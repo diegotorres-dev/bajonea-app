@@ -1,0 +1,1 @@
+**Link a Figma - Interfaz Mobile**: https://www.figma.com/design/C4MQqdvDqGL45sbEcmOozB/Bajone%C3%A1?node-id=0-1&t=sWlsTgAEHIoox0FH-1
