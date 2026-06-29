@@ -3,30 +3,7 @@
 **Proyecto:** Bajoneá — Plataforma de pedidos gastronómicos en línea  
 **Motor de base de datos:** MySQL (InnoDB)  
 **ORM / Migraciones:** Spring Data JPA + Hibernate / Flyway  
-**Versión del modelo:** 1.0  
-
----
-
-## Convenciones
-
-| Símbolo | Significado |
-|---------|-------------|
-| PK | Clave primaria |
-| FK | Clave foránea |
-| UQ | Restricción UNIQUE |
-| NN | NOT NULL |
-| AI | AUTO_INCREMENT |
-| — | No aplica / valor NULL permitido |
-
-- Todos los campos de tipo `datetime` se mapean a `DATETIME` en MySQL (precisión de segundos).
-- El tipo `boolean` se almacena como `TINYINT(1)` en MySQL.
-- Los ENUMs pueden implementarse como tipo `ENUM` nativo de MySQL o como `VARCHAR` con validación en la capa de aplicación (Spring). Ambas estrategias son válidas; la elección se delega a la implementación con Flyway.
-- Los identificadores de `Provincia` y `Localidad` provienen del dataset Georef (datos.gob.ar) y se cargan mediante ETL inicial. No se crean desde la aplicación.
-- Los campos `fecha_modificacion`, `fecha_baja`, `fecha_uso`, `fecha_resolucion` y similares son `NULL` hasta que ocurra el evento correspondiente.
-- Las URLs almacenadas apuntan a recursos en Cloudinary. El backend valida el límite de 5 imágenes por producto antes de emitir firmas de subida.
-- Los campos `access_token` y `refresh_token` de `CuentaMercadoPago` se almacenan como texto; en producción se recomienda cifrado a nivel de columna.
-
----
+**Versión del modelo:** 1.2  
 
 ## 1. Tipos Enumerados (ENUMs)
 
@@ -143,18 +120,6 @@ Días de la semana para la configuración de horarios del comercio.
 
 ---
 
-### ENUM: TipoAccionComercio
-
-Tipo de acción administrativa registrada en `HistorialAccionComercio`.
-
-| Valor | Descripción |
-|-------|-------------|
-| `APROBACION` | El Administrador aprobó la solicitud del comercio. |
-| `RECHAZO` | El Administrador rechazó la solicitud del comercio. |
-| `SUSPENSION` | El Administrador suspendió el comercio. |
-| `REACTIVACION` | El Administrador levantó la suspensión del comercio. |
-
----
 
 ### ENUM: TipoToken
 
@@ -319,9 +284,9 @@ Estado de un reclamo iniciado por un cliente sobre un pedido.
 
 ---
 
-### ENUM: ResultadoSoporte
+### ENUM: ResolucionSoporte
 
-Resultado de la resolución de un mensaje de soporte por parte del Administrador.
+Resolución de un ticket de soporte determinada por el Administrador.
 
 | Valor | Descripción |
 |-------|-------------|
@@ -459,7 +424,7 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 
 ### Tabla: Usuario
 
-**Descripción:** Entidad central del sistema de identidad. Almacena credenciales, estado del ciclo de vida y metadatos de seguridad para todos los actores del sistema. La PK (`id`) es compartida con `Persona` mediante herencia por tabla.
+**Descripción:** Entidad central del sistema de identidad. Almacena credenciales, estado operacional actual y metadatos de seguridad para todos los actores del sistema. Las transiciones de estado y sus fechas se registran en `HistorialEstadoUsuario`. La PK (`id`) es compartida con `Persona` mediante herencia por tabla.
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
@@ -467,24 +432,44 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 | `email` | VARCHAR(150) | NO | — | NN, UQ | Dirección de email. Identificador de acceso único en toda la plataforma. |
 | `password_hash` | VARCHAR(255) | NO | — | NN | Hash de la contraseña generado con BCrypt. Nunca se almacena en texto plano. |
 | `rol` | ENUM RolUsuario | NO | — | NN | Rol funcional: `CLIENTE`, `COMERCIO` o `ADMINISTRADOR`. Determina las entidades asociadas y los permisos de la API. |
-| `estado` | ENUM EstadoUsuario | NO | `'PENDIENTE'` | NN | Estado del ciclo de vida del usuario. |
+| `estado` | ENUM EstadoUsuario | NO | `'PENDIENTE'` | NN | Estado operacional actual del usuario. Consultado en cada validación de seguridad. |
 | `email_verificado` | TINYINT(1) | NO | `false` | NN | `true` una vez que el usuario consumió exitosamente el token de `VERIFICACION_EMAIL`. |
 | `intentos_fallidos` | INT | NO | `0` | NN | Contador de intentos fallidos de login o de cambio de contraseña desde perfil. Se resetea al autenticarse correctamente. Al llegar a 3, el usuario pasa a `BLOQUEADO`. |
-| `fecha_registro` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación del registro de usuario. |
-| `fecha_ultimo_acceso` | DATETIME | SÍ | NULL | — | Fecha y hora del último inicio de sesión exitoso. Es el criterio para detectar inactividad (3 meses sin actualización = `INACTIVO`). |
-| `fecha_bloqueo` | DATETIME | SÍ | NULL | — | Fecha y hora en que el usuario pasó a estado `BLOQUEADO`. |
-| `fecha_suspension` | DATETIME | SÍ | NULL | — | Fecha y hora en que el Administrador aplicó la suspensión. |
-| `motivo_suspension` | VARCHAR(500) | SÍ | NULL | — | Motivo de la suspensión ingresado por el Administrador. Obligatorio al suspender; NULL en otros estados. |
-| `fecha_inactivo` | DATETIME | SÍ | NULL | — | Fecha y hora en que el sistema inactivó automáticamente al usuario. |
-| `fecha_reactivacion` | DATETIME | SÍ | NULL | — | Fecha y hora de la última reactivación del usuario desde estado `INACTIVO`. |
+| `fecha_registro` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación del registro de usuario. Inmutable. |
+| `fecha_ultimo_acceso` | DATETIME | SÍ | NULL | — | Fecha y hora del último inicio de sesión exitoso. Criterio para detectar inactividad (3 meses sin actualización = `INACTIVO`). |
 | `fecha_actualizacion` | DATETIME | SÍ | NULL | — | Fecha y hora de la última modificación de cualquier campo del registro. |
+
+> **Campos eliminados en v1.2:** `fecha_bloqueo`, `fecha_suspension`, `motivo_suspension`, `fecha_inactivo`, `fecha_reactivacion`. Todos se derivan desde `HistorialEstadoUsuario`: `SELECT estado_destino, motivo, fecha_hora FROM HistorialEstadoUsuario WHERE usuario_id = ? ORDER BY fecha_hora DESC`.
 
 **Índices:** `PRIMARY KEY (id)` | `UNIQUE (email)` | `INDEX (rol)` | `INDEX (estado)`
 
 **Reglas de negocio:**
-- Al registrarse: `estado = PENDIENTE`, `email_verificado = false`.
-- Tras 3 intentos fallidos: `estado → BLOQUEADO`, `intentos_fallidos` se resetea a 0.
+- Al registrarse: `estado = PENDIENTE`, `email_verificado = false`. Se inserta la primera fila en `HistorialEstadoUsuario` con `estado_origen = NULL`, `estado_destino = PENDIENTE`.
+- Tras 3 intentos fallidos: `estado → BLOQUEADO`, `intentos_fallidos` se resetea a 0. Se inserta fila en `HistorialEstadoUsuario`.
 - `fecha_ultimo_acceso` se actualiza en cada login exitoso y es el único criterio para la inactivación por 3 meses.
+- Cada cambio de `estado` genera un INSERT en `HistorialEstadoUsuario` con `estado_origen` (estado previo) y `estado_destino` (nuevo estado).
+
+---
+
+### Tabla: HistorialEstadoUsuario
+
+**Descripción:** Registro histórico de todas las transiciones de estado del usuario. Tabla de detalle 1:N de `Usuario`. Cada cambio de `Usuario.estado` genera una nueva fila. Patrón de máquina de estados: registra el estado previo y el estado resultante de cada transición. Permite auditoría completa del ciclo de vida del usuario sin sobreescribir datos.
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `id` | INT | NO | AI | PK, AI | Identificador único del registro histórico. |
+| `usuario_id` | INT | NO | — | FK → Usuario.id, NN | Usuario cuyo estado cambió. |
+| `estado_origen` | ENUM EstadoUsuario | SÍ | NULL | — | Estado del usuario antes de la transición. NULL únicamente en el primer registro (creación del usuario, sin estado previo). |
+| `estado_destino` | ENUM EstadoUsuario | NO | — | NN | Estado resultante del usuario tras la transición. |
+| `motivo` | VARCHAR(500) | SÍ | NULL | — | Motivo de la transición. Obligatorio para `SUSPENDIDO`; opcional para los demás estados. El actor se infiere de la transición: `BLOQUEADO` = sistema, `SUSPENDIDO` = admin, `INACTIVO` = sistema. |
+| `fecha_hora` | DATETIME | NO | `NOW()` | NN | Fecha y hora exacta de la transición. |
+
+**Índices:** `PRIMARY KEY (id)` | `INDEX (usuario_id)` | `INDEX (fecha_hora)`
+
+**Reglas de negocio:**
+- Tabla de solo inserción (append-only). No se modifica ni elimina ningún registro.
+- El estado actual del usuario se obtiene desde `Usuario.estado`. El historial completo, desde esta tabla ordenada por `fecha_hora ASC`.
+- Para obtener la última suspensión: `SELECT motivo, fecha_hora FROM HistorialEstadoUsuario WHERE usuario_id = ? AND estado_destino = 'SUSPENDIDO' ORDER BY fecha_hora DESC LIMIT 1`.
 
 ---
 
@@ -566,7 +551,7 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 
 ### Tabla: Comercio
 
-**Descripción:** Entidad principal que representa a un comercio gastronómico en la plataforma. Vinculado a una `PersonaJuridica` como titular legal. Tiene estado propio que puede ser afectado automáticamente por el estado de su usuario representante.
+**Descripción:** Entidad principal que representa a un comercio gastronómico en la plataforma. Vinculado a una `PersonaJuridica` como titular legal. Tiene estado propio que puede ser afectado automáticamente por el estado de su usuario representante. Los motivos y fechas de cada transición de estado se registran exclusivamente en `HistorialEstadoComercio`; esta tabla conserva únicamente el estado operacional actual y los atributos que no tienen naturaleza histórica repetible.
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
@@ -580,18 +565,14 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 | `tipo_comercio` | ENUM TipoComercio | NO | — | NN | Categoría del negocio: `RESTAURANTE` o `EMPRENDIMIENTO`. |
 | `acepta_delivery` | TINYINT(1) | NO | `false` | NN | `true` si el comercio ofrece entrega a domicilio. |
 | `acepta_retiro` | TINYINT(1) | NO | `false` | NN | `true` si el comercio permite retiro en el local. |
-| `estado` | ENUM EstadoComercio | NO | `'PENDIENTE'` | NN | Estado del ciclo de vida del comercio en la plataforma. |
+| `estado` | ENUM EstadoComercio | NO | `'PENDIENTE'` | NN | Estado operacional actual del comercio. Consultado en cada validación de pedido. |
 | `cerrado_manualmente` | TINYINT(1) | NO | `false` | NN | `true` si el comerciante cerró manualmente su tienda. Independiente del estado y del horario. Se combina con ambos para determinar la disponibilidad real. |
-| `motivo_rechazo` | VARCHAR(500) | SÍ | NULL | — | Motivo ingresado por el Administrador al rechazar la solicitud. NULL en otros estados. |
-| `fecha_rechazo` | DATETIME | SÍ | NULL | — | Fecha y hora en que el Administrador rechazó la solicitud. |
-| `fecha_resolicitud` | DATETIME | SÍ | NULL | — | Fecha y hora en que el comercio presentó una nueva solicitud de aprobación tras ser rechazado. |
-| `fecha_suspension` | DATETIME | SÍ | NULL | — | Fecha y hora de la última suspensión administrativa. |
-| `motivo_suspension` | VARCHAR(500) | SÍ | NULL | — | Motivo de la suspensión ingresado por el Administrador. NULL en otros estados. |
+| `fecha_resolicitud` | DATETIME | SÍ | NULL | — | Fecha y hora en que el comercio presentó una nueva solicitud de aprobación tras ser rechazado. Permite al Administrador distinguir re-solicitudes de solicitudes iniciales en el panel de revisión. |
 | `mp_vinculado` | TINYINT(1) | NO | `false` | NN | `true` si existe una `CuentaMercadoPago` activa para este comercio. Se actualiza al vincular o desvincular. |
-| `fecha_aprobacion` | DATETIME | SÍ | NULL | — | Fecha y hora de la última aprobación por el Administrador. |
-| `fecha_registro` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación del comercio en el sistema. |
-| `fecha_modificacion` | DATETIME | SÍ | NULL | — | Fecha y hora de la última modificación del perfil del comercio. |
-| `fecha_reactivacion` | DATETIME | SÍ | NULL | — | Fecha y hora de la última reactivación (levantamiento de suspensión o restauración desde `CERRADO_TEMPORALMENTE`). |
+| `fecha_registro` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación del comercio en el sistema. Inmutable. |
+| `fecha_modificacion` | DATETIME | SÍ | NULL | — | Fecha y hora de la última modificación del perfil del comercio (nombre, descripción, teléfono, foto, modalidades). |
+
+> **Campos eliminados en v1.1:** `motivo_rechazo`, `fecha_rechazo`, `motivo_suspension`, `fecha_suspension`, `fecha_aprobacion`, `fecha_reactivacion`. Todos se obtienen desde `HistorialEstadoComercio` con `WHERE comercio_id = ? AND estado_destino = 'RECHAZADO' ORDER BY fecha_hora DESC LIMIT 1` (o el `estado_destino` correspondiente).
 
 **Índices:** `PRIMARY KEY (id)` | `INDEX (persona_juridica_id)` | `INDEX (estado)`
 
@@ -599,6 +580,9 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 - Un comercio puede recibir pedidos si: `estado = APROBADO AND mp_vinculado = true AND cerrado_manualmente = false AND usuario representante ACTIVO AND hora actual dentro de Horario`.
 - Propagación automática desde el estado del usuario: `BLOQUEADO → CERRADO_TEMPORALMENTE`; `INACTIVO → INACTIVO`; `SUSPENDIDO → SUSPENDIDO`.
 - Al recuperar contraseña (desbloqueo del usuario): si `estado = CERRADO_TEMPORALMENTE`, se restaura automáticamente a `APROBADO`.
+- Para obtener el motivo y fecha del último rechazo: `SELECT motivo, fecha_hora FROM HistorialEstadoComercio WHERE comercio_id = ? AND estado_destino = 'RECHAZADO' ORDER BY fecha_hora DESC LIMIT 1`.
+- Para obtener el motivo y fecha de la última suspensión: ídem con `estado_destino = 'SUSPENDIDO'`.
+- Para obtener la fecha de la última aprobación o reactivación: ídem con `estado_destino = 'APROBADO'`.
 
 ---
 
@@ -647,21 +631,27 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 
 ---
 
-### Tabla: HistorialAccionComercio
+### Tabla: HistorialEstadoComercio
 
-**Descripción:** Registro de auditoría inmutable de todas las acciones administrativas sobre comercios. Cada registro es de solo inserción; no se modifica ni elimina.
+**Descripción:** Registro histórico inmutable de todas las transiciones de estado del comercio. Tabla de detalle 1:N de `Comercio`. Patrón de máquina de estados: registra el estado previo (`estado_origen`) y el estado resultante (`estado_destino`) de cada transición. Cubre tanto acciones administrativas como transiciones automáticas del sistema. Cada registro es de solo inserción; no se modifica ni elimina.
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
 | `id` | INT | NO | AI | PK, AI | Identificador único del registro. |
-| `comercio_id` | INT | NO | — | FK → Comercio.id, NN | Comercio sobre el que se ejecutó la acción. |
-| `administrador_id` | INT | NO | — | FK → Administrador.id, NN | Administrador que ejecutó la acción. |
-| `tipo_accion` | ENUM TipoAccionComercio | NO | — | NN | Tipo de acción: `APROBACION`, `RECHAZO`, `SUSPENSION` o `REACTIVACION`. |
-| `motivo` | VARCHAR(500) | SÍ | NULL | — | Motivo de la acción. Obligatorio para `RECHAZO` y `SUSPENSION`. Opcional para `APROBACION` y `REACTIVACION`. |
-| `estado_resultante` | ENUM EstadoComercio | NO | — | NN | Estado del comercio inmediatamente después de ejecutar la acción. Permite reconstruir la secuencia de estados. |
-| `fecha_hora` | DATETIME | NO | `NOW()` | NN | Fecha y hora exacta de ejecución de la acción. |
+| `comercio_id` | INT | NO | — | FK → Comercio.id, NN | Comercio cuyo estado cambió. |
+| `administrador_id` | INT | SÍ | NULL | FK → Administrador.id | Administrador que ejecutó la transición. NULL cuando la transición es automática (sistema). |
+| `estado_origen` | ENUM EstadoComercio | NO | — | NN | Estado del comercio antes de la transición. |
+| `estado_destino` | ENUM EstadoComercio | NO | — | NN | Estado del comercio después de la transición. |
+| `motivo` | VARCHAR(500) | SÍ | NULL | — | Motivo de la transición. Obligatorio para transiciones hacia `RECHAZADO` y `SUSPENDIDO`. Opcional en los demás casos. |
+| `fecha_hora` | DATETIME | NO | `NOW()` | NN | Fecha y hora exacta de la transición. |
 
-**Índices:** `PRIMARY KEY (id)` | `INDEX (comercio_id)` | `INDEX (administrador_id)`
+**Índices:** `PRIMARY KEY (id)` | `INDEX (comercio_id)` | `INDEX (administrador_id)` | `INDEX (fecha_hora)`
+
+**Reglas de negocio:**
+- Tabla append-only. Nunca se modifica ni elimina ningún registro.
+- `administrador_id = NULL` identifica transiciones automáticas del sistema (ej.: `APROBADO → CERRADO_TEMPORALMENTE` por bloqueo del usuario representante).
+- Para obtener el motivo y fecha del último rechazo: `SELECT motivo, fecha_hora FROM HistorialEstadoComercio WHERE comercio_id = ? AND estado_destino = 'RECHAZADO' ORDER BY fecha_hora DESC LIMIT 1`.
+- Para obtener el motivo y fecha de la última suspensión: ídem con `estado_destino = 'SUSPENDIDO'`.
 
 ---
 
@@ -777,7 +767,7 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 | `fecha_envio` | DATETIME | NO | `NOW()` | NN | Fecha y hora en que el usuario envió el mensaje. |
 | `atendido` | TINYINT(1) | NO | `false` | NN | `true` una vez que un Administrador revisó y resolvió el mensaje. |
 | `administrador_id` | INT | SÍ | NULL | FK → Administrador.id | Administrador que atendió el mensaje. NULL mientras está sin atender. |
-| `resultado` | ENUM ResultadoSoporte | SÍ | NULL | — | Resultado de la resolución: `REACTIVADO` o `SUSPENSION_MANTENIDA`. NULL mientras no fue atendido. |
+| `resolucion` | ENUM ResolucionSoporte | SÍ | NULL | — | Resolución del ticket: `REACTIVADO` o `SUSPENSION_MANTENIDA`. NULL mientras no fue atendido. |
 | `fecha_resolucion` | DATETIME | SÍ | NULL | — | Fecha y hora de resolución por el Administrador. NULL mientras no fue atendido. |
 
 **Índices:** `PRIMARY KEY (id)` | `INDEX (usuario_id)` | `INDEX (atendido)`
@@ -792,11 +782,11 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 |---------|-----------|------|---------|---------------|-------------|
 | `id` | INT | NO | AI | PK, AI | Identificador único del reclamo. |
 | `pedido_id` | INT | NO | — | FK → Pedido.id, NN, UQ | Pedido sobre el que se realiza el reclamo. UNIQUE: máximo un reclamo por pedido. |
-| `descripcion` | TEXT | NO | — | NN | Descripción detallada del reclamo ingresada por el cliente. |
+| `descripcion` | TEXT | NO | — | NN | Descripción del problema ingresada por el **cliente** al crear el reclamo. |
 | `fecha_creacion` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación del reclamo. |
 | `estado` | ENUM EstadoReclamo | NO | `'PENDIENTE'` | NN | Estado del reclamo en el flujo de resolución. |
 | `administrador_id` | INT | SÍ | NULL | FK → Administrador.id | Administrador que resolvió el reclamo. NULL mientras está `PENDIENTE`. |
-| `motivo_rechazo` | VARCHAR(500) | SÍ | NULL | — | Motivo por el que el Administrador rechazó el reclamo. NULL si fue aprobado o está pendiente. |
+| `nota_resolucion` | VARCHAR(500) | SÍ | NULL | — | Nota del **Administrador** al resolver el reclamo, aplicable tanto a `APROBADO` como a `RECHAZADO`. NULL mientras está `PENDIENTE`. Semánticamente distinto de `descripcion` (cliente) y de `Pedido.motivo_rechazo` (comercio rechazando el pedido). |
 | `fecha_resolucion` | DATETIME | SÍ | NULL | — | Fecha y hora de resolución por el Administrador. NULL mientras está `PENDIENTE`. |
 
 **Índices:** `PRIMARY KEY (id)` | `UNIQUE (pedido_id)` | `INDEX (estado)`
@@ -937,7 +927,7 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 
 ### Tabla: Pedido
 
-**Descripción:** Pedido generado por un cliente. Cubre el ciclo completo desde la creación (antes del pago) hasta la entrega. Contiene el snapshot de montos al momento de la transacción, los metadatos del ciclo de vida y los campos discriminadores de estados terminales. El `id` del pedido se usa como `external_reference` en MercadoPago para correlacionar webhooks.
+**Descripción:** Pedido generado por un cliente. Cubre el ciclo completo desde la creación (antes del pago) hasta la entrega. Contiene el snapshot de montos al momento de la transacción y los metadatos del ciclo de vida. Los timestamps de cada transición de estado se registran exclusivamente en `HistorialEstadoPedido`; esta tabla conserva únicamente el estado operacional actual y `fecha_creacion` (evento único, no repetible). El `id` del pedido se usa como `external_reference` en MercadoPago para correlacionar webhooks.
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
@@ -960,12 +950,9 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 | `cargo_servicio_cliente` | DECIMAL(10,2) | NO | — | NN | Cargo de servicio aplicado al cliente, congelado desde la `ConfiguracionTarifa` vigente al momento del pedido. |
 | `cargo_servicio_comercio` | DECIMAL(10,2) | NO | — | NN | Comisión de plataforma del comercio, congelada desde la `ConfiguracionTarifa` vigente al momento del pedido. |
 | `total` | DECIMAL(10,2) | NO | — | NN | Monto total cobrado al cliente: `subtotal + cargo_servicio_cliente`. Debe coincidir con `Pago.monto`. |
-| `fecha_creacion` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación del pedido (previo al pago). |
-| `fecha_pago` | DATETIME | SÍ | NULL | — | Fecha y hora de confirmación del pago por MercadoPago vía webhook `payment.approved`. |
-| `fecha_aceptacion` | DATETIME | SÍ | NULL | — | Fecha y hora en que el comercio aceptó el pedido. |
-| `fecha_listo` | DATETIME | SÍ | NULL | — | Fecha y hora en que el pedido pasó a `LISTO_PARA_RETIRAR` (retiro) o `EN_CAMINO` (domicilio). |
-| `fecha_despacho` | DATETIME | SÍ | NULL | — | Fecha y hora en que el pedido fue despachado (pasó a `EN_CAMINO`). Solo aplica a `DOMICILIO`. |
-| `fecha_cancelacion` | DATETIME | SÍ | NULL | — | Fecha y hora en que el pedido alcanzó un estado terminal negativo (`RECHAZADO`, `CANCELADO`, `ANULADO`, `CANCELADO_POR_SISTEMA` o `EXPIRADO`). |
+| `fecha_creacion` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación del pedido (previo al pago). Inmutable. |
+
+> **Campos eliminados en v1.1:** `fecha_pago`, `fecha_aceptacion`, `fecha_listo`, `fecha_despacho`, `fecha_cancelacion`. Todos se derivan desde `HistorialEstadoPedido` con `SELECT fecha_hora FROM HistorialEstadoPedido WHERE pedido_id = ? AND estado = 'ESTADO_BUSCADO' ORDER BY fecha_hora DESC LIMIT 1`.
 
 **Índices:** `PRIMARY KEY (id)` | `INDEX (cliente_id)` | `INDEX (comercio_id)` | `INDEX (estado)` | `INDEX (fecha_creacion)`
 
@@ -973,6 +960,7 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 - `cancelado_por` y `fuente_entrega` son mutuamente excluyentes: en un pedido terminal solo puede estar poblado uno de los dos.
 - Si llega un webhook de pago aprobado y el pedido ya está en `CANCELADO_POR_SISTEMA` (por timeout procesado primero), el sistema debe generar el reembolso inmediatamente.
 - Los valores de `subtotal`, `cargo_servicio_cliente`, `cargo_servicio_comercio` y `total` son inmutables una vez registrados.
+- Cada cambio de estado del pedido genera un INSERT en `HistorialEstadoPedido`, que es la fuente canónica de todos los timestamps del ciclo de vida.
 
 ---
 
@@ -1069,30 +1057,31 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 | 8 | `Direccion` | `localidad_id` | `Localidad` | N:1 | N direcciones → 1 localidad | Ubicación geográfica de la dirección. |
 | 9 | `Direccion` | `cliente_id` | `Cliente` | N:1 | N direcciones → 1 cliente | Direcciones de entrega registradas por el cliente. |
 | 10 | `Direccion` | `comercio_id` | `Comercio` | 1:1 | 1 dirección ↔ 1 comercio | Dirección operativa única del comercio (UNIQUE). |
-| 11 | `Horario` | `comercio_id` | `Comercio` | N:1 | N horarios → 1 comercio | Franjas horarias de atención del comercio. |
-| 12 | `Token` | `usuario_id` | `Usuario` | N:1 | N tokens → 1 usuario | Tokens de seguridad generados para el usuario. |
-| 13 | `Sesion` | `usuario_id` | `Usuario` | N:1 | N sesiones → 1 usuario | Historial de sesiones del usuario. |
-| 14 | `Notificacion` | `usuario_id` | `Usuario` | N:1 | N notificaciones → 1 usuario | Notificaciones emitidas al usuario. |
-| 15 | `Soporte` | `usuario_id` | `Usuario` | N:1 | N mensajes → 1 usuario | Mensajes de soporte enviados por el usuario. |
-| 16 | `Soporte` | `administrador_id` | `Administrador` | N:1 | N mensajes → 1 administrador | Administrador que atendió el mensaje. |
-| 17 | `Reclamo` | `pedido_id` | `Pedido` | 1:1 | 1 reclamo ↔ 1 pedido | Un reclamo por pedido (UNIQUE). |
-| 18 | `Reclamo` | `administrador_id` | `Administrador` | N:1 | N reclamos → 1 administrador | Administrador que resolvió el reclamo. |
-| 19 | `HistorialAccionComercio` | `comercio_id` | `Comercio` | N:1 | N registros → 1 comercio | Auditoría de acciones admin sobre el comercio. |
-| 20 | `HistorialAccionComercio` | `administrador_id` | `Administrador` | N:1 | N registros → 1 administrador | Administrador que ejecutó la acción. |
-| 21 | `ConfiguracionTarifa` | `administrador_id` | `Administrador` | N:1 | N configs → 1 administrador | Configuraciones de tarifa registradas por el admin. |
-| 22 | `CuentaMercadoPago` | `comercio_id` | `Comercio` | 1:1 | 1 cuenta ↔ 1 comercio | Credenciales OAuth MP del comercio (UNIQUE). |
-| 23 | `Producto` | `comercio_id` | `Comercio` | N:1 | N productos → 1 comercio | Catálogo de productos del comercio. |
-| 24 | `Producto` | `categoria_id` | `Categoria` | N:1 | N productos → 1 categoría | Clasificación del producto. |
-| 25 | `ImagenProducto` | `producto_id` | `Producto` | N:1 | N imágenes → 1 producto | Galería de imágenes del producto (máx. 5). |
-| 26 | `ProductoTag` | `producto_id` | `Producto` | N:1 | N registros → 1 producto | Unión M:N: tags de un producto. |
-| 27 | `ProductoTag` | `tag_id` | `Tag` | N:1 | N registros → 1 tag | Unión M:N: productos con un tag dado. |
-| 28 | `Carrito` | `cliente_id` | `Cliente` | 1:1 | 1 carrito ↔ 1 cliente | Carrito persistente y único por cliente (UNIQUE). |
-| 29 | `Carrito` | `comercio_id` | `Comercio` | N:1 | N carritos → 1 comercio | Comercio activo en el carrito del cliente. |
-| 30 | `ItemCarrito` | `carrito_id` | `Carrito` | N:1 | N ítems → 1 carrito | Contenido del carrito. |
-| 31 | `ItemCarrito` | `producto_id` | `Producto` | N:1 | N ítems → 1 producto | Producto incluido en el ítem del carrito. |
-| 32 | `Pedido` | `cliente_id` | `Cliente` | N:1 | N pedidos → 1 cliente | Pedidos realizados por el cliente. |
-| 33 | `Pedido` | `comercio_id` | `Comercio` | N:1 | N pedidos → 1 comercio | Pedidos recibidos por el comercio. |
-| 34 | `Pedido` | `direccion_id` | `Direccion` | N:1 | N pedidos → 1 dirección | Dirección de entrega (solo `DOMICILIO`). |
+| 11 | `HistorialEstadoUsuario` | `usuario_id` | `Usuario` | N:1 | N registros → 1 usuario | Historial de transiciones de estado del usuario. |
+| 12 | `Horario` | `comercio_id` | `Comercio` | N:1 | N horarios → 1 comercio | Franjas horarias de atención del comercio. |
+| 13 | `Token` | `usuario_id` | `Usuario` | N:1 | N tokens → 1 usuario | Tokens de seguridad generados para el usuario. |
+| 14 | `Sesion` | `usuario_id` | `Usuario` | N:1 | N sesiones → 1 usuario | Historial de sesiones del usuario. |
+| 15 | `Notificacion` | `usuario_id` | `Usuario` | N:1 | N notificaciones → 1 usuario | Notificaciones emitidas al usuario. |
+| 16 | `Soporte` | `usuario_id` | `Usuario` | N:1 | N mensajes → 1 usuario | Mensajes de soporte enviados por el usuario. |
+| 17 | `Soporte` | `administrador_id` | `Administrador` | N:1 | N mensajes → 1 administrador | Administrador que atendió el mensaje. |
+| 18 | `Reclamo` | `pedido_id` | `Pedido` | 1:1 | 1 reclamo ↔ 1 pedido | Un reclamo por pedido (UNIQUE). |
+| 19 | `Reclamo` | `administrador_id` | `Administrador` | N:1 | N reclamos → 1 administrador | Administrador que resolvió el reclamo. |
+| 20 | `HistorialEstadoComercio` | `comercio_id` | `Comercio` | N:1 | N registros → 1 comercio | Historial de transiciones de estado del comercio. |
+| 21 | `HistorialEstadoComercio` | `administrador_id` | `Administrador` | N:1 | N registros → 1 administrador | Administrador que ejecutó la transición (NULL si fue el sistema). |
+| 22 | `ConfiguracionTarifa` | `administrador_id` | `Administrador` | N:1 | N configs → 1 administrador | Configuraciones de tarifa registradas por el admin. |
+| 23 | `CuentaMercadoPago` | `comercio_id` | `Comercio` | 1:1 | 1 cuenta ↔ 1 comercio | Credenciales OAuth MP del comercio (UNIQUE). |
+| 24 | `Producto` | `comercio_id` | `Comercio` | N:1 | N productos → 1 comercio | Catálogo de productos del comercio. |
+| 25 | `Producto` | `categoria_id` | `Categoria` | N:1 | N productos → 1 categoría | Clasificación del producto. |
+| 26 | `ImagenProducto` | `producto_id` | `Producto` | N:1 | N imágenes → 1 producto | Galería de imágenes del producto (máx. 5). |
+| 27 | `ProductoTag` | `producto_id` | `Producto` | N:1 | N registros → 1 producto | Unión M:N: tags de un producto. |
+| 28 | `ProductoTag` | `tag_id` | `Tag` | N:1 | N registros → 1 tag | Unión M:N: productos con un tag dado. |
+| 29 | `Carrito` | `cliente_id` | `Cliente` | 1:1 | 1 carrito ↔ 1 cliente | Carrito persistente y único por cliente (UNIQUE). |
+| 30 | `Carrito` | `comercio_id` | `Comercio` | N:1 | N carritos → 1 comercio | Comercio activo en el carrito del cliente. |
+| 31 | `ItemCarrito` | `carrito_id` | `Carrito` | N:1 | N ítems → 1 carrito | Contenido del carrito. |
+| 32 | `ItemCarrito` | `producto_id` | `Producto` | N:1 | N ítems → 1 producto | Producto incluido en el ítem del carrito. |
+| 33 | `Pedido` | `cliente_id` | `Cliente` | N:1 | N pedidos → 1 cliente | Pedidos realizados por el cliente. |
+| 34 | `Pedido` | `comercio_id` | `Comercio` | N:1 | N pedidos → 1 comercio | Pedidos recibidos por el comercio. |
+| 35 | `Pedido` | `direccion_id` | `Direccion` | N:1 | N pedidos → 1 dirección | Dirección de entrega (solo `DOMICILIO`). |
 | 35 | `DetallePedido` | `pedido_id` | `Pedido` | N:1 | N detalles → 1 pedido | Ítems snapshooteados al confirmar el pedido. |
 | 36 | `DetallePedido` | `producto_id` | `Producto` | N:1 | N detalles → 1 producto | Referencia histórica al producto detallado. |
 | 37 | `HistorialEstadoPedido` | `pedido_id` | `Pedido` | N:1 | N registros → 1 pedido | Trazabilidad de transiciones de estado. |
@@ -1179,4 +1168,4 @@ LISTO_PARA_RETIRAR ──[90 min durante suspensión]───────→ EN
 
 ---
 
-*Diccionario de Datos — Proyecto Bajoneá — Versión 1.0*
+*Diccionario de Datos — Proyecto Bajoneá — Versión 1.2*
