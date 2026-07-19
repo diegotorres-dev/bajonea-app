@@ -1,10 +1,13 @@
 package com.bajonea.backend.services;
 
+import com.bajonea.backend.dto.request.ImagenProductoRequestDTO;
 import com.bajonea.backend.dto.request.ProductoRequestDTO;
+import com.bajonea.backend.dto.response.CloudinarySignatureResponseDTO;
 import com.bajonea.backend.dto.response.ImagenProductoResponseDTO;
 import com.bajonea.backend.dto.response.ProductoResponseDTO;
 import com.bajonea.backend.entities.Categoria;
 import com.bajonea.backend.entities.Comercio;
+import com.bajonea.backend.entities.ImagenProducto;
 import com.bajonea.backend.entities.ItemCarrito;
 import com.bajonea.backend.entities.Producto;
 import com.bajonea.backend.entities.ProductoTag;
@@ -29,9 +32,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * CRUD de Producto para el comercio autenticado + transición de estado. No incluye gestión
- * de galería ({@code ImagenProducto}) — diferida a la Fase 11 (Cloudinary), ver el propio
- * javadoc de {@code ProductoRequestDTO} y docs/DECISIONES.md.
+ * CRUD de Producto para el comercio autenticado + transición de estado + gestión de la
+ * galería ({@code ImagenProducto}, Fase 11): firma de subida vía {@code CloudinaryService},
+ * alta/baja/marcado de principal de imágenes individuales.
  */
 @Service
 @RequiredArgsConstructor
@@ -43,6 +46,8 @@ public class ProductoService {
             EstadoProducto.AGOTADO, Set.of(EstadoProducto.DISPONIBLE, EstadoProducto.DESCONTINUADO),
             EstadoProducto.DESCONTINUADO, Set.of());
 
+    private static final int MAX_IMAGENES_POR_PRODUCTO = 5;
+
     private final ProductoRepository productoRepository;
     private final ComercioRepository comercioRepository;
     private final CategoriaRepository categoriaRepository;
@@ -51,6 +56,7 @@ public class ProductoService {
     private final ImagenProductoRepository imagenProductoRepository;
     private final ItemCarritoRepository itemCarritoRepository;
     private final NotificacionService notificacionService;
+    private final CloudinaryService cloudinaryService;
 
     public ProductoResponseDTO crearProducto(Integer usuarioId, ProductoRequestDTO request) {
         Comercio comercio = obtenerComercioDelUsuario(usuarioId);
@@ -151,6 +157,75 @@ public class ProductoService {
         }
 
         return aResponseDTO(producto);
+    }
+
+    public CloudinarySignatureResponseDTO generarFirmaImagen(Integer usuarioId, Integer productoId) {
+        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+        Producto producto = obtenerProductoDelComercio(productoId, comercio);
+        return cloudinaryService.generarFirmaImagenProducto(comercio.getId(), producto.getId());
+    }
+
+    public ImagenProductoResponseDTO agregarImagen(Integer usuarioId, Integer productoId, ImagenProductoRequestDTO request) {
+        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+        Producto producto = obtenerProductoDelComercio(productoId, comercio);
+
+        long existentes = imagenProductoRepository.countByProductoId(productoId);
+        if (existentes >= MAX_IMAGENES_POR_PRODUCTO) {
+            throw new ConflictoDeNegocioException(
+                    "El producto ya tiene el máximo de " + MAX_IMAGENES_POR_PRODUCTO + " imágenes");
+        }
+
+        boolean esPrincipal = request.isEsPrincipal() || existentes == 0;
+        if (esPrincipal) {
+            desmarcarPrincipalActual(productoId);
+        }
+
+        ImagenProducto imagen = ImagenProducto.builder()
+                .producto(producto)
+                .url(request.getUrl())
+                .orden(request.getOrden())
+                .esPrincipal(esPrincipal)
+                .build();
+        imagenProductoRepository.save(imagen);
+
+        return new ImagenProductoResponseDTO(imagen.getId(), imagen.getUrl(), imagen.getOrden(), imagen.isEsPrincipal());
+    }
+
+    public void eliminarImagen(Integer usuarioId, Integer productoId, Integer imagenId) {
+        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+        Producto producto = obtenerProductoDelComercio(productoId, comercio);
+        ImagenProducto imagen = obtenerImagenDelProducto(imagenId, producto);
+        imagenProductoRepository.delete(imagen);
+    }
+
+    public ImagenProductoResponseDTO marcarImagenPrincipal(Integer usuarioId, Integer productoId, Integer imagenId) {
+        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+        Producto producto = obtenerProductoDelComercio(productoId, comercio);
+        ImagenProducto imagen = obtenerImagenDelProducto(imagenId, producto);
+
+        desmarcarPrincipalActual(productoId);
+        imagen.setEsPrincipal(true);
+        imagenProductoRepository.save(imagen);
+
+        return new ImagenProductoResponseDTO(imagen.getId(), imagen.getUrl(), imagen.getOrden(), imagen.isEsPrincipal());
+    }
+
+    private void desmarcarPrincipalActual(Integer productoId) {
+        imagenProductoRepository.findByProductoIdOrderByOrdenAsc(productoId).stream()
+                .filter(ImagenProducto::isEsPrincipal)
+                .forEach(imagen -> {
+                    imagen.setEsPrincipal(false);
+                    imagenProductoRepository.save(imagen);
+                });
+    }
+
+    private ImagenProducto obtenerImagenDelProducto(Integer imagenId, Producto producto) {
+        ImagenProducto imagen = imagenProductoRepository.findById(imagenId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Imagen no encontrada"));
+        if (!imagen.getProducto().getId().equals(producto.getId())) {
+            throw new RecursoNoEncontradoException("Imagen no encontrada");
+        }
+        return imagen;
     }
 
     private void limpiarCarritosActivos(Producto producto) {

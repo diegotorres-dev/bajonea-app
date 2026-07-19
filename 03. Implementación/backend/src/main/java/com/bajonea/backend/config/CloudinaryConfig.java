@@ -1,9 +1,23 @@
 package com.bajonea.backend.config;
 
-/**
- * Placeholder de la Fase 3. Se implementa en la Fase 11 de la guía: bean del cliente
- * Cloudinary ({@code com.cloudinary.Cloudinary}) inicializado con cloud-name/api-key/
- * api-secret leídos de application.properties.
- */
+import com.cloudinary.Cloudinary;
+import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
 public class CloudinaryConfig {
+
+    @Bean
+    public Cloudinary cloudinary(
+            @Value("${cloudinary.cloud-name}") String cloudName,
+            @Value("${cloudinary.api-key}") String apiKey,
+            @Value("${cloudinary.api-secret}") String apiSecret) {
+        return new Cloudinary(Map.of(
+                "cloud_name", cloudName,
+                "api_key", apiKey,
+                "api_secret", apiSecret,
+                "secure", true));
+    }
 }

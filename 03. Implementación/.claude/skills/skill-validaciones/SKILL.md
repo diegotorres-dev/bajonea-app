@@ -55,17 +55,29 @@ usuario/comercio (o cualquier asset público de la cuenta de Cloudinary del proy
 y la validación pasa igual, porque el dominio coincide.
 
 **Regla:** no agregar esta anotación a un campo de un DTO de request que el cliente
-pueda escribir libremente hasta que exista el flujo de subida firmada (Fase 11) que
-garantice que la URL salió de una firma generada para ese usuario/comercio puntual.
-Hasta entonces, ese campo **no va en el DTO** — no hay ningún mecanismo legítimo para
-que el cliente obtenga una URL de Cloudinary en primer lugar, así que dejarlo abierto
-no habilita una funcionalidad real, solo el vector de suplantación. Cuando Fase 11
-exista, la asociación de la URL correcta la hace el propio backend tras validar la
-firma de subida — no un valor que llega suelto por body en un endpoint no relacionado
-con el flujo de subida. Ver `docs/DECISIONES.md`, entrada *"Corrección:
-`ComercioPerfilRequestDTO.fotoPerfilUrl` sacado del DTO"*, 2026-07-17 — el gap se
-encontró y corrigió ahí (el campo llegó a estar en el DTO real por un turno antes de
-sacarse).
+pueda escribir libremente si no hay ningún mecanismo previo que garantice que la URL
+salió de una firma generada para ese usuario/comercio puntual — el campo **no va en
+ese DTO** hasta que exista ese mecanismo, porque dejarlo abierto no habilita una
+funcionalidad real, solo el vector de suplantación. Ver `docs/DECISIONES.md`, entrada
+*"Corrección: `ComercioPerfilRequestDTO.fotoPerfilUrl` sacado del DTO"*, 2026-07-17 —
+el gap se encontró y corrigió ahí (el campo llegó a estar en el DTO real por un turno
+antes de sacarse).
+
+**Resuelto en Fase 11:** el mecanismo es el flujo de firma de Cloudinary
+(`CloudinaryService`). `@ValidarUrlCloudinary` sola sigue sin probar propiedad —
+sigue validando solo dominio — pero en los DTOs donde se usa desde Fase 11
+(`ImagenProductoRequestDTO.url`, `FotoPerfilComercioRequestDTO.url`) el gap de
+suplantación queda mitigado por otra vía, no por la anotación: el backend valida el
+límite/folder **antes** de firmar (`CloudinaryService.generarFirma*`, apoyado en
+`ImagenProductoRepository.countByProductoId` para la galería de producto), y cada
+folder de subida está scoped por `comercioId`/`productoId` real (resuelto desde el
+JWT, nunca desde el body) — un comercio no puede generar una firma válida para el
+folder de otro. Sigue siendo cierto que, una vez que el cliente tiene *cualquier* URL
+válida de `res.cloudinary.com` en la mano, nada impide técnicamente que la pegue en el
+body de otro comercio: el costo residual de eso es bajo para un TFC (más un problema
+de que la imagen "no es del producto/comercio esperado" que de seguridad real), y no
+se agregó una anotación custom de "verificar propiedad exacta del asset" — no está en
+el catálogo de las 9 y no se justificó un caso nuevo para esto.
 
 ## Dónde aplicar cada una (guía rápida para Fase 5)
 
@@ -82,14 +94,15 @@ sacarse).
   explícitos, va con `@DireccionExclusionMutua` a nivel de clase.
 - `ProductoRequestDTO` (Fase 8.4) **no** lleva `url`/imágenes — la galería se gestiona
   aparte, vía firma de Cloudinary (Fase 11), ver javadoc del propio DTO.
-  `ImagenProductoRequestDTO` sigue diferido a esa fase (`docs/DECISIONES.md`, entrada
-  de DTOs diferidos de Fase 5); cuando se cree, `url` → `@ValidarUrlCloudinary`, pero
-  ahí la URL la genera el propio flujo de subida firmada, no un campo libre — no
-  aplica la advertencia de arriba de la misma forma que a un campo de edición de
-  perfil.
-- `ComercioPerfilRequestDTO` (Fase 8.4) **no** lleva `fotoPerfilUrl` — ver la
-  advertencia de `@ValidarUrlCloudinary` arriba. `ComercioResponseDTO` tampoco lleva
-  validación (es de response, no de request).
+- `ImagenProductoRequestDTO` (Fase 11): `url` → `@NotBlank` + `@ValidarUrlCloudinary`;
+  `orden` → `@NotNull` + `@PositiveOrZero`. La URL la genera el propio flujo de subida
+  firmada (`POST /productos/{id}/cloudinary/firma`), no un campo libre.
+- `ComercioPerfilRequestDTO` (Fase 8.4) **sigue sin** llevar `fotoPerfilUrl` — ver la
+  advertencia de `@ValidarUrlCloudinary` arriba. Ese campo tiene su propio DTO desde
+  Fase 11: `FotoPerfilComercioRequestDTO` (`url` → `@NotBlank` + `@ValidarUrlCloudinary`),
+  consumido por `PUT /comercios/perfil/foto`, precedido siempre por
+  `POST /comercios/perfil/foto/firma`. `ComercioResponseDTO` tampoco lleva validación
+  (es de response, no de request).
 
 ## Un campo "motivo" no siempre es un candidato a validación custom
 

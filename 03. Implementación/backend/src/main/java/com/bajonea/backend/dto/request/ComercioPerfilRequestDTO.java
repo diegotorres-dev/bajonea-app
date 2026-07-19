@@ -16,9 +16,10 @@ import lombok.Setter;
  * Tampoco incluye {@code fotoPerfilUrl}: {@code @ValidarUrlCloudinary} solo valida el dominio
  * ({@code res.cloudinary.com}), no la propiedad del recurso — un comercio podría pegar la URL
  * de una imagen subida por otro comercio, y no hay forma de verificarlo sin el flujo de
- * subida firmada de Fase 11. Ese campo se agrega recién cuando el propio backend, tras
- * validar la firma, sea quien asocie la URL — no un valor que llega suelto por body. Ver
- * docs/DECISIONES.md, 2026-07-17.
+ * subida firmada. Ese campo tiene su propio par de endpoints desde la Fase 11
+ * ({@code POST /comercios/perfil/foto/firma} + {@code PUT /comercios/perfil/foto}, con
+ * {@code FotoPerfilComercioRequestDTO}), separado de este DTO de edición de perfil general.
+ * Ver docs/DECISIONES.md, 2026-07-17 y 2026-07-18.
  */
 @Getter
 @Setter

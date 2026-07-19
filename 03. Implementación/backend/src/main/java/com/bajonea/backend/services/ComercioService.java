@@ -1,7 +1,9 @@
 package com.bajonea.backend.services;
 
 import com.bajonea.backend.dto.request.ComercioPerfilRequestDTO;
+import com.bajonea.backend.dto.request.FotoPerfilComercioRequestDTO;
 import com.bajonea.backend.dto.response.ComercioResponseDTO;
+import com.bajonea.backend.dto.response.CloudinarySignatureResponseDTO;
 import com.bajonea.backend.dto.response.DireccionResponseDTO;
 import com.bajonea.backend.entities.Comercio;
 import com.bajonea.backend.entities.Direccion;
@@ -16,9 +18,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Autoservicio de perfil del propio Comercio. No incluye CRUD de Producto — ver
- * {@code ProductoService}, misma tanda (Fase 8.4), comparte el patrón de resolución
- * {@code usuarioId (JWT) → Comercio} vía {@code ComercioRepository.findByPersonaJuridicaId}.
+ * Autoservicio de perfil del propio Comercio, incluida la foto de perfil vía firma de
+ * Cloudinary (Fase 11 — flujo separado del de la galería de {@code ProductoService}, sin
+ * límite de cantidad). No incluye CRUD de Producto — ver {@code ProductoService}, misma
+ * tanda de resolución {@code usuarioId (JWT) → Comercio} vía
+ * {@code ComercioRepository.findByPersonaJuridicaId}.
  */
 @Service
 @RequiredArgsConstructor
@@ -27,6 +31,7 @@ public class ComercioService {
 
     private final ComercioRepository comercioRepository;
     private final DireccionRepository direccionRepository;
+    private final CloudinaryService cloudinaryService;
 
     public ComercioResponseDTO verPerfil(Integer usuarioId) {
         Comercio comercio = obtenerComercioDelUsuario(usuarioId);
@@ -45,6 +50,19 @@ public class ComercioService {
         comercio.setFechaModificacion(LocalDateTime.now());
         comercioRepository.save(comercio);
 
+        return aResponseDTO(comercio);
+    }
+
+    public CloudinarySignatureResponseDTO generarFirmaFotoPerfil(Integer usuarioId) {
+        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+        return cloudinaryService.generarFirmaFotoPerfilComercio(comercio.getId());
+    }
+
+    public ComercioResponseDTO actualizarFotoPerfil(Integer usuarioId, FotoPerfilComercioRequestDTO request) {
+        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+        comercio.setFotoPerfilUrl(request.getUrl());
+        comercio.setFechaModificacion(LocalDateTime.now());
+        comercioRepository.save(comercio);
         return aResponseDTO(comercio);
     }
 
