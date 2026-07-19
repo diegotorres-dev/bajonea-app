@@ -271,7 +271,7 @@ Todas viven en `validation/` (`validation/annotations/` + `validation/validators
 
 ## 6. Índice de fases (dónde estamos, qué sigue)
 
-Secuencia completa definida en `GUIA-IMPLEMENTACION-MVP-BAJONEA.md`. Estado actual: **Fase 9 cerrada, siguiente: Fase 10.**
+Secuencia completa definida en `GUIA-IMPLEMENTACION-MVP-BAJONEA.md`. Estado actual: **Fase 12 cerrada; Fase 10 en pausa (dominio `bajonea.ar` sin activar); siguiente: Fase 13.**
 
 | Fase | Nombre | Estado |
 |---|---|---|
@@ -288,7 +288,7 @@ Secuencia completa definida en `GUIA-IMPLEMENTACION-MVP-BAJONEA.md`. Estado actu
 | 9 | Controllers y contrato de respuestas HTTP | ✅ cerrada — inventario completo del 2026-07-18 contra 9.3 (ver `docs/DECISIONES.md`): `ComercioController` completado (reapertura puntual de Fase 8); 3 deviaciones de path/verbo HTTP (`AdministradorController`/`PedidoController`/`NotificacionController`) confirmadas como decisión de diseño (§7bis); `CatalogoController`/`CatalogoService` implementados y probados end-to-end. Checklist formal de cierre de la guía (3 puntos) corrido contra los 11 Controllers en una sola entrada: único hueco real es la galería de `ProductoController`, diferida a Fase 11; 2 casos de status HTTP sin evidencia previa (`POST /auth/cambiar-password`, regla `hasRole("CLIENTE")`) probados ahora sin sorpresas; los 12 Controllers actuales pasan el hook `bloquear-entity-en-controller.js` real (cobertura histórica de los 9 escritos en sesiones previas no verificable — sin git history en el proyecto — dejado explícito, no asumido). |
 | 10 | Email real (SMTP) para verificación de cuenta | ⏸️ en pausa — dominio `bajonea.ar` (DonWeb) comprado, activación pendiente; sin dominio activo no hay forma de verificar en Brevo para obtener credenciales SMTP reales. No cerrada, no salteada — se retoma en cuanto `info@bajonea.ar` esté activo. Ver `docs/DECISIONES.md`, 2026-07-18. |
 | 11 | Cloudinary: subida firmada de imágenes de producto | ✅ cerrada — galería de `ProductoController` (los 3 endpoints diferidos de Fase 9) + `POST /productos/{id}/cloudinary/firma` + foto de perfil de `Comercio` (`POST /comercios/perfil/foto/firma` + `PUT /comercios/perfil/foto`, ver §7bis). Credenciales de una cuenta de Cloudinary de prueba, cuenta definitiva pendiente de `info@bajonea.ar` — ver `docs/DECISIONES.md`, 2026-07-18. |
-| 12 | Notificaciones in-app (polling) | ⬜ pendiente |
+| 12 | Notificaciones in-app (polling) | ✅ cerrada — mayormente construida por adelantado en Fases 8/9 (`Notificacion`/`NotificacionRepository`/`NotificacionService`/`NotificacionController`, 5 sitios de `notificacionService.crear` en `PedidoService`/`ProductoService`/`AdministradorService`). Esta fase fue inventario + evidencia faltante, no código nuevo: los 3 sitios de `PedidoService` (nuevo pedido, aceptado, rechazado) solo tenían prueba **anterior** a la centralización del 2026-07-18 — probados ahora contra el código post-refactor. Ver `docs/DECISIONES.md`, 2026-07-19. |
 | 13 | Documentación automática (springdoc-openapi) | ⬜ pendiente |
 | 14 | Testing de API con Postman | ⬜ pendiente |
 | 15 | Figma: checklist de pantallas MVP | ⬜ pendiente |
