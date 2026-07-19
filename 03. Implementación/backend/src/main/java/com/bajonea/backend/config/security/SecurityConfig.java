@@ -41,6 +41,13 @@ public class SecurityConfig {
      * error original, incluso en un endpoint público (ver docs/DECISIONES.md, 2026-07-18: bug
      * real encontrado probando {@code GeografiaService} — {@code MissingServletRequestParameterException}
      * enmascarada como 401 en vez de 400).
+     * <p>
+     * {@code /swagger-ui.html} necesita su propia entrada, separada de
+     * {@code /swagger-ui/**}: springdoc lo registra como un redirect a
+     * {@code /swagger-ui/index.html}, no como un subpath de {@code /swagger-ui/} — sin esta
+     * entrada, {@code /swagger-ui.html} (el link literal que da la guía y que springdoc loguea
+     * al arrancar) devolvía {@code 401} en vez de redirigir (bug real encontrado probando
+     * Fase 13, ver docs/DECISIONES.md, 2026-07-19).
      */
     private static final String[] RUTAS_PUBLICAS = {
             "/api/v1/auth/registro/**",
@@ -53,6 +60,7 @@ public class SecurityConfig {
             "/api/v1/catalogo/**",
             "/api/v1/geografia/**",
             "/api/v1/health",
+            "/swagger-ui.html",
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/error"

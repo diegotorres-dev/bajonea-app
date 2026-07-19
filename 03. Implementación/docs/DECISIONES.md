@@ -618,3 +618,31 @@ Datos de prueba (Administrador id 51, Cliente id 52, Comercio A id 24/usuario 53
 - [x] El polling refleja notificaciones nuevas sin recargar la página — responsabilidad de Fase 16 (frontend), que todavía no arrancó; el backend ya devuelve lo esperado en cada llamada (filtrado por JWT, orden descendente), que es lo que le corresponde a esta fase del lado del backend.
 
 No se escribió ni se reescribió código de negocio en esta fase — todo el trabajo real (`NotificacionService`, los 5 call sites, `NotificacionController`) ya estaba construido y funcionando desde las Fases 8/9. Fase 12 queda cerrada como formalización de algo ya construido, no como fase nueva de implementación.
+
+## 2026-07-19 — Fase 13 (Documentación automática, springdoc-openapi) cerrada; bug real encontrado en `SecurityConfig`
+
+**Generado:** `OpenApiConfig` (bean `OpenAPI` — título "Bajoneá API", versión, descripción; `Components` con el `SecurityScheme` `bearerAuth` tipo `HTTP`/`bearer`/`JWT`; `addSecurityItem` global para que Swagger UI muestre el candado en cada operación). `springdoc.swagger-ui.persist-authorization=true` agregado a `application.properties` — conveniencia: el token pegado en "Authorize" sobrevive a un refresh de la página durante una sesión de pruebas manuales, sin volver a pegarlo en cada recarga.
+
+**Bug real encontrado probando el punto 2 del alcance de la fase ("confirmar que Swagger UI expone correctamente `http://localhost:8080/swagger-ui.html`"):** ese path literal — el que loguea springdoc al arrancar y el que da la guía — devolvía `401`, no el redirect esperado a `/swagger-ui/index.html`. Causa: `SecurityConfig.RUTAS_PUBLICAS` tenía `/swagger-ui/**` (cubre la UI real) y `/v3/api-docs/**` (cubre el spec JSON), pero springdoc registra `/swagger-ui.html` como una entrada de redirect propia, **no** como un subpath de `/swagger-ui/` — el patrón `/swagger-ui/**` no lo alcanza. Sin esta entrada, cualquiera que entrara por el link literal de la guía chocaba con un `401` antes de llegar a la UI.
+
+**Corrección:** se agregó `/swagger-ui.html` como entrada propia en `RUTAS_PUBLICAS`, con un comentario explicando por qué es una entrada separada de `/swagger-ui/**` (mismo criterio de documentación puntual ya usado para `/error` en el mismo array). Re-probado: `GET /swagger-ui.html` sin auth → `302` (redirect real a `/swagger-ui/index.html`), `GET /swagger-ui/index.html` → `200`, `GET /v3/api-docs` (sin trailing slash) → `200` — confirmado que `/v3/api-docs/**` sí matchea la ruta exacta sin slash final, no hacía falta agregar una entrada extra ahí.
+
+**Verificado con `curl` + el spec JSON completo, no solo visualmente:**
+- `GET /v3/api-docs` → `200`, 43 paths registrados, correspondientes a los 12 Controllers reales (incluye `geografia-controller` y los 6 endpoints de galería/foto de perfil de la Fase 11: `POST /productos/{id}/cloudinary/firma`, `POST /productos/{id}/imagenes`, `DELETE /productos/{id}/imagenes/{imagenId}`, `PATCH /productos/{id}/imagenes/{imagenId}/principal`, `POST /comercios/perfil/foto/firma`, `PUT /comercios/perfil/foto`) — ninguno filtrado por paquete ni patrón, confirmando que la preocupación puntual del pedido de esta fase (que algo en la config de springdoc filtrara restrictivamente) no se materializó.
+- 58 schemas generados, todos DTOs (`*RequestDTO`/`*ResponseDTO`/`ApiResponse<T>`), ninguna Entity de `entities/` expuesta directamente.
+- `grep -i "passwordHash\|apiSecret\|api_secret\|jwt.secret\|jwtSecret"` contra el JSON completo del spec → 0 coincidencias. Inspección puntual de `UsuarioResponseDTO` (`id`, `email`, `rol`, `estado` — sin password), `LoginResponseDTO` (`token`, `usuario`) y `ComercioResponseDTO` — ningún campo sensible colado.
+
+**Probado el flujo real end-to-end vía la UI de Swagger, no solo con `curl`** (navegador dirigido por Claude Browser contra `http://localhost:8080/swagger-ui.html`, 1 Administrador sembrado + 1 Cliente y 1 Comercio registrados y verificados vía API, comercio aprobado):
+- Botón "Authorize" global: se pegó el JWT de cada rol y se confirmó visualmente que los íconos de candado de **todas** las operaciones pasan de "unlocked" a "locked" al aplicar credenciales — el esquema `bearerAuth` se propaga a cada endpoint protegido, no solo al que se vaya a probar.
+- **ADMINISTRADOR:** `GET /api/v1/administrador/comercios/pendientes` con "Try it out" + "Execute" desde la UI → request real capturado en la pestaña de red del navegador, `200`, body `{"mensaje":"Comercios pendientes obtenidos correctamente","data":[]}`.
+- **COMERCIO:** se removió la autorización anterior, se pegó el JWT de Comercio, `GET /api/v1/comercios/perfil` ejecutado desde la UI → `200`, body con el perfil completo del comercio de prueba.
+- **CLIENTE:** mismo proceso con el JWT de Cliente, `GET /api/v1/carrito` ejecutado desde la UI → `200`, body `{"mensaje":"Carrito obtenido correctamente","data":{"comercioId":null,...,"items":[],"subtotal":0}}` (carrito vacío, creado perezosamente al primer acceso — comportamiento ya documentado en Fase 8.5).
+- Los 3 casos confirman que el flujo completo (pegar token real → Authorize → Try it out → Execute → `200` real, no `401`) funciona de punta a punta para los 3 roles, ejecutado desde la interfaz, no simulado con `curl` por fuera de ella.
+
+Datos de prueba (Administrador id 55, Cliente id 56, Comercio id 26/usuario 57, y todas las filas derivadas: `persona`/`persona_fisica`/`persona_juridica`, `direccion`, `token`, `sesion`, `carrito` creado perezosamente por la prueba de Swagger UI) eliminados de la base al finalizar.
+
+**Cierre contra el checklist literal de la guía (2 puntos):**
+- [x] Swagger UI levanta y lista todos los endpoints de la Fase 9, incluyendo `GeografiaController` y la firma de Cloudinary — 43 paths confirmados contra el spec JSON, ninguno faltante.
+- [x] El botón "Authorize" con Bearer token funciona contra un endpoint protegido real — confirmado para los 3 roles (ADMINISTRADOR, COMERCIO, CLIENTE), ejecutado desde la UI real.
+
+`./mvnw compile` → `BUILD SUCCESS` tras los cambios de `OpenApiConfig`/`SecurityConfig`.
