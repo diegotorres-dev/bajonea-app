@@ -79,6 +79,26 @@ de que la imagen "no es del producto/comercio esperado" que de seguridad real), 
 se agregó una anotación custom de "verificar propiedad exacta del asset" — no está en
 el catálogo de las 9 y no se justificó un caso nuevo para esto.
 
+**Formato y tamaño de archivo: van en la firma de Cloudinary, no acá.** Ni
+`ImagenProductoRequestDTO` ni `FotoPerfilComercioRequestDTO` validan el formato o el
+peso del binario con Bean Validation — no hay ninguna anotación posible que pueda
+hacerlo, porque el backend nunca recibe el archivo (solo genera la firma antes de la
+subida y recibe la URL ya subida después). Esa restricción vive del lado de Cloudinary,
+vía el Upload Preset `bajonea_imagenes_mvp` (`allowed_formats: jpg,jpeg,png,webp` +
+transformación entrante `c_limit,w_1200,q_auto`, creado manualmente en el dashboard de
+Cloudinary, no por código) referenciado en la firma con `upload_preset=...`. El tope de
+tamaño de archivo **no** se pudo fijar en 5MB propio: el campo "Max file size" no está
+expuesto en la UI de Upload Presets en el plan/versión de la cuenta usada — sí existe
+como parámetro de la Admin API, pero se decidió no crear el preset por ese camino solo
+para ganar esto (más superficie de infraestructura por 5MB de diferencia, no se
+justificó para un TFC). El tope real de tamaño queda en el límite de cuenta del plan
+free de Cloudinary (10MB por imagen, confirmado en el panel "Usage Limits" del
+dashboard), verificado con un archivo real de ~20MB rechazado con
+`"Maximum is 10485760"`. Un `@Pattern` liviano sobre la extensión de la URL sigue
+presente en ambos DTOs como defensa de bajo costo adicional (no reemplaza nada de lo
+anterior, ver "Dónde aplicar cada una" abajo). Ver `docs/DECISIONES.md`, entrada de
+esta mejora puntual sobre la Fase 11 ya cerrada.
+
 ## Dónde aplicar cada una (guía rápida para Fase 5)
 
 - `RegistroClienteRequestDTO` / `PersonaFisica` en general: `nombre`/`apellido` →
@@ -94,15 +114,18 @@ el catálogo de las 9 y no se justificó un caso nuevo para esto.
   explícitos, va con `@DireccionExclusionMutua` a nivel de clase.
 - `ProductoRequestDTO` (Fase 8.4) **no** lleva `url`/imágenes — la galería se gestiona
   aparte, vía firma de Cloudinary (Fase 11), ver javadoc del propio DTO.
-- `ImagenProductoRequestDTO` (Fase 11): `url` → `@NotBlank` + `@ValidarUrlCloudinary`;
-  `orden` → `@NotNull` + `@PositiveOrZero`. La URL la genera el propio flujo de subida
-  firmada (`POST /productos/{id}/cloudinary/firma`), no un campo libre.
+- `ImagenProductoRequestDTO` (Fase 11): `url` → `@NotBlank` + `@ValidarUrlCloudinary` +
+  `@Pattern(regexp = "(?i).*\\.(jpg|jpeg|png|webp)$")` (defensa de bajo costo adicional
+  sobre la extensión, no reemplaza la restricción real de formato/tamaño que aplica
+  Cloudinary vía el Upload Preset — ver nota arriba); `orden` → `@NotNull` +
+  `@PositiveOrZero`. La URL la genera el propio flujo de subida firmada
+  (`POST /productos/{id}/cloudinary/firma`), no un campo libre.
 - `ComercioPerfilRequestDTO` (Fase 8.4) **sigue sin** llevar `fotoPerfilUrl` — ver la
   advertencia de `@ValidarUrlCloudinary` arriba. Ese campo tiene su propio DTO desde
-  Fase 11: `FotoPerfilComercioRequestDTO` (`url` → `@NotBlank` + `@ValidarUrlCloudinary`),
-  consumido por `PUT /comercios/perfil/foto`, precedido siempre por
-  `POST /comercios/perfil/foto/firma`. `ComercioResponseDTO` tampoco lleva validación
-  (es de response, no de request).
+  Fase 11: `FotoPerfilComercioRequestDTO` (`url` → `@NotBlank` + `@ValidarUrlCloudinary` +
+  el mismo `@Pattern` de extensión que `ImagenProductoRequestDTO`), consumido por
+  `PUT /comercios/perfil/foto`, precedido siempre por `POST /comercios/perfil/foto/firma`.
+  `ComercioResponseDTO` tampoco lleva validación (es de response, no de request).
 
 ## Un campo "motivo" no siempre es un candidato a validación custom
 
