@@ -139,7 +139,8 @@ com.bajonea.backend/
 │   ├── PedidoService.java
 │   ├── NotificacionService.java
 │   ├── EmailService.java
-│   └── CloudinaryService.java           <- generar firma de subida, validar límite de imágenes
+│   ├── CloudinaryService.java           <- generar firma de subida, validar límite de imágenes
+│   └── TestSupportService.java          <- exclusivo del perfil `test` (Fase 14), atajo de token sin email real
 ├── controllers/
 │   ├── HealthController.java            <- GET /api/v1/health, implementado en la Fase 3
 │   ├── AuthController.java
@@ -152,7 +153,8 @@ com.bajonea.backend/
 │   ├── GeografiaController.java         <- GET /provincias, GET /localidades?provinciaId=
 │   ├── CarritoController.java
 │   ├── PedidoController.java
-│   └── NotificacionController.java
+│   ├── NotificacionController.java
+│   └── TestController.java              <- exclusivo del perfil `test` (Fase 14), GET /test/token(-verificacion)
 ├── exceptions/
 │   ├── GlobalExceptionHandler.java      <- @RestControllerAdvice
 │   ├── RecursoNoEncontradoException.java
@@ -271,7 +273,7 @@ Todas viven en `validation/` (`validation/annotations/` + `validation/validators
 
 ## 6. Índice de fases (dónde estamos, qué sigue)
 
-Secuencia completa definida en `GUIA-IMPLEMENTACION-MVP-BAJONEA.md`. Estado actual: **Fase 13 cerrada; Fase 10 en pausa (dominio `bajonea.ar` sin activar); siguiente: Fase 14.**
+Secuencia completa definida en `GUIA-IMPLEMENTACION-MVP-BAJONEA.md`. Estado actual: **Fase 14 cerrada; Fase 10 en pausa (dominio `bajonea.ar` sin activar); siguiente: Fase 15.**
 
 | Fase | Nombre | Estado |
 |---|---|---|
@@ -290,7 +292,7 @@ Secuencia completa definida en `GUIA-IMPLEMENTACION-MVP-BAJONEA.md`. Estado actu
 | 11 | Cloudinary: subida firmada de imágenes de producto | ✅ cerrada — galería de `ProductoController` (los 3 endpoints diferidos de Fase 9) + `POST /productos/{id}/cloudinary/firma` + foto de perfil de `Comercio` (`POST /comercios/perfil/foto/firma` + `PUT /comercios/perfil/foto`, ver §7bis). Credenciales de una cuenta de Cloudinary de prueba, cuenta definitiva pendiente de `info@bajonea.ar` — ver `docs/DECISIONES.md`, 2026-07-18. |
 | 12 | Notificaciones in-app (polling) | ✅ cerrada — mayormente construida por adelantado en Fases 8/9 (`Notificacion`/`NotificacionRepository`/`NotificacionService`/`NotificacionController`, 5 sitios de `notificacionService.crear` en `PedidoService`/`ProductoService`/`AdministradorService`). Esta fase fue inventario + evidencia faltante, no código nuevo: los 3 sitios de `PedidoService` (nuevo pedido, aceptado, rechazado) solo tenían prueba **anterior** a la centralización del 2026-07-18 — probados ahora contra el código post-refactor. Ver `docs/DECISIONES.md`, 2026-07-19. |
 | 13 | Documentación automática (springdoc-openapi) | ✅ cerrada — `OpenApiConfig` (bean `OpenAPI`, esquema `bearerAuth` HTTP/Bearer/JWT). Bug real encontrado y corregido en `SecurityConfig`: `/swagger-ui.html` (el link literal de la guía) no estaba cubierto por `/swagger-ui/**` — es un redirect propio de springdoc, no un subpath — y daba `401`; agregado como entrada propia. 43 endpoints confirmados en el spec (incluida la galería/foto de perfil de Fase 11), sin campos sensibles en los 58 schemas generados. Flujo "Authorize" probado de punta a punta vía la UI real (no solo `curl`) para los 3 roles. Ver `docs/DECISIONES.md`, 2026-07-19. |
-| 14 | Testing de API con Postman | ⬜ pendiente |
+| 14 | Testing de API con Postman | ✅ cerrada — colección de 49 requests (9 carpetas) armada vía MCP de Postman en workspace dedicado (`Bajoneá MVP`), corrida completa con Newman (49/49 requests, 113/113 assertions, 0 fallos) contra el backend real; exportada a `postman/`. `TestController`/`TestSupportService` (`@Profile("test")`) generalizados a `GET /api/v1/test/token?email=&tipo=` para cubrir también recuperación de contraseña, no solo verificación de cuenta — queda permanente bajo el perfil `test`, no es un atajo con fecha de vencimiento. Ver `docs/DECISIONES.md`, 2026-07-19. |
 | 15 | Figma: checklist de pantallas MVP | ⬜ pendiente |
 | 16 | Frontend HTML/CSS/JS | ⬜ pendiente |
 | 17 | Testing E2E con Playwright | ⬜ pendiente |
@@ -396,7 +398,7 @@ Cierre confirmado por el usuario el 2026-07-17.
 
 - **`JwtService`:** genera el token al login (claims: `sub`=email, `rol`, `userId`, `sesionId`, expiración), lo valida y extrae claims. Usa `jwt.secret` y `jwt.expiration-ms` de `application.properties`.
 - **`JwtAuthenticationFilter`:** `OncePerRequestFilter` que lee `Authorization: Bearer <token>`, valida la firma vía `JwtService`, y **además** consulta `SesionRepository` para confirmar que la `Sesion` del claim `sesionId` sigue con `activa = true` — si la firma es válida pero la sesión fue cerrada (bloqueo, recuperación/cambio de contraseña, login concurrente, logout), responde `401` igual. Si todo es válido, carga el `Authentication` en el `SecurityContextHolder` con el rol como `GrantedAuthority` (`ROLE_CLIENTE`, `ROLE_COMERCIO`, `ROLE_ADMINISTRADOR`).
-- **Endpoints públicos (sin auth):** `POST /api/v1/auth/registro/cliente`, `POST /api/v1/auth/registro/comercio`, `POST /api/v1/auth/login`, `GET /api/v1/auth/verificar/{token}`, `POST /api/v1/auth/recuperar-password`, `POST /api/v1/auth/recuperar-password/confirmar`, `POST /api/v1/auth/reactivar-cuenta`, `POST /api/v1/auth/reactivar-cuenta/confirmar`, `GET /api/v1/catalogo/**`, `GET /api/v1/geografia/provincias`, `GET /api/v1/geografia/localidades`, Swagger UI.
+- **Endpoints públicos (sin auth):** `POST /api/v1/auth/registro/cliente`, `POST /api/v1/auth/registro/comercio`, `POST /api/v1/auth/login`, `GET /api/v1/auth/verificar/{token}`, `POST /api/v1/auth/recuperar-password`, `POST /api/v1/auth/recuperar-password/confirmar`, `POST /api/v1/auth/reactivar-cuenta`, `POST /api/v1/auth/reactivar-cuenta/confirmar`, `GET /api/v1/catalogo/**`, `GET /api/v1/geografia/provincias`, `GET /api/v1/geografia/localidades`, Swagger UI, `/api/v1/test/**` (Fase 14 — listado en `RUTAS_PUBLICAS` pero solo alcanzable bajo `spring.profiles.active=test`, ver §9 y `docs/DECISIONES.md`).
 - **Endpoints por rol:** `/api/v1/productos/**` (COMERCIO), `/api/v1/categorias/**`, `/api/v1/tags/**` y `/api/v1/administrador/**` (ADMINISTRADOR), `/api/v1/carrito/**` y `/api/v1/pedidos/cliente/**` (CLIENTE), `/api/v1/pedidos/comercio/**` (COMERCIO). El cambio de contraseña desde perfil (`POST /api/v1/auth/cambiar-password`) requiere cualquier rol autenticado.
 - `sessionCreationPolicy(SessionCreationPolicy.STATELESS)` — sin cambios: esto es sobre el `HttpSession`/cookie de servlet de Spring Security, no sobre la tabla `Sesion` propia de la aplicación (ver nota de alcance arriba). No hay contradicción entre ambas.
 - CORS habilitado para el origen del frontend durante desarrollo.
@@ -453,4 +455,4 @@ El inventario de Controllers de la Fase 9 (2026-07-18) encontró 3 endpoints don
 - **Proveedor SMTP definitivo** para el envío de email de verificación (Fase 10) — **en pausa** desde el 2026-07-18: se compró el dominio `bajonea.ar` en DonWeb (correo definitivo `info@bajonea.ar`), pero su activación está en curso (demora de algunas horas). Sin el dominio activo no se puede verificar en Brevo para obtener credenciales SMTP reales, así que Fase 10 no puede cerrarse end-to-end todavía. No bloquea el resto del desarrollo — se avanzó directamente a la Fase 11 (Cloudinary), sin dependencia de Fase 10. Con la Fase 7 incluyendo recuperación y reactivación de cuenta por email, el proveedor SMTP sigue siendo bloqueante para esos 2 flujos además de la verificación de cuenta — los 3 quedan pendientes de la misma pieza (dominio activo → Brevo). Ver `docs/DECISIONES.md`, 2026-07-18.
 - ~~Recuperación de contraseña~~ — resuelto: sumado al MVP en la Fase 7 mediante enmienda formal de alcance (ver `docs/DECISIONES.md`, 2026-07-17), junto con bloqueo de cuenta y reactivación de cuenta.
 - ~~Endpoint de logout real vs. simbólico~~ — resuelto: con la reincorporación de `Sesion` en la Fase 7, el logout es real (cierra la `Sesion` activa), no simbólico. Ver §7.
-- **Endpoint auxiliar de bypass de verificación para testing** (Fase 14.4, punto 5): recomendado por la guía para que la suite de Postman no dependa de leer una casilla de email real, activo solo bajo `spring.profiles.active=test`. A confirmar si se implementa así. Con la ampliación de la Fase 7, aplicaría también a recuperación/reactivación de cuenta (leer el token sin depender de un email real).
+- ~~Endpoint auxiliar de bypass de verificación para testing~~ — resuelto: implementado en la Fase 14 como `TestController`/`TestSupportService` (`@Profile("test")`), `GET /api/v1/test/token-verificacion?email=` (verificación de cuenta) y `GET /api/v1/test/token?email=&tipo=` (generalizado, cualquier `TipoToken` — usado también para fijar una contraseña de admin conocida vía el flujo real de recuperación, sin tocar la base a mano). Permanente bajo el perfil `test`, no tiene fecha de remoción — ver `docs/DECISIONES.md`, 2026-07-19.

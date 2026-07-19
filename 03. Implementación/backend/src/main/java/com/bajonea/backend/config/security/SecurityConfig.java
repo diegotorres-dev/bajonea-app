@@ -48,6 +48,12 @@ public class SecurityConfig {
      * entrada, {@code /swagger-ui.html} (el link literal que da la guía y que springdoc loguea
      * al arrancar) devolvía {@code 401} en vez de redirigir (bug real encontrado probando
      * Fase 13, ver docs/DECISIONES.md, 2026-07-19).
+     * <p>
+     * {@code /api/v1/test/**} (Fase 14, bypass de verificación para Postman) es público acá,
+     * pero la protección real es estructural, no esta lista: {@code TestController}/
+     * {@code TestSupportService} llevan {@code @Profile("test")}, así que fuera de ese perfil
+     * Spring nunca registra el bean ni la ruta — permitirla acá no la hace alcanzable en el
+     * perfil normal/producción, donde ni siquiera existe un handler que responda.
      */
     private static final String[] RUTAS_PUBLICAS = {
             "/api/v1/auth/registro/**",
@@ -63,7 +69,8 @@ public class SecurityConfig {
             "/swagger-ui.html",
             "/swagger-ui/**",
             "/v3/api-docs/**",
-            "/error"
+            "/error",
+            "/api/v1/test/**"
     };
 
     @Bean

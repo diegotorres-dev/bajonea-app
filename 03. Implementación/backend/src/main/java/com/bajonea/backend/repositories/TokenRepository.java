@@ -11,4 +11,11 @@ public interface TokenRepository extends JpaRepository<Token, Integer> {
     Optional<Token> findByTokenAndUsado(String token, boolean usado);
 
     List<Token> findByUsuarioIdAndTipoAndUsado(Integer usuarioId, TipoToken tipo, boolean usado);
+
+    /**
+     * Usado únicamente por {@code TestSupportService} (perfil {@code test}, Fase 14) para
+     * exponer el token pendiente más reciente sin depender de leer un email real.
+     */
+    Optional<Token> findFirstByUsuarioIdAndTipoAndUsadoOrderByFechaCreacionDesc(
+            Integer usuarioId, TipoToken tipo, boolean usado);
 }

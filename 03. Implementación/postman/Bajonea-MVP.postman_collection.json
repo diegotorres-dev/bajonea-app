@@ -1,0 +1,805 @@
+{
+  "info": {
+    "name": "Bajoneá MVP",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Colección de testing de API para el backend del MVP de Bajoneá (Fase 14). Generada vía MCP de Postman por Claude Code. Carpetas numeradas 00-08 en el orden real de ejecución (dependencias reales: Administrador y Productos deben correr antes que Catálogo/Carrito/Pedidos), no en el orden de dominio literal de la guía — ver docs/DECISIONES.md."
+  },
+  "item": [
+    {
+      "name": "00 - Health",
+      "id": "00-health-1",
+      "item": [
+        {
+          "name": "Health check",
+          "id": "health-check-2",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/health", "host": ["{{base_url}}"], "path": ["health"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "01 - Geografía",
+      "id": "01-geografia-3",
+      "item": [
+        {
+          "name": "Listar provincias",
+          "id": "listar-provincias-4",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/geografia/provincias", "host": ["{{base_url}}"], "path": ["geografia", "provincias"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "const tdf = json.data.find(p => p.nombre.includes('Tierra del Fuego'));",
+            "pm.test('Tierra del Fuego existe en el listado', () => pm.expect(tdf).to.exist);",
+            "pm.environment.set('provincia_id', tdf.id);"
+          ]}}]
+        },
+        {
+          "name": "Listar localidades de Tierra del Fuego",
+          "id": "listar-localidades-de-tierra-del-fuego-5",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/geografia/localidades?provinciaId={{provincia_id}}", "host": ["{{base_url}}"], "path": ["geografia", "localidades"], "query": [{"key": "provinciaId", "value": "{{provincia_id}}"}] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "const rg = json.data.find(l => l.nombre.indexOf('Grande') !== -1);",
+            "pm.test('Rio Grande existe en el listado', () => pm.expect(rg).to.exist);",
+            "pm.environment.set('localidad_id', rg.id);"
+          ]}}]
+        },
+        {
+          "name": "[negativo] Listar localidades sin provinciaId",
+          "id": "negativo-listar-localidades-sin-provinciaid-6",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/geografia/localidades", "host": ["{{base_url}}"], "path": ["geografia", "localidades"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 400 (parametro requerido ausente)', () => pm.response.to.have.status(400));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "02 - Auth",
+      "id": "02-auth-7",
+      "item": [
+        {
+          "name": "Registro Cliente",
+          "id": "registro-cliente-8",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"nombre\": \"Postman\",\n  \"apellido\": \"Tester\",\n  \"dni\": \"35678912\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"2964123456\",\n  \"email\": \"{{cliente_email}}\",\n  \"password\": \"{{cliente_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/auth/registro/cliente", "host": ["{{base_url}}"], "path": ["auth", "registro", "cliente"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        },
+        {
+          "name": "Registro Comercio A",
+          "id": "registro-comercio-a-9",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"razonSocial\": \"Comercio Postman A SRL\",\n  \"cuit\": \"30712345671\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Postman A\",\n  \"descripcion\": \"Comercio de prueba para Postman (Fase 14)\",\n  \"telefono\": \"2964555111\",\n  \"emailContacto\": \"contacto.comercioA@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"{{comercioA_email}}\",\n  \"password\": \"{{comercioA_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  }\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/auth/registro/comercio", "host": ["{{base_url}}"], "path": ["auth", "registro", "comercio"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        },
+        {
+          "name": "Registro Comercio B",
+          "id": "registro-comercio-b-10",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"razonSocial\": \"Comercio Postman B SRL\",\n  \"cuit\": \"30712345698\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 300, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Postman B\",\n  \"descripcion\": \"Comercio de prueba para Postman (Fase 14) - aislamiento entre tenants\",\n  \"telefono\": \"2964555222\",\n  \"emailContacto\": \"contacto.comercioB@bajonea.test\",\n  \"tipoComercio\": \"EMPRENDIMIENTO\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"{{comercioB_email}}\",\n  \"password\": \"{{comercioB_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"400\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  }\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/auth/registro/comercio", "host": ["{{base_url}}"], "path": ["auth", "registro", "comercio"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        },
+        {
+          "name": "Bypass test - token verificación Cliente",
+          "id": "bypass-test-token-verificacion-cliente-11",
+          "description": "Endpoint auxiliar exclusivo del perfil `test` (Fase 14, ver CLAUDE.md §9 y docs/DECISIONES.md). Reemplaza la lectura de un email real mientras la Fase 10 (SMTP) sigue en pausa.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/test/token-verificacion?email={{cliente_email}}", "host": ["{{base_url}}"], "path": ["test", "token-verificacion"], "query": [{"key": "email", "value": "{{cliente_email}}"}] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.environment.set('token_verif_cliente', json.data);"
+          ]}}]
+        },
+        {
+          "name": "Verificar cuenta Cliente",
+          "id": "verificar-cuenta-cliente-12",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/auth/verificar/{{token_verif_cliente}}", "host": ["{{base_url}}"], "path": ["auth", "verificar", "{{token_verif_cliente}}"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        },
+        {
+          "name": "Bypass test - token verificación Comercio A",
+          "id": "bypass-test-token-verificacion-comercio-a-13",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/test/token-verificacion?email={{comercioA_email}}", "host": ["{{base_url}}"], "path": ["test", "token-verificacion"], "query": [{"key": "email", "value": "{{comercioA_email}}"}] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.environment.set('token_verif_comercioA', json.data);"
+          ]}}]
+        },
+        {
+          "name": "Verificar cuenta Comercio A",
+          "id": "verificar-cuenta-comercio-a-14",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/auth/verificar/{{token_verif_comercioA}}", "host": ["{{base_url}}"], "path": ["auth", "verificar", "{{token_verif_comercioA}}"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        },
+        {
+          "name": "Bypass test - token verificación Comercio B",
+          "id": "bypass-test-token-verificacion-comercio-b-15",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/test/token-verificacion?email={{comercioB_email}}", "host": ["{{base_url}}"], "path": ["test", "token-verificacion"], "query": [{"key": "email", "value": "{{comercioB_email}}"}] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.environment.set('token_verif_comercioB', json.data);"
+          ]}}]
+        },
+        {
+          "name": "Verificar cuenta Comercio B",
+          "id": "verificar-cuenta-comercio-b-16",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/auth/verificar/{{token_verif_comercioB}}", "host": ["{{base_url}}"], "path": ["auth", "verificar", "{{token_verif_comercioB}}"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        },
+        {
+          "name": "Login Cliente",
+          "id": "login-cliente-17",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"{{cliente_email}}\",\n  \"password\": \"{{cliente_password}}\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene token', () => pm.expect(json.data.token).to.exist);",
+            "pm.environment.set('token_cliente', json.data.token);"
+          ]}}]
+        },
+        {
+          "name": "Login Comercio A",
+          "id": "login-comercio-a-18",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"{{comercioA_email}}\",\n  \"password\": \"{{comercioA_password}}\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene token', () => pm.expect(json.data.token).to.exist);",
+            "pm.environment.set('token_comercio', json.data.token);"
+          ]}}]
+        },
+        {
+          "name": "Login Comercio B",
+          "id": "login-comercio-b-19",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"{{comercioB_email}}\",\n  \"password\": \"{{comercioB_password}}\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene token', () => pm.expect(json.data.token).to.exist);",
+            "pm.environment.set('token_comercio_b', json.data.token);"
+          ]}}]
+        },
+        {
+          "name": "Login Administrador",
+          "id": "login-administrador-20",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene token', () => pm.expect(json.data.token).to.exist);",
+            "pm.environment.set('token_admin', json.data.token);"
+          ]}}]
+        },
+        {
+          "name": "[negativo] Login con password incorrecta",
+          "id": "negativo-login-con-password-incorrecta-21",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"email\": \"{{cliente_email}}\",\n  \"password\": \"PasswordIncorrecta1\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/auth/login", "host": ["{{base_url}}"], "path": ["auth", "login"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 401', () => pm.response.to.have.status(401));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        },
+        {
+          "name": "[negativo] Registro Cliente con localidadId inexistente",
+          "id": "negativo-registro-cliente-con-localidadid-inexistente-22",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"nombre\": \"Postman\",\n  \"apellido\": \"Invalido\",\n  \"dni\": \"35678999\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"2964123457\",\n  \"email\": \"postman.invalido@bajonea.test\",\n  \"password\": \"Postman123\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"99999999\",\n    \"principal\": true\n  }\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/auth/registro/cliente", "host": ["{{base_url}}"], "path": ["auth", "registro", "cliente"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 404 (localidad inexistente)', () => pm.response.to.have.status(404));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "03 - Administrador",
+      "id": "03-administrador-23",
+      "item": [
+        {
+          "name": "Listar comercios pendientes",
+          "id": "listar-comercios-pendientes-24",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_admin}}"}],
+            "url": { "raw": "{{base_url}}/administrador/comercios/pendientes", "host": ["{{base_url}}"], "path": ["administrador", "comercios", "pendientes"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "const a = json.data.find(c => c.nombre === 'Comercio Postman A');",
+            "const b = json.data.find(c => c.nombre === 'Comercio Postman B');",
+            "pm.test('Comercio A esta pendiente', () => pm.expect(a).to.exist);",
+            "pm.test('Comercio B esta pendiente', () => pm.expect(b).to.exist);",
+            "pm.environment.set('comercio_id', a.id);",
+            "pm.environment.set('comercio_a_id', a.id);",
+            "pm.environment.set('comercio_b_id', b.id);"
+          ]}}]
+        },
+        {
+          "name": "Aprobar Comercio A",
+          "id": "aprobar-comercio-a-25",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_admin}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"aprobar\": true\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/administrador/comercios/{{comercio_a_id}}/resolver", "host": ["{{base_url}}"], "path": ["administrador", "comercios", "{{comercio_a_id}}", "resolver"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        },
+        {
+          "name": "Aprobar Comercio B",
+          "id": "aprobar-comercio-b-26",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_admin}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"aprobar\": true\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/administrador/comercios/{{comercio_b_id}}/resolver", "host": ["{{base_url}}"], "path": ["administrador", "comercios", "{{comercio_b_id}}", "resolver"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        },
+        {
+          "name": "Crear categoría",
+          "id": "crear-categoria-27",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_admin}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"nombre\": \"Comidas Postman\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/categorias", "host": ["{{base_url}}"], "path": ["categorias"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "pm.environment.set('categoria_id', json.data.id);"
+          ]}}]
+        },
+        {
+          "name": "Crear tag",
+          "id": "crear-tag-28",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_admin}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"nombre\": \"PostmanTag\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/tags", "host": ["{{base_url}}"], "path": ["tags"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "pm.environment.set('tag_id', json.data.id);"
+          ]}}]
+        },
+        {
+          "name": "[negativo] Listar comercios pendientes con token de Cliente",
+          "id": "negativo-listar-comercios-pendientes-con-token-de-cliente-29",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_cliente}}"}],
+            "url": { "raw": "{{base_url}}/administrador/comercios/pendientes", "host": ["{{base_url}}"], "path": ["administrador", "comercios", "pendientes"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 403 (rol insuficiente)', () => pm.response.to.have.status(403));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "04 - Productos",
+      "id": "04-productos-30",
+      "item": [
+        {
+          "name": "Crear producto (Comercio A)",
+          "id": "crear-producto-comercio-a-31",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_comercio}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"nombre\": \"Empanada de carne Postman\",\n  \"descripcion\": \"Empanada criolla de prueba\",\n  \"precio\": 1500.00,\n  \"categoriaId\": {{categoria_id}},\n  \"tagIds\": [{{tag_id}}]\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/productos", "host": ["{{base_url}}"], "path": ["productos"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "pm.test('El producto nace DISPONIBLE', () => pm.expect(json.data.estado).to.eql('DISPONIBLE'));",
+            "pm.environment.set('producto_id', json.data.id);"
+          ]}}]
+        },
+        {
+          "name": "Crear producto (Comercio B)",
+          "id": "crear-producto-comercio-b-32",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_comercio_b}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"nombre\": \"Pizza muzzarella Postman\",\n  \"descripcion\": \"Pizza de prueba\",\n  \"precio\": 3200.00,\n  \"categoriaId\": {{categoria_id}}\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/productos", "host": ["{{base_url}}"], "path": ["productos"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "pm.environment.set('producto_b_id', json.data.id);"
+          ]}}]
+        },
+        {
+          "name": "Pedir firma Cloudinary para imagen de producto",
+          "id": "pedir-firma-cloudinary-para-imagen-de-producto-33",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_comercio}}"}],
+            "url": { "raw": "{{base_url}}/productos/{{producto_id}}/cloudinary/firma", "host": ["{{base_url}}"], "path": ["productos", "{{producto_id}}", "cloudinary", "firma"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "pm.test('La firma no expone api_secret', () => {",
+            "  const raw = JSON.stringify(json.data).toLowerCase();",
+            "  pm.expect(raw).to.not.include('secret');",
+            "});",
+            "pm.environment.set('cloudinary_cloud_name', json.data.cloudName);",
+            "pm.environment.set('cloudinary_folder', json.data.folder);"
+          ]}}]
+        },
+        {
+          "name": "Agregar imagen 1 (principal)",
+          "id": "agregar-imagen-1-principal-34",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_comercio}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"url\": \"https://res.cloudinary.com/{{cloudinary_cloud_name}}/image/upload/v1700000001/postman-test-1.jpg\",\n  \"orden\": 0,\n  \"esPrincipal\": true\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/productos/{{producto_id}}/imagenes", "host": ["{{base_url}}"], "path": ["productos", "{{producto_id}}", "imagenes"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "pm.test('Es la imagen principal', () => pm.expect(json.data.esPrincipal).to.eql(true));"
+          ]}}]
+        },
+        {
+          "name": "Agregar imagen 2",
+          "id": "agregar-imagen-2-35",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_comercio}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"url\": \"https://res.cloudinary.com/{{cloudinary_cloud_name}}/image/upload/v1700000002/postman-test-2.jpg\",\n  \"orden\": 1,\n  \"esPrincipal\": false\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/productos/{{producto_id}}/imagenes", "host": ["{{base_url}}"], "path": ["productos", "{{producto_id}}", "imagenes"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        },
+        {
+          "name": "Agregar imagen 3",
+          "id": "agregar-imagen-3-36",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_comercio}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"url\": \"https://res.cloudinary.com/{{cloudinary_cloud_name}}/image/upload/v1700000003/postman-test-3.jpg\",\n  \"orden\": 2,\n  \"esPrincipal\": false\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/productos/{{producto_id}}/imagenes", "host": ["{{base_url}}"], "path": ["productos", "{{producto_id}}", "imagenes"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        },
+        {
+          "name": "Agregar imagen 4",
+          "id": "agregar-imagen-4-37",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_comercio}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"url\": \"https://res.cloudinary.com/{{cloudinary_cloud_name}}/image/upload/v1700000004/postman-test-4.jpg\",\n  \"orden\": 3,\n  \"esPrincipal\": false\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/productos/{{producto_id}}/imagenes", "host": ["{{base_url}}"], "path": ["productos", "{{producto_id}}", "imagenes"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        },
+        {
+          "name": "Agregar imagen 5",
+          "id": "agregar-imagen-5-38",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_comercio}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"url\": \"https://res.cloudinary.com/{{cloudinary_cloud_name}}/image/upload/v1700000005/postman-test-5.jpg\",\n  \"orden\": 4,\n  \"esPrincipal\": false\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/productos/{{producto_id}}/imagenes", "host": ["{{base_url}}"], "path": ["productos", "{{producto_id}}", "imagenes"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        },
+        {
+          "name": "[negativo] Agregar imagen 6 (límite de galería)",
+          "id": "negativo-agregar-imagen-6-limite-de-galeria-39",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_comercio}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"url\": \"https://res.cloudinary.com/{{cloudinary_cloud_name}}/image/upload/v1700000006/postman-test-6.jpg\",\n  \"orden\": 5,\n  \"esPrincipal\": false\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/productos/{{producto_id}}/imagenes", "host": ["{{base_url}}"], "path": ["productos", "{{producto_id}}", "imagenes"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 409 (limite de 5 imagenes)', () => pm.response.to.have.status(409));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        },
+        {
+          "name": "[negativo] Cambiar estado de producto inexistente",
+          "id": "negativo-cambiar-estado-de-producto-inexistente-40",
+          "request": {
+            "method": "PATCH",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_comercio}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"estado\": \"AGOTADO\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/productos/999999/estado", "host": ["{{base_url}}"], "path": ["productos", "999999", "estado"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 404 (producto inexistente)', () => pm.response.to.have.status(404));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "05 - Catálogo",
+      "id": "05-catalogo-41",
+      "item": [
+        {
+          "name": "Listar comercios del catálogo",
+          "id": "listar-comercios-del-catalogo-42",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/catalogo/comercios", "host": ["{{base_url}}"], "path": ["catalogo", "comercios"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "const a = json.data.find(c => c.nombre === 'Comercio Postman A');",
+            "pm.test('Comercio A aprobado aparece en el catalogo', () => pm.expect(a).to.exist);"
+          ]}}]
+        },
+        {
+          "name": "Listar productos del comercio (con galería)",
+          "id": "listar-productos-del-comercio-con-galeria-43",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": { "raw": "{{base_url}}/catalogo/comercios/{{comercio_a_id}}/productos", "host": ["{{base_url}}"], "path": ["catalogo", "comercios", "{{comercio_a_id}}", "productos"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "const p = json.data.find(pr => pr.id == pm.environment.get('producto_id'));",
+            "pm.test('El producto aparece con su galeria completa (5 imagenes)', () => {",
+            "  pm.expect(p).to.exist;",
+            "  pm.expect(p.imagenes.length).to.eql(5);",
+            "});"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "06 - Carrito",
+      "id": "06-carrito-44",
+      "item": [
+        {
+          "name": "Agregar producto A al carrito",
+          "id": "agregar-producto-a-al-carrito-45",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_cliente}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"productoId\": {{producto_id}},\n  \"cantidad\": 2,\n  \"nota\": \"Sin cebolla\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/carrito/items", "host": ["{{base_url}}"], "path": ["carrito", "items"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "pm.test('El carrito queda fijado al comercio A', () => pm.expect(String(json.data.comercioId)).to.eql(String(pm.environment.get('comercio_a_id'))));"
+          ]}}]
+        },
+        {
+          "name": "[negativo] Agregar producto de otro comercio",
+          "id": "negativo-agregar-producto-de-otro-comercio-46",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_cliente}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"productoId\": {{producto_b_id}},\n  \"cantidad\": 1,\n  \"nota\": \"\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/carrito/items", "host": ["{{base_url}}"], "path": ["carrito", "items"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 409 (un comercio a la vez)', () => pm.response.to.have.status(409));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        },
+        {
+          "name": "Ver carrito",
+          "id": "ver-carrito-47",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_cliente}}"}],
+            "url": { "raw": "{{base_url}}/carrito", "host": ["{{base_url}}"], "path": ["carrito"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "pm.test('El subtotal es 3000 (2 x 1500)', () => pm.expect(json.data.subtotal).to.eql(3000));"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "07 - Pedidos",
+      "id": "07-pedidos-48",
+      "item": [
+        {
+          "name": "Confirmar pedido (Comercio A, retiro)",
+          "id": "confirmar-pedido-comercio-a-retiro-49",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_cliente}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"tipoEntrega\": \"RETIRO\",\n  \"direccionId\": null\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/pedidos/cliente", "host": ["{{base_url}}"], "path": ["pedidos", "cliente"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "pm.test('El pedido nace PENDIENTE', () => pm.expect(json.data.estado).to.eql('PENDIENTE'));",
+            "pm.environment.set('pedido_id', json.data.id);"
+          ]}}]
+        },
+        {
+          "name": "Ver pedidos pendientes del Comercio A",
+          "id": "ver-pedidos-pendientes-del-comercio-a-50",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_comercio}}"}],
+            "url": { "raw": "{{base_url}}/pedidos/comercio", "host": ["{{base_url}}"], "path": ["pedidos", "comercio"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "const pedido = json.data.find(p => p.id == pm.environment.get('pedido_id'));",
+            "pm.test('El pedido pendiente aparece', () => pm.expect(pedido).to.exist);"
+          ]}}]
+        },
+        {
+          "name": "Aceptar pedido",
+          "id": "aceptar-pedido-51",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_comercio}}"}],
+            "url": { "raw": "{{base_url}}/pedidos/comercio/{{pedido_id}}/aceptar", "host": ["{{base_url}}"], "path": ["pedidos", "comercio", "{{pedido_id}}", "aceptar"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "pm.test('El pedido queda EN_PREPARACION', () => pm.expect(json.data.estado).to.eql('EN_PREPARACION'));"
+          ]}}]
+        },
+        {
+          "name": "Agregar producto B al carrito (segundo pedido)",
+          "id": "agregar-producto-b-al-carrito-segundo-pedido-52",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_cliente}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"productoId\": {{producto_b_id}},\n  \"cantidad\": 1,\n  \"nota\": \"\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/carrito/items", "host": ["{{base_url}}"], "path": ["carrito", "items"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        },
+        {
+          "name": "Confirmar pedido (Comercio B, retiro)",
+          "id": "confirmar-pedido-comercio-b-retiro-53",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_cliente}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"tipoEntrega\": \"RETIRO\",\n  \"direccionId\": null\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/pedidos/cliente", "host": ["{{base_url}}"], "path": ["pedidos", "cliente"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "pm.environment.set('pedido_b_id', json.data.id);"
+          ]}}]
+        },
+        {
+          "name": "Rechazar pedido con motivo (Comercio B)",
+          "id": "rechazar-pedido-con-motivo-comercio-b-54",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_comercio_b}}"}, {"key": "Content-Type", "value": "application/json"}],
+            "body": {"mode": "raw", "raw": "{\n  \"motivo\": \"SIN_STOCK\",\n  \"comentario\": \"Nos quedamos sin insumos para esta pizza\"\n}", "options": {"raw": {"language": "json"}}},
+            "url": { "raw": "{{base_url}}/pedidos/comercio/{{pedido_b_id}}/rechazar", "host": ["{{base_url}}"], "path": ["pedidos", "comercio", "{{pedido_b_id}}", "rechazar"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "pm.test('El pedido queda RECHAZADO', () => pm.expect(json.data.estado).to.eql('RECHAZADO'));"
+          ]}}]
+        }
+      ]
+    },
+    {
+      "name": "08 - Notificaciones",
+      "id": "08-notificaciones-55",
+      "item": [
+        {
+          "name": "Ver notificaciones del cliente",
+          "id": "ver-notificaciones-del-cliente-56",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_cliente}}"}],
+            "url": { "raw": "{{base_url}}/notificaciones", "host": ["{{base_url}}"], "path": ["notificaciones"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "pm.test('Hay notificacion de pedido aceptado', () => pm.expect(json.data.some(n => n.mensaje.toLowerCase().includes('aceptado'))).to.be.true);",
+            "pm.test('Hay notificacion de pedido rechazado', () => pm.expect(json.data.some(n => n.mensaje.toLowerCase().includes('rechazado'))).to.be.true);",
+            "pm.environment.set('notif_id', json.data[0].id);"
+          ]}}]
+        },
+        {
+          "name": "Marcar notificación como leída",
+          "id": "marcar-notificacion-como-leida-57",
+          "request": {
+            "method": "PUT",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_cliente}}"}],
+            "url": { "raw": "{{base_url}}/notificaciones/{{notif_id}}/leida", "host": ["{{base_url}}"], "path": ["notificaciones", "{{notif_id}}", "leida"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "const json = pm.response.json();",
+            "pm.test('La respuesta tiene mensaje', () => pm.expect(json.mensaje).to.exist);",
+            "pm.test('La notificacion queda leida', () => pm.expect(json.data.leida).to.eql(true));"
+          ]}}]
+        },
+        {
+          "name": "Ver contador de no leídas",
+          "id": "ver-contador-de-no-leidas-58",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token_cliente}}"}],
+            "url": { "raw": "{{base_url}}/notificaciones/no-leidas/contador", "host": ["{{base_url}}"], "path": ["notificaciones", "no-leidas", "contador"] }
+          },
+          "event": [{"listen": "test", "script": {"type": "text/javascript", "exec": [
+            "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+            "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+          ]}}]
+        }
+      ]
+    }
+  ]
+}
