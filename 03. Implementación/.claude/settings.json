@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/bloquear-escritura-fuera-de-proyecto.js"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/bloquear-entity-en-controller.js"
+          },
+          {
+            "type": "command",
+            "command": "node .claude/hooks/formateo-automatico.js"
+          }
+        ]
+      }
+    ]
+  }
+}

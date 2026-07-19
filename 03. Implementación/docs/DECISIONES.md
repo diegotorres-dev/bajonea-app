@@ -1,0 +1,484 @@
+# Decisiones — Bajoneá MVP
+
+Registro cronológico de decisiones de diseño/implementación tomadas durante el desarrollo, con fecha y justificación breve. `CLAUDE.md` no repite este contenido, solo lo referencia.
+
+## 2026-07-16 — `application.properties`: defaults vacíos para variables SMTP
+
+El snippet de la Fase 1.3 de la guía define `spring.mail.host=${SMTP_HOST}` (sin default). Al intentar levantar la app por primera vez (cierre de Fase 1), esto hizo fallar el arranque con `PlaceholderResolutionException: Could not resolve placeholder 'SMTP_HOST'` **antes** de llegar al intento de conexión a MySQL, porque Spring no puede resolver el placeholder si la variable de entorno no existe y no hay default. Se cambió a `${SMTP_HOST:}`, `${SMTP_USER:}`, `${SMTP_PASSWORD:}` (default vacío), mismo patrón que ya usa `spring.datasource.password=${DB_PASSWORD:}`. Esto no afecta la Fase 10 (ahí se van a setear las variables de entorno reales) y permite que el arranque llegue efectivamente hasta el intento de conexión a la base, que es el comportamiento esperado en el cierre de la Fase 1.
+
+## 2026-07-16 — Spring Boot 3.5.16 en vez de una versión 3.3.x/3.4.x específica
+
+`start.spring.io` dejó de generar proyectos con Spring Boot 3.x (rango disponible: `>=4.0.0`). Como la guía y el usuario piden explícitamente Java 21 + Spring Boot 3.x, el `pom.xml` se armó a mano (alternativa que la propia guía habilita en la Fase 1.1) apuntando a `3.5.16`, la última versión estable de la línea 3.x publicada en Maven Central. El Maven Wrapper se extrajo de un proyecto Initializr generado con la versión por defecto (4.x) — el wrapper es independiente de la versión de Boot — y luego se reemplazó el `pom.xml`.
+
+## 2026-07-16 — Versiones manuales de jjwt, springdoc-openapi y Cloudinary
+
+- `jjwt` (api/impl/jackson): `0.13.0`, última versión estable en Maven Central al momento de esta fase.
+- `springdoc-openapi-starter-webmvc-ui`: `2.8.17` (línea 2.x, compatible con Spring Boot 3.x / Spring Framework 6). La línea `3.x` de springdoc ya está publicada pero apunta a Spring Boot 4 / Spring Framework 7, que no corresponde a este proyecto.
+- Cloudinary Java SDK: `com.cloudinary:cloudinary-http5:2.4.0` (el artefacto vigente del SDK oficial; `cloudinary-http44` es la variante legacy con Apache HttpClient 4.4).
+
+## 2026-07-16 — Modelo de 21 tablas aplicado en Flyway V1–V10, Fase 2 cerrada
+
+`docs/modelo-mvp.md` (21 tablas, incluyendo `Persona` reincorporada tras la segunda revisión) quedó aplicado contra la base `bajonea` en las migraciones `V1__geografia.sql` a `V10__notificaciones.sql`. `./mvnw spring-boot:run` aplicó las 10 migraciones sin error (`Successfully applied 10 migrations..., now at version v10`); verificado contra la base: 21 tablas de dominio presentes vía `SHOW TABLES`, y `flyway_schema_history` con exactamente 10 filas, las 10 con `success = 1`. `V11__seed_admin.sql` queda pendiente para la Fase 14.5, no se generó en esta fase.
+
+## 2026-07-16 — ETL Georef implementado como script Node.js standalone + carga vía cliente `mysql`, Fase 2bis cerrada
+
+**Implementación elegida:** `backend/scripts/etl-georef/etl-georef.mjs`, un script Node.js standalone (no un `CommandLineRunner` de Spring). Motivo: no requiere compilar ni levantar el contexto de Spring para una tarea de infraestructura de una sola vez; Node v26 (disponible en el entorno) trae `fetch` nativo, así que no hace falta ninguna dependencia externa. El script pagina contra la API Georef (`campos=estandar`, `max`/`inicio`, tamaño de página 3000) hasta traer las 24 provincias y las 4037 localidades del país completo, y genera un archivo `.sql` con sentencias `INSERT ... ON DUPLICATE KEY UPDATE` (idempotentes) en lotes de 500 filas — no inserta por JDBC directo desde Node para no agregar un driver de MySQL a un script que se corre una sola vez. La aplicación del SQL contra `bajonea` se hace en un paso separado con el cliente `mysql` de XAMPP (`C:\xampp\mysql\bin\mysql.exe`), igual que se usó para verificar la Fase 2. El archivo generado (`backend/scripts/etl-georef/output/georef-seed.sql`) es un artefacto regenerable, no se versiona (agregado a `backend/.gitignore`).
+
+**Incidente encontrado y resuelto durante la aplicación:** la primera carga, hecha canalizando el archivo SQL a `mysql.exe` a través de un pipe de PowerShell (`Get-Content | mysql.exe`), corrompió los caracteres acentuados (ej. "Río Grande" quedó guardado como "R?o Grande", con el byte `0x3F` literal en vez de `í` en UTF-8) — PowerShell 5.1 reencodea a ASCII por defecto al canalizar texto Unicode hacia un ejecutable nativo. Se corrigió reaplicando el mismo SQL con redirección de `cmd.exe` (`cmd /c "mysql.exe ... < archivo.sql"`), que pasa los bytes del archivo sin re-encodear. Verificado con `HEX(nombre)` que los caracteres acentuados quedaron en UTF-8 correcto (`í` = `C3AD`) en varias filas, no solo en Río Grande.
+
+**Validación final:** `SELECT COUNT(*) FROM provincia` = 24, `SELECT COUNT(*) FROM localidad` = 4037, Río Grande (Tierra del Fuego) presente y vinculada a su provincia. Corrido dos veces (re-fetch completo + re-aplicación del SQL): mismos conteos en ambas corridas, sin errores — idempotencia confirmada.
+
+## 2026-07-17 — DTOs de auth y pedido/comercio diferidos a Fase 7 y Fase 9 con destino explícito
+
+Al cerrar la Fase 5, 4 DTOs de la lista original de `CLAUDE.md` §3 no fueron creados: `LoginRequestDTO`, `ImagenProductoRequestDTO`, `RechazoPedidoRequestDTO`, `AprobacionComercioRequestDTO`, más `ProvinciaResponseDTO`, `LocalidadResponseDTO` y `CloudinarySignatureResponseDTO`. Esto no es un pendiente suelto ni un olvido: cada uno queda diferido a la fase donde se implementa el Service/Controller que realmente lo consume, en vez de crearse sin nada que lo use:
+
+- `LoginRequestDTO` (+ el `ResponseDTO` de login con el JWT) → Fase 7, junto con `AuthService`/`AuthController`. **✅ Resuelto** en Fase 7.
+- `RechazoPedidoRequestDTO` → Fase 9, junto con `PedidoService` (rechazo de pedido por el comercio). **✅ Resuelto**: creado y usado en `PedidoService.rechazarPedido` (Fase 8.6, no 9 — `PedidoService` terminó siendo parte de la Fase 8, ver entrada correspondiente), probado end-to-end con motivo `SIN_STOCK` y `OTRO` + comentario.
+- `AprobacionComercioRequestDTO` (o el DTO equivalente de aprobación/rechazo de comercio) → Fase 9, junto con `ComercioService`/`AdministradorService`. **✅ Resuelto** en Fase 8.3 (`AdministradorService`, no 9).
+- `ProvinciaResponseDTO` / `LocalidadResponseDTO` → confirmado sin DTO propio hasta que exista `GeografiaController` (Fase 8/9): son catálogos precargados por ETL (Fase 2bis), de solo lectura, no requests JSON tradicionales.
+- `ImagenProductoRequestDTO` / `CloudinarySignatureResponseDTO` → confirmado sin DTO propio hasta la Fase 11 (Cloudinary): la firma de subida y el registro de imagen no tienen service/controller propio todavía.
+
+`CLAUDE.md` §6 (tabla de fases) referencia esta decisión para que cualquier sesión futura la vea sin buscar en el historial de chat.
+
+## 2026-07-17 — Enmienda formal de alcance del MVP: reincorporación de `Sesion`, recuperación de contraseña, bloqueo de cuenta y reactivación de cuenta (Fase 7)
+
+**Contexto:** al diseñar `AuthService` para la Fase 7, se pidió incluir recuperación de contraseña, bloqueo tras 3 intentos fallidos y reactivación de cuenta. La sección 0 de `GUIA-IMPLEMENTACION-MVP-BAJONEA.md` ("Decisiones cerradas de alcance del MVP") advierte explícitamente contra este patrón: *"Si en el camino aparece la tentación de 'agregar solo esto que ya está documentado en el proyecto completo', volver a este punto 0 primero."* Verificado contra esa sección: la lista cerrada "Roles y flujos incluidos" del MVP no menciona recuperación de contraseña, bloqueo ni reactivación; y la lista "Entidades que NO entran al MVP" nombra `Sesion` explícitamente, junto con `HistorialEstadoUsuario`, `HistorialEstadoComercio`, `Soporte`, `Reclamo`, etc. La autenticación del MVP fue definida ahí como *"JWT (jjwt) con rol embebido en el token. Sin sesiones server-side"* — decisión cerrada, no una laguna.
+
+**Decisión:** se amplía el alcance del MVP de forma consciente y explícita (no como corrección de un olvido) para incluir estos 3 flujos, porque están definidos como requisito funcional cerrado desde el inicio del proyecto en `01. Análisis de Requerimientos/04. Requisitos Funcionales/requisitos-funcionales-generales.md` (secciones "Recuperación de Contraseña", "Reactivación de Cuenta" y "Gestión de Contraseña") y en `02. Diseño/.../diccionario-de-datos.md` (v1.2, `TipoToken` con 3 valores, tabla `Sesion` completa). Un JWT puramente stateless no puede cumplir el requisito de invalidar sesiones activas de forma real (recuperación de contraseña, bloqueo, cambio de contraseña, login concurrente), así que la reincorporación de `Sesion` es una consecuencia técnica directa de aceptar estos 3 flujos, no un agregado aparte.
+
+**Qué entra exactamente** (alcance deliberadamente acotado, no el módulo de seguridad/sesiones completo del diccionario — ver `docs/modelo-mvp.md` nota de alcance 12 para el detalle completo de columnas):
+- Tabla `sesion` fiel al diccionario completo (id, usuario_id, activa, fecha_inicio, fecha_cierre, tipo_cierre, ip_origen, navegador, dispositivo) + enum `TipoCierreSesion`. `dispositivo` queda nullable y sin parser de user-agent implementado en esta fase (se puede completar después sin migración adicional), pero la columna no se recorta — corrección del 2026-07-17 tras señalarse que el objetivo de la enmienda era traer la tabla completa, no una versión reducida.
+- `usuario.intentos_fallidos` (nueva columna).
+- `TipoToken` ampliado de 1 a 3 valores (`RECUPERACION_PASSWORD`, `REACTIVACION_CUENTA`).
+- El JWT deja de ser puramente stateless: incorpora un claim `sesionId`, y `JwtAuthenticationFilter` valida `Sesion.activa = true` en cada request además de la firma.
+- Reabre puntualmente Fase 2 (nueva migración Flyway correctiva), Fase 3 (2 enums nuevos/ampliados) y Fase 4 (nueva Entity `Sesion`) — Fase 6 no se reabre en los hechos porque los 21 Repository existentes no cambian; se suma 1 Repository nuevo (`SesionRepository`).
+
+**Qué queda explícitamente fuera, incluso con esta enmienda** (para no deslizar hacia el resto del módulo de seguridad completo):
+- `HistorialEstadoUsuario` / `HistorialEstadoComercio` — sin tabla de auditoría de transiciones, solo se guarda el estado actual.
+- Suspensión de cuenta/comercio por Administrador — sigue sin ningún endpoint ni lógica.
+- El job periódico de inactivación automática por 3 meses sin actividad — sigue sin implementarse. `confirmarReactivacionCuenta` se construye igual en la Fase 7, pero en la práctica nada dispara `INACTIVO` todavía hasta que ese job exista.
+- La notificación por email de "cierre de sesión por login concurrente" que describe el diccionario completo — el cierre de la sesión anterior es silencioso.
+
+**Estado:** implementado — migración `V11__seguridad_sesiones_y_bloqueo.sql`, `TipoToken`/`TipoCierreSesion`, `Sesion`/`SesionRepository`, `JwtService`/`JwtAuthenticationFilter`/`SecurityConfig`/`CustomAuthenticationEntryPoint`/`CustomAccessDeniedHandler`, `AuthService`/`AuthController`/`EmailService`. `./mvnw compile` → `BUILD SUCCESS` (122 archivos); app levantada contra la base real, Flyway aplicó V11 sin error, Hibernate validó las 22 entidades sin conflicto de schema. Pendiente: pruebas end-to-end de los flujos (login, bloqueo, recuperación, reactivación) y cierre formal del checklist de Fase 7.
+
+## 2026-07-17 — `usuario.intentos_fallidos`: columna preexistente en el diccionario completo, migrada recién en la Fase 7 (no es parte de la ampliación de alcance de `Sesion`)
+
+Distinto de la entrada anterior — no confundir ambas en el registro histórico. `intentos_fallidos` **no es una columna nueva inventada para esta fase**: ya estaba documentada en `02. Diseño/.../diccionario-de-datos.md` (v1.2) para la tabla `Usuario` desde el inicio del proyecto (`INT NOT NULL DEFAULT 0`, "Contador de intentos fallidos de login o de cambio de contraseña desde perfil"). Al recortar el diccionario completo a `docs/modelo-mvp.md` en la Fase 2, esta columna se excluyó conscientemente — no por error, sino porque en ese momento no existía ningún flujo del MVP que la incrementara (`modelo-mvp.md`, nota de alcance 3 original: *"`intentos_fallidos` no tiene ningún flujo que lo incremente en el MVP (no hay bloqueo por 3 intentos)"*). Esa es una omisión deliberada de columna dentro de una tabla que **ya estaba** en el MVP (`Usuario`), a diferencia de `Sesion`, que era una **tabla entera** excluida por nombre en la sección 0 de la guía.
+
+En la Fase 7, al sumarse el flujo de bloqueo tras 3 intentos fallidos (parte de la enmienda de alcance documentada en la entrada anterior), la razón original para omitir la columna dejó de aplicar, así que se migró (`V11__seguridad_sesiones_y_bloqueo.sql`, `ALTER TABLE usuario ADD COLUMN intentos_fallidos`). Es una migración correctiva que completa una columna ya prevista en el modelo de datos del proyecto, no una decisión de alcance nueva — el disparador es la Fase 7, pero la columna en sí no es alcance ampliado.
+
+## 2026-07-17 — Pruebas end-to-end de Fase 7: bug real encontrado y corregido (`@Transactional` + excepción de negocio deshacía el contador de intentos fallidos)
+
+Antes de dar el checklist de Fase 7 por cerrado, se probaron los flujos con `curl` contra la app levantada (base real, usuario `Cliente` sembrado a mano por SQL — sin `RegistroService`, Fase 8, todavía no hay forma de registrarse vía API).
+
+**Bug encontrado en la primera corrida:** `AuthService` está anotado `@Transactional` a nivel de clase. `registrarIntentoFallido` incrementa `intentos_fallidos` (y al tercero, bloquea) y hace `usuarioRepository.save(usuario)` — pero inmediatamente después, `login`/`cambiarPasswordDesdePerfil` lanzan `CredencialesInvalidasException` para señalar el fallo al llamador. Como esa excepción extiende `RuntimeException`, el comportamiento por defecto de Spring hace **rollback de toda la transacción**, incluido el `save()` del contador — el bloqueo nunca llegaba a persistirse. Se detectó porque, tras 3 intentos fallidos reales contra la API, un 4° intento con la contraseña correcta logueó exitosamente en vez de devolver 409 (verificado con `SELECT intentos_fallidos FROM usuario`, que mostraba `0` pese a los 3 fallos).
+
+**Corrección:** `@Transactional(noRollbackFor = CredencialesInvalidasException.class)` a nivel de clase en `AuthService` — el contador y el bloqueo se persisten aunque el método termine lanzando esa excepción. El resto de las excepciones (`ConflictoDeNegocioException`, `ValidacionException`, `RecursoNoEncontradoException`) no tenían este problema: en todos sus puntos de uso actuales, se lanzan antes de cualquier mutación en la misma llamada, así que el rollback por defecto no pierde nada.
+
+**Bug relacionado, ya corregido antes de esta corrida** (ver entrada de más arriba sobre `EmailService`): el mismo patrón de rollback-por-excepción-de-negocio afectaba a `solicitarRecuperacionPassword`/`solicitarReactivacionCuenta` — si `EmailService` relanzaba la falla de SMTP (credenciales vacías, Fase 10 pendiente), se perdía el `Token` recién generado. Resuelto logueando el fallo de envío en vez de relanzarlo.
+
+**Flujos verificados, todos con resultado esperado:**
+- Login exitoso → `200`, JWT con claims `sub`/`userId`/`rol`/`sesionId` correctos, fila en `sesion` creada.
+- 3 intentos fallidos consecutivos → `401` cada uno; al 3°, `usuario.estado = BLOQUEADO` persistido. 4° intento (con contraseña correcta) → `409 "Cuenta bloqueada..."`.
+- Recuperación de contraseña: `POST /recuperar-password` → `200`, `Token` tipo `RECUPERACION_PASSWORD` persistido pese a que el envío de email falla (sin SMTP real). `POST /recuperar-password/confirmar` → `200`; verificado: `estado → ACTIVO`, `intentos_fallidos → 0`, `token.usado = true`, login con la contraseña vieja falla (`401`), login con la nueva funciona (`200`). Repetido con una sesión activa existente: confirmada la restaura — la sesión queda `activa = false, tipo_cierre = FORZADO`.
+- Reactivación de cuenta: usuario llevado a `INACTIVO` manualmente por SQL (no hay job automático, ver nota de alcance 12 de `modelo-mvp.md`) — login en ese estado da `409`. `POST /reactivar-cuenta` + `GET /reactivar-cuenta/confirmar/{token}` → `200`, `estado → ACTIVO`, login vuelve a funcionar.
+- Logout: `POST /logout` autenticado → `200`, cierra la `Sesion` (`MANUAL`). Reintentar cualquier endpoint protegido con el **mismo JWT** (firma todavía válida, sesión ya cerrada) → `401` — confirma que `JwtAuthenticationFilter` valida `Sesion.activa` y no solo la firma.
+- Sin token en ruta protegida → `401`. Rol insuficiente (`CLIENTE` contra ruta `ADMINISTRADOR`) → `403`. Ambos con el formato `ApiResponse` estándar, vía `CustomAuthenticationEntryPoint`/`CustomAccessDeniedHandler`.
+
+Además, contra el checklist de cierre de Fase 7 tal cual lo define la guía original: token corrupto/malformado en una ruta protegida → `401` (vía `CustomAuthenticationEntryPoint`, capa de Security). `GET /auth/verificar/{token}` sin header `Authorization` **no** es bloqueado por Security (confirmado público) y llega hasta `AuthService`, que devuelve `401` por motivo de negocio (`CredencialesInvalidasException`, token inexistente) — dos capas distintas, ambas conectadas correctamente. `POST /auth/login` con body inválido (`email` mal formado, `password` vacío) → `400` vía Bean Validation, no `401`.
+
+Usuario de prueba (`e2e.test@bajonea.test`, sembrado por SQL directo) eliminado de la base al finalizar, junto con sus filas de `sesion`/`token`. No queda dato de prueba residual.
+
+## 2026-07-17 — `docs/CONCURRENCIA-Y-TRANSACCIONES.md`: análisis de riesgo por módulo antes de Fase 8, y fix del único caso real identificado
+
+Antes de escribir los Services de la Fase 8 en adelante, se armó un documento de análisis de riesgo de concurrencia/transacciones con criterio de TFC (prueba manual acotada por profesores, no producción bajo carga real) — ver `docs/CONCURRENCIA-Y-TRANSACCIONES.md`, formato tabla por módulo con columnas Escenario / Riesgo / Estrategia / Justificación / ¿Se implementa ahora?. Criterio general: se implementa ahora solo si el escenario ya afecta código existente y probado con un disparador realista incluso en prueba manual (ej. doble click); se documenta para v2 si depende de módulos que no existen todavía y el volumen de evaluación esperado hace la colisión real improbable — excepto MercadoPago, cuyo riesgo de reintento de webhook no depende del volumen de usuarios (lo garantiza el proveedor), así que queda como prioridad #1 de v2 aunque no se implemente ahora (Pago sigue fuera del alcance del MVP).
+
+**Único caso que cumplió el criterio "Sí, implementar ahora":** doble submit de `POST /auth/login` para el mismo usuario (doble click, doble tab, reintento de red) — race real sobre `usuario.intentos_fallidos` (*lost update*) y sobre la regla "una sola sesión activa" (dos `Sesion` activas simultáneas si ambas requests leen "sin sesión activa" antes de que la primera cree la suya).
+
+**Fix aplicado:** `UsuarioRepository.findByEmailConBloqueo` — `@Lock(LockModeType.PESSIMISTIC_WRITE)` sobre una `@Query` explícita (`SELECT ... FOR UPDATE` contra MySQL/InnoDB), usado únicamente en `AuthService.login()` en reemplazo de `findByEmail` (que se deja intacto para lecturas sin lock, ej. `RegistroService` en Fase 8). Serializa cualquier request concurrente contra el mismo usuario a nivel de fila.
+
+**Verificado con una carrera real:** 2 requests `POST /auth/login` con contraseña incorrecta disparadas en paralelo (`curl ... & curl ... & wait`) contra un usuario de prueba sembrado por SQL. Resultado: `intentos_fallidos = 2` tras ambas — sin el lock, existía riesgo real de que ambas leyeran `0` y el contador quedara en `1` (incremento perdido). Usuario de prueba (`e2e.lock@bajonea.test`) eliminado de la base al finalizar.
+
+**Todo lo demás del documento queda documentado, no implementado** (aprobación de comercio, aceptación/rechazo de pedido, límite de imágenes de producto, regla de un comercio a la vez en el carrito, idempotencia de webhook de MP) — pendiente de que el usuario revise el documento completo antes de decidir si algo más se implementa ahora.
+
+## 2026-07-17 — Fase 8 (inicio): `RegistroService`/`GeografiaService` implementados y probados end-to-end
+
+Primera tanda de Fase 8, según el orden de la guía (8.1 RegistroService, 8.1bis GeografiaService). Cierra los DTOs de geografía que quedaban diferidos desde Fase 5 (`ProvinciaResponseDTO`, `LocalidadResponseDTO`, ya no diferidos) y el círculo con `AuthService.verificarEmail` (Fase 7), que hasta ahora no tenía forma de generar el `Token` que consume.
+
+**Generado:** `RegistroService` (`registrarCliente`, `registrarComercio` — cadena `Usuario → Persona → PersonaFisica/PersonaJuridica → Cliente/Comercio` con `@MapsId` encadenado + `Direccion` + `Token` de verificación), `GeografiaService` (2 métodos de solo lectura), `GeografiaController` (`GET /geografia/provincias`, `GET /geografia/localidades?provinciaId=`), endpoints `POST /auth/registro/cliente` y `POST /auth/registro/comercio` agregados a `AuthController`, `EmailService.enviarVerificacion` (nuevo, mismo patrón log-and-continue de los otros 2 métodos). `./mvnw compile` → `BUILD SUCCESS` (127 archivos).
+
+**Probado con `curl` contra la base real:**
+- `GET /geografia/provincias` → 24 provincias. `GET /geografia/localidades?provinciaId=94` → localidades de Tierra del Fuego, incluida Río Grande (`id=94008010`).
+- `POST /auth/registro/cliente` completo (con `direccion` anidada) → `201`, cadena completa verificada en la base (`usuario` PENDIENTE, `persona_fisica`, `cliente`, `direccion` con `principal=1`, `token` tipo `VERIFICACION_EMAIL`).
+- Login mientras `PENDIENTE` → `409`. `GET /verificar/{token}` con el token real generado por el registro → `200`. Login tras verificar → `200` — confirma el círculo completo Fase 8 → Fase 7.
+- Registro duplicado (mismo email) → `409`. Registro con `localidadId` inexistente → `404`.
+- `POST /auth/registro/comercio` completo → `201`, cadena verificada (`persona_juridica`, `comercio` PENDIENTE, `direccion` con `comercio_id` y `principal=0`, correcto porque "no aplica" para Comercio). CUIT duplicado → `409`.
+- Nota al margen: el primer intento de probar el registro de comercio usó un CUIT inventado sin dígito verificador válido → `400 "CUIT inválido"`, correcto (`@ValidarCuit` funcionando). Se recalculó un CUIT matemáticamente válido (`30712345671`) contra el algoritmo exacto de `CuitValidator` para reintentar.
+
+Usuarios de prueba (`e2e.cliente@bajonea.test`, `e2e.comercio@bajonea.test`) y sus filas derivadas (`persona`, `persona_fisica`/`persona_juridica`, `cliente`/`comercio`, `direccion`, `token`, `sesion`) eliminados de la base al finalizar.
+
+**Pendiente dentro de Fase 8:** `ComercioService`/`AdministradorService` (8.3), `ProductoService` (8.4), y lo que siga (`CarritoService`, `PedidoService`, `NotificacionService`) — Fase 8 sigue abierta, esta es solo la primera tanda.
+
+## 2026-07-17 — Fase 8.3: piezas diferidas con destino explícito
+
+- `ComercioService.editarPerfil` → Fase 8.4, junto con `ProductoService`, por compartir el patrón de validación "el `comercioId` del recurso coincide con el comercio del JWT" que ahí se describe con más detalle.
+- `CategoriaService`/`TagService` (CRUD de categorías/tags con baja lógica) → tanda propia, todavía sin fecha fija. `CLAUDE.md` §3 ya las lista como clases separadas de `AdministradorService` (no la agrupación informal que sugiere el texto de la guía en 8.3) — la tanda de `AdministradorService`/`AdministradorController` de esta sesión se acota a la aprobación/rechazo de comercios (`listarComerciosPendientes`, `resolverAprobacion`), sin tocar `CategoriaController`/`TagController`.
+- `HistorialEstadoComercioRepository.findFirstByComercioIdAndEstadoDestinoOrderByFechaHoraDesc` (el finder de "último motivo de rechazo" que sugiere el diccionario completo) → no se agregó todavía: repasado contra el estándar de justificación de Fase 6 (`ComercioRepository.findByPersonaJuridicaId`, con 3 call sites reales), no tiene ningún consumidor real hoy — no hay flujo de re-solicitud en este MVP (`Comercio.fecha_resolicitud` excluida, `modelo-mvp.md` nota 4) ni un endpoint que muestre el motivo del último rechazo. Se agrega el día que exista un consumidor real; mientras tanto `HistorialEstadoComercioRepository` queda sin finders custom (mismo patrón que `DireccionRepository`/`ClienteRepository`).
+
+## 2026-07-17 — `HistorialEstadoComercio` reincorporada (Fase 8.3): `AdministradorService`/`AdministradorController` implementados y probados end-to-end
+
+Segunda reincorporación de una entidad "que no entra al MVP" según la sección 0 de la guía (mismo criterio que `Sesion` en Fase 7, ver entrada correspondiente) — motivada porque `AdministradorService.resolverAprobacion` necesita persistir el motivo de rechazo de un `Comercio`, y el diccionario completo **eliminó** `Comercio.motivo_rechazo` en v1.1 a favor de centralizarlo en `HistorialEstadoComercio.motivo`: no existía una alternativa fiel al modelo que no fuera reincorporar la tabla. Detalle completo en `docs/modelo-mvp.md`, nota de alcance 13.
+
+**Generado:** migración `V12__historial_estado_comercio.sql`, entity `HistorialEstadoComercio` (sin finders custom en su repository — ver entrada anterior), `AprobacionComercioRequestDTO` (`motivo` como `String` libre, fiel al diccionario — no hay `ENUM` de motivo de rechazo de Comercio documentado, a diferencia de `Pedido.motivo_rechazo`/`MotivoRechazo`), `AdministradorService` (`listarComerciosPendientes`, `resolverAprobacion`), `AdministradorController`. `DireccionRepository` suma `findByComercioId` (usado para anidar la dirección en `ComercioResponseDTO`). Acotado a la aprobación de comercios — `CategoriaService`/`TagService`/`CategoriaController`/`TagController` quedan diferidos (ver entrada anterior). `./mvnw compile` → `BUILD SUCCESS` (132 archivos).
+
+**Probado con `curl` contra la base real:** Administrador y 2 Comercios de prueba sembrados (uno vía `INSERT` directo, los comercios vía `POST /auth/registro/comercio` real, con CUITs matemáticamente válidos recalculados contra `CuitValidator`).
+- `GET /administrador/comercios/pendientes` → `200`, ambos comercios con `direccion` anidada completa (`nombreLocalidad`/`nombreProvincia` resueltos sin error de lazy-loading, dentro de la transacción).
+- Aprobar comercio → `200`, `estado → APROBADO`, fila en `historial_estado_comercio` con `motivo = NULL`, `administrador_id` correcto.
+- Rechazar sin motivo → `400` (`ValidacionException`, correcto). Rechazar con motivo → `200`, `estado → RECHAZADO`, fila de historial con el motivo persistido.
+- Reintentar resolver un comercio ya resuelto → `409` (`ConflictoDeNegocioException`, patrón documentado en `CONCURRENCIA-Y-TRANSACCIONES.md` §2, sin lock explícito).
+- `Notificacion` creada para el usuario representante de cada comercio, con el mensaje correcto (incluye el motivo en el caso de rechazo).
+- **Falso positivo detectado y descartado durante la prueba:** un primer intento de rechazo con motivo conteniendo una tilde ("Documentación") devolvió `401 "sesión cerrada"` — se verificó contra la base que la `Sesion` del administrador seguía `activa = true`, y el log del servidor mostró `HttpMessageNotReadableException: Invalid UTF-8 middle byte` — era un problema de encoding de la terminal al enviar el `curl`, no un bug de la aplicación. Reintentado con `--data-binary` y sin tilde → `200` correcto. Se deja constancia para no confundir este tipo de falso positivo con un bug real en pruebas futuras.
+
+Usuarios y datos de prueba (`e2e.admin@bajonea.test`, `e2e.comercio1@bajonea.test`, `e2e.comercio2@bajonea.test`, y todas sus filas derivadas incluido `historial_estado_comercio`) eliminados de la base al finalizar.
+
+## 2026-07-17 — Fase 8.4: `ProductoService`/`ComercioService.editarPerfil` implementados y probados end-to-end
+
+Confirmado antes de implementar: `Comercio.id` **no** coincide con `Usuario.id` (a diferencia de `Cliente`/`Administrador`, que sí encadenan `@MapsId` hasta `Usuario`) — `Comercio` tiene PK propia autogenerada. Tanto `ProductoService` como `ComercioService.editarPerfil` resuelven "¿qué Comercio pertenece a este usuario autenticado?" reutilizando `ComercioRepository.findByPersonaJuridicaId` (mismo finder de Fase 7/8.3, ahora con un 3er call site real, reforzando que estuvo bien justificado desde el principio).
+
+**Generado:** `ProductoRepository.findByComercioId` (sin filtro de estado, distinto de `findByComercioIdAndEstadoNot` que es para el catálogo público de Fase 9), `ItemCarritoRepository.findByProductoId` (limpieza de carritos), `ProductoTagRepository.findByProductoId`/`deleteByProductoId` (listar y reemplazar tags en cada edición), `ComercioPerfilRequestDTO`, `CambioEstadoProductoRequestDTO`, `ProductoService` (crear/editar/listar/cambiar estado — **sin gestión de galería**, diferida a Fase 11 por diseño ya existente en `ProductoRequestDTO`), `ComercioService.editarPerfil`, `ProductoController`, `ComercioController`. `SecurityConfig` suma `/api/v1/comercios/**` a las rutas `COMERCIO` (no estaba cubierta explícitamente, caía en `anyRequest().authenticated()` sin restricción de rol). `./mvnw compile` → `BUILD SUCCESS` (138 archivos).
+
+**Probado con `curl` contra la base real** (2 comercios registrados vía API y aprobados por SQL directo — la aprobación real ya se probó en 8.3, no hacía falta repetirla; 1 categoría y 1 tag sembrados por SQL ya que `CategoriaService`/`TagService` siguen diferidos):
+- `PUT /comercios/perfil` → `200`, campos actualizados, dirección anidada intacta.
+- `POST /productos` → `201`, categoría y tag resueltos correctamente, `estado = DISPONIBLE`, `imagenes: []` (esperado, Fase 11).
+- `GET /productos` (listado propio) y `PUT /productos/{id}` (edición, incluida la baja de un tag existente) → `200`.
+- **Limpieza de carrito al marcar `AGOTADO`:** Cliente de prueba sembrado con el producto en su carrito (`CarritoService` no existe todavía, sembrado por SQL) → `PATCH /productos/{id}/estado` a `AGOTADO` → `200`, `item_carrito` del cliente eliminado, `Notificacion` creada con el mensaje correcto.
+- Transición terminal: `AGOTADO → DESCONTINUADO` → `200`; `DESCONTINUADO → DISPONIBLE` → `409` (irreversible, correcto). Editar un producto `DESCONTINUADO` → `409`.
+- Aislamiento entre tenants: comercio 2 intentando editar un producto del comercio 1 → `404` (no `403` — no revela que el recurso existe, mismo criterio que ya se documentó como decisión de diseño).
+
+Datos de prueba (2 usuarios comercio, 1 cliente, categoría, tag, producto, carrito, notificación) eliminados de la base al finalizar.
+
+## 2026-07-17 — Corrección: `ComercioPerfilRequestDTO.fotoPerfilUrl` sacado del DTO (gap de validación de propiedad, no solo de dominio)
+
+Al revisar `ComercioPerfilRequestDTO`, se señaló que `@ValidarUrlCloudinary` valida únicamente que la URL pertenezca al dominio `res.cloudinary.com`, no que el recurso pertenezca al comercio que lo manda — cualquier comercio autenticado podía pegar la URL de una imagen subida por otro comercio (o cualquier asset público bajo la cuenta de Cloudinary del proyecto) y pasaba la validación igual. No fue una mitigación contemplada y descartada — fue un gap real no detectado al escribir el DTO.
+
+**Corrección:** se sacó `fotoPerfilUrl` de `ComercioPerfilRequestDTO` y de `ComercioService.editarPerfil`. Hasta que exista el flujo de subida firmada de Fase 11, no hay ningún mecanismo legítimo para que el comercio obtenga una URL de Cloudinary en primer lugar — dejar el campo abierto no habilitaba una funcionalidad real, solo el vector señalado. En Fase 11, la asociación de la URL al perfil del comercio debe hacerla el propio backend tras validar la firma de subida, no aceptar un valor que llega suelto por body en un endpoint de edición de perfil no relacionado con el flujo de subida. `./mvnw compile` → `BUILD SUCCESS` (138 archivos, sin cambio de conteo — solo se achicó un DTO existente).
+
+Confirmado de paso: `Comercio.foto_perfil_url` **no** es `NOT NULL` en el MVP (a diferencia del diccionario completo) — ya se había resuelto correctamente en `modelo-mvp.md` nota de alcance 4 desde la Fase 2, antes de esta sesión. Queda `NULL` sin ninguna vía para setearla hasta que exista Fase 11.
+
+## 2026-07-17 — Auditoría de `DECISIONES.md` completo: patrones recurrentes trasladados a las skills
+
+Antes de seguir con `CategoriaService`/`TagService`, se revisó `DECISIONES.md` de punta a punta para separar lo puntual (una tabla, un campo, una decisión de una sola sesión) de lo recurrente (algo que cualquier Service/DTO nuevo debería seguir de acá en adelante sin tener que releer el historial de chat). Los patrones recurrentes pasaron a `.claude/skills/generar-capa-crud/SKILL.md` y `.claude/skills/skill-validaciones/SKILL.md`, cada uno con una referencia corta a la entrada de esta misma tabla donde se originó — las skills quedan como el "cómo hacerlo de acá en adelante", este archivo sigue siendo el "por qué se decidió así".
+
+**Agregado a `generar-capa-crud/SKILL.md`:**
+- Regla de "ningún finder sin call site real ya identificado" (sección 3, Repository) — mostrar el punto de uso exacto antes de aceptar un finder nuevo.
+- Campo "motivo": `ENUM` cuando el diccionario lo define (`Pedido.motivo_rechazo`), texto libre cuando no (`HistorialEstadoComercio.motivo`) — no un criterio único (sección 2, DTOs).
+- Campo/DTO sin consumidor: diferir con destino explícito en `DECISIONES.md`, nunca como nota de paso (sección 2, DTOs).
+- Constraint de BD como última línea de defensa — `GlobalExceptionHandler` ya cubre `DataIntegrityViolationException` de forma transversal, no reimplementar por Service (sección 4).
+- Criterio corto para `@Lock(PESSIMISTIC_WRITE)`, con referencia a `CONCURRENCIA-Y-TRANSACCIONES.md` para el detalle completo — no queda solo en un documento separado que nadie relee al escribir un Service nuevo (sección 4).
+- `@Transactional(noRollbackFor = ...)` acotado, cuando hay un efecto secundario antes de una excepción de negocio (sección 4).
+- Resolver el dueño de un recurso vía `usuarioId` del JWT, nunca vía un id que manda el cliente — con la advertencia puntual de `Comercio.id != Usuario.id` (sección 4).
+- Aislamiento entre tenants: `404`, no `403`, cuando un recurso pertenece a otro usuario/comercio (sección 4).
+- Operaciones secundarias no críticas: no perder una mutación ya persistida por relanzar una excepción evitable (sección 4).
+- Proceso fijo de 4 pasos para reincorporar una tabla del diccionario completo recortada del MVP, con la lista exacta de archivos que siempre se tocan (sección 4).
+- Checklist de validación post-generación ampliado con los ítems correspondientes a todo lo anterior.
+
+**Agregado a `skill-validaciones/SKILL.md`:**
+- Advertencia de que `@ValidarUrlCloudinary` valida dominio, no propiedad del recurso — no usarla sola en un campo de request editable hasta que exista el flujo de subida firmada de Fase 11.
+- Corrección de la guía "Dónde aplicar cada una", que todavía decía que `foto_perfil_url` se validaba en el DTO de edición de perfil de Comercio (ya no, ver entrada anterior) y listaba `ImagenProductoRequestDTO` como si ya existiera (sigue diferida a Fase 11).
+- Referencia cruzada al criterio de "motivo: ENUM o texto libre" de `generar-capa-crud/SKILL.md`, para que quien busque una anotación de validación para un campo `motivo` encuentre la aclaración de que no siempre es un caso de validación.
+
+**Además:** se agregó un paso permanente al checklist de cierre de fase en `CLAUDE.md` §6 — revisar si la fase introdujo un patrón recurrente nuevo y, si es así, reflejarlo en la skill correspondiente antes de dar la fase por cerrada. Reemplaza la idea de una skill separada que "autocompleta" a las demás; la actualización de skills pasa a ser un paso más del cierre, igual que ya lo son `CLAUDE.md` y `DECISIONES.md`.
+
+**Nota sobre la sesión:** varios intentos de `Edit`/`Write` sobre archivos de `.claude/skills/` fallaron en el camino con el error *"claude-sonnet-5 is temporarily unavailable, so auto mode cannot determine the safety of [Edit/Write] right now"* — una indisponibilidad general y transitoria del clasificador de seguridad (mismo texto de error en Edit y en Write), no una restricción real sobre esa carpeta. Se confirmó reintentando: los mismos edits que fallaban 4-5 veces seguidas terminaron aplicándose sin cambios de enfoque. No sacar conclusiones sobre "rutas bloqueadas" a partir de fallas intermitentes de este tipo — confirmar primero el texto exacto del error.
+
+**Revisión posterior (mismo día):** al pedir confirmar que la referencia a `CONCURRENCIA-Y-TRANSACCIONES.md` para `@Lock` fuera específica (qué sección, qué regla exacta), se encontró que el texto original decía "repasar la tabla" de forma genérica, sin nombrar la sección ni citar la regla — obligaba a releer el documento entero. Corregido en `generar-capa-crud/SKILL.md`, sección "Concurrencia: cuándo usar `@Lock`": ahora nombra la sección exacta (**"Criterio general para decidir '¿se implementa ahora?'"**, el bloque de 2 viñetas al principio del documento, antes de la tabla del primer módulo), cita la regla textual completa, y explica cómo aplicarla puntualmente a la decisión de agregar un `@Lock` nuevo (solo si el método ya existe y ya se probó, con los 2 casos de la sección 1 como referencia concreta).
+
+## 2026-07-17 — `CategoriaService`/`TagService` implementados y probados end-to-end (primera prueba real de las skills actualizadas)
+
+Siguiendo el patrón ya establecido en `generar-capa-crud/SKILL.md` §4 (que usa `Categoria` como ejemplo de referencia textual desde antes de esta sesión): `crear`, `editar`, `listar`, `baja` (lógica) y `reactivar` para ambos recursos, código estructuralmente idéntico entre `CategoriaService`/`TagService` dado que las entidades son idénticas en forma. `CategoriaController`/`TagController` en `/api/v1/categorias`/`/api/v1/tags`, ya cubiertas como rutas `ADMINISTRADOR` en `SecurityConfig` desde Fase 7 — no hizo falta tocar `SecurityConfig`. `./mvnw compile` → `BUILD SUCCESS` (142 archivos).
+
+**Probado con `curl` contra la base real** (segundo Administrador y un Cliente de prueba sembrados por SQL):
+- Crear categoría/tag → `201`. Duplicado (mismo nombre) → `409`.
+- Editar, listar → `200`.
+- Baja lógica → `200`, verificado en la base (`activo = 0`, `fecha_baja` seteada). Reactivar → `200`, `activo` vuelve a `true`.
+- Recurso inexistente → `404`.
+- Rol insuficiente (`CLIENTE` contra `/categorias` y `/tags`) → `403`.
+
+Datos de prueba eliminados de la base al finalizar. Esta es la primera vez que se genera un recurso nuevo después de auditar y actualizar las skills — sirvió también como prueba indirecta de que `generar-capa-crud/SKILL.md` describe el patrón con suficiente precisión como para replicarlo sin fricción.
+
+## 2026-07-17 — `CarritoService`/`CarritoController` implementados y probados end-to-end
+
+Siguiendo 8.5 de la guía al pie de la letra: `agregarItem` (si el carrito está vacío, setea el comercio del producto; si ya tiene uno distinto, `409`), `verCarrito`, `actualizarCantidad`, `eliminarItem`, `vaciarCarrito`. Decisiones no cubiertas explícitamente por la guía, resueltas con criterio propio:
+- El `Carrito` no se crea en el registro — se crea perezosamente (get-or-create) en el primer acceso de cada cliente, 1 por cliente (`CarritoRepository.findByClienteId` ya existía desde Fase 6).
+- Agregar un producto que ya está en el carrito → `409` señalando usar `actualizarCantidad`, en vez de inventar semántica de "sumar cantidades" no especificada por la guía.
+- Al eliminar el último ítem o vaciar el carrito, se resetea `comercio = null` — permite empezar de cero con un comercio distinto sin dejar el carrito en un estado "vacío pero todavía atado a un comercio".
+- Agregar un producto no `DISPONIBLE` → `409`.
+- Sin `@Lock`: es código nuevo, no probado todavía — no cumple el criterio "Sí" de `generar-capa-crud/SKILL.md` (que exige código *ya* probado). La race de "un comercio a la vez" entre dos pestañas del mismo cliente ya está documentada como "No" en `CONCURRENCIA-Y-TRANSACCIONES.md` §4.
+
+`./mvnw compile` → `BUILD SUCCESS` (145 archivos).
+
+**Probado con `curl` contra la base real** (1 cliente + 2 comercios con 1 producto cada uno, más un segundo cliente para el test de aislamiento):
+- Ver carrito vacío (get-or-create) → `200`, `comercioId: null`.
+- Agregar producto → `201`, fija el comercio del carrito. Agregar producto de **otro** comercio → `409`. Agregar producto **duplicado** → `409`.
+- Actualizar cantidad → `200`, subtotal recalculado. Cantidad fuera de rango (21, límite 1-20) → `400` (Bean Validation).
+- Eliminar ítem → `200`. Eliminar ítem inexistente → `404`.
+- Vaciar carrito → `200`, `comercioId` vuelve a `null` — confirmado que después sí se puede agregar un producto de un comercio distinto.
+- Aislamiento entre clientes: cliente 2 intentando eliminar un ítem del carrito del cliente 1 → `404` (mismo criterio de tenant-isolation ya establecido), y se confirmó que el ítem del cliente 1 quedó intacto.
+
+Datos de prueba (2 clientes, 2 comercios, 3 productos, 1 categoría) eliminados de la base al finalizar.
+
+## 2026-07-17 — Cambio de criterio: producto duplicado en `agregarItem` suma cantidad en vez de rechazar con `409`
+
+**Reemplaza la decisión de la entrada anterior de esta misma fase** ("producto duplicado → `409`, usá `actualizarCantidad`"). No es una corrección de un bug — es un cambio de criterio de producto, confirmado contra la documentación de requisitos: ni `requisitos-funcionales-cliente.md` ni la guía de implementación especificaban qué hacer ante un producto duplicado — era un vacío real, no un requisito cerrado que se estuviera contradiciendo. Se resolvió con el comportamiento estándar de cualquier carrito de compras (sumar cantidad), mejor UX que forzar al cliente a usar un endpoint distinto para algo tan común como agregar el mismo producto dos veces.
+
+**Reglas exactas:** `cantidadNueva = cantidadActual + cantidadDelRequest`, clampeada a `MAX_CANTIDAD = 20` (si se pasa, queda en 20, no rechaza el request). La `nota` del ítem se sobrescribe con la última recibida. `actualizarCantidad` sigue existiendo sin cambios, para fijar una cantidad exacta en vez de sumar.
+
+**Archivos actualizados, en este orden:**
+1. `CarritoService.agregarItem` — reemplaza el chequeo `yaExiste → 409` por el cálculo de suma + clamp + sobrescritura de nota.
+2. Re-probado contra la base real con `curl`: agregar producto (cantidad 5) → `201`; agregar el mismo producto de nuevo (cantidad 8) → `201`, `cantidad = 13` (no `409`), `nota` sobrescrita; agregar de nuevo (cantidad 15, 13+15=28) → `201`, `cantidad` clampeada a `20`, `nota` sobrescrita de nuevo. Los 3 casos confirmados exactamente como se especificó.
+3. `01. Análisis de Requerimientos/04. Requisitos Funcionales/requisitos-funcionales-cliente.md`, sección "Carrito de Compras": se agregó una línea explícita documentando este comportamiento — vacío real completado, no contradicción de un requisito previo.
+4. `01. Análisis de Requerimientos/07. Historias de Usuario/Historias de Usuario - Cliente.md`: revisado — este documento no tiene una lista de criterios de aceptación separada por historia (formato narrativo "Como X, quiero Y, para Z" en las 10 historias de Cliente revisadas), y HU-C09 no baja a este nivel de detalle en ningún lado del archivo. Nada que actualizar ahí; el detalle de comportamiento vive en `requisitos-funcionales-cliente.md`.
+5. `docs/CONCURRENCIA-Y-TRANSACCIONES.md` §4: agregada una fila nueva documentando que el nuevo `agregarItem` es un *read-check-then-write* sin lock (mismo patrón de riesgo de *lost update* que `usuario.intentos_fallidos` en Fase 7, §1), con la diferencia de que acá el cliente compite solo consigo mismo (sin tercero, sin impacto de seguridad) — **No** se implementa mitigación, mismo criterio de bajo volumen de evaluación del resto del documento, pero dejado explícito en vez de omitido. También se actualizó el encabezado de §4 (`"Fase 8, a construir"` → `"Fase 8.5, implementado"`) y la primera fila de la tabla, que ya hablaba de un `CarritoService` inexistente.
+6. Esta misma entrada.
+7. Se buscó un catálogo de pantallas/prompts de UI-UX (~158 pantallas mencionadas) que pudiera mockear un mensaje de error para este caso — no se encontró ninguno en el proyecto: `02. Diseño/04. Prototipos (Interfaz)` tiene un único archivo (`interfaz-mobile.md`) y está vacío; no hay ninguna otra carpeta o archivo de prompts/mockups de UI en `01. Análisis de Requerimientos` ni `02. Diseño`. No hay nada que marcar para ajuste porque no existe el catálogo todavía en este repositorio.
+
+`./mvnw compile` → `BUILD SUCCESS` tras el cambio (145 archivos, mismo conteo — no se agregaron clases nuevas).
+
+## 2026-07-17 — `PedidoService`/`PedidoController` implementados y probados end-to-end
+
+Siguiendo 8.6 de la guía: `confirmarPedido` (toma el carrito, valida que no esté vacío, snapshotea `precioUnitario`/`subtotal` en `DetallePedido`, vacía el carrito, notifica al comercio), `aceptarPedido`/`rechazarPedido` (valida ownership + `estado == PENDIENTE`, notifica al cliente), `listarPedidosCliente`/`listarPedidosComercio`. `EstadoPedido` usa `EN_PREPARACION` al aceptar, no `ACEPTADO` — la guía menciona "ACEPTADO" en su texto pero eso ya fue corregido en `modelo-mvp.md` nota de alcance 9 desde la Fase 2 (`ACEPTADO` no existe en el diccionario completo).
+
+**Decisiones no explicitadas por la guía, resueltas con criterio propio:**
+- Dos endpoints separados (`/aceptar`, `/rechazar`) en vez de un único `resolverPedido` con `aceptar: boolean` — mismo criterio de nombrado `<Acción><Recurso>RequestDTO` ya establecido en `generar-capa-crud/SKILL.md` para `RechazoPedidoRequestDTO`.
+- Validación de que el comercio soporta la modalidad de entrega elegida (`aceptaDelivery`/`aceptaRetiro`) antes de confirmar — no es una regla inventada, ya está en `requisitos-funcionales-cliente.md`: *"La opción de envío a domicilio solo se muestra si el comercio lo acepta; la de retiro, solo si el comercio lo acepta."*
+- `direccionId` obligatorio y validado (pertenece al cliente, no eliminada) solo si `tipoEntrega = DOMICILIO`, coherente con el propio javadoc de `PedidoRequestDTO` que ya anticipaba esta validación condicional en el Service.
+- `PedidoService.confirmarPedido` reutiliza `CarritoService.vaciarCarrito` (inyección de Service a Service, sin duplicar la lógica de limpieza) en vez de reimplementarla.
+
+`./mvnw compile` → `BUILD SUCCESS` (148 archivos).
+
+**Probado con `curl` contra la base real** (1 cliente, 3 comercios — A con delivery+retiro, B solo para test de ownership, C con delivery pero sin retiro):
+- Confirmar pedido con carrito vacío → `409`.
+- Confirmar pedido `RETIRO` → `201`, `direccion: null`, carrito vaciado después (verificado con `GET /carrito`).
+- Confirmar pedido `RETIRO` contra un comercio que no acepta retiro (Comercio C) → `409`. Confirmar `DOMICILIO` sin `direccionId` → `409`. Confirmar `DOMICILIO` con la dirección real del cliente → `201`, dirección anidada completa en la respuesta.
+- Ownership: comercio B intentando aceptar un pedido de comercio A → `404`.
+- Aceptar pedido → `200`, `estado → EN_PREPARACION`. Reintentar aceptar el mismo pedido → `409`.
+- Rechazar pedido con motivo → `200`, `estado → RECHAZADO`, `motivoRechazo`/`comentarioRechazo` persistidos y devueltos.
+- `listarPedidosCliente`/`listarPedidosComercio` → `200`, estados y detalles correctos.
+- Notificaciones verificadas en la base: comercio recibe "Nuevo pedido recibido de <cliente>" al confirmar; cliente recibe "aceptado" o "rechazado. Motivo: X" según corresponda.
+
+Datos de prueba (1 cliente, 3 comercios, 2 productos, 2 pedidos, 1 categoría) eliminados de la base al finalizar.
+
+## 2026-07-17 — Gap real corregido: la notificación de rechazo de pedido no incluía el motivo legible ni el comentario
+
+Al revisar `PedidoService.rechazarPedido`, el mensaje generado era `"Tu pedido fue rechazado. Motivo: " + request.getMotivo() + "."` — `request.getMotivo()` es el enum `MotivoRechazo`, y la concatenación de `String` llama a `.toString()`, que devuelve el nombre crudo de la constante (`"SIN_STOCK"`, no "Sin stock"). Además, `request.getComentario()` **no se usaba en absoluto** en el mensaje — se guardaba en `Pedido.comentarioRechazo` pero nunca llegaba a la notificación del cliente. El propio `MotivoRechazo` existe para que esta información le llegue al cliente, no solo para quedar en la base.
+
+**Corrección:**
+- `MotivoRechazo` suma una `etiqueta` legible por constante (`SIN_STOCK → "Sin stock"`, `CERRADO → "Comercio cerrado"`, etc.) — centralizado en el enum, no un `switch` suelto dentro de `PedidoService`, reutilizable si otro punto del proyecto necesita mostrar este motivo.
+- `rechazarPedido` arma el mensaje como `"Tu pedido #{id} fue rechazado por el comercio. Motivo: {etiqueta}."`, y le agrega el `comentario` a continuación si vino en el request.
+- Gap colateral encontrado y corregido de paso: `Notificacion.mensaje` es `VARCHAR(500)`, y el prefijo + un `comentario` cercano al máximo (también 500) podían superarlo, haciendo fallar el `INSERT` de la notificación y — al estar en la misma transacción — revirtiendo el rechazo del pedido completo. Se trunca el mensaje final a 500 caracteres antes de guardar.
+
+`./mvnw compile` → `BUILD SUCCESS` (148 archivos, mismo conteo).
+
+**Re-probado contra la base real**, los 2 casos pedidos: rechazo con `SIN_STOCK` sin comentario → mensaje guardado `"Tu pedido #3 fue rechazado por el comercio. Motivo: Sin stock."`; rechazo con `OTRO` + comentario → `"Tu pedido #4 fue rechazado por el comercio. Motivo: Otro. El cocinero se enfermo y cerramos por hoy"`. Ambos confirmados leyendo la fila real de `notificacion` en la base, no solo la respuesta del endpoint. Datos de prueba eliminados al finalizar.
+
+## 2026-07-17 — Gap real encontrado en `RegistroService`: `DataIntegrityViolationException` sin manejar, corregido y verificado con una carrera real
+
+Al revisar `RegistroService`, se señaló que `existsByEmail`/`existsByDni`/`existsByCuit` son lecturas *check-then-act* sin lock — dos registros simultáneos con el mismo DNI/CUIT podrían ambos pasar la validación antes del primer commit, dejando el `UNIQUE` de la base como última línea de defensa real. Se verificó: `GlobalExceptionHandler` no tenía ningún `@ExceptionHandler` para `DataIntegrityViolationException` — esa carrera hubiera terminado en un `500` sin manejar, con el formato de error por defecto de Spring, no `ApiResponse`.
+
+**Corrección:** `GlobalExceptionHandler.handleDataIntegrityViolation` — `@ExceptionHandler(DataIntegrityViolationException.class)` → `409` con `ApiResponse`. Es transversal (aplica a cualquier violación de `UNIQUE` en toda la API), no específico de `RegistroService` — documentado como fila nueva (`1bis`) en `docs/CONCURRENCIA-Y-TRANSACCIONES.md`, que no lo había cubierto explícitamente en la primera versión del documento.
+
+**Verificado con una carrera real:** 2 registros simultáneos (`POST /auth/registro/cliente`) con el mismo DNI, emails distintos (`curl ... & curl ... & wait`). Resultado: uno `201`, el otro `409` con `ApiResponse` claro — confirmado en el log del servidor que fue el `UNIQUE` de la base el que realmente cortó la carrera (`Duplicate entry '30777001' for key 'uq_persona_fisica_dni'`), no solo el chequeo de aplicación ganando por timing. `./mvnw compile` → `BUILD SUCCESS`. Usuarios de prueba (`e2e.race1@bajonea.test`, `e2e.race2@bajonea.test`) eliminados de la base al finalizar.
+
+## 2026-07-17 — Documento aprobado; `cambiarPasswordDesdePerfil` suma el mismo lock que `login()` por consistencia
+
+Al revisar `docs/CONCURRENCIA-Y-TRANSACCIONES.md`, se preguntó si había alguna razón de peso para no aplicar el mismo lock pesimista de `login()` a `cambiarPasswordDesdePerfil`, dado que el costo era la misma línea de código. Respuesta: no la había — la "menor severidad" documentada en la fila 2 de §1 era un argumento de *prioridad* (por qué no era el caso urgente que motivaba el documento), no de que agregarlo fuera indeseable. Se agregó `UsuarioRepository.findByIdConBloqueo` (mismo patrón que `findByEmailConBloqueo`, por PK) y se actualizó `cambiarPasswordDesdePerfil` para usarlo. `./mvnw compile` → `BUILD SUCCESS`. Tabla de §1 y la sección "Fix aplicado" de `CONCURRENCIA-Y-TRANSACCIONES.md` actualizadas para reflejar el cambio.
+
+Una sesión previa había dejado los DTOs de la Fase 5 (Bloques 1-3) y los 21 Repository de la Fase 6 implementados, pero un corte de Bash/PowerShell impidió confirmar la compilación antes de dar las fases por cerradas. Al retomar, se verificó Bash disponible y se corrió `./mvnw compile` desde `backend/`: `BUILD SUCCESS`, 106 archivos fuente compilados sin errores (Java 21). Se contrastó el contenido real contra lo documentado en `CLAUDE.md` §3 y §5bis antes de cerrar: de los DTOs planeados originalmente, `LoginRequestDTO`, `ImagenProductoRequestDTO`, `RechazoPedidoRequestDTO`, `AprobacionComercioRequestDTO`, `ProvinciaResponseDTO`, `LocalidadResponseDTO` y `CloudinarySignatureResponseDTO` no existen todavía — se interpreta como diferido a propósito a las fases que efectivamente los consumen (7/9 auth, 8/9 flujo de pedido y aprobación de comercio, 11 Cloudinary, geografía), no como un pendiente de la Fase 5. Se encontró además que `RegistroComercioRequestDTO` sí existe y ya tiene las validaciones custom aplicadas (`@ValidarCuit`, `@ValidarTelefonoArgentino`, `@ValidarPasswordSegura`), lo que dejaba desactualizada la nota "Pendiente de aplicar" de `CLAUDE.md` §5bis — corregida en el mismo cierre. Los 21 Repository verificados 1 a 1 contra las 21 entidades de la Fase 4, patrón `JpaRepository<Entidad, PK>` con `List<T>` por defecto confirmado en `ProductoRepository`.
+
+## 2026-07-18 — `NotificacionService`/`NotificacionController` implementados y probados end-to-end; creación centralizada, eliminando la duplicación en 3 Services
+
+Antes de escribir código se repasó `docs/modelo-mvp.md` §8 (tabla `notificacion`: `usuario_id`, `mensaje` VARCHAR(500), `leida`, `fecha_creacion` — sin campo de tipo estructurado ni canal, por decisión ya cerrada en la sección 0 de la guía) y se confirmó que `Notificacion.builder()...save()` ya estaba duplicado inline en `PedidoService` (3 sitios: `confirmarPedido`, `aceptarPedido`, `rechazarPedido`), `ProductoService` (`limpiarCarritosActivos`) y `AdministradorService` (`resolverAprobacion`).
+
+**Dos decisiones de diseño resueltas con el usuario antes de implementar (no había nada en la guía ni en `CLAUDE.md` que las cerrara):**
+- **Centralizar la creación:** se agregó `NotificacionService.crear(Integer usuarioId, String mensaje)` — incluye la lógica de truncado defensivo a 500 caracteres que antes solo vivía en `PedidoService.rechazarPedido` (ver entrada del 2026-07-17 "Gap real corregido") — y se refactorizaron los 3 call sites existentes para usarlo, eliminando `NotificacionRepository` como dependencia directa de esos 3 Services (pasan a depender de `NotificacionService`).
+- **Sin paginación:** el listado (`GET /api/v1/notificaciones`) devuelve `List<NotificacionResponseDTO>` plano, no `Page<T>`. Ningún otro endpoint del proyecto pagina (regla `CLAUDE.md` §4.1, `List<T>` por defecto) y el diccionario de datos no exige paginación para `notificacion` — introducir `Pageable` acá hubiera sido el primer precedente del proyecto sin justificación real.
+
+**Alcance de `NotificacionService`:** `crear` (interno, sin controller — lo consumen otros Services), `listar(usuarioId)` (ordenado por `fechaCreacion DESC`, ya filtrado por dueño a nivel de query — no hace falta chequeo de tenant adicional), `marcarLeida(usuarioId, notificacionId)` (fetch + comparación `notificacion.usuario.id == usuarioId`, `404` si no coincide — mismo patrón `RecursoNoEncontradoException` que `PedidoService.obtenerPedidoDelComercio`/`ProductoService.obtenerProductoDelComercio`). `NotificacionController` expone `GET /api/v1/notificaciones` y `PUT /api/v1/notificaciones/{id}/leida`, sin regla de rol explícita en `SecurityConfig` (cae en `anyRequest().authenticated()`, mismo patrón que `cambiar-password` — CLIENTE y COMERCIO son ambos destinatarios de notificaciones).
+
+`./mvnw compile` → `BUILD SUCCESS` sin warnings nuevos.
+
+**Probado con `curl` contra la base real:**
+- 2 Clientes registrados y verificados (token de verificación leído directo de la tabla `token`, SMTP real sigue pendiente de Fase 10). Notificaciones sembradas por SQL para uno de los dos: `GET /notificaciones` del dueño devuelve las 2; `PUT /{id}/leida` marca `leida=true` y lo refleja en el `GET` siguiente.
+- Tenant isolation: el segundo Cliente intentando `PUT /notificaciones/{id}/leida` sobre una notificación que no es suya → `404` (`"Notificación no encontrada"`, no `403` — mismo patrón del resto del proyecto). `GET /notificaciones` del segundo Cliente devuelve `[]` (no ve las del primero, sin necesidad de chequeo extra porque la query ya filtra por `usuarioId`).
+- `GET /notificaciones` sin token → `401`.
+- **Refactor de creación centralizada verificado con un flujo real, no solo compilación:** se sembró un Administrador de prueba directo por SQL (reutilizando el `password_hash` BCrypt ya generado de un Cliente de prueba para la misma contraseña, evitando generar un hash a mano) y un Comercio de prueba vía `POST /auth/registro/comercio`. `PUT /administrador/comercios/{id}/resolver` con `aprobar: true` → `200`, y `GET /notificaciones` del Comercio (`NotificacionController`, recién creado) devuelve la notificación de aprobación generada por `AdministradorService.resolverAprobacion` a través del nuevo `NotificacionService.crear(...)` — confirma que el refactor de los 3 call sites no rompió el flujo, no solo que el código compila.
+
+Datos de prueba (2 Clientes, 1 Comercio, 1 Administrador y todas sus filas derivadas: `persona`/`persona_fisica`/`persona_juridica`, `direccion`, `token`, `sesion`, `historial_estado_comercio`, `notificacion`) eliminados de la base al finalizar.
+
+## 2026-07-18 — Cierre de 3 puntos sin confirmar del cierre anterior de `NotificacionService`, con evidencia real
+
+El cierre anterior (entrada de arriba) probó `AdministradorService` end-to-end pero dejó `ProductoService` cubierto solo por `mvnw compile`, y no documentó explícitamente el mecanismo de excepción de `marcarLeida` ni el paso por los hooks del controller. Se pidió cerrar los 3 puntos con evidencia real antes de dar la fase por avanzada:
+
+**1) `ProductoService.cambiarEstado` → `NotificacionService.crear` probado end-to-end.** El flujo real que dispara la notificación es `limpiarCarritosActivos` (invocado desde `cambiarEstado` cuando el nuevo estado es `AGOTADO` o `DESCONTINUADO`) — no hay una notificación de "baja de stock" separada, es la limpieza de carritos activos. Se sembró un Administrador de prueba (id 31), un Comercio aprobado (id 14, vía `POST /auth/registro/comercio` + `PUT /administrador/comercios/14/resolver`), una Categoría (id 7, vía `POST /categorias`) y un Producto (id 9, vía `POST /productos`). Un Cliente de prueba (id 33) agregó el producto al carrito (`POST /carrito/items`, cantidad 2, subtotal 2000 confirmado). El Comercio marcó el producto `AGOTADO` (`PATCH /productos/9/estado`) → `200`. Verificado en la misma sesión: `GET /carrito` del cliente pasó de tener el ítem a `items: []`, y `GET /notificaciones` del cliente devolvió `{"id":16,"mensaje":"El producto 'Producto Notif Test' ya no está disponible y fue eliminado de tu carrito.","leida":false,...}` — confirmado además con una consulta directa a la tabla `notificacion` en la base (`SELECT ... WHERE usuario_id=33`, fila real, no solo la respuesta del endpoint). Esto cierra el único de los 3 call sites refactorizados que no tenía evidencia end-to-end propia (los otros 2 ya estaban cubiertos: `PedidoService` en la sesión del 2026-07-17 "Gap real corregido", `AdministradorService` en el cierre anterior de esta misma entrada).
+
+**2) Mecanismo de `marcarLeida` sin dueño confirmado: excepción existente, sin cambios en `GlobalExceptionHandler`.** `NotificacionService.marcarLeida` reusa `RecursoNoEncontradoException` (ya existente desde la Fase 3), que `GlobalExceptionHandler.handleRecursoNoEncontrado` ya mapeaba a `404` desde antes de esta sesión — no fue necesario agregar ningún `@ExceptionHandler` nuevo, `GlobalExceptionHandler.java` no se tocó en esta fase. Mismo patrón exacto que `PedidoService.obtenerPedidoDelComercio` (compara `pedido.getComercio().getId()` contra el comercio del JWT, `404` si no coincide) y `ProductoService.obtenerProductoDelComercio` (mismo patrón con `producto.getComercio().getId()`): fetch por PK + comparación de ownership + `RecursoNoEncontradoException` con el mismo mensaje de "no encontrado" que devolvería un ID inexistente, para no filtrarle a un usuario no autorizado que el recurso sí existe pero no es suyo (404, no 403 — decisión de diseño ya establecida en sesiones previas, no nueva de esta fase).
+
+**3) `NotificacionController` devuelve DTO, no la entidad — confirmado, y sin bloqueo de hooks.** `NotificacionController.listar`/`marcarLeida` devuelven `ResponseEntity<ApiResponse<NotificacionResponseDTO>>`/`ResponseEntity<ApiResponse<List<NotificacionResponseDTO>>>` (ver `backend/src/main/java/com/bajonea/backend/controllers/NotificacionController.java`), nunca `Notificacion`. `NotificacionResponseDTO` ya existía desde la Fase 5 (`dto/response/NotificacionResponseDTO.java`, campos `id`/`mensaje`/`leida`/`fechaCreacion`, sin exponer la relación `usuario`) — no fue necesario crearlo en esta fase. El hook `bloquear-entity-en-controller.js` (`.claude/hooks/`, `PostToolUse` sobre `controllers/*.java`) corre automáticamente tras cada `Write`/`Edit` de un archivo en `controllers/` y bloquea (`exit 2`) si encuentra `ResponseEntity<X>` sin envolver en `ApiResponse` o un método que devuelve una Entity JPA por nombre de clase directamente. La creación de `NotificacionController.java` (`Write`) no generó ningún bloqueo ni mensaje de error del hook — evidencia indirecta pero real: si el hook hubiera detectado una violación, la llamada a `Write` habría fallado con `exit 2` y el archivo no habría quedado escrito tal cual quedó.
+
+`./mvnw compile` no volvió a correrse en esta sesión de verificación porque no se tocó ningún `.java` — los 3 puntos son de verificación de comportamiento ya compilado, no de código nuevo. Datos de prueba de esta sesión (Administrador id 31, Comercio id 14/32, Cliente id 33, Categoría id 7, Producto id 9, y todas las filas derivadas: `persona`/`persona_fisica`/`persona_juridica`, `direccion`, `token`, `sesion`, `carrito`/`item_carrito`, `historial_estado_comercio`, `notificacion`) eliminados de la base al finalizar.
+
+## 2026-07-18 — Cierre real de la Fase 8 contra el checklist completo de la guía (8.1 a 8.8); 3 puntos sin evidencia end-to-end + 1 bug real encontrado y corregido; nueva regla transversal 9 en `CLAUDE.md`
+
+Repasando la Fase 8 sección por sección contra `GUIA-IMPLEMENTACION-MVP-BAJONEA.pdf` (no solo contra lo ya escrito en este archivo), aparecieron 3 puntos sin evidencia end-to-end confirmada — ninguno de los 3 tenía código faltante, pero tampoco tenían una prueba real detrás, que es lo que exige el checklist real de la guía, no solo `./mvnw compile`.
+
+**1) `GeografiaService` (8.1bis) — probado end-to-end por primera vez, y bug real encontrado en el camino.**
+- `GET /geografia/provincias` → `200`, 24 provincias (coincide con el conteo de la Fase 2bis).
+- `GET /geografia/localidades?provinciaId=94` (Tierra del Fuego) → `200`, 4 localidades (Río Grande, Laguna Escondida, Ushuaia, Puerto Argentino).
+- `GET /geografia/localidades?provinciaId=99` (código de provincia inexistente) → `200`, `data: []` — lista vacía, no error, tal como pide el punto 1 de esta sesión.
+- **Bug real encontrado:** `GET /geografia/localidades` **sin** `provinciaId` (parámetro `@RequestParam` obligatorio ausente) devolvía `401 "No autenticado..."` en vez de `400`, en un endpoint público. Causa raíz confirmada en el log del servidor (`DefaultHandlerExceptionResolver: Resolved [MissingServletRequestParameterException...]`): Spring resuelve esa excepción con `response.sendError(400, ...)`, que el contenedor traduce en un forward interno a `/error`; ese forward vuelve a pasar por la cadena de filtros de Spring Security, y como `/error` no estaba en `RUTAS_PUBLICAS`, caía en `anyRequest().authenticated()` sin autenticación → `401`, enmascarando el `400` real. No es un problema exclusivo de `GeografiaService`: **cualquier excepción no cubierta por `GlobalExceptionHandler` en cualquier endpoint público del proyecto** quedaba expuesta al mismo enmascaramiento.
+  - **Corrección (2 cambios, transversales a todo el proyecto):** `SecurityConfig.RUTAS_PUBLICAS` suma `/error` (root-cause: el forward de error nunca debe quedar bloqueado por el requisito de autenticación, sin importar qué endpoint falló). `GlobalExceptionHandler` suma `@ExceptionHandler(MissingServletRequestParameterException.class)` → `400` con `ApiResponse` (formato consistente con el resto de la API — sin este handler, el `/error` permitido devolvería el cuerpo de error por defecto de Spring Boot, no `ApiResponse`).
+  - **Re-verificado tras la corrección:** los 3 casos de arriba siguen en `200`, y `GET /geografia/localidades` sin `provinciaId` ahora devuelve `{"mensaje":"provinciaId: parámetro requerido ausente","data":null}` con `400`.
+
+**2) `CategoriaService`/`TagService` (parte de 8.3) — ciclo CRUD completo probado end-to-end, no solo como paso instrumental de otras pruebas.**
+- Categoría: crear → `201`; crear duplicada (mismo nombre) → `409`; editar → `200`; listar (aparece con `activo:true`) → `200`; baja lógica (`DELETE`) → `200`, reaparece en el listado con `activo:false` (confirmado también con `SELECT` directo — la fila sigue en la tabla, `fecha_baja IS NOT NULL`, sin `DELETE` físico); reactivar → `200`, vuelve a `activo:true`; editar una categoría inexistente → `404`.
+- Tag: mismo ciclo completo (crear, duplicado → `409`, editar, listar, baja lógica con verificación directa en la base de que la fila persiste, reactivar, baja de un tag inexistente → `404`).
+- `GET /categorias` sin token → `401` (ambos módulos exigen `ROLE_ADMINISTRADOR` vía `SecurityConfig`, no son públicos).
+- Hallazgo colateral de higiene, no un bug: al listar categorías apareció una fila `id=6 "CatRechazo"`, residuo de datos de prueba de una sesión anterior que no se había limpiado del todo. Eliminada en el cleanup de esta sesión junto con el resto de los datos de prueba propios.
+
+**3) Gestión de galería `ImagenProducto` (8.4) — confirmado formalmente como diferido a Fase 11, no implementado ahora.** Se evaluaron las dos opciones: la lógica de validación pura (máximo 5 imágenes, una sola `esPrincipal`) técnicamente podría probarse con URLs de prueba bien formadas (`https://res.cloudinary.com/...`) sin una cuenta Cloudinary real, porque `@ValidarUrlCloudinary`/`UrlCloudinaryValidator` (ya implementado desde Fase 5bis) solo valida el formato de la URL (esquema `https` + host `res.cloudinary.com`), no que el recurso exista de verdad. Sin embargo, se optó por **(a): confirmar el diferimiento explícito a Fase 11**, no por limitación técnica sino porque el proyecto ya había tomado esa decisión de diseño en dos lugares distintos, antes de esta sesión:
+   - `docs/modelo-mvp.md`, tabla `imagen_producto`, columna `foto_perfil_url` de `comercio` (línea ~228): *"Distinta de la galería de `imagen_producto` (Fase 11)"* — ya tag-eada como Fase 11 desde la Fase 2, antes de que existiera ningún Service.
+   - `ProductoRequestDTO` (javadoc de la clase, Fase 5): *"Tampoco incluye imágenes: la galería se gestiona aparte, vía firma de Cloudinary (`POST /productos/{id}/cloudinary/firma`) y sus propios endpoints"* — el propio diseño del DTO ya ataba los endpoints de galería al flujo de firma de Cloudinary, no a un CRUD independiente.
+   - `docs/DECISIONES.md`, entrada del 2026-07-17 ("DTOs de auth y pedido/comercio diferidos..."): `ImagenProductoRequestDTO`/`CloudinarySignatureResponseDTO` ya diferidos formalmente a Fase 11 con ese mismo formato.
+
+   Construir ahora solo la mitad de la funcionalidad (validación + endpoints individuales, sin la firma de subida) fragmentaría la feature en dos sesiones distintas sin necesidad real — la Fase 11 va a tener que revisar de todos modos cómo se coordina el flujo completo (firma → subida directa a Cloudinary desde el frontend → el backend recién recibe la URL ya subida), y construir la mitad ahora arriesga tener que rehacer la integración entre ambas partes. Esta entrada deja el diferimiento **formalizado explícitamente** (mismo criterio que la regla transversal 9 nueva de `CLAUDE.md` exige), no como omisión: `CLAUDE.md` §6, fila de la Fase 8, referencia esta entrada.
+
+**Regla transversal nueva en `CLAUDE.md` §4, punto 9** (pedida explícitamente en esta sesión, texto literal agregado): ninguna fase se da por cerrada ni se avanza a la siguiente sin que todos los sub-puntos de su sección en la guía tengan evidencia real en `docs/DECISIONES.md` — `BUILD SUCCESS` no alcanza para puntos de comportamiento, y cualquier sub-punto diferido a propósito tiene que quedar explícito con destino a otra fase, nunca como omisión silenciosa.
+
+**Además, cerrando un gap real de 8.7 encontrado al repasar la guía contra el código:** `NotificacionService.contarNoLeidas(usuarioId)` (mencionado explícitamente en 8.7 de la guía, *"para el badge de polling"*) no existía — se agregó (`NotificacionRepository.countByUsuarioIdAndLeidaFalse` + `GET /api/v1/notificaciones/no-leidas/contador`, `ApiResponse<Long>` sin DTO dedicado por ser un escalar simple, no una proyección de entidad). Probado con 3 notificaciones sembradas (2 no leídas, 1 leída) para un usuario de prueba: contador inicial `2`, tras marcar una como leída vía `PUT /notificaciones/{id}/leida` → contador `1`.
+
+`./mvnw compile` → `BUILD SUCCESS` tras los cambios de `SecurityConfig`, `GlobalExceptionHandler`, `NotificacionRepository`, `NotificacionService` y `NotificacionController`.
+
+**Checklist de cierre de Fase 8 de la guía (2 puntos), confirmado:**
+- [x] Cada Service tiene su propia responsabilidad, sin lógica de negocio filtrada a controllers o repositories — verificado a lo largo de todas las pruebas end-to-end de esta fase (controllers solo mapean DTO↔HTTP y delegan, repositories solo queries derivadas).
+- [x] Las reglas de negocio del proyecto completo que sí aplican al MVP (email/DNI/CUIT únicos, un producto de un solo comercio en el carrito, snapshot de precio en detalle de pedido) están validadas en el Service, no solo en la base — confirmado en las entradas de cierre de `RegistroService`/`CarritoService`/`PedidoService` de sesiones anteriores.
+
+Datos de prueba de esta sesión (Administrador id 34, y todas las notificaciones/categoría/tag de prueba creadas para las pruebas de los puntos 1 y 2) eliminados de la base al finalizar, junto con el residuo `id=6 "CatRechazo"` de una sesión anterior.
+
+## 2026-07-18 — Reapertura puntual de Fase 8: `ComercioService.verPerfil` faltante, encontrado durante el inventario de Fase 9
+
+El inventario de Controllers contra la sección 9.3 de la guía (hecho antes de arrancar Fase 9 formalmente) detectó que `ComercioController` solo tenía `PUT /perfil`, sin `GET /perfil`. Al revisar `ComercioService` para confirmar si era solo un hueco de wiring en el Controller o algo más profundo, se confirmó que **`ComercioService` no tenía ningún método de lectura** — únicamente `editarPerfil` (mutación) y el helper privado `obtenerComercioDelUsuario`. El gap estaba en el Service, no solo en el Controller — mismo tipo de hallazgo que `NotificacionService.contarNoLeidas` en la entrada anterior ("Cierre real de la Fase 8"), tratado con el mismo criterio: no se avanza a Fase 9 sin cerrarlo primero.
+
+**Por qué se le escapó al cierre del 2026-07-18 ("Cierre real de la Fase 8"):** esa sesión repasó la Fase 8 contra las subsecciones 8.1 a 8.8 de la guía, pero la guía **nunca enumera los métodos de `ComercioService` explícitamente** — la sección 8.3 ("ComercioService / AdministradorService") solo detalla métodos de `AdministradorService` (`listarComerciosPendientes`, `resolverAprobacion`, `gestionarCategoria`/`gestionarTag`); `ComercioService` aparece únicamente como nombre de clase en el árbol de paquetes de la guía. El requisito real de `GET /comercios/perfil` vive en la sección 9.3 (lista de endpoints por Controller), que el cierre de Fase 8 no cruzó contra los Services — cruce que sí se hizo recién al armar el inventario de Fase 9. Queda como aprendizaje explícito: revisar una fase contra su propia sección de la guía no alcanza si el requisito real está descrito en la sección de otra fase (acá, 9.3 describiendo el contrato HTTP que 8.3 da por sentado sin decirlo).
+
+**Corrección:**
+- `ComercioService.verPerfil(Integer usuarioId)` — reutiliza `obtenerComercioDelUsuario` + el mapeo `aResponseDTO` ya existente de `editarPerfil` (misma `ComercioResponseDTO` con dirección anidada, cero código duplicado).
+- `ComercioController.verPerfil` — `GET /api/v1/comercios/perfil`, patrón 9.2 exacto (`ResponseEntity<ApiResponse<ComercioResponseDTO>>`, `200`), sin `{id}` en la URL — mismo criterio que `PUT /perfil` y el resto de los endpoints "propios" del proyecto (`GET /carrito`, `GET /pedidos/cliente`, etc.): el recurso lo determina el JWT, nunca un path variable.
+- No hizo falta tocar `SecurityConfig` — `/api/v1/comercios/**` ya exige `ROLE_COMERCIO` desde la Fase 7.
+
+`./mvnw compile` → `BUILD SUCCESS`.
+
+**Probado con `curl` contra la base real:** Administrador (id 35), Comercio aprobado (id 15, vía `POST /auth/registro/comercio` + `PUT /administrador/comercios/15/resolver`), Cliente (id 37).
+- `GET /comercios/perfil` con el JWT del Comercio dueño → `200`, todos los campos correctos (`estado: APROBADO`, dirección anidada completa con `nombreLocalidad`/`nombreProvincia` resueltos).
+- `GET /comercios/perfil` con el JWT de un Cliente (rol equivocado) → `403`.
+- `GET /comercios/perfil` sin token → `401`.
+- Regresión sobre `editarPerfil` (mismo archivo tocado): `PUT /perfil` sigue funcionando (`200`, campos actualizados), y el `GET /perfil` inmediatamente después refleja el cambio — confirma que ambos métodos comparten el mapeo `aResponseDTO` sin divergencia.
+
+**Punto 5, reconfirmado con el criterio correcto (no el circular de la primera versión de esta entrada).** La primera redacción de este punto se apoyaba en "8.3 no le asigna nada más a `ComercioService`" — el mismo razonamiento que ya había dejado pasar el hueco de `verPerfil` en el cierre anterior, porque 8.3 nunca enumera los métodos de `ComercioService` en absoluto (ver más arriba). Repetido con el criterio correcto: partir de lo que 9.3 exige del Controller, no de si 8.x lo nombra.
+
+1. **Los 2 endpoints que 9.3 le asigna a `ComercioController`** son exactamente `GET /comercios/perfil` y `PUT /comercios/perfil` (línea literal de 9.3: *"ComercioController: GET /comercios/perfil, PUT /comercios/perfil."*) — ningún tercero.
+2. **Cada uno tiene su método propio en `ComercioService`, y ambos con evidencia end-to-end real:** `GET /perfil` → `ComercioService.verPerfil` (probado en esta misma sesión, arriba: `200` dueño, `403` rol equivocado, `401` sin token). `PUT /perfil` → `ComercioService.editarPerfil` (ya probado end-to-end en la sesión original de Fase 8, `docs/DECISIONES.md` 2026-07-17 — "`PUT /comercios/perfil` → `200`, campos actualizados, dirección anidada intacta" — y reconfirmado sin regresión en esta sesión).
+3. **Barrido del documento completo, no solo 8.3/9.3:** grep de `Comercio` sobre la guía completa (`GUIA-IMPLEMENTACION-MVP-BAJONEA.pdf` convertido a texto) devuelve 47 ocurrencias. Revisadas una por una, ninguna asigna una responsabilidad de `ComercioService` distinta de perfil: son menciones a la entidad `Comercio` (Fase 2/4), a `RegistroService.registrarComercio` (Fase 8.1, alta inicial — no es `ComercioService`), a `AdministradorService` (aprobación, Fase 8.3), a `CarritoResponseDTO`/`ProductoResponseDTO` incluyendo `comercioId`/`nombreComercio` (Fase 5, otros DTOs), a `ComercioRepository.findByEstado` (usado por el catálogo público y por `AdministradorService`, no por `ComercioService`), al flujo E2E de Postman de la Fase 14.4 (`Comercio crea el producto`, `pide firma de Cloudinary`, `agrega imagen`, `ve el pedido pendiente`, `acepta`/`rechaza` — todas acciones de `ProductoService`/`CloudinaryService`/`PedidoService`), y al checklist de pantallas de Figma de la Fase 15.1 (`"Comercio autenticado: Panel de productos, Alta/edición de producto, Pedidos recibidos, Notificaciones"` — inventario de UI, no de API). Ninguna de las 47 describe una acción de perfil de comercio adicional a `GET`/`PUT /perfil`, ni una acción de "solo lectura de datos propios del comercio" fuera de esas dos.
+
+Con el criterio correcto (9.3 como fuente del contrato de Controller, corroborado contra el documento completo) el resultado es el mismo que con el razonamiento anterior — nada pendiente en `ComercioService` — pero ahora apoyado en evidencia real, no en la ausencia de mención en una sola subsección.
+
+**No es una regresión general de Fase 8** — los 3 puntos cerrados en la entrada anterior (`GeografiaService`, `CategoriaService`/`TagService`, `ImagenProducto` diferido) siguen válidos sin cambios; este es un cuarto punto puntual que esa sesión no había alcanzado a cubrir porque el cruce 8.x↔9.3 recién se hizo al armar el inventario de Fase 9. Fase 8 vuelve a quedar cerrada con este agregado.
+
+Datos de prueba (Administrador id 35, Comercio id 15/36, Cliente id 37 y todas las filas derivadas: `persona`/`persona_fisica`/`persona_juridica`, `direccion`, `token`, `sesion`, `historial_estado_comercio`, `notificacion`) eliminados de la base al finalizar.
+
+## 2026-07-18 — Las 3 deviaciones de path/verbo HTTP quedan confirmadas como decisión de diseño; `CatalogoController`/`CatalogoService` implementados y probados end-to-end (último hueco real de la Fase 9)
+
+**Deviaciones de `AdministradorController`/`PedidoController`/`NotificacionController`:** confirmadas como decisión de diseño definitiva, no como pendiente de renombrar — ninguna se toca. Motivo: ya estaban justificadas en el momento en que se construyó cada Controller (no accidentes de esta sesión), y no existe ningún consumidor real (Postman, frontend) todavía construido que dependa del path literal de la guía, así que renombrar ahora no evita romper nada existente, solo generaría trabajo sin beneficio. Quedan documentadas con detalle en `CLAUDE.md` §7bis (tabla guía↔real + motivo de cada una), agregada en esta misma sesión, para que una auditoría futura las encuentre ya resueltas en vez de volver a marcarlas como deviación.
+
+**`CatalogoController`/`CatalogoService` — el único hueco de 0% de la Fase 9, ahora cerrado.**
+
+*Diseño (punto 1 de esta sesión — reutilización antes que duplicación):* `CatalogoService` quedó deliberadamente delgado, mismo criterio de centralización que `NotificacionService`. No repite ninguna query ni mapeo Entity→DTO — delega:
+- `CatalogoService.listarComerciosAprobados()` → `ComercioService.listarAprobados()` (nuevo método, reutiliza el `aResponseDTO` privado que ya existía para `verPerfil`/`editarPerfil`).
+- `CatalogoService.listarProductosDelComercio(comercioId, categoriaId, tagId)` → primero `ComercioService.buscarAprobadoPorId(comercioId)` (nuevo método, valida existencia **y** `estado == APROBADO` en un solo paso, `RecursoNoEncontradoException` → `404` si cualquiera de las dos falla — un comercio `PENDIENTE`/`RECHAZADO` no es distinguible desde afuera de uno inexistente, a propósito) y después `ProductoService.listarCatalogoDelComercio(comercioId, categoriaId, tagId)` (nuevo método, reutiliza el `aResponseDTO` privado que ya arma imágenes + tags).
+
+*Repositorios (punto 2 — `ComercioRepository.findByEstado` ya existía):* confirmado que `ComercioRepository.findByEstado(EstadoComercio)` ya estaba implementado desde la Fase 6, con un javadoc que decía literalmente "para el catálogo público y para el panel de administrador" — no hizo falta agregar nada ahí. Tampoco en `ProductoRepository.findByComercioIdAndEstadoNot`, que ya existía con javadoc "pensado para el catálogo público, Fase 9". Sí hizo falta un método nuevo: `ProductoTagRepository.findByTagId(Integer tagId)`, para resolver el filtro opcional por tag sin duplicar la lógica de `aResponseDTO` — no existía ninguna query por `tagId` todavía.
+
+*Decisión pausada y confirmada con el usuario antes de escribir código (punto 3 — AGOTADO en el catálogo):* ni la guía (9.3 no lo especifica), ni `docs/modelo-mvp.md`, ni `requisitos-funcionales-cliente.md` (que además no es fuente MVP-válida acá, condiciona la visibilidad a `mp_vinculado`, un campo de MercadoPago fuera de alcance) resolvían esto. Único indicio real: el propio diseño de `ProductoRepository.findByComercioIdAndEstadoNot(comercioId, estado)` — recibe un único estado a excluir, no una lista, lo cual ya sugería la intención de excluir solo `DESCONTINUADO`. Se preguntó explícitamente en vez de asumir. **Decisión: `AGOTADO` se muestra en el catálogo, marcado por su propio campo `estado` en el DTO** (ya existía en `ProductoResponseDTO`, sin cambios de forma) — coherente con `CarritoService.agregarItem`, que ya rechaza agregar al carrito un producto que no está `DISPONIBLE`, así que mostrarlo marcado (no oculto) es lo que le permite al frontend explicarle al cliente por qué no puede agregarlo. Solo `DESCONTINUADO` se excluye del listado.
+
+*Controller (punto 4 — patrón 9.2, público):* `GET /catalogo/comercios` y `GET /catalogo/comercios/{id}/productos?categoriaId=&tagId=` (ambos `@RequestParam(required = false) Integer`), `ResponseEntity<ApiResponse<List<...>>>`, `200`. No hizo falta tocar `SecurityConfig` — `/api/v1/catalogo/**` ya estaba en `RUTAS_PUBLICAS` desde la Fase 7, anticipando este Controller.
+
+`./mvnw compile` → `BUILD SUCCESS`.
+
+**Probado con `curl` contra la base real (punto 5):** Administrador (id 38), 3 Comercios (A id 16 → `APROBADO`; B id 18 → queda `PENDIENTE`, sin tocar; C id 17 → `RECHAZADO` con motivo), 2 categorías, 1 tag, 3 productos de A (`DISPONIBLE` con el tag, `AGOTADO` sin tag ni categoría compartida, `DESCONTINUADO`).
+- `GET /catalogo/comercios` sin token → `200`, aparece únicamente el Comercio A (`APROBADO`) — B y C, ambos con `estado` distinto de `APROBADO`, no aparecen.
+- `GET /catalogo/comercios/16/productos` sin filtro → `200`, aparecen el producto `DISPONIBLE` y el `AGOTADO` (con `estado: "AGOTADO"` visible en el DTO); el `DESCONTINUADO` no aparece.
+- Filtro `categoriaId` → cada categoría devuelve exactamente su producto, incluido el caso de filtrar por la categoría del producto `AGOTADO` (sigue apareciendo, marcado). Filtro `tagId` → devuelve solo el producto con ese tag. Filtro combinado `categoriaId` + `tagId` sin intersección real → `200`, lista vacía (no error).
+- `categoriaId` inexistente (`9999`) → `200`, lista vacía — no `404`, no `500` (el filtro es sobre productos ya obtenidos, no un recurso que deba existir).
+- `GET /catalogo/comercios/999/productos` (id inexistente) → `404`, `"Comercio no encontrado"` — no `500`, no lista vacía engañosa.
+- `GET /catalogo/comercios/18/productos` (Comercio B, `PENDIENTE`) → `404` — mismo mensaje que un id inexistente, a propósito (no revela que el comercio existe pero no está aprobado).
+- `GET /catalogo/comercios/17/productos` (Comercio C, `RECHAZADO`) → `404`, mismo criterio.
+
+Datos de prueba (Administrador id 38, Comercios id 16/17/18 con sus usuarios 39/40/41, 2 categorías, 1 tag, 3 productos, y todas las filas derivadas: `persona`/`persona_fisica`/`persona_juridica`, `direccion`, `token`, `sesion`, `historial_estado_comercio`, `producto_tag`) eliminados de la base al finalizar.
+
+**Estado de Fase 9:** con `CatalogoController` cerrado, no queda ningún hueco de 0% ni deviación sin resolver de los detectados en el inventario del 2026-07-18. Falta correr el checklist formal de cierre de la guía (verificar cada endpoint de 9.3 con status HTTP correcto uno por uno, y confirmar que ningún endpoint devuelve una entidad JPA — el hook `bloquear-entity-en-controller.js` ya lo garantiza en cada `Write`/`Edit`, pero el checklist formal de la guía pide dejarlo explícito) antes de dar la fase por cerrada.
+
+## 2026-07-18 — Checklist formal de cierre de Fase 9, los 3 puntos de la guía contra los 11 Controllers, en una sola entrada
+
+Las sesiones anteriores probaron cada Controller individualmente en el momento en que se construyó, pero nunca se armó el checklist único de cierre que la guía exige al final de la sección 9.3 (3 puntos, contra los 11 Controllers en conjunto). Esta entrada lo hace, repasando `docs/DECISIONES.md` completo (427 líneas previas) para separar "ya probado con evidencia real" de "asumido por analogía" — y donde encontró algo genuinamente sin probar, lo probó ahora con `curl` real en vez de darlo por hecho.
+
+### Punto 1 — Cada endpoint de la lista 9.3 implementado
+
+| Controller | Endpoints 9.3 | Implementado | Nota |
+|---|---|---|---|
+| `AuthController` | `POST /registro/cliente`, `POST /registro/comercio`, `POST /login`, `GET /verificar/{token}`, `POST /logout` | ✅ los 5 | + 5 endpoints de la ampliación de alcance de Fase 7 (`recuperar-password`, `recuperar-password/confirmar`, `reactivar-cuenta`, `reactivar-cuenta/confirmar/{token}`, `cambiar-password`), no listados en 9.3 pero exigidos por el requisito funcional que motivó la enmienda del 2026-07-17. |
+| `CatalogoController` | `GET /catalogo/comercios`, `GET /catalogo/comercios/{id}/productos` | ✅ los 2 | Cerrado hoy, entrada anterior. |
+| `GeografiaController` | `GET /geografia/provincias`, `GET /geografia/localidades?provinciaId=` | ✅ los 2 | — |
+| `ComercioController` | `GET /comercios/perfil`, `PUT /comercios/perfil` | ✅ los 2 | `GET` cerrado el 2026-07-18 (reapertura puntual de Fase 8). |
+| `AdministradorController` | `GET /administrador/comercios/pendientes`, `PUT /administrador/comercios/{id}/resolucion` | ✅ los 2 | Path real `/resolver`, no `/resolucion` — deviación confirmada como decisión (`CLAUDE.md` §7bis). |
+| `CategoriaController` | CRUD completo (ADMIN) | ✅ crear/editar/listar/baja/reactivar | — |
+| `TagController` | CRUD completo (ADMIN) | ✅ crear/editar/listar/baja/reactivar | — |
+| `ProductoController` | CRUD completo (COMERCIO), `PATCH /estado`, `POST/DELETE/PATCH /imagenes` | ✅ CRUD + `PATCH /estado`; ❌ los 3 endpoints de galería | Galería diferida formalmente a Fase 11 (entrada del 2026-07-18, "Cierre real de la Fase 8" punto 3) — no es un hueco sin explicar. |
+| `CarritoController` | `GET /carrito`, `POST /items`, `PUT /items/{id}`, `DELETE /items/{id}`, `DELETE /carrito` | ✅ los 5 | Paths idénticos al literal de 9.3. |
+| `PedidoController` | `POST /pedidos`, `GET /pedidos/cliente`, `GET /pedidos/comercio`, `PATCH /{id}/resolucion` | ✅ equivalente funcional de los 4 | `POST /pedidos` real es `POST /pedidos/cliente`; `PATCH /{id}/resolucion` real son 2 endpoints `PUT .../aceptar` + `PUT .../rechazar` — ambas deviaciones confirmadas como decisión (`CLAUDE.md` §7bis). |
+| `NotificacionController` | `GET /notificaciones`, `PATCH /{id}/leida` | ✅ los 2 | Verbo real `PUT`, no `PATCH` — deviación confirmada como decisión. + `GET /no-leidas/contador`, exigido por 8.7 aunque 9.3 no lo liste. |
+
+Único hueco real: los 3 endpoints de galería de `ProductoController`, diferidos con destino explícito a Fase 11 (no un pendiente de esta fase).
+
+### Punto 2 — Status HTTP correcto según la tabla de 0.4, verificado o probado ahora
+
+Repaso completo de las ~45 rutas de los 11 Controllers contra el historial de `curl` documentado. Casos ya cubiertos con evidencia explícita en entradas anteriores (fecha entre paréntesis) — no se repiten acá: `AuthController` (registro `201`/`409`/`404`, login `200`/`401`/`409`, verificar `200`, recuperar/reactivar-cuenta `200` — 2026-07-17 "Pruebas end-to-end de Fase 7"), `CatalogoController` (`200`/`404` — hoy), `GeografiaController` (`200`/`400` — 2026-07-18), `ComercioController` (`200`/`403`/`401` — 2026-07-18), `AdministradorController` (`200`/`400`/`409` — 2026-07-17), `CategoriaController`/`TagController` (`201`/`409`/`200`/`404`/`403` — 2026-07-17), `ProductoController` (`201`/`200`/`409` — 2026-07-17), `CarritoController` (`200`/`201`/`409`/`400`/`404` — 2026-07-17), `PedidoController` (`201`/`200`/`409`/`404` — 2026-07-17), `NotificacionController` (`200`/`404`/`401` — 2026-07-18).
+
+**2 casos identificados sin evidencia explícita — probados ahora, no asumidos:**
+
+1. **`POST /auth/cambiar-password`** — el bug de `noRollbackFor` de la Fase 7 se corrigió a nivel de `AuthService`, pero el checklist de cierre de esa fase nunca curl-testeó específicamente este endpoint (la lista de "Flujos verificados" de esa sesión no lo incluye). Probado ahora: Cliente autenticado, `POST /cambiar-password` con la contraseña actual correcta → `200`, `"Contraseña cambiada correctamente"`. Confirmado real (no solo formal): login inmediatamente después con la contraseña vieja → `401`; login con la contraseña nueva → `200`.
+2. **Regla `hasRole("CLIENTE")`** (`/carrito/**`, `/pedidos/cliente/**`) — el `403` por rol insuficiente se había verificado explícitamente para `hasRole("COMERCIO")` (vía `ComercioController`, 2026-07-18) y `hasRole("ADMINISTRADOR")` (vía `CategoriaController`/`TagController`, 2026-07-17), pero nunca puntualmente para `hasRole("CLIENTE")`. Probado ahora con un token de Comercio real: `GET /carrito` → `403`; `GET /pedidos/cliente` → `403`. Ambos con el mismo `ApiResponse` (`"No tiene permisos para acceder a este recurso"`) que los otros 2 roles.
+
+Ningún caso probado ahora dio un resultado distinto del esperado — no hubo que pausar por nada roto, los 2 gaps eran de evidencia faltante, no de comportamiento incorrecto.
+
+**Convención de status en bajas (`DELETE`) confirmada consistente:** el proyecto usa `200` + `mensaje` en vez de `204` en toda baja (`CategoriaController.baja`, `TagController.baja`, `CarritoController.eliminarItem`/`vaciarCarrito`) — no es una inconsistencia caso por caso, es la convención ya escrita en `CLAUDE.md` §4.4 ("en este proyecto se prioriza devolver `mensaje`") aplicada uniformemente.
+
+### Punto 3 — Ningún endpoint devuelve una entidad JPA; cobertura del hook `bloquear-entity-en-controller.js`
+
+**Verificación actual (no histórica) de los 12 archivos de `controllers/`:** se corrió el hook real (no una réplica de su lógica) contra cada archivo, invocándolo directo por stdin igual que lo haría el `PostToolUse` de Claude Code:
+
+```
+echo '{"tool_input":{"file_path":"<archivo>"}}' | node .claude/hooks/bloquear-entity-en-controller.js
+```
+
+Resultado: **los 12 Controllers actuales** (los 11 de 9.3 + `HealthController`, que no está en el alcance de 9.3 pero vive en el mismo paquete) **pasan con `exit 0`**, sin ninguna violación detectada — ningún `ResponseEntity<X>` sin envolver en `ApiResponse`, ningún método que devuelva una entidad de `entities/` directamente.
+
+**Cobertura histórica (¿corrió el hook en el momento en que se escribió cada archivo?) — no se puede determinar, y se deja explícito en vez de asumir que sí.** Se intentó reconstruir la cronología por `git log` y no hay ninguna: todo el directorio `03. Implementación` (código, `.claude/`, `docs/`) está **completamente sin commitear** (`git log --all -- .` sobre el directorio no devuelve ninguna entrada, `git ls-files` tampoco). No existe ningún registro de cuándo se creó `.claude/settings.json` (que registra el hook en `PostToolUse` para `Write|Edit`) en relación a cuándo se escribió cada Controller, y `docs/DECISIONES.md` tampoco tiene ninguna entrada que documente "hooks instalados" como evento. De los 12 Controllers:
+- `NotificacionController`, el `GET /perfil` agregado a `ComercioController`, y `CatalogoController` se escribieron **dentro de esta conversación**, donde sí se pudo observar directamente que la llamada a `Write`/`Edit` no fue bloqueada por el hook (si lo hubiera bloqueado, la herramienta habría fallado con `exit 2` y el archivo no habría quedado escrito) — cobertura histórica confirmada para estos 3.
+- Los otros 9 (`AuthController`, `AdministradorController`, `CategoriaController`, `TagController`, `ProductoController`, `ComercioController` en su versión original con solo `PUT /perfil`, `CarritoController`, `PedidoController`, `GeografiaController`, más `HealthController`) se escribieron en sesiones anteriores no visibles en el contexto de esta conversación — **no hay forma de confirmar si el hook ya estaba activo en el momento exacto de su creación**. Lo único verificable es que, tal como existen ahora, los 12 pasan el hook real.
+
+Dado que el propósito del hook es prevenir la violación, no solo detectarla después, la verificación actual (12/12 sin violación) es la evidencia disponible más fuerte que se puede ofrecer sin una cronología real — cumple el punto 3 del checklist de la guía ("ningún endpoint devuelve una entidad JPA en el body") con certeza, aunque no permite afirmar con la misma certeza que el hook fue el mecanismo que lo garantizó en cada caso histórico.
+
+### Cierre
+
+Con los 3 puntos del checklist de 9.3 cubiertos — punto 1 con un solo hueco real y explícitamente diferido (galería de `ProductoController`, Fase 11), punto 2 con los 2 casos sin evidencia ahora probados y sin sorpresas, punto 3 con verificación actual 12/12 y la limitación de cobertura histórica dejada explícita en vez de asumida — **Fase 9 queda cerrada.**
+
+Datos de prueba (Cliente id 43, Comercio id 42, y todas las filas derivadas: `persona`/`persona_fisica`/`persona_juridica`, `direccion`, `token`, `sesion`) eliminados de la base al finalizar.

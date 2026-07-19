@@ -1,0 +1,28 @@
+# Bajoneá — .gitignore de raíz del repo.
+# Cada subproyecto con necesidades propias tiene el suyo (ej. "03. Implementación/backend/.gitignore"
+# para Java/Maven/IDE de ese módulo específico). Este archivo cubre lo transversal a todo el repo:
+# lo que no depende de qué subproyecto se esté tocando, y lo que un futuro subproyecto sin .gitignore
+# propio (frontend/, postman/, testing/) todavía no tiene cubierto.
+
+# IDE — el de la raíz del repo. backend/.gitignore ya ignora ".idea" dentro de esa carpeta, pero esa
+# regla no alcanza al ".idea/" que vive en la raíz del repo (evaluado por Git en relación a la carpeta
+# donde está cada .gitignore, no en cascada hacia arriba).
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Node — por si algún script (ETL de Georef u otro futuro) llega a instalar dependencias reales.
+node_modules/
+
+# Credenciales / configuración local — nunca commitear (CLAUDE.md §4.6). Repetido a propósito acá
+# aunque backend/.gitignore ya cubre esto para esa carpeta puntual: esta es la red de seguridad para
+# cualquier otro subproyecto (frontend/, postman/, testing/) que todavía no tiene su propio .gitignore.
+application-local.properties
+.env
+*.env.local

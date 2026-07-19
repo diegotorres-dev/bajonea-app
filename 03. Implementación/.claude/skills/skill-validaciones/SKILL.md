@@ -1,0 +1,112 @@
+---
+name: skill-validaciones
+description: Catálogo de validaciones Bean Validation del backend Bajoneá — estándar de jakarta.validation y las 9 anotaciones custom del paquete validation/ (CUIT, DNI, teléfono argentino, nombre propio, password segura, código postal argentino, mayoría de edad, URL de Cloudinary, exclusión mutua cliente/comercio en Direccion). Consultar antes de escribir o editar cualquier RequestDTO con campos de tipo CUIT, DNI, teléfono, nombre/apellido, password, código postal, fecha de nacimiento, URL de imagen, o el par clienteId/comercioId de Direccion.
+---
+
+# Validaciones (Fase 5 en adelante)
+
+Todas las anotaciones de esta skill viven en el paquete `validation/`
+(`backend/src/main/java/com/bajonea/backend/validation/`), hermano de `entities/`:
+`validation/annotations/` para las `@interface`, `validation/validators/` para sus
+`ConstraintValidator`. Se aplican **exclusivamente en los DTOs de request**
+(`dto/request/`), nunca en las Entities de JPA — las Entities representan el dato ya
+persistido y válido; la validación de entrada ocurre en el borde HTTP, disparada por
+`@Valid` en la firma del método del controller.
+
+## Regla general: estándar cuando alcanza, custom solo cuando hay lógica real
+
+Antes de crear o usar una anotación custom, preguntarse si `jakarta.validation` estándar
+ya resuelve el caso: `@NotBlank`, `@NotNull`, `@Email`, `@Size`, `@Pattern`, `@Positive`,
+`@PositiveOrZero`, `@Past`, `@PastOrPresent`, `@Future`, `@Min`, `@Max`, `@Digits`. Usar
+estas directo en el campo del DTO siempre que alcancen.
+
+Se crea (o se usa, si ya existe) una anotación custom **únicamente** cuando la regla
+necesita lógica real que un `@Pattern` no puede resolver: dígito verificador,
+normalización de formato, coherencia entre campos, o una regla de negocio (ej. mayoría de
+edad). Las 9 anotaciones de abajo son exactamente ese catálogo — no crear una anotación
+custom nueva para algo que ya cubre una de estas o un validador estándar.
+
+## Catálogo de anotaciones custom
+
+| Anotación | Target | Tipo de campo | Qué valida |
+|---|---|---|---|
+| `@ValidarCuit` | `FIELD` | `String` | 11 dígitos + dígito verificador módulo 11 real (algoritmo AFIP). Rechaza CUITs bien formados pero matemáticamente inválidos. |
+| `@ValidarDni` | `FIELD` | `String` | 7 u 8 dígitos, rango [1.000.000, 99.999.999]. |
+| `@ValidarTelefonoArgentino` | `FIELD` | `String` | Normaliza y valida teléfono argentino tolerando +54, 9, 0 de larga distancia y 15 (formato histórico de celular). Ver Javadoc de `TelefonoArgentinoValidator` para el algoritmo exacto de normalización. |
+| `@ValidarNombrePropio` | `FIELD` | `String` | Solo letras Unicode (incluye acentos y ñ), espacios y guiones; rechaza números, símbolos, vacío y solo-espacios. Usar en `nombre`/`apellido`. |
+| `@ValidarPasswordSegura` | `FIELD` | `String` | Mínimo 8 caracteres, al menos 1 mayúscula, al menos 1 número. No exige símbolo (decisión explícita del MVP). |
+| `@ValidarCodigoPostalArgentino` | `FIELD` | `String` | Formato clásico de 4 dígitos, o CPA alfanumérico de 8 caracteres (ej. `C1425DJP`). Ambos formatos son válidos en Argentina. |
+| `@MayorDeEdad` | `FIELD` | `LocalDate` | La fecha (ej. `fechaNacimiento`) implica 18 años o más al momento de la validación. |
+| `@ValidarUrlCloudinary` | `FIELD` | `String` | Esquema `https` y host exactamente `res.cloudinary.com`. **Valida dominio, no propiedad del recurso** — ver advertencia debajo antes de usarla en un campo editable por el cliente. |
+| `@DireccionExclusionMutua` | `TYPE` (nivel de clase) | — | Sobre el DTO completo de Direccion: exactamente uno de `clienteId`/`comercioId` debe ser no nulo, nunca ambos ni ninguno. Sube a anotación declarativa la regla documentada en `docs/modelo-mvp.md`, tabla `direccion`. Se aplica sobre la propia clase del DTO (`@DireccionExclusionMutua` encima de `public class XxxDireccionDTO { ... }`), no sobre un campo. |
+
+Todas menos `@DireccionExclusionMutua` son `null`-tolerantes (devuelven `true` si el valor
+es `null`): la ausencia de valor es responsabilidad de `@NotNull`/`@NotBlank` en el mismo
+campo, combinada según corresponda; cada validador custom solo se expide sobre el
+formato/regla cuando el valor está presente.
+
+## `@ValidarUrlCloudinary` no alcanza sola para un campo editable por el cliente
+
+`@ValidarUrlCloudinary` valida **únicamente** que la URL pertenezca al dominio
+`res.cloudinary.com` — no valida que el recurso pertenezca a quien lo manda. Si se
+usa sola en un DTO de request editable (ej. `fotoPerfilUrl` en un DTO de perfil),
+cualquier usuario autenticado puede pegar la URL de un asset subido por **otro**
+usuario/comercio (o cualquier asset público de la cuenta de Cloudinary del proyecto)
+y la validación pasa igual, porque el dominio coincide.
+
+**Regla:** no agregar esta anotación a un campo de un DTO de request que el cliente
+pueda escribir libremente hasta que exista el flujo de subida firmada (Fase 11) que
+garantice que la URL salió de una firma generada para ese usuario/comercio puntual.
+Hasta entonces, ese campo **no va en el DTO** — no hay ningún mecanismo legítimo para
+que el cliente obtenga una URL de Cloudinary en primer lugar, así que dejarlo abierto
+no habilita una funcionalidad real, solo el vector de suplantación. Cuando Fase 11
+exista, la asociación de la URL correcta la hace el propio backend tras validar la
+firma de subida — no un valor que llega suelto por body en un endpoint no relacionado
+con el flujo de subida. Ver `docs/DECISIONES.md`, entrada *"Corrección:
+`ComercioPerfilRequestDTO.fotoPerfilUrl` sacado del DTO"*, 2026-07-17 — el gap se
+encontró y corrigió ahí (el campo llegó a estar en el DTO real por un turno antes de
+sacarse).
+
+## Dónde aplicar cada una (guía rápida para Fase 5)
+
+- `RegistroClienteRequestDTO` / `PersonaFisica` en general: `nombre`/`apellido` →
+  `@ValidarNombrePropio` + `@NotBlank`; `dni` → `@ValidarDni` + `@NotBlank`;
+  `fechaNacimiento` → `@MayorDeEdad` + `@NotNull` + `@Past`; `telefono` →
+  `@ValidarTelefonoArgentino` + `@NotBlank`; `password` → `@ValidarPasswordSegura` +
+  `@NotBlank`.
+- `RegistroComercioRequestDTO` / `PersonaJuridica`: `cuit` → `@ValidarCuit` + `@NotBlank`;
+  `razonSocial`, `domicilioFiscal` → `@NotBlank` + `@Size` estándar (no necesitan anotación
+  custom).
+- `DireccionRequestDTO`: `codigoPostal` → `@ValidarCodigoPostalArgentino` + `@NotBlank`.
+  Si más adelante se crea un DTO administrativo que sí exponga `clienteId`/`comercioId`
+  explícitos, va con `@DireccionExclusionMutua` a nivel de clase.
+- `ProductoRequestDTO` (Fase 8.4) **no** lleva `url`/imágenes — la galería se gestiona
+  aparte, vía firma de Cloudinary (Fase 11), ver javadoc del propio DTO.
+  `ImagenProductoRequestDTO` sigue diferido a esa fase (`docs/DECISIONES.md`, entrada
+  de DTOs diferidos de Fase 5); cuando se cree, `url` → `@ValidarUrlCloudinary`, pero
+  ahí la URL la genera el propio flujo de subida firmada, no un campo libre — no
+  aplica la advertencia de arriba de la misma forma que a un campo de edición de
+  perfil.
+- `ComercioPerfilRequestDTO` (Fase 8.4) **no** lleva `fotoPerfilUrl` — ver la
+  advertencia de `@ValidarUrlCloudinary` arriba. `ComercioResponseDTO` tampoco lleva
+  validación (es de response, no de request).
+
+## Un campo "motivo" no siempre es un candidato a validación custom
+
+No todo campo de texto libre necesita (ni admite) una anotación de este catálogo. Si
+el campo representa un motivo de rechazo/cancelación, el tipo correcto (`String` vs.
+un `enum` ya existente en `enums/`) depende de si el diccionario completo define un
+`ENUM` cerrado para ese motivo puntual — no es una decisión de validación, es una
+decisión de modelado de datos. Ver
+`.claude/skills/generar-capa-crud/SKILL.md`, sección "Campo 'motivo'...", para el
+criterio completo con los dos casos reales del proyecto (`Pedido.motivo_rechazo` con
+`ENUM`, `HistorialEstadoComercio.motivo` sin él).
+
+## Referencias
+
+- Implementación completa: `backend/src/main/java/com/bajonea/backend/validation/`.
+- Catálogo y regla estándar-vs-custom también resumidos en `CLAUDE.md` §5 (validaciones).
+- Convenciones de DTOs en general: `.claude/skills/generar-capa-crud/SKILL.md`, sección
+  "## 2. DTOs".
+- Registro cronológico de las decisiones que originaron el catálogo y sus correcciones
+  (el "por qué", no el "cómo" — eso vive acá): [docs/DECISIONES.md](../../../docs/DECISIONES.md).
