@@ -224,8 +224,7 @@ insuficiente a nivel de ruta (`SecurityConfig`), no ownership a nivel de dato. V
 ### Operaciones secundarias no críticas: no perder una mutación de negocio ya persistida
 
 Si un Service dispara una operación secundaria que puede fallar por una razón externa
-esperada en esta etapa del proyecto (ej. `EmailService` sin credenciales SMTP reales
-todavía, Fase 10 pendiente), esa operación **no debe relanzar la excepción** si eso
+esperada (ej. `EmailService`/Resend con la API caída o rechazando el envío), esa operación **no debe relanzar la excepción** si eso
 significa perder (por rollback) una mutación de negocio que ya se persistió en el
 mismo método (ej. el `Token` generado justo antes de intentar el envío). Loguear la
 falla (`log.warn`) y seguir — no usar el mismo criterio para operaciones que sí son el
@@ -367,7 +366,7 @@ confiar en que "se siguió la plantilla"):
       poder lanzar una excepción de negocio en el mismo método, se revisó si hace falta
       `@Transactional(noRollbackFor = ...)` acotado a esa excepción puntual.
 - [ ] Si el Service dispara una operación secundaria que puede fallar por una razón
-      externa esperada en esta etapa (ej. envío de email sin SMTP real), esa falla no
+      externa esperada (ej. envío de email vía Resend rechazado o caído), esa falla no
       hace perder una mutación de negocio ya persistida en el mismo método.
 - [ ] Si el recurso introduce una operación de alta frecuencia de "doble submit"
       (login, cambio de contraseña, o cualquier mutación sobre un contador/estado de

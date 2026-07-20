@@ -14,10 +14,11 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Atajo de testing exclusivo del perfil {@code test} (Fase 14, ver docs/DECISIONES.md) —
  * expone el token de verificación pendiente de un usuario sin depender de leer un email
- * real, para que la colección de Postman no dependa de una casilla real mientras Fase 10
- * (SMTP) sigue en pausa. El bean no se crea fuera del perfil {@code test}
- * ({@code @Profile}), así que {@code TestController} no tiene a quién inyectar y la ruta
- * ni siquiera se registra en el perfil normal/producción.
+ * real, para que la colección de Postman corra rápido y determinística sin depender de
+ * una casilla real, aun con el envío de email (Fase 10, Resend) funcionando. El bean no
+ * se crea fuera del perfil {@code test} ({@code @Profile}), así que {@code TestController}
+ * no tiene a quién inyectar y la ruta ni siquiera se registra en el perfil
+ * normal/producción.
  */
 @Service
 @RequiredArgsConstructor
