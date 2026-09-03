@@ -3791,7 +3791,7 @@
           ]
         },
         {
-          "name": "[negativo] Pedir firma foto de registro de comercio (6/5, rate limit)",
+          "name": "[SKIP EN SUITE COMPARTIDA] [negativo] Pedir firma foto de registro de comercio (6/5, rate limit)",
           "request": {
             "method": "POST",
             "header": [
@@ -3811,7 +3811,8 @@
                 "comercio",
                 "foto-firma"
               ]
-            }
+            },
+            "description": "No va a dar 429 corriendo la colección completa: application-test.properties sube el límite de RateLimitFotoRegistroFilter a 1000/min a propósito para que la suite de Playwright no se corte con sus propias subidas de foto repetidas. La regla real (5/min) ya fue verificada aparte, reiniciando el backend una vez con el límite en su valor de producción — ver docs/DECISIONES.md, entrada del 2026-09-03. Esto es un choque de configuración compartida entre dos suites de test, no una falla real de la app ni de este caso."
           },
           "response": [],
           "event": [
