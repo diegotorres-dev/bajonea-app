@@ -26,3 +26,8 @@ node_modules/
 application-local.properties
 .env
 *.env.local
+
+.~lock.*#
+
+03. Implementación/datos-prueba/
+03. Implementación/docs/
