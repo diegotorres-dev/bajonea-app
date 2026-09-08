@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Pedidos — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <div id="top-bar-slot"></div>
+  <main class="app-main">
+    <div class="screen-body screen-body--tight">
+      <div id="filtros-slot" data-testid="fila-chips-filtro"></div>
+      <div id="pedidos-content" data-testid="lista-pedidos"></div>
+    </div>
+  </main>
+  <div id="bottom-nav-slot"></div>
+</div>
+<script type="module">
+import { initComercioPedidos } from './js/comercio.js';
+initComercioPedidos();
+</script>
+</body>
+</html>

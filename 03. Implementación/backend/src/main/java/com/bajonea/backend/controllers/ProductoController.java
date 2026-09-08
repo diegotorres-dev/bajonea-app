@@ -3,7 +3,9 @@ package com.bajonea.backend.controllers;
 import com.bajonea.backend.config.security.AuthenticatedUser;
 import com.bajonea.backend.dto.request.CambioEstadoProductoRequestDTO;
 import com.bajonea.backend.dto.request.ImagenProductoRequestDTO;
+import com.bajonea.backend.dto.request.OrdenImagenRequestDTO;
 import com.bajonea.backend.dto.request.ProductoRequestDTO;
+import com.bajonea.backend.dto.request.UrlImagenRequestDTO;
 import com.bajonea.backend.dto.response.ApiResponse;
 import com.bajonea.backend.dto.response.CloudinarySignatureResponseDTO;
 import com.bajonea.backend.dto.response.ImagenProductoResponseDTO;
@@ -81,10 +83,26 @@ public class ProductoController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Imagen eliminada correctamente", null));
     }
 
-    @PatchMapping("/{id}/imagenes/{imagenId}/principal")
-    public ResponseEntity<ApiResponse<ImagenProductoResponseDTO>> marcarImagenPrincipal(@PathVariable Integer id,
+    @PatchMapping("/{id}/imagenes/{imagenId}/orden")
+    public ResponseEntity<ApiResponse<ImagenProductoResponseDTO>> reordenarImagen(@PathVariable Integer id,
+            @PathVariable Integer imagenId, @Valid @RequestBody OrdenImagenRequestDTO request,
+            @AuthenticationPrincipal AuthenticatedUser usuario) {
+        ImagenProductoResponseDTO response = productoService.reordenarImagen(usuario.userId(), id, imagenId, request.getOrden());
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Orden de la imagen actualizado correctamente", response));
+    }
+
+    @PostMapping("/{id}/imagenes/{imagenId}/recorte/firma")
+    public ResponseEntity<ApiResponse<CloudinarySignatureResponseDTO>> generarFirmaRecorteImagen(@PathVariable Integer id,
             @PathVariable Integer imagenId, @AuthenticationPrincipal AuthenticatedUser usuario) {
-        ImagenProductoResponseDTO response = productoService.marcarImagenPrincipal(usuario.userId(), id, imagenId);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Imagen principal actualizada correctamente", response));
+        CloudinarySignatureResponseDTO response = productoService.generarFirmaRecorteImagen(usuario.userId(), id, imagenId);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Firma generada correctamente", response));
+    }
+
+    @PatchMapping("/{id}/imagenes/{imagenId}/url")
+    public ResponseEntity<ApiResponse<ImagenProductoResponseDTO>> actualizarUrlImagen(@PathVariable Integer id,
+            @PathVariable Integer imagenId, @Valid @RequestBody UrlImagenRequestDTO request,
+            @AuthenticationPrincipal AuthenticatedUser usuario) {
+        ImagenProductoResponseDTO response = productoService.actualizarUrlImagen(usuario.userId(), id, imagenId, request.getUrl());
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Imagen actualizada correctamente", response));
     }
 }

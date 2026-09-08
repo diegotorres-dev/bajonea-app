@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Panel del administrador — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <div id="top-bar-slot"></div>
+  <main class="app-main">
+    <div class="screen-body">
+      <div class="summary-card" style="margin-bottom:24px;">
+        <div class="summary-card__icon" id="admin-avatar" style="background:var(--color-primary);color:#ffffff;font-family:var(--font-display);font-weight:800;">AD</div>
+        <div class="summary-card__body">
+          <p>Administrador</p>
+          <h3 id="admin-nombre" data-testid="nombre-admin">Cargando...</h3>
+        </div>
+      </div>
+
+      <p class="section-heading">Requieren Atención</p>
+      <a class="alert-card" href="admin-comercios-pendientes.html" id="alert-comercios-pendientes" data-testid="btn-comercios-pendientes">
+        <div class="alert-card__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+        </div>
+        <div class="alert-card__body">
+          <h3>Comercios Pendientes</h3>
+          <p data-subtitulo>Cargando...</p>
+        </div>
+        <div class="alert-card__side">
+          <span class="alert-card__count" data-count data-testid="contador-comercios-pendientes"></span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </a>
+
+      <p class="section-heading" style="margin-top:24px;">Gestión</p>
+      <div class="stat-tile-grid" id="gestion-grid" data-testid="grilla-gestion-admin"></div>
+
+      <div style="text-align:center;margin-top:32px;">
+        <button type="button" class="btn-text" id="cerrar-sesion-btn" data-testid="btn-cerrar-sesion">Cerrar sesión</button>
+      </div>
+    </div>
+  </main>
+</div>
+<script type="module">
+import { initAdminDashboard } from './js/admin.js';
+initAdminDashboard();
+</script>
+</body>
+</html>

@@ -33,7 +33,7 @@ public class Usuario {
     private Integer id;
 
     @Setter
-    @Column(name = "email", length = 150, nullable = false, unique = true)
+    @Column(name = "email", length = 254, nullable = false, unique = true)
     private String email;
 
     @Setter
@@ -53,6 +53,10 @@ public class Usuario {
     @Setter
     @Column(name = "intentos_fallidos", nullable = false)
     private int intentosFallidos;
+
+    @Setter
+    @Column(name = "foto_perfil_url", length = 500)
+    private String fotoPerfilUrl;
 
     @Setter
     @Column(name = "fecha_registro", nullable = false, updatable = false)

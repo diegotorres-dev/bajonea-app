@@ -1,0 +1,58 @@
+[
+  {
+    "key": "popular",
+    "nombre": "Pizzería Popular",
+    "email": "popular@bajonea.com",
+    "fotoPerfilUrl": "https://res.cloudinary.com/dhzqelo1n/image/upload/v1788835189/comercios/pre-registro/njk2d4bynoyhg0rc1v3g.jpg",
+    "usuarioId": 185,
+    "ok": true
+  },
+  {
+    "key": "corner",
+    "nombre": "Corner Coffee Shop",
+    "email": "corner@bajonea.com",
+    "fotoPerfilUrl": "https://res.cloudinary.com/dhzqelo1n/image/upload/v1788835191/comercios/pre-registro/k1eruhnro5pjihbkctre.jpg",
+    "usuarioId": 186,
+    "ok": true
+  },
+  {
+    "key": "lostroncos",
+    "nombre": "Los Troncos",
+    "email": "lostroncos@bajonea.com",
+    "fotoPerfilUrl": "https://res.cloudinary.com/dhzqelo1n/image/upload/v1788835193/comercios/pre-registro/izkbewawf69kfbfke56v.jpg",
+    "usuarioId": 187,
+    "ok": true
+  },
+  {
+    "key": "store54",
+    "nombre": "Store 54",
+    "email": "store54@bajonea.com",
+    "fotoPerfilUrl": "https://res.cloudinary.com/dhzqelo1n/image/upload/v1788835194/comercios/pre-registro/ggtuctht4grutavxzrve.jpg",
+    "usuarioId": 188,
+    "ok": true
+  },
+  {
+    "key": "lasvegas",
+    "nombre": "Las Vegas Food Truck",
+    "email": "lasvegas@bajonea.com",
+    "fotoPerfilUrl": "https://res.cloudinary.com/dhzqelo1n/image/upload/v1788835196/comercios/pre-registro/vll7v2aotdnzyjvpname.jpg",
+    "usuarioId": 189,
+    "ok": true
+  },
+  {
+    "key": "bigburger",
+    "nombre": "Big Burger",
+    "email": "bigburger@bajonea.com",
+    "fotoPerfilUrl": "https://res.cloudinary.com/dhzqelo1n/image/upload/v1788835228/comercios/pre-registro/yycvbfpizbpdht1awhjl.jpg",
+    "usuarioId": 190,
+    "ok": true
+  },
+  {
+    "key": "tantesara",
+    "nombre": "Tante Sara",
+    "email": "tantesara@bajonea.com",
+    "fotoPerfilUrl": "https://res.cloudinary.com/dhzqelo1n/image/upload/v1788835229/comercios/pre-registro/vfyuslt6x8dpcqglja6f.jpg",
+    "usuarioId": 191,
+    "ok": true
+  }
+]

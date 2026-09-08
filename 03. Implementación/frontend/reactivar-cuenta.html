@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Reactivar cuenta — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header app-header--logo-centrado">
+    <button class="app-header__back" type="button" onclick="history.back()" aria-label="Volver" data-testid="btn-volver">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <img class="header-logo" src="assets/img/bajonea-logo-orange-header.png" alt="Bajoneá" />
+  </header>
+  <main class="app-main">
+    <div id="form-container" class="screen-body">
+      <h1 class="title-lg">Reactivar tu cuenta</h1>
+      <p class="subtitle">Ingresá tu email y te enviaremos un código de 6 dígitos para reactivarla. El código vence en 24 horas.</p>
+      <div id="banner-slot" data-testid="mensaje-banner"></div>
+      <form class="form" id="solicitar-form" novalidate>
+        <div class="field">
+          <label class="field__label" for="email">Email</label>
+          <div class="input-shell">
+            <span class="input-shell__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
+            </span>
+            <input type="email" id="email" name="email" placeholder="tu@email.com" autocomplete="username" required data-testid="input-email" />
+          </div>
+          <div class="field__error" id="error-email" style="display:none;" data-testid="mensaje-error-email"></div>
+        </div>
+        <button class="btn btn-primary" type="submit" id="submit-btn" data-testid="btn-enviar-codigo-reactivacion">Enviar código de reactivación</button>
+      </form>
+    </div>
+    <div id="codigo-container" class="screen-body is-hidden">
+      <h1 class="title-lg">Ingresá tu código</h1>
+      <p class="subtitle">Te enviamos un código de 6 dígitos a tu email. Ingresalo para reactivar tu cuenta.</p>
+      <div id="banner-slot-codigo" data-testid="mensaje-banner-codigo"></div>
+      <form class="form" id="confirmar-form" novalidate>
+        <div class="field">
+          <label class="field__label">Código de reactivación</label>
+          <div id="otp-container" data-testid="input-codigo-verificacion"></div>
+          <div class="field__error" id="error-codigo" style="display:none;" data-testid="mensaje-error-codigo"></div>
+        </div>
+        <button class="btn btn-primary" type="submit" id="confirmar-submit-btn" data-testid="btn-reactivar-cuenta">Reactivar cuenta</button>
+        <button class="btn btn-tertiary" type="button" id="reenviar-btn" data-testid="btn-reenviar-codigo">Reenviar código</button>
+      </form>
+    </div>
+    <div id="exito-container" class="state-page is-hidden">
+      <div class="state-page__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+      </div>
+      <h1 class="state-page__title">Cuenta reactivada</h1>
+      <p class="state-page__text">Tu cuenta ya está activa de nuevo. Ya podés iniciar sesión.</p>
+      <div class="state-page__actions">
+        <a class="btn btn-primary" href="login.html" data-testid="btn-ir-a-login">Ir al inicio de sesión</a>
+      </div>
+    </div>
+  </main>
+</div>
+<script type="module">
+import { initReactivarCuentaSolicitar } from './js/auth.js';
+initReactivarCuentaSolicitar();
+</script>
+</body>
+</html>

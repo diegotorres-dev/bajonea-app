@@ -6,26 +6,28 @@
 
 - El sistema debe permitir el registro de nuevos clientes solicitando: nombre, apellido, DNI, fecha de nacimiento, teléfono, email, contraseña y una dirección de entrega inicial (que queda registrada automáticamente como dirección principal).
 - El cliente debe poder editar sus datos personales (nombre, apellido, teléfono) desde su perfil autenticado.
+- El cliente debe poder cargar y editar una foto de perfil desde su perfil autenticado. Es opcional.
 - El cliente debe poder gestionar múltiples direcciones de entrega: agregar, editar, eliminar y designar una como dirección principal. La dirección principal no puede eliminarse si es la única registrada; primero debe designarse otra como principal.
 
 ---
 
 ## Exploración de Comercios y Menús
 
-- El sistema debe mostrar el listado de comercios disponibles de forma pública, sin requerir autenticación. Solo se muestran comercios con estado Aprobado que tengan su cuenta de MercadoPago vinculada (`mp_vinculado = true`), o comercios en estado Cerrado Temporalmente. Estos últimos aparecen con indicador visual de "temporalmente cerrado" y sin posibilidad de realizar pedidos.
+- El sistema debe mostrar el listado de comercios disponibles de forma pública, sin requerir autenticación. Solo se muestran comercios con estado Aprobado cuyo Dueño tenga su cuenta de MercadoPago vinculada, o comercios en estado Cerrado Temporalmente. Estos últimos aparecen con indicador visual de "temporalmente cerrado" y sin posibilidad de realizar pedidos.
 - El cliente debe poder acceder al menú de un comercio y visualizar sus productos activos con nombre, descripción, precio, foto, categoría y tags.
 - El cliente debe poder filtrar productos dentro de un menú por categoría y/o tags.
 - El sistema debe informar al usuario no autenticado que debe iniciar sesión para poder realizar un pedido.
-- El detalle del comercio muestra: nombre, descripción, tipo de comercio (Restaurante o Emprendimiento), horarios de atención, dirección, teléfono y modalidades disponibles (delivery, retiro en local o ambas).
+- El detalle del comercio muestra: nombre, descripción, tipo de comercio, horarios de atención, dirección, teléfono, enlaces a sus redes sociales cargadas (si tiene) y modalidades disponibles (delivery, retiro en local o ambas).
 
 ---
 
 ## Carrito de Compras
 
-- El cliente autenticado debe poder agregar productos al carrito, especificando cantidad (entre 1 y 20 unidades) y una nota opcional por ítem.
+- El cliente autenticado debe poder agregar productos al carrito, especificando cantidad (entre 1 y 20 unidades), una nota opcional por ítem y, si el producto ofrece grupos de extras, los extras elegidos para ese ítem. Si un grupo de extras es obligatorio, el sistema exige al menos una selección de ese grupo antes de permitir agregar el ítem al carrito. Si el grupo permite una única opción (`cantidad_maxima = 1`), elegir un nuevo extra del mismo grupo reemplaza al anteriormente seleccionado; si permite más de una, se acumulan hasta el máximo configurado.
+- Si el producto que se agrega ya está en el carrito, el sistema debe sumar la cantidad indicada a la cantidad ya existente del ítem (no rechazar la operación ni crear un ítem duplicado), respetando el máximo de 20 unidades por ítem — si la suma lo supera, la cantidad queda en 20. La nota del ítem se reemplaza por la última recibida.
 - El carrito debe restringir la selección a productos de un único comercio por sesión. Intentar agregar un producto de otro comercio devuelve un error 409 solicitando vaciar el carrito primero.
 - El cliente debe poder modificar la cantidad de un ítem, eliminarlo individualmente o vaciar el carrito completo.
-- El sistema debe calcular y mostrar el subtotal del carrito en tiempo real.
+- El sistema debe calcular y mostrar el subtotal del carrito en tiempo real, incluyendo el precio de los extras seleccionados en cada ítem.
 - El carrito debe vincularse a la sesión activa del cliente, pasando a estado inactivo al expirar la sesión o al inactivarse la cuenta.
 - El carrito solo se limpia automáticamente una vez confirmado el pago (transición del pedido a estado PENDIENTE). En caso de pago fallido o timeout de pago, el carrito permanece intacto.
 
@@ -35,7 +37,7 @@
 
 - El cliente autenticado puede tener múltiples pedidos activos simultáneamente, siempre que cada pedido individual sea de un único comercio.
 - El cliente autenticado debe poder confirmar su pedido desde el carrito, seleccionando la modalidad de entrega: retiro en el local o envío a domicilio. La opción de envío a domicilio solo se muestra si el comercio lo acepta; la de retiro, solo si el comercio lo acepta.
-- El sistema debe validar, al momento de confirmar el pedido: que el comercio esté Aprobado, que tenga MP vinculado, que esté dentro de su horario de atención, que todos los productos sigan activos, y —en caso de domicilio— que el cliente tenga una dirección principal configurada.
+- El sistema debe validar, al momento de confirmar el pedido: que el comercio esté Aprobado, que su Dueño tenga la cuenta de MercadoPago vinculada, que esté dentro de su horario de atención, que todos los productos sigan activos, que se haya seleccionado al menos un extra en cada grupo obligatorio, y —en caso de domicilio— que el cliente tenga una dirección principal configurada.
 - El sistema debe registrar el pedido con todos sus ítems, precios al momento de la compra, comercio, modalidad de entrega, tarifa de servicio vigente al cliente y al comercio (ambas persistidas en el registro del pedido), y fecha.
 - El resumen del pedido debe mostrar: subtotal, cargo de servicio al cliente (valor vigente al momento del pedido) y total a pagar.
 - El cliente debe poder visualizar el historial completo de sus pedidos con su estado actual y detalle de cada uno.

@@ -13,10 +13,10 @@ import lombok.Setter;
 @AllArgsConstructor
 public class CambioPasswordPerfilRequestDTO {
 
-    @NotBlank
+    @NotBlank(message = "No debe estar vacío")
     private String passwordActual;
 
-    @NotBlank
+    @NotBlank(message = "No debe estar vacío")
     @ValidarPasswordSegura
     private String passwordNueva;
 }

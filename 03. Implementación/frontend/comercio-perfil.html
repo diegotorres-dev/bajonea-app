@@ -12,7 +12,8 @@
   <main class="app-main">
     <section id="view-principal" class="perfil-view">
       <div class="profile-header">
-        <div class="profile-header__avatar" id="perfil-avatar"></div>
+        <button type="button" class="profile-header__avatar" id="perfil-avatar" style="border:none;padding:0;cursor:pointer;" data-testid="btn-foto-perfil-comercio"></button>
+        <input type="file" id="input-avatar" accept="image/jpeg,image/png,image/webp" class="is-hidden" data-testid="input-foto-comercio" />
         <h2 id="perfil-nombre" data-testid="nombre-comercio-perfil"></h2>
         <p id="perfil-email" data-testid="email-comercio-perfil"></p>
       </div>
@@ -56,11 +57,6 @@
       </header>
       <div class="screen-body">
         <div id="editar-banner-slot" data-testid="mensaje-banner"></div>
-        <div style="text-align:center;margin-bottom:20px;">
-          <div class="profile-header__avatar" id="editar-avatar" style="margin:0 auto 10px;"></div>
-          <input type="file" id="input-avatar" accept="image/jpeg,image/png,image/webp" class="is-hidden" data-testid="input-foto-comercio" />
-          <button type="button" class="link" id="cambiar-foto-btn" data-testid="btn-cambiar-foto-comercio">Cambiar foto</button>
-        </div>
         <form class="form" id="form-editar-perfil" novalidate>
           <div class="field">
             <label class="field__label" for="editar-nombre">Nombre del comercio</label>

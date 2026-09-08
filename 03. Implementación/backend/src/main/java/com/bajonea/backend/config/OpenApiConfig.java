@@ -19,7 +19,7 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("Bajoneá API")
                         .version("1.0")
-                        .description("Plataforma de pedidos gastronómicos para Río Grande, Tierra del Fuego — MVP."))
+                        .description("Plataforma de pedidos gastronómicos para Tierra del Fuego."))
                 .components(new Components()
                         .addSecuritySchemes(BEARER_SCHEME_NAME, new SecurityScheme()
                                 .type(SecurityScheme.Type.HTTP)

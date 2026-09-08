@@ -1,6 +1,9 @@
 package com.bajonea.backend.entities;
 
+import com.bajonea.backend.enums.CanceladoPor;
+import com.bajonea.backend.enums.EstadoPagoPedido;
 import com.bajonea.backend.enums.EstadoPedido;
+import com.bajonea.backend.enums.FuenteEntrega;
 import com.bajonea.backend.enums.MotivoRechazo;
 import com.bajonea.backend.enums.TipoEntrega;
 import jakarta.persistence.Column;
@@ -54,13 +57,44 @@ public class Pedido {
 
     @Setter
     @Enumerated(EnumType.STRING)
-    @Column(name = "tipo_entrega", nullable = false)
+    @Column(name = "modalidad_entrega", nullable = false)
     private TipoEntrega tipoEntrega;
 
     @Setter
     @Enumerated(EnumType.STRING)
     @Column(name = "estado", nullable = false)
     private EstadoPedido estado;
+
+    @Setter
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pago_estado", nullable = false)
+    private EstadoPagoPedido pagoEstado;
+
+    @Setter
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cancelado_por")
+    private CanceladoPor canceladoPor;
+
+    @Setter
+    @Column(name = "motivo", length = 500)
+    private String motivo;
+
+    @Setter
+    @Enumerated(EnumType.STRING)
+    @Column(name = "fuente_entrega")
+    private FuenteEntrega fuenteEntrega;
+
+    @Setter
+    @Column(name = "fecha_entrega")
+    private LocalDateTime fechaEntrega;
+
+    @Setter
+    @Column(name = "suspension_retiro_expira")
+    private LocalDateTime suspensionRetiroExpira;
+
+    @Setter
+    @Column(name = "primer_aviso_emitido", nullable = false)
+    private boolean primerAvisoEmitido;
 
     @Setter
     @Enumerated(EnumType.STRING)
@@ -74,6 +108,18 @@ public class Pedido {
     @Setter
     @Column(name = "subtotal", precision = 10, scale = 2, nullable = false)
     private BigDecimal subtotal;
+
+    @Setter
+    @Column(name = "cargo_servicio_cliente", precision = 10, scale = 2, nullable = false)
+    private BigDecimal cargoServicioCliente;
+
+    @Setter
+    @Column(name = "cargo_servicio_comercio", precision = 10, scale = 2, nullable = false)
+    private BigDecimal cargoServicioComercio;
+
+    @Setter
+    @Column(name = "total", precision = 10, scale = 2, nullable = false)
+    private BigDecimal total;
 
     @Setter
     @Column(name = "fecha_creacion", nullable = false, updatable = false)

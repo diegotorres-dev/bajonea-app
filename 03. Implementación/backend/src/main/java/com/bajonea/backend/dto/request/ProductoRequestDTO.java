@@ -3,6 +3,7 @@ package com.bajonea.backend.dto.request;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
@@ -26,20 +27,22 @@ import lombok.Setter;
 @AllArgsConstructor
 public class ProductoRequestDTO {
 
-    @NotBlank
+    @NotBlank(message = "No debe estar vacío")
+    @Pattern(regexp = "^[\\p{L}0-9][\\p{L}0-9 ]*$", message = "Ingresá un nombre de producto válido (letras, números y espacios)")
     @Size(max = 150)
     private String nombre;
 
     @Size(max = 2000)
     private String descripcion;
 
-    @NotNull
-    @Positive
-    @Digits(integer = 8, fraction = 2)
+    @NotNull(message = "No debe estar vacío")
+    @Positive(message = "El precio debe ser mayor a $0")
+    @Digits(integer = 8, fraction = 0, message = "El precio no puede tener más de 8 dígitos y no admite centavos")
     private BigDecimal precio;
 
     @NotNull
     private Integer categoriaId;
 
+    @Size(max = 5, message = "No podés seleccionar más de 5 tags")
     private List<Integer> tagIds;
 }

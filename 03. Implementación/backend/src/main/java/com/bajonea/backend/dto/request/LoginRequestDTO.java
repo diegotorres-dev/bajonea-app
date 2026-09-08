@@ -13,10 +13,10 @@ import lombok.Setter;
 @AllArgsConstructor
 public class LoginRequestDTO {
 
-    @NotBlank
-    @Email
+    @NotBlank(message = "No debe estar vacío")
+    @Email(message = "Ingresá un email con formato válido")
     private String email;
 
-    @NotBlank
+    @NotBlank(message = "No debe estar vacío")
     private String password;
 }

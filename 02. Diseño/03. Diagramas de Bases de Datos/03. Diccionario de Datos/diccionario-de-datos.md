@@ -3,7 +3,7 @@
 **Proyecto:** Bajoneá — Plataforma de pedidos gastronómicos en línea  
 **Motor de base de datos:** MySQL (InnoDB)  
 **ORM / Migraciones:** Spring Data JPA + Hibernate / Flyway  
-**Versión del modelo:** 1.2  
+**Versión del modelo:** 1.6  
 
 ## 1. Tipos Enumerados (ENUMs)
 
@@ -16,7 +16,8 @@ Define el rol funcional de un usuario dentro del sistema.
 | Valor | Descripción |
 |-------|-------------|
 | `CLIENTE` | Usuario final que realiza pedidos. Asociado a `PersonaFisica` → `Cliente`. |
-| `COMERCIO` | Representante de un comercio gastronómico. Asociado a `PersonaFisica` y a `PersonaJuridica` mediante `Comercio`. |
+| `DUENO` | Titular de uno o varios comercios gastronómicos. Asociado a `PersonaFisica` y a `PersonaJuridica` mediante `Dueno`. |
+| `EMPLEADO` | Operador delegado por un Dueno para gestionar uno o varios comercios. Asociado a `PersonaFisica` → `Empleado`, vinculado a comercios mediante `EmpleadoComercio`. |
 | `ADMINISTRADOR` | Operador interno con acceso a la gestión global de la plataforma. Asociado a `PersonaFisica` → `Administrador`. |
 
 ---
@@ -84,6 +85,34 @@ Categoría de negocio del comercio dentro de la plataforma.
 |-------|-------------|
 | `RESTAURANTE` | Establecimiento gastronómico formal con local físico. |
 | `EMPRENDIMIENTO` | Negocio gastronómico informal o de pequeña escala (cocina emprendedora, delivery casero, etc.). |
+| `ROTISERIA` | Comidas elaboradas y platos listos para llevar. |
+| `HELADERIA` | Heladería. |
+| `CAFETERIA` | Cafetería. |
+| `PANADERIA` | Panadería. |
+| `PIZZERIA` | Pizzería. |
+| `PARRILLA` | Parrilla / asador. |
+| `BAR` | Bar. |
+| `KIOSCO` | Kiosco / almacén de cercanía. |
+| `FOOD_TRUCK` | Food truck / gastronomía móvil. |
+| `OTRO` | Categoría no contemplada en los valores anteriores. |
+
+> Clasificación informativa y visual; todos los tipos de comercio tienen las mismas funcionalidades dentro de la plataforma. Campo candidato a usarse como filtro del catálogo público en una futura versión (no implementado en esta).
+
+---
+
+### ENUM: TipoRedSocial
+
+Plataforma o canal de contacto asociado a un link de red social cargado por el comercio.
+
+| Valor | Descripción |
+|-------|-------------|
+| `INSTAGRAM` | Perfil de Instagram. |
+| `FACEBOOK` | Página de Facebook. |
+| `TIKTOK` | Perfil de TikTok. |
+| `WHATSAPP` | Enlace directo de WhatsApp (`wa.me`), distinto del campo `Comercio.telefono`. |
+| `X` | Perfil de X (ex Twitter). |
+| `SITIO_WEB` | Sitio web propio del comercio. |
+| `OTRO` | Otro canal no contemplado en los valores anteriores. |
 
 ---
 
@@ -96,11 +125,11 @@ Ciclo de vida del comercio en la plataforma.
 | `PENDIENTE` | Solicitud de alta enviada; pendiente de revisión por el Administrador. No visible en el catálogo. |
 | `APROBADO` | Aprobado por el Administrador. Visible y operable en la plataforma (sujeto a horario y `cerrado_manualmente`). |
 | `RECHAZADO` | Solicitud rechazada por el Administrador con motivo. Puede presentar una re-solicitud de aprobación. |
-| `SUSPENDIDO` | Suspendido por el Administrador. Oculto del catálogo. El representante puede enviar mensaje de soporte. |
-| `INACTIVO` | Inactivado por propagación desde el usuario representante (3 meses sin actividad). Oculto del catálogo. |
-| `CERRADO_TEMPORALMENTE` | Cerrado automáticamente por bloqueo del usuario representante. Se restaura a `APROBADO` al recuperar la contraseña. |
+| `SUSPENDIDO` | Suspendido por el Administrador. Oculto del catálogo. El Dueno titular puede enviar mensaje de soporte. |
+| `INACTIVO` | Inactivado por propagación desde el Dueno titular (3 meses sin actividad). Oculto del catálogo. |
+| `CERRADO_TEMPORALMENTE` | Cerrado automáticamente por bloqueo del Dueno titular. Se restaura a `APROBADO` al recuperar la contraseña. |
 
-> **Regla de visibilidad:** El comercio se muestra como abierto únicamente si `estado = APROBADO AND usuario.estado = ACTIVO AND cerrado_manualmente = false AND hora actual dentro de alguna franja de Horario`.
+> **Regla de visibilidad:** El comercio se muestra como abierto únicamente si `estado = APROBADO AND Dueno.usuario.estado = ACTIVO AND cerrado_manualmente = false AND hora actual dentro de alguna franja de Horario`.
 
 ---
 
@@ -130,8 +159,22 @@ Propósito funcional del token de seguridad de un solo uso.
 | `VERIFICACION_EMAIL` | Token enviado al registrarse para verificar la dirección de email. |
 | `RECUPERACION_PASSWORD` | Token enviado para restablecer la contraseña olvidada. También desbloquea usuarios en estado `BLOQUEADO`. |
 | `REACTIVACION_CUENTA` | Token enviado para reactivar una cuenta en estado `INACTIVO`. |
+| `INVITACION_EMPLEADO` | Token enviado a la persona invitada por un Dueno para operar un comercio como Empleado. |
 
+> **Nota de implementación (MVP, Tramo 16.12 de `03. Implementación`, 2026-07-28):** el MVP se apartó de este diseño original para los 3 tipos de token existentes en ese momento (`VERIFICACION_EMAIL`, `RECUPERACION_PASSWORD`, `REACTIVACION_CUENTA`) — se generan como un código numérico de 6 dígitos (no UUID v4), pensado para tipeo manual por el usuario en una pantalla de la app, no como parte de un link. `INVITACION_EMPLEADO` se incorpora con posterioridad a esa nota; salvo indicación en contrario en `docs/DECISIONES.md`, sigue el diseño original (UUID v4 como parte de un link de invitación por email). El resto del párrafo (tabla `Token` discriminada por `tipo`, expiración según duración por tipo, invalidación tras el primer uso) sigue vigente sin cambios. Detalle completo en `03. Implementación/docs/modelo-mvp.md` (tabla `token`) y `03. Implementación/docs/DECISIONES.md`.
+>
 > Todos los tokens se generan como UUID v4, se almacenan en la tabla `Token` discriminada por `tipo`, expiran según la duración definida para cada tipo, y se invalidan tras su primer uso.
+---
+
+### ENUM: EstadoEmpleadoComercio
+
+Estado de la relación entre un Empleado y un Comercio puntual (tabla `EmpleadoComercio`).
+
+| Valor | Descripción |
+|-------|-------------|
+| `PENDIENTE` | Invitación generada; el empleado aún no confirmó su alta en este comercio. |
+| `ACTIVO` | El empleado opera este comercio con normalidad. |
+| `DESACTIVADO` | El Dueno de este comercio desactivó la relación. No afecta las relaciones del empleado con otros comercios. |
 
 ---
 
@@ -194,7 +237,7 @@ Motivo estructurado por el cual el comercio rechazó un pedido en estado `PENDIE
 | `PRODUCTO_NO_DISPONIBLE_TEMPORAL` | Algún producto del pedido está temporalmente no disponible. |
 | `SIN_DELIVERY_DISPONIBLE` | No hay personal de reparto disponible para realizar la entrega. |
 | `PROBLEMA_TECNICO` | Inconveniente técnico interno del comercio. |
-| `OTRO` | Motivo no categorizado; se complementa con `Pedido.detalle_rechazo` en texto libre. |
+| `OTRO` | Motivo no categorizado; se complementa con `Pedido.comentario_rechazo` en texto libre. |
 
 ---
 
@@ -215,6 +258,20 @@ Estados del ciclo de vida de un pedido.
 | `ANULADO` | Anulado por el comercio desde estado `EN_PREPARACION`. | Sí |
 | `CANCELADO_POR_SISTEMA` | Cancelado automáticamente por el sistema (timeout de pago no confirmado, pago rechazado por MP, suspensión o inactivación del comercio). El reembolso se genera **solo** si el pago ya había sido confirmado previamente. | Condicional |
 | `EXPIRADO` | El comercio no respondió dentro de 1 hora tras la confirmación del pago. | Sí |
+
+---
+
+### ENUM: EstadoDetallePedido
+
+Estado individual de un ítem (`DetallePedido`) dentro de un pedido ya confirmado. Permite cancelar o anular un ítem puntual sin afectar el resto del pedido — agregado 2026-08-28, ver `docs/DECISIONES.md`.
+
+| Valor | Descripción |
+|-------|-------------|
+| `ACTIVO` | Estado inicial de todo ítem al confirmarse el pedido. Sin cancelación ni anulación. |
+| `CANCELADO` | El ítem fue cancelado (a pedido del cliente o del comercio, según la lógica de negocio que se defina en el tramo de implementación). Estado terminal. |
+| `ANULADO` | El ítem fue anulado por el comercio con motivo (`motivo_anulacion`). Estado terminal. |
+
+> `CANCELADO` y `ANULADO` son ambos terminales: un ítem que sale de `ACTIVO` no vuelve a `ACTIVO` ni cambia entre sí. La distinción exacta entre ambos valores (quién puede llevar un ítem a cada uno, y bajo qué circunstancia) es lógica de negocio pendiente del tramo que implemente los endpoints de cancelación/anulación parcial — fuera de alcance del tramo de modelo de datos que introdujo este ENUM.
 
 ---
 
@@ -326,21 +383,21 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 
 | Valor | Cód. | Destinatario | Canal | Descripción |
 |-------|------|-------------|-------|-------------|
-| `NUEVO_PEDIDO` | T1 | Comercio | Push | Nuevo pedido recibido en estado `PENDIENTE`. |
+| `NUEVO_PEDIDO` | T1 | Dueno y Empleados activos del comercio | Push | Nuevo pedido recibido en estado `PENDIENTE`. |
 | `PEDIDO_ACEPTADO` | T2 | Cliente | Push | Pedido aceptado por el comercio; pasa directamente a `EN_PREPARACION`. |
 | `PEDIDO_RECHAZADO` | T3 | Cliente | Push | Pedido rechazado por el comercio con motivo. |
 | `PEDIDO_EN_CAMINO` | T5 | Cliente | Push | Pedido despachado (modalidad `DOMICILIO`). |
 | `PEDIDO_LISTO_RETIRO` | T6 | Cliente | Push | Pedido listo para retirar en el local (modalidad `RETIRO`). |
 | `AVISO_75MIN_SIN_CONFIRMACION` | T7 | Cliente | Push | Aviso preventivo: 75 min en estado `EN_CAMINO` sin confirmación de recepción. |
 | `PEDIDO_AUTOCONFIRMADO` | T8 | Cliente | Push | Pedido autoconfirmado como `ENTREGADO` a los 90 min. Incluye opciones para iniciar reclamo o contactar al comercio. |
-| `PEDIDO_CANCELADO_CLIENTE` | T9 | Comercio | Push | El cliente canceló un pedido activo. |
+| `PEDIDO_CANCELADO_CLIENTE` | T9 | Dueno y Empleados activos del comercio | Push | El cliente canceló un pedido activo. |
 | `PEDIDO_ANULADO_COMERCIO` | T10 | Cliente | Push | El comercio anuló el pedido desde `EN_PREPARACION`. |
 | `PEDIDO_CANCELADO_SISTEMA` | T11 | Cliente | Push + Email | Pedido cancelado por el sistema con motivo (suspensión, timeout, pago rechazado). |
 | `PEDIDO_EXPIRADO_CLIENTE` | T12 | Cliente | Push | El comercio no respondió en 1 hora; pedido expirado y reembolso en proceso. |
-| `PEDIDO_EXPIRADO_COMERCIO` | T13 | Comercio | Push | Aviso al comercio de pedido expirado por falta de respuesta. |
-| `COMERCIO_APROBADO` | T14 | Comercio | Push + Email | La solicitud del comercio fue aprobada por el Administrador. |
-| `COMERCIO_RECHAZADO` | T15 | Comercio | Push + Email | La solicitud del comercio fue rechazada con motivo. |
-| `COMERCIO_SUSPENDIDO` | T16 | Comercio | Push + Email | El comercio fue suspendido por el Administrador con motivo. |
+| `PEDIDO_EXPIRADO_COMERCIO` | T13 | Dueno y Empleados activos del comercio | Push | Aviso al comercio de pedido expirado por falta de respuesta. |
+| `COMERCIO_APROBADO` | T14 | Dueno | Push + Email | La solicitud del comercio fue aprobada por el Administrador. |
+| `COMERCIO_RECHAZADO` | T15 | Dueno | Push + Email | La solicitud del comercio fue rechazada con motivo. |
+| `COMERCIO_SUSPENDIDO` | T16 | Dueno y Empleados activos del comercio | Push + Email | El comercio fue suspendido por el Administrador con motivo. |
 | `NUEVO_COMERCIO_PENDIENTE` | T17 | Administrador | Push | Nueva solicitud de alta de comercio para revisar en el panel. |
 | `NUEVA_RESOLICITUD_COMERCIO` | T18 | Administrador | Push | Re-solicitud de aprobación de un comercio rechazado. |
 | `NUEVO_RECLAMO` | T19 | Administrador | Push | Nuevo reclamo iniciado por un cliente. |
@@ -348,13 +405,26 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 | `RECLAMO_RECHAZADO` | T21 | Cliente | Push | Reclamo rechazado con motivo por el Administrador. |
 | `NUEVO_MENSAJE_SOPORTE` | T22 | Administrador | Push | Nuevo mensaje de soporte de un usuario suspendido. |
 | `PRODUCTO_REMOVIDO_CARRITO` | T23 | Cliente | Push | Un producto fue eliminado del carrito activo por pasar a `AGOTADO` o `DESCONTINUADO`. |
-| `CUENTA_INACTIVADA` | T24 | Cliente / Comercio | Email | Cuenta inactivada automáticamente por 3 meses sin actividad. |
-| `COMERCIO_INACTIVADO` | T25 | Comercio | Email | Comercio inactivado automáticamente por inactividad del usuario representante. |
+| `CUENTA_INACTIVADA` | T24 | Cliente, Dueno o Empleado | Email | Cuenta inactivada automáticamente por 3 meses sin actividad. |
+| `COMERCIO_INACTIVADO` | T25 | Dueno | Email | Comercio inactivado automáticamente por inactividad del Dueno titular. |
 | `PEDIDO_CERRADO_TIMER_SUSPENSION` | T26 | Cliente | Push | Pedido `LISTO_PARA_RETIRAR` cerrado automáticamente por vencimiento del timer de 90 min durante la suspensión del comercio, sin reembolso. |
 | `REEMBOLSO_FALLIDO_DEFINITIVO` | T27 | Administrador | Push + Email | Reembolso fallido tras 5 intentos; requiere intervención manual. |
 | `CLIENTE_SUSPENDIDO` | T28 | Cliente | Push + Email | Cliente suspendido por el Administrador con motivo. |
-| `SUSPENSION_LEVANTADA` | T29 | Cliente / Comercio | Push + Email | Suspensión levantada por el Administrador. |
-| `PEDIDO_AUTOCONFIRMADO_COMERCIO` | T30 | Comercio | Push | El sistema autoconfirmó la entrega del pedido (timer 90 min). |
+| `SUSPENSION_LEVANTADA` | T29 | Cliente o Dueno | Push + Email | Suspensión levantada por el Administrador. |
+| `PEDIDO_AUTOCONFIRMADO_COMERCIO` | T30 | Dueno y Empleados activos del comercio | Push | El sistema autoconfirmó la entrega del pedido (timer 90 min). |
+| `INVITACION_EMPLEADO` | T31 | Persona invitada | Email (+ Push si ya tiene cuenta) | Invitación para operar un comercio como Empleado. |
+| `EMPLEADO_DESACTIVADO` | T32 | Empleado | Push | El Dueno desactivó al empleado de un comercio puntual. |
+
+---
+
+### ENUM: TipoEntidadNotificacion
+
+Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificación permite un deep-link a un recurso concreto (ej. "ver pedido" desde la campana de notificaciones). Diseño genérico (`entidad_tipo` + `entidad_id`) en vez de una columna `*_id` nullable por cada tipo de entidad referenciable — ver regla de negocio de integridad en `Tabla: Notificacion` más abajo.
+
+| Valor | Descripción |
+|-------|-------------|
+| `PEDIDO` | `entidad_id` referencia un `Pedido.id`. |
+| `COMERCIO` | `entidad_id` referencia un `Comercio.id`. |
 
 ---
 
@@ -377,7 +447,7 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 
 ### Tabla: Localidad
 
-**Descripción:** Catálogo estático de localidades de Argentina. Precargado desde la API Georef. Cada localidad pertenece a una provincia.
+**Descripción:** Catálogo estático de localidades de Argentina. Precargado desde la API Georef. Cada localidad pertenece a una provincia. **Excepción (MVP, Tramo 16.12):** la fila de Tolhuin (Tierra del Fuego) no viene de la API Georef — no existe en su endpoint /localidades— se cargó aparte vía migración Flyway; verdocs/modelo-mvp.md.
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
@@ -431,9 +501,10 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 | `id` | INT | NO | AI | PK, AI | Identificador único del usuario. Compartido con `Persona` (mismo valor). |
 | `email` | VARCHAR(150) | NO | — | NN, UQ | Dirección de email. Identificador de acceso único en toda la plataforma. |
 | `password_hash` | VARCHAR(255) | NO | — | NN | Hash de la contraseña generado con BCrypt. Nunca se almacena en texto plano. |
-| `rol` | ENUM RolUsuario | NO | — | NN | Rol funcional: `CLIENTE`, `COMERCIO` o `ADMINISTRADOR`. Determina las entidades asociadas y los permisos de la API. |
+| `rol` | ENUM RolUsuario | NO | — | NN | Rol funcional: `CLIENTE`, `DUENO`, `EMPLEADO` o `ADMINISTRADOR`. Determina las entidades asociadas y los permisos de la API. |
 | `estado` | ENUM EstadoUsuario | NO | `'PENDIENTE'` | NN | Estado operacional actual del usuario. Consultado en cada validación de seguridad. |
 | `email_verificado` | TINYINT(1) | NO | `false` | NN | `true` una vez que el usuario consumió exitosamente el token de `VERIFICACION_EMAIL`. |
+| `foto_perfil_url` | VARCHAR(500) | SÍ | NULL | — | URL en Cloudinary de la foto de perfil personal del usuario. Opcional para los cuatro roles. Campo independiente de `Comercio.foto_perfil_url` (logo del negocio): no se comparte entre los distintos comercios de un mismo Dueno. |
 | `intentos_fallidos` | INT | NO | `0` | NN | Contador de intentos fallidos de login o de cambio de contraseña desde perfil. Se resetea al autenticarse correctamente. Al llegar a 3, el usuario pasa a `BLOQUEADO`. |
 | `fecha_registro` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación del registro de usuario. Inmutable. |
 | `fecha_ultimo_acceso` | DATETIME | SÍ | NULL | — | Fecha y hora del último inicio de sesión exitoso. Criterio para detectar inactividad (3 meses sin actualización = `INACTIVO`). |
@@ -545,41 +616,81 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 
 ---
 
+### Tabla: Empleado
+
+**Descripción:** Subtipo de `PersonaFisica` con rol `EMPLEADO`. Tabla de identidad que actúa como nodo de unión entre el usuario y los comercios donde opera (relación M:N vía `EmpleadoComercio`). No tiene columnas propias más allá de la PK y el timestamp de creación.
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `id` | INT | NO | — | PK, FK → PersonaFisica.id | Mismo valor que `PersonaFisica.id`. |
+| `fecha_creacion` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación del registro de empleado. |
+
+**Índices:** `PRIMARY KEY (id)`
+
+**Reglas de negocio:**
+- No lleva `fecha_modificacion` ni `fecha_baja` propias: la baja de la cuenta se maneja vía `Usuario.estado` (`SUSPENDIDO`/`INACTIVO`), igual que `Cliente` y `Administrador`.
+- La baja de un Empleado en un comercio puntual (sin afectar sus otras relaciones) se maneja vía `EmpleadoComercio.estado = DESACTIVADO`, no en esta tabla.
+
+---
+
+### Tabla: Dueno
+
+**Descripción:** Subtipo de `PersonaJuridica` **y** de `PersonaFisica` simultáneamente, con rol `DUENO`. Tabla de identidad del titular de uno o varios `Comercio`. Representa que el titular legal del negocio (`PersonaJuridica`) es siempre la misma persona física (`PersonaFisica`) que se registró en la plataforma — ambas relaciones son 1:1 y corresponden al mismo `Persona`/`Usuario`. No tiene columnas propias más allá de la PK, la FK hacia `PersonaFisica` y el timestamp de creación: los datos personales viven en `PersonaFisica`, los datos fiscales en `PersonaJuridica` y los datos del negocio en `Comercio`.
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `id` | INT | NO | — | PK, FK → PersonaJuridica.id | Mismo valor que `PersonaJuridica.id`. |
+| `persona_fisica_id` | INT | NO | — | FK → PersonaFisica.id, NN, UQ | Persona física titular del negocio. Misma persona que ya está asociada a este Usuario/Persona vía la relación de herencia estándar — esta FK existe para permitir navegar directamente de Dueno a sus datos personales sin atravesar el nodo Persona. |
+| `fecha_creacion` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación del registro de Dueno. |
+
+**Índices:** `PRIMARY KEY (id)`, `UNIQUE KEY (persona_fisica_id)`
+
+**Reglas de negocio:**
+- No lleva `fecha_modificacion` ni `fecha_baja` propias: la baja de la cuenta se maneja vía `Usuario.estado` (`SUSPENDIDO`/`INACTIVO`), igual que `Cliente` y `Administrador`.
+- Un Dueno puede tener múltiples `Comercio` asociados (relación N:1 nativa desde `Comercio.dueno_id`).
+- La vinculación de MercadoPago (`CuentaMercadoPago`) cuelga del Dueno, no de cada comercio: se vincula una sola vez y habilita el cobro en todos sus comercios aprobados.
+- `persona_fisica_id` debe corresponder siempre a la misma fila de `PersonaFisica` asociada al `Persona` del cual este `Dueno` desciende (vía `PersonaJuridica.id = Dueno.id = Persona.id`). No se valida a nivel de FK que ambas relaciones apunten al mismo `Persona.id` — es responsabilidad del `RegistroService` garantizarlo al crear ambas filas en la misma transacción de registro.
+
+---
+
 ## 4. Módulo Comercio
 
 ---
 
 ### Tabla: Comercio
 
-**Descripción:** Entidad principal que representa a un comercio gastronómico en la plataforma. Vinculado a una `PersonaJuridica` como titular legal. Tiene estado propio que puede ser afectado automáticamente por el estado de su usuario representante. Los motivos y fechas de cada transición de estado se registran exclusivamente en `HistorialEstadoComercio`; esta tabla conserva únicamente el estado operacional actual y los atributos que no tienen naturaleza histórica repetible.
+**Descripción:** Entidad principal que representa a un comercio gastronómico en la plataforma. Vinculado a un `Dueno` como titular. Un mismo Dueno puede administrar varios comercios (relación N:1). Tiene estado propio que puede ser afectado automáticamente por el estado de su Dueno titular. Los motivos y fechas de cada transición de estado se registran exclusivamente en `HistorialEstadoComercio`; esta tabla conserva únicamente el estado operacional actual y los atributos que no tienen naturaleza histórica repetible.
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
 | `id` | INT | NO | AI | PK, AI | Identificador único del comercio. |
-| `persona_juridica_id` | INT | NO | — | FK → PersonaJuridica.id, NN | Persona jurídica titular del comercio. Por regla de negocio de esta versión, una PersonaJuridica representa exactamente un Comercio. |
+| `dueno_id` | INT | NO | — | FK → Dueno.id, NN | Dueno titular del comercio. Relación N:1: un mismo Dueno puede administrar varios comercios. |
 | `nombre` | VARCHAR(150) | NO | — | NN | Nombre comercial o de fantasía del comercio. |
 | `descripcion` | TEXT | SÍ | NULL | — | Descripción libre del comercio: propuesta de valor, especialidades, etc. |
-| `foto_perfil_url` | VARCHAR(500) | NO | — | NN | URL de la imagen de perfil del comercio almacenada en Cloudinary. |
+| `foto_perfil_url` | VARCHAR(500) | NO | — | NN | URL del logo/imagen de perfil del comercio almacenada en Cloudinary. Campo propio de cada comercio: no se comparte entre los distintos comercios de un mismo Dueno, a diferencia de `Usuario.foto_perfil_url` (foto personal del Dueno/Empleado). |
 | `telefono` | VARCHAR(30) | NO | — | NN | Teléfono de contacto del comercio. Se usa para generar enlace `wa.me`. |
-| `email` | VARCHAR(150) | NO | — | NN | Email de contacto del comercio (puede ser distinto al email del usuario representante). |
-| `tipo_comercio` | ENUM TipoComercio | NO | — | NN | Categoría del negocio: `RESTAURANTE` o `EMPRENDIMIENTO`. |
+| `email` | VARCHAR(150) | NO | — | NN | Email de contacto del comercio (puede ser distinto al email del Dueno titular). |
+| `tipo_comercio` | ENUM TipoComercio | NO | — | NN | Categoría del negocio (ver ENUM TipoComercio, 12 valores). Clasificación informativa y visual; no altera funcionalidades. |
 | `acepta_delivery` | TINYINT(1) | NO | `false` | NN | `true` si el comercio ofrece entrega a domicilio. |
 | `acepta_retiro` | TINYINT(1) | NO | `false` | NN | `true` si el comercio permite retiro en el local. |
 | `estado` | ENUM EstadoComercio | NO | `'PENDIENTE'` | NN | Estado operacional actual del comercio. Consultado en cada validación de pedido. |
 | `cerrado_manualmente` | TINYINT(1) | NO | `false` | NN | `true` si el comerciante cerró manualmente su tienda. Independiente del estado y del horario. Se combina con ambos para determinar la disponibilidad real. |
 | `fecha_resolicitud` | DATETIME | SÍ | NULL | — | Fecha y hora en que el comercio presentó una nueva solicitud de aprobación tras ser rechazado. Permite al Administrador distinguir re-solicitudes de solicitudes iniciales en el panel de revisión. |
-| `mp_vinculado` | TINYINT(1) | NO | `false` | NN | `true` si existe una `CuentaMercadoPago` activa para este comercio. Se actualiza al vincular o desvincular. |
+| `mp_vinculado` | TINYINT(1) | NO | `false` | NN | `true` si el Dueno titular de este comercio tiene una `CuentaMercadoPago` activa. Se actualiza en TODOS los comercios del mismo Dueno al vincular o desvincular. |
 | `fecha_registro` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación del comercio en el sistema. Inmutable. |
 | `fecha_modificacion` | DATETIME | SÍ | NULL | — | Fecha y hora de la última modificación del perfil del comercio (nombre, descripción, teléfono, foto, modalidades). |
 
 > **Campos eliminados en v1.1:** `motivo_rechazo`, `fecha_rechazo`, `motivo_suspension`, `fecha_suspension`, `fecha_aprobacion`, `fecha_reactivacion`. Todos se obtienen desde `HistorialEstadoComercio` con `WHERE comercio_id = ? AND estado_destino = 'RECHAZADO' ORDER BY fecha_hora DESC LIMIT 1` (o el `estado_destino` correspondiente).
 
-**Índices:** `PRIMARY KEY (id)` | `INDEX (persona_juridica_id)` | `INDEX (estado)`
+**Índices:** `PRIMARY KEY (id)` | `INDEX (dueno_id)` | `INDEX (estado)`
 
 **Reglas de negocio:**
-- Un comercio puede recibir pedidos si: `estado = APROBADO AND mp_vinculado = true AND cerrado_manualmente = false AND usuario representante ACTIVO AND hora actual dentro de Horario`.
-- Propagación automática desde el estado del usuario: `BLOQUEADO → CERRADO_TEMPORALMENTE`; `INACTIVO → INACTIVO`; `SUSPENDIDO → SUSPENDIDO`.
-- Al recuperar contraseña (desbloqueo del usuario): si `estado = CERRADO_TEMPORALMENTE`, se restaura automáticamente a `APROBADO`.
+- Un comercio puede recibir pedidos si: `estado = APROBADO AND mp_vinculado = true AND cerrado_manualmente = false AND Dueno titular con Usuario.estado = ACTIVO AND hora actual dentro de Horario`.
+- Propagación automática desde el estado del `Usuario` del Dueno titular hacia TODOS los comercios que administra: `BLOQUEADO → CERRADO_TEMPORALMENTE`; `INACTIVO → INACTIVO`; `SUSPENDIDO → SUSPENDIDO`.
+- Al recuperar contraseña (desbloqueo del Dueno): se restaura automáticamente a `APROBADO` el estado de todos los comercios de ese Dueno que estuvieran en `CERRADO_TEMPORALMENTE`.
+- Al reactivarse la cuenta del Dueno (token de reactivación): se restaura automáticamente a `APROBADO` el estado de todos los comercios de ese Dueno que estuvieran en `INACTIVO`.
+- La suspensión de un comercio puntual por el Administrador es una acción a nivel `Comercio`: cambia el estado de ese comercio a `SUSPENDIDO` sin alterar el estado del Dueno ni el de sus demás comercios.
+- Los cambios de estado sobre la cuenta de un Empleado no propagan ningún efecto sobre los comercios donde opera.
 - Para obtener el motivo y fecha del último rechazo: `SELECT motivo, fecha_hora FROM HistorialEstadoComercio WHERE comercio_id = ? AND estado_destino = 'RECHAZADO' ORDER BY fecha_hora DESC LIMIT 1`.
 - Para obtener el motivo y fecha de la última suspensión: ídem con `estado_destino = 'SUSPENDIDO'`.
 - Para obtener la fecha de la última aprobación o reactivación: ídem con `estado_destino = 'APROBADO'`.
@@ -606,28 +717,73 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 
 ---
 
+### Tabla: RedSocial
+
+**Descripción:** Links de contacto y redes sociales cargados manualmente por el comercio (Dueno o Empleado autorizado), visibles en su perfil público. No implica integración OAuth ni sincronización automática con las plataformas externas — ver aclaración en Alcance y Limitaciones.
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `id` | INT | NO | AI | PK, AI | Identificador único del link. |
+| `comercio_id` | INT | NO | — | FK → Comercio.id, NN | Comercio Dueno del link. |
+| `tipo` | ENUM TipoRedSocial | NO | — | NN | Plataforma o canal del link. |
+| `url` | VARCHAR(500) | NO | — | NN | Link completo. |
+| `fecha_creacion` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación del registro. |
+| `fecha_modificacion` | DATETIME | SÍ | NULL | — | Fecha y hora de la última edición de la url. |
+| `fecha_baja` | DATETIME | SÍ | NULL | — | Baja lógica, si el comercio elimina el link. |
+
+**Índices:** `PRIMARY KEY (id)` | `INDEX (comercio_id)` | `UNIQUE (comercio_id, tipo)`
+
+**Reglas de negocio:**
+- El `UNIQUE (comercio_id, tipo)` aplica solo a filas activas (`fecha_baja IS NULL`) a nivel de validación de aplicación, no como constraint SQL — permite recargar un tipo de red social dado de baja anteriormente.
+- Mínimo 1 fila por `comercio_id`, validado a nivel aplicación.
+
+---
+
 ### Tabla: CuentaMercadoPago
 
-**Descripción:** Credenciales OAuth del comercio en MercadoPago bajo el modelo Marketplace con split de pagos. El `access_token` permite al backend crear preferencias de pago con `application_fee` en nombre del comercio.
+**Descripción:** Credenciales OAuth del Dueno en MercadoPago bajo el modelo Marketplace con split de pagos. Se vincula una única vez por Dueno y habilita el cobro en todos los comercios que administra. El `access_token` permite al backend crear preferencias de pago con `application_fee` en nombre de esos comercios.
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
 | `id` | INT | NO | AI | PK, AI | Identificador único del registro. |
-| `comercio_id` | INT | NO | — | FK → Comercio.id, NN, UQ | Comercio al que pertenece la cuenta vinculada. UNIQUE: un solo registro por comercio. |
+| `dueno_id` | INT | NO | — | FK → Dueno.id, NN, UQ | Dueno al que pertenece la cuenta vinculada. UNIQUE: un solo registro por Dueno, compartido por todos sus comercios. |
 | `mp_user_id` | VARCHAR(50) | NO | — | NN | ID del usuario en la plataforma de MercadoPago (obtenido durante el flujo OAuth). |
-| `access_token` | VARCHAR(255) | NO | — | NN | Token de acceso OAuth para llamadas a la API de MP en nombre del comercio. Sensible: considerar cifrado en reposo. |
+| `access_token` | VARCHAR(255) | NO | — | NN | Token de acceso OAuth para llamadas a la API de MP en nombre del Dueno. Sensible: considerar cifrado en reposo. |
 | `refresh_token` | VARCHAR(255) | NO | — | NN | Token de renovación OAuth para obtener un nuevo `access_token` antes de que expire. Sensible. |
-| `public_key` | VARCHAR(255) | SÍ | NULL | — | Clave pública del comercio en MercadoPago. Puede usarse para inicializar el SDK en el frontend. |
+| `public_key` | VARCHAR(255) | SÍ | NULL | — | Clave pública del Dueno en MercadoPago. Puede usarse para inicializar el SDK en el frontend. |
 | `activa` | TINYINT(1) | NO | `true` | NN | `true` si la vinculación está activa. Pasa a `false` al desvincular. |
-| `fecha_vinculacion` | DATETIME | NO | `NOW()` | NN | Fecha y hora en que el comercio completó el flujo OAuth exitosamente. |
-| `fecha_desvinculacion` | DATETIME | SÍ | NULL | — | Fecha y hora en que el comercio desvinculó su cuenta. Se popula al desvincular. |
+| `fecha_vinculacion` | DATETIME | NO | `NOW()` | NN | Fecha y hora en que el Dueno completó el flujo OAuth exitosamente. |
+| `fecha_desvinculacion` | DATETIME | SÍ | NULL | — | Fecha y hora en que el Dueno desvinculó su cuenta. Se popula al desvincular. |
 | `token_expira` | DATETIME | SÍ | NULL | — | Fecha y hora de expiración del `access_token`. El sistema debe renovar antes de que venza. |
 
-**Índices:** `PRIMARY KEY (id)` | `UNIQUE (comercio_id)`
+**Índices:** `PRIMARY KEY (id)` | `UNIQUE (dueno_id)`
 
 **Reglas de negocio:**
-- Al desvincular: `activa = false`, `fecha_desvinculacion = NOW()`, `Comercio.mp_vinculado = false`.
-- Al vincular (nueva o renovación): `activa = true`, `Comercio.mp_vinculado = true`.
+- Al desvincular: `activa = false`, `fecha_desvinculacion = NOW()`; se actualiza `mp_vinculado = false` en TODOS los comercios de ese Dueno.
+- Al vincular (nueva o renovación): `activa = true`; se actualiza `mp_vinculado = true` en TODOS los comercios de ese Dueno.
+
+---
+
+### Tabla: EmpleadoComercio
+
+**Descripción:** Tabla puente M:N entre `Empleado` y `Comercio`. Cada fila representa la relación entre un empleado y un comercio puntual, controlada de forma independiente por el Dueno de ESE comercio — no afecta las relaciones del empleado con otros comercios, incluso si pertenecen a otro Dueno.
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `id` | INT | NO | AI | PK, AI | Identificador único de la relación. |
+| `empleado_id` | INT | NO | — | FK → Empleado.id, NN | Empleado vinculado al comercio. |
+| `comercio_id` | INT | NO | — | FK → Comercio.id, NN | Comercio donde opera el empleado. |
+| `estado` | ENUM EstadoEmpleadoComercio | NO | `'PENDIENTE'` | NN | Estado de la relación empleado-comercio. |
+| `fecha_alta` | DATETIME | NO | `NOW()` | NN | Fecha y hora en que se generó la invitación (creación de la fila). |
+| `fecha_baja` | DATETIME | SÍ | NULL | — | Fecha y hora en que el Dueno de ese comercio desactivó la relación (`estado → DESACTIVADO`). |
+
+**Índices:** `PRIMARY KEY (id)` | `UNIQUE (empleado_id, comercio_id)` | `INDEX (comercio_id)` | `INDEX (empleado_id)`
+
+**Reglas de negocio:**
+- Si el email invitado ya corresponde a un `Usuario` existente en la plataforma (sea `Cliente`, `Empleado` en otro comercio, u otro rol), la invitación reutiliza ese `Usuario`/`PersonaFisica`: si aún no tiene fila en `Empleado`, se crea únicamente esa fila (sin pedir de nuevo nombre, apellido, DNI o contraseña); en cualquier caso se crea la fila nueva en `EmpleadoComercio` para este comercio. Solo si el email no corresponde a ningún `Usuario` existente se crean `Usuario`/`PersonaFisica`/`Empleado` desde cero. Comportamiento intencional, no un bug a prevenir — ver `docs/DECISIONES.md`.
+- El registro queda en `PENDIENTE` hasta que el empleado confirma su email (token `INVITACION_EMPLEADO`).
+- El Dueno puede pasar el estado a `DESACTIVADO` en cualquier momento para su comercio puntual, sin afectar los otros comercios donde ese empleado esté `ACTIVO`.
+- No lleva `fecha_modificacion`: no se registra el momento exacto de la transición `PENDIENTE → ACTIVO`.
 
 ---
 
@@ -649,7 +805,7 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 
 **Reglas de negocio:**
 - Tabla append-only. Nunca se modifica ni elimina ningún registro.
-- `administrador_id = NULL` identifica transiciones automáticas del sistema (ej.: `APROBADO → CERRADO_TEMPORALMENTE` por bloqueo del usuario representante).
+- `administrador_id = NULL` identifica transiciones automáticas del sistema (ej.: `APROBADO → CERRADO_TEMPORALMENTE` por bloqueo del Dueno titular).
 - Para obtener el motivo y fecha del último rechazo: `SELECT motivo, fecha_hora FROM HistorialEstadoComercio WHERE comercio_id = ? AND estado_destino = 'RECHAZADO' ORDER BY fecha_hora DESC LIMIT 1`.
 - Para obtener el motivo y fecha de la última suspensión: ídem con `estado_destino = 'SUSPENDIDO'`.
 
@@ -680,18 +836,18 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 
 ### Tabla: Token
 
-**Descripción:** Tokens de un solo uso para operaciones críticas de seguridad. Tabla discriminada por el campo `tipo` que unifica los tres flujos de tokenización del sistema. Los tokens se generan como UUID v4 y se envían al usuario por email como parte de un enlace de acción.
+**Descripción:** Tokens de un solo uso para operaciones críticas de seguridad. Tabla discriminada por el campo `tipo` que unifica los tres flujos de tokenización del sistema. Los tokens se generan como UUID v4 y se envían al usuario por email como parte de un enlace de acción. **MVP (Tramo 16.12):** en vez de UUID v4 y de un enlace, el MVP usa un código numérico de 6 dígitos que el usuario tipea a mano en la app — ver nota en `ENUM: TipoToken` más arriba.
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
 | `id` | INT | NO | AI | PK, AI | Identificador único del registro de token. |
 | `usuario_id` | INT | NO | — | FK → Usuario.id, NN | Usuario al que pertenece el token. |
 | `tipo` | ENUM TipoToken | NO | — | NN | Propósito del token: `VERIFICACION_EMAIL`, `RECUPERACION_PASSWORD` o `REACTIVACION_CUENTA`. |
-| `token` | VARCHAR(36) | NO | — | NN, UQ | Valor UUID v4 del token. Se incluye en el enlace enviado al usuario. UNIQUE para garantizar irrepetibilidad global. |
-| `fecha_creacion` | DATETIME | NO | `NOW()` | NN | Fecha y hora de generación del token. |
+| `token` | VARCHAR(36) | NO | — | NN, UQ | Valor del token. Diseño original: UUID v4 incluido en un enlace. **MVP (Tramo 16.12):** código numérico de 6 dígitos, tipeado a mano por el usuario — la columna sigue en VARCHAR(36) sin angostar (ver `docs/modelo-mvp.md`). UNIQUE para garantizar irrepetibilidad global. || `fecha_creacion` | DATETIME | NO | `NOW()` | NN | Fecha y hora de generación del token. |
 | `fecha_vencimiento` | DATETIME | NO | — | NN | Fecha y hora de expiración. Calculada al crear el token según la duración configurada para cada tipo. |
 | `fecha_uso` | DATETIME | SÍ | NULL | — | Fecha y hora en que el usuario consumió el token. Se registra al pasar a `UTILIZADO`. |
 | `estado` | ENUM EstadoToken | NO | `'PENDIENTE'` | NN | Estado del ciclo de vida del token. |
+| `intentos_fallidos` | INT | NO | `0` | NN | Contador de intentos fallidos de verificación de este token (código de 6 dígitos). Protección anti-fuerza-bruta independiente del contador de intentos de login (`Usuario.intentos_fallidos`) — ambas columnas coexisten a propósito, cada una protege una amenaza distinta (login vs. verificación de OTP/token de un solo uso). |
 
 **Índices:** `PRIMARY KEY (id)` | `UNIQUE (token)` | `INDEX (usuario_id, tipo, estado)`
 
@@ -699,6 +855,7 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 - Un job periódico actualiza a `EXPIRADO` todos los tokens donde `fecha_vencimiento <= NOW() AND estado = 'PENDIENTE'`.
 - Al consumirse: `estado = UTILIZADO`, `fecha_uso = NOW()`. No puede reutilizarse.
 - Al reenviar un token del mismo tipo para el mismo usuario, los tokens `PENDIENTE` anteriores del mismo tipo deben invalidarse.
+- Cada intento fallido de verificación (código incorrecto) incrementa `intentos_fallidos` en 1. Al alcanzar `MAX_INTENTOS_TOKEN_VERIFICACION = 5` intentos fallidos, el token deja de aceptar verificaciones aunque siga `PENDIENTE` y no haya vencido — el usuario debe solicitar un token nuevo.
 
 ---
 
@@ -746,8 +903,14 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 | `canal` | ENUM CanalNotificacion | NO | — | NN | Canal de envío: `PUSH` o `EMAIL`. |
 | `estado` | ENUM EstadoEnvioNotificacion | NO | `'PENDIENTE'` | NN | Estado del procesamiento del envío. |
 | `fecha_envio` | DATETIME | SÍ | NULL | — | Fecha y hora en que el envío fue procesado. NULL hasta que se envíe. |
+| `entidad_tipo` | ENUM TipoEntidadNotificacion | SÍ | NULL | — | Tipo de entidad referenciada por `entidad_id`, para deep-link desde la notificación (ej. "ver pedido"). NULL si la notificación no referencia ninguna entidad concreta. Va siempre junto con `entidad_id`: ambas con valor o ambas `NULL`. |
+| `entidad_id` | INT | SÍ | NULL | — | Id de la entidad referenciada, interpretado según `entidad_tipo`. Sin FK física (ver regla de negocio abajo). NULL si la notificación no referencia ninguna entidad concreta. |
 
 **Índices:** `PRIMARY KEY (id)` | `INDEX (usuario_id, leida)` | `INDEX (estado)`
+
+**Reglas de negocio:**
+- `entidad_tipo` + `entidad_id` es una referencia genérica opcional hacia cualquier entidad del sistema (hoy `PEDIDO` o `COMERCIO`, ver `ENUM: TipoEntidadNotificacion`), en vez de una columna `*_id` nullable dedicada por cada tipo de entidad referenciable — diseño abierto a sumar más valores de `entidad_tipo` a futuro sin alterar la estructura de la tabla.
+- **Sin FK física:** MySQL no soporta una FK condicional/polimórfica que apunte a distintas tablas según el valor de otra columna. La integridad de `entidad_id` respecto a la tabla indicada por `entidad_tipo` se garantiza a nivel de aplicación, no de base de datos. Si la entidad referenciada se elimina físicamente en el futuro, corresponde limpiar o anular las notificaciones asociadas a nivel de servicio.
 
 ---
 
@@ -885,6 +1048,62 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 
 ---
 
+### Tabla: GrupoExtra
+
+**Descripción:** Grupo de opciones de personalización configurado por el comercio para uno o varios productos (ej. "Agregados", "Elegí tu salsa"). Un producto puede tener múltiples grupos asociados (M:N vía `ProductoGrupoExtra`).
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `id` | INT | NO | AI | PK, AI | Identificador único del grupo. |
+| `comercio_id` | INT | NO | — | FK → Comercio.id, NN | Comercio Dueno del grupo. |
+| `nombre` | VARCHAR(100) | NO | — | NN | Nombre del grupo (ej. "Agregados", "Elegí tu salsa"). |
+| `cantidad_maxima` | INT | NO | `1` | NN | Máximo de opciones seleccionables del grupo. `1` = elegí solo una. |
+| `obligatorio` | TINYINT(1) | NO | `false` | NN | `true` exige al menos 1 selección de este grupo antes de confirmar el pedido. |
+| `fecha_creacion` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación. |
+| `fecha_modificacion` | DATETIME | SÍ | NULL | — | Fecha y hora de la última modificación. |
+| `fecha_baja` | DATETIME | SÍ | NULL | — | Baja lógica. |
+
+**Índices:** `PRIMARY KEY (id)` | `INDEX (comercio_id)`
+
+---
+
+### Tabla: Extra
+
+**Descripción:** Opción individual dentro de un `GrupoExtra` (ej. "Panceta extra"). Su precio se suma al precio del producto al seleccionarse.
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `id` | INT | NO | AI | PK, AI | Identificador único del extra. |
+| `grupo_extra_id` | INT | NO | — | FK → GrupoExtra.id, NN | Grupo al que pertenece. Un extra pertenece a un solo grupo (1:N). |
+| `nombre` | VARCHAR(100) | NO | — | NN | Nombre del extra (ej. "Panceta extra"). |
+| `precio` | DECIMAL(10,2) | NO | `0` | NN | Monto que se suma al precio del producto. |
+| `fecha_creacion` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación. |
+| `fecha_modificacion` | DATETIME | SÍ | NULL | — | Fecha y hora de la última modificación. |
+| `fecha_baja` | DATETIME | SÍ | NULL | — | Baja lógica. |
+
+**Índices:** `PRIMARY KEY (id)` | `INDEX (grupo_extra_id)`
+
+---
+
+### Tabla: ProductoGrupoExtra
+
+**Descripción:** Tabla de unión M:N entre `Producto` y `GrupoExtra`. Un producto sin filas en esta tabla no ofrece extras.
+
+| Columna | Tipo MySQL | Nulo | Restricciones | Descripción |
+|---------|------|---------------|-------------|
+| `producto_id` | INT | NO | PK (componente), FK → Producto.id | Producto que ofrece el grupo de extras. |
+| `grupo_extra_id` | INT | NO | PK (componente), FK → GrupoExtra.id | Grupo de extras ofrecido en el producto. |
+
+**Índices:** `PRIMARY KEY (producto_id, grupo_extra_id)` | `INDEX (grupo_extra_id)`
+
+**Reglas de negocio de Extras (a nivel aplicación):**
+- Producto sin filas en `ProductoGrupoExtra` no ofrece extras.
+- Al agregar un extra de un grupo con `cantidad_maxima = 1`: reemplaza cualquier otro extra del mismo grupo ya presente en ese ítem. Si `cantidad_maxima > 1`, acumula hasta el máximo.
+- Al confirmar el pedido: se valida que todo `GrupoExtra` con `obligatorio = true` asociado al producto tenga al menos un `Extra` elegido, o se rechaza la confirmación con mensaje claro.
+- El total del carrito suma `ItemCarritoExtra.precio_unitario` de todos los ítems.
+
+---
+
 ## 9. Módulo Operaciones y Ventas
 
 ---
@@ -925,6 +1144,26 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 
 ---
 
+### Tabla: ItemCarritoExtra
+
+**Descripción:** Extras seleccionados por el cliente para un ítem del carrito. Tabla de borrador: si el cliente quita el extra, la fila se elimina físicamente (no hay baja lógica), mismo criterio que `ItemCarrito`.
+
+| Columna | Tipo MySQL | Nulo | Restricciones | Descripción |
+|---------|------|---------------|-------------|
+| `id` | INT | NO | PK, AI | Identificador único. |
+| `item_carrito_id` | INT | NO | FK → ItemCarrito.id, NN | Ítem del carrito al que pertenece el extra. |
+| `extra_id` | INT | NO | FK → Extra.id, NN | Extra seleccionado. |
+| `precio_unitario` | DECIMAL(10,2) | NO | NN | Precio congelado al agregarse al carrito. |
+| `fecha_creacion` | DATETIME | NO | `NOW()` | Momento en que el cliente agregó este extra al ítem del carrito. |
+
+**Índices:** `PRIMARY KEY (id)` | `INDEX (item_carrito_id)` | `INDEX (extra_id)`
+
+**Reglas de negocio:**
+- No lleva `fecha_modificacion` ni `fecha_baja`: si el cliente quita el extra, la fila se elimina físicamente; si cambia de opinión, se inserta como fila nueva.
+- **Confirmado con Diego (2026-08-26):** el costo del extra en el carrito es `precio_unitario × ItemCarrito.cantidad` del ítem padre (mismo criterio que en el pedido, ver `DetallePedidoExtra`). Ejemplo: 2 hamburguesas con panceta extra ($500 c/u) = $1.000 de panceta en el subtotal del carrito.
+
+---
+
 ### Tabla: Pedido
 
 **Descripción:** Pedido generado por un cliente. Cubre el ciclo completo desde la creación (antes del pago) hasta la entrega. Contiene el snapshot de montos al momento de la transacción y los metadatos del ciclo de vida. Los timestamps de cada transición de estado se registran exclusivamente en `HistorialEstadoPedido`; esta tabla conserva únicamente el estado operacional actual y `fecha_creacion` (evento único, no repetible). El `id` del pedido se usa como `external_reference` en MercadoPago para correlacionar webhooks.
@@ -945,7 +1184,7 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 | `suspension_retiro_expira` | DATETIME | SÍ | NULL | — | Fecha y hora de expiración del timer de 90 minutos para pedidos `LISTO_PARA_RETIRAR` afectados por la suspensión del comercio. NULL si no aplica. |
 | `primer_aviso_emitido` | TINYINT(1) | NO | `false` | NN | Flag de idempotencia: `true` una vez emitido el aviso de los 75 minutos (T7) para pedidos en `EN_CAMINO`. Evita duplicados en reintentos del job periódico. |
 | `motivo_rechazo` | ENUM MotivoRechazo | SÍ | NULL | — | Motivo estructurado del rechazo por el comercio. Solo se registra cuando `estado = RECHAZADO`. |
-| `detalle_rechazo` | VARCHAR(500) | SÍ | NULL | — | Texto libre complementario al `motivo_rechazo`. Particularmente útil cuando `motivo_rechazo = OTRO`. |
+| `comentario_rechazo` | VARCHAR(500) | SÍ | NULL | — | Texto libre complementario al `motivo_rechazo`. Particularmente útil cuando `motivo_rechazo = OTRO`. |
 | `subtotal` | DECIMAL(10,2) | NO | — | NN | Suma de todos los `DetallePedido.subtotal` al momento de confirmar el pedido. Valor congelado. |
 | `cargo_servicio_cliente` | DECIMAL(10,2) | NO | — | NN | Cargo de servicio aplicado al cliente, congelado desde la `ConfiguracionTarifa` vigente al momento del pedido. |
 | `cargo_servicio_comercio` | DECIMAL(10,2) | NO | — | NN | Comisión de plataforma del comercio, congelada desde la `ConfiguracionTarifa` vigente al momento del pedido. |
@@ -977,8 +1216,37 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 | `precio_unitario` | DECIMAL(10,2) | NO | — | NN | Precio del producto **al momento del pedido** (congelado desde `Producto.precio`). Inmutable. |
 | `nota` | VARCHAR(255) | SÍ | NULL | — | Nota o aclaración del cliente para ese ítem. Copiada desde `ItemCarrito.nota` al confirmar el pedido. |
 | `subtotal` | DECIMAL(10,2) | NO | — | NN | Valor calculado y congelado: `precio_unitario × cantidad`. |
+| `estado` | ENUM EstadoDetallePedido | NO | `'ACTIVO'` | NN | Estado individual del ítem: permite cancelar/anular un ítem puntual sin afectar el resto del pedido. Agregado 2026-08-28. |
+| `motivo_anulacion` | VARCHAR(255) | SÍ | NULL | — | Motivo de la anulación, texto libre. Se completa únicamente cuando `estado = ANULADO`. Agregado 2026-08-28. |
+| `nota_credito_id` | INT | SÍ | NULL | FK → NotaCredito.id | Nota de crédito parcial asociada a la cancelación/anulación de este ítem. Se completa únicamente cuando `estado != ACTIVO`. Agregado 2026-08-28. |
 
-**Índices:** `PRIMARY KEY (id)` | `INDEX (pedido_id)`
+**Índices:** `PRIMARY KEY (id)` | `INDEX (pedido_id)` | `INDEX (nota_credito_id)`
+
+**Reglas de negocio:**
+- `nota_credito_id` solo debe completarse cuando `estado != ACTIVO`.
+- Una vez `CANCELADO` o `ANULADO`, el estado de un ítem es terminal — sin transición de vuelta a `ACTIVO` ni entre `CANCELADO`/`ANULADO`.
+- `motivo_anulacion` se completa únicamente cuando `estado = ANULADO`.
+- **Fuera de alcance del tramo que introdujo estas columnas (2026-08-28, ver `docs/DECISIONES.md`):** ningún Service/Controller/endpoint implementa todavía la cancelación o anulación de un ítem puntual, ni la generación de la nota de crédito parcial asociada. Estas 3 reglas están documentadas acá, no como constraint de base de datos ni como validación de aplicación — quedan para el tramo que implemente esa lógica.
+
+---
+
+### Tabla: DetallePedidoExtra
+
+**Descripción:** Snapshot inmutable de los extras seleccionados para cada ítem del pedido al momento de su confirmación. Mismo criterio que `DetallePedido`: no se edita.
+
+| Columna | Tipo MySQL | Nulo | Restricciones | Descripción |
+|---------|------|---------------|-------------|
+| `id` | INT | NO | PK, AI | Identificador único. |
+| `detalle_pedido_id` | INT | NO | FK → DetallePedido.id, NN | Ítem del pedido al que pertenece el extra. |
+| `extra_id` | INT | NO | FK → Extra.id, NN | Extra pedido. Referencia histórica. |
+| `precio_unitario` | DECIMAL(10,2) | NO | NN | Precio congelado al momento de confirmar el pedido, mismo criterio que `DetallePedido.precio_unitario`. |
+| `fecha_creacion` | DATETIME | NO | `NOW()` | Momento de confirmación del pedido (mismo instante para todas las filas de un mismo pedido). |
+
+**Índices:** `PRIMARY KEY (id)` | `INDEX (detalle_pedido_id)` | `INDEX (extra_id)`
+
+**Reglas de negocio:**
+- No lleva `fecha_modificacion` ni `fecha_baja`: es un registro histórico inmutable, igual que `DetallePedido`.
+- **Confirmado con Diego (2026-08-26):** el costo total de un extra en el pedido es `precio_unitario × DetallePedido.cantidad` del ítem padre — los extras no tienen cantidad propia, se multiplican por la cantidad del producto al que pertenecen. Ejemplo: 2 hamburguesas con panceta extra ($500 c/u) = $1.000 de panceta en el subtotal, no $500 fijo.
 
 ---
 
@@ -1019,13 +1287,13 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 
 ### Tabla: NotaCredito
 
-**Descripción:** Solicitud de reembolso al cliente. Se genera automáticamente ante eventos que implican devolución de dinero. Vinculada 1:1 con `Pago`. El job periódico reintenta los reembolsos fallidos hasta un máximo de 5 intentos; al superarlos, emite la notificación T27 al Administrador.
+**Descripción:** Solicitud de reembolso al cliente. Se genera automáticamente ante eventos que implican devolución de dinero. Vinculada N:1 con `Pago` — desde 2026-08-28 (ver `docs/DECISIONES.md`) un mismo pago puede tener más de una nota de crédito asociada, una por cada cancelación/anulación parcial de ítems de su pedido (además del caso de reembolso total ya existente). El job periódico reintenta los reembolsos fallidos hasta un máximo de 5 intentos; al superarlos, emite la notificación T27 al Administrador.
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
 | `id` | INT | NO | AI | PK, AI | Identificador único de la nota de crédito. |
-| `pago_id` | INT | NO | — | FK → Pago.id, NN, UQ | Pago sobre el cual se realiza el reembolso. UNIQUE: una sola nota de crédito por pago. |
-| `monto` | DECIMAL(10,2) | NO | — | NN | Monto a reembolsar. En la versión actual siempre igual al `Pago.monto` (no se admiten reembolsos parciales). |
+| `pago_id` | INT | NO | — | FK → Pago.id, NN | Pago sobre el cual se realiza el reembolso. Ya **no** es UNIQUE desde 2026-08-28: un mismo pago puede tener varias notas de crédito (reembolso total, o una por cada cancelación/anulación parcial de ítems). |
+| `monto` | DECIMAL(10,2) | NO | — | NN | Monto a reembolsar. Antes de 2026-08-28 siempre igual al `Pago.monto` (solo reembolso total); con la cancelación parcial de ítems puede ser un monto parcial, igual a la suma de los `DetallePedido.subtotal` cancelados/anulados en esa nota. |
 | `estado` | ENUM EstadoNotaCredito | NO | `'PENDIENTE'` | NN | Estado del proceso de reembolso ante la API de MercadoPago. |
 | `intentos` | INT | NO | `0` | NN | Contador de intentos de solicitud de reembolso realizados. Máximo: 5. Al alcanzarlo sin éxito, `estado → FALLIDO`. |
 | `refund_id_mp` | VARCHAR(50) | SÍ | NULL | — | ID del reembolso en MercadoPago (`refund_id`). Se popula al confirmar el reembolso exitoso por la API. |
@@ -1033,13 +1301,14 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 | `fecha_proceso` | DATETIME | SÍ | NULL | — | Fecha y hora en que el reembolso fue procesado exitosamente por MercadoPago. Se registra al pasar a `PROCESADO`. |
 | `fecha_fallido` | DATETIME | SÍ | NULL | — | Fecha y hora en que se alcanzó el máximo de intentos fallidos. Se emite notificación T27 al Administrador en este momento. |
 
-**Índices:** `PRIMARY KEY (id)` | `UNIQUE (pago_id)` | `INDEX (estado)`
+**Índices:** `PRIMARY KEY (id)` | `INDEX (pago_id)` | `INDEX (estado)`
 
 **Reglas de negocio:**
 - El job periódico procesa registros con `estado = PENDIENTE_REINTENTO`.
 - Flujo de reintentos: `PENDIENTE → [primer fallo] → PENDIENTE_REINTENTO → [fallo hasta 5 intentos] → FALLIDO`.
 - Al alcanzar 5 intentos: `estado = FALLIDO`, `fecha_fallido = NOW()`, notificación T27 al Administrador.
 - El reembolso para `CANCELADO_POR_SISTEMA` se genera solo si `Pago.id_transaccion_mp` no es NULL (pago confirmado previamente).
+- **Agregado 2026-08-28:** una `NotaCredito` puede corresponder a un reembolso total del pedido (sin ningún `DetallePedido` asociado, criterio anterior a esta fecha) o a un reembolso parcial originado por uno o más `DetallePedido.nota_credito_id` apuntando a ella (cancelación/anulación de ítems puntuales). Sin ningún Service/Controller que implemente esta segunda vía todavía — ver nota de alcance en `Tabla: DetallePedido` y en `docs/DECISIONES.md`.
 
 ---
 
@@ -1051,42 +1320,57 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 | 2 | `Persona` | `id` | `Usuario` | 1:1 | 1 persona = 1 usuario | Herencia por tabla compartida; PK idéntica. |
 | 3 | `PersonaFisica` | `id` | `Persona` | 1:1 | 1 persona física = 1 persona | Subtipo concreto de Persona. |
 | 4 | `PersonaJuridica` | `id` | `Persona` | 1:1 | 1 persona jurídica = 1 persona | Subtipo concreto de Persona. Mutuamente excluyente con PersonaFisica. |
-| 5 | `Cliente` | `id` | `PersonaFisica` | 1:1 | 1 cliente = 1 persona física | Rol de negocio. Mutuamente excluyente con Administrador. |
-| 6 | `Administrador` | `id` | `PersonaFisica` | 1:1 | 1 administrador = 1 persona física | Rol de negocio. Mutuamente excluyente con Cliente. |
-| 7 | `Comercio` | `persona_juridica_id` | `PersonaJuridica` | N:1 | N comercios → 1 persona jurídica | Titular legal del comercio. Por regla de negocio de v1: 1:1. |
-| 8 | `Direccion` | `localidad_id` | `Localidad` | N:1 | N direcciones → 1 localidad | Ubicación geográfica de la dirección. |
-| 9 | `Direccion` | `cliente_id` | `Cliente` | N:1 | N direcciones → 1 cliente | Direcciones de entrega registradas por el cliente. |
-| 10 | `Direccion` | `comercio_id` | `Comercio` | 1:1 | 1 dirección ↔ 1 comercio | Dirección operativa única del comercio (UNIQUE). |
-| 11 | `HistorialEstadoUsuario` | `usuario_id` | `Usuario` | N:1 | N registros → 1 usuario | Historial de transiciones de estado del usuario. |
-| 12 | `Horario` | `comercio_id` | `Comercio` | N:1 | N horarios → 1 comercio | Franjas horarias de atención del comercio. |
-| 13 | `Token` | `usuario_id` | `Usuario` | N:1 | N tokens → 1 usuario | Tokens de seguridad generados para el usuario. |
-| 14 | `Sesion` | `usuario_id` | `Usuario` | N:1 | N sesiones → 1 usuario | Historial de sesiones del usuario. |
-| 15 | `Notificacion` | `usuario_id` | `Usuario` | N:1 | N notificaciones → 1 usuario | Notificaciones emitidas al usuario. |
-| 16 | `Soporte` | `usuario_id` | `Usuario` | N:1 | N mensajes → 1 usuario | Mensajes de soporte enviados por el usuario. |
-| 17 | `Soporte` | `administrador_id` | `Administrador` | N:1 | N mensajes → 1 administrador | Administrador que atendió el mensaje. |
-| 18 | `Reclamo` | `pedido_id` | `Pedido` | 1:1 | 1 reclamo ↔ 1 pedido | Un reclamo por pedido (UNIQUE). |
-| 19 | `Reclamo` | `administrador_id` | `Administrador` | N:1 | N reclamos → 1 administrador | Administrador que resolvió el reclamo. |
-| 20 | `HistorialEstadoComercio` | `comercio_id` | `Comercio` | N:1 | N registros → 1 comercio | Historial de transiciones de estado del comercio. |
-| 21 | `HistorialEstadoComercio` | `administrador_id` | `Administrador` | N:1 | N registros → 1 administrador | Administrador que ejecutó la transición (NULL si fue el sistema). |
-| 22 | `ConfiguracionTarifa` | `administrador_id` | `Administrador` | N:1 | N configs → 1 administrador | Configuraciones de tarifa registradas por el admin. |
-| 23 | `CuentaMercadoPago` | `comercio_id` | `Comercio` | 1:1 | 1 cuenta ↔ 1 comercio | Credenciales OAuth MP del comercio (UNIQUE). |
-| 24 | `Producto` | `comercio_id` | `Comercio` | N:1 | N productos → 1 comercio | Catálogo de productos del comercio. |
-| 25 | `Producto` | `categoria_id` | `Categoria` | N:1 | N productos → 1 categoría | Clasificación del producto. |
-| 26 | `ImagenProducto` | `producto_id` | `Producto` | N:1 | N imágenes → 1 producto | Galería de imágenes del producto (máx. 5). |
-| 27 | `ProductoTag` | `producto_id` | `Producto` | N:1 | N registros → 1 producto | Unión M:N: tags de un producto. |
-| 28 | `ProductoTag` | `tag_id` | `Tag` | N:1 | N registros → 1 tag | Unión M:N: productos con un tag dado. |
-| 29 | `Carrito` | `cliente_id` | `Cliente` | 1:1 | 1 carrito ↔ 1 cliente | Carrito persistente y único por cliente (UNIQUE). |
-| 30 | `Carrito` | `comercio_id` | `Comercio` | N:1 | N carritos → 1 comercio | Comercio activo en el carrito del cliente. |
-| 31 | `ItemCarrito` | `carrito_id` | `Carrito` | N:1 | N ítems → 1 carrito | Contenido del carrito. |
-| 32 | `ItemCarrito` | `producto_id` | `Producto` | N:1 | N ítems → 1 producto | Producto incluido en el ítem del carrito. |
-| 33 | `Pedido` | `cliente_id` | `Cliente` | N:1 | N pedidos → 1 cliente | Pedidos realizados por el cliente. |
-| 34 | `Pedido` | `comercio_id` | `Comercio` | N:1 | N pedidos → 1 comercio | Pedidos recibidos por el comercio. |
-| 35 | `Pedido` | `direccion_id` | `Direccion` | N:1 | N pedidos → 1 dirección | Dirección de entrega (solo `DOMICILIO`). |
-| 35 | `DetallePedido` | `pedido_id` | `Pedido` | N:1 | N detalles → 1 pedido | Ítems snapshooteados al confirmar el pedido. |
-| 36 | `DetallePedido` | `producto_id` | `Producto` | N:1 | N detalles → 1 producto | Referencia histórica al producto detallado. |
-| 37 | `HistorialEstadoPedido` | `pedido_id` | `Pedido` | N:1 | N registros → 1 pedido | Trazabilidad de transiciones de estado. |
-| 38 | `Pago` | `pedido_id` | `Pedido` | 1:1 | 1 pago ↔ 1 pedido | Pago asociado al pedido (UNIQUE). |
-| 39 | `NotaCredito` | `pago_id` | `Pago` | 1:1 | 1 nota ↔ 1 pago | Solicitud de reembolso asociada al pago (UNIQUE). |
+| 5 | `Cliente` | `id` | `PersonaFisica` | 1:1 | 1 cliente = 1 persona física | Rol de negocio. Mutuamente excluyente con Administrador y Empleado. |
+| 6 | `Administrador` | `id` | `PersonaFisica` | 1:1 | 1 administrador = 1 persona física | Rol de negocio. Mutuamente excluyente con Cliente y Empleado. |
+| 7 | `Empleado` | `id` | `PersonaFisica` | 1:1 | 1 empleado = 1 persona física | Rol de negocio. Mutuamente excluyente con Cliente y Administrador. |
+| 8 | `Dueno` | `id` | `PersonaJuridica` | 1:1 | 1 Dueno = 1 persona jurídica | Rol de negocio. Titular de uno o varios comercios. |
+| 9 | `Comercio` | `dueno_id` | `Dueno` | N:1 | N comercios → 1 Dueno | Un mismo Dueno puede administrar varios comercios. |
+| 10 | `Direccion` | `localidad_id` | `Localidad` | N:1 | N direcciones → 1 localidad | Ubicación geográfica de la dirección. |
+| 11 | `Direccion` | `cliente_id` | `Cliente` | N:1 | N direcciones → 1 cliente | Direcciones de entrega registradas por el cliente. |
+| 12 | `Direccion` | `comercio_id` | `Comercio` | 1:1 | 1 dirección ↔ 1 comercio | Dirección operativa única del comercio (UNIQUE). |
+| 13 | `HistorialEstadoUsuario` | `usuario_id` | `Usuario` | N:1 | N registros → 1 usuario | Historial de transiciones de estado del usuario. |
+| 14 | `Horario` | `comercio_id` | `Comercio` | N:1 | N horarios → 1 comercio | Franjas horarias de atención del comercio. |
+| 15 | `RedSocial` | `comercio_id` | `Comercio` | N:1 | N links → 1 comercio | Links de contacto y redes sociales del comercio. |
+| 16 | `Token` | `usuario_id` | `Usuario` | N:1 | N tokens → 1 usuario | Tokens de seguridad generados para el usuario. |
+| 17 | `Sesion` | `usuario_id` | `Usuario` | N:1 | N sesiones → 1 usuario | Historial de sesiones del usuario. |
+| 18 | `Notificacion` | `usuario_id` | `Usuario` | N:1 | N notificaciones → 1 usuario | Notificaciones emitidas al usuario. |
+| 19 | `Soporte` | `usuario_id` | `Usuario` | N:1 | N mensajes → 1 usuario | Mensajes de soporte enviados por el usuario. |
+| 20 | `Soporte` | `administrador_id` | `Administrador` | N:1 | N mensajes → 1 administrador | Administrador que atendió el mensaje. |
+| 21 | `Reclamo` | `pedido_id` | `Pedido` | 1:1 | 1 reclamo ↔ 1 pedido | Un reclamo por pedido (UNIQUE). |
+| 22 | `Reclamo` | `administrador_id` | `Administrador` | N:1 | N reclamos → 1 administrador | Administrador que resolvió el reclamo. |
+| 23 | `HistorialEstadoComercio` | `comercio_id` | `Comercio` | N:1 | N registros → 1 comercio | Historial de transiciones de estado del comercio. |
+| 24 | `HistorialEstadoComercio` | `administrador_id` | `Administrador` | N:1 | N registros → 1 administrador | Administrador que ejecutó la transición (NULL si fue el sistema). |
+| 25 | `ConfiguracionTarifa` | `administrador_id` | `Administrador` | N:1 | N configs → 1 administrador | Configuraciones de tarifa registradas por el admin. |
+| 26 | `CuentaMercadoPago` | `dueno_id` | `Dueno` | 1:1 | 1 cuenta ↔ 1 Dueno | Credenciales OAuth MP del Dueno, compartidas por todos sus comercios (UNIQUE). |
+| 27 | `EmpleadoComercio` | `empleado_id` | `Empleado` | N:1 | N relaciones → 1 empleado | Comercios donde opera el empleado. |
+| 28 | `EmpleadoComercio` | `comercio_id` | `Comercio` | N:1 | N relaciones → 1 comercio | Empleados que operan el comercio. |
+| 29 | `Producto` | `comercio_id` | `Comercio` | N:1 | N productos → 1 comercio | Catálogo de productos del comercio. |
+| 30 | `Producto` | `categoria_id` | `Categoria` | N:1 | N productos → 1 categoría | Clasificación del producto. |
+| 31 | `ImagenProducto` | `producto_id` | `Producto` | N:1 | N imágenes → 1 producto | Galería de imágenes del producto (máx. 5). |
+| 32 | `ProductoTag` | `producto_id` | `Producto` | N:1 | N registros → 1 producto | Unión M:N: tags de un producto. |
+| 33 | `ProductoTag` | `tag_id` | `Tag` | N:1 | N registros → 1 tag | Unión M:N: productos con un tag dado. |
+| 34 | `GrupoExtra` | `comercio_id` | `Comercio` | N:1 | N grupos → 1 comercio | Grupos de extras configurados por el comercio. |
+| 35 | `Extra` | `grupo_extra_id` | `GrupoExtra` | N:1 | N extras → 1 grupo | Opciones individuales dentro de un grupo. |
+| 36 | `ProductoGrupoExtra` | `producto_id` | `Producto` | N:1 | N registros → 1 producto | Unión M:N: grupos de extras de un producto. |
+| 37 | `ProductoGrupoExtra` | `grupo_extra_id` | `GrupoExtra` | N:1 | N registros → 1 grupo | Unión M:N: productos que ofrecen un grupo dado. |
+| 38 | `Carrito` | `cliente_id` | `Cliente` | 1:1 | 1 carrito ↔ 1 cliente | Carrito persistente y único por cliente (UNIQUE). |
+| 39 | `Carrito` | `comercio_id` | `Comercio` | N:1 | N carritos → 1 comercio | Comercio activo en el carrito del cliente. |
+| 40 | `ItemCarrito` | `carrito_id` | `Carrito` | N:1 | N ítems → 1 carrito | Contenido del carrito. |
+| 41 | `ItemCarrito` | `producto_id` | `Producto` | N:1 | N ítems → 1 producto | Producto incluido en el ítem del carrito. |
+| 42 | `ItemCarritoExtra` | `item_carrito_id` | `ItemCarrito` | N:1 | N extras → 1 ítem | Extras seleccionados para un ítem del carrito. |
+| 43 | `ItemCarritoExtra` | `extra_id` | `Extra` | N:1 | N registros → 1 extra | Extra elegido en el carrito. |
+| 44 | `Pedido` | `cliente_id` | `Cliente` | N:1 | N pedidos → 1 cliente | Pedidos realizados por el cliente. |
+| 45 | `Pedido` | `comercio_id` | `Comercio` | N:1 | N pedidos → 1 comercio | Pedidos recibidos por el comercio. |
+| 46 | `Pedido` | `direccion_id` | `Direccion` | N:1 | N pedidos → 1 dirección | Dirección de entrega (solo `DOMICILIO`). |
+| 47 | `DetallePedido` | `pedido_id` | `Pedido` | N:1 | N detalles → 1 pedido | Ítems snapshooteados al confirmar el pedido. |
+| 48 | `DetallePedido` | `producto_id` | `Producto` | N:1 | N detalles → 1 producto | Referencia histórica al producto detallado. |
+| 49 | `DetallePedidoExtra` | `detalle_pedido_id` | `DetallePedido` | N:1 | N extras → 1 detalle | Extras snapshooteados de un ítem del pedido. |
+| 50 | `DetallePedidoExtra` | `extra_id` | `Extra` | N:1 | N registros → 1 extra | Referencia histórica al extra pedido. |
+| 51 | `HistorialEstadoPedido` | `pedido_id` | `Pedido` | N:1 | N registros → 1 pedido | Trazabilidad de transiciones de estado. |
+| 52 | `Pago` | `pedido_id` | `Pedido` | 1:1 | 1 pago ↔ 1 pedido | Pago asociado al pedido (UNIQUE). |
+| 53 | `NotaCredito` | `pago_id` | `Pago` | N:1 | N notas → 1 pago | Solicitud(es) de reembolso asociadas al pago. Pasó de 1:1 a N:1 el 2026-08-28 (ya no UNIQUE) para permitir una nota de crédito parcial por cada cancelación/anulación de ítems, además de la nota de reembolso total. |
+| 54 | `Dueno` | `persona_fisica_id` | `PersonaFisica` | 1:1 | 1 Dueno = 1 persona física | Titular legal del negocio, misma persona física que ya está asociada al mismo Usuario/Persona (UNIQUE). |
+| 55 | `DetallePedido` | `nota_credito_id` | `NotaCredito` | N:1 | N ítems → 1 nota de crédito | Nota de crédito parcial asociada a la cancelación/anulación de este ítem puntual. Agregada 2026-08-28; NULL mientras `estado = ACTIVO`. |
 
 ---
 
@@ -1098,21 +1382,26 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 | `PersonaFisica` | `dni` | DNI único en toda la plataforma. |
 | `PersonaJuridica` | `cuit` | CUIT único en toda la plataforma. |
 | `Direccion` | `comercio_id` | Un comercio tiene exactamente una dirección. |
-| `Token` | `token` | UUID de token irrepetible. |
-| `CuentaMercadoPago` | `comercio_id` | Un comercio tiene como máximo una cuenta MP. |
+| `Token` | `token` | Valor de token irrepetible (UUID v4 en el diseño original; código numérico de 6 dígitos en el MVP desde el Tramo 16.12 para los tipos existentes en ese momento — ver `docs/modelo-mvp.md`). |
+| `CuentaMercadoPago` | `dueno_id` | Un Dueno tiene como máximo una cuenta MP, compartida por todos sus comercios. |
+| `RedSocial` | `(comercio_id, tipo)` | Un comercio no puede tener dos links activos del mismo tipo (validado a nivel aplicación, solo filas activas). |
+| `EmpleadoComercio` | `(empleado_id, comercio_id)` | Un empleado no puede tener más de una relación con el mismo comercio. |
 | `Categoria` | `nombre` | Nombre de categoría único. |
 | `Tag` | `nombre` | Nombre de tag único. |
 | `Carrito` | `cliente_id` | Un cliente tiene exactamente un carrito. |
 | `Reclamo` | `pedido_id` | Máximo un reclamo por pedido. |
 | `Pago` | `pedido_id` | Exactamente un pago por pedido. |
-| `NotaCredito` | `pago_id` | Exactamente una nota de crédito por pago. |
 | `ProductoTag` | `(producto_id, tag_id)` | PK compuesta; evita tags duplicados por producto. |
+| `ProductoGrupoExtra` | `(producto_id, grupo_extra_id)` | PK compuesta; evita grupos de extras duplicados por producto. |
+| `Dueno` | `persona_fisica_id` | Un Dueno tiene como máximo una `PersonaFisica` titular; cada `PersonaFisica` puede estar asociada a lo sumo un `Dueno`. |
 
 ---
 
 ## 12. Reglas de Negocio Transversales
 
 ### Ciclo de vida del usuario y propagación al comercio
+
+> Aplica específicamente al rol Dueno: sus cambios de estado propagan a TODOS los comercios que administra. Los cambios de estado de un Empleado no propagan ningún efecto sobre los comercios donde opera — solo afectan su propio acceso (login/sesión).
 
 | Evento | Estado Usuario resultante | Estado Comercio resultante |
 |--------|--------------------------|--------------------------|
@@ -1149,7 +1438,8 @@ LISTO_PARA_RETIRAR ──[90 min durante suspensión]───────→ EN
 
 - `DetallePedido.precio_unitario` = `Producto.precio` al momento de confirmar. Inmutable post-inserción.
 - `DetallePedido.subtotal` = `precio_unitario × cantidad`. Calculado al insertar.
-- `Pedido.subtotal` = suma de todos los `DetallePedido.subtotal` del pedido. Calculado al crear.
+- Si el ítem tiene extras seleccionados, el costo de los extras se suma al subtotal del ítem: `SUM(DetallePedidoExtra.precio_unitario) × DetallePedido.cantidad` — cada extra se multiplica por la cantidad del producto padre (criterio confirmado, ver tabla `DetallePedidoExtra`).
+- `Pedido.subtotal` = suma de todos los `DetallePedido.subtotal` del pedido (incluyendo extras). Calculado al crear.
 - `Pedido.total` = `subtotal + cargo_servicio_cliente`. Calculado al crear.
 - `Pago.monto` = `Pedido.total`. Verificado al procesar el webhook.
 
@@ -1168,4 +1458,4 @@ LISTO_PARA_RETIRAR ──[90 min durante suspensión]───────→ EN
 
 ---
 
-*Diccionario de Datos — Proyecto Bajoneá — Versión 1.2*
+*Diccionario de Datos — Proyecto Bajoneá — Versión 1.5*

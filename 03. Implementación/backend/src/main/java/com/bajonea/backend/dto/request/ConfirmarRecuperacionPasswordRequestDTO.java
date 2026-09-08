@@ -1,7 +1,9 @@
 package com.bajonea.backend.dto.request;
 
 import com.bajonea.backend.validation.annotations.ValidarPasswordSegura;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,10 +15,15 @@ import lombok.Setter;
 @AllArgsConstructor
 public class ConfirmarRecuperacionPasswordRequestDTO {
 
-    @NotBlank
-    private String token;
+    @NotBlank(message = "No debe estar vacío")
+    @Email(message = "Ingresá un email con formato válido")
+    private String email;
 
-    @NotBlank
+    @NotBlank(message = "No debe estar vacío")
+    @Pattern(regexp = "\\d{6}", message = "El código debe tener 6 dígitos numéricos")
+    private String codigo;
+
+    @NotBlank(message = "No debe estar vacío")
     @ValidarPasswordSegura
     private String nuevaPassword;
 }

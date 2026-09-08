@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mis productos — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <div id="top-bar-slot"></div>
+  <main class="app-main">
+    <div class="screen-body screen-body--tight">
+      <div class="search-shell">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="buscar-producto-input" placeholder="Buscar en mis productos" style="border:none;background:transparent;outline:none;width:100%;font-size:15px;color:var(--color-text);" data-testid="input-buscar-producto" />
+      </div>
+      <div id="filtros-slot" data-testid="fila-chips-filtro"></div>
+      <div id="productos-content" data-testid="lista-productos"></div>
+    </div>
+  </main>
+  <button class="fab" type="button" id="crear-producto-fab" aria-label="Crear producto" data-testid="btn-crear-producto">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+  <div id="bottom-nav-slot"></div>
+</div>
+<script type="module">
+import { initComercioProductos } from './js/comercio.js';
+initComercioProductos();
+</script>
+</body>
+</html>

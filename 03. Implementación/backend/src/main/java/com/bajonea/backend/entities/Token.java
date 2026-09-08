@@ -1,5 +1,6 @@
 package com.bajonea.backend.entities;
 
+import com.bajonea.backend.enums.EstadoToken;
 import com.bajonea.backend.enums.TipoToken;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -57,10 +58,15 @@ public class Token {
     private LocalDateTime fechaVencimiento;
 
     @Setter
-    @Column(name = "usado", nullable = false)
-    private boolean usado;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado", nullable = false)
+    private EstadoToken estado;
 
     @Setter
     @Column(name = "fecha_uso")
     private LocalDateTime fechaUso;
+
+    @Setter
+    @Column(name = "intentos_fallidos", nullable = false)
+    private int intentosFallidos;
 }

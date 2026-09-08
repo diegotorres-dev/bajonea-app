@@ -36,6 +36,7 @@ public class CarritoService {
     private final ItemCarritoRepository itemCarritoRepository;
     private final ClienteRepository clienteRepository;
     private final ProductoRepository productoRepository;
+    private final ComercioService comercioService;
 
     public CarritoResponseDTO verCarrito(Integer usuarioId) {
         Carrito carrito = obtenerOCrearCarrito(usuarioId);
@@ -50,6 +51,8 @@ public class CarritoService {
         if (producto.getEstado() != EstadoProducto.DISPONIBLE) {
             throw new ConflictoDeNegocioException("El producto no está disponible");
         }
+
+        comercioService.validarAceptaPedidos(producto.getComercio());
 
         if (carrito.getComercio() == null) {
             carrito.setComercio(producto.getComercio());

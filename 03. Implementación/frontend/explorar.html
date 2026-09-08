@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bajoneá — Explorar productos</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <div id="top-bar-slot"></div>
+  <main class="app-main">
+    <div class="screen-body screen-body--tight" style="padding-bottom:0;">
+      <h1 class="title-md">Explorar productos</h1>
+      <div class="input-shell" style="margin-top:16px;">
+        <span class="input-shell__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </span>
+        <input type="text" id="buscador-input" placeholder="Buscar producto por nombre" data-testid="input-buscar-producto-explorar" />
+      </div>
+      <p class="section-heading" style="margin-top:20px;">Filtrar por categoría</p>
+    </div>
+    <div id="chip-row-categorias" class="chip-row" style="padding-top:0;" data-testid="fila-chips-categorias"></div>
+    <div class="screen-body screen-body--tight" style="padding-top:0;padding-bottom:0;">
+      <p class="section-heading">Filtrar por tags</p>
+    </div>
+    <div id="chip-row-tags" class="chip-row" style="padding-top:0;" data-testid="fila-chips-tags"></div>
+    <div id="producto-list" class="comercio-list" data-testid="lista-productos-explorar"></div>
+    <div id="pagination-slot" data-testid="paginacion-explorar"></div>
+  </main>
+  <div id="bottom-nav-slot"></div>
+</div>
+<script type="module">
+import { initExplorar } from './js/explorar.js';
+initExplorar();
+</script>
+</body>
+</html>

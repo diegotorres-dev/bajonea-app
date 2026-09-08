@@ -1,7 +1,10 @@
 package com.bajonea.backend.entities;
 
+import com.bajonea.backend.enums.EstadoDetallePedido;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -56,4 +59,13 @@ public class DetallePedido {
     @Setter
     @Column(name = "subtotal", precision = 10, scale = 2, nullable = false)
     private BigDecimal subtotal;
+
+    @Setter
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado", nullable = false)
+    private EstadoDetallePedido estado;
+
+    @Setter
+    @Column(name = "motivo_anulacion", length = 255)
+    private String motivoAnulacion;
 }

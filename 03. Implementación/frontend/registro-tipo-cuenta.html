@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Crear cuenta — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header app-header--logo-centrado">
+    <button class="app-header__back" type="button" onclick="history.back()" aria-label="Volver" data-testid="btn-volver">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <img class="header-logo" src="assets/img/bajonea-logo-orange-header.png" alt="Bajoneá" />
+  </header>
+  <main class="app-main">
+    <div class="screen-body">
+      <h1 class="title-lg">¿Cómo querés registrarte?</h1>
+      <p class="subtitle">Elegí el tipo de cuenta que querés crear.</p>
+      <div class="form">
+        <a class="delivery-option" href="registro-cliente.html" data-testid="btn-elegir-cliente">
+          <div class="delivery-option__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </div>
+          <div class="delivery-option__body">
+            <h3>Quiero registrarme como cliente</h3>
+            <p>Para pedir comida en negocios locales</p>
+          </div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;color:var(--color-text-muted);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+        <a class="delivery-option" href="registro-comercio.html" data-testid="btn-elegir-comercio">
+          <div class="delivery-option__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+          </div>
+          <div class="delivery-option__body">
+            <h3>Quiero registrarme como comercio</h3>
+            <p>Para vender tus productos en Bajoneá</p>
+          </div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;color:var(--color-text-muted);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
+        </a>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

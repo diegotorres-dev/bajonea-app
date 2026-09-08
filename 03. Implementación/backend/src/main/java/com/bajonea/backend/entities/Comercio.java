@@ -11,7 +11,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
@@ -36,9 +36,9 @@ public class Comercio {
     private Integer id;
 
     @Setter
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "persona_juridica_id", nullable = false)
-    private PersonaJuridica personaJuridica;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "dueno_id", nullable = false)
+    private Dueno dueno;
 
     @Setter
     @Column(name = "nombre", length = 150, nullable = false)

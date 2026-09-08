@@ -25,9 +25,9 @@ direcciones registradas.
 
 ## HU-C05: Editar mi Perfil y Direcciones
 
-Como cliente, quiero editar mis datos personales y gestionar mis direcciones de
-entrega (agregar, editar, eliminar y cambiar la principal), para mantener mi
-información actualizada.
+Como cliente, quiero editar mis datos personales, cargar una foto de perfil opcional y
+gestionar mis direcciones de entrega (agregar, editar, eliminar y cambiar la
+principal), para mantener mi información actualizada.
 
 ## HU-C06: Explorar Comercios
 
@@ -54,6 +54,12 @@ Como cliente, quiero agregar, modificar y eliminar productos de mi carrito, para
 mi pedido de forma flexible antes de confirmarlo. Entiendo que cada carrito puede
 contener productos de un solo comercio, pero puedo tener varios pedidos activos de
 distintos comercios al mismo tiempo.
+
+## HU-C09B: Elegir Extras al Armar mi Pedido
+
+Como cliente, quiero elegir los extras disponibles de un producto (por ejemplo,
+agregados o variantes) al sumarlo a mi carrito, respetando el mínimo obligatorio y el
+máximo de opciones de cada grupo, para personalizar mi pedido según mis preferencias.
 
 ## HU-C10: Realizar un Pedido
 

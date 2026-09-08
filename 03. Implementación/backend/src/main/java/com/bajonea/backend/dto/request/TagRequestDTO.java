@@ -13,7 +13,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class TagRequestDTO {
 
-    @NotBlank
+    @NotBlank(message = "No debe estar vacío")
     @Size(max = 100)
     private String nombre;
 }

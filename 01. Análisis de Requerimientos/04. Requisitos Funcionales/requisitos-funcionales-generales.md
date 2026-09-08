@@ -1,17 +1,22 @@
 # Requisitos Funcionales — Generales
 
-Requisitos aplicables a todos los roles del sistema: Cliente, Comercio y Administrador.
+Requisitos aplicables a todos los roles del sistema: Cliente, Dueño, Empleado y Administrador.
 
 ---
 
 ## Autenticación
 
 - El sistema debe permitir el inicio de sesión mediante email y contraseña.
-- El sistema debe soportar tres roles de usuario: Cliente, Comercio y Administrador.
+- El sistema debe soportar cuatro roles de usuario: Cliente, Dueño, Empleado y Administrador.
 - El sistema debe bloquear la cuenta tras tres intentos fallidos consecutivos de inicio de sesión.
 - El sistema debe bloquear la cuenta tras tres intentos fallidos de ingreso de contraseña actual en el flujo de cambio de contraseña desde perfil, invalidando la sesión activa.
 - El sistema debe permitir únicamente una sesión activa por usuario a la vez.
 - El sistema debe permitir el cierre de sesión manual por parte del usuario.
+- Un mismo Usuario puede tener más de un rol activo simultáneamente (Cliente y
+  Empleado, ej.). En ese caso, al iniciar sesión el sistema debe presentar un selector
+  de contexto activo (equivalente al selector de comercio activo del Dueño) para que
+  la persona elija con qué rol va a operar, sin que esto implique múltiples sesiones
+  ni múltiples logins.
 
 ---
 
@@ -37,7 +42,7 @@ Requisitos aplicables a todos los roles del sistema: Cliente, Comercio y Adminis
 - El flujo de recuperación de contraseña debe estar disponible tanto para usuarios en estado Activo como para usuarios en estado Bloqueado, ya que es el mecanismo principal de desbloqueo de cuenta.
 - El sistema debe registrar el estado del token, su fecha de creación, uso y vencimiento.
 - Al utilizar el token exitosamente, la contraseña se actualiza, el estado del usuario se restablece a Activo, el contador de intentos fallidos se pone en cero, y todas las sesiones activas se cierran forzadamente.
-- Si el usuario que recuperó la contraseña tiene rol Comercio y su comercio estaba en estado Cerrado Temporalmente, el sistema debe restaurar automáticamente el estado del comercio a Aprobado al completar el reset.
+- Si el usuario que recuperó la contraseña tiene rol Dueño, el sistema debe restaurar automáticamente a Aprobado el estado de todos sus comercios que estuvieran en Cerrado Temporalmente al completar el reset.
 
 ---
 
@@ -82,7 +87,7 @@ El rol Administrador no es susceptible de inactivación automática. Solo puede 
 
 - La entidad Dirección es independiente y se relaciona con los usuarios según el rol:
   - **Cliente:** relación 1:N. Un cliente puede tener una o más direcciones de entrega. Una de ellas es designada como dirección principal. Al registrarse, el cliente debe ingresar obligatoriamente su primera dirección, que queda automáticamente como principal.
-  - **Comercio:** relación 1:1. Un comercio tiene una única dirección fiscal/operativa registrada al momento del registro.
+  - **Comercio:** relación 1:1. Un comercio tiene una única dirección operativa registrada al momento de su alta. El domicilio fiscal es un dato propio del Dueño (persona jurídica), independiente de esta relación.
 - El cliente puede agregar, editar, eliminar y cambiar su dirección principal desde su perfil autenticado en cualquier momento posterior al registro. No puede eliminar la dirección principal si es la única registrada.
 - Toda Dirección debe estar asociada a una Localidad (`localidad_id`), de la cual se deriva su Provincia mediante la relación Localidad → Provincia. El formulario de alta/edición de dirección presenta un selector de Provincia y un selector dependiente de Localidad (filtrado por la provincia seleccionada), cubriendo la totalidad del territorio nacional.
 
@@ -97,10 +102,21 @@ El rol Administrador no es susceptible de inactivación automática. Solo puede 
 
 ---
 
+## Gestión de Foto de Perfil
+
+- Todo usuario debe poder cargar y editar una foto de perfil personal desde su cuenta
+  autenticada, almacenada en Cloudinary (campo `Usuario.foto_perfil_url`). Es opcional
+  para los cuatro roles: Cliente, Dueño, Empleado y Administrador. Es un dato de
+  identidad de la persona, sin relación con ningún comercio puntual.
+- Esta foto de perfil personal es independiente de la foto de perfil de cada comercio
+  (campo `Comercio.foto_perfil_url`, obligatoria — ver Requisitos Funcionales —
+  Comercio). Un Dueño con varios comercios tiene una única foto personal, pero cada
+  comercio conserva su propia foto de negocio.
+
 ## Gestión de Tokens (Arquitectura)
 
-Los tokens de verificación, recuperación de contraseña y reactivación de cuenta se gestionan en una única tabla `Token` discriminada por tipo. Estructura:
+Los tokens de verificación, recuperación de contraseña, reactivación de cuenta e invitación de empleado se gestionan en una única tabla `Token` discriminada por tipo. Estructura:
 
-- `id`, `id_usuario`, `tipo` (VERIFICACION_EMAIL / RECUPERACION_PASSWORD / REACTIVACION_CUENTA), `token` (UUID), `fecha_creacion`, `fecha_vencimiento`, `fecha_uso`, `estado` (PENDIENTE / UTILIZADO / EXPIRADO).
+- `id`, `id_usuario`, `tipo` (VERIFICACION_EMAIL / RECUPERACION_PASSWORD / REACTIVACION_CUENTA / INVITACION_EMPLEADO), `token` (UUID), `fecha_creacion`, `fecha_vencimiento`, `fecha_uso`, `estado` (PENDIENTE / UTILIZADO / EXPIRADO).
 
 Un token solo es válido si existe en BD, no fue utilizado (estado = PENDIENTE) y no venció (fecha_vencimiento > NOW()). El tipo de token valida que no pueda usarse para una acción distinta a la prevista.

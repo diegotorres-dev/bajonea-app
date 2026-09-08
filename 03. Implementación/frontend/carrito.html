@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mi carrito — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <div id="top-bar-slot"></div>
+  <main class="app-main">
+    <div id="carrito-content"></div>
+  </main>
+  <div id="carrito-footer-slot"></div>
+  <div id="bottom-nav-slot"></div>
+</div>
+<script type="module">
+import { initCarrito } from './js/carrito.js';
+initCarrito();
+</script>
+</body>
+</html>

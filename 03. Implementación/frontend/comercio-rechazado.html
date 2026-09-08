@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Solicitud de comercio rechazada — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header app-header--brand">
+    <img class="header-logo" src="assets/img/bajonea-logo-orange-header.png" alt="Bajoneá" />
+  </header>
+  <main class="app-main">
+    <div class="state-page">
+      <div class="state-page__icon state-page__icon--error">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      </div>
+      <h1 class="state-page__title">Tu solicitud fue rechazada</h1>
+      <p class="state-page__text">No pudimos aprobar el registro de tu comercio en esta oportunidad. Contactá a soporte si creés que se trata de un error.</p>
+      <div id="motivo-rechazo-slot"></div>
+      <p class="state-page__text" style="margin-top:-20px;font-size:13px;">Sesión iniciada como <strong id="usuario-email" data-testid="email-usuario-rechazado"></strong></p>
+      <div class="state-page__actions">
+        <button class="btn btn-tertiary" type="button" id="logout-btn" data-testid="btn-cerrar-sesion">Cerrar sesión</button>
+      </div>
+    </div>
+  </main>
+</div>
+<script type="module">
+import { logout } from './js/auth.js';
+import { initComercioEstadoPagina } from './js/comercio.js';
+initComercioEstadoPagina('RECHAZADO').then((comercio) => {
+  if (comercio && comercio.motivoRechazo) {
+    const slot = document.getElementById('motivo-rechazo-slot');
+    const aviso = document.createElement('div');
+    aviso.className = 'aviso-punto aviso-punto--rechazo';
+    aviso.setAttribute('data-testid', 'motivo-rechazo-comercio');
+    const dot = document.createElement('span');
+    dot.className = 'aviso-punto__dot';
+    const motivo = document.createElement('p');
+    motivo.className = 'aviso-punto__motivo';
+    motivo.textContent = comercio.motivoRechazo;
+    aviso.appendChild(dot);
+    aviso.appendChild(motivo);
+    slot.appendChild(aviso);
+  }
+});
+document.getElementById('logout-btn').addEventListener('click', () => logout());
+</script>
+</body>
+</html>

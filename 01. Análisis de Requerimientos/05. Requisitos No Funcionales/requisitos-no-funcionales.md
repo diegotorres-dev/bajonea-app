@@ -22,7 +22,12 @@
   cada notificación mediante la firma provista por MP, rechazando cualquier solicitud
   que no supere esta verificación.
 - El acceso a cada funcionalidad debe estar restringido según el rol del usuario
-  autenticado, impidiendo el acceso a recursos no autorizados.
+  autenticado (Cliente, Dueño, Empleado, Administrador), impidiendo el acceso a
+  recursos no autorizados. Dentro de un mismo comercio, el sistema debe distinguir
+  además los permisos exclusivos del Dueño de los permisos delegables a un Empleado.
+- Un mismo Usuario puede tener más de un rol asociado simultáneamente (Cliente y
+  Empleado, ej.); la autorización debe resolverse según el rol activo elegido en el
+  selector de contexto al iniciar sesión, no asumir un único rol posible por Usuario.
 
 ---
 
@@ -71,8 +76,9 @@
 - El sistema debe procesar los webhooks de MercadoPago para confirmar pagos de forma
   asíncrona, actualizar los estados de pedido correspondientes y gestionar reembolsos
   según los estándares de seguridad de MP.
-- Cada comercio debe vincular su cuenta de MercadoPago a la plataforma mediante
-  OAuth para habilitar la recepción de pagos via split.
+- Cada Dueño debe vincular su cuenta de MercadoPago a la plataforma mediante OAuth,
+  una única vez, para habilitar la recepción de pagos vía split en todos los comercios
+  que administra.
 - El sistema debe reintentar automáticamente los reembolsos fallidos hasta su
   procesamiento exitoso.
 

@@ -1,8 +1,9 @@
 package com.bajonea.backend.dto.request;
 
+import com.bajonea.backend.validation.annotations.ValidarFormatoEmail;
 import com.bajonea.backend.validation.annotations.ValidarTelefonoArgentino;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -27,20 +28,21 @@ import lombok.Setter;
 @AllArgsConstructor
 public class ComercioPerfilRequestDTO {
 
-    @NotBlank
+    @NotBlank(message = "No debe estar vacío")
+    @Pattern(regexp = ".*[\\p{L}0-9].*", message = "Ingresá un nombre de comercio válido")
     @Size(max = 150)
     private String nombre;
 
-    @Size(max = 2000)
+    @Size(max = 2000, message = "La descripción no puede superar los 2000 caracteres.")
     private String descripcion;
 
-    @NotBlank
+    @NotBlank(message = "No debe estar vacío")
     @ValidarTelefonoArgentino
     @Size(max = 30)
     private String telefono;
 
-    @NotBlank
-    @Email
+    @NotBlank(message = "No debe estar vacío")
+    @ValidarFormatoEmail(message = "Ingresá un email de contacto con formato válido")
     @Size(max = 150)
     private String emailContacto;
 

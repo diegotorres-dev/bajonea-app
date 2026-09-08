@@ -16,14 +16,14 @@ import lombok.Setter;
 @AllArgsConstructor
 public class ImagenProductoRequestDTO {
 
-    @NotBlank
+    @NotBlank(message = "No debe estar vacío")
     @ValidarUrlCloudinary
     @Pattern(regexp = "(?i).*\\.(jpg|jpeg|png|webp)$",
             message = "La URL debe apuntar a un archivo jpg, jpeg, png o webp")
     private String url;
 
-    @NotNull
-    @PositiveOrZero
+    @NotNull(message = "El orden es obligatorio")
+    @PositiveOrZero(message = "El orden debe ser un valor positivo")
     private Integer orden;
 
     private boolean esPrincipal;

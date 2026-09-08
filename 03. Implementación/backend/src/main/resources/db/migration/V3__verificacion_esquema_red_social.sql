@@ -1,0 +1,23 @@
+-- Fase A del lote de ajustes post-migración (RedSocial, backend). Ver docs/DECISIONES.md,
+-- entrada de esta fecha, para el detalle completo de la auditoría.
+--
+-- Esta migración NO ejecuta ningún DDL: la tabla `red_social` ya existía, idéntica al
+-- diseño de docs/diccionario-de-datos.md, tanto en V1__baseline_bajonea_final.sql
+-- (líneas 458-470) como físicamente en la base `bajonea_final` (confirmado con
+-- `DESCRIBE bajonea_final.red_social` antes de escribir este archivo). No hay nada que
+-- crear ni alterar a nivel de esquema para esta fase.
+--
+-- Se deja este archivo como marcador versionado en el historial de Flyway (V3), a pedido
+-- explícito de Diego, para dejar constancia de que esta fase auditó y confirmó el estado
+-- de la tabla en este punto de la secuencia de migraciones, en vez de omitir directamente
+-- cualquier archivo de migración para RedSocial.
+--
+-- Reglas de negocio de `red_social`, documentadas acá para referencia (implementadas en
+-- RedSocialService, no en la base):
+--   1. El `UNIQUE (comercio_id, tipo)` de la tabla es incondicional (no filtra por
+--      fecha_baja) — por eso "recargar un tipo dado de baja" se resuelve revivificando la
+--      fila existente (fecha_baja = NULL, actualiza url y fecha_modificacion) en vez de
+--      insertar una fila nueva, que chocaría contra ese UNIQUE.
+--   2. Límite operativo de 5 redes sociales activas por comercio, validado a nivel
+--      aplicación (fecha_baja IS NULL), no en la base.
+SELECT 1;

@@ -6,6 +6,7 @@ import com.bajonea.backend.entities.Categoria;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.repositories.CategoriaRepository;
+import com.bajonea.backend.repositories.ProductoRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CategoriaService {
 
     private final CategoriaRepository categoriaRepository;
+    private final ProductoRepository productoRepository;
 
     public CategoriaResponseDTO crear(CategoriaRequestDTO request) {
         if (categoriaRepository.existsByNombre(request.getNombre())) {
@@ -75,6 +77,7 @@ public class CategoriaService {
     }
 
     private CategoriaResponseDTO aResponseDTO(Categoria categoria) {
-        return new CategoriaResponseDTO(categoria.getId(), categoria.getNombre(), categoria.isActivo());
+        long cantidadProductos = productoRepository.countByCategoriaId(categoria.getId());
+        return new CategoriaResponseDTO(categoria.getId(), categoria.getNombre(), categoria.isActivo(), cantidadProductos);
     }
 }

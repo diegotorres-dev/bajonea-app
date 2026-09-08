@@ -13,7 +13,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class ReactivacionCuentaRequestDTO {
 
-    @NotBlank
-    @Email
+    @NotBlank(message = "No debe estar vacío")
+    @Email(message = "Ingresá un email con formato válido")
     private String email;
 }

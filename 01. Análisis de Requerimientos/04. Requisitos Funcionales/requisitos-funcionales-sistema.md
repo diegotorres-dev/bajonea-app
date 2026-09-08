@@ -20,20 +20,22 @@ Acciones ejecutadas automáticamente por el sistema, sin intervención de ningú
 
 ---
 
-## Propagación Automática de Estados Usuario → Comercio
+## Propagación Automática de Estados Usuario (Dueño) → Comercios
 
-- Al pasar un usuario con rol Comercio a estado Bloqueado, el sistema debe cambiar automáticamente el estado del comercio asociado a Cerrado Temporalmente.
-- Al pasar un usuario con rol Comercio a estado Inactivo, el sistema debe cambiar automáticamente el estado del comercio a Inactivo y ocultarlo del catálogo.
-- Al pasar un usuario con rol Comercio a estado Suspendido, el sistema debe cambiar automáticamente el estado del comercio a Suspendido y ocultarlo del catálogo.
-- Al revertirse el estado Bloqueado del usuario via recuperación de contraseña, el sistema debe restaurar automáticamente el estado del comercio a Aprobado, siempre que el comercio estuviera en estado Cerrado Temporalmente en ese momento.
-- Al revertirse el estado Inactivo del usuario via token de reactivación de cuenta, el sistema debe restaurar automáticamente el estado del comercio a Aprobado, siempre que el comercio estuviera en estado Inactivo en ese momento.
+- Al pasar un usuario con rol Dueño a estado Bloqueado, el sistema debe cambiar automáticamente el estado de TODOS los comercios que administra a Cerrado Temporalmente.
+- Al pasar un usuario con rol Dueño a estado Inactivo, el sistema debe cambiar automáticamente el estado de TODOS los comercios que administra a Inactivo y ocultarlos del catálogo.
+- Si en algún momento se suspende directamente la cuenta de un Dueño (estado Suspendido a nivel Usuario, distinto de la suspensión de un comercio puntual descrita en Requisitos Funcionales — Administrador), el sistema debe cambiar automáticamente el estado de TODOS los comercios que administra a Suspendido y ocultarlos del catálogo.
+- Al revertirse el estado Bloqueado del usuario vía recuperación de contraseña, el sistema debe restaurar automáticamente a Aprobado el estado de todos los comercios de ese Dueño que estuvieran en Cerrado Temporalmente en ese momento.
+- Al revertirse el estado Inactivo del usuario vía token de reactivación de cuenta, el sistema debe restaurar automáticamente a Aprobado el estado de todos los comercios de ese Dueño que estuvieran en Inactivo en ese momento.
+- La suspensión de un comercio puntual por el Administrador (ver Requisitos Funcionales — Administrador) es una acción a nivel Comercio: cambia el estado de ese comercio a Suspendido sin alterar el estado de la cuenta del Dueño ni el de sus demás comercios.
+- Los cambios de estado sobre la cuenta de un Empleado no propagan ningún efecto sobre los comercios donde opera: bloquear, suspender o inactivar a un Empleado solo afecta su propio acceso, dejando intactos el comercio y su Dueño.
 
 ---
 
 ## Gestión de Tokens
 
-- El sistema debe expirar todos los tokens al vencer, invalidarlos tras su primer uso y registrar la fecha de expiración o uso: verificación de email, recuperación de contraseña y reactivación de cuenta.
-- El sistema gestiona los tres tipos de token en una única tabla discriminada por tipo (VERIFICACION_EMAIL, RECUPERACION_PASSWORD, REACTIVACION_CUENTA), con campos: id, usuario_id, tipo, token, fecha_creacion, fecha_vencimiento, fecha_uso, estado (PENDIENTE, UTILIZADO, EXPIRADO).
+- El sistema debe expirar todos los tokens al vencer, invalidarlos tras su primer uso y registrar la fecha de expiración o uso: verificación de email, recuperación de contraseña, reactivación de cuenta e invitación de empleado.
+- El sistema gestiona los cuatro tipos de token en una única tabla discriminada por tipo (VERIFICACION_EMAIL, RECUPERACION_PASSWORD, REACTIVACION_CUENTA, INVITACION_EMPLEADO), con campos: id, usuario_id, tipo, token, fecha_creacion, fecha_vencimiento, fecha_uso, estado (PENDIENTE, UTILIZADO, EXPIRADO).
 - Un job periódico procesa los tokens con fecha_vencimiento <= NOW() y estado = PENDIENTE, actualizando su estado a EXPIRADO.
 
 ---
@@ -94,7 +96,7 @@ Al suspenderse un comercio por el Administrador, el sistema debe procesar los pe
 
 ### Inactivación de Comercio — Gestión de Pedidos Activos
 
-Al inactivarse automáticamente un comercio por inactividad (3 meses sin actividad del usuario representante), el sistema cancela los pedidos en estado PENDIENTE y EN_PREPARACION con estado CANCELADO_POR_SISTEMA, genera los reembolsos correspondientes y notifica a los clientes afectados. Los pedidos EN_CAMINO o LISTO_PARA_RETIRAR siguen su curso normal (la inactivación por 3 meses de inactividad implica que no hay entregas activas en ese momento).
+Al inactivarse automáticamente un comercio por inactividad (3 meses sin actividad del Dueño titular), el sistema cancela los pedidos en estado PENDIENTE y EN_PREPARACION con estado CANCELADO_POR_SISTEMA, genera los reembolsos correspondientes y notifica a los clientes afectados. Los pedidos EN_CAMINO o LISTO_PARA_RETIRAR siguen su curso normal (la inactivación por 3 meses de inactividad implica que no hay entregas activas en ese momento).
 
 ---
 
@@ -110,7 +112,7 @@ El sistema emite notificaciones push (y en algunos casos email) ante los siguien
 
 | Código | Evento | Destinatario | Canal |
 |--------|--------|-------------|-------|
-| T1 | Nuevo pedido recibido | Comercio | Push + Panel |
+| T1 | Nuevo pedido recibido | Dueño y Empleados activos del comercio | Push + Panel |
 | T2 | Pedido aceptado y en preparación | Cliente | Push + Panel |
 | T3 | Pedido rechazado (con motivo y detalle) | Cliente | Push + Panel |
 | T4 | *(fusionado con T2 — la aceptación implica inicio de preparación)* | — | — |
@@ -118,14 +120,14 @@ El sistema emite notificaciones push (y en algunos casos email) ante los siguien
 | T6 | Pedido listo para retirar | Cliente | Push + Panel |
 | T7 | Aviso 75 min sin confirmación de entrega | Cliente | Push + Panel |
 | T8 | Pedido auto-confirmado como entregado (incluye opciones: reclamo y contactar comercio) | Cliente | Push + Panel |
-| T9 | Pedido cancelado por el cliente | Comercio | Push + Panel |
+| T9 | Pedido cancelado por el cliente | Dueño y Empleados activos del comercio | Push + Panel |
 | T10 | Pedido anulado por el comercio (con motivo y detalle) | Cliente | Push + Panel |
 | T11 | Pedido cancelado por sistema (con motivo) | Cliente | Push + Panel + Email |
 | T12 | Pedido expirado por falta de respuesta del comercio | Cliente | Push + Panel |
-| T13 | Pedido expirado — sin respuesta | Comercio | Push + Panel |
-| T14 | Comercio aprobado | Comercio | Push + Panel + Email |
-| T15 | Comercio rechazado (con motivo) | Comercio | Push + Panel + Email |
-| T16 | Comercio suspendido (con motivo) | Comercio | Push + Panel + Email |
+| T13 | Pedido expirado — sin respuesta | Dueño y Empleados activos del comercio | Push + Panel |
+| T14 | Comercio aprobado | Dueño | Push + Panel + Email |
+| T15 | Comercio rechazado (con motivo) | Dueño | Push + Panel + Email |
+| T16 | Comercio suspendido (con motivo) | Dueño y Empleados activos del comercio | Push + Panel + Email |
 | T17 | Nuevo comercio pendiente de revisión | Administrador | Push + Panel |
 | T18 | Nueva re-solicitud de comercio rechazado | Administrador | Push + Panel |
 | T19 | Nuevo reclamo iniciado por cliente | Administrador | Push + Panel |
@@ -133,13 +135,15 @@ El sistema emite notificaciones push (y en algunos casos email) ante los siguien
 | T21 | Reclamo rechazado (con motivo) | Cliente | Push + Panel |
 | T22 | Nuevo mensaje de soporte (comercio o cliente suspendido) | Administrador | Push + Panel |
 | T23 | Producto removido del carrito por agotado o descontinuado | Cliente | Push + Panel |
-| T24 | Cuenta inactivada por inactividad | Usuario (cliente o comercio) | Email |
-| T25 | Comercio inactivado automáticamente | Comercio | Email |
+| T24 | Cuenta inactivada por inactividad | Usuario (Cliente, Dueño o Empleado) | Email |
+| T25 | Comercio inactivado automáticamente | Dueño | Email |
 | T26 | Pedido LISTO_PARA_RETIRAR cerrado automáticamente por vencimiento del timer de suspensión del comercio (sin reembolso) | Cliente | Push + Panel |
 | T27 | Reembolso fallido definitivamente tras 5 intentos — requiere intervención manual | Administrador | Push + Panel + Email |
 | T28 | Cliente suspendido (con motivo) | Cliente | Push + Panel + Email |
-| T29 | Suspensión levantada (comercio o cliente) | Cliente o Comercio | Push + Panel + Email |
-| T30 | Pedido auto-confirmado como entregado por el sistema | Comercio | Push + Panel |
+| T29 | Suspensión levantada (comercio o cliente) | Cliente o Dueño | Push + Panel + Email |
+| T30 | Pedido auto-confirmado como entregado por el sistema | Dueño y Empleados activos del comercio | Push + Panel |
+| T31 | Invitación para operar un comercio como Empleado | Persona invitada | Email (+ Push/Panel si ya tiene cuenta) |
+| T32 | Empleado desactivado de un comercio | Empleado | Push + Panel |
 
 - Al auto-confirmar la entrega (T8), la notificación incluye botones para iniciar reclamo o contactar al comercio directamente.
 - T2 y T4 corresponden al mismo evento: cuando el comercio acepta un pedido, este pasa directamente a EN_PREPARACION. La notificación al cliente unifica ambos conceptos en un único mensaje ("Tu pedido fue aceptado y ya está en preparación").

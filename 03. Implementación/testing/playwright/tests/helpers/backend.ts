@@ -58,6 +58,13 @@ export async function apiPut(request: APIRequestContext, path: string, data: unk
   return { status: response.status(), body: await leerBody(response) };
 }
 
+export async function apiDelete(request: APIRequestContext, path: string, token?: string) {
+  const response = await request.delete(`${API_BASE_URL}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  return { status: response.status(), body: await leerBody(response) };
+}
+
 /**
  * Mismo algoritmo que TextoUtils.aTitleCase (backend) / aTitleCase (frontend/js/validators.js):
  * RegistroService normaliza nombre/apellido, razonSocial, nombre de comercio y calle a Title
@@ -368,6 +375,26 @@ export async function buscarComercioPendientePorEmail(request: APIRequestContext
     throw new Error(`No se encontró el comercio pendiente con emailCuenta ${email}`);
   }
   return comercio as { id: number; nombre: string; emailCuenta: string };
+}
+
+export async function buscarClienteAdminPorEmail(request: APIRequestContext, adminToken: string, email: string) {
+  const { body } = await apiGet(request, '/administrador/clientes', adminToken);
+  const cliente = (body.data || []).find((c: any) => c.email === email);
+  if (!cliente) {
+    throw new Error(`No se encontró el cliente con email ${email} en /administrador/clientes`);
+  }
+  return cliente as { id: number; nombre: string; apellido: string; dni: string; email: string; estado: string };
+}
+
+export async function eliminarTodasLasRedesSociales(request: APIRequestContext, comercioToken: string): Promise<void> {
+  const { body } = await apiGet(request, '/comercios/redes-sociales', comercioToken);
+  const redes = (body.data || []) as Array<{ id: number }>;
+  for (const red of redes) {
+    const { status, body: bodyBaja } = await apiDelete(request, `/comercios/redes-sociales/${red.id}`, comercioToken);
+    if (status !== 200) {
+      throw new Error(`No se pudo dar de baja la red social ${red.id}: ${status} ${JSON.stringify(bodyBaja)}`);
+    }
+  }
 }
 
 export async function crearCategoria(request: APIRequestContext, adminToken: string, nombre: string): Promise<number> {

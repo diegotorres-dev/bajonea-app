@@ -11,9 +11,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Valida que el campo anotado cumpla la política de password del MVP: mínimo 8 caracteres,
- * al menos 1 mayúscula y al menos 1 número. No exige símbolo especial. Ver
- * {@link PasswordSeguraValidator} para la implementación.
+ * Valida que el campo anotado cumpla la política de password del MVP: 8 a 72 caracteres, al
+ * menos 1 mayúscula, al menos 1 minúscula y al menos 1 número. No exige símbolo especial.
+ * Ver {@link PasswordSeguraValidator} para la implementación.
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
@@ -21,7 +21,7 @@ import java.lang.annotation.Target;
 @Documented
 public @interface ValidarPasswordSegura {
 
-    String message() default "La contraseña debe tener al menos 8 caracteres, una mayúscula y un número";
+    String message() default "Debe tener mínimo 8 caracteres, una mayúscula, una minúscula y un número";
 
     Class<?>[] groups() default {};
 

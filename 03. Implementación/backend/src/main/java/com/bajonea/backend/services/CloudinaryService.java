@@ -32,11 +32,21 @@ import org.springframework.stereotype.Service;
  *       guardado sea el liviano): ancho máx. 1200px, {@code crop: limit} (nunca agranda),
  *       {@code quality: auto}</li>
  * </ul>
- * Compartido entre ambos flujos (galería de producto y foto de perfil de comercio): mismas
- * restricciones para los dos, sin razón de negocio para que difieran — un solo preset, no
- * dos. {@code folder} sigue siendo dinámico por request (no vive en el preset, que no
- * conoce el {@code comercioId}/{@code productoId} de cada subida). Ver docs/DECISIONES.md,
- * entrada de esta mejora puntual sobre la Fase 11 ya cerrada.
+ * Compartido entre los flujos de galería de producto, foto de perfil de comercio ya
+ * aprobado, foto de perfil de Usuario (Cliente/Administrador, con vista a Dueño/Empleado a
+ * futuro) y foto de perfil en el momento del registro (Comercio o Cliente): mismas
+ * restricciones para todos, sin razón de negocio para que difieran — un solo preset, no
+ * varios. {@code folder} sigue siendo dinámico por request (no vive en el preset). Ver
+ * docs/DECISIONES.md, entrada de esta mejora puntual sobre la Fase 11 ya cerrada.
+ * <p>
+ * {@code generarFirmaFotoPerfilRegistro}/{@code generarFirmaFotoPerfilRegistroCliente} son
+ * las únicas firmas sin {@code comercioId}/{@code productoId}/{@code usuarioId} real detrás
+ * (el comercio o el usuario todavía no existen al momento del registro) — firman a una
+ * carpeta fija de pre-registro en vez de una carpeta scoped por id. No hace falta mover/
+ * renombrar el asset después de crear el registro: la URL ya persistida queda con esa
+ * carpeta en el nombre para siempre, sin efecto funcional (es solo organización dentro de
+ * Cloudinary). Al ser públicas (sin JWT), van protegidas por
+ * {@code RateLimitFotoRegistroFilter} — ver esa clase.
  */
 @Service
 @RequiredArgsConstructor
@@ -64,8 +74,24 @@ public class CloudinaryService {
         return firmar("productos/" + comercioId + "/" + productoId + "/");
     }
 
+    public CloudinarySignatureResponseDTO generarFirmaRecorteImagen(Integer comercioId, Integer productoId) {
+        return firmar("productos/" + comercioId + "/" + productoId + "/");
+    }
+
     public CloudinarySignatureResponseDTO generarFirmaFotoPerfilComercio(Integer comercioId) {
         return firmar("comercios/" + comercioId + "/perfil/");
+    }
+
+    public CloudinarySignatureResponseDTO generarFirmaFotoPerfilRegistro() {
+        return firmar("comercios/pre-registro/");
+    }
+
+    public CloudinarySignatureResponseDTO generarFirmaFotoPerfilUsuario(Integer usuarioId) {
+        return firmar("usuarios/" + usuarioId + "/perfil/");
+    }
+
+    public CloudinarySignatureResponseDTO generarFirmaFotoPerfilRegistroCliente() {
+        return firmar("usuarios/pre-registro/");
     }
 
     private CloudinarySignatureResponseDTO firmar(String folder) {

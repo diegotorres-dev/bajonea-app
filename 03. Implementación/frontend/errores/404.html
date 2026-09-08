@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Página no encontrada — Bajoneá</title>
+<link rel="stylesheet" href="../css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header app-header--accent">
+    <button class="app-header__back" type="button" onclick="history.back()" aria-label="Volver">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span class="app-header__title">Página no encontrada</span>
+  </header>
+  <main class="app-main">
+    <div class="state-page">
+      <div class="state-page__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><line x1="9.5" y1="7.5" x2="14.5" y2="12.5"/><line x1="14.5" y1="7.5" x2="9.5" y2="12.5"/></svg>
+      </div>
+      <h1 class="state-page__title">¿Te perdiste?</h1>
+      <p class="state-page__text">La página que buscás no existe o fue movida. Revisá la dirección o volvé al inicio.</p>
+      <div class="state-page__actions">
+        <a class="btn btn-primary" href="../index.html" data-testid="btn-volver-inicio">Volver al inicio</a>
+        <button class="btn btn-tertiary" type="button" onclick="history.back()" data-testid="btn-ir-atras">Ir atrás</button>
+      </div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

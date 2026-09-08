@@ -30,8 +30,9 @@
 ## Integraciones Externas
 
 - **MercadoPago** (SDK oficial Java) bajo el modelo Marketplace: vinculación de
-  cuentas de comercio vía OAuth, creación de preferencias de pago con split
-  (`application_fee`), y recepción de confirmaciones vía webhook.
+  cuenta vía OAuth a nivel Dueño (una única vez, compartida entre todos los comercios
+  que administra), creación de preferencias de pago con split (`application_fee`), y
+  recepción de confirmaciones vía webhook.
 - **Cloudinary** para almacenamiento de imágenes (productos y fotos de perfil),
   mediante subida firmada directa desde el frontend; la base de datos almacena
   únicamente la URL resultante. El backend valida el límite de 5 imágenes por

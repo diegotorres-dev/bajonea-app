@@ -1,8 +1,6 @@
 import { apiFetch, ApiError, getUsuario } from './api.js';
 import { showToast, renderTopBar, pintarAvatarComercio, pintarAvatarUsuario } from './catalogo.js';
 import { logout, LABELS_TIPO_COMERCIO, LABELS_TIPO_RED_SOCIAL } from './auth.js';
-import { validarArchivoImagen, subirFotoPerfilUsuario, CloudinaryUploadError } from './cloudinary.js';
-import { abrirEditorRecorte } from './crop.js';
 import { normalizarCampos } from './validators.js';
 
 function normalizarComercioAdmin(comercio) {
@@ -165,37 +163,6 @@ export async function initAdminDashboard() {
   const avatarAdmin = document.getElementById('admin-avatar');
   pintarAvatarUsuario(avatarAdmin, perfil.fotoPerfilUrl, 'AD');
 
-  const inputFotoAdmin = document.getElementById('input-foto-admin');
-  document.getElementById('cambiar-foto-admin-btn').addEventListener('click', () => inputFotoAdmin.click());
-  inputFotoAdmin.addEventListener('change', () => {
-    const file = inputFotoAdmin.files[0];
-    inputFotoAdmin.value = '';
-    if (!file) {
-      return;
-    }
-    const errorValidacion = validarArchivoImagen(file);
-    if (errorValidacion) {
-      showToast(errorValidacion, 'error');
-      return;
-    }
-    abrirEditorRecorte({
-      origen: { file },
-      aspectRatio: 1,
-      onConfirmar: async (blob) => {
-        const archivoRecortado = new File([blob], file.name, { type: 'image/jpeg' });
-        try {
-          const actualizado = await subirFotoPerfilUsuario(perfil.id, archivoRecortado);
-          perfil.fotoPerfilUrl = actualizado.fotoPerfilUrl;
-          pintarAvatarUsuario(avatarAdmin, perfil.fotoPerfilUrl, 'AD');
-          showToast('Foto de perfil actualizada', 'success');
-        } catch (error) {
-          const esErrorConocido = error instanceof CloudinaryUploadError || error instanceof ApiError;
-          showToast(esErrorConocido ? error.message : 'No pudimos subir la foto.', 'error');
-        }
-      },
-    });
-  });
-
   const alertLink = document.getElementById('alert-comercios-pendientes');
   alertLink.querySelector('[data-count]').style.display = metricas.comerciosPendientes > 0 ? 'block' : 'none';
   alertLink.querySelector('[data-subtitulo]').textContent =
@@ -295,7 +262,9 @@ export async function initAdminComerciosPendientes() {
   const comercios = await apiFetch('/administrador/comercios/pendientes');
   comercios.forEach(normalizarComercioAdmin);
 
-  document.getElementById('header-badge').textContent = String(comercios.length);
+  const headerBadge = document.getElementById('header-badge');
+  headerBadge.textContent = String(comercios.length);
+  headerBadge.style.display = comercios.length > 0 ? 'flex' : 'none';
 
   const container = document.getElementById('pendientes-content');
   container.innerHTML = '';

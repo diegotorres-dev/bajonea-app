@@ -13,6 +13,6 @@ import lombok.Setter;
 @AllArgsConstructor
 public class CambioEstadoProductoRequestDTO {
 
-    @NotNull
+    @NotNull(message = "El estado es obligatorio")
     private EstadoProducto estado;
 }

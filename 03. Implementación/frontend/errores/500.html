@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Error del servidor — Bajoneá</title>
+<link rel="stylesheet" href="../css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header app-header--accent">
+    <span class="app-header__title">Algo salió mal</span>
+  </header>
+  <main class="app-main">
+    <div class="state-page">
+      <div class="state-page__icon state-page__icon--error">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </div>
+      <h1 class="state-page__title">Ups, algo falló de nuestro lado</h1>
+      <p class="state-page__text">Tuvimos un problema inesperado en el servidor. Ya estamos al tanto. Probá de nuevo en unos minutos.</p>
+      <div class="state-page__actions">
+        <button class="btn btn-primary" type="button" id="reintentar-btn" data-testid="btn-reintentar">Reintentar</button>
+        <a class="btn btn-tertiary" href="../index.html" data-testid="btn-volver-inicio">Volver al inicio</a>
+      </div>
+    </div>
+  </main>
+</div>
+<script type="module">
+const params = new URLSearchParams(window.location.search);
+const retorno = params.get('retorno');
+document.getElementById('reintentar-btn').addEventListener('click', () => {
+  window.location.href = '../' + (retorno || 'index.html');
+});
+</script>
+</body>
+</html>

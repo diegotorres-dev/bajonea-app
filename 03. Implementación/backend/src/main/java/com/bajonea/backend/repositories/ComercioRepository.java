@@ -10,5 +10,5 @@ public interface ComercioRepository extends JpaRepository<Comercio, Integer> {
 
     List<Comercio> findByEstado(EstadoComercio estado);
 
-    Optional<Comercio> findByPersonaJuridicaId(Integer personaJuridicaId);
+    Optional<Comercio> findByDuenoId(Integer duenoId);
 }

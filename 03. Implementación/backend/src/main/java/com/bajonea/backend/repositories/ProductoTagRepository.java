@@ -21,4 +21,6 @@ public interface ProductoTagRepository extends JpaRepository<ProductoTag, Produc
     List<ProductoTag> findByTagId(Integer tagId);
 
     void deleteByProductoId(Integer productoId);
+
+    long countByTagId(Integer tagId);
 }

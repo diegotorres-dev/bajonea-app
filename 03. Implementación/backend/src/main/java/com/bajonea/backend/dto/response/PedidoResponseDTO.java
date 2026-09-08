@@ -21,6 +21,7 @@ public class PedidoResponseDTO {
 
     private final Integer id;
     private final Integer clienteId;
+    private final String nombreCliente;
     private final Integer comercioId;
     private final EstadoPedido estado;
     private final TipoEntrega tipoEntrega;
@@ -34,6 +35,7 @@ public class PedidoResponseDTO {
     public PedidoResponseDTO(
             Integer id,
             Integer clienteId,
+            String nombreCliente,
             Integer comercioId,
             EstadoPedido estado,
             TipoEntrega tipoEntrega,
@@ -45,6 +47,7 @@ public class PedidoResponseDTO {
             BigDecimal total) {
         this.id = id;
         this.clienteId = clienteId;
+        this.nombreCliente = nombreCliente;
         this.comercioId = comercioId;
         this.estado = estado;
         this.tipoEntrega = tipoEntrega;

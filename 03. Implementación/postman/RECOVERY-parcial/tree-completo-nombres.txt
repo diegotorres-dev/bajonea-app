@@ -1,0 +1,621 @@
+/00 - Health/Health check
+/01 - Geografía/Listar provincias
+/01 - Geografía/Listar localidades de Tierra del Fuego
+/01 - Geografía/[negativo] Listar localidades sin provinciaId
+/02 - Auth/Registro Cliente
+/02 - Auth/Registro Comercio A
+/02 - Auth/Registro Comercio B
+/02 - Auth/Bypass test - token verificación Cliente
+/02 - Auth/Verificar cuenta Cliente
+/02 - Auth/Bypass test - token verificación Comercio A
+/02 - Auth/Verificar cuenta Comercio A
+/02 - Auth/Bypass test - token verificación Comercio B
+/02 - Auth/Verificar cuenta Comercio B
+/02 - Auth/Login Cliente
+/02 - Auth/Login Comercio A
+/02 - Auth/Login Comercio B
+/02 - Auth/Login Administrador
+/02 - Auth/[negativo] Login con password incorrecta
+/02 - Auth/[negativo] Registro Cliente con localidadId inexistente
+/03 - Administrador/Listar comercios pendientes
+/03 - Administrador/Aprobar Comercio A
+/03 - Administrador/Aprobar Comercio B
+/03 - Administrador/Crear categoría
+/03 - Administrador/Crear tag
+/03 - Administrador/[negativo] Listar comercios pendientes con token de Cliente
+/04 - Productos/Crear producto (Comercio A)
+/04 - Productos/Crear producto (Comercio B)
+/04 - Productos/Pedir firma Cloudinary para imagen de producto
+/04 - Productos/Agregar imagen 1 (principal)
+/04 - Productos/Agregar imagen 2
+/04 - Productos/Agregar imagen 3
+/04 - Productos/Agregar imagen 4
+/04 - Productos/Agregar imagen 5
+/04 - Productos/[negativo] Agregar imagen 6 (límite de galería)
+/04 - Productos/[negativo] Cambiar estado de producto inexistente
+/05 - Catálogo/Listar comercios del catálogo
+/05 - Catálogo/Listar productos del comercio (con galería)
+/06 - Carrito/Agregar producto A al carrito
+/06 - Carrito/[negativo] Agregar producto de otro comercio
+/06 - Carrito/Ver carrito
+/07 - Pedidos/Confirmar pedido (Comercio A, retiro)
+/07 - Pedidos/Ver pedidos pendientes del Comercio A
+/07 - Pedidos/Aceptar pedido
+/07 - Pedidos/Agregar producto B al carrito (segundo pedido)
+/07 - Pedidos/Confirmar pedido (Comercio B, retiro)
+/07 - Pedidos/Rechazar pedido con motivo (Comercio B)
+/08 - Notificaciones/Ver notificaciones del cliente
+/08 - Notificaciones/Marcar notificación como leída
+/08 - Notificaciones/Ver contador de no leídas
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Registro Cliente E (para verificacion por codigo)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/[negativo] Verificar con codigo incorrecto
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Bypass test - obtener codigo verificacion Cliente E
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Verificar cuenta Cliente E con codigo real (flujo primario, no bypass de link)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Login Cliente E (confirma mismo estado final que el bypass de link)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Registro Cliente F (para el negativo de abajo y reenvio)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/[negativo] Login antes de verificar (Usuario PENDIENTE)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Reenviar verificacion Cliente F
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/[negativo] Reenviar verificacion de cuenta ya activa (Cliente E)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/[negativo] Reenviar verificacion de email inexistente
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Solicitar recuperacion de password (Cliente E)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/[negativo] Solicitar recuperacion con email inexistente (no revela existencia)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Bypass test - obtener codigo recuperacion Cliente E
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/[negativo] Validar codigo de recuperacion incorrecto
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Validar codigo de recuperacion correcto
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Confirmar recuperacion de password (Cliente E)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Login Cliente E con la password nueva (confirma que cambio de verdad)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/[negativo] Login con la password vieja ya no sirve
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/[negativo] Cambiar password con la actual incorrecta
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/[negativo] Cambiar password nueva igual a la actual
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Cambiar password desde perfil (Cliente E)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Solicitar reactivacion sobre cuenta ya activa (sin efecto observable, 200 igual)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/[negativo] Confirmar reactivacion con codigo inexistente (cuenta activa, sin token pendiente)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Login Cliente E de nuevo (para probar logout)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Logout Cliente E
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/[negativo] Reutilizar el JWT despues de logout
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/[negativo] Registro Cliente con email duplicado
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/[negativo] Registro Cliente con DNI duplicado
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/[negativo] Registro Comercio con CUIT duplicado
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/[negativo] Registro Comercio con DNI de representante duplicado cross-role (mismo DNI que un Cliente)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/[negativo] Registro Comercio sin horarios (lista vacia)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/[negativo] Registro Comercio con horaCierre anterior a horaApertura
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Pedir firma foto de registro de comercio (1/5, dentro del limite)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Pedir firma foto de registro de comercio (2/5, dentro del limite)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Pedir firma foto de registro de comercio (3/5, dentro del limite)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Pedir firma foto de registro de comercio (4/5, dentro del limite)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/Pedir firma foto de registro de comercio (5/5, dentro del limite)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout)/[negativo] Pedir firma foto de registro de comercio (6/5, rate limit)
+/10 - Administrador (endpoints nuevos y reglas de aprobacion)/Registro Comercio D (para probar rechazo por Admin)
+/10 - Administrador (endpoints nuevos y reglas de aprobacion)/Bypass test - token verificacion Comercio D
+/10 - Administrador (endpoints nuevos y reglas de aprobacion)/Verificar cuenta Comercio D
+/10 - Administrador (endpoints nuevos y reglas de aprobacion)/Login Comercio D
+/10 - Administrador (endpoints nuevos y reglas de aprobacion)/[gap conocido] Comercio D opera con perfil COMERCIO aunque Comercio.estado siga PENDIENTE (SecurityConfig no bloquea por estado)
+/10 - Administrador (endpoints nuevos y reglas de aprobacion)/Crear producto para Comercio D (antes de resolverlo)
+/10 - Administrador (endpoints nuevos y reglas de aprobacion)/GET administrador/comercios (aprobados) - A y B aparecen, D no
+/10 - Administrador (endpoints nuevos y reglas de aprobacion)/GET administrador/clientes
+/10 - Administrador (endpoints nuevos y reglas de aprobacion)/GET administrador/perfil
+/10 - Administrador (endpoints nuevos y reglas de aprobacion)/GET administrador/metricas
+/10 - Administrador (endpoints nuevos y reglas de aprobacion)/[negativo] Resolver un comercio ya resuelto (doble resolucion sobre Comercio A)
+/10 - Administrador (endpoints nuevos y reglas de aprobacion)/[negativo] Resolver un comercio inexistente
+/10 - Administrador (endpoints nuevos y reglas de aprobacion)/[negativo] Rechazar comercio sin motivo
+/10 - Administrador (endpoints nuevos y reglas de aprobacion)/Rechazar Comercio D con motivo
+/10 - Administrador (endpoints nuevos y reglas de aprobacion)/[negativo] Cliente confirma pedido a Comercio D ya rechazado (no acepta pedidos)
+/10 - Administrador (endpoints nuevos y reglas de aprobacion)/GET catalogo/comercios confirma que Comercio D rechazado no aparece
+/10 - Administrador (endpoints nuevos y reglas de aprobacion)/[negativo] Cliente intenta crear categoria (rol insuficiente)
+/10 - Administrador (endpoints nuevos y reglas de aprobacion)/[negativo] Comercio intenta listar comercios pendientes (rol insuficiente)
+/11 - Categorias y Tags (CRUD completo)/Crear categoria 2 (para probar colision de nombre al editar)
+/11 - Categorias y Tags (CRUD completo)/[negativo] Crear categoria con nombre duplicado
+/11 - Categorias y Tags (CRUD completo)/Editar categoria (cambia nombre)
+/11 - Categorias y Tags (CRUD completo)/[negativo] Editar categoria a un nombre ya usado por otra
+/11 - Categorias y Tags (CRUD completo)/GET categorias con token de Cliente (abierto a cualquier autenticado)
+/11 - Categorias y Tags (CRUD completo)/Dar de baja categoria 2
+/11 - Categorias y Tags (CRUD completo)/GET categorias confirma que la dada de baja sigue apareciendo (activo=false)
+/11 - Categorias y Tags (CRUD completo)/Reactivar categoria 2
+/11 - Categorias y Tags (CRUD completo)/Crear tag 2 (para probar colision de nombre al editar)
+/11 - Categorias y Tags (CRUD completo)/[negativo] Crear tag con nombre duplicado
+/11 - Categorias y Tags (CRUD completo)/Editar tag (cambia nombre)
+/11 - Categorias y Tags (CRUD completo)/[negativo] Editar tag a un nombre ya usado por otro
+/11 - Categorias y Tags (CRUD completo)/GET tags con token de Comercio (abierto a cualquier autenticado)
+/11 - Categorias y Tags (CRUD completo)/[negativo] Comercio intenta dar de baja un tag (rol insuficiente)
+/11 - Categorias y Tags (CRUD completo)/Dar de baja tag 2
+/11 - Categorias y Tags (CRUD completo)/Reactivar tag 2
+/12 - Cliente perfil/GET clientes/perfil
+/12 - Cliente perfil/PUT clientes/perfil (edita nombre/apellido/telefono)
+/12 - Cliente perfil/PUT clientes/perfil intentando cambiar email/dni (se ignoran)
+/12 - Cliente perfil/[negativo] PUT clientes/perfil con telefono invalido (letras)
+/12 - Cliente perfil/[negativo] Comercio intenta ver clientes/perfil (rol insuficiente)
+/13 - Comercio perfil y foto/GET comercios/perfil (Comercio A)
+/13 - Comercio perfil y foto/PUT comercios/perfil (edita nombre/telefono/emailContacto/modalidades)
+/13 - Comercio perfil y foto/PUT comercios/perfil intentando cambiar razonSocial/cuit (se ignoran)
+/13 - Comercio perfil y foto/POST comercios/perfil/foto/firma
+/13 - Comercio perfil y foto/PUT comercios/perfil/foto
+/13 - Comercio perfil y foto/[negativo] Cliente intenta ver comercios/perfil (rol insuficiente)
+/14 - Productos extras (editar, imagenes, estados)/PUT productos/{id} (editar producto A)
+/14 - Productos extras (editar, imagenes, estados)/GET productos (listar propio del comercio A)
+/14 - Productos extras (editar, imagenes, estados)/[negativo] Cambiar estado del producto B al mismo estado actual (DISPONIBLE->DISPONIBLE)
+/14 - Productos extras (editar, imagenes, estados)/[negativo] Comercio A intenta editar producto de Comercio B (tenant isolation)
+/14 - Productos extras (editar, imagenes, estados)/Agregar imagen 1 al producto B (para tests de mutacion, sin tocar la galeria de 5 de A)
+/14 - Productos extras (editar, imagenes, estados)/Agregar imagen 2 al producto B
+/14 - Productos extras (editar, imagenes, estados)/PATCH empujar imagen 1 (hoy principal) a orden 5, sin tocar la 2 todavia
+/14 - Productos extras (editar, imagenes, estados)/PATCH reordenar imagen 2 del producto B a orden 0 (ahora es la de menor orden, recalcula principal)
+/14 - Productos extras (editar, imagenes, estados)/PATCH actualizar URL de una imagen del producto B
+/14 - Productos extras (editar, imagenes, estados)/POST firma de recorte de una imagen del producto B
+/14 - Productos extras (editar, imagenes, estados)/DELETE una imagen del producto B
+/14 - Productos extras (editar, imagenes, estados)/[negativo] Eliminar una imagen ya eliminada
+/14 - Productos extras (editar, imagenes, estados)/Crear Producto Postman Estados (Comercio A, para ciclo de vida de EstadoProducto)
+/14 - Productos extras (editar, imagenes, estados)/PATCH estado: DISPONIBLE -> AGOTADO
+/14 - Productos extras (editar, imagenes, estados)/PATCH estado: AGOTADO -> DISPONIBLE (transicion valida de vuelta)
+/14 - Productos extras (editar, imagenes, estados)/PATCH estado: DISPONIBLE -> DESCONTINUADO (estado terminal)
+/14 - Productos extras (editar, imagenes, estados)/[negativo] Transicion invalida desde DESCONTINUADO (estado terminal)
+/14 - Productos extras (editar, imagenes, estados)/[negativo] Editar un producto descontinuado
+/15 - Carrito extras (cantidad, eliminar, purga por agotado)/Crear Producto Postman Purga (Comercio A, para probar purga de carrito)
+/15 - Carrito extras (cantidad, eliminar, purga por agotado)/Crear Producto Postman Purga 2 (para probar DELETE de un item puntual)
+/15 - Carrito extras (cantidad, eliminar, purga por agotado)/Cliente agrega Producto Postman Purga al carrito
+/15 - Carrito extras (cantidad, eliminar, purga por agotado)/Cliente agrega Producto Postman Purga 2 al carrito (para el DELETE puntual)
+/15 - Carrito extras (cantidad, eliminar, purga por agotado)/DELETE de un item puntual del carrito
+/15 - Carrito extras (cantidad, eliminar, purga por agotado)/PUT actualizar cantidad del item de carrito
+/15 - Carrito extras (cantidad, eliminar, purga por agotado)/[negativo] PUT actualizar cantidad por encima del maximo (21)
+/15 - Carrito extras (cantidad, eliminar, purga por agotado)/[negativo] PUT actualizar cantidad de un item inexistente
+/15 - Carrito extras (cantidad, eliminar, purga por agotado)/Comercio A marca Producto Postman Purga como AGOTADO (dispara purga de carritos)
+/15 - Carrito extras (cantidad, eliminar, purga por agotado)/GET carrito confirma que el producto agotado fue purgado y el carrito quedo vacio
+/16 - Catalogo extras (busqueda global, filtros)/GET catalogo/productos (busqueda global, sin filtros)
+/16 - Catalogo extras (busqueda global, filtros)/GET catalogo/productos con busqueda por texto (q=empanada)
+/16 - Catalogo extras (busqueda global, filtros)/GET catalogo/productos con pagina fuera de rango (sin error)
+/16 - Catalogo extras (busqueda global, filtros)/GET catalogo/filtros
+/16 - Catalogo extras (busqueda global, filtros)/[negativo] GET productos de un comercio inexistente
+/16 - Catalogo extras (busqueda global, filtros)/Confirma que el catalogo publico NO expone datos del representante
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio)/GET pedidos/cliente (listar pedidos propios)
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio)/GET pedidos/comercio/resumen-hoy (Comercio A)
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio)/[negativo] Comercio B intenta aceptar un pedido de Comercio A (tenant isolation)
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio)/[negativo] Re-aceptar un pedido ya resuelto
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio)/Vaciar carrito antes de probar el negativo de carrito vacio
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio)/[negativo] Confirmar pedido con el carrito vacio
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio)/Agregar producto A al carrito (para probar DOMICILIO sin direccion)
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio)/[negativo] Confirmar pedido DOMICILIO sin direccionId
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio)/[negativo] Confirmar pedido DOMICILIO con direccion de otro cliente/inexistente
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio)/Vaciar carrito (cleanup, no interfiere con nada mas)
+/18 - Notificaciones extras (tenant isolation)/GET notificaciones del Comercio A (para tomar un id ajeno al cliente)
+/18 - Notificaciones extras (tenant isolation)/[negativo] Cliente intenta marcar como leida una notificacion del Comercio A (tenant isolation)
+/18 - Notificaciones extras (tenant isolation)/[negativo] Marcar como leida una notificacion inexistente
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE)/Registro Comercio C (para probar bloqueo por intentos fallidos)
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE)/Bypass test - token verificacion Comercio C
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE)/Verificar cuenta Comercio C
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE)/Login Comercio C (todavia funciona, antes del bloqueo)
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE)/Crear producto para Comercio C (antes del bloqueo, mientras todavia puede operar)
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE)/Admin aprueba Comercio C
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE)/Resolver (aprobar) Comercio C
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE)/Cliente puede agregar producto de Comercio C al carrito mientras esta APROBADO (control, antes del bloqueo)
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE)/Vaciar carrito (cleanup antes de bloquear a Comercio C)
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE)/[negativo] Login Comercio C con password incorrecta (intento 1/3)
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE)/[negativo] Login Comercio C con password incorrecta (intento 2/3)
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE)/[negativo] Login Comercio C con password incorrecta (intento 3/3)
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE)/[negativo] 4to intento de login contra Comercio C ya BLOQUEADO
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE)/[CRITICO, Paso 4] Cliente intenta agregar producto de Comercio C (ahora CERRADO_TEMPORALMENTE) al carrito
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE)/Vaciar carrito (cleanup final)
+/20 - Autorizacion (401 sin token)/[negativo] GET carrito sin token (CLIENTE)
+/20 - Autorizacion (401 sin token)/[negativo] GET clientes/perfil sin token (CLIENTE)
+/20 - Autorizacion (401 sin token)/[negativo] GET comercios/perfil sin token (COMERCIO)
+/20 - Autorizacion (401 sin token)/[negativo] GET productos (propio) sin token (COMERCIO)
+/20 - Autorizacion (401 sin token)/[negativo] GET administrador/metricas sin token (ADMINISTRADOR)
+/20 - Autorizacion (401 sin token)/[negativo] GET pedidos/cliente sin token
+/20 - Autorizacion (401 sin token)/[negativo] GET notificaciones sin token
+/20 - Autorizacion (401 sin token)/[negativo] POST categorias sin token
+/20 - Autorizacion (401 sin token)/[negativo] Token con firma corrupta
+/21 - Redes Sociales/Instagram ya activa por registro (Comercio A) - obtener su id
+/21 - Redes Sociales/[negativo] Agregar red social de tipo ya activo (Instagram otra vez)
+/21 - Redes Sociales/Agregar red social 2 - Facebook (Comercio A)
+/21 - Redes Sociales/Agregar red social 3 - TikTok (Comercio A)
+/21 - Redes Sociales/Agregar red social 4 - WhatsApp (Comercio A)
+/21 - Redes Sociales/Agregar red social 5 - X (Comercio A)
+/21 - Redes Sociales/[negativo] Agregar red social 6 - Sitio Web (excede limite de 5 activas)
+/21 - Redes Sociales/Listar redes sociales activas (Comercio A, confirma 5)
+/21 - Redes Sociales/Dar de baja red social TikTok (Comercio A)
+/21 - Redes Sociales/Listar redes sociales activas confirma 4 tras la baja
+/21 - Redes Sociales/Agregar red social TikTok de nuevo (tipo previamente dado de baja, debe permitir)
+/21 - Redes Sociales/Editar red social propia (Comercio A cambia la url de su Instagram)
+/21 - Redes Sociales/Instagram ya activa por registro (Comercio B) - obtener su id
+/21 - Redes Sociales/[negativo] Comercio A intenta editar red social de Comercio B (tenant isolation)
+/21 - Redes Sociales/[negativo] Comercio A intenta dar de baja red social de Comercio B (tenant isolation)
+/21 - Redes Sociales/[negativo] Agregar red social con url solo espacios
+/21 - Redes Sociales/[negativo] Agregar red social con url solo numeros
+/21 - Redes Sociales/[negativo] Agregar red social con url solo caracteres especiales
+/21 - Redes Sociales/[negativo] Agregar red social con url sin punto
+/21 - Redes Sociales/[negativo] GET redes-sociales sin token
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - nombre vacio
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - nombre formato invalido (numeros)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - nombre formato invalido (caracteres especiales)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - nombre limite superior exacto (100 caracteres, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - nombre por encima del limite (101 caracteres, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - apellido vacio
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - apellido formato invalido (numeros)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - apellido formato invalido (caracteres especiales)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - apellido limite superior exacto (100 caracteres, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - apellido por encima del limite (101 caracteres, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - dni vacio
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - dni formato invalido (letras)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - dni formato invalido (12 digitos)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - dni limite inferior menos uno (6 digitos, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - dni limite superior mas uno (9 digitos, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - dni con separadores (puntos, sanitiza y acepta)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - fechaNacimiento vacia (null)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - fechaNacimiento futura (debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - fechaNacimiento hace 121 anios (debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - fechaNacimiento hoy mismo (limite exacto, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - telefono vacio
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - telefono formato invalido (sin prefijo +549)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - telefono formato invalido (cantidad de digitos incorrecta)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - telefono con separadores (espacios y guiones, sanitiza y acepta)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - email vacio
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - email formato invalido (sin arroba)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - email formato invalido (sin dominio)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - email limite superior exacto (254 caracteres, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - email por encima del limite (255 caracteres, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - password vacia
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - password formato invalido (sin mayuscula)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - password formato invalido (sin numero)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - password limite inferior menos uno (7 caracteres, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - password limite superior exacto (72 caracteres, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - password por encima del limite (73 caracteres, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - direccion.calle vacia
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - direccion.calle formato invalido (solo caracteres especiales)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - direccion.calle limite superior exacto (150 caracteres, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - direccion.calle por encima del limite (151 caracteres, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - direccion.numero vacio
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - direccion.numero formato invalido (letras)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - direccion.numero formato invalido (caracteres especiales)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - direccion.numero limite superior exacto (10 digitos, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - direccion.numero por encima del limite (11 digitos, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - direccion.pisoDepto formato invalido (solo caracteres especiales)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - direccion.pisoDepto limite superior exacto (30 caracteres, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - direccion.pisoDepto por encima del limite (31 caracteres, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - direccion.pisoDepto vacio (opcional, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - direccion.codigoPostal vacio
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - direccion.codigoPostal formato invalido (3 digitos)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - direccion.codigoPostal formato invalido (5 digitos)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - direccion.codigoPostal formato CPA valido (8 caracteres, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - direccion.localidadId vacio
+/22 - Matriz Cliente - Registro (campo por campo)/Registro Cliente - sin aceptaTerminos (campo solo frontend, backend debe aceptar igual)
+/23 - Matriz Cliente - Login/Login - email vacio
+/23 - Matriz Cliente - Login/Login - email formato invalido
+/23 - Matriz Cliente - Login/Login - password vacia
+/24 - Matriz Cliente - Verificacion de cuenta/Verificar cuenta - email vacio
+/24 - Matriz Cliente - Verificacion de cuenta/Verificar cuenta - email formato invalido
+/24 - Matriz Cliente - Verificacion de cuenta/Verificar cuenta - codigo vacio
+/24 - Matriz Cliente - Verificacion de cuenta/Verificar cuenta - codigo formato invalido (letras)
+/24 - Matriz Cliente - Verificacion de cuenta/Verificar cuenta - codigo longitud corta (5 digitos)
+/24 - Matriz Cliente - Verificacion de cuenta/Verificar cuenta - codigo longitud larga (7 digitos)
+/24 - Matriz Cliente - Verificacion de cuenta/Reenviar verificacion - email vacio
+/24 - Matriz Cliente - Verificacion de cuenta/Reenviar verificacion - email formato invalido
+/24 - Matriz Cliente - Verificacion de cuenta/Setup - Registro Cliente para verificacion real (matriz)
+/24 - Matriz Cliente - Verificacion de cuenta/Setup - Obtener codigo real de verificacion (matriz)
+/24 - Matriz Cliente - Verificacion de cuenta/Verificar cuenta - codigo real de 6 digitos (debe aceptar)
+/25 - Matriz Cliente - Recuperacion de password/Recuperar password - email vacio
+/25 - Matriz Cliente - Recuperacion de password/Recuperar password - email formato invalido
+/25 - Matriz Cliente - Recuperacion de password/Recuperar password validar-codigo - email vacio
+/25 - Matriz Cliente - Recuperacion de password/Recuperar password validar-codigo - email formato invalido
+/25 - Matriz Cliente - Recuperacion de password/Recuperar password validar-codigo - codigo vacio
+/25 - Matriz Cliente - Recuperacion de password/Recuperar password validar-codigo - codigo formato invalido (letras)
+/25 - Matriz Cliente - Recuperacion de password/Recuperar password validar-codigo - codigo longitud corta (5 digitos)
+/25 - Matriz Cliente - Recuperacion de password/Recuperar password validar-codigo - codigo longitud larga (7 digitos)
+/25 - Matriz Cliente - Recuperacion de password/Recuperar password confirmar - nuevaPassword vacia
+/25 - Matriz Cliente - Recuperacion de password/Recuperar password confirmar - nuevaPassword sin mayuscula
+/25 - Matriz Cliente - Recuperacion de password/Recuperar password confirmar - nuevaPassword sin numero
+/25 - Matriz Cliente - Recuperacion de password/Recuperar password confirmar - nuevaPassword limite inferior menos uno (7 caracteres)
+/25 - Matriz Cliente - Recuperacion de password/Recuperar password confirmar - nuevaPassword 73 caracteres (sin @Size explicito, ver mensaje real)
+/25 - Matriz Cliente - Recuperacion de password/Setup - Registro Cliente para recuperacion real (matriz)
+/25 - Matriz Cliente - Recuperacion de password/Setup - Solicitar recuperacion real (matriz)
+/25 - Matriz Cliente - Recuperacion de password/Setup - Obtener codigo real de recuperacion (matriz)
+/25 - Matriz Cliente - Recuperacion de password/Recuperar password validar-codigo - codigo real (debe aceptar)
+/25 - Matriz Cliente - Recuperacion de password/Recuperar password confirmar - nuevaPassword limite superior exacto (72 caracteres, flujo real, debe aceptar)
+/26 - Matriz Cliente - Reactivacion de cuenta/Reactivar cuenta - email vacio
+/26 - Matriz Cliente - Reactivacion de cuenta/Reactivar cuenta - email formato invalido
+/26 - Matriz Cliente - Reactivacion de cuenta/Reactivar cuenta confirmar - email vacio
+/26 - Matriz Cliente - Reactivacion de cuenta/Reactivar cuenta confirmar - email formato invalido
+/26 - Matriz Cliente - Reactivacion de cuenta/Reactivar cuenta confirmar - codigo vacio
+/26 - Matriz Cliente - Reactivacion de cuenta/Reactivar cuenta confirmar - codigo formato invalido (letras)
+/26 - Matriz Cliente - Reactivacion de cuenta/Reactivar cuenta confirmar - codigo longitud corta (5 digitos)
+/27 - Matriz Cliente - Perfil (datos personales)/Setup - Registro Cliente (matriz perfil)
+/27 - Matriz Cliente - Perfil (datos personales)/Setup - Obtener codigo real de verificacion (matriz perfil)
+/27 - Matriz Cliente - Perfil (datos personales)/Setup - Verificar cuenta (matriz perfil)
+/27 - Matriz Cliente - Perfil (datos personales)/Setup - Login (matriz perfil)
+/27 - Matriz Cliente - Perfil (datos personales)/Setup - GET clientes/perfil, obtener id (matriz perfil)
+/27 - Matriz Cliente - Perfil (datos personales)/Perfil Cliente - nombre vacio
+/27 - Matriz Cliente - Perfil (datos personales)/Perfil Cliente - nombre formato invalido (numeros)
+/27 - Matriz Cliente - Perfil (datos personales)/Perfil Cliente - nombre formato invalido (caracteres especiales)
+/27 - Matriz Cliente - Perfil (datos personales)/Perfil Cliente - nombre limite superior exacto (100 caracteres, debe aceptar)
+/27 - Matriz Cliente - Perfil (datos personales)/Perfil Cliente - nombre por encima del limite (101 caracteres, debe rechazar)
+/27 - Matriz Cliente - Perfil (datos personales)/Perfil Cliente - apellido vacio
+/27 - Matriz Cliente - Perfil (datos personales)/Perfil Cliente - apellido formato invalido (numeros)
+/27 - Matriz Cliente - Perfil (datos personales)/Perfil Cliente - apellido formato invalido (caracteres especiales)
+/27 - Matriz Cliente - Perfil (datos personales)/Perfil Cliente - apellido limite superior exacto (100 caracteres, debe aceptar)
+/27 - Matriz Cliente - Perfil (datos personales)/Perfil Cliente - apellido por encima del limite (101 caracteres, debe rechazar)
+/27 - Matriz Cliente - Perfil (datos personales)/Perfil Cliente - telefono vacio
+/27 - Matriz Cliente - Perfil (datos personales)/Perfil Cliente - telefono formato invalido (sin prefijo +549)
+/27 - Matriz Cliente - Perfil (datos personales)/Perfil Cliente - telefono formato invalido (cantidad de digitos incorrecta)
+/27 - Matriz Cliente - Perfil (datos personales)/Perfil Cliente - telefono con separadores (espacios y guiones, sanitiza y acepta)
+/27 - Matriz Cliente - Perfil (datos personales)/Perfil Cliente - restaurar valores validos tras la matriz
+/28 - Matriz Cliente - Cambio de password desde perfil/Cambiar password perfil - passwordActual vacia
+/28 - Matriz Cliente - Cambio de password desde perfil/Cambiar password perfil - passwordNueva vacia
+/28 - Matriz Cliente - Cambio de password desde perfil/Cambiar password perfil - passwordNueva sin mayuscula
+/28 - Matriz Cliente - Cambio de password desde perfil/Cambiar password perfil - passwordNueva sin numero
+/28 - Matriz Cliente - Cambio de password desde perfil/Cambiar password perfil - passwordNueva limite inferior menos uno (7 caracteres)
+/28 - Matriz Cliente - Cambio de password desde perfil/Cambiar password perfil - passwordNueva 73 caracteres (sin @Size explicito en este DTO a diferencia del registro, ver auditoria Parte 3 punto 4 - mensaje generico de complejidad)
+/28 - Matriz Cliente - Cambio de password desde perfil/Setup - Registro Cliente para password 72 caracteres (matriz perfil)
+/28 - Matriz Cliente - Cambio de password desde perfil/Setup - Obtener codigo real de verificacion (matriz pw72)
+/28 - Matriz Cliente - Cambio de password desde perfil/Setup - Verificar cuenta (matriz pw72)
+/28 - Matriz Cliente - Cambio de password desde perfil/Setup - Login (matriz pw72)
+/28 - Matriz Cliente - Cambio de password desde perfil/Cambiar password perfil - passwordNueva limite superior exacto (72 caracteres, debe aceptar)
+/29 - Matriz Cliente - Foto de perfil (Usuario)/Foto perfil Usuario - url vacia
+/29 - Matriz Cliente - Foto de perfil (Usuario)/Foto perfil Usuario - url host invalido (no es res.cloudinary.com)
+/29 - Matriz Cliente - Foto de perfil (Usuario)/Foto perfil Usuario - url extension invalida (.pdf)
+/29 - Matriz Cliente - Foto de perfil (Usuario)/Foto perfil Usuario - url esquema invalido (http en vez de https)
+/29 - Matriz Cliente - Foto de perfil (Usuario)/Foto perfil Usuario - url limite superior exacto (500 caracteres, debe aceptar)
+/29 - Matriz Cliente - Foto de perfil (Usuario)/Foto perfil Usuario - url por encima del limite (501 caracteres, debe rechazar con 400)
+/29 - Matriz Cliente - Foto de perfil (Usuario)/Foto perfil Usuario - url valida (debe aceptar)
+/29 - Matriz Cliente - Foto de perfil (Usuario)/Setup - Registro Cliente ajeno (matriz perfil, tenant isolation)
+/29 - Matriz Cliente - Foto de perfil (Usuario)/Setup - Obtener codigo real de verificacion (matriz ajeno)
+/29 - Matriz Cliente - Foto de perfil (Usuario)/Setup - Verificar cuenta (matriz ajeno)
+/29 - Matriz Cliente - Foto de perfil (Usuario)/Setup - Login (matriz ajeno)
+/29 - Matriz Cliente - Foto de perfil (Usuario)/[negativo] Foto perfil Usuario - otro usuario intenta editar la foto de este id (debe dar 404, no 403)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Setup - Registro Cliente (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Setup - Obtener codigo verificacion Cliente (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Setup - Verificar Cliente (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Setup - Login Cliente (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Setup - Registro Comercio (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Setup - Obtener codigo verificacion Comercio (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Setup - Verificar Comercio (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Setup - Login Comercio (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Setup - Admin: listar comercios pendientes (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Setup - Admin: aprobar Comercio (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Setup - Crear categoria (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Setup - Crear producto (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Carrito alta - cantidad vacia (null)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Carrito alta - cantidad limite inferior menos uno (0, debe rechazar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Carrito alta - cantidad limite inferior exacto (1, debe aceptar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Carrito alta - vaciar carrito (cleanup entre casos)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Carrito alta - cantidad limite superior exacto (20, debe aceptar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Carrito alta - vaciar carrito (cleanup entre casos) 2
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Carrito alta - cantidad limite superior mas uno (21, debe rechazar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Carrito alta - productoId vacio (null)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Carrito alta - nota limite superior exacto (255 caracteres, debe aceptar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Carrito alta - vaciar carrito (cleanup entre casos) 3
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Carrito alta - nota por encima del limite (256 caracteres, debe rechazar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Carrito alta - nota vacia (opcional, debe aceptar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Carrito editar cantidad - vacia (null)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Carrito editar cantidad - limite inferior menos uno (0, debe rechazar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Carrito editar cantidad - limite inferior exacto (1, debe aceptar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Carrito editar cantidad - limite superior exacto (20, debe aceptar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad)/Carrito editar cantidad - limite superior mas uno (21, debe rechazar)
+/31 - Matriz Cliente - Checkout/Checkout - tipoEntrega vacio (null)
+/31 - Matriz Cliente - Checkout/Checkout - tipoEntrega fuera del enum (falla en la deserializacion JSON, antes de Bean Validation)
+/31 - Matriz Cliente - Checkout/Checkout - DOMICILIO sin direccionId (debe rechazar, regla de negocio)
+/31 - Matriz Cliente - Checkout/Checkout - RETIRO valido (debe aceptar, consume el carrito de este bloque)
+/31 - Matriz Cliente - Checkout/Setup - Registro Comercio sin delivery (matriz carrito)
+/31 - Matriz Cliente - Checkout/Setup - Obtener codigo verificacion Comercio sin delivery (matriz carrito)
+/31 - Matriz Cliente - Checkout/Setup - Verificar Comercio sin delivery (matriz carrito)
+/31 - Matriz Cliente - Checkout/Setup - Login Comercio sin delivery (matriz carrito)
+/31 - Matriz Cliente - Checkout/Setup - Admin: listar comercios pendientes (comercio sin delivery)
+/31 - Matriz Cliente - Checkout/Setup - Admin: aprobar Comercio sin delivery (matriz carrito)
+/31 - Matriz Cliente - Checkout/Setup - Crear producto en comercio sin delivery (matriz carrito)
+/31 - Matriz Cliente - Checkout/Setup - Agregar producto de comercio sin delivery al carrito
+/31 - Matriz Cliente - Checkout/Setup - Obtener direccionId del Cliente (matriz carrito)
+/31 - Matriz Cliente - Checkout/[negocio] Checkout - DOMICILIO contra un comercio que no ofrece delivery (debe rechazar, regla de negocio)
+/31 - Matriz Cliente - Checkout/Cleanup - vaciar carrito final (matriz carrito)
+/32 - Matriz Cliente - Explorar (busqueda y filtros del catalogo)/Explorar - q vacio (sin parametro, debe devolver el catalogo completo)
+/32 - Matriz Cliente - Explorar (busqueda y filtros del catalogo)/Explorar - q con caracteres especiales / SQL-injection-like (debe tratarse como texto literal, no romper)
+/32 - Matriz Cliente - Explorar (busqueda y filtros del catalogo)/Explorar - q con script tag (XSS-like, debe tratarse como texto literal)
+/32 - Matriz Cliente - Explorar (busqueda y filtros del catalogo)/Explorar - categoriaId inexistente (debe devolver vacio, no error)
+/32 - Matriz Cliente - Explorar (busqueda y filtros del catalogo)/Explorar - tagIds inexistente (debe devolver vacio, no error)
+/32 - Matriz Cliente - Explorar (busqueda y filtros del catalogo)/Explorar - pagina fuera de rango (999, debe devolver vacio sin error)
+/32 - Matriz Cliente - Explorar (busqueda y filtros del catalogo)/Explorar - pagina negativa (degrada a pagina 1, no rompe)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - nombre vacio
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - nombre formato invalido (solo simbolos)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - nombre formato invalido (guiones)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - nombre limite superior exacto 150 caracteres (debe aceptar)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - nombre por encima del limite 151 caracteres (debe rechazar)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - descripcion limite superior exacto 2000 caracteres (debe aceptar)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - descripcion por encima del limite 2001 caracteres (debe rechazar)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - telefono vacio
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - telefono formato invalido (sin +549)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - telefono formato invalido (letras)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - emailContacto vacio
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - emailContacto formato invalido (sin arroba)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - emailContacto formato invalido (sin dominio)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - tipoComercio=RESTAURANTE (pasa validacion de formato, aislado con password vacio)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - tipoComercio=EMPRENDIMIENTO (pasa validacion de formato, aislado con password vacio)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - tipoComercio=ROTISERIA (pasa validacion de formato, aislado con password vacio)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - tipoComercio=HELADERIA (pasa validacion de formato, aislado con password vacio)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - tipoComercio=CAFETERIA (pasa validacion de formato, aislado con password vacio)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - tipoComercio=PANADERIA (pasa validacion de formato, aislado con password vacio)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - tipoComercio=PIZZERIA (pasa validacion de formato, aislado con password vacio)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - tipoComercio=PARRILLA (pasa validacion de formato, aislado con password vacio)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - tipoComercio=BAR (pasa validacion de formato, aislado con password vacio)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - tipoComercio=KIOSCO (pasa validacion de formato, aislado con password vacio)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - tipoComercio=FOOD_TRUCK (pasa validacion de formato, aislado con password vacio)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - tipoComercio=OTRO (pasa validacion de formato, aislado con password vacio)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - tipoComercio vacio (null)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - tipoComercio fuera del enum (INVALIDO)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - ninguna modalidad de entrega (aceptaDelivery y aceptaRetiro false)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - fotoPerfilUrl vacia
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - fotoPerfilUrl host invalido (no es res.cloudinary.com)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - fotoPerfilUrl esquema invalido (http en vez de https)
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - direccion.calle vacia
+/33 - Matriz Comercio - Registro Paso 1 (Negocio)/Registro Comercio - direccion.codigoPostal formato CPA alternativo (debe aceptar)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - razonSocial vacia
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - razonSocial formato invalido (solo simbolos)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - razonSocial por encima del limite 151 (debe rechazar)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - razonSocial limite superior exacto 150 (debe aceptar)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - cuit vacio
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - cuit formato invalido (longitud incorrecta, 10 digitos)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - cuit formato invalido (digito verificador incorrecto)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - condicionIva=RESPONSABLE_INSCRIPTO (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - condicionIva=EXENTO (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - condicionIva=NO_INSCRIPTO (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - condicionIva=MONOTRIBUTO (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - condicionIva=RESPONSABLE_NACIONAL (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - condicionIva vacio (null)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - condicionIva fuera del enum
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad=SA (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad=SRL (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad=SAS (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad=SC (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad=SCS (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad=SCRL (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad=SCSA (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad=SCCS (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad=CC (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad=CS (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad=CCSA (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad=CA (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad=SP (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad=ST (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad=ACP (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad=EMP (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad=EU (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad=UTE (pasa validacion de formato, aislado con password vacio)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad vacio (null)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - tipoSociedad fuera del enum
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - domicilioFiscal vacio
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - domicilioFiscal formato invalido (solo simbolos)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - domicilioFiscal por encima del limite 256 (debe rechazar)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - domicilioFiscal limite superior exacto 255 (debe aceptar)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - fechaInicioActividades vacia (null)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - fechaInicioActividades futura (invalida)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - nombreRepresentante vacio
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - nombreRepresentante formato invalido (numeros)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - nombreRepresentante por encima del limite 101 (debe rechazar)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - apellidoRepresentante vacio
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - apellidoRepresentante formato invalido (simbolos)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - dniRepresentante vacio
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - dniRepresentante formato invalido (6 digitos, corto)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - dniRepresentante formato invalido (9 digitos, largo)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - dniRepresentante limite inferior exacto 7 digitos (debe aceptar)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - telefonoRepresentante vacio
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - telefonoRepresentante formato invalido (sin +549)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - fechaNacimientoRepresentante vacia (null)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/[bug conocido, no corregido] Registro Comercio - fechaNacimientoRepresentante futura (mensaje no deterministico, @Past y @MayorDeEdad violan a la vez)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - fechaNacimientoRepresentante menor de edad (17 anios, violacion unica)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - email vacio
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - email formato invalido (sin arroba)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - password 7 caracteres (por debajo del minimo, debe rechazar)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - password 8 caracteres exacto (limite inferior, debe aceptar)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - password 73 caracteres, corrida 1 (determinismo, ver Parte A)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - password 73 caracteres, corrida 2 (determinismo, ver Parte A)
+/34 - Matriz Comercio - Registro Paso 2 (Legales)/Registro Comercio - password 73 caracteres, corrida 3 (determinismo, ver Parte A)
+/35 - Matriz Comercio - Registro Paso 3 (Horarios)/Registro Comercio - horarios diaSemana null en una franja
+/35 - Matriz Comercio - Registro Paso 3 (Horarios)/Registro Comercio - horarios horaApertura null en una franja
+/35 - Matriz Comercio - Registro Paso 3 (Horarios)/Registro Comercio - horarios horaCierre igual a horaApertura (limite, debe rechazar)
+/35 - Matriz Comercio - Registro Paso 3 (Horarios)/Registro Comercio - horarios horaCierre anterior a horaApertura (debe rechazar)
+/35 - Matriz Comercio - Registro Paso 3 (Horarios)/Registro Comercio - horarios superposicion en el mismo dia (debe rechazar)
+/35 - Matriz Comercio - Registro Paso 3 (Horarios)/Registro Comercio - horarios sin superposicion, horario partido mismo dia (debe aceptar)
+/35 - Matriz Comercio - Registro Paso 3 (Horarios)/Registro Comercio - horarios diaSemana fuera del enum
+/36 - Matriz Comercio - Perfil (edicion)/Setup - Registro Comercio (matriz perfil comercio)
+/36 - Matriz Comercio - Perfil (edicion)/Setup - Obtener codigo real de verificacion (matriz perfil comercio)
+/36 - Matriz Comercio - Perfil (edicion)/Setup - Verificar cuenta (matriz perfil comercio)
+/36 - Matriz Comercio - Perfil (edicion)/Setup - Login (matriz perfil comercio)
+/36 - Matriz Comercio - Perfil (edicion)/Perfil Comercio - nombre vacio
+/36 - Matriz Comercio - Perfil (edicion)/Perfil Comercio - nombre formato invalido (simbolos)
+/36 - Matriz Comercio - Perfil (edicion)/[mensaje generico de Hibernate Validator, no personalizado como el resto de la app - @Size sin message propio] Perfil Comercio - nombre por encima del limite 151 (debe rechazar)
+/36 - Matriz Comercio - Perfil (edicion)/Perfil Comercio - nombre limite superior exacto 150 (debe aceptar)
+/36 - Matriz Comercio - Perfil (edicion)/Perfil Comercio - descripcion limite superior 2001 (debe rechazar)
+/36 - Matriz Comercio - Perfil (edicion)/Perfil Comercio - descripcion limite superior exacto 2000 (debe aceptar)
+/36 - Matriz Comercio - Perfil (edicion)/Perfil Comercio - telefono vacio
+/36 - Matriz Comercio - Perfil (edicion)/Perfil Comercio - telefono formato invalido
+/36 - Matriz Comercio - Perfil (edicion)/Perfil Comercio - emailContacto vacio
+/36 - Matriz Comercio - Perfil (edicion)/Perfil Comercio - emailContacto formato invalido
+/36 - Matriz Comercio - Perfil (edicion)/[GAP CERRADO, confirmado por primera vez con test real] Perfil Comercio - sin ninguna modalidad de entrega (debe rechazar)
+/36 - Matriz Comercio - Perfil (edicion)/Perfil Comercio - valido (debe aceptar)
+/37 - Matriz Comercio - Cambio de password desde perfil/Setup - Registro Comercio (matriz password comercio)
+/37 - Matriz Comercio - Cambio de password desde perfil/Setup - Obtener codigo real de verificacion (matriz password comercio)
+/37 - Matriz Comercio - Cambio de password desde perfil/Setup - Verificar cuenta (matriz password comercio)
+/37 - Matriz Comercio - Cambio de password desde perfil/Setup - Login (matriz password comercio)
+/37 - Matriz Comercio - Cambio de password desde perfil/Cambiar password Comercio - passwordActual vacio
+/37 - Matriz Comercio - Cambio de password desde perfil/Cambiar password Comercio - passwordNueva vacio
+/37 - Matriz Comercio - Cambio de password desde perfil/Cambiar password Comercio - passwordNueva formato invalido (sin mayuscula)
+/37 - Matriz Comercio - Cambio de password desde perfil/Cambiar password Comercio - passwordNueva 73 caracteres, corrida 1 (determinismo, sin @Size redundante en este DTO)
+/37 - Matriz Comercio - Cambio de password desde perfil/Cambiar password Comercio - passwordNueva 73 caracteres, corrida 2 (determinismo)
+/37 - Matriz Comercio - Cambio de password desde perfil/Cambiar password Comercio - passwordActual incorrecta (1 solo intento, no agota bloqueo)
+/37 - Matriz Comercio - Cambio de password desde perfil/Cambiar password Comercio - valido (debe aceptar)
+/37 - Matriz Comercio - Cambio de password desde perfil/Cambiar password Comercio - login con password nueva confirma el cambio real
+/37 - Matriz Comercio - Cambio de password desde perfil/Cambiar password Comercio - login con password vieja ya no funciona
+/38 - Matriz Comercio - Foto de perfil/Setup - Registro Comercio (matriz foto comercio)
+/38 - Matriz Comercio - Foto de perfil/Setup - Obtener codigo real de verificacion (matriz foto comercio)
+/38 - Matriz Comercio - Foto de perfil/Setup - Verificar cuenta (matriz foto comercio)
+/38 - Matriz Comercio - Foto de perfil/Setup - Login (matriz foto comercio)
+/38 - Matriz Comercio - Foto de perfil/Foto perfil Comercio - url vacia
+/38 - Matriz Comercio - Foto de perfil/Foto perfil Comercio - url host invalido (no es res.cloudinary.com)
+/38 - Matriz Comercio - Foto de perfil/Foto perfil Comercio - url extension invalida (.pdf)
+/38 - Matriz Comercio - Foto de perfil/Foto perfil Comercio - url esquema invalido (http en vez de https)
+/38 - Matriz Comercio - Foto de perfil/[BUG REAL REPORTADO, no corregido] Foto perfil Comercio - url de 552 caracteres (sin @Size en el DTO, produce 500 en vez de 400)
+/38 - Matriz Comercio - Foto de perfil/Foto perfil Comercio - url valida (debe aceptar)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Setup - Login Administrador (matriz productos)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Setup - Crear categoria (matriz productos)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Setup - Crear tag MatrizTagA (matriz productos)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Setup - Crear tag MatrizTagB (matriz productos)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Setup - Crear tag MatrizTagC (matriz productos)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Setup - Crear tag MatrizTagD (matriz productos)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Setup - Crear tag MatrizTagE (matriz productos)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Setup - Crear tag MatrizTagF (matriz productos)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Setup - Registro Comercio (matriz productos comercio)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Setup - Obtener codigo real de verificacion (matriz productos comercio)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Setup - Verificar cuenta (matriz productos comercio)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Setup - Login (matriz productos comercio)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Producto - nombre vacio
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Producto - nombre formato invalido (empieza con simbolo)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Producto - nombre formato invalido (solo simbolos)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/[mensaje generico de Hibernate Validator, no personalizado como el resto de la app - @Size sin message propio] Producto - nombre por encima del limite 151 (debe rechazar)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Producto - nombre limite superior exacto 150 (debe aceptar)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/[mensaje generico de Hibernate Validator, gap ya documentado en CLAUDE.md] Producto - descripcion por encima del limite 2001 (debe rechazar)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Producto - descripcion limite superior exacto 2000 (debe aceptar)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Producto - precio nulo
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Producto - precio cero (invalido, debe ser mayor a $0)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Producto - precio negativo
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Producto - precio con decimales (fraction=0, debe rechazar)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Producto - precio 8 digitos limite superior exacto 99999999 (debe aceptar)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Producto - precio 9 digitos por encima del limite 100000000 (debe rechazar)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/[mensaje generico de Hibernate Validator, no personalizado como el resto de la app - @NotNull sin message propio] Producto - categoriaId nulo
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Producto - categoriaId inexistente
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Producto - tagIds vacio (opcional, debe aceptar)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Producto - tagIds limite superior exacto 5 (debe aceptar)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Producto - tagIds por encima del limite 6 (debe rechazar)
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Producto - tagIds con id inexistente
+/39 - Matriz Comercio - CRUD de productos (campo por campo)/Producto - valido (debe aceptar)
+/40 - Matriz Comercio - Gestion de imagenes de producto/Imagen producto - url vacia
+/40 - Matriz Comercio - Gestion de imagenes de producto/Imagen producto - url host invalido
+/40 - Matriz Comercio - Gestion de imagenes de producto/Imagen producto - url extension invalida (.pdf)
+/40 - Matriz Comercio - Gestion de imagenes de producto/Imagen producto - url esquema invalido (http)
+/40 - Matriz Comercio - Gestion de imagenes de producto/Imagen producto - orden nulo
+/40 - Matriz Comercio - Gestion de imagenes de producto/Imagen producto - orden negativo
+/40 - Matriz Comercio - Gestion de imagenes de producto/Imagen producto - valida (debe aceptar, primera imagen del producto)
+/40 - Matriz Comercio - Gestion de imagenes de producto/OrdenImagenRequestDTO - orden nulo
+/40 - Matriz Comercio - Gestion de imagenes de producto/OrdenImagenRequestDTO - orden negativo
+/40 - Matriz Comercio - Gestion de imagenes de producto/OrdenImagenRequestDTO - orden valido 0 (debe aceptar)
+/40 - Matriz Comercio - Gestion de imagenes de producto/UrlImagenRequestDTO - url vacia
+/40 - Matriz Comercio - Gestion de imagenes de producto/UrlImagenRequestDTO - url host invalido
+/40 - Matriz Comercio - Gestion de imagenes de producto/[comportamiento intencional, ya documentado en la auditoria] UrlImagenRequestDTO - url con extension .pdf (sin @Pattern de extension, debe aceptar)
+/41 - Matriz Comercio - Rechazo de pedido/Setup - Login Administrador (matriz pedido)
+/41 - Matriz Comercio - Rechazo de pedido/Setup - Registro Comercio (matriz pedido comercio)
+/41 - Matriz Comercio - Rechazo de pedido/Setup - Obtener codigo real de verificacion (matriz pedido comercio)
+/41 - Matriz Comercio - Rechazo de pedido/Setup - Verificar cuenta (matriz pedido comercio)
+/41 - Matriz Comercio - Rechazo de pedido/Setup - Login (matriz pedido comercio)
+/41 - Matriz Comercio - Rechazo de pedido/Setup - Obtener id de Comercio (matriz pedido)
+/41 - Matriz Comercio - Rechazo de pedido/Setup - Aprobar Comercio (matriz pedido)
+/41 - Matriz Comercio - Rechazo de pedido/Setup - Crear categoria (matriz pedido)
+/41 - Matriz Comercio - Rechazo de pedido/Setup - Crear producto (matriz pedido)
+/41 - Matriz Comercio - Rechazo de pedido/Setup - Registro Cliente (matriz pedido)
+/41 - Matriz Comercio - Rechazo de pedido/Setup - Obtener codigo real de verificacion Cliente (matriz pedido)
+/41 - Matriz Comercio - Rechazo de pedido/Setup - Verificar cuenta Cliente (matriz pedido)
+/41 - Matriz Comercio - Rechazo de pedido/Setup - Login Cliente (matriz pedido)
+/41 - Matriz Comercio - Rechazo de pedido/Setup - Obtener perfil Cliente para direccionId (matriz pedido)
+/41 - Matriz Comercio - Rechazo de pedido/Setup - Agregar item al carrito, pedido 1 (matriz pedido)
+/41 - Matriz Comercio - Rechazo de pedido/Setup - Crear pedido 1 (matriz pedido)
+/41 - Matriz Comercio - Rechazo de pedido/[mensaje generico de Hibernate Validator, no personalizado como el resto de la app - @NotNull sin message propio] Rechazo pedido - motivo faltante (null)
+/41 - Matriz Comercio - Rechazo de pedido/Rechazo pedido - motivo=OTRO sin comentario (obligatoriedad condicional, debe rechazar)
+/41 - Matriz Comercio - Rechazo de pedido/Rechazo pedido - motivo=OTRO con comentario string vacio (debe rechazar)
+/41 - Matriz Comercio - Rechazo de pedido/[confirma que el backend tambien hace trim, no solo el frontend] Rechazo pedido - motivo=OTRO con comentario solo espacios (debe rechazar)
+/41 - Matriz Comercio - Rechazo de pedido/Rechazo pedido - motivo fuera del enum
+/41 - Matriz Comercio - Rechazo de pedido/Rechazo pedido - motivo=OTRO con comentario valido (debe aceptar, consume pedido 1)
+/41 - Matriz Comercio - Rechazo de pedido/Setup - Agregar item al carrito, pedido 2 (matriz pedido)
+/41 - Matriz Comercio - Rechazo de pedido/Setup - Crear pedido 2 (matriz pedido)
+/41 - Matriz Comercio - Rechazo de pedido/[mensaje generico de Hibernate Validator, no personalizado como el resto de la app - @Size sin message propio] Rechazo pedido - comentario por encima del limite 501 (debe rechazar)
+/41 - Matriz Comercio - Rechazo de pedido/Rechazo pedido - motivo != OTRO sin comentario (opcional, debe aceptar, consume pedido 2)

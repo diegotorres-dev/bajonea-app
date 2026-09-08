@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Comercio pendiente de aprobación — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header app-header--brand">
+    <img class="header-logo" src="assets/img/bajonea-logo-orange-header.png" alt="Bajoneá" />
+  </header>
+  <main class="app-main">
+    <div class="state-page state-page--centrado-vertical">
+      <div class="revision-alert">
+        <div class="revision-alert__icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="revision-alert__body">
+          <h1 class="revision-alert__title">En revisión</h1>
+          <p class="revision-alert__text">Tu solicitud fue enviada correctamente y está siendo evaluada por el equipo de Bajoneá. Te informaremos vía email</p>
+          <span class="pill pill--primary revision-alert__pill">Pendiente de aprobación</span>
+        </div>
+      </div>
+      <div class="state-page__actions">
+        <button class="btn btn-primary" type="button" id="logout-btn" data-testid="btn-ir-a-inicio">Ir a la pantalla principal</button>
+      </div>
+    </div>
+  </main>
+</div>
+<script type="module">
+import { logout } from './js/auth.js';
+import { initComercioEstadoPagina } from './js/comercio.js';
+initComercioEstadoPagina('PENDIENTE');
+document.getElementById('logout-btn').addEventListener('click', () => logout('index.html'));
+</script>
+</body>
+</html>

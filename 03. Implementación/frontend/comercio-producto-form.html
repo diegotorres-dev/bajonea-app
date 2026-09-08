@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Producto — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <div id="top-bar-slot"></div>
+  <main class="app-main">
+    <div class="screen-body">
+      <div id="form-banner-slot" data-testid="mensaje-banner"></div>
+      <form class="form" id="form-producto" novalidate>
+        <div class="field">
+          <div class="field__label-row">
+            <label class="field__label">Fotos del producto</label>
+            <span class="field__label-badge">Obligatorio</span>
+          </div>
+          <div class="photo-gallery" id="galeria-fotos" data-testid="galeria-fotos-producto"></div>
+          <p class="field__hint" id="galeria-hint">Agregá hasta 5 fotos (al menos una obligatoria). Arrastrá las imágenes para cambiar el orden.</p>
+          <p class="field__hint">Resolución recomendada: 1200 x 900 px (4:3)</p>
+          <input type="file" id="input-foto" accept="image/jpeg,image/png,image/webp" class="is-hidden" data-testid="input-foto-producto" />
+          <div class="field__error" id="error-producto-fotos" style="display:none;" data-testid="mensaje-error-fotos-producto"></div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="producto-nombre">Nombre del producto</label>
+          <div class="input-shell"><input type="text" id="producto-nombre" required maxlength="150" data-testid="input-nombre-producto" /></div>
+          <div class="field__error" id="error-producto-nombre" style="display:none;" data-testid="mensaje-error-nombre-producto"></div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="producto-descripcion">Descripción</label>
+          <div class="textarea-shell"><textarea id="producto-descripcion" maxlength="2000" placeholder="Contales a tus clientes qué incluye (opcional)" data-testid="input-descripcion-producto"></textarea></div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="producto-precio">Precio</label>
+          <div class="input-shell">
+            <span class="input-prefix">$</span>
+            <input type="text" id="producto-precio" inputmode="numeric" autocomplete="off" required maxlength="10" data-testid="input-precio-producto" />
+          </div>
+          <div class="field__error" id="error-producto-precio" style="display:none;" data-testid="mensaje-error-precio-producto"></div>
+        </div>
+        <div class="field">
+          <label class="field__label" for="producto-categoria">Categoría</label>
+          <div class="select-shell">
+            <select id="producto-categoria" required data-testid="select-categoria-producto"></select>
+            <svg class="select-shell__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="field__error" id="error-producto-categoria" style="display:none;" data-testid="mensaje-error-categoria-producto"></div>
+        </div>
+        <div class="field">
+          <label class="field__label">Tags / Preferencias alimentarias</label>
+          <div class="chip-row chip-row--wrap" id="tags-chip-row" style="padding:4px 0;" data-testid="fila-chips-tags-producto"></div>
+          <div class="field__error" id="error-producto-tags" style="display:none;" data-testid="mensaje-error-tags-producto"></div>
+        </div>
+        <button class="btn btn-primary" type="submit" id="guardar-producto-btn" data-testid="btn-guardar-producto">Crear producto</button>
+      </form>
+      <button class="profile-link profile-link--danger" type="button" id="descontinuar-producto-link" style="margin-top:16px;border:1px solid var(--color-border);border-radius:var(--radius-lg);display:none;" data-testid="btn-descontinuar-producto">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        <span>Descontinuar producto</span>
+      </button>
+    </div>
+  </main>
+</div>
+<script type="module">
+import { initComercioProductoForm } from './js/comercio.js';
+initComercioProductoForm();
+</script>
+</body>
+</html>

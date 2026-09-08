@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tiempo de espera agotado — Bajoneá</title>
+<link rel="stylesheet" href="../css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header app-header--accent">
+    <span class="app-header__title">Tiempo agotado</span>
+  </header>
+  <main class="app-main">
+    <div class="state-page">
+      <div class="state-page__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <h1 class="state-page__title">La conexión tardó demasiado</h1>
+      <p class="state-page__text">La red está lenta y no pudimos completar la solicitud a tiempo. Probá nuevamente.</p>
+      <div class="state-page__actions">
+        <button class="btn btn-primary" type="button" id="reintentar-btn" data-testid="btn-reintentar">Reintentar</button>
+        <a class="btn btn-tertiary" href="../index.html" data-testid="btn-volver-inicio">Volver al inicio</a>
+      </div>
+    </div>
+  </main>
+</div>
+<script type="module">
+const params = new URLSearchParams(window.location.search);
+const retorno = params.get('retorno');
+document.getElementById('reintentar-btn').addEventListener('click', () => {
+  window.location.href = '../' + (retorno || 'index.html');
+});
+</script>
+</body>
+</html>

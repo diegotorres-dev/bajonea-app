@@ -81,7 +81,7 @@ Si alguno de estos 13 puntos no es el criterio que querés, avisame antes de pas
 
 ### Tabla: `localidad`
 
-**Descripción:** catálogo estático de localidades de Argentina, precargado por el mismo ETL. Cada localidad pertenece a una provincia.
+**Descripción:** catálogo estático de localidades de Argentina, precargado por el mismo ETL. Cada localidad pertenece a una provincia. **Excepción puntual (Tramo 16.12, 2026-07-28, `docs/DECISIONES.md`):** Tolhuin (Tierra del Fuego) no existe en el endpoint `/localidades` de Georef — solo en `/municipios` — así que el ETL nunca la trae por más veces que se reejecute. Se cargó vía una migración Flyway dedicada (`V16__seed_localidad_tolhuin.sql`, id `940021` reutilizado de `/municipios`), no por el script — es la única fila de `provincia`/`localidad` que no viene del ETL.
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---|---|---|---|---|---|
@@ -225,7 +225,7 @@ Si alguno de estos 13 puntos no es el criterio que querés, avisame antes de pas
 | `persona_juridica_id` | INT | NO | — | FK → `persona_juridica.id`, NN | Titular legal. Por regla de negocio, 1 PersonaJuridica = 1 Comercio (no forzado con UNIQUE, igual que en el diccionario completo). |
 | `nombre` | VARCHAR(150) | NO | — | NN | Nombre comercial / de fantasía. |
 | `descripcion` | TEXT | SÍ | NULL | — | Descripción libre del comercio. |
-| `foto_perfil_url` | VARCHAR(500) | SÍ | NULL | — | URL de Cloudinary de la foto de perfil del comercio. Opcional: no se pide en el registro, el comercio la sube o modifica después desde la edición de su perfil (a incluir en el alcance del MVP). Distinta de la galería de `imagen_producto` (Fase 11). |
+| `foto_perfil_url` | VARCHAR(500) | SÍ | NULL | — | URL de Cloudinary de la foto de perfil del comercio. Opcional: se puede cargar en el momento del registro (Tramo 16.22, firma pública scoped a `comercios/pre-registro/` porque el comercio todavía no tiene `id`) o subir/modificar después desde la edición de su perfil. Distinta de la galería de `imagen_producto` (Fase 11). |
 | `telefono` | VARCHAR(30) | NO | — | NN | Teléfono de contacto. |
 | `email` | VARCHAR(150) | NO | — | NN | Email de contacto (puede diferir del email del usuario representante). |
 | `tipo_comercio` | ENUM `TipoComercio` | NO | — | NN | `RESTAURANTE` o `EMPRENDIMIENTO`. |
@@ -263,18 +263,19 @@ Si alguno de estos 13 puntos no es el criterio que querés, avisame antes de pas
 
 ### Tabla: `token`
 
-**Descripción:** tokens de un solo uso. Desde la Fase 7, cubre verificación de email, recuperación de contraseña y reactivación de cuenta (ver nota de alcance 6 y 12).
+**Descripción:** tokens de un solo uso. Desde la Fase 7, cubre verificación de email, recuperación de contraseña y reactivación de cuenta (ver nota de alcance 6 y 12). Desde el Tramo 16.11 (2026-07-24, ver `docs/DECISIONES.md`), suma el contador `intentos_fallidos` para limitar fuerza bruta. Desde el Tramo 16.12 (2026-07-28), los 3 tipos se consumen siempre por email+código, nunca por link — los endpoints que resolvían por link (`RECUPERACION_PASSWORD`/`REACTIVACION_CUENTA`) se eliminaron, no se mantuvieron en paralelo.
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---|---|---|---|---|---|
 | `id` | INT | NO | AI | PK, AI | Identificador único. |
 | `usuario_id` | INT | NO | — | FK → `usuario.id`, NN | Usuario dueño del token. |
 | `tipo` | ENUM `TipoToken` | NO | — | NN | `VERIFICACION_EMAIL` (24hs), `RECUPERACION_PASSWORD` (30min) o `REACTIVACION_CUENTA` (24hs). Duración validada en `AuthService`, no en el schema. |
-| `token` | VARCHAR(36) | NO | — | NN, UQ | UUID v4. |
+| `token` | VARCHAR(36) | NO | — | NN, UQ | Código numérico de 6 dígitos (`String`, con ceros a la izquierda) para los 3 tipos, pensado para tipeo manual — `VERIFICACION_EMAIL` desde el Tramo 16.11, `RECUPERACION_PASSWORD`/`REACTIVACION_CUENTA` desde el Tramo 16.12 (`docs/DECISIONES.md`). La columna sigue en `VARCHAR(36)` pese a que ningún tipo usa más de 6 caracteres hoy — angostarla no aporta nada y generaría una migración sin beneficio real. Generación con reintento ante colisión (`AuthService.generarToken`, hasta 5 intentos) — el `UNIQUE` de esta columna es de por vida sobre toda la tabla (las filas usadas no se borran), así que la probabilidad de choque crece con el tiempo de vida real del sitio. |
 | `fecha_creacion` | DATETIME | NO | `NOW()` | NN | Fecha de generación. |
 | `fecha_vencimiento` | DATETIME | NO | — | NN | Fecha de expiración. |
-| `usado` | TINYINT(1) | NO | `false` | NN | `true` una vez consumido. |
-| `fecha_uso` | DATETIME | SÍ | NULL | — | Fecha en que se consumió. `NULL` mientras `usado = false`. |
+| `usado` | TINYINT(1) | NO | `false` | NN | `true` una vez consumido, o al superar `intentos_fallidos` (invalidación por fuerza bruta). |
+| `fecha_uso` | DATETIME | SÍ | NULL | — | Fecha en que se consumió/invalidó. `NULL` mientras `usado = false`. |
+| `intentos_fallidos` | INT | NO | `0` | NN | Agregada en el Tramo 16.11 (migración `V15__token_intentos_fallidos.sql`), en ese momento exclusiva de `VERIFICACION_EMAIL`. Desde el Tramo 16.12 se incrementa para los 3 tipos, vía el helper compartido `AuthService.obtenerTokenValidoPorCodigo`; al llegar a 5, el token se marca `usado = true` y hay que solicitar uno nuevo. |
 
 **Índices:** `PRIMARY KEY (id)` \| `UNIQUE (token)` \| `INDEX (usuario_id, tipo, usado)`
 
@@ -471,12 +472,13 @@ Si alguno de estos 13 puntos no es el criterio que querés, avisame antes de pas
 
 ### Tabla: `notificacion`
 
-**Descripción:** notificaciones in-app vía polling. Sin canal email, sin tipo estructurado (decisión cerrada en la sección 0 de la guía: "Tabla Notificacion básica (usuario, mensaje, leída, fecha)").
+**Descripción:** notificaciones in-app vía polling. Sin canal email, sin tipo estructurado (decisión cerrada en la sección 0 de la guía: "Tabla Notificacion básica (usuario, mensaje, leída, fecha)"). Ampliada en el Tramo 16.19 (ver `docs/DECISIONES.md`, 2026-07-29) con `pedido_id`, nullable a propósito — solo las notificaciones generadas desde `PedidoService` (nuevo pedido, aceptado, rechazado) la completan; el resto (aprobación de comercio, producto agotado en carrito) sigue sin vincularse a ningún pedido.
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---|---|---|---|---|---|
 | `id` | INT | NO | AI | PK, AI | Identificador único. |
 | `usuario_id` | INT | NO | — | FK → `usuario.id`, NN | Destinatario. |
+| `pedido_id` | INT | SÍ | — | FK → `pedido.id` | Pedido asociado, si corresponde (Tramo 16.19). |
 | `mensaje` | VARCHAR(500) | NO | — | NN | Texto de la notificación. |
 | `leida` | TINYINT(1) | NO | `false` | NN | `true` una vez marcada como leída. |
 | `fecha_creacion` | DATETIME | NO | `NOW()` | NN | Fecha de generación. |

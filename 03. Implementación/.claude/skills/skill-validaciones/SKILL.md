@@ -1,6 +1,6 @@
 ---
 name: skill-validaciones
-description: Catálogo de validaciones Bean Validation del backend Bajoneá — estándar de jakarta.validation y las 9 anotaciones custom del paquete validation/ (CUIT, DNI, teléfono argentino, nombre propio, password segura, código postal argentino, mayoría de edad, URL de Cloudinary, exclusión mutua cliente/comercio en Direccion). Consultar antes de escribir o editar cualquier RequestDTO con campos de tipo CUIT, DNI, teléfono, nombre/apellido, password, código postal, fecha de nacimiento, URL de imagen, o el par clienteId/comercioId de Direccion.
+description: Catálogo de validaciones Bean Validation del backend Bajoneá — estándar de jakarta.validation y las 13 anotaciones custom del paquete validation/ (CUIT, DNI, teléfono argentino, nombre propio, password segura, código postal argentino, mayoría de edad, plausibilidad de fecha de nacimiento, URL de Cloudinary, exclusión mutua cliente/comercio en Direccion, y los 3 validadores de formato blanco-tolerantes de nombre/DNI/email). Consultar antes de escribir o editar cualquier RequestDTO con campos de tipo CUIT, DNI, teléfono, nombre/apellido, password, código postal, fecha de nacimiento, email, URL de imagen, o el par clienteId/comercioId de Direccion.
 ---
 
 # Validaciones (Fase 5 en adelante)
@@ -23,27 +23,51 @@ estas directo en el campo del DTO siempre que alcancen.
 Se crea (o se usa, si ya existe) una anotación custom **únicamente** cuando la regla
 necesita lógica real que un `@Pattern` no puede resolver: dígito verificador,
 normalización de formato, coherencia entre campos, o una regla de negocio (ej. mayoría de
-edad). Las 9 anotaciones de abajo son exactamente ese catálogo — no crear una anotación
-custom nueva para algo que ya cubre una de estas o un validador estándar.
+edad, o resolver la ambigüedad "obligatorio vs. formato inválido" cuando conviven con
+`@NotBlank`/`@NotNull` en el mismo campo — ver nota debajo del catálogo). Las 13
+anotaciones de abajo son exactamente ese catálogo — no crear una anotación custom nueva
+para algo que ya cubre una de estas o un validador estándar.
 
 ## Catálogo de anotaciones custom
 
 | Anotación | Target | Tipo de campo | Qué valida |
 |---|---|---|---|
 | `@ValidarCuit` | `FIELD` | `String` | 11 dígitos + dígito verificador módulo 11 real (algoritmo AFIP). Rechaza CUITs bien formados pero matemáticamente inválidos. |
-| `@ValidarDni` | `FIELD` | `String` | 7 u 8 dígitos, rango [1.000.000, 99.999.999]. |
-| `@ValidarTelefonoArgentino` | `FIELD` | `String` | Normaliza y valida teléfono argentino tolerando +54, 9, 0 de larga distancia y 15 (formato histórico de celular). Ver Javadoc de `TelefonoArgentinoValidator` para el algoritmo exacto de normalización. |
-| `@ValidarNombrePropio` | `FIELD` | `String` | Solo letras Unicode (incluye acentos y ñ), espacios y guiones; rechaza números, símbolos, vacío y solo-espacios. Usar en `nombre`/`apellido`. |
-| `@ValidarPasswordSegura` | `FIELD` | `String` | Mínimo 8 caracteres, al menos 1 mayúscula, al menos 1 número. No exige símbolo (decisión explícita del MVP). |
+| `@ValidarDni` | `FIELD` | `String` | 7 u 8 dígitos, rango [1.000.000, 99.999.999]. **No** es blanco-tolerante (solo `null`-tolerante) — mismo riesgo de ambigüedad que `@ValidarNombrePropio` con `@NotBlank`; para un campo que solo necesita el formato (sin el chequeo de rango) evaluar `@ValidarFormatoDni`. |
+| `@ValidarTelefonoArgentino` | `FIELD` | `String` | Prefijo fijo `+549` (no editable en el HTML) + exactamente 10 dígitos locales tras quitar espacios/paréntesis/guiones. **Endurecida** en el tramo de perfeccionamiento de validaciones de "01. Datos Personales" (2026-09-01, ver `docs/DECISIONES.md`): antes toleraba 8-10 dígitos con lógica de prefijos 54/9/0/15 heredada de formatos legacy que ningún formulario del proyecto usa hoy — los 5 usos actuales (`RegistroClienteRequestDTO.telefono`, `RegistroComercioRequestDTO.telefono`/`telefonoRepresentante`, `ComercioPerfilRequestDTO.telefono`, `ClienteEditarPerfilRequestDTO.telefono`) comparten el mismo patrón de prefijo fijo en el HTML, confirmado antes de endurecer. Ver Javadoc de `TelefonoArgentinoValidator` para el algoritmo exacto. |
+| `@ValidarNombrePropio` | `FIELD` | `String` | Solo letras Unicode (incluye acentos y ñ), espacios y guiones; rechaza números, símbolos, vacío y solo-espacios. Usar en `nombre`/`apellido`. **No** es blanco-tolerante (solo `null`-tolerante) — combinada con `@NotBlank` en el mismo campo puede competir por el mensaje ganador en un valor vacío (ver nota debajo del catálogo); no usar en un campo nuevo sin evaluar `@ValidarFormatoNombre` en su lugar. |
+| `@ValidarPasswordSegura` | `FIELD` | `String` | 8 a 72 caracteres (72 = límite real de bcrypt), al menos 1 mayúscula, al menos 1 minúscula, al menos 1 número. No exige símbolo (decisión explícita del MVP). **Corregida** en el mismo tramo: no exigía minúscula pese a que `requisitos-funcionales-generales.md` ya la pedía — gap real, corregido en el validador compartido (afecta a los 4 usos existentes). |
 | `@ValidarCodigoPostalArgentino` | `FIELD` | `String` | Formato clásico de 4 dígitos, o CPA alfanumérico de 8 caracteres (ej. `C1425DJP`). Ambos formatos son válidos en Argentina. |
-| `@MayorDeEdad` | `FIELD` | `LocalDate` | La fecha (ej. `fechaNacimiento`) implica 18 años o más al momento de la validación. |
+| `@MayorDeEdad` | `FIELD` | `LocalDate` | La fecha (ej. `fechaNacimiento`) implica 18 años o más al momento de la validación. Es una política de edad mínima — no confundir con `@ValidarFechaNacimientoPlausible` (plausibilidad de datos, sin piso de edad). Desde 2026-09-01 ya no se usa en `RegistroClienteRequestDTO` (edad mínima retirada del registro de Cliente por decisión de negocio); sigue vigente en `RegistroComercioRequestDTO.fechaNacimientoRepresentante`. |
+| `@ValidarFechaNacimientoPlausible` | `FIELD` | `LocalDate` | Rechaza fecha futura y fecha anterior a 120 años desde hoy. Chequeo de plausibilidad de datos, sin piso de edad mínima — agregada en el tramo de "01. Datos Personales" (2026-09-01) al retirar `@MayorDeEdad` de `RegistroClienteRequestDTO.fechaNacimiento`. |
 | `@ValidarUrlCloudinary` | `FIELD` | `String` | Esquema `https` y host exactamente `res.cloudinary.com`. **Valida dominio, no propiedad del recurso** — ver advertencia debajo antes de usarla en un campo editable por el cliente. |
+| `@ValidarFormatoNombre` | `FIELD` | `String` | Igual que `@ValidarNombrePropio` pero con charset más acotado (solo A-Z/vocales acentuadas/Ñ/guion/apóstrofe/espacio, sin tolerancia Unicode completa) y **blanco-tolerante** (además de `null`-tolerante): un valor vacío o solo-espacios pasa como `true`, delegando esa violación por completo a `@NotBlank`. Agregada en el tramo de "01. Datos Personales" (2026-09-01) — usada hoy solo por `RegistroClienteRequestDTO.nombre`/`apellido`, por decisión explícita de no endurecer el charset de la anotación compartida `@ValidarNombrePropio` (usada también por `ClienteEditarPerfilRequestDTO`/`RegistroComercioRequestDTO`) sin auditar esos formularios primero. Ver `docs/DECISIONES.md`. |
+| `@ValidarFormatoDni` | `FIELD` | `String` | Igual que `@ValidarDni` pero sin el chequeo de rango numérico y **blanco-tolerante**. Agregada el mismo tramo — usada hoy solo por `RegistroClienteRequestDTO.dni` (recibe el valor ya sanitizado de puntos/espacios/guiones por el setter manual del DTO). |
+| `@ValidarFormatoEmail` | `FIELD` | `String` | `^[^\s@]+@[^\s@]+\.[^\s@]+$`, **blanco-tolerante**. Reemplaza a la combinación `@Email` + `@Pattern` (redundante entre sí, y ninguna de las dos blanco-tolerante en conjunto con `@NotBlank`) en `RegistroClienteRequestDTO.email`. Agregada el mismo tramo. |
 | `@DireccionExclusionMutua` | `TYPE` (nivel de clase) | — | Sobre el DTO completo de Direccion: exactamente uno de `clienteId`/`comercioId` debe ser no nulo, nunca ambos ni ninguno. Sube a anotación declarativa la regla documentada en `docs/modelo-mvp.md`, tabla `direccion`. Se aplica sobre la propia clase del DTO (`@DireccionExclusionMutua` encima de `public class XxxDireccionDTO { ... }`), no sobre un campo. |
 
 Todas menos `@DireccionExclusionMutua` son `null`-tolerantes (devuelven `true` si el valor
 es `null`): la ausencia de valor es responsabilidad de `@NotNull`/`@NotBlank` en el mismo
 campo, combinada según corresponda; cada validador custom solo se expide sobre el
 formato/regla cuando el valor está presente.
+
+**`null`-tolerante no es lo mismo que blanco-tolerante — y la diferencia importa cuando el
+campo también lleva `@NotBlank`.** Bean Validation no garantiza qué mensaje "gana" cuando
+dos anotaciones del mismo campo violan a la vez (ej. `@NotBlank` + `@ValidarDni` sobre un
+`dni=""`, que viola ambas) — el orden de `ConstraintViolation` de Hibernate Validator no está
+especificado. Un validador solo `null`-tolerante (la mayoría de la tabla de arriba) SÍ
+compite con `@NotBlank` en un valor `""` o `"   "`, y el mensaje de "obligatorio" puede
+perder esa competencia de forma no determinista — el bug real detectado y corregido en el
+tramo de "01. Datos Personales" (2026-09-01, ver `docs/DECISIONES.md`). `@ValidarTelefonoArgentino`
+y `@ValidarPasswordSegura` se endurecieron a blanco-tolerantes en ese mismo tramo (afecta a
+sus usos compartidos); `@ValidarFormatoNombre`/`@ValidarFormatoDni`/`@ValidarFormatoEmail` se
+crearon expresamente blanco-tolerantes para los 3 campos que lo necesitaban sin tocar el
+comportamiento de las anotaciones compartidas (`@ValidarNombrePropio`/`@ValidarDni`, que
+siguen siendo solo `null`-tolerantes en sus otros usos). Regla práctica para cualquier campo
+nuevo que combine `@NotBlank`/`@NotNull` con un validador custom de formato: si el validador
+no es blanco/`null`-tolerante de forma consistente con el chequeo de obligatoriedad del mismo
+campo, separarlos explícitamente (blanco-tolerante) en vez de confiar en el orden de
+evaluación.
 
 ## `@ValidarUrlCloudinary` no alcanza sola para un campo editable por el cliente
 

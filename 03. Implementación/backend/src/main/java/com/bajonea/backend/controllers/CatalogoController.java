@@ -1,8 +1,10 @@
 package com.bajonea.backend.controllers;
 
 import com.bajonea.backend.dto.response.ApiResponse;
-import com.bajonea.backend.dto.response.ComercioResponseDTO;
+import com.bajonea.backend.dto.response.ComercioPublicoResponseDTO;
+import com.bajonea.backend.dto.response.FiltrosCatalogoResponseDTO;
 import com.bajonea.backend.dto.response.ProductoResponseDTO;
+import com.bajonea.backend.dto.response.ProductosPaginadosResponseDTO;
 import com.bajonea.backend.services.CatalogoService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +24,8 @@ public class CatalogoController {
     private final CatalogoService catalogoService;
 
     @GetMapping("/comercios")
-    public ResponseEntity<ApiResponse<List<ComercioResponseDTO>>> listarComercios() {
-        List<ComercioResponseDTO> comercios = catalogoService.listarComerciosAprobados();
+    public ResponseEntity<ApiResponse<List<ComercioPublicoResponseDTO>>> listarComercios() {
+        List<ComercioPublicoResponseDTO> comercios = catalogoService.listarComerciosAprobados();
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Comercios obtenidos correctamente", comercios));
     }
 
@@ -32,5 +34,21 @@ public class CatalogoController {
             @RequestParam(required = false) Integer categoriaId, @RequestParam(required = false) Integer tagId) {
         List<ProductoResponseDTO> productos = catalogoService.listarProductosDelComercio(id, categoriaId, tagId);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Productos obtenidos correctamente", productos));
+    }
+
+    @GetMapping("/productos")
+    public ResponseEntity<ApiResponse<ProductosPaginadosResponseDTO>> listarProductosGlobal(
+            @RequestParam(required = false) Integer categoriaId,
+            @RequestParam(required = false) List<Integer> tagIds,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) Integer pagina) {
+        ProductosPaginadosResponseDTO productos = catalogoService.listarProductosGlobal(categoriaId, tagIds, q, pagina);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Productos obtenidos correctamente", productos));
+    }
+
+    @GetMapping("/filtros")
+    public ResponseEntity<ApiResponse<FiltrosCatalogoResponseDTO>> listarFiltrosDisponibles() {
+        FiltrosCatalogoResponseDTO filtros = catalogoService.listarFiltrosDisponibles();
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Filtros obtenidos correctamente", filtros));
     }
 }

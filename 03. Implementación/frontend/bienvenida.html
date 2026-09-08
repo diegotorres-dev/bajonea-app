@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bajoneá — Pedí la mejor comida de tu ciudad</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <main class="app-main">
+    <div class="landing-hero">
+      <img src="assets/img/bajonea-logo-white.png" alt="Bajoneá" />
+    </div>
+    <div class="screen-body">
+      <h1 class="title-lg">Pedí la mejor comida de tu ciudad y bajoneá ;)</h1>
+      <p class="subtitle">Negocios gastronómicos locales en un solo lugar.</p>
+      <div class="form">
+        <a class="btn btn-primary" href="login.html" data-testid="btn-ingresar">Ingresar</a>
+        <a class="btn btn-secondary" href="registro-tipo-cuenta.html" data-testid="btn-crear-cuenta">Crear cuenta</a>
+        <button class="btn btn-text" type="button" id="explorar-btn" style="width:100%;justify-content:center;color:var(--color-text-muted);" data-testid="btn-explorar-sin-registro">
+          Explorar sin registrarme
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+      </div>
+    </div>
+  </main>
+</div>
+<script type="module">
+document.getElementById('explorar-btn').addEventListener('click', () => {
+  window.location.href = 'index.html';
+});
+</script>
+</body>
+</html>

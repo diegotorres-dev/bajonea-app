@@ -2,6 +2,7 @@ package com.bajonea.backend.services;
 
 import com.bajonea.backend.entities.Token;
 import com.bajonea.backend.entities.Usuario;
+import com.bajonea.backend.enums.EstadoToken;
 import com.bajonea.backend.enums.TipoToken;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.repositories.TokenRepository;
@@ -37,8 +38,8 @@ public class TestSupportService {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
         Token token = tokenRepository
-                .findFirstByUsuarioIdAndTipoAndUsadoOrderByFechaCreacionDesc(
-                        usuario.getId(), tipo, false)
+                .findFirstByUsuarioIdAndTipoAndEstadoOrderByFechaCreacionDesc(
+                        usuario.getId(), tipo, EstadoToken.PENDIENTE)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No hay token de tipo " + tipo + " pendiente para ese email"));
         return token.getToken();

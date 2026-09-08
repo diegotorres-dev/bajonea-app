@@ -5,6 +5,7 @@ import com.bajonea.backend.dto.response.TagResponseDTO;
 import com.bajonea.backend.entities.Tag;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
+import com.bajonea.backend.repositories.ProductoTagRepository;
 import com.bajonea.backend.repositories.TagRepository;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TagService {
 
     private final TagRepository tagRepository;
+    private final ProductoTagRepository productoTagRepository;
 
     public TagResponseDTO crear(TagRequestDTO request) {
         if (tagRepository.existsByNombre(request.getNombre())) {
@@ -75,6 +77,7 @@ public class TagService {
     }
 
     private TagResponseDTO aResponseDTO(Tag tag) {
-        return new TagResponseDTO(tag.getId(), tag.getNombre(), tag.isActivo());
+        long cantidadProductos = productoTagRepository.countByTagId(tag.getId());
+        return new TagResponseDTO(tag.getId(), tag.getNombre(), tag.isActivo(), cantidadProductos);
     }
 }

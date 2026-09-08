@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Comercio — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <div id="top-bar-slot"></div>
+  <main class="app-main">
+    <div id="main-content">
+      <div class="comercio-detail-header">
+        <div class="comercio-detail-header__avatar"><img id="comercio-hero" alt="" /></div>
+        <div class="comercio-detail-header__body">
+          <div class="comercio-detail-header__top">
+            <h1 id="comercio-nombre" data-testid="nombre-comercio"></h1>
+            <span id="comercio-estado-badge" class="comercio-estado-badge"></span>
+          </div>
+        </div>
+      </div>
+      <div id="comercio-info" class="comercio-info comercio-info--center"></div>
+      <p id="comercio-descripcion" class="comercio-description" data-testid="descripcion-comercio"></p>
+      <div id="chip-row" class="chip-row"></div>
+      <div id="product-list"></div>
+    </div>
+  </main>
+</div>
+<script type="module">
+import { initComercioDetalle } from './js/catalogo.js';
+initComercioDetalle();
+</script>
+</body>
+</html>

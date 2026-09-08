@@ -1,0 +1,410 @@
+/00 - Health | GET {{base_url}}/health | Health check
+/01 - Geografía | GET {{base_url}}/geografia/provincias | Listar provincias
+/01 - Geografía | GET {{base_url}}/geografia/localidades?provinciaId={{provincia_id}} | Listar localidades de Tierra del Fuego
+/01 - Geografía | GET {{base_url}}/geografia/localidades | [negativo] Listar localidades sin provinciaId
+/02 - Auth | POST {{base_url}}/auth/registro/cliente | Registro Cliente
+/02 - Auth | POST {{base_url}}/auth/registro/comercio | Registro Comercio A
+/02 - Auth | POST {{base_url}}/auth/registro/comercio | Registro Comercio B
+/02 - Auth | GET {{base_url}}/test/token-verificacion?email={{cliente_email}} | Bypass test - token verificación Cliente
+/02 - Auth | GET {{base_url}}/auth/verificar/{{token_verif_cliente}} | Verificar cuenta Cliente
+/02 - Auth | GET {{base_url}}/test/token-verificacion?email={{comercioA_email}} | Bypass test - token verificación Comercio A
+/02 - Auth | GET {{base_url}}/auth/verificar/{{token_verif_comercioA}} | Verificar cuenta Comercio A
+/02 - Auth | GET {{base_url}}/test/token-verificacion?email={{comercioB_email}} | Bypass test - token verificación Comercio B
+/02 - Auth | GET {{base_url}}/auth/verificar/{{token_verif_comercioB}} | Verificar cuenta Comercio B
+/02 - Auth | POST {{base_url}}/auth/login | Login Cliente
+/02 - Auth | POST {{base_url}}/auth/login | Login Comercio A
+/02 - Auth | POST {{base_url}}/auth/login | Login Comercio B
+/02 - Auth | POST {{base_url}}/auth/login | Login Administrador
+/02 - Auth | POST {{base_url}}/auth/login | [negativo] Login con password incorrecta
+/02 - Auth | POST {{base_url}}/auth/registro/cliente | [negativo] Registro Cliente con localidadId inexistente
+/03 - Administrador | GET {{base_url}}/administrador/comercios/pendientes | Listar comercios pendientes
+/03 - Administrador | PUT {{base_url}}/administrador/comercios/{{comercio_a_id}}/resolver | Aprobar Comercio A
+/03 - Administrador | PUT {{base_url}}/administrador/comercios/{{comercio_b_id}}/resolver | Aprobar Comercio B
+/03 - Administrador | POST {{base_url}}/categorias | Crear categoría
+/03 - Administrador | POST {{base_url}}/tags | Crear tag
+/03 - Administrador | GET {{base_url}}/administrador/comercios/pendientes | [negativo] Listar comercios pendientes con token de Cliente
+/04 - Productos | POST {{base_url}}/productos | Crear producto (Comercio A)
+/04 - Productos | POST {{base_url}}/productos | Crear producto (Comercio B)
+/04 - Productos | POST {{base_url}}/productos/{{producto_id}}/cloudinary/firma | Pedir firma Cloudinary para imagen de producto
+/04 - Productos | POST {{base_url}}/productos/{{producto_id}}/imagenes | Agregar imagen 1 (principal)
+/04 - Productos | POST {{base_url}}/productos/{{producto_id}}/imagenes | Agregar imagen 2
+/04 - Productos | POST {{base_url}}/productos/{{producto_id}}/imagenes | Agregar imagen 3
+/04 - Productos | POST {{base_url}}/productos/{{producto_id}}/imagenes | Agregar imagen 4
+/04 - Productos | POST {{base_url}}/productos/{{producto_id}}/imagenes | Agregar imagen 5
+/04 - Productos | POST {{base_url}}/productos/{{producto_id}}/imagenes | [negativo] Agregar imagen 6 (límite de galería)
+/04 - Productos | PATCH {{base_url}}/productos/999999/estado | [negativo] Cambiar estado de producto inexistente
+/05 - Catálogo | GET {{base_url}}/catalogo/comercios | Listar comercios del catálogo
+/05 - Catálogo | GET {{base_url}}/catalogo/comercios/{{comercio_a_id}}/productos | Listar productos del comercio (con galería)
+/06 - Carrito | POST {{base_url}}/carrito/items | Agregar producto A al carrito
+/06 - Carrito | POST {{base_url}}/carrito/items | [negativo] Agregar producto de otro comercio
+/06 - Carrito | GET {{base_url}}/carrito | Ver carrito
+/07 - Pedidos | POST {{base_url}}/pedidos/cliente | Confirmar pedido (Comercio A, retiro)
+/07 - Pedidos | GET {{base_url}}/pedidos/comercio | Ver pedidos pendientes del Comercio A
+/07 - Pedidos | PUT {{base_url}}/pedidos/comercio/{{pedido_id}}/aceptar | Aceptar pedido
+/07 - Pedidos | POST {{base_url}}/carrito/items | Agregar producto B al carrito (segundo pedido)
+/07 - Pedidos | POST {{base_url}}/pedidos/cliente | Confirmar pedido (Comercio B, retiro)
+/07 - Pedidos | PUT {{base_url}}/pedidos/comercio/{{pedido_b_id}}/rechazar | Rechazar pedido con motivo (Comercio B)
+/08 - Notificaciones | GET {{base_url}}/notificaciones | Ver notificaciones del cliente
+/08 - Notificaciones | PUT {{base_url}}/notificaciones/{{notif_id}}/leida | Marcar notificación como leída
+/08 - Notificaciones | GET {{base_url}}/notificaciones/no-leidas/contador | Ver contador de no leídas
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/registro/cliente | Registro Cliente E (para verificacion por codigo)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/verificar | [negativo] Verificar con codigo incorrecto
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | GET {{base_url}}/test/token?email={{clienteE_email}}&tipo=VERIFICACION_EMAIL | Bypass test - obtener codigo verificacion Cliente E
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/verificar | Verificar cuenta Cliente E con codigo real (flujo primario, no bypass de link)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/login | Login Cliente E (confirma mismo estado final que el bypass de link)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/registro/cliente | Registro Cliente F (para el negativo de abajo y reenvio)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/login | [negativo] Login antes de verificar (Usuario PENDIENTE)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/reenviar-verificacion | Reenviar verificacion Cliente F
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/reenviar-verificacion | [negativo] Reenviar verificacion de cuenta ya activa (Cliente E)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/reenviar-verificacion | [negativo] Reenviar verificacion de email inexistente
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/recuperar-password | Solicitar recuperacion de password (Cliente E)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/recuperar-password | [negativo] Solicitar recuperacion con email inexistente (no revela existencia)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | GET {{base_url}}/test/token?email={{clienteE_email}}&tipo=RECUPERACION_PASSWORD | Bypass test - obtener codigo recuperacion Cliente E
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/recuperar-password/validar-codigo | [negativo] Validar codigo de recuperacion incorrecto
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/recuperar-password/validar-codigo | Validar codigo de recuperacion correcto
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/recuperar-password/confirmar | Confirmar recuperacion de password (Cliente E)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/login | Login Cliente E con la password nueva (confirma que cambio de verdad)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/login | [negativo] Login con la password vieja ya no sirve
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/cambiar-password | [negativo] Cambiar password con la actual incorrecta
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/cambiar-password | [negativo] Cambiar password nueva igual a la actual
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/cambiar-password | Cambiar password desde perfil (Cliente E)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/reactivar-cuenta | Solicitar reactivacion sobre cuenta ya activa (sin efecto observable, 200 igual)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/reactivar-cuenta/confirmar | [negativo] Confirmar reactivacion con codigo inexistente (cuenta activa, sin token pendiente)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/login | Login Cliente E de nuevo (para probar logout)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/logout | Logout Cliente E
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | GET {{base_url}}/clientes/perfil | [negativo] Reutilizar el JWT despues de logout
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/registro/cliente | [negativo] Registro Cliente con email duplicado
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/registro/cliente | [negativo] Registro Cliente con DNI duplicado
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/registro/comercio | [negativo] Registro Comercio con CUIT duplicado
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/registro/comercio | [negativo] Registro Comercio con DNI de representante duplicado cross-role (mismo DNI que un Cliente)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/registro/comercio | [negativo] Registro Comercio sin horarios (lista vacia)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/registro/comercio | [negativo] Registro Comercio con horaCierre anterior a horaApertura
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/registro/comercio/foto-firma | Pedir firma foto de registro de comercio (1/5, dentro del limite)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/registro/comercio/foto-firma | Pedir firma foto de registro de comercio (2/5, dentro del limite)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/registro/comercio/foto-firma | Pedir firma foto de registro de comercio (3/5, dentro del limite)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/registro/comercio/foto-firma | Pedir firma foto de registro de comercio (4/5, dentro del limite)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/registro/comercio/foto-firma | Pedir firma foto de registro de comercio (5/5, dentro del limite)
+/09 - Auth avanzado (codigo, recuperacion, reactivacion, cambiar-password, logout) | POST {{base_url}}/auth/registro/comercio/foto-firma | [negativo] Pedir firma foto de registro de comercio (6/5, rate limit)
+/10 - Administrador (endpoints nuevos y reglas de aprobacion) | POST {{base_url}}/auth/registro/comercio | Registro Comercio D (para probar rechazo por Admin)
+/10 - Administrador (endpoints nuevos y reglas de aprobacion) | GET {{base_url}}/test/token-verificacion?email={{comercioD_email}} | Bypass test - token verificacion Comercio D
+/10 - Administrador (endpoints nuevos y reglas de aprobacion) | GET {{base_url}}/auth/verificar/{{token_verif_comercioD}} | Verificar cuenta Comercio D
+/10 - Administrador (endpoints nuevos y reglas de aprobacion) | POST {{base_url}}/auth/login | Login Comercio D
+/10 - Administrador (endpoints nuevos y reglas de aprobacion) | GET {{base_url}}/comercios/perfil | [gap conocido] Comercio D opera con perfil COMERCIO aunque Comercio.estado siga PENDIENTE (SecurityConfig no bloquea por estado)
+/10 - Administrador (endpoints nuevos y reglas de aprobacion) | POST {{base_url}}/productos | Crear producto para Comercio D (antes de resolverlo)
+/10 - Administrador (endpoints nuevos y reglas de aprobacion) | GET {{base_url}}/administrador/comercios | GET administrador/comercios (aprobados) - A y B aparecen, D no
+/10 - Administrador (endpoints nuevos y reglas de aprobacion) | GET {{base_url}}/administrador/clientes | GET administrador/clientes
+/10 - Administrador (endpoints nuevos y reglas de aprobacion) | GET {{base_url}}/administrador/perfil | GET administrador/perfil
+/10 - Administrador (endpoints nuevos y reglas de aprobacion) | GET {{base_url}}/administrador/metricas | GET administrador/metricas
+/10 - Administrador (endpoints nuevos y reglas de aprobacion) | PUT {{base_url}}/administrador/comercios/{{comercio_a_id}}/resolver | [negativo] Resolver un comercio ya resuelto (doble resolucion sobre Comercio A)
+/10 - Administrador (endpoints nuevos y reglas de aprobacion) | PUT {{base_url}}/administrador/comercios/999999/resolver | [negativo] Resolver un comercio inexistente
+/10 - Administrador (endpoints nuevos y reglas de aprobacion) | PUT {{base_url}}/administrador/comercios/{{comercio_d_id}}/resolver | [negativo] Rechazar comercio sin motivo
+/10 - Administrador (endpoints nuevos y reglas de aprobacion) | PUT {{base_url}}/administrador/comercios/{{comercio_d_id}}/resolver | Rechazar Comercio D con motivo
+/10 - Administrador (endpoints nuevos y reglas de aprobacion) | POST {{base_url}}/carrito/items | [negativo] Cliente confirma pedido a Comercio D ya rechazado (no acepta pedidos)
+/10 - Administrador (endpoints nuevos y reglas de aprobacion) | GET {{base_url}}/catalogo/comercios | GET catalogo/comercios confirma que Comercio D rechazado no aparece
+/10 - Administrador (endpoints nuevos y reglas de aprobacion) | POST {{base_url}}/categorias | [negativo] Cliente intenta crear categoria (rol insuficiente)
+/10 - Administrador (endpoints nuevos y reglas de aprobacion) | GET {{base_url}}/administrador/comercios/pendientes | [negativo] Comercio intenta listar comercios pendientes (rol insuficiente)
+/11 - Categorias y Tags (CRUD completo) | POST {{base_url}}/categorias | Crear categoria 2 (para probar colision de nombre al editar)
+/11 - Categorias y Tags (CRUD completo) | POST {{base_url}}/categorias | [negativo] Crear categoria con nombre duplicado
+/11 - Categorias y Tags (CRUD completo) | PUT {{base_url}}/categorias/{{categoria2_id}} | Editar categoria (cambia nombre)
+/11 - Categorias y Tags (CRUD completo) | PUT {{base_url}}/categorias/{{categoria2_id}} | [negativo] Editar categoria a un nombre ya usado por otra
+/11 - Categorias y Tags (CRUD completo) | GET {{base_url}}/categorias | GET categorias con token de Cliente (abierto a cualquier autenticado)
+/11 - Categorias y Tags (CRUD completo) | DELETE {{base_url}}/categorias/{{categoria2_id}} | Dar de baja categoria 2
+/11 - Categorias y Tags (CRUD completo) | GET {{base_url}}/categorias | GET categorias confirma que la dada de baja sigue apareciendo (activo=false)
+/11 - Categorias y Tags (CRUD completo) | PUT {{base_url}}/categorias/{{categoria2_id}}/reactivar | Reactivar categoria 2
+/11 - Categorias y Tags (CRUD completo) | POST {{base_url}}/tags | Crear tag 2 (para probar colision de nombre al editar)
+/11 - Categorias y Tags (CRUD completo) | POST {{base_url}}/tags | [negativo] Crear tag con nombre duplicado
+/11 - Categorias y Tags (CRUD completo) | PUT {{base_url}}/tags/{{tag2_id}} | Editar tag (cambia nombre)
+/11 - Categorias y Tags (CRUD completo) | PUT {{base_url}}/tags/{{tag2_id}} | [negativo] Editar tag a un nombre ya usado por otro
+/11 - Categorias y Tags (CRUD completo) | GET {{base_url}}/tags | GET tags con token de Comercio (abierto a cualquier autenticado)
+/11 - Categorias y Tags (CRUD completo) | DELETE {{base_url}}/tags/{{tag2_id}} | [negativo] Comercio intenta dar de baja un tag (rol insuficiente)
+/11 - Categorias y Tags (CRUD completo) | DELETE {{base_url}}/tags/{{tag2_id}} | Dar de baja tag 2
+/11 - Categorias y Tags (CRUD completo) | PUT {{base_url}}/tags/{{tag2_id}}/reactivar | Reactivar tag 2
+/12 - Cliente perfil | GET {{base_url}}/clientes/perfil | GET clientes/perfil
+/12 - Cliente perfil | PUT {{base_url}}/clientes/perfil | PUT clientes/perfil (edita nombre/apellido/telefono)
+/12 - Cliente perfil | PUT {{base_url}}/clientes/perfil | PUT clientes/perfil intentando cambiar email/dni (se ignoran)
+/12 - Cliente perfil | PUT {{base_url}}/clientes/perfil | [negativo] PUT clientes/perfil con telefono invalido (letras)
+/12 - Cliente perfil | GET {{base_url}}/clientes/perfil | [negativo] Comercio intenta ver clientes/perfil (rol insuficiente)
+/13 - Comercio perfil y foto | GET {{base_url}}/comercios/perfil | GET comercios/perfil (Comercio A)
+/13 - Comercio perfil y foto | PUT {{base_url}}/comercios/perfil | PUT comercios/perfil (edita nombre/telefono/emailContacto/modalidades)
+/13 - Comercio perfil y foto | PUT {{base_url}}/comercios/perfil | PUT comercios/perfil intentando cambiar razonSocial/cuit (se ignoran)
+/13 - Comercio perfil y foto | POST {{base_url}}/comercios/perfil/foto/firma | POST comercios/perfil/foto/firma
+/13 - Comercio perfil y foto | PUT {{base_url}}/comercios/perfil/foto | PUT comercios/perfil/foto
+/13 - Comercio perfil y foto | GET {{base_url}}/comercios/perfil | [negativo] Cliente intenta ver comercios/perfil (rol insuficiente)
+/14 - Productos extras (editar, imagenes, estados) | PUT {{base_url}}/productos/{{producto_id}} | PUT productos/{id} (editar producto A)
+/14 - Productos extras (editar, imagenes, estados) | GET {{base_url}}/productos | GET productos (listar propio del comercio A)
+/14 - Productos extras (editar, imagenes, estados) | PATCH {{base_url}}/productos/{{producto_b_id}}/estado | [negativo] Cambiar estado del producto B al mismo estado actual (DISPONIBLE->DISPONIBLE)
+/14 - Productos extras (editar, imagenes, estados) | PUT {{base_url}}/productos/{{producto_b_id}} | [negativo] Comercio A intenta editar producto de Comercio B (tenant isolation)
+/14 - Productos extras (editar, imagenes, estados) | POST {{base_url}}/productos/{{producto_b_id}}/imagenes | Agregar imagen 1 al producto B (para tests de mutacion, sin tocar la galeria de 5 de A)
+/14 - Productos extras (editar, imagenes, estados) | POST {{base_url}}/productos/{{producto_b_id}}/imagenes | Agregar imagen 2 al producto B
+/14 - Productos extras (editar, imagenes, estados) | PATCH {{base_url}}/productos/{{producto_b_id}}/imagenes/{{imagen_b1_id}}/orden | PATCH empujar imagen 1 (hoy principal) a orden 5, sin tocar la 2 todavia
+/14 - Productos extras (editar, imagenes, estados) | PATCH {{base_url}}/productos/{{producto_b_id}}/imagenes/{{imagen_b2_id}}/orden | PATCH reordenar imagen 2 del producto B a orden 0 (ahora es la de menor orden, recalcula principal)
+/14 - Productos extras (editar, imagenes, estados) | PATCH {{base_url}}/productos/{{producto_b_id}}/imagenes/{{imagen_b1_id}}/url | PATCH actualizar URL de una imagen del producto B
+/14 - Productos extras (editar, imagenes, estados) | POST {{base_url}}/productos/{{producto_b_id}}/imagenes/{{imagen_b1_id}}/recorte/firma | POST firma de recorte de una imagen del producto B
+/14 - Productos extras (editar, imagenes, estados) | DELETE {{base_url}}/productos/{{producto_b_id}}/imagenes/{{imagen_b1_id}} | DELETE una imagen del producto B
+/14 - Productos extras (editar, imagenes, estados) | DELETE {{base_url}}/productos/{{producto_b_id}}/imagenes/{{imagen_b1_id}} | [negativo] Eliminar una imagen ya eliminada
+/14 - Productos extras (editar, imagenes, estados) | POST {{base_url}}/productos | Crear Producto Postman Estados (Comercio A, para ciclo de vida de EstadoProducto)
+/14 - Productos extras (editar, imagenes, estados) | PATCH {{base_url}}/productos/{{producto_estados_id}}/estado | PATCH estado: DISPONIBLE -> AGOTADO
+/14 - Productos extras (editar, imagenes, estados) | PATCH {{base_url}}/productos/{{producto_estados_id}}/estado | PATCH estado: AGOTADO -> DISPONIBLE (transicion valida de vuelta)
+/14 - Productos extras (editar, imagenes, estados) | PATCH {{base_url}}/productos/{{producto_estados_id}}/estado | PATCH estado: DISPONIBLE -> DESCONTINUADO (estado terminal)
+/14 - Productos extras (editar, imagenes, estados) | PATCH {{base_url}}/productos/{{producto_estados_id}}/estado | [negativo] Transicion invalida desde DESCONTINUADO (estado terminal)
+/14 - Productos extras (editar, imagenes, estados) | PUT {{base_url}}/productos/{{producto_estados_id}} | [negativo] Editar un producto descontinuado
+/15 - Carrito extras (cantidad, eliminar, purga por agotado) | POST {{base_url}}/productos | Crear Producto Postman Purga (Comercio A, para probar purga de carrito)
+/15 - Carrito extras (cantidad, eliminar, purga por agotado) | POST {{base_url}}/productos | Crear Producto Postman Purga 2 (para probar DELETE de un item puntual)
+/15 - Carrito extras (cantidad, eliminar, purga por agotado) | POST {{base_url}}/carrito/items | Cliente agrega Producto Postman Purga al carrito
+/15 - Carrito extras (cantidad, eliminar, purga por agotado) | POST {{base_url}}/carrito/items | Cliente agrega Producto Postman Purga 2 al carrito (para el DELETE puntual)
+/15 - Carrito extras (cantidad, eliminar, purga por agotado) | DELETE {{base_url}}/carrito/items/{{item_carrito_delete_id}} | DELETE de un item puntual del carrito
+/15 - Carrito extras (cantidad, eliminar, purga por agotado) | PUT {{base_url}}/carrito/items/{{item_carrito_extra_id}} | PUT actualizar cantidad del item de carrito
+/15 - Carrito extras (cantidad, eliminar, purga por agotado) | PUT {{base_url}}/carrito/items/{{item_carrito_extra_id}} | [negativo] PUT actualizar cantidad por encima del maximo (21)
+/15 - Carrito extras (cantidad, eliminar, purga por agotado) | PUT {{base_url}}/carrito/items/999999 | [negativo] PUT actualizar cantidad de un item inexistente
+/15 - Carrito extras (cantidad, eliminar, purga por agotado) | PATCH {{base_url}}/productos/{{producto_purga_id}}/estado | Comercio A marca Producto Postman Purga como AGOTADO (dispara purga de carritos)
+/15 - Carrito extras (cantidad, eliminar, purga por agotado) | GET {{base_url}}/carrito | GET carrito confirma que el producto agotado fue purgado y el carrito quedo vacio
+/16 - Catalogo extras (busqueda global, filtros) | GET {{base_url}}/catalogo/productos | GET catalogo/productos (busqueda global, sin filtros)
+/16 - Catalogo extras (busqueda global, filtros) | GET {{base_url}}/catalogo/productos?q=Empanada | GET catalogo/productos con busqueda por texto (q=empanada)
+/16 - Catalogo extras (busqueda global, filtros) | GET {{base_url}}/catalogo/productos?pagina=999 | GET catalogo/productos con pagina fuera de rango (sin error)
+/16 - Catalogo extras (busqueda global, filtros) | GET {{base_url}}/catalogo/filtros | GET catalogo/filtros
+/16 - Catalogo extras (busqueda global, filtros) | GET {{base_url}}/catalogo/comercios/999999/productos | [negativo] GET productos de un comercio inexistente
+/16 - Catalogo extras (busqueda global, filtros) | GET {{base_url}}/catalogo/comercios | Confirma que el catalogo publico NO expone datos del representante
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio) | GET {{base_url}}/pedidos/cliente | GET pedidos/cliente (listar pedidos propios)
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio) | GET {{base_url}}/pedidos/comercio/resumen-hoy | GET pedidos/comercio/resumen-hoy (Comercio A)
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio) | PUT {{base_url}}/pedidos/comercio/{{pedido_id}}/aceptar | [negativo] Comercio B intenta aceptar un pedido de Comercio A (tenant isolation)
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio) | PUT {{base_url}}/pedidos/comercio/{{pedido_id}}/aceptar | [negativo] Re-aceptar un pedido ya resuelto
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio) | DELETE {{base_url}}/carrito | Vaciar carrito antes de probar el negativo de carrito vacio
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio) | POST {{base_url}}/pedidos/cliente | [negativo] Confirmar pedido con el carrito vacio
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio) | POST {{base_url}}/carrito/items | Agregar producto A al carrito (para probar DOMICILIO sin direccion)
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio) | POST {{base_url}}/pedidos/cliente | [negativo] Confirmar pedido DOMICILIO sin direccionId
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio) | POST {{base_url}}/pedidos/cliente | [negativo] Confirmar pedido DOMICILIO con direccion de otro cliente/inexistente
+/17 - Pedidos extras (tenant isolation, doble resolucion, carrito vacio) | DELETE {{base_url}}/carrito | Vaciar carrito (cleanup, no interfiere con nada mas)
+/18 - Notificaciones extras (tenant isolation) | GET {{base_url}}/notificaciones | GET notificaciones del Comercio A (para tomar un id ajeno al cliente)
+/18 - Notificaciones extras (tenant isolation) | PUT {{base_url}}/notificaciones/{{notif_comercio_id}}/leida | [negativo] Cliente intenta marcar como leida una notificacion del Comercio A (tenant isolation)
+/18 - Notificaciones extras (tenant isolation) | PUT {{base_url}}/notificaciones/999999/leida | [negativo] Marcar como leida una notificacion inexistente
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE) | POST {{base_url}}/auth/registro/comercio | Registro Comercio C (para probar bloqueo por intentos fallidos)
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE) | GET {{base_url}}/test/token-verificacion?email={{comercioC_email}} | Bypass test - token verificacion Comercio C
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE) | GET {{base_url}}/auth/verificar/{{token_verif_comercioC}} | Verificar cuenta Comercio C
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE) | POST {{base_url}}/auth/login | Login Comercio C (todavia funciona, antes del bloqueo)
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE) | POST {{base_url}}/productos | Crear producto para Comercio C (antes del bloqueo, mientras todavia puede operar)
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE) | GET {{base_url}}/administrador/comercios/pendientes | Admin aprueba Comercio C
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE) | PUT {{base_url}}/administrador/comercios/{{comercio_c_id}}/resolver | Resolver (aprobar) Comercio C
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE) | POST {{base_url}}/carrito/items | Cliente puede agregar producto de Comercio C al carrito mientras esta APROBADO (control, antes del bloqueo)
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE) | DELETE {{base_url}}/carrito | Vaciar carrito (cleanup antes de bloquear a Comercio C)
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE) | POST {{base_url}}/auth/login | [negativo] Login Comercio C con password incorrecta (intento 1/3)
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE) | POST {{base_url}}/auth/login | [negativo] Login Comercio C con password incorrecta (intento 2/3)
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE) | POST {{base_url}}/auth/login | [negativo] Login Comercio C con password incorrecta (intento 3/3)
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE) | POST {{base_url}}/auth/login | [negativo] 4to intento de login contra Comercio C ya BLOQUEADO
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE) | POST {{base_url}}/carrito/items | [CRITICO, Paso 4] Cliente intenta agregar producto de Comercio C (ahora CERRADO_TEMPORALMENTE) al carrito
+/19 - Bloqueo de comercio por intentos fallidos (CERRADO_TEMPORALMENTE) | DELETE {{base_url}}/carrito | Vaciar carrito (cleanup final)
+/20 - Autorizacion (401 sin token) | GET {{base_url}}/carrito | [negativo] GET carrito sin token (CLIENTE)
+/20 - Autorizacion (401 sin token) | GET {{base_url}}/clientes/perfil | [negativo] GET clientes/perfil sin token (CLIENTE)
+/20 - Autorizacion (401 sin token) | GET {{base_url}}/comercios/perfil | [negativo] GET comercios/perfil sin token (COMERCIO)
+/20 - Autorizacion (401 sin token) | GET {{base_url}}/productos | [negativo] GET productos (propio) sin token (COMERCIO)
+/20 - Autorizacion (401 sin token) | GET {{base_url}}/administrador/metricas | [negativo] GET administrador/metricas sin token (ADMINISTRADOR)
+/20 - Autorizacion (401 sin token) | GET {{base_url}}/pedidos/cliente | [negativo] GET pedidos/cliente sin token
+/20 - Autorizacion (401 sin token) | GET {{base_url}}/notificaciones | [negativo] GET notificaciones sin token
+/20 - Autorizacion (401 sin token) | POST {{base_url}}/categorias | [negativo] POST categorias sin token
+/20 - Autorizacion (401 sin token) | GET {{base_url}}/carrito | [negativo] Token con firma corrupta
+/21 - Redes Sociales | GET {{base_url}}/comercios/redes-sociales | Instagram ya activa por registro (Comercio A) - obtener su id
+/21 - Redes Sociales | POST {{base_url}}/comercios/redes-sociales | [negativo] Agregar red social de tipo ya activo (Instagram otra vez)
+/21 - Redes Sociales | POST {{base_url}}/comercios/redes-sociales | Agregar red social 2 - Facebook (Comercio A)
+/21 - Redes Sociales | POST {{base_url}}/comercios/redes-sociales | Agregar red social 3 - TikTok (Comercio A)
+/21 - Redes Sociales | POST {{base_url}}/comercios/redes-sociales | Agregar red social 4 - WhatsApp (Comercio A)
+/21 - Redes Sociales | POST {{base_url}}/comercios/redes-sociales | Agregar red social 5 - X (Comercio A)
+/21 - Redes Sociales | POST {{base_url}}/comercios/redes-sociales | [negativo] Agregar red social 6 - Sitio Web (excede limite de 5 activas)
+/21 - Redes Sociales | GET {{base_url}}/comercios/redes-sociales | Listar redes sociales activas (Comercio A, confirma 5)
+/21 - Redes Sociales | DELETE {{base_url}}/comercios/redes-sociales/{{red_social_tiktok_id}} | Dar de baja red social TikTok (Comercio A)
+/21 - Redes Sociales | GET {{base_url}}/comercios/redes-sociales | Listar redes sociales activas confirma 4 tras la baja
+/21 - Redes Sociales | POST {{base_url}}/comercios/redes-sociales | Agregar red social TikTok de nuevo (tipo previamente dado de baja, debe permitir)
+/21 - Redes Sociales | PUT {{base_url}}/comercios/redes-sociales/{{red_social_id}} | Editar red social propia (Comercio A cambia la url de su Instagram)
+/21 - Redes Sociales | GET {{base_url}}/comercios/redes-sociales | Instagram ya activa por registro (Comercio B) - obtener su id
+/21 - Redes Sociales | PUT {{base_url}}/comercios/redes-sociales/{{red_social_b_id}} | [negativo] Comercio A intenta editar red social de Comercio B (tenant isolation)
+/21 - Redes Sociales | DELETE {{base_url}}/comercios/redes-sociales/{{red_social_b_id}} | [negativo] Comercio A intenta dar de baja red social de Comercio B (tenant isolation)
+/21 - Redes Sociales | POST {{base_url}}/comercios/redes-sociales | [negativo] Agregar red social con url solo espacios
+/21 - Redes Sociales | POST {{base_url}}/comercios/redes-sociales | [negativo] Agregar red social con url solo numeros
+/21 - Redes Sociales | POST {{base_url}}/comercios/redes-sociales | [negativo] Agregar red social con url solo caracteres especiales
+/21 - Redes Sociales | POST {{base_url}}/comercios/redes-sociales | [negativo] Agregar red social con url sin punto
+/21 - Redes Sociales | GET {{base_url}}/comercios/redes-sociales | [negativo] GET redes-sociales sin token
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - nombre vacio
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - nombre formato invalido (numeros)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - nombre formato invalido (caracteres especiales)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - nombre limite superior exacto (100 caracteres, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - nombre por encima del limite (101 caracteres, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - apellido vacio
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - apellido formato invalido (numeros)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - apellido formato invalido (caracteres especiales)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - apellido limite superior exacto (100 caracteres, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - apellido por encima del limite (101 caracteres, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - dni vacio
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - dni formato invalido (letras)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - dni formato invalido (12 digitos)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - dni limite inferior menos uno (6 digitos, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - dni limite superior mas uno (9 digitos, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - dni con separadores (puntos, sanitiza y acepta)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - fechaNacimiento vacia (null)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - fechaNacimiento futura (debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - fechaNacimiento hace 121 anios (debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - fechaNacimiento hoy mismo (limite exacto, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - telefono vacio
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - telefono formato invalido (sin prefijo +549)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - telefono formato invalido (cantidad de digitos incorrecta)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - telefono con separadores (espacios y guiones, sanitiza y acepta)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - email vacio
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - email formato invalido (sin arroba)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - email formato invalido (sin dominio)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - email limite superior exacto (254 caracteres, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - email por encima del limite (255 caracteres, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - password vacia
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - password formato invalido (sin mayuscula)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - password formato invalido (sin numero)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - password limite inferior menos uno (7 caracteres, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - password limite superior exacto (72 caracteres, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - password por encima del limite (73 caracteres, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - direccion.calle vacia
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - direccion.calle formato invalido (solo caracteres especiales)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - direccion.calle limite superior exacto (150 caracteres, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - direccion.calle por encima del limite (151 caracteres, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - direccion.numero vacio
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - direccion.numero formato invalido (letras)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - direccion.numero formato invalido (caracteres especiales)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - direccion.numero limite superior exacto (10 digitos, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - direccion.numero por encima del limite (11 digitos, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - direccion.pisoDepto formato invalido (solo caracteres especiales)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - direccion.pisoDepto limite superior exacto (30 caracteres, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - direccion.pisoDepto por encima del limite (31 caracteres, debe rechazar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - direccion.pisoDepto vacio (opcional, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - direccion.codigoPostal vacio
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - direccion.codigoPostal formato invalido (3 digitos)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - direccion.codigoPostal formato invalido (5 digitos)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - direccion.codigoPostal formato CPA valido (8 caracteres, debe aceptar)
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - direccion.localidadId vacio
+/22 - Matriz Cliente - Registro (campo por campo) | POST {{base_url}}/auth/registro/cliente | Registro Cliente - sin aceptaTerminos (campo solo frontend, backend debe aceptar igual)
+/23 - Matriz Cliente - Login | POST {{base_url}}/auth/login | Login - email vacio
+/23 - Matriz Cliente - Login | POST {{base_url}}/auth/login | Login - email formato invalido
+/23 - Matriz Cliente - Login | POST {{base_url}}/auth/login | Login - password vacia
+/24 - Matriz Cliente - Verificacion de cuenta | POST {{base_url}}/auth/verificar | Verificar cuenta - email vacio
+/24 - Matriz Cliente - Verificacion de cuenta | POST {{base_url}}/auth/verificar | Verificar cuenta - email formato invalido
+/24 - Matriz Cliente - Verificacion de cuenta | POST {{base_url}}/auth/verificar | Verificar cuenta - codigo vacio
+/24 - Matriz Cliente - Verificacion de cuenta | POST {{base_url}}/auth/verificar | Verificar cuenta - codigo formato invalido (letras)
+/24 - Matriz Cliente - Verificacion de cuenta | POST {{base_url}}/auth/verificar | Verificar cuenta - codigo longitud corta (5 digitos)
+/24 - Matriz Cliente - Verificacion de cuenta | POST {{base_url}}/auth/verificar | Verificar cuenta - codigo longitud larga (7 digitos)
+/24 - Matriz Cliente - Verificacion de cuenta | POST {{base_url}}/auth/reenviar-verificacion | Reenviar verificacion - email vacio
+/24 - Matriz Cliente - Verificacion de cuenta | POST {{base_url}}/auth/reenviar-verificacion | Reenviar verificacion - email formato invalido
+/24 - Matriz Cliente - Verificacion de cuenta | POST {{base_url}}/auth/registro/cliente | Setup - Registro Cliente para verificacion real (matriz)
+/24 - Matriz Cliente - Verificacion de cuenta | GET {{base_url}}/test/token?email=postman.matrizverifreal@bajonea.test&tipo=VERIFICACION_EMAIL | Setup - Obtener codigo real de verificacion (matriz)
+/24 - Matriz Cliente - Verificacion de cuenta | POST {{base_url}}/auth/verificar | Verificar cuenta - codigo real de 6 digitos (debe aceptar)
+/25 - Matriz Cliente - Recuperacion de password | POST {{base_url}}/auth/recuperar-password | Recuperar password - email vacio
+/25 - Matriz Cliente - Recuperacion de password | POST {{base_url}}/auth/recuperar-password | Recuperar password - email formato invalido
+/25 - Matriz Cliente - Recuperacion de password | POST {{base_url}}/auth/recuperar-password/validar-codigo | Recuperar password validar-codigo - email vacio
+/25 - Matriz Cliente - Recuperacion de password | POST {{base_url}}/auth/recuperar-password/validar-codigo | Recuperar password validar-codigo - email formato invalido
+/25 - Matriz Cliente - Recuperacion de password | POST {{base_url}}/auth/recuperar-password/validar-codigo | Recuperar password validar-codigo - codigo vacio
+/25 - Matriz Cliente - Recuperacion de password | POST {{base_url}}/auth/recuperar-password/validar-codigo | Recuperar password validar-codigo - codigo formato invalido (letras)
+/25 - Matriz Cliente - Recuperacion de password | POST {{base_url}}/auth/recuperar-password/validar-codigo | Recuperar password validar-codigo - codigo longitud corta (5 digitos)
+/25 - Matriz Cliente - Recuperacion de password | POST {{base_url}}/auth/recuperar-password/validar-codigo | Recuperar password validar-codigo - codigo longitud larga (7 digitos)
+/25 - Matriz Cliente - Recuperacion de password | POST {{base_url}}/auth/recuperar-password/confirmar | Recuperar password confirmar - nuevaPassword vacia
+/25 - Matriz Cliente - Recuperacion de password | POST {{base_url}}/auth/recuperar-password/confirmar | Recuperar password confirmar - nuevaPassword sin mayuscula
+/25 - Matriz Cliente - Recuperacion de password | POST {{base_url}}/auth/recuperar-password/confirmar | Recuperar password confirmar - nuevaPassword sin numero
+/25 - Matriz Cliente - Recuperacion de password | POST {{base_url}}/auth/recuperar-password/confirmar | Recuperar password confirmar - nuevaPassword limite inferior menos uno (7 caracteres)
+/25 - Matriz Cliente - Recuperacion de password | POST {{base_url}}/auth/recuperar-password/confirmar | Recuperar password confirmar - nuevaPassword 73 caracteres (sin @Size explicito, ver mensaje real)
+/25 - Matriz Cliente - Recuperacion de password | POST {{base_url}}/auth/registro/cliente | Setup - Registro Cliente para recuperacion real (matriz)
+/25 - Matriz Cliente - Recuperacion de password | POST {{base_url}}/auth/recuperar-password | Setup - Solicitar recuperacion real (matriz)
+/25 - Matriz Cliente - Recuperacion de password | GET {{base_url}}/test/token?email=postman.matrizrecupreal@bajonea.test&tipo=RECUPERACION_PASSWORD | Setup - Obtener codigo real de recuperacion (matriz)
+/25 - Matriz Cliente - Recuperacion de password | POST {{base_url}}/auth/recuperar-password/validar-codigo | Recuperar password validar-codigo - codigo real (debe aceptar)
+/25 - Matriz Cliente - Recuperacion de password | POST {{base_url}}/auth/recuperar-password/confirmar | Recuperar password confirmar - nuevaPassword limite superior exacto (72 caracteres, flujo real, debe aceptar)
+/26 - Matriz Cliente - Reactivacion de cuenta | POST {{base_url}}/auth/reactivar-cuenta | Reactivar cuenta - email vacio
+/26 - Matriz Cliente - Reactivacion de cuenta | POST {{base_url}}/auth/reactivar-cuenta | Reactivar cuenta - email formato invalido
+/26 - Matriz Cliente - Reactivacion de cuenta | POST {{base_url}}/auth/reactivar-cuenta/confirmar | Reactivar cuenta confirmar - email vacio
+/26 - Matriz Cliente - Reactivacion de cuenta | POST {{base_url}}/auth/reactivar-cuenta/confirmar | Reactivar cuenta confirmar - email formato invalido
+/26 - Matriz Cliente - Reactivacion de cuenta | POST {{base_url}}/auth/reactivar-cuenta/confirmar | Reactivar cuenta confirmar - codigo vacio
+/26 - Matriz Cliente - Reactivacion de cuenta | POST {{base_url}}/auth/reactivar-cuenta/confirmar | Reactivar cuenta confirmar - codigo formato invalido (letras)
+/26 - Matriz Cliente - Reactivacion de cuenta | POST {{base_url}}/auth/reactivar-cuenta/confirmar | Reactivar cuenta confirmar - codigo longitud corta (5 digitos)
+/27 - Matriz Cliente - Perfil (datos personales) | POST {{base_url}}/auth/registro/cliente | Setup - Registro Cliente (matriz perfil)
+/27 - Matriz Cliente - Perfil (datos personales) | GET {{base_url}}/test/token?email=postman.matrizperfil@bajonea.test&tipo=VERIFICACION_EMAIL | Setup - Obtener codigo real de verificacion (matriz perfil)
+/27 - Matriz Cliente - Perfil (datos personales) | POST {{base_url}}/auth/verificar | Setup - Verificar cuenta (matriz perfil)
+/27 - Matriz Cliente - Perfil (datos personales) | POST {{base_url}}/auth/login | Setup - Login (matriz perfil)
+/27 - Matriz Cliente - Perfil (datos personales) | GET {{base_url}}/clientes/perfil | Setup - GET clientes/perfil, obtener id (matriz perfil)
+/27 - Matriz Cliente - Perfil (datos personales) | PUT {{base_url}}/clientes/perfil | Perfil Cliente - nombre vacio
+/27 - Matriz Cliente - Perfil (datos personales) | PUT {{base_url}}/clientes/perfil | Perfil Cliente - nombre formato invalido (numeros)
+/27 - Matriz Cliente - Perfil (datos personales) | PUT {{base_url}}/clientes/perfil | Perfil Cliente - nombre formato invalido (caracteres especiales)
+/27 - Matriz Cliente - Perfil (datos personales) | PUT {{base_url}}/clientes/perfil | Perfil Cliente - nombre limite superior exacto (100 caracteres, debe aceptar)
+/27 - Matriz Cliente - Perfil (datos personales) | PUT {{base_url}}/clientes/perfil | Perfil Cliente - nombre por encima del limite (101 caracteres, debe rechazar)
+/27 - Matriz Cliente - Perfil (datos personales) | PUT {{base_url}}/clientes/perfil | Perfil Cliente - apellido vacio
+/27 - Matriz Cliente - Perfil (datos personales) | PUT {{base_url}}/clientes/perfil | Perfil Cliente - apellido formato invalido (numeros)
+/27 - Matriz Cliente - Perfil (datos personales) | PUT {{base_url}}/clientes/perfil | Perfil Cliente - apellido formato invalido (caracteres especiales)
+/27 - Matriz Cliente - Perfil (datos personales) | PUT {{base_url}}/clientes/perfil | Perfil Cliente - apellido limite superior exacto (100 caracteres, debe aceptar)
+/27 - Matriz Cliente - Perfil (datos personales) | PUT {{base_url}}/clientes/perfil | Perfil Cliente - apellido por encima del limite (101 caracteres, debe rechazar)
+/27 - Matriz Cliente - Perfil (datos personales) | PUT {{base_url}}/clientes/perfil | Perfil Cliente - telefono vacio
+/27 - Matriz Cliente - Perfil (datos personales) | PUT {{base_url}}/clientes/perfil | Perfil Cliente - telefono formato invalido (sin prefijo +549)
+/27 - Matriz Cliente - Perfil (datos personales) | PUT {{base_url}}/clientes/perfil | Perfil Cliente - telefono formato invalido (cantidad de digitos incorrecta)
+/27 - Matriz Cliente - Perfil (datos personales) | PUT {{base_url}}/clientes/perfil | Perfil Cliente - telefono con separadores (espacios y guiones, sanitiza y acepta)
+/27 - Matriz Cliente - Perfil (datos personales) | PUT {{base_url}}/clientes/perfil | Perfil Cliente - restaurar valores validos tras la matriz
+/28 - Matriz Cliente - Cambio de password desde perfil | POST {{base_url}}/auth/cambiar-password | Cambiar password perfil - passwordActual vacia
+/28 - Matriz Cliente - Cambio de password desde perfil | POST {{base_url}}/auth/cambiar-password | Cambiar password perfil - passwordNueva vacia
+/28 - Matriz Cliente - Cambio de password desde perfil | POST {{base_url}}/auth/cambiar-password | Cambiar password perfil - passwordNueva sin mayuscula
+/28 - Matriz Cliente - Cambio de password desde perfil | POST {{base_url}}/auth/cambiar-password | Cambiar password perfil - passwordNueva sin numero
+/28 - Matriz Cliente - Cambio de password desde perfil | POST {{base_url}}/auth/cambiar-password | Cambiar password perfil - passwordNueva limite inferior menos uno (7 caracteres)
+/28 - Matriz Cliente - Cambio de password desde perfil | POST {{base_url}}/auth/cambiar-password | Cambiar password perfil - passwordNueva 73 caracteres (sin @Size explicito en este DTO a diferencia del registro, ver auditoria Parte 3 punto 4 - mensaje generico de complejidad)
+/28 - Matriz Cliente - Cambio de password desde perfil | POST {{base_url}}/auth/registro/cliente | Setup - Registro Cliente para password 72 caracteres (matriz perfil)
+/28 - Matriz Cliente - Cambio de password desde perfil | GET {{base_url}}/test/token?email=postman.matrizperfilpw72@bajonea.test&tipo=VERIFICACION_EMAIL | Setup - Obtener codigo real de verificacion (matriz pw72)
+/28 - Matriz Cliente - Cambio de password desde perfil | POST {{base_url}}/auth/verificar | Setup - Verificar cuenta (matriz pw72)
+/28 - Matriz Cliente - Cambio de password desde perfil | POST {{base_url}}/auth/login | Setup - Login (matriz pw72)
+/28 - Matriz Cliente - Cambio de password desde perfil | POST {{base_url}}/auth/cambiar-password | Cambiar password perfil - passwordNueva limite superior exacto (72 caracteres, debe aceptar)
+/29 - Matriz Cliente - Foto de perfil (Usuario) | PATCH {{base_url}}/usuarios/{{matriz_perfil_usuario_id}}/foto-perfil | Foto perfil Usuario - url vacia
+/29 - Matriz Cliente - Foto de perfil (Usuario) | PATCH {{base_url}}/usuarios/{{matriz_perfil_usuario_id}}/foto-perfil | Foto perfil Usuario - url host invalido (no es res.cloudinary.com)
+/29 - Matriz Cliente - Foto de perfil (Usuario) | PATCH {{base_url}}/usuarios/{{matriz_perfil_usuario_id}}/foto-perfil | Foto perfil Usuario - url extension invalida (.pdf)
+/29 - Matriz Cliente - Foto de perfil (Usuario) | PATCH {{base_url}}/usuarios/{{matriz_perfil_usuario_id}}/foto-perfil | Foto perfil Usuario - url esquema invalido (http en vez de https)
+/29 - Matriz Cliente - Foto de perfil (Usuario) | PATCH {{base_url}}/usuarios/{{matriz_perfil_usuario_id}}/foto-perfil | Foto perfil Usuario - url limite superior exacto (500 caracteres, debe aceptar)
+/29 - Matriz Cliente - Foto de perfil (Usuario) | PATCH {{base_url}}/usuarios/{{matriz_perfil_usuario_id}}/foto-perfil | Foto perfil Usuario - url por encima del limite (501 caracteres, debe rechazar con 400)
+/29 - Matriz Cliente - Foto de perfil (Usuario) | PATCH {{base_url}}/usuarios/{{matriz_perfil_usuario_id}}/foto-perfil | Foto perfil Usuario - url valida (debe aceptar)
+/29 - Matriz Cliente - Foto de perfil (Usuario) | POST {{base_url}}/auth/registro/cliente | Setup - Registro Cliente ajeno (matriz perfil, tenant isolation)
+/29 - Matriz Cliente - Foto de perfil (Usuario) | GET {{base_url}}/test/token?email=postman.matrizperfilajeno@bajonea.test&tipo=VERIFICACION_EMAIL | Setup - Obtener codigo real de verificacion (matriz ajeno)
+/29 - Matriz Cliente - Foto de perfil (Usuario) | POST {{base_url}}/auth/verificar | Setup - Verificar cuenta (matriz ajeno)
+/29 - Matriz Cliente - Foto de perfil (Usuario) | POST {{base_url}}/auth/login | Setup - Login (matriz ajeno)
+/29 - Matriz Cliente - Foto de perfil (Usuario) | PATCH {{base_url}}/usuarios/{{matriz_perfil_usuario_id}}/foto-perfil | [negativo] Foto perfil Usuario - otro usuario intenta editar la foto de este id (debe dar 404, no 403)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | POST {{base_url}}/auth/registro/cliente | Setup - Registro Cliente (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | GET {{base_url}}/test/token?email=postman.matrizcarrito@bajonea.test&tipo=VERIFICACION_EMAIL | Setup - Obtener codigo verificacion Cliente (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | POST {{base_url}}/auth/verificar | Setup - Verificar Cliente (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | POST {{base_url}}/auth/login | Setup - Login Cliente (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | POST {{base_url}}/auth/registro/comercio | Setup - Registro Comercio (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | GET {{base_url}}/test/token?email=postman.matrizcomerciocarrito@bajonea.test&tipo=VERIFICACION_EMAIL | Setup - Obtener codigo verificacion Comercio (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | POST {{base_url}}/auth/verificar | Setup - Verificar Comercio (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | POST {{base_url}}/auth/login | Setup - Login Comercio (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | GET {{base_url}}/administrador/comercios/pendientes | Setup - Admin: listar comercios pendientes (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | PUT {{base_url}}/administrador/comercios/{{matriz_carrito_comercio_id}}/resolver | Setup - Admin: aprobar Comercio (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | POST {{base_url}}/categorias | Setup - Crear categoria (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | POST {{base_url}}/productos | Setup - Crear producto (matriz carrito)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | POST {{base_url}}/carrito/items | Carrito alta - cantidad vacia (null)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | POST {{base_url}}/carrito/items | Carrito alta - cantidad limite inferior menos uno (0, debe rechazar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | POST {{base_url}}/carrito/items | Carrito alta - cantidad limite inferior exacto (1, debe aceptar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | DELETE {{base_url}}/carrito | Carrito alta - vaciar carrito (cleanup entre casos)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | POST {{base_url}}/carrito/items | Carrito alta - cantidad limite superior exacto (20, debe aceptar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | DELETE {{base_url}}/carrito | Carrito alta - vaciar carrito (cleanup entre casos) 2
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | POST {{base_url}}/carrito/items | Carrito alta - cantidad limite superior mas uno (21, debe rechazar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | POST {{base_url}}/carrito/items | Carrito alta - productoId vacio (null)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | POST {{base_url}}/carrito/items | Carrito alta - nota limite superior exacto (255 caracteres, debe aceptar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | DELETE {{base_url}}/carrito | Carrito alta - vaciar carrito (cleanup entre casos) 3
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | POST {{base_url}}/carrito/items | Carrito alta - nota por encima del limite (256 caracteres, debe rechazar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | POST {{base_url}}/carrito/items | Carrito alta - nota vacia (opcional, debe aceptar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | PUT {{base_url}}/carrito/items/{{matriz_carrito_item_id}} | Carrito editar cantidad - vacia (null)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | PUT {{base_url}}/carrito/items/{{matriz_carrito_item_id}} | Carrito editar cantidad - limite inferior menos uno (0, debe rechazar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | PUT {{base_url}}/carrito/items/{{matriz_carrito_item_id}} | Carrito editar cantidad - limite inferior exacto (1, debe aceptar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | PUT {{base_url}}/carrito/items/{{matriz_carrito_item_id}} | Carrito editar cantidad - limite superior exacto (20, debe aceptar)
+/30 - Matriz Cliente - Carrito (alta y edicion de cantidad) | PUT {{base_url}}/carrito/items/{{matriz_carrito_item_id}} | Carrito editar cantidad - limite superior mas uno (21, debe rechazar)
+/31 - Matriz Cliente - Checkout | POST {{base_url}}/pedidos/cliente | Checkout - tipoEntrega vacio (null)
+/31 - Matriz Cliente - Checkout | POST {{base_url}}/pedidos/cliente | Checkout - tipoEntrega fuera del enum (falla en la deserializacion JSON, antes de Bean Validation)
+/31 - Matriz Cliente - Checkout | POST {{base_url}}/pedidos/cliente | Checkout - DOMICILIO sin direccionId (debe rechazar, regla de negocio)
+/31 - Matriz Cliente - Checkout | POST {{base_url}}/pedidos/cliente | Checkout - RETIRO valido (debe aceptar, consume el carrito de este bloque)
+/31 - Matriz Cliente - Checkout | POST {{base_url}}/auth/registro/comercio | Setup - Registro Comercio sin delivery (matriz carrito)
+/31 - Matriz Cliente - Checkout | GET {{base_url}}/test/token?email=postman.matrizcomerciosindelivery@bajonea.test&tipo=VERIFICACION_EMAIL | Setup - Obtener codigo verificacion Comercio sin delivery (matriz carrito)
+/31 - Matriz Cliente - Checkout | POST {{base_url}}/auth/verificar | Setup - Verificar Comercio sin delivery (matriz carrito)
+/31 - Matriz Cliente - Checkout | POST {{base_url}}/auth/login | Setup - Login Comercio sin delivery (matriz carrito)
+/31 - Matriz Cliente - Checkout | GET {{base_url}}/administrador/comercios/pendientes | Setup - Admin: listar comercios pendientes (comercio sin delivery)
+/31 - Matriz Cliente - Checkout | PUT {{base_url}}/administrador/comercios/{{matriz_carrito_comercio2_id}}/resolver | Setup - Admin: aprobar Comercio sin delivery (matriz carrito)
+/31 - Matriz Cliente - Checkout | POST {{base_url}}/productos | Setup - Crear producto en comercio sin delivery (matriz carrito)
+/31 - Matriz Cliente - Checkout | POST {{base_url}}/carrito/items | Setup - Agregar producto de comercio sin delivery al carrito
+/31 - Matriz Cliente - Checkout | GET {{base_url}}/clientes/perfil | Setup - Obtener direccionId del Cliente (matriz carrito)
+/31 - Matriz Cliente - Checkout | POST {{base_url}}/pedidos/cliente | [negocio] Checkout - DOMICILIO contra un comercio que no ofrece delivery (debe rechazar, regla de negocio)
+/31 - Matriz Cliente - Checkout | DELETE {{base_url}}/carrito | Cleanup - vaciar carrito final (matriz carrito)
+/32 - Matriz Cliente - Explorar (busqueda y filtros del catalogo) | GET {{base_url}}/catalogo/productos | Explorar - q vacio (sin parametro, debe devolver el catalogo completo)
+/32 - Matriz Cliente - Explorar (busqueda y filtros del catalogo) | GET {{base_url}}/catalogo/productos?q='%20OR%20'1'%3D'1 | Explorar - q con caracteres especiales / SQL-injection-like (debe tratarse como texto literal, no romper)
+/32 - Matriz Cliente - Explorar (busqueda y filtros del catalogo) | GET {{base_url}}/catalogo/productos?q=%3Cscript%3Ealert(1)%3C%2Fscript%3E | Explorar - q con script tag (XSS-like, debe tratarse como texto literal)
+/32 - Matriz Cliente - Explorar (busqueda y filtros del catalogo) | GET {{base_url}}/catalogo/productos?categoriaId=999999 | Explorar - categoriaId inexistente (debe devolver vacio, no error)
+/32 - Matriz Cliente - Explorar (busqueda y filtros del catalogo) | GET {{base_url}}/catalogo/productos?tagIds=999999 | Explorar - tagIds inexistente (debe devolver vacio, no error)
+/32 - Matriz Cliente - Explorar (busqueda y filtros del catalogo) | GET {{base_url}}/catalogo/productos?pagina=999 | Explorar - pagina fuera de rango (999, debe devolver vacio sin error)
+/32 - Matriz Cliente - Explorar (busqueda y filtros del catalogo) | GET {{base_url}}/catalogo/productos?pagina=-1 | Explorar - pagina negativa (degrada a pagina 1, no rompe)

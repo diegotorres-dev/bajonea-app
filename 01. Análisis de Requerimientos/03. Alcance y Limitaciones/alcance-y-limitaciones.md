@@ -16,23 +16,46 @@ La aplicación es una plataforma web responsiva, accesible desde escritorio y di
 móviles. No se contempla el desarrollo de aplicaciones nativas para iOS o Android.
 
 ### Tipos de comercio
-El sistema clasifica a los comercios en dos categorías: **Restaurante** y **Emprendimiento
-gastronómico**. Esta clasificación es informativa y visual; ambas categorías tienen las
-mismas funcionalidades dentro de la plataforma.
+El sistema clasifica a los comercios según su rubro gastronómico mediante el campo
+`tipo_comercio`, que admite los siguientes valores: Restaurante, Emprendimiento,
+Rotisería, Heladería, Cafetería, Panadería, Pizzería, Parrilla, Bar, Kiosco, Food Truck
+y Otro. Esta clasificación es informativa y visual; todos los tipos de comercio tienen
+las mismas funcionalidades dentro de la plataforma. Queda registrado como criterio para
+una eventual futura versión que permita filtrar el catálogo público por este campo;
+dicho filtro no se implementa en esta versión.
 
 ### Usuarios contemplados
-El sistema gestiona tres roles: Cliente, Comercio y Administrador. Cualquier comercio
-gastronómico de Río Grande puede registrarse, quedando habilitado tras la aprobación
-del Administrador y la vinculación de su cuenta de MercadoPago.
+El sistema gestiona cuatro roles: Cliente, Dueño, Empleado y Administrador.
+
+- **Dueño:** titular de uno o varios comercios. Se registra completando sus datos
+  fiscales (persona jurídica) junto con los datos de su primer comercio; desde su panel
+  puede dar de alta comercios adicionales sin volver a cargar esos datos fiscales. Cada
+  comercio que administra queda habilitado de forma individual tras la aprobación del
+  Administrador. La cuenta de MercadoPago se vincula una única vez a nivel Dueño y
+  habilita el cobro en todos los comercios aprobados de ese Dueño.
+- **Empleado:** cuenta con login propio, invitada por un Dueño para operar el día a día
+  de uno o varios comercios (gestión de productos y pedidos), sin acceso a los datos
+  fiscales, a la cuenta de MercadoPago ni a la gestión de otros empleados. Un mismo
+  Empleado puede operar comercios de Dueños distintos sin restricción.
+- **Roles combinados:** una misma persona puede tener simultáneamente rol Cliente y
+  rol Empleado bajo el mismo Usuario/login (por ejemplo, alguien que pide comida como
+  Cliente y también trabaja operando el panel de un comercio como Empleado). El modelo
+  de datos lo soporta sin cambios de estructura: Cliente y Empleado son subtipos
+  independientes de PersonaFisica. Si el sistema detecta más de un rol activo para el
+  mismo Usuario, el login presenta un selector de contexto ("¿Cómo querés entrar: como
+  Cliente, o como Empleado de [comercio]?"), reutilizando el mismo mecanismo del
+  selector de comercio activo del Dueño. No implica cerrar sesión para cambiar de
+  contexto.
 
 ### Acceso público
 La visualización de comercios y menús es pública y no requiere registro. El catálogo
 muestra los comercios que cumplen las siguientes condiciones:
-- Estado **Aprobado** con cuenta de MercadoPago vinculada y `cerrado_manualmente = false`:
-  aparecen como disponibles si están dentro de su horario de atención.
+- Estado **Aprobado** con la cuenta de MercadoPago de su Dueño vinculada y
+  `cerrado_manualmente = false`: aparecen como disponibles si están dentro de su
+  horario de atención.
 - Estado **Aprobado** con `cerrado_manualmente = true`: aparecen en el catálogo con
   indicador visual de "temporalmente cerrado", sin posibilidad de recibir pedidos.
-- Estado **Cerrado Temporalmente** (representante con cuenta bloqueada): aparecen en el
+- Estado **Cerrado Temporalmente** (Dueño con cuenta bloqueada): aparecen en el
   catálogo con indicador visual de "temporalmente cerrado", sin posibilidad de recibir
   pedidos.
 
@@ -43,8 +66,8 @@ verificada.
 Un comercio puede recibir pedidos únicamente si se cumplen en simultáneo todas las
 siguientes condiciones:
 - `Comercio.estado == APROBADO`
-- `Comercio.mp_vinculado == true`
-- `Usuario.estado == ACTIVO`
+- `Comercio.dueño.mp_vinculado == true` (cuenta de MercadoPago del Dueño titular vinculada)
+- `Dueño.usuario.estado == ACTIVO`
 - El horario de consulta está dentro de las franjas horarias del comercio.
 - `Comercio.cerrado_manualmente == false`
 
@@ -76,6 +99,12 @@ Administrador: un cargo al cliente sumado al subtotal y un cargo al comercio
 descontado de su cobro mediante split automático. Las transacciones en efectivo
 u otros métodos externos quedan fuera del alcance del sistema.
 
+### Personalización de Productos (Extras)
+Un producto puede ofrecer uno o más grupos de extras opcionales (por ejemplo,
+"Agregados" o "Elegí tu salsa"), cada grupo con un máximo de opciones seleccionables y
+la posibilidad de ser obligatorio. El cliente elige sus extras al agregar el producto
+al carrito; el precio de cada extra elegido se suma al precio del producto.
+
 ### Notificaciones
 Las notificaciones de estado (cambios de pedido, aprobaciones, rechazos, reclamos) se
 gestionan mediante notificaciones push dentro de la plataforma.
@@ -89,6 +118,7 @@ El email se utiliza en los siguientes flujos:
 - Aviso de suspensión levantada (cuando el administrador reactiva una cuenta suspendida)
 - Aviso de sesión cerrada en otro dispositivo (seguridad)
 - Cancelación de pedido por suspensión del comercio (notificación a clientes afectados)
+- Invitación a operar un comercio como Empleado (al email de la persona invitada)
 
 ### Gestión de pedidos
 El sistema contempla retiro en el local y envío a domicilio, con la posibilidad de
@@ -124,18 +154,17 @@ Los pedidos atraviesan los siguientes estados a lo largo de su ciclo de vida:
 - **Sin rol de repartidor:** No se incluye un módulo de gestión de repartidores. El
   seguimiento del envío es manual y responsabilidad del comercio.
 
+- **Sin niveles de permiso entre Empleados:** todo Empleado en estado Activo dentro de
+  un comercio (relación EmpleadoComercio) cuenta con el mismo conjunto de permisos
+  operativos (gestión de productos y pedidos). No existen sub-roles ni permisos
+  diferenciados entre empleados de un mismo comercio.
+
 - **Sin cálculo de costo de envío:** La plataforma no gestiona ni calcula tarifas de
   envío en esta versión.
 
 - **Un solo comercio por pedido:** Un pedido individual no puede combinar productos de
   distintos comercios. Sin embargo, un cliente puede tener varios pedidos activos
   simultáneos, cada uno de un comercio diferente.
-
-- **Una cuenta de Comercio = un negocio:** El modelo de datos contempla que una misma
-  persona jurídica pueda operar más de un comercio (relación 1:N). En esta versión,
-  sin embargo, cada cuenta de Comercio (persona jurídica) está limitada a operar un
-  único comercio. La gestión de múltiples comercios desde una misma cuenta queda
-  planteada como mejora para versiones futuras.
 
 - **Cobertura geográfica limitada:** El sistema no contempla operaciones fuera de
   Río Grande en esta versión, si bien el modelo de direcciones admite localidades de
@@ -145,7 +174,10 @@ Los pedidos atraviesan los siguientes estados a lo largo de su ciclo de vida:
   no se desarrollan apps para iOS ni Android.
 
 - **Sin integración con redes sociales:** No se contempla login social ni sincronización
-  con plataformas externas como Instagram o WhatsApp.
+  automática con plataformas externas como Instagram o WhatsApp. Esto no incluye la
+  publicación de enlaces de contacto a las redes del comercio (Instagram, Facebook,
+  TikTok, WhatsApp, X, sitio web u otro), que el comercio carga y edita
+  manualmente como dato de contacto — ver Requisitos Funcionales del Comercio.
 
 - **Pedidos en camino durante suspensión:** Si un comercio es suspendido mientras tiene
   pedidos en estado En Camino, esos pedidos se completan automáticamente como entregados.

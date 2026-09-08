@@ -1,0 +1,609 @@
+<title>Fases C, D, E, F1</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,900&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #F1F3F1;
+    --surface: #FFFFFF;
+    --surface-sunken: #E9ECEA;
+    --text: #1B2320;
+    --text-muted: #5B655F;
+    --text-faint: #869089;
+    --border: #DBE0DD;
+    --border-strong: #C2C9C5;
+    --accent: #FF4700;
+    --accent-strong: #DE3D00;
+    --accent-soft: #FFE4D6;
+    --accent-soft-text: #9A3300;
+    --success: #1F8A5F;
+    --success-bg: #E1F2E9;
+    --success-text: #166B49;
+    --pending: #A2720B;
+    --pending-bg: #FBF0D9;
+    --pending-text: #7A5808;
+    --bug: #C4372B;
+    --bug-bg: #FBE7E4;
+    --bug-text: #9B2C22;
+    --info: #2F6B8C;
+    --info-bg: #E4EEF3;
+    --info-text: #235572;
+    --shadow: 0 1px 2px rgba(20, 30, 25, 0.04), 0 6px 20px rgba(20, 30, 25, 0.06);
+    --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+    --font-body: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", "SF Mono", Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #14181A;
+      --surface: #1C2124;
+      --surface-sunken: #23282A;
+      --text: #ECEFEC;
+      --text-muted: #9AA39D;
+      --text-faint: #6C7570;
+      --border: #323A37;
+      --border-strong: #434D49;
+      --accent: #FF6A3D;
+      --accent-strong: #FF8259;
+      --accent-soft: #3A2317;
+      --accent-soft-text: #FFB08C;
+      --success: #4CC38A;
+      --success-bg: #163327;
+      --success-text: #7FDCAE;
+      --pending: #E0A73C;
+      --pending-bg: #3A2C10;
+      --pending-text: #F0C574;
+      --bug: #E2695A;
+      --bug-bg: #3B1E19;
+      --bug-text: #F0A398;
+      --info: #7FB2D6;
+      --info-bg: #16262E;
+      --info-text: #A8D0EA;
+      --shadow: 0 1px 2px rgba(0,0,0,0.2), 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14181A;
+    --surface: #1C2124;
+    --surface-sunken: #23282A;
+    --text: #ECEFEC;
+    --text-muted: #9AA39D;
+    --text-faint: #6C7570;
+    --border: #323A37;
+    --border-strong: #434D49;
+    --accent: #FF6A3D;
+    --accent-strong: #FF8259;
+    --accent-soft: #3A2317;
+    --accent-soft-text: #FFB08C;
+    --success: #4CC38A;
+    --success-bg: #163327;
+    --success-text: #7FDCAE;
+    --pending: #E0A73C;
+    --pending-bg: #3A2C10;
+    --pending-text: #F0C574;
+    --bug: #E2695A;
+    --bug-bg: #3B1E19;
+    --bug-text: #F0A398;
+    --info: #7FB2D6;
+    --info-bg: #16262E;
+    --info-text: #A8D0EA;
+    --shadow: 0 1px 2px rgba(0,0,0,0.2), 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 15.5px;
+    line-height: 1.6;
+    margin: 0;
+    padding: 0 20px 100px;
+  }
+  h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; color: var(--text); }
+  code, .mono { font-family: var(--font-mono); font-size: 0.88em; }
+
+  a { color: var(--accent-strong); }
+  @media (prefers-color-scheme: dark) { a { color: var(--accent); } }
+  :root[data-theme="dark"] a { color: var(--accent); }
+
+  .wrap { max-width: 860px; margin: 0 auto; }
+
+  .masthead {
+    padding: 48px 0 28px;
+    border-bottom: 1px solid var(--border);
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--accent-strong);
+    font-weight: 500;
+  }
+  :root[data-theme="dark"] .eyebrow, @media (prefers-color-scheme: dark) { .eyebrow { color: var(--accent); } }
+  .masthead h1 {
+    font-size: 34px;
+    font-weight: 600;
+    margin: 10px 0 8px;
+  }
+  .masthead p.lede {
+    color: var(--text-muted);
+    font-size: 16px;
+    max-width: 62ch;
+    margin: 0;
+  }
+
+  .stat-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 26px;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    min-width: 128px;
+    box-shadow: var(--shadow);
+  }
+  .stat .n {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    display: block;
+  }
+  .stat .l {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  nav.jump {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 24px;
+  }
+  nav.jump a {
+    font-size: 13px;
+    text-decoration: none;
+    color: var(--text-muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-weight: 500;
+  }
+  nav.jump a:hover { border-color: var(--border-strong); color: var(--text); }
+
+  section { padding: 44px 0; border-bottom: 1px solid var(--border); }
+  section:last-of-type { border-bottom: none; }
+  section > .eyebrow { display: block; margin-bottom: 6px; }
+  section > h2 {
+    font-size: 25px;
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+  section > .dek {
+    color: var(--text-muted);
+    max-width: 68ch;
+    margin: 0 0 28px;
+  }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    padding: 3px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .chip.done { background: var(--success-bg); color: var(--success-text); }
+  .chip.pending { background: var(--pending-bg); color: var(--pending-text); }
+  .chip.bug { background: var(--bug-bg); color: var(--bug-text); }
+  .chip.info { background: var(--info-bg); color: var(--info-text); }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 24px;
+    box-shadow: var(--shadow);
+    margin-bottom: 16px;
+  }
+  .card > .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .card > .head h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+  }
+  .card p { margin: 0 0 10px; }
+  .card p:last-child { margin-bottom: 0; }
+  .card ul { margin: 0 0 10px; padding-left: 20px; }
+  .card ul:last-child { margin-bottom: 0; }
+  .card li { margin-bottom: 4px; }
+
+  .callout {
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 14px;
+    margin-top: 12px;
+    border: 1px solid transparent;
+  }
+  .callout.pending { background: var(--pending-bg); color: var(--pending-text); border-color: color-mix(in srgb, var(--pending) 35%, transparent); }
+  .callout.bug { background: var(--bug-bg); color: var(--bug-text); border-color: color-mix(in srgb, var(--bug) 35%, transparent); }
+  .callout.info { background: var(--info-bg); color: var(--info-text); border-color: color-mix(in srgb, var(--info) 35%, transparent); }
+  .callout strong { font-weight: 700; }
+
+  .finding {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--pending);
+    border-radius: 0 10px 10px 0;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    background: var(--surface);
+  }
+  .finding .loc {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    color: var(--accent-strong);
+    margin-bottom: 6px;
+    display: block;
+  }
+  :root[data-theme="dark"] .finding .loc, @media (prefers-color-scheme: dark) { .finding .loc { color: var(--accent); } }
+  .finding blockquote {
+    margin: 6px 0;
+    padding: 8px 12px;
+    background: var(--surface-sunken);
+    border-radius: 6px;
+    font-size: 14px;
+    font-style: normal;
+    color: var(--text);
+  }
+  .finding .meta {
+    font-size: 12.5px;
+    color: var(--text-muted);
+  }
+
+  .note-only {
+    border-left-color: var(--border-strong);
+    opacity: 0.85;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--surface);
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  thead th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    background: var(--surface-sunken);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--surface-sunken); }
+  td .file { font-family: var(--font-mono); font-size: 12.5px; color: var(--text-muted); }
+
+  .role-heading {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin: 26px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px dashed var(--border-strong);
+  }
+  .role-heading:first-child { margin-top: 0; }
+
+  .filelist {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.9;
+  }
+  .filelist strong { color: var(--text); font-family: var(--font-body); font-weight: 600; }
+
+  footer.closing {
+    padding-top: 40px;
+    color: var(--text-muted);
+    font-size: 13.5px;
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <span class="eyebrow">Bajoneá — sesión del 29 de agosto de 2026</span>
+    <h1>Fases C, D, E y F1: cliente logueado</h1>
+    <p class="lede">C1/C2 y E1–E6 quedaron implementadas y verificadas contra <code>bajonea_final</code> real. C3, C4 y D son auditorías — nada de esos tres puntos se tocó todavía. F1 es inventario puro.</p>
+
+    <div class="stat-row">
+      <div class="stat"><span class="n">8</span><span class="l">puntos implementados</span></div>
+      <div class="stat"><span class="n">3</span><span class="l">bugs reales corregidos</span></div>
+      <div class="stat"><span class="n">2</span><span class="l">decisiones a confirmar</span></div>
+      <div class="stat"><span class="n">1</span><span class="l">endpoint nuevo (backend)</span></div>
+      <div class="stat"><span class="n">18</span><span class="l">hallazgos de auditoría (C3+C4+D)</span></div>
+    </div>
+
+    <nav class="jump">
+      <a href="#implementado">Implementado y verificado</a>
+      <a href="#decisiones">A confirmar</a>
+      <a href="#c3">C3 — texto "si existe cuenta"</a>
+      <a href="#c4">C4 — "restaurantes y emprendimientos"</a>
+      <a href="#d">D — scroll a errores</a>
+      <a href="#f1">F1 — inventario de toasts</a>
+      <a href="#archivos">Archivos</a>
+    </nav>
+  </header>
+
+  <section id="implementado">
+    <span class="eyebrow">Hecho</span>
+    <h2>Implementado y verificado</h2>
+    <p class="dek">Probado contra el backend real (perfil <code>test</code> apuntado a <code>bajonea_final</code>, sin tocar tus datos) y recorrido en el navegador. Los dos bugs marcados abajo no existían antes de esta sesión — aparecieron al construir C1 y E6, y quedaron corregidos en el mismo paso.</p>
+
+    <div class="card">
+      <div class="head"><h3>C1 — Foto de perfil en el registro de Cliente</h3><span class="chip done">verificado</span></div>
+      <p>El círculo pasa a ser el propio botón (clic directo abre el selector de archivo), sin el link "Agregar foto" separado. Label sin "(obligatorio)". Fondo gris + ícono negro, mismo criterio que el círculo de Comercio.</p>
+      <div class="callout bug"><strong>Bug encontrado y corregido:</strong> <code class="mono">js/auth.js</code> seguía referenciando el botón <code class="mono">#foto-cliente-btn</code> que este cambio elimina del HTML — sin el fix, la pantalla tiraba un <code class="mono">TypeError</code> no capturado en cada carga y el wizard completo quedaba roto. También faltaba la regla CSS que pone fondo gris (el círculo salía naranja por defecto) — agregada junto a la de Comercio.</p></div>
+    </div>
+
+    <div class="card">
+      <div class="head"><h3>C2 — Términos y Condiciones sin link</h3><span class="chip done">verificado</span></div>
+      <p><code class="mono">&lt;a href="#"&gt;</code> → <code class="mono">&lt;span class="link"&gt;</code>. Mismo naranja (confirmado por <code class="mono">getComputedStyle</code>), sin <code class="mono">href</code> ni click asociado.</p>
+    </div>
+
+    <div class="card">
+      <div class="head"><h3>E1 — Filtros de Inicio: 6 → 3</h3><span class="chip done">verificado</span></div>
+      <p>Quedan <strong>Delivery / Retiro / Abierto ahora</strong>. Se sacaron Todos/Restaurantes/Emprendimientos.</p>
+      <div class="callout pending"><strong>Decisión tomada sin pedido explícito, revisar:</strong> el mecanismo viejo era de selección única tipo radio, con "Todos" como el estado "sin filtro". Sacar "Todos" sin cambiar el mecanismo dejaba un chip siempre activo sin forma de volver a ver todo. Lo cambié a chips independientes (se combinan con AND, ninguno tocado = se ve todo) — Delivery y Retiro no son excluyentes entre sí como sí lo eran Restaurante/Emprendimiento. Probado: tocar "Delivery" lo activa solo; tocar "Retiro" después deja ambos activos a la vez. Confirmame si esta mecánica (antes excluyente, ahora combinable) es la que querés.</div>
+    </div>
+
+    <div class="card">
+      <div class="head"><h3>E2 / E3 / E4 — Carrito: de ícono flotante a header + badge de footer</h3><span class="chip done">verificado</span></div>
+      <ul>
+        <li><strong>E2:</strong> <code class="mono">comercio-detalle.html</code> ahora tiene el carrito en el header (naranja, arriba a la derecha), con badge naranja/blanco que muestra "0" incluso vacío. Probado en vivo: pasa de "0" a "1" al agregar un producto, sin recargar.</li>
+        <li><strong>E3:</strong> el ícono flotante desapareció de <code class="mono">index.html</code> y <code class="mono">explorar.html</code> (y de hecho de todos lados — el mecanismo viejo, <code class="mono">actualizarBadgeCarritoFab</code>, se reemplazó por completo).</li>
+        <li><strong>E4:</strong> el ícono "Carrito" del footer (las 5 pantallas: Inicio, Explorar, Carrito, Mis pedidos, Perfil) muestra el mismo badge naranja/blanco solo cuando hay productos — probado en <code class="mono">explorar.html</code> tras agregar un producto desde <code class="mono">comercio-detalle.html</code>.</li>
+      </ul>
+      <p>El badge reusa <code class="mono">.top-bar__badge-dot</code> (la misma clase de la campana de notificaciones) en vez de crear una clase nueva. Las clases <code class="mono">.fab</code>/<code class="mono">.fab__badge</code> quedaron huérfanas y se eliminaron de <code class="mono">styles.css</code>.</p>
+    </div>
+
+    <div class="card">
+      <div class="head"><h3>E5 — Avatar con foto o inicial en el footer</h3><span class="chip done">verificado</span></div>
+      <p>Reusa <code class="mono">pintarAvatarUsuario()</code> (mismo patrón que el avatar de Comercio) — foto real recortada en círculo, o círculo gris con la inicial en blanco si no hay foto. Probado: sin foto muestra "C" (de "Claude"); con foto muestra la imagen real.</p>
+    </div>
+
+    <div class="card">
+      <div class="head"><h3>E6 — Modal "Editar foto / Eliminar foto" en Perfil</h3><span class="chip done">verificado</span></div>
+      <p>Clic en el avatar: sin foto abre la galería directo; con foto abre un mini modal ("Editar foto" / "Eliminar foto"). "Editar datos personales" ya no tiene ningún elemento de foto — arranca directo en Nombre.</p>
+      <div class="callout bug"><strong>Bug encontrado y corregido:</strong> al eliminar/editar la foto desde el modal nuevo, el avatar del footer (E5) se quedaba con la imagen vieja hasta recargar la página. <code class="mono">actualizarAvatares()</code> ahora repinta los dos lugares a la vez.</p></div>
+      <div class="callout pending"><strong>Backend nuevo, confirmar:</strong> no existía ningún endpoint para borrar la foto de perfil (el <code class="mono">PATCH</code> existente exige una URL no vacía). Agregué <code class="mono">DELETE /api/v1/usuarios/{id}/foto-perfil</code> en <code class="mono">UsuarioController</code>/<code class="mono">UsuarioService</code>, mismo aislamiento por tenant que el <code class="mono">PATCH</code> (id ajeno → 404). Es la única pieza de esta sesión que agrega superficie de backend en vez de solo pulir frontend — probado de punta a punta contra <code class="mono">bajonea_final</code> (setear → borrar → confirmar <code class="mono">null</code> → aislamiento por tenant → sin token → 401), pero todavía no está en la colección de Postman.</div>
+    </div>
+  </section>
+
+  <section id="decisiones">
+    <span class="eyebrow">Resumen</span>
+    <h2>2 decisiones puntuales a confirmar</h2>
+    <p class="dek">Ya están implementadas (no bloquean nada), pero son las dos únicas cosas de esta sesión que no eran 100% literal a lo que pediste. Todo lo demás de "Implementado y verificado" es tal cual el enunciado.</p>
+    <ol style="padding-left: 20px; margin: 0;">
+      <li style="margin-bottom: 10px;"><strong>E1</strong> — los filtros de Inicio pasaron de selección única a combinables entre sí (ver tarjeta arriba).</li>
+      <li><strong>E6</strong> — se sumó un endpoint <code class="mono">DELETE</code> nuevo al backend para poder borrar la foto de perfil (ver tarjeta arriba).</li>
+    </ol>
+  </section>
+
+  <section id="c3">
+    <span class="eyebrow">Auditoría · C3 — sin aplicar</span>
+    <h2>Texto "si existe una cuenta..."</h2>
+    <p class="dek">7 ocurrencias en 3 archivos. Ninguna se reescribió todavía — necesito tu OK antes de tocar el copy, en caso de que algún contexto sea distinto al ejemplo que diste.</p>
+
+    <div class="finding">
+      <span class="loc">reactivar-cuenta.html:20</span>
+      <blockquote>Ingresá tu email y, si existe una cuenta asociada, te enviamos un código de 6 dígitos para reactivarla. El código vence en 24 horas.</blockquote>
+      <span class="meta">Subtítulo del paso 1 (pedir email) — este es el ejemplo exacto que diste.</span>
+    </div>
+    <div class="finding">
+      <span class="loc">reactivar-cuenta.html:38</span>
+      <blockquote>Si existe una cuenta asociada a ese email, te enviamos un código de 6 dígitos. Ingresalo para reactivar tu cuenta.</blockquote>
+      <span class="meta">Subtítulo del paso 2 (ingresar código) — variante que el enunciado no mencionaba, mismo patrón.</span>
+    </div>
+    <div class="finding">
+      <span class="loc">recuperar-password.html:20</span>
+      <blockquote>Ingresá tu email y, si existe una cuenta asociada, te enviamos un código de 6 dígitos para restablecer tu contraseña. El código vence en 30 minutos.</blockquote>
+      <span class="meta">Subtítulo del paso 1.</span>
+    </div>
+    <div class="finding">
+      <span class="loc">recuperar-password.html:52</span>
+      <blockquote>Si existe una cuenta asociada a ese email, te enviamos un código de 6 dígitos.</blockquote>
+      <span class="meta">Subtítulo del paso "código".</span>
+    </div>
+    <div class="finding">
+      <span class="loc">js/auth.js:999 <span class="chip info" style="margin-left:6px;">dinámico</span></span>
+      <blockquote>Si la cuenta existe y está pendiente, te enviamos un nuevo código.</blockquote>
+      <span class="meta"><code class="mono">initVerificarEmail()</code> → <code class="mono">reenviarCodigo()</code>, banner armado con <code class="mono">renderBanner()</code> en <code class="mono">verificar-email.html</code> al tocar "Reenviar código".</span>
+    </div>
+    <div class="finding">
+      <span class="loc">js/auth.js:1150 <span class="chip info" style="margin-left:6px;">dinámico</span></span>
+      <blockquote>Si la cuenta existe, te enviamos un nuevo código.</blockquote>
+      <span class="meta"><code class="mono">initRecuperarPasswordSolicitar()</code>, banner de "Reenviar" en el paso del código.</span>
+    </div>
+    <div class="finding">
+      <span class="loc">js/auth.js:1256 <span class="chip info" style="margin-left:6px;">dinámico</span></span>
+      <blockquote>Si la cuenta existe, te enviamos un nuevo código.</blockquote>
+      <span class="meta"><code class="mono">initReactivarCuentaSolicitar()</code>, mismo patrón que el anterior.</span>
+    </div>
+    <p class="dek" style="margin-top: 18px; margin-bottom:0;">No se encontraron variantes adicionales en el resto de los ~35 <code class="mono">.html</code> ni en los otros 15 <code class="mono">.js</code>.</p>
+  </section>
+
+  <section id="c4">
+    <span class="eyebrow">Auditoría · C4 — sin aplicar</span>
+    <h2>"Restaurantes y emprendimientos" → "negocios locales"</h2>
+    <p class="dek">6 ocurrencias de texto visible en 4 archivos. Dos de ellas (los chips de filtro) ya se resuelven solas al aplicar E1, que las eliminó — quedan 4 reales por decidir.</p>
+
+    <div class="finding">
+      <span class="loc">bienvenida.html:17</span>
+      <blockquote>Restaurantes y emprendimientos gastronómicos en un solo lugar.</blockquote>
+      <span class="meta">Subtítulo de la landing inicial (primera pantalla que ve cualquiera).</span>
+    </div>
+    <div class="finding">
+      <span class="loc">registro-tipo-cuenta.html:28</span>
+      <blockquote>Para pedir comida en restaurantes y emprendimientos locales</blockquote>
+      <span class="meta">Descripción de la opción "Quiero registrarme como cliente".</span>
+    </div>
+    <div class="finding">
+      <span class="loc">js/catalogo.js:448</span>
+      <blockquote>Estamos incorporando restaurantes y emprendimientos en Río Grande. Volvé a revisar pronto.</blockquote>
+      <span class="meta">Empty state de <code class="mono">index.html</code> cuando no hay comercios cargados.</span>
+    </div>
+    <div class="finding">
+      <span class="loc">js/explorar.js:135</span>
+      <blockquote>Estamos incorporando restaurantes y emprendimientos en Río Grande. Volvé a revisar pronto.</blockquote>
+      <span class="meta">Mismo texto, empty state de <code class="mono">explorar.html</code>.</span>
+    </div>
+    <div class="finding note-only">
+      <span class="loc">js/catalogo.js:430-431 <span class="chip done" style="margin-left:6px;">resuelto por E1</span></span>
+      <blockquote>label: 'Restaurantes' / label: 'Emprendimientos'</blockquote>
+      <span class="meta">Eran los chips de filtro de <code class="mono">index.html</code> — E1 los eliminó por completo, así que este punto ya no aplica.</span>
+    </div>
+    <div class="finding note-only">
+      <span class="loc">js/auth.js:455-457 — no tocar</span>
+      <span class="meta"><code class="mono">LABELS_TIPO_COMERCIO</code>: el mapa de labels individuales del ENUM (<code class="mono">RESTAURANTE: 'Restaurante'</code>, etc.), usado para mostrar el tipo específico de un comercio puntual, no la frase genérica de solo 2 categorías. Es código correcto, no forma parte de este barrido.</span>
+    </div>
+  </section>
+
+  <section id="d">
+    <span class="eyebrow">Auditoría · D — sin aplicar</span>
+    <h2>Cobertura de <code class="mono">scrollAlPrimerError()</code></h2>
+    <p class="dek">Hoy solo la usa <code class="mono">initRegistroComercio()</code>. 8 formularios más son compatibles tal cual (mismo patrón <code class="mono">.field__error</code> + <code class="mono">mostrarErrorCampo</code>/<code class="mono">limpiarErrorCampo</code>); el resto no la necesita o usa un patrón distinto.</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Pantalla</th><th>Handler</th><th>Qué falta</th></tr></thead>
+        <tbody>
+          <tr><td><span class="file">registro-cliente.html</span></td><td>initRegistroCliente() — paso 1 y 2</td><td>Ya importa la función; nunca la llama. Mismos puntos que ya tiene <code class="mono">initRegistroComercio</code>.</td></tr>
+          <tr><td><span class="file">login.html</span></td><td>initLogin()</td><td>Falta importar + llamar. Formulario corto (2 campos) — valor menor en desktop, útil en mobile con teclado abierto.</td></tr>
+          <tr><td><span class="file">perfil.html</span></td><td>initPerfil() — editar datos, cambiar password</td><td>Falta importar <code class="mono">scrollAlPrimerError</code> en <code class="mono">cliente.js</code> + llamarla.</td></tr>
+          <tr><td><span class="file">comercio-perfil.html</span></td><td>initComercioPerfil() — editar perfil, cambiar password</td><td>Falta importar en <code class="mono">comercio.js</code> + llamarla.</td></tr>
+          <tr><td><span class="file">comercio-producto-form.html</span></td><td>initComercioProductoForm()</td><td>Mismo que arriba. El que más valor real tendría — nombre/precio/categoría/tags/galería pueden exceder una pantalla.</td></tr>
+          <tr><td><span class="file">recuperar-password.html</span></td><td>initRecuperarPasswordSolicitar() — 3 pasos</td><td>Falta llamarla en cada paso.</td></tr>
+          <tr><td><span class="file">reactivar-cuenta.html</span></td><td>initReactivarCuentaSolicitar() — 2 pasos</td><td>Ídem.</td></tr>
+          <tr><td><span class="file">verificar-email.html</span></td><td>initVerificarEmail()</td><td>Ídem. El caso 409 (cuenta bloqueada) no aplica — oculta el form entero, no hay <code class="mono">.field__error</code> que scrollear ahí.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="margin: 22px 0 10px; font-weight: 600;">Con patrón distinto o sin necesidad real (no recomendado cablear tal cual):</p>
+    <ul style="padding-left: 20px; margin: 0;">
+      <li><strong>checkout.html</strong> — sin <code class="mono">.field__error</code>; la validación deshabilita el botón "Continuar" en vez de mostrar error. Ya tiene su propio <code class="mono">scrollTo</code> manual para los pocos banners de error reales.</li>
+      <li><strong>carrito.html</strong> — errores vía <code class="mono">showToast</code> (flotante), no hay nada en el documento que scrollear.</li>
+      <li><strong>Modales de un solo campo</strong> (categoría/tag/rechazar-comercio en <code class="mono">admin.js</code>, rechazar-pedido en <code class="mono">comercio.js</code>) — siempre completos en pantalla, sin valor real en agregar scroll.</li>
+      <li><strong>pedidos.js, notificaciones.js, explorar.js, otp.js, catalogo.js</strong> — sin formularios de validación.</li>
+    </ul>
+  </section>
+
+  <section id="f1">
+    <span class="eyebrow">Inventario · F1 — sin implementar</span>
+    <h2>Feedback de acciones (toasts)</h2>
+    <p class="dek">21 acciones ya usan <code class="mono">showToast()</code> de forma consistente (o un equivalente igual de bueno). El hallazgo más señalable no es un vacío, es un bug: 3 lugares llaman a <code class="mono">showToast()</code> y navegan a otra pantalla en el mismo instante — el toast probablemente nunca llega a pintarse.</p>
+
+    <div class="callout bug" style="margin-bottom: 22px;">
+      <strong>Bug de entrega (3 casos), no un simple "falta feedback":</strong> <span class="file">comercio.js</span> al crear un producto, y <span class="file">admin.js</span> al aprobar/rechazar un comercio — el mensaje ya es correcto, pero <code class="mono">window.location.href = ...</code> corre en la misma línea que el <code class="mono">showToast()</code>, así que el toast se descarta antes de poder verse. Se arregla pasando el mensaje a la pantalla siguiente (mismo patrón que ya usa <code class="mono">?passwordActualizada=1</code>), no repitiendo el toast.
+    </div>
+
+    <p class="role-heading">Cliente</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Pantalla</th><th>Acción</th><th>Feedback actual</th><th>Recomendación</th></tr></thead>
+        <tbody>
+          <tr><td><span class="file">carrito.html</span></td><td>Vaciar carrito</td><td>Ninguno en éxito (solo error)</td><td><span class="chip done">Éxito</span> "Carrito vaciado"</td></tr>
+          <tr><td><span class="file">carrito.html</span></td><td>Eliminar producto del carrito</td><td>Ninguno en éxito</td><td><span class="chip done">Éxito</span> "Producto eliminado del carrito"</td></tr>
+          <tr><td><span class="file">perfil.html</span></td><td>Editar datos personales</td><td>Ninguno, vuelve a la vista principal en silencio</td><td><span class="chip done">Éxito</span> "Tus datos se actualizaron correctamente"</td></tr>
+          <tr><td><span class="file">perfil.html</span></td><td>Cambiar/eliminar foto de perfil</td><td style="color:var(--success-text);">Ya resuelto en esta sesión (E6, ver arriba)</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="role-heading">Comercio / Dueño</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Pantalla</th><th>Acción</th><th>Feedback actual</th><th>Recomendación</th></tr></thead>
+        <tbody>
+          <tr><td><span class="file">comercio-producto-form.html</span></td><td>Crear producto</td><td class="chip bug" style="display:inline-flex;">bug de entrega</td><td>Mismo mensaje, entregado tras la navegación</td></tr>
+          <tr><td><span class="file">comercio-producto-form.html</span></td><td>Editar producto</td><td>Ninguno, redirect silencioso</td><td><span class="chip done">Éxito</span> "Producto actualizado correctamente"</td></tr>
+          <tr><td><span class="file">comercio-producto-form.html</span></td><td>Descontinuar (desde el form)</td><td>Ninguno — inconsistente con la misma acción desde la lista, que sí tiene toast</td><td><span class="chip done">Éxito</span> "Producto descontinuado"</td></tr>
+          <tr><td><span class="file">comercio-perfil.html</span></td><td>Editar perfil</td><td>Ninguno, redirect silencioso</td><td><span class="chip done">Éxito</span> "Perfil actualizado correctamente"</td></tr>
+          <tr><td><span class="file">comercio-perfil.html</span></td><td>Cambiar foto de perfil</td><td>Ninguno — mismo gap que Cliente antes de E6</td><td><span class="chip done">Éxito</span> "Foto de perfil actualizada" (ya usado tal cual en <span class="file">admin.js</span>)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="role-heading">Administrador</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Pantalla</th><th>Acción</th><th>Feedback actual</th><th>Recomendación</th></tr></thead>
+        <tbody>
+          <tr><td><span class="file">admin-comercio-detalle.html</span></td><td>Aprobar comercio</td><td class="chip bug" style="display:inline-flex;">bug de entrega</td><td>Mismo mensaje, entregado tras la navegación</td></tr>
+          <tr><td><span class="file">admin-comercio-detalle.html</span></td><td>Rechazar comercio</td><td class="chip bug" style="display:inline-flex;">bug de entrega</td><td>Mismo mensaje, entregado tras la navegación</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="role-heading">De severidad baja / aceptable tal cual (no urgente)</p>
+    <ul style="padding-left: 20px; margin: 0;">
+      <li>Cambiar cantidad en el carrito, subir/reordenar/recortar/eliminar imagen de producto, marcar notificación como leída — el cambio visual inmediato ya funciona como feedback.</li>
+      <li>Cerrar sesión (los 3 roles) — el modal de confirmación previo ya cumple ese rol.</li>
+      <li>Cambiar contraseña (Cliente y Comercio) — fuerza relogin con banner ya existente en la pantalla de destino.</li>
+    </ul>
+  </section>
+
+  <section id="archivos">
+    <span class="eyebrow">Referencia</span>
+    <h2>Archivos tocados</h2>
+    <p class="dek">Detalle completo de cada cambio en <code class="mono">docs/DECISIONES.md</code>, entrada del 2026-08-29. Ninguna fase de esta sesión quedó cerrada.</p>
+    <div class="card">
+      <p class="filelist">
+        <strong>Backend</strong><br>
+        controllers/UsuarioController.java<br>
+        services/UsuarioService.java<br><br>
+        <strong>Frontend</strong><br>
+        registro-cliente.html · perfil.html<br>
+        js/auth.js · js/cliente.js · js/catalogo.js · js/carrito.js · js/explorar.js · js/cloudinary.js<br>
+        css/styles.css<br><br>
+        <strong>Docs</strong><br>
+        docs/DECISIONES.md
+      </p>
+    </div>
+  </section>
+
+  <footer class="closing">
+    Datos de prueba (2 cuentas Cliente creadas para verificar) eliminados de <code class="mono">bajonea_final</code> al terminar. Nada de C3, C4 o D fue tocado — quedan tal cual arriba, esperando tu confirmación.
+  </footer>
+
+</div>

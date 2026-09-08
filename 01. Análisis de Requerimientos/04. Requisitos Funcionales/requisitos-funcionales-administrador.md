@@ -7,8 +7,8 @@
 - El administrador debe poder visualizar comercios pendientes de aprobación con sus datos de registro.
 - El administrador debe poder aprobar un comercio, habilitándolo para operar y recibir pedidos. El sistema registra la acción en el historial de acciones del comercio (HistorialAccionComercio).
 - El administrador debe poder rechazar un comercio ingresando un motivo. El sistema registra la acción en el historial.
-- El administrador debe poder suspender un comercio activo ingresando un motivo. La suspensión invalida todas las sesiones activas del usuario representante, desencadena la cancelación de pedidos activos según las reglas del sistema, y registra la acción en el historial.
-- El administrador debe poder levantar la suspensión de un comercio, reactivando la cuenta del usuario y el estado del comercio a Aprobado. El sistema registra la acción en el historial.
+- El administrador debe poder suspender un comercio activo ingresando un motivo. La suspensión es una acción sobre ese comercio puntual: cambia su estado a Suspendido sin afectar la cuenta del Dueño ni sus demás comercios, desencadena la cancelación de pedidos activos de ese comercio según las reglas del sistema, y registra la acción en el historial.
+- El administrador debe poder levantar la suspensión de un comercio, restaurando su estado a Aprobado. El sistema registra la acción en el historial.
 - El sistema debe registrar un historial de acciones sobre cada comercio (HistorialAccionComercio): fecha y hora, administrador responsable, tipo de acción (aprobación, rechazo, suspensión, reactivación), motivo (cuando aplica) y estado resultante.
 
 ---
@@ -43,7 +43,7 @@
 
 ## Supervisión General
 
-- El administrador debe poder visualizar el listado completo de comercios registrados con: nombre, tipo, estado actual, fecha de registro y si tiene MP vinculado.
+- El administrador debe poder visualizar el listado completo de comercios registrados con: nombre, tipo, estado actual, fecha de registro, Dueño titular y si ese Dueño tiene MP vinculado.
 - El administrador debe poder visualizar el listado completo de clientes registrados con: nombre, DNI, estado actual y fecha de registro.
 - Ambos listados deben soportar filtros por estado y búsqueda por nombre.
 

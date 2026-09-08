@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Verificación de cuenta — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header app-header--brand">
+    <img class="header-logo" src="assets/img/bajonea-logo-orange-header.png" alt="Bajoneá" />
+  </header>
+  <main class="app-main">
+    <div id="form-container" class="screen-body">
+      <h1 class="title-lg">Verificá tu cuenta</h1>
+      <p class="subtitle" id="verificar-texto"></p>
+      <div id="banner-slot" data-testid="mensaje-banner"></div>
+      <form class="form" id="verificar-form" novalidate>
+        <div class="field">
+          <label class="field__label">Código de verificación</label>
+          <div id="otp-container" data-testid="input-codigo-verificacion"></div>
+          <div class="field__error" id="error-codigo" style="display:none;" data-testid="mensaje-error-codigo"></div>
+        </div>
+        <button class="btn btn-primary" type="submit" id="submit-btn" data-testid="btn-verificar-cuenta">Verificar cuenta</button>
+        <button class="btn btn-tertiary" type="button" id="reenviar-btn" data-testid="btn-reenviar-codigo">Reenviar código</button>
+      </form>
+    </div>
+    <div id="estado-exito" class="state-page is-hidden" data-testid="estado-verificacion-exito">
+      <div class="state-page__icon state-page__icon--success">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      </div>
+      <h1 class="state-page__title">Email verificado</h1>
+      <p class="state-page__text">Tu cuenta ya está activa. Ya podés iniciar sesión en Bajoneá.</p>
+      <div class="state-page__actions">
+        <a class="btn btn-primary" href="login.html" data-testid="btn-ir-a-login">Ir al inicio de sesión</a>
+      </div>
+    </div>
+    <div id="estado-error" class="state-page is-hidden" data-testid="estado-verificacion-error">
+      <div class="state-page__icon state-page__icon--error">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <h1 class="state-page__title">No pudimos verificar tu cuenta</h1>
+      <p class="state-page__text" id="estado-error-texto" data-testid="mensaje-error-verificacion">El código no es válido o ya venció. Pedí uno nuevo para continuar.</p>
+      <div class="state-page__actions">
+        <button class="btn btn-primary" type="button" id="error-reenviar-btn" data-testid="btn-reenviar-codigo-error">Pedir un código nuevo</button>
+        <a class="btn btn-tertiary" href="login.html" data-testid="btn-ir-a-login-error">Ir al inicio de sesión</a>
+      </div>
+    </div>
+  </main>
+</div>
+<script type="module">
+import { initVerificarEmail } from './js/auth.js';
+initVerificarEmail();
+</script>
+</body>
+</html>

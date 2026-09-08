@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Panel del comercio — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <div id="top-bar-slot"></div>
+  <main class="app-main">
+    <div class="screen-body">
+      <div id="banner-estado-slot" style="margin-bottom:16px;" data-testid="mensaje-estado-comercio"></div>
+      <div class="catalog-greeting" style="padding:0 0 16px;">
+        <h1 id="saludo-titulo" data-testid="mensaje-saludo"></h1>
+        <p id="saludo-fecha"></p>
+      </div>
+      <div id="metrics-row" data-testid="metricas-dashboard"></div>
+      <div class="section-heading" style="margin-top:24px;display:flex;align-items:center;gap:10px;">
+        <span>Pedidos activos</span>
+        <span id="badge-pedidos-activos" data-testid="contador-pedidos-activos"></span>
+      </div>
+      <div id="pedidos-activos-list" data-testid="lista-pedidos-activos"></div>
+    </div>
+  </main>
+  <div id="bottom-nav-slot"></div>
+</div>
+<script type="module">
+import { initComercioDashboard } from './js/comercio.js';
+initComercioDashboard();
+</script>
+</body>
+</html>

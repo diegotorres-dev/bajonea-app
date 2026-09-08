@@ -11,9 +11,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Valida que el campo anotado sea un teléfono argentino en alguno de los formatos reales
- * tolerados (con/sin +54, con/sin 9, con/sin 0 de larga distancia, con/sin 15). Ver
- * {@link TelefonoArgentinoValidator} para el detalle exacto de la normalización aplicada.
+ * Valida que el campo anotado sea un teléfono argentino en el formato usado por todos los
+ * formularios del proyecto: prefijo fijo {@code +549} (no editable en el HTML) + exactamente
+ * 10 dígitos locales. Ver {@link TelefonoArgentinoValidator} para el detalle exacto de la
+ * normalización aplicada.
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
@@ -21,7 +22,7 @@ import java.lang.annotation.Target;
 @Documented
 public @interface ValidarTelefonoArgentino {
 
-    String message() default "Teléfono inválido";
+    String message() default "Ingresá un número de teléfono válido (cod. área + número)";
 
     Class<?>[] groups() default {};
 

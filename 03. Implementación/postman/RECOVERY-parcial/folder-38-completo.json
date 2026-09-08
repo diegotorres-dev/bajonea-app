@@ -1,0 +1,470 @@
+{
+  "name": "38 - Matriz Comercio - Foto de perfil",
+  "item": [
+    {
+      "name": "Setup - Registro Comercio (matriz foto comercio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000411\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.foto@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199360\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+              "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Setup - Obtener codigo real de verificacion (matriz foto comercio)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/test/token?email=matriz.comercio.foto%40bajonea.test&tipo=VERIFICACION_EMAIL",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "test",
+            "token?email=matriz.comercio.foto%40bajonea.test&tipo=VERIFICACION_EMAIL"
+          ]
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.environment.set('matriz_comercio_foto_token_codigo', json.data);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Setup - Verificar cuenta (matriz foto comercio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/verificar",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "verificar"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"matriz.comercio.foto@bajonea.test\",\n  \"codigo\": \"{{matriz_comercio_foto_token_codigo}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Setup - Login (matriz foto comercio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"matriz.comercio.foto@bajonea.test\",\n  \"password\": \"Aa1Password2026\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+              "const json = pm.response.json();",
+              "pm.environment.set('matriz_comercio_foto_token', json.data.token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Foto perfil Comercio - url vacia",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{matriz_comercio_foto_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/comercios/perfil/foto",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "comercios",
+            "perfil",
+            "foto"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"url\": \"\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de url', () => pm.expect(json.data['url']).to.eql(\"No debe estar vacío\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Foto perfil Comercio - url host invalido (no es res.cloudinary.com)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{matriz_comercio_foto_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/comercios/perfil/foto",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "comercios",
+            "perfil",
+            "foto"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"url\": \"https://evil.com/image/upload/v1/x.jpg\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de url', () => pm.expect(json.data['url']).to.eql(\"La URL debe pertenecer al dominio de Cloudinary\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Foto perfil Comercio - url extension invalida (.pdf)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{matriz_comercio_foto_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/comercios/perfil/foto",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "comercios",
+            "perfil",
+            "foto"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"url\": \"https://res.cloudinary.com/demo/image/upload/v1/x.pdf\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de url', () => pm.expect(json.data['url']).to.eql(\"La URL debe apuntar a un archivo jpg, jpeg, png o webp\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Foto perfil Comercio - url esquema invalido (http en vez de https)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{matriz_comercio_foto_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/comercios/perfil/foto",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "comercios",
+            "perfil",
+            "foto"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"url\": \"http://res.cloudinary.com/demo/image/upload/v1/x.jpg\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de url', () => pm.expect(json.data['url']).to.eql(\"La URL debe pertenecer al dominio de Cloudinary\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "[BUG REAL REPORTADO, no corregido] Foto perfil Comercio - url de 552 caracteres (sin @Size en el DTO, produce 500 en vez de 400)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{matriz_comercio_foto_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/comercios/perfil/foto",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "comercios",
+            "perfil",
+            "foto"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"url\": \"https://res.cloudinary.com/demo/image/upload/v1/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.jpg\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 500 (bug real: deberia ser 400 con mensaje, ver reporte)', () => pm.response.to.have.status(500));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Foto perfil Comercio - url valida (debe aceptar)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{matriz_comercio_foto_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/comercios/perfil/foto",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "comercios",
+            "perfil",
+            "foto"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"url\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-foto-nueva.jpg\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

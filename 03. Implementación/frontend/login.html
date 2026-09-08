@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Iniciar sesión — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header app-header--brand">
+    <img class="header-logo" src="assets/img/bajonea-logo-orange-header.png" alt="Bajoneá" />
+  </header>
+  <main class="app-main">
+    <div class="screen-body">
+      <h1 class="title-lg">Bienvenido de vuelta</h1>
+      <p class="subtitle">Ingresá con tu email y contraseña.</p>
+      <div id="banner-slot" data-testid="mensaje-banner"></div>
+      <form class="form" id="login-form" novalidate>
+        <div class="field" id="field-email">
+          <label class="field__label" for="email">Email</label>
+          <div class="input-shell" id="shell-email">
+            <span class="input-shell__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
+            </span>
+            <input type="email" id="email" name="email" placeholder="tu@email.com" autocomplete="username" required data-testid="input-email" />
+          </div>
+        </div>
+        <div class="field" id="field-password">
+          <label class="field__label" for="password">Contraseña</label>
+          <div class="input-shell" id="shell-password">
+            <span class="input-shell__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            <input type="password" id="password" name="password" placeholder="••••••••" autocomplete="current-password" required data-testid="input-password" />
+            <button type="button" class="input-shell__toggle" id="toggle-password" aria-label="Mostrar contraseña" data-testid="btn-mostrar-password">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div id="error-credenciales" class="field__error" style="display:none;" data-testid="mensaje-error-login"></div>
+          <p id="warning-bloqueo" class="field__warning" style="display:none;" data-testid="mensaje-advertencia-bloqueo">Cuidado: si fallás una vez más, tu cuenta se bloqueará.</p>
+        </div>
+        <div style="display:flex;justify-content:flex-end;">
+          <a class="link" style="font-size:13px;" href="recuperar-password.html" data-testid="btn-olvide-password">¿Olvidaste tu contraseña?</a>
+        </div>
+        <button class="btn btn-primary" type="submit" id="submit-btn" data-testid="btn-ingresar">
+          Ingresar
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+      </form>
+      <p class="form-footer-link">¿No tenés cuenta? <a class="link" href="registro-tipo-cuenta.html" data-testid="btn-ir-a-registro">Registrate</a></p>
+      <p class="form-footer-link form-footer-link--small">¿Tu cuenta está inactiva? <a class="link" href="reactivar-cuenta.html" data-testid="btn-ir-a-reactivar-cuenta">Reactivar mi cuenta</a></p>
+    </div>
+  </main>
+</div>
+<script type="module">
+import { initLogin } from './js/auth.js';
+initLogin();
+</script>
+</body>
+</html>

@@ -15,8 +15,12 @@ la organización interna del comercio.
 
 - Implementar un sistema de autenticación seguro que contemple el registro, verificación,
   recuperación y administración de cuentas para los distintos roles del sistema: Cliente,
-  Comercio y Administrador, incluyendo mecanismos de bloqueo, reactivación y gestión
-  de sesiones únicas por usuario.
+  Dueño, Empleado y Administrador, incluyendo mecanismos de bloqueo, reactivación y
+  gestión de sesiones únicas por usuario.
+
+- Permitir que todo usuario cargue una foto de perfil personal desde su cuenta,
+  opcional para los cuatro roles, y que cada comercio cargue su propia foto de perfil
+  de negocio (obligatoria), independiente de la foto personal de su Dueño.
 
 ### Experiencia del cliente
 
@@ -32,8 +36,19 @@ la organización interna del comercio.
 
 - Brindar al comercio las herramientas necesarias para administrar su catálogo de
   productos y gestionar el ciclo completo de sus pedidos, contemplando tanto la modalidad
-  de retiro en local como la de envío a domicilio, y diferenciando entre restaurantes
-  y emprendimientos gastronómicos como tipos de comercio disponibles en la plataforma.
+  de retiro en local como la de envío a domicilio, y clasificando cada comercio según su
+  rubro gastronómico (restaurante, rotisería, heladería, panadería, entre otros tipos
+  disponibles en la plataforma).
+
+- Permitir que un mismo dueño administre uno o varios comercios bajo una única cuenta,
+  y que pueda delegar la operación diaria de cada comercio (gestión de productos y
+  pedidos) a Empleados con acceso propio, sin comprometer los datos fiscales ni las
+  decisiones exclusivas del dueño.
+
+- Permitir que cada comercio enriquezca su catálogo mediante grupos de extras y extras
+  opcionales asociados a sus productos (por ejemplo, agregados o variantes de un plato),
+  y que publique enlaces a sus redes sociales y canales de contacto directo (Instagram,
+  WhatsApp, sitio web, entre otros) para reforzar su presencia digital.
 
 - Integrar un sistema de pagos con MercadoPago bajo el modelo Marketplace con split
   automático de cobros, que permita procesar transacciones de forma segura mediante
@@ -60,8 +75,8 @@ la organización interna del comercio.
   gastronómicos de Río Grande y sus clientes, mejorando la visibilidad de los negocios
   locales y facilitando el acceso a opciones adaptadas a distintas preferencias
   y necesidades alimentarias. Los comercios aparecen en el catálogo público desde el
-  momento en que completan su configuración, incluyendo la vinculación de su cuenta
-  de MercadoPago.
+  momento en que completan su configuración, incluyendo la vinculación de la cuenta
+  de MercadoPago de su dueño.
 
 ### Organización y toma de decisiones
 

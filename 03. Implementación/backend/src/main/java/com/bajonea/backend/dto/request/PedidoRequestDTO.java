@@ -19,7 +19,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class PedidoRequestDTO {
 
-    @NotNull
+    @NotNull(message = "Debés seleccionar una modalidad de entrega")
     private TipoEntrega tipoEntrega;
 
     private Integer direccionId;

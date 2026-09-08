@@ -4,6 +4,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -28,6 +29,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RateLimitFotoRegistroFilter rateLimitFotoRegistroFilter;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
 
@@ -59,10 +61,13 @@ public class SecurityConfig {
             "/api/v1/auth/registro/**",
             "/api/v1/auth/login",
             "/api/v1/auth/verificar/**",
+            "/api/v1/auth/verificar",
+            "/api/v1/auth/reenviar-verificacion",
             "/api/v1/auth/recuperar-password",
+            "/api/v1/auth/recuperar-password/validar-codigo",
             "/api/v1/auth/recuperar-password/confirmar",
             "/api/v1/auth/reactivar-cuenta",
-            "/api/v1/auth/reactivar-cuenta/confirmar/**",
+            "/api/v1/auth/reactivar-cuenta/confirmar",
             "/api/v1/catalogo/**",
             "/api/v1/geografia/**",
             "/api/v1/health",
@@ -84,13 +89,17 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(RUTAS_PUBLICAS).permitAll()
-                        .requestMatchers("/api/v1/productos/**", "/api/v1/comercios/**").hasRole("COMERCIO")
+                        .requestMatchers("/api/v1/productos/**", "/api/v1/comercios/**").hasRole("DUENO")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/categorias/**", "/api/v1/tags/**")
+                        .authenticated()
                         .requestMatchers("/api/v1/categorias/**", "/api/v1/tags/**", "/api/v1/administrador/**")
                         .hasRole("ADMINISTRADOR")
-                        .requestMatchers("/api/v1/carrito/**", "/api/v1/pedidos/cliente/**").hasRole("CLIENTE")
-                        .requestMatchers("/api/v1/pedidos/comercio/**").hasRole("COMERCIO")
+                        .requestMatchers("/api/v1/carrito/**", "/api/v1/pedidos/cliente/**", "/api/v1/clientes/**")
+                        .hasRole("CLIENTE")
+                        .requestMatchers("/api/v1/pedidos/comercio/**").hasRole("DUENO")
                         .anyRequest().authenticated())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(rateLimitFotoRegistroFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }

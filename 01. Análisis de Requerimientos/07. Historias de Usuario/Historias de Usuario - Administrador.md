@@ -38,8 +38,8 @@ su descargo, para reactivar su cuenta y permitirle volver a operar en la platafo
 ## HU-A07: Ver el Listado Completo de Comercios
 
 Como administrador, quiero visualizar todos los comercios con su estado actual, tipo,
-fecha de registro y si tienen MP vinculado, para tener una visión general de la
-plataforma y actuar cuando sea necesario.
+fecha de registro, Dueño titular y si ese Dueño tiene MP vinculado, para tener una
+visión general de la plataforma y actuar cuando sea necesario.
 
 ## HU-A08: Ver el Listado Completo de Clientes
 

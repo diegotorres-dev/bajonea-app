@@ -5,6 +5,7 @@ import com.bajonea.backend.dto.request.PedidoRequestDTO;
 import com.bajonea.backend.dto.request.RechazoPedidoRequestDTO;
 import com.bajonea.backend.dto.response.ApiResponse;
 import com.bajonea.backend.dto.response.PedidoResponseDTO;
+import com.bajonea.backend.dto.response.ResumenPedidosHoyResponseDTO;
 import com.bajonea.backend.services.PedidoService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -46,6 +47,13 @@ public class PedidoController {
             @AuthenticationPrincipal AuthenticatedUser usuario) {
         List<PedidoResponseDTO> pedidos = pedidoService.listarPedidosComercio(usuario.userId());
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pedidos obtenidos correctamente", pedidos));
+    }
+
+    @GetMapping("/comercio/resumen-hoy")
+    public ResponseEntity<ApiResponse<ResumenPedidosHoyResponseDTO>> obtenerResumenHoy(
+            @AuthenticationPrincipal AuthenticatedUser usuario) {
+        ResumenPedidosHoyResponseDTO response = pedidoService.obtenerResumenHoy(usuario.userId());
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Resumen obtenido correctamente", response));
     }
 
     @PutMapping("/comercio/{id}/aceptar")

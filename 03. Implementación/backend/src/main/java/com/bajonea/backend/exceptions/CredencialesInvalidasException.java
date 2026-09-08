@@ -8,7 +8,18 @@ package com.bajonea.backend.exceptions;
  */
 public class CredencialesInvalidasException extends RuntimeException {
 
+    private final Object data;
+
     public CredencialesInvalidasException(String mensaje) {
+        this(mensaje, null);
+    }
+
+    public CredencialesInvalidasException(String mensaje, Object data) {
         super(mensaje);
+        this.data = data;
+    }
+
+    public Object getData() {
+        return data;
     }
 }

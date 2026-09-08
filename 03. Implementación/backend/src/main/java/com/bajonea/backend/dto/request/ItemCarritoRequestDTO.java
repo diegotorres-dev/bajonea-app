@@ -15,14 +15,14 @@ import lombok.Setter;
 @AllArgsConstructor
 public class ItemCarritoRequestDTO {
 
-    @NotNull
+    @NotNull(message = "El producto es obligatorio")
     private Integer productoId;
 
-    @NotNull
-    @Min(1)
-    @Max(20)
+    @NotNull(message = "La cantidad es obligatoria")
+    @Min(value = 1, message = "La cantidad mínima es 1")
+    @Max(value = 20, message = "La cantidad máxima es 20")
     private Integer cantidad;
 
-    @Size(max = 255)
+    @Size(max = 255, message = "La nota no puede superar los 255 caracteres")
     private String nota;
 }

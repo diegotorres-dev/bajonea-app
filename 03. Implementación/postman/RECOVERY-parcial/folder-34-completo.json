@@ -1,0 +1,2807 @@
+{
+  "name": "34 - Matriz Comercio - Registro Paso 2 (Legales)",
+  "item": [
+    {
+      "name": "Registro Comercio - razonSocial vacia",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de razonSocial', () => pm.expect(json.data['razonSocial']).to.eql(\"La razón social es obligatoria\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - razonSocial formato invalido (solo simbolos)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"####\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de razonSocial', () => pm.expect(json.data['razonSocial']).to.eql(\"La razón social no puede contener solo caracteres especiales\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - razonSocial por encima del limite 151 (debe rechazar)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de razonSocial', () => pm.expect(json.data['razonSocial']).to.eql(\"La razón social no puede superar los 150 caracteres\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - razonSocial limite superior exacto 150 (debe aceptar)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR\",\n  \"cuit\": \"30799000144\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.c2.razon150@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199310\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+              "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - cuit vacio",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de cuit', () => pm.expect(json.data['cuit']).to.eql(\"El CUIT es obligatorio\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - cuit formato invalido (longitud incorrecta, 10 digitos)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"3079900030\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de cuit', () => pm.expect(json.data['cuit']).to.eql(\"El CUIT debe tener 11 dígitos numéricos\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - cuit formato invalido (digito verificador incorrecto)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000307\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de cuit', () => pm.expect(json.data['cuit']).to.eql(\"El CUIT debe tener 11 dígitos numéricos\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - condicionIva=RESPONSABLE_INSCRIPTO (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('condicionIva no genera error de formato', () => pm.expect(json.data).to.not.have.property('condicionIva'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - condicionIva=EXENTO (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"EXENTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('condicionIva no genera error de formato', () => pm.expect(json.data).to.not.have.property('condicionIva'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - condicionIva=NO_INSCRIPTO (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"NO_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('condicionIva no genera error de formato', () => pm.expect(json.data).to.not.have.property('condicionIva'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - condicionIva=MONOTRIBUTO (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"MONOTRIBUTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('condicionIva no genera error de formato', () => pm.expect(json.data).to.not.have.property('condicionIva'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - condicionIva=RESPONSABLE_NACIONAL (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_NACIONAL\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('condicionIva no genera error de formato', () => pm.expect(json.data).to.not.have.property('condicionIva'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - condicionIva vacio (null)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": null,\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de condicionIva', () => pm.expect(json.data['condicionIva']).to.eql(\"Seleccioná la condición ante el IVA\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - condicionIva fuera del enum",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"INVALIDO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto', () => pm.expect(json.mensaje).to.eql(\"El cuerpo de la solicitud contiene datos con formato inválido\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad=SA (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SA\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('tipoSociedad no genera error de formato', () => pm.expect(json.data).to.not.have.property('tipoSociedad'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad=SRL (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('tipoSociedad no genera error de formato', () => pm.expect(json.data).to.not.have.property('tipoSociedad'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad=SAS (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SAS\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('tipoSociedad no genera error de formato', () => pm.expect(json.data).to.not.have.property('tipoSociedad'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad=SC (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SC\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('tipoSociedad no genera error de formato', () => pm.expect(json.data).to.not.have.property('tipoSociedad'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad=SCS (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SCS\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('tipoSociedad no genera error de formato', () => pm.expect(json.data).to.not.have.property('tipoSociedad'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad=SCRL (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SCRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('tipoSociedad no genera error de formato', () => pm.expect(json.data).to.not.have.property('tipoSociedad'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad=SCSA (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SCSA\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('tipoSociedad no genera error de formato', () => pm.expect(json.data).to.not.have.property('tipoSociedad'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad=SCCS (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SCCS\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('tipoSociedad no genera error de formato', () => pm.expect(json.data).to.not.have.property('tipoSociedad'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad=CC (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"CC\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('tipoSociedad no genera error de formato', () => pm.expect(json.data).to.not.have.property('tipoSociedad'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad=CS (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"CS\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('tipoSociedad no genera error de formato', () => pm.expect(json.data).to.not.have.property('tipoSociedad'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad=CCSA (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"CCSA\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('tipoSociedad no genera error de formato', () => pm.expect(json.data).to.not.have.property('tipoSociedad'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad=CA (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"CA\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('tipoSociedad no genera error de formato', () => pm.expect(json.data).to.not.have.property('tipoSociedad'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad=SP (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SP\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('tipoSociedad no genera error de formato', () => pm.expect(json.data).to.not.have.property('tipoSociedad'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad=ST (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"ST\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('tipoSociedad no genera error de formato', () => pm.expect(json.data).to.not.have.property('tipoSociedad'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad=ACP (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"ACP\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('tipoSociedad no genera error de formato', () => pm.expect(json.data).to.not.have.property('tipoSociedad'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad=EMP (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"EMP\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('tipoSociedad no genera error de formato', () => pm.expect(json.data).to.not.have.property('tipoSociedad'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad=EU (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"EU\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('tipoSociedad no genera error de formato', () => pm.expect(json.data).to.not.have.property('tipoSociedad'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad=UTE (pasa validacion de formato, aislado con password vacio)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"UTE\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('tipoSociedad no genera error de formato', () => pm.expect(json.data).to.not.have.property('tipoSociedad'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad vacio (null)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": null,\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de tipoSociedad', () => pm.expect(json.data['tipoSociedad']).to.eql(\"Seleccioná el tipo de sociedad\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - tipoSociedad fuera del enum",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"INVALIDO\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto', () => pm.expect(json.mensaje).to.eql(\"El cuerpo de la solicitud contiene datos con formato inválido\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - domicilioFiscal vacio",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de domicilioFiscal', () => pm.expect(json.data['domicilioFiscal']).to.eql(\"El domicilio fiscal es obligatorio\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - domicilioFiscal formato invalido (solo simbolos)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"@@@@\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de domicilioFiscal', () => pm.expect(json.data['domicilioFiscal']).to.eql(\"El domicilio fiscal no puede contener solo caracteres especiales\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - domicilioFiscal por encima del limite 256 (debe rechazar)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de domicilioFiscal', () => pm.expect(json.data['domicilioFiscal']).to.eql(\"El domicilio fiscal no puede superar los 255 caracteres\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - domicilioFiscal limite superior exacto 255 (debe aceptar)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000152\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.c2.dom255@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199311\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+              "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - fechaInicioActividades vacia (null)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": null,\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de fechaInicioActividades', () => pm.expect(json.data['fechaInicioActividades']).to.eql(\"La fecha de inicio de actividades es obligatoria\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - fechaInicioActividades futura (invalida)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2099-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de fechaInicioActividades', () => pm.expect(json.data['fechaInicioActividades']).to.eql(\"La fecha ingresada no es válida\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - nombreRepresentante vacio",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de nombreRepresentante', () => pm.expect(json.data['nombreRepresentante']).to.eql(\"El nombre es obligatorio\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - nombreRepresentante formato invalido (numeros)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto123\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de nombreRepresentante', () => pm.expect(json.data['nombreRepresentante']).to.eql(\"El nombre solo puede contener letras\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - nombreRepresentante por encima del limite 101 (debe rechazar)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de nombreRepresentante', () => pm.expect(json.data['nombreRepresentante']).to.eql(\"El nombre no puede superar los 100 caracteres\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - apellidoRepresentante vacio",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de apellidoRepresentante', () => pm.expect(json.data['apellidoRepresentante']).to.eql(\"El apellido es obligatorio\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - apellidoRepresentante formato invalido (simbolos)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez@\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de apellidoRepresentante', () => pm.expect(json.data['apellidoRepresentante']).to.eql(\"El apellido solo puede contener letras\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - dniRepresentante vacio",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de dniRepresentante', () => pm.expect(json.data['dniRepresentante']).to.eql(\"El DNI es obligatorio\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - dniRepresentante formato invalido (6 digitos, corto)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"123456\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de dniRepresentante', () => pm.expect(json.data['dniRepresentante']).to.eql(\"El DNI debe tener un formato válido\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - dniRepresentante formato invalido (9 digitos, largo)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"123456789\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de dniRepresentante', () => pm.expect(json.data['dniRepresentante']).to.eql(\"El DNI debe tener un formato válido\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - dniRepresentante limite inferior exacto 7 digitos (debe aceptar)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000209\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.c2.dni7@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"3019930\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+              "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - telefonoRepresentante vacio",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de telefonoRepresentante', () => pm.expect(json.data['telefonoRepresentante']).to.eql(\"El teléfono es obligatorio\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - telefonoRepresentante formato invalido (sin +549)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"2964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de telefonoRepresentante', () => pm.expect(json.data['telefonoRepresentante']).to.eql(\"Ingresá un número de teléfono válido (cod. área + número)\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - fechaNacimientoRepresentante vacia (null)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": null,\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de fechaNacimientoRepresentante', () => pm.expect(json.data['fechaNacimientoRepresentante']).to.eql(\"La fecha de nacimiento es obligatoria\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "[bug conocido, no corregido] Registro Comercio - fechaNacimientoRepresentante futura (mensaje no deterministico, @Past y @MayorDeEdad violan a la vez)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"2099-01-01\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Alguno de los 2 mensajes posibles (no deterministico, bug reportado sin corregir)', () => pm.expect(['La fecha ingresada no es válida', 'Debe ser mayor de 18 años']).to.include(json.data['fechaNacimientoRepresentante']));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - fechaNacimientoRepresentante menor de edad (17 anios, violacion unica)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"2009-01-01\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de fechaNacimientoRepresentante', () => pm.expect(json.data['fechaNacimientoRepresentante']).to.eql(\"Debe ser mayor de 18 años\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - email vacio",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de email', () => pm.expect(json.data['email']).to.eql(\"El email es obligatorio\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - email formato invalido (sin arroba)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"sin.arroba.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de email', () => pm.expect(json.data['email']).to.eql(\"Ingresá un email válido\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - password 7 caracteres (por debajo del minimo, debe rechazar)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1abcd\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de password', () => pm.expect(json.data['password']).to.eql(\"Debe tener mínimo 8 caracteres, una mayúscula, una minúscula y un número\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - password 8 caracteres exacto (limite inferior, debe aceptar)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000217\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.c2.pw8@bajonea.test\",\n  \"password\": \"Aa1abcde\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+              "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - password 73 caracteres, corrida 1 (determinismo, ver Parte A)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de password', () => pm.expect(json.data['password']).to.eql(\"Debe tener mínimo 8 caracteres, una mayúscula, una minúscula y un número\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - password 73 caracteres, corrida 2 (determinismo, ver Parte A)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de password', () => pm.expect(json.data['password']).to.eql(\"Debe tener mínimo 8 caracteres, una mayúscula, una minúscula y un número\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registro Comercio - password 73 caracteres, corrida 3 (determinismo, ver Parte A)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/registro/comercio",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "registro",
+            "comercio"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"emailContacto\": \"contacto.matriz.comercio@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199222\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "response": [],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+              "const json = pm.response.json();",
+              "pm.test('Mensaje exacto de password', () => pm.expect(json.data['password']).to.eql(\"Debe tener mínimo 8 caracteres, una mayúscula, una minúscula y un número\"));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

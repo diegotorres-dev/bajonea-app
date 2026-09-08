@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Bajoneá — Comercios en Tierra del Fuego</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <div id="top-bar-slot"></div>
+  <main class="app-main">
+    <div class="catalog-greeting">
+      <h1 id="greeting-title" data-testid="mensaje-saludo"></h1>
+      <p id="greeting-subtitle"></p>
+    </div>
+    <div id="chip-row" class="chip-row" data-testid="fila-chips-filtro"></div>
+    <div id="comercio-list" class="comercio-list" data-testid="lista-comercios"></div>
+  </main>
+  <div id="bottom-nav-slot"></div>
+</div>
+<script type="module">
+import { initCatalogo } from './js/catalogo.js';
+initCatalogo();
+</script>
+</body>
+</html>

@@ -2,6 +2,7 @@ package com.bajonea.backend.dto.request;
 
 import com.bajonea.backend.validation.annotations.ValidarCodigoPostalArgentino;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -24,23 +25,26 @@ import lombok.Setter;
 @AllArgsConstructor
 public class DireccionRequestDTO {
 
-    @NotBlank
-    @Size(max = 150)
+    @NotBlank(message = "La calle es obligatoria")
+    @Size(max = 150, message = "La calle no puede superar los 150 caracteres")
+    @Pattern(regexp = ".*[\\p{L}0-9].*", message = "La calle no puede contener solo caracteres especiales")
     private String calle;
 
-    @NotBlank
-    @Size(max = 10)
+    @NotBlank(message = "El número es obligatorio")
+    @Size(max = 10, message = "El número no puede superar los 10 caracteres")
+    @Pattern(regexp = "^\\d+$", message = "Solo se permiten números")
     private String numero;
 
-    @Size(max = 30)
+    @Size(max = 30, message = "El piso/departamento no puede superar los 30 caracteres")
+    @Pattern(regexp = "\\s*|.*[\\p{L}0-9].*", message = "El piso/departamento no puede contener solo caracteres especiales")
     private String pisoDepto;
 
-    @NotBlank
-    @ValidarCodigoPostalArgentino
+    @NotBlank(message = "El código postal es obligatorio")
+    @ValidarCodigoPostalArgentino(message = "Ingresá un código postal válido (4 dígitos o formato CPA)")
     private String codigoPostal;
 
-    @NotBlank
-    @Size(max = 15)
+    @NotBlank(message = "Seleccioná tu localidad")
+    @Size(max = 15, message = "La localidad no puede superar los 15 caracteres")
     private String localidadId;
 
     private boolean principal;

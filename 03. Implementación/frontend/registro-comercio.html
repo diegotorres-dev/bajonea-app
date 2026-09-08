@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Registrar comercio — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header">
+    <button class="app-header__back" type="button" id="back-btn" aria-label="Volver" data-testid="btn-volver">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span class="app-header__title">Registrar comercio</span>
+  </header>
+  <main class="app-main">
+    <div id="step-progress-container" class="step-progress">
+      <div class="step-progress__bars">
+        <div class="step-progress__bar step-progress__bar--active"></div>
+        <div class="step-progress__bar"></div>
+        <div class="step-progress__bar"></div>
+        <div class="step-progress__bar"></div>
+      </div>
+      <div class="step-progress__labels">
+        <span class="is-active">1. Negocio</span>
+        <span>2. Legales</span>
+        <span>3. Horarios</span>
+        <span>4. Redes sociales</span>
+      </div>
+    </div>
+    <div id="wizard-container" class="screen-body screen-body--tight">
+      <div id="banner-slot" data-testid="mensaje-banner"></div>
+      <section id="step-1">
+        <h1 class="title-md">Datos de tu negocio</h1>
+        <p class="subtitle" style="margin-bottom:20px;">Esta información será visible para tus clientes.</p>
+        <form class="form" id="form-step-1" novalidate>
+          <div class="field" style="text-align:center;">
+            <label class="field__label">Agregá una foto de perfil</label>
+            <span class="field__label-badge" style="align-self:center;margin-bottom:10px;">Obligatorio</span>
+            <button type="button" class="profile-header__avatar" id="foto-comercio-avatar" style="margin:0 auto 10px;border:none;padding:0;cursor:pointer;" data-testid="btn-agregar-foto-comercio">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <input type="file" id="input-foto-comercio" accept="image/jpeg,image/png,image/webp" class="is-hidden" data-testid="input-foto-comercio" />
+            <div class="field__error" id="error-foto-comercio" style="display:none;" data-testid="mensaje-error-foto-comercio"></div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="nombre">Nombre del comercio</label>
+            <div class="input-shell">
+              <input type="text" id="nombre" placeholder="Ingresá el nombre de tu comercio" required maxlength="150" data-testid="input-nombre" />
+            </div>
+            <div class="field__error" id="error-nombre" style="display:none;" data-testid="mensaje-error-nombre"></div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="descripcion">Descripción</label>
+            <div class="textarea-shell">
+              <textarea id="descripcion" placeholder="Contales a tus clientes qué ofrecés (opcional)" maxlength="2000" data-testid="input-descripcion"></textarea>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="telefono">Teléfono de contacto del comercio</label>
+            <div class="input-shell">
+              <span class="input-prefix">+54 9</span>
+              <input type="tel" id="telefono" inputmode="numeric" placeholder="2964 000000" required data-testid="input-telefono" />
+            </div>
+            <div class="field__error" id="error-telefono" style="display:none;" data-testid="mensaje-error-telefono"></div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="emailContacto">Email de contacto del comercio</label>
+            <div class="input-shell">
+              <span class="input-shell__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
+              </span>
+              <input type="email" id="emailContacto" placeholder="Ingresá el email de tu comercio" required data-testid="input-email-contacto" />
+            </div>
+            <div class="field__error" id="error-emailContacto" style="display:none;" data-testid="mensaje-error-email-contacto"></div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="tipoComercio">Tipo de comercio</label>
+            <div class="select-shell">
+              <select id="tipoComercio" required data-testid="select-tipo-comercio"></select>
+              <svg class="select-shell__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <p class="field__hint">Seleccioná el rubro de tu negocio</p>
+            <div class="field__error" id="error-tipoComercio" style="display:none;" data-testid="mensaje-error-tipo-comercio"></div>
+          </div>
+          <div class="field">
+            <label class="field__label">Modalidades de entrega</label>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div class="switch-row" aria-pressed="true">
+                <span class="switch-row__label">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                  Delivery a domicilio
+                </span>
+                <button type="button" class="switch" id="switch-delivery" aria-pressed="true" data-testid="btn-switch-delivery"><span class="switch__knob"></span></button>
+              </div>
+              <div class="switch-row" aria-pressed="false">
+                <span class="switch-row__label">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
+                  Retiro en el local
+                </span>
+                <button type="button" class="switch" id="switch-retiro" aria-pressed="false" data-testid="btn-switch-retiro"><span class="switch__knob"></span></button>
+              </div>
+            </div>
+            <p class="field__hint" style="padding-left:2px;">Debés ofrecer al menos una modalidad.</p>
+            <div class="field__error" id="error-modalidad" style="display:none;" data-testid="mensaje-error-modalidad"></div>
+          </div>
+          <div class="form-section">
+            <p class="section-heading">Dirección del local</p>
+            <div class="form" style="gap:16px;">
+              <div class="field">
+                <label class="field__label" for="calle">Calle</label>
+                <div class="input-shell">
+                  <span class="input-shell__icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                  </span>
+                  <input type="text" id="calle" placeholder="Nombre de la calle" required data-testid="input-calle" />
+                </div>
+                <div class="field__error" id="error-calle" style="display:none;" data-testid="mensaje-error-calle"></div>
+              </div>
+              <div class="form-row">
+                <div class="field">
+                  <label class="field__label" for="numero">Número</label>
+                  <div class="input-shell">
+                    <input type="text" id="numero" inputmode="numeric" placeholder="1234" required data-testid="input-numero" />
+                  </div>
+                  <div class="field__error" id="error-numero" style="display:none;" data-testid="mensaje-error-numero"></div>
+                </div>
+                <div class="field">
+                  <label class="field__label" for="pisoDepto">Piso / Dpto</label>
+                  <div class="input-shell">
+                    <input type="text" id="pisoDepto" placeholder="Opcional" data-testid="input-piso-depto" />
+                  </div>
+                  <div class="field__error" id="error-pisoDepto" style="display:none;" data-testid="mensaje-error-piso-depto"></div>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="codigoPostal">Código Postal</label>
+                <div class="input-shell">
+                  <span class="input-shell__icon">#</span>
+                  <input type="text" id="codigoPostal" placeholder="9420" required data-testid="input-codigo-postal" />
+                </div>
+                <div class="field__error" id="error-codigoPostal" style="display:none;" data-testid="mensaje-error-codigo-postal"></div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="provincia">Provincia</label>
+                <div class="select-shell">
+                  <select id="provincia" required data-testid="select-provincia"></select>
+                  <svg class="select-shell__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="field__error" id="error-provincia" style="display:none;" data-testid="mensaje-error-provincia"></div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="localidad">Localidad</label>
+                <div class="select-shell">
+                  <select id="localidad" required data-testid="select-localidad"></select>
+                  <svg class="select-shell__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="field__error" id="error-localidad" style="display:none;" data-testid="mensaje-error-localidad"></div>
+              </div>
+            </div>
+          </div>
+        </form>
+        <button class="btn btn-primary" type="button" id="continuar-btn" style="margin-top:24px;" data-testid="btn-continuar">
+          Continuar
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+      </section>
+      <section id="step-2" class="is-hidden">
+        <h1 class="title-md">Información legal</h1>
+        <p class="subtitle" style="margin-bottom:16px;">Datos fiscales de tu negocio y el acceso a la plataforma.</p>
+        <div class="info-box" style="margin-bottom:24px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          <span>Esta información no es visible para los clientes. Es utilizada solo para la gestión administrativa y fiscal.</span>
+        </div>
+        <form class="form" id="form-step-2">
+          <div>
+            <p class="section-heading">Datos del representante</p>
+            <p class="section-note">La persona física responsable de este comercio ante la plataforma.</p>
+            <div class="form" style="gap:16px;">
+              <div class="form-row">
+                <div class="field">
+                  <label class="field__label" for="nombreRepresentante">Nombre completo</label>
+                  <div class="input-shell">
+                    <input type="text" id="nombreRepresentante" placeholder="Nombre" required maxlength="100" data-testid="input-nombre-representante" />
+                  </div>
+                  <div class="field__error" id="error-nombreRepresentante" style="display:none;" data-testid="mensaje-error-nombre-representante"></div>
+                </div>
+                <div class="field">
+                  <label class="field__label" for="apellidoRepresentante">Apellido</label>
+                  <div class="input-shell">
+                    <input type="text" id="apellidoRepresentante" placeholder="Apellido" required maxlength="100" data-testid="input-apellido-representante" />
+                  </div>
+                  <div class="field__error" id="error-apellidoRepresentante" style="display:none;" data-testid="mensaje-error-apellido-representante"></div>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="dniRepresentante">Documento (DNI)</label>
+                <div class="input-shell">
+                  <span class="input-shell__icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="6" y1="15" x2="10" y2="15"/><circle cx="15" cy="12" r="2"/></svg>
+                  </span>
+                  <input type="text" id="dniRepresentante" inputmode="numeric" placeholder="12345678" maxlength="8" required data-testid="input-dni-representante" />
+                </div>
+                <div class="field__error" id="error-dniRepresentante" style="display:none;" data-testid="mensaje-error-dni-representante"></div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="fechaNacimientoRepresentante">Fecha de nacimiento</label>
+                <div class="input-shell">
+                  <span class="input-shell__icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  </span>
+                  <input type="date" id="fechaNacimientoRepresentante" required data-testid="input-fecha-nacimiento-representante" />
+                </div>
+                <div class="field__error" id="error-fechaNacimientoRepresentante" style="display:none;" data-testid="mensaje-error-fecha-nacimiento-representante"></div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="telefonoRepresentante">Teléfono personal</label>
+                <div class="input-shell">
+                  <span class="input-prefix">+54 9</span>
+                  <input type="tel" id="telefonoRepresentante" inputmode="numeric" placeholder="2964 000000" required data-testid="input-telefono-representante" />
+                </div>
+                <div class="field__error" id="error-telefonoRepresentante" style="display:none;" data-testid="mensaje-error-telefono-representante"></div>
+              </div>
+            </div>
+          </div>
+          <div class="form-section">
+            <p class="section-heading">Datos legales del comercio</p>
+            <p class="section-note">Información fiscal, usada solo para la gestión administrativa.</p>
+            <div class="form" style="gap:16px;">
+              <div class="field">
+                <label class="field__label" for="razonSocial">Razón social</label>
+                <div class="input-shell">
+                  <input type="text" id="razonSocial" placeholder="Nombre legal o razón social" required maxlength="150" data-testid="input-razon-social" />
+                </div>
+                <div class="field__error" id="error-razonSocial" style="display:none;" data-testid="mensaje-error-razon-social"></div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="cuit">CUIT</label>
+                <div class="input-shell">
+                  <input type="text" id="cuit" inputmode="numeric" placeholder="20123456789" maxlength="11" required data-testid="input-cuit" />
+                </div>
+                <div class="field__error" id="error-cuit" style="display:none;" data-testid="mensaje-error-cuit"></div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="fechaInicioActividades">Fecha de inicio de actividades</label>
+                <div class="input-shell">
+                  <input type="date" id="fechaInicioActividades" required data-testid="input-fecha-inicio-actividades" />
+                </div>
+                <div class="field__error" id="error-fechaInicioActividades" style="display:none;" data-testid="mensaje-error-fecha-inicio-actividades"></div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="tipoSociedad">Tipo de sociedad</label>
+                <div class="select-shell">
+                  <select id="tipoSociedad" required data-testid="select-tipo-sociedad"></select>
+                  <svg class="select-shell__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="field__error" id="error-tipoSociedad" style="display:none;" data-testid="mensaje-error-tipo-sociedad"></div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="condicionIva">Condición ante el IVA</label>
+                <div class="select-shell">
+                  <select id="condicionIva" required data-testid="select-condicion-iva"></select>
+                  <svg class="select-shell__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="field__error" id="error-condicionIva" style="display:none;" data-testid="mensaje-error-condicion-iva"></div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="domicilioFiscal">Domicilio fiscal</label>
+                <div class="input-shell">
+                  <input type="text" id="domicilioFiscal" placeholder="Dirección fiscal declarada ante ARCA" required maxlength="255" data-testid="input-domicilio-fiscal" />
+                </div>
+                <p class="field__hint">Puede coincidir con la dirección del local o ser diferente.</p>
+                <div class="field__error" id="error-domicilioFiscal" style="display:none;" data-testid="mensaje-error-domicilio-fiscal"></div>
+              </div>
+            </div>
+          </div>
+          <div class="form-section">
+            <p class="section-heading">Acceso a la plataforma</p>
+            <div class="form" style="gap:16px;">
+              <div class="field">
+                <label class="field__label" for="email">Email de acceso</label>
+                <div class="input-shell">
+                  <input type="email" id="email" placeholder="acceso@micomercio.com" required maxlength="254" data-testid="input-email" />
+                </div>
+                <p class="field__hint">Este email se usará para iniciar sesión y recibir notificaciones.</p>
+                <div class="field__error" id="error-email" style="display:none;" data-testid="mensaje-error-email"></div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="password">Contraseña</label>
+                <div class="input-shell">
+                  <input type="password" id="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password" required minlength="8" data-testid="input-password" />
+                  <button type="button" class="input-shell__toggle" id="toggle-password" aria-label="Mostrar contraseña" data-testid="btn-mostrar-password">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+                <div class="strength-meter" id="strength-bars" data-testid="indicador-fortaleza-password">
+                  <div class="strength-meter__bars">
+                    <div class="strength-meter__bar"></div>
+                    <div class="strength-meter__bar"></div>
+                    <div class="strength-meter__bar"></div>
+                    <div class="strength-meter__bar"></div>
+                  </div>
+                  <span class="strength-meter__label" id="strength-label">Seguridad</span>
+                </div>
+                <div class="field__error" id="error-password" style="display:none;" data-testid="mensaje-error-password"></div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="confirmarPassword">Confirmar contraseña</label>
+                <div class="input-shell">
+                  <input type="password" id="confirmarPassword" placeholder="Repetí tu contraseña" autocomplete="new-password" required data-testid="input-confirmar-password" />
+                  <button type="button" class="input-shell__toggle" id="toggle-confirmar" aria-label="Mostrar contraseña" data-testid="btn-mostrar-confirmar-password">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </div>
+                <div class="field__error" id="error-confirmarPassword" style="display:none;" data-testid="mensaje-error-confirmar-password"></div>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-primary" type="button" id="continuar-btn-2" style="margin-top:8px;" data-testid="btn-continuar-2">
+            Continuar
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+        </form>
+      </section>
+      <section id="step-3" class="is-hidden">
+        <h1 class="title-md">Horarios de atención</h1>
+        <p class="subtitle" style="margin-bottom:20px;">Cargá al menos una franja horaria de atención.</p>
+        <form class="form" id="form-step-3" novalidate>
+          <div class="segmented-control" role="tablist" data-testid="tabs-horarios">
+            <button type="button" class="segmented-control__btn" id="tab-horario-fijo" role="tab" aria-selected="true" data-testid="tab-horario-fijo">Horario fijo</button>
+            <button type="button" class="segmented-control__btn" id="tab-horario-personalizado" role="tab" aria-selected="false" data-testid="tab-horario-personalizado">Personalizado</button>
+          </div>
+          <div id="panel-horario-fijo" data-testid="panel-horario-fijo">
+            <div class="quick-schedule" data-testid="bloque-franja-rapida">
+              <p class="section-note" style="margin-top:0;">Tildá los días y cargá un horario para aplicarlo a todos de una sola vez.</p>
+              <div class="chip-row chip-row--wrap" id="dia-chip-row" style="padding:4px 0;" data-testid="chips-dia-franja-rapida"></div>
+              <div class="form-row" style="margin-top:4px;">
+                <div class="field">
+                  <label class="field__label" for="franja-rapida-desde">Desde</label>
+                  <div class="input-shell">
+                    <input type="time" id="franja-rapida-desde" data-testid="input-franja-rapida-desde" />
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="field__label" for="franja-rapida-hasta">Hasta</label>
+                  <div class="input-shell">
+                    <input type="time" id="franja-rapida-hasta" data-testid="input-franja-rapida-hasta" />
+                  </div>
+                </div>
+              </div>
+              <p class="field__hint" data-testid="texto-formato-24hs-rapida">Formato 24 hrs (00:00 a 23:59 hrs)</p>
+              <div class="field__error" id="error-franja-rapida" style="display:none;" data-testid="mensaje-error-franja-rapida"></div>
+              <button type="button" class="btn btn-secondary" id="aplicar-franja-rapida-btn" style="margin-top:8px;" data-testid="btn-aplicar-franja-rapida">Aplicar a los días seleccionados</button>
+            </div>
+            <div style="margin-top:20px;">
+              <p class="section-heading" style="margin-top:0;" data-testid="titulo-ya-cargaste">Tus horarios</p>
+              <div id="horario-resumen-fijo" data-testid="resumen-horarios-cargados"></div>
+              <p class="field__hint" id="horario-resumen-vacio" data-testid="texto-sin-horarios-cargados">Todavía no cargaste ningún horario.</p>
+            </div>
+          </div>
+          <div id="panel-horario-personalizado" class="is-hidden" data-testid="panel-horario-personalizado">
+            <div id="horario-list" class="schedule-list" data-testid="lista-horarios"></div>
+            <button type="button" class="btn btn-tertiary" id="agregar-horario-btn" data-testid="btn-agregar-horario">+ Agregar franja horaria</button>
+            <p class="field__hint" data-testid="texto-formato-24hs">Podés agregar más de una franja por día. Formato 24 hrs (00:00 a 23:59 hrs)</p>
+          </div>
+          <div class="field__error" id="error-horarios" style="display:none;margin-top:12px;" data-testid="mensaje-error-horarios"></div>
+          <button class="btn btn-primary" type="button" id="continuar-btn-3" style="margin-top:8px;" data-testid="btn-continuar-3">
+            Continuar
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+        </form>
+      </section>
+      <section id="step-4" class="is-hidden">
+        <h1 class="title-md">Redes sociales</h1>
+        <p class="subtitle" style="margin-bottom:20px;">Cargá al menos una red social. Podés agregar hasta 5.</p>
+        <form class="form" id="form-step-4" novalidate>
+          <div id="red-social-list" class="schedule-list" data-testid="lista-redes-sociales"></div>
+          <button type="button" class="btn btn-tertiary" id="agregar-red-social-btn" data-testid="btn-agregar-red-social">+ Agregar red social</button>
+          <p class="field__hint is-hidden" id="red-social-max-hint" data-testid="mensaje-maximo-redes-sociales">Alcanzaste el máximo de 5 redes sociales.</p>
+          <button class="btn btn-primary" type="submit" id="submit-btn" style="margin-top:8px;" data-testid="btn-registrar-comercio">
+            Registrar comercio
+          </button>
+        </form>
+      </section>
+    </div>
+    <div id="exito-container" class="state-page is-hidden">
+      <div class="state-page__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      </div>
+      <h1 class="state-page__title">Registro enviado</h1>
+      <p class="state-page__text">Te enviamos un código de 6 dígitos a tu email. Verificá tu cuenta y luego un administrador va a revisar tu comercio y te vamos a avisar por email cuando quede aprobado.</p>
+      <div class="state-page__actions">
+        <a class="btn btn-primary" id="ir-a-verificar-link" href="verificar-email.html" data-testid="btn-ir-a-verificar">Ingresar código de verificación</a>
+      </div>
+    </div>
+  </main>
+</div>
+<script type="module">
+import { initRegistroComercio } from './js/auth.js';
+initRegistroComercio();
+</script>
+</body>
+</html>

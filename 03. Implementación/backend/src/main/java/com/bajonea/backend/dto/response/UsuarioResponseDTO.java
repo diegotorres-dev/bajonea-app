@@ -16,11 +16,13 @@ public class UsuarioResponseDTO {
     private final String email;
     private final RolUsuario rol;
     private final EstadoUsuario estado;
+    private final String fotoPerfilUrl;
 
-    public UsuarioResponseDTO(Integer id, String email, RolUsuario rol, EstadoUsuario estado) {
+    public UsuarioResponseDTO(Integer id, String email, RolUsuario rol, EstadoUsuario estado, String fotoPerfilUrl) {
         this.id = id;
         this.email = email;
         this.rol = rol;
         this.estado = estado;
+        this.fotoPerfilUrl = fotoPerfilUrl;
     }
 }

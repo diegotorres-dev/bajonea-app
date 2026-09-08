@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Revisión de solicitud — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header">
+    <button class="app-header__back" type="button" onclick="history.back()" aria-label="Volver" data-testid="btn-volver">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span class="app-header__title" style="position:static;transform:none;margin:0 auto;color:var(--color-text);">Revisión de Solicitud</span>
+  </header>
+  <main class="app-main">
+    <div id="detalle-content" data-testid="detalle-comercio-pendiente"></div>
+  </main>
+</div>
+<script type="module">
+import { initAdminComercioDetalle } from './js/admin.js';
+initAdminComercioDetalle();
+</script>
+</body>
+</html>

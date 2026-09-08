@@ -14,8 +14,8 @@ import lombok.Setter;
 @AllArgsConstructor
 public class ActualizarCantidadItemCarritoRequestDTO {
 
-    @NotNull
-    @Min(1)
-    @Max(20)
+    @NotNull(message = "La cantidad es obligatoria")
+    @Min(value = 1, message = "La cantidad mínima es 1")
+    @Max(value = 20, message = "La cantidad máxima es 20")
     private Integer cantidad;
 }

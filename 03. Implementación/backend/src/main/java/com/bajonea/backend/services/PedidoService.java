@@ -5,6 +5,7 @@ import com.bajonea.backend.dto.request.RechazoPedidoRequestDTO;
 import com.bajonea.backend.dto.response.DetallePedidoResponseDTO;
 import com.bajonea.backend.dto.response.DireccionResponseDTO;
 import com.bajonea.backend.dto.response.PedidoResponseDTO;
+import com.bajonea.backend.dto.response.ResumenPedidosHoyResponseDTO;
 import com.bajonea.backend.entities.Carrito;
 import com.bajonea.backend.entities.Cliente;
 import com.bajonea.backend.entities.Comercio;
@@ -12,10 +13,16 @@ import com.bajonea.backend.entities.DetallePedido;
 import com.bajonea.backend.entities.Direccion;
 import com.bajonea.backend.entities.ItemCarrito;
 import com.bajonea.backend.entities.Pedido;
+import com.bajonea.backend.enums.EstadoDetallePedido;
+import com.bajonea.backend.enums.EstadoPagoPedido;
 import com.bajonea.backend.enums.EstadoPedido;
+import com.bajonea.backend.enums.TipoEntidadNotificacion;
 import com.bajonea.backend.enums.TipoEntrega;
+import com.bajonea.backend.enums.MotivoRechazo;
+import com.bajonea.backend.enums.TipoNotificacion;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
+import com.bajonea.backend.exceptions.ValidacionException;
 import com.bajonea.backend.repositories.CarritoRepository;
 import com.bajonea.backend.repositories.ClienteRepository;
 import com.bajonea.backend.repositories.ComercioRepository;
@@ -24,6 +31,7 @@ import com.bajonea.backend.repositories.DireccionRepository;
 import com.bajonea.backend.repositories.ItemCarritoRepository;
 import com.bajonea.backend.repositories.PedidoRepository;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +57,9 @@ public class PedidoService {
     private final DireccionRepository direccionRepository;
     private final NotificacionService notificacionService;
     private final CarritoService carritoService;
+    private final ComercioService comercioService;
+
+    private static final BigDecimal SUBTOTAL_MAXIMO = new BigDecimal("99999999");
 
     public PedidoResponseDTO confirmarPedido(Integer usuarioId, PedidoRequestDTO request) {
         Cliente cliente = clienteRepository.findById(usuarioId)
@@ -62,6 +73,7 @@ public class PedidoService {
         }
 
         Comercio comercio = carrito.getComercio();
+        comercioService.validarAceptaPedidos(comercio);
 
         if (request.getTipoEntrega() == TipoEntrega.DOMICILIO && !comercio.isAceptaDelivery()) {
             throw new ConflictoDeNegocioException("El comercio no ofrece entrega a domicilio");
@@ -82,9 +94,24 @@ public class PedidoService {
             }
         }
 
+        for (ItemCarrito item : items) {
+            BigDecimal subtotalItemValidado = item.getProducto().getPrecio().multiply(BigDecimal.valueOf(item.getCantidad()));
+            if (subtotalItemValidado.compareTo(SUBTOTAL_MAXIMO) > 0) {
+                throw new ValidacionException(
+                        "El subtotal de \"" + item.getProducto().getNombre() + "\" supera el monto máximo permitido ($" + SUBTOTAL_MAXIMO + ")");
+            }
+        }
+
         BigDecimal subtotalPedido = items.stream()
                 .map(item -> item.getProducto().getPrecio().multiply(BigDecimal.valueOf(item.getCantidad())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal cargoServicioCliente = BigDecimal.ZERO;
+        BigDecimal cargoServicioComercio = BigDecimal.ZERO;
+
+        if (subtotalPedido.add(cargoServicioCliente).compareTo(SUBTOTAL_MAXIMO) > 0) {
+            throw new ValidacionException(
+                    "El total del pedido supera el monto máximo permitido por el sistema ($" + SUBTOTAL_MAXIMO + ")");
+        }
 
         Pedido pedido = Pedido.builder()
                 .cliente(cliente)
@@ -92,7 +119,11 @@ public class PedidoService {
                 .direccion(direccion)
                 .tipoEntrega(request.getTipoEntrega())
                 .estado(EstadoPedido.PENDIENTE)
+                .pagoEstado(EstadoPagoPedido.PENDIENTE)
                 .subtotal(subtotalPedido)
+                .cargoServicioCliente(cargoServicioCliente)
+                .cargoServicioComercio(cargoServicioComercio)
+                .total(subtotalPedido.add(cargoServicioCliente))
                 .fechaCreacion(LocalDateTime.now())
                 .build();
         pedidoRepository.save(pedido);
@@ -106,14 +137,17 @@ public class PedidoService {
                     .precioUnitario(item.getProducto().getPrecio())
                     .nota(item.getNota())
                     .subtotal(subtotalItem)
+                    .estado(EstadoDetallePedido.ACTIVO)
                     .build();
             detallePedidoRepository.save(detalle);
         }
 
         carritoService.vaciarCarrito(usuarioId);
 
-        notificacionService.crear(comercio.getPersonaJuridica().getPersona().getUsuario().getId(),
-                "Nuevo pedido recibido de " + cliente.getPersonaFisica().getNombre() + ".");
+        notificacionService.crear(comercio.getDueno().getPersonaJuridica().getPersona().getUsuario().getId(),
+                "Nuevo pedido recibido de " + cliente.getPersonaFisica().getNombre() + " "
+                        + cliente.getPersonaFisica().getApellido() + ".",
+                TipoNotificacion.NUEVO_PEDIDO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
 
         return aResponseDTO(pedido);
     }
@@ -129,7 +163,8 @@ public class PedidoService {
         pedidoRepository.save(pedido);
 
         notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
-                "Tu pedido fue aceptado y está en preparación.");
+                "Tu pedido a " + pedido.getComercio().getNombre() + " fue aceptado y está en preparación.",
+                TipoNotificacion.PEDIDO_ACEPTADO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
 
         return aResponseDTO(pedido);
     }
@@ -141,18 +176,24 @@ public class PedidoService {
             throw new ConflictoDeNegocioException("El pedido ya fue resuelto, no está en estado PENDIENTE");
         }
 
+        if (request.getMotivo() == MotivoRechazo.OTRO
+                && (request.getComentario() == null || request.getComentario().isBlank())) {
+            throw new ValidacionException("Ingresá un comentario para especificar el motivo del rechazo.");
+        }
+
         pedido.setEstado(EstadoPedido.RECHAZADO);
         pedido.setMotivoRechazo(request.getMotivo());
         pedido.setComentarioRechazo(request.getComentario());
         pedidoRepository.save(pedido);
 
-        String mensaje = "Tu pedido #" + pedido.getId() + " fue rechazado por el comercio. Motivo: "
-                + request.getMotivo().getEtiqueta() + ".";
+        String mensaje = "Tu pedido #" + pedido.getId() + " a " + pedido.getComercio().getNombre()
+                + " fue rechazado por el comercio. Motivo: " + request.getMotivo().getEtiqueta() + ".";
         if (request.getComentario() != null && !request.getComentario().isBlank()) {
             mensaje += " " + request.getComentario();
         }
 
-        notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(), mensaje);
+        notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(), mensaje,
+                TipoNotificacion.PEDIDO_RECHAZADO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
 
         return aResponseDTO(pedido);
     }
@@ -164,15 +205,35 @@ public class PedidoService {
     }
 
     public List<PedidoResponseDTO> listarPedidosComercio(Integer usuarioId) {
-        Comercio comercio = comercioRepository.findByPersonaJuridicaId(usuarioId)
+        Comercio comercio = comercioRepository.findByDuenoId(usuarioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
         return pedidoRepository.findByComercioId(comercio.getId()).stream()
                 .map(this::aResponseDTO)
                 .toList();
     }
 
+    public ResumenPedidosHoyResponseDTO obtenerResumenHoy(Integer usuarioId) {
+        Comercio comercio = comercioRepository.findByDuenoId(usuarioId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
+
+        LocalDateTime inicioHoy = LocalDate.now().atStartOfDay();
+        LocalDateTime finHoy = inicioHoy.plusDays(1);
+        List<Pedido> pedidosHoy = pedidoRepository.findByComercioIdAndFechaCreacionBetween(comercio.getId(), inicioHoy, finHoy);
+
+        BigDecimal totalFacturadoHoy = pedidosHoy.stream()
+                .filter(pedido -> pedido.getEstado() == EstadoPedido.EN_PREPARACION)
+                .map(Pedido::getSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        int cantidadPedidosHoy = pedidosHoy.size();
+        int cantidadPendientes = (int) pedidosHoy.stream()
+                .filter(pedido -> pedido.getEstado() == EstadoPedido.PENDIENTE)
+                .count();
+
+        return new ResumenPedidosHoyResponseDTO(totalFacturadoHoy, cantidadPedidosHoy, cantidadPendientes);
+    }
+
     private Pedido obtenerPedidoDelComercio(Integer usuarioId, Integer pedidoId) {
-        Comercio comercio = comercioRepository.findByPersonaJuridicaId(usuarioId)
+        Comercio comercio = comercioRepository.findByDuenoId(usuarioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado"));
@@ -201,6 +262,7 @@ public class PedidoService {
         return new PedidoResponseDTO(
                 pedido.getId(),
                 pedido.getCliente().getId(),
+                pedido.getCliente().getPersonaFisica().getNombre() + " " + pedido.getCliente().getPersonaFisica().getApellido(),
                 pedido.getComercio().getId(),
                 pedido.getEstado(),
                 pedido.getTipoEntrega(),
@@ -209,7 +271,7 @@ public class PedidoService {
                 pedido.getComentarioRechazo(),
                 pedido.getFechaCreacion(),
                 detalles,
-                pedido.getSubtotal());
+                pedido.getTotal());
     }
 
     private DetallePedidoResponseDTO aResponseDTO(DetallePedido detalle) {

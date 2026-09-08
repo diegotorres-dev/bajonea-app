@@ -31,18 +31,36 @@ public class EmailService {
     private String remitente;
 
     public void enviarVerificacion(String destinatario, String token) {
-        enviarTextoPlano(destinatario, "Verificación de cuenta — Bajoneá",
-                "Usá este token para verificar tu cuenta (válido 24 horas): " + token);
+        enviarTextoPlano(destinatario, "Tu código de verificación — Bajoneá",
+                "¡Gracias por registrarte en Bajoneá!\n\n"
+                        + "Tu código de verificación es: " + token + "\n\n"
+                        + "Ingresá este código en la pantalla de verificación de la app para activar tu cuenta. "
+                        + "El código vence en 24 horas y podés usarlo hasta 5 veces antes de que se invalide "
+                        + "— si eso pasa, o si el código venció, podés pedir uno nuevo desde la misma pantalla.\n\n"
+                        + "Si vos no solicitaste esta cuenta, podés ignorar este email: nadie va a poder "
+                        + "activarla sin acceso a esta casilla.\n\n"
+                        + "Equipo de Bajoneá");
     }
 
     public void enviarRecuperacionPassword(String destinatario, String token) {
-        enviarTextoPlano(destinatario, "Recuperación de contraseña — Bajoneá",
-                "Usá este token para restablecer tu contraseña (válido 30 minutos): " + token);
+        enviarTextoPlano(destinatario, "Tu código de recuperación de contraseña — Bajoneá",
+                "Recibimos una solicitud para restablecer tu contraseña en Bajoneá.\n\n"
+                        + "Tu código de recuperación es: " + token + "\n\n"
+                        + "Ingresá este código en la pantalla de recuperación de contraseña de la app junto con "
+                        + "tu nueva contraseña. El código vence en 30 minutos.\n\n"
+                        + "Si vos no solicitaste este cambio, podés ignorar este email: tu contraseña actual "
+                        + "sigue siendo válida.\n\n"
+                        + "Equipo de Bajoneá");
     }
 
     public void enviarReactivacionCuenta(String destinatario, String token) {
-        enviarTextoPlano(destinatario, "Reactivación de cuenta — Bajoneá",
-                "Usá este token para reactivar tu cuenta (válido 24 horas): " + token);
+        enviarTextoPlano(destinatario, "Tu código de reactivación de cuenta — Bajoneá",
+                "Recibimos una solicitud para reactivar tu cuenta en Bajoneá.\n\n"
+                        + "Tu código de reactivación es: " + token + "\n\n"
+                        + "Ingresá este código en la pantalla de reactivación de cuenta de la app para volver a "
+                        + "activarla. El código vence en 24 horas.\n\n"
+                        + "Si vos no solicitaste esta reactivación, podés ignorar este email.\n\n"
+                        + "Equipo de Bajoneá");
     }
 
     private void enviarTextoPlano(String destinatario, String asunto, String cuerpo) {
