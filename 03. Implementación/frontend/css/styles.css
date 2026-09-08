@@ -137,6 +137,11 @@ img {
   flex-shrink: 0;
 }
 
+.app-header__back svg {
+  width: 22px;
+  height: 22px;
+}
+
 .app-header--accent .app-header__back {
   color: #ffffff;
 }
@@ -336,6 +341,11 @@ img {
   justify-content: center;
 }
 
+.input-shell__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
 .input-shell input,
 .input-shell select {
   border: none;
@@ -376,6 +386,11 @@ img {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.input-shell__toggle svg {
+  width: 20px;
+  height: 20px;
 }
 
 .input-prefix {
@@ -1423,6 +1438,11 @@ img {
   padding: 0;
 }
 
+.top-bar__action svg {
+  width: 22px;
+  height: 22px;
+}
+
 .top-bar__cta {
   height: 32px;
   padding: 0 16px;
@@ -2131,6 +2151,11 @@ img {
   cursor: pointer;
 }
 
+.product-modal-sheet__close svg {
+  width: 18px;
+  height: 18px;
+}
+
 .gallery-zoom-btn {
   position: absolute;
   bottom: 16px;
@@ -2145,6 +2170,11 @@ img {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+}
+
+.gallery-zoom-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 .image-zoom-backdrop {
@@ -2177,6 +2207,11 @@ img {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+}
+
+.image-zoom-backdrop__close svg {
+  width: 20px;
+  height: 20px;
 }
 
 .product-gallery__main {
