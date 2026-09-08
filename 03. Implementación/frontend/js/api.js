@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'http://localhost:8080/api/v1';
+export const API_BASE_URL = 'https://bajonea-app-production.up.railway.app/api/v1';
 
 const TOKEN_KEY = 'bajonea_token';
 const USUARIO_KEY = 'bajonea_usuario';
