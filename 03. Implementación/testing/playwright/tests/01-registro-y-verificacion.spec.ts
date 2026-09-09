@@ -13,6 +13,9 @@ import {
   diaDeHoy,
   diaDistintoDeHoy,
   nombreArchivoFixture,
+  verificarCuenta,
+  login,
+  apiGet,
 } from './helpers/backend';
 
 const FIXTURE_PATH = path.resolve(__dirname, '../fixtures/bajonea-e2e-producto.png');
@@ -98,6 +101,80 @@ test.describe('Registro y verificación de cuenta', () => {
 
     const codigo = await obtenerCodigoTest(request, email, 'VERIFICACION_EMAIL');
     expect(codigo).toMatch(/^\d{6}$/);
+  });
+
+  /**
+   * A diferencia de Comercio (fotoPerfilUrl obligatoria), la foto de perfil de Cliente es
+   * opcional (RegistroClienteRequestDTO.fotoPerfilUrl sin @NotBlank/@NotNull) -- por eso el
+   * resto de los tests de este describe no la cargan. Este test cubre específicamente ese
+   * camino: recorte real (js/crop.js, mismo mecanismo que subirFotoComercioUi) + subida real
+   * a Cloudinary en el submit final + persistencia confirmada contra el backend real después
+   * de verificar la cuenta y loguearse (GET /clientes/perfil).
+   */
+  test('registro de cliente con foto de perfil: el recorte funciona sin errores y la URL de Cloudinary queda persistida', async ({ page, request }) => {
+    const suf = sufijoUnico();
+    const email = `cliente.foto.ui.${suf}@bajonea.test`;
+    const password = 'Testing123';
+
+    const erroresConsola: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') erroresConsola.push(msg.text());
+    });
+
+    await page.goto('/registro-cliente.html');
+
+    await page.getByTestId('input-nombre').fill('Valentina');
+    await page.getByTestId('input-apellido').fill('Domínguez');
+    await page.getByTestId('input-dni').fill(generarDni());
+    await page.getByTestId('input-fecha-nacimiento').fill('1995-05-20');
+    await page.getByTestId('input-telefono').fill(generarTelefono());
+    await page.getByTestId('input-email').fill(email);
+    await page.getByTestId('input-password').fill(password);
+    await page.getByTestId('input-confirmar-password').fill(password);
+    await page.getByTestId('input-acepta-terminos').check();
+
+    // Mismo mecanismo real que subirFotoComercioUi: seleccionar archivo -> abre el editor de
+    // recorte (js/crop.js, URL.createObjectURL) -> confirmar deja la foto en memoria
+    // (fotoClienteStaged); la subida real a Cloudinary ocurre recién en el submit final.
+    await page.getByTestId('input-foto-cliente').setInputFiles({
+      name: nombreArchivoFixture(),
+      mimeType: 'image/png',
+      buffer: FIXTURE_BUFFER,
+    });
+    await expect(page.getByTestId('modal-recorte-imagen')).toBeVisible();
+    await expect(page.getByTestId('canvas-recorte')).toBeVisible();
+    await expect(page.getByTestId('input-zoom-recorte')).toBeVisible();
+    await page.getByTestId('btn-confirmar-recorte').click();
+    await expect(page.getByTestId('modal-recorte-imagen')).toHaveCount(0);
+
+    await page.getByTestId('btn-continuar').click();
+
+    await expect(page.getByTestId('input-calle')).toBeVisible();
+    await page.getByTestId('input-calle').fill('Belgrano');
+    await page.getByTestId('input-numero').fill('450');
+    await page.getByTestId('input-codigo-postal').fill('9420');
+    await elegirLocalidad(page);
+
+    const registroResponse = page.waitForResponse(
+      (res) => res.url().endsWith('/auth/registro/cliente') && res.request().method() === 'POST',
+    );
+    await page.getByTestId('btn-crear-cuenta').click();
+    const respuesta = await registroResponse;
+    expect(respuesta.status()).toBe(201);
+    const cuerpoRespuesta = await respuesta.json();
+    expect(cuerpoRespuesta.data.fotoPerfilUrl).toContain('res.cloudinary.com');
+
+    await expect(page.getByTestId('btn-ir-a-verificar')).toBeVisible();
+
+    expect(erroresConsola, `Errores de consola durante el flujo:\n${erroresConsola.join('\n')}`).toEqual([]);
+
+    // Persistencia confirmada de punta a punta: verificar cuenta -> loguear -> leer el perfil
+    // real desde el backend, no solo confiar en lo que devolvió el registro.
+    await verificarCuenta(request, email);
+    const sesion = await login(request, email, password);
+    const { status, body } = await apiGet(request, '/clientes/perfil', sesion.token);
+    expect(status).toBe(200);
+    expect(body.data.fotoPerfilUrl).toContain('res.cloudinary.com');
   });
 
   test('registro de comercio con datos válidos (representante y horarios) completa el wizard y lleva a la pantalla de código', async ({ page }) => {

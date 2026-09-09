@@ -24,6 +24,7 @@ import com.bajonea.backend.util.ComercioValidaciones;
 import com.bajonea.backend.util.TextoUtils;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -46,6 +47,8 @@ public class ComercioService {
     private final HorarioRepository horarioRepository;
     private final HistorialEstadoComercioRepository historialEstadoComercioRepository;
     private final CloudinaryService cloudinaryService;
+
+    private static final ZoneId ZONA_HORARIA_COMERCIO = ZoneId.of("America/Argentina/Ushuaia");
 
     public ComercioResponseDTO verPerfil(Integer usuarioId) {
         Comercio comercio = obtenerComercioDelUsuario(usuarioId);
@@ -102,7 +105,7 @@ public class ComercioService {
         if (horarios.isEmpty()) {
             return false;
         }
-        LocalDateTime ahora = LocalDateTime.now();
+        LocalDateTime ahora = LocalDateTime.now(ZONA_HORARIA_COMERCIO);
         DiaSemana diaHoy = DiaSemana.values()[ahora.getDayOfWeek().getValue() - 1];
         LocalTime horaActual = ahora.toLocalTime();
         return horarios.stream()

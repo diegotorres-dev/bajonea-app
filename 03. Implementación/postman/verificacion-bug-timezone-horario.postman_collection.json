@@ -1,0 +1,365 @@
+{
+  "info": {
+    "name": "Bajoneá - Verificación Bug timezone horario comercio",
+    "_postman_id": "b2b2b2b2-0000-4000-8000-000000000001",
+    "description": "Colección armada para verificar en vivo el fix de timezone en ComercioService.estaAbiertoAhora (LocalDateTime.now() -> LocalDateTime.now(ZoneId.of(\"America/Argentina/Ushuaia\"))). Corrida real contra el backend local en perfil `test` (bajonea_test), con el JVM forzado a UTC vía -Duser.timezone=UTC (misma condición que Railway) el 2026-09-09.\n\nRequiere: backend levantado con `./mvnw spring-boot:run -Dspring-boot.run.profiles=test \"-Dspring-boot.run.jvmArguments=-Duser.timezone=UTC\"` contra `bajonea_test` recién reseteada (`npm run test:reset` en testing/playwright/).\n\nOrden de uso:\n1. Correr la carpeta \"1. Setup\" de punta a punta (variables de colección se auto-completan con los tests de cada request).\n2. Antes de cada request de la carpeta \"2. Escenarios de horario\", correr el UPDATE de horario que aparece en la descripción de ese request (vía phpMyAdmin o `mysql -uroot bajonea_test`), reemplazando HH:mm:ss por horarios reales relativos a tu hora actual de Argentina.\n3. Los \"Saved responses\" de cada request de escenario son las respuestas reales capturadas en la corrida del 2026-09-09 09:38 (hora Argentina) contra el código YA CORREGIDO -- sirven de referencia de qué HTTP status/body esperar.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080/api/v1" },
+    { "key": "clienteEmail", "value": "" },
+    { "key": "clientePassword", "value": "Testing123" },
+    { "key": "comercioEmail", "value": "" },
+    { "key": "comercioPassword", "value": "Testing123" },
+    { "key": "clienteToken", "value": "" },
+    { "key": "comercioToken", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "comercioId", "value": "" },
+    { "key": "productoId", "value": "" },
+    { "key": "localidadId", "value": "94008010" }
+  ],
+  "item": [
+    {
+      "name": "1. Setup",
+      "item": [
+        {
+          "name": "1.1 Registrar Cliente",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/registro/cliente",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Clienta\",\n  \"apellido\": \"BugDos\",\n  \"dni\": \"30123456\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964123456\",\n  \"email\": \"cliente.bug2.postman.{{$timestamp}}@bajonea.test\",\n  \"password\": \"{{clientePassword}}\",\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidadId}}\",\n    \"principal\": true\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": { "exec": ["pm.collectionVariables.set('clienteEmail', `cliente.bug2.postman.${Date.now()}@bajonea.test`);"] }
+            },
+            {
+              "listen": "test",
+              "script": { "exec": ["pm.test('201 Created', () => pm.response.to.have.status(201));"] }
+            }
+          ]
+        },
+        {
+          "name": "1.2 Obtener código de verificación (perfil test)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/test/token?email={{clienteEmail}}&tipo=VERIFICACION_EMAIL"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": { "exec": [
+                "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                "pm.collectionVariables.set('clienteCodigo', pm.response.json().data);"
+              ] }
+            }
+          ]
+        },
+        {
+          "name": "1.3 Verificar cuenta Cliente",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/verificar",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{clienteEmail}}\",\n  \"codigo\": \"{{clienteCodigo}}\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"] } }]
+        },
+        {
+          "name": "1.4 Login Cliente",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{clienteEmail}}\",\n  \"password\": \"{{clientePassword}}\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.collectionVariables.set('clienteToken', pm.response.json().data.token);"
+          ] } }]
+        },
+        {
+          "name": "1.5 Firma Cloudinary pre-registro (Comercio)",
+          "request": { "method": "POST", "url": "{{baseUrl}}/auth/registro/comercio/foto-firma" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const d = pm.response.json().data;",
+            "pm.collectionVariables.set('cloudSignature', d.signature);",
+            "pm.collectionVariables.set('cloudTimestamp', d.timestamp);",
+            "pm.collectionVariables.set('cloudApiKey', d.apiKey);",
+            "pm.collectionVariables.set('cloudCloudName', d.cloudName);",
+            "pm.collectionVariables.set('cloudFolder', d.folder);",
+            "pm.collectionVariables.set('cloudUploadPreset', d.uploadPreset);"
+          ] } }]
+        },
+        {
+          "name": "1.6 Subir foto a Cloudinary (real)",
+          "request": {
+            "method": "POST",
+            "url": "https://api.cloudinary.com/v1_1/{{cloudCloudName}}/image/upload",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "testing/playwright/fixtures/bajonea-e2e-producto.png" },
+                { "key": "api_key", "value": "{{cloudApiKey}}" },
+                { "key": "timestamp", "value": "{{cloudTimestamp}}" },
+                { "key": "signature", "value": "{{cloudSignature}}" },
+                { "key": "folder", "value": "{{cloudFolder}}" },
+                { "key": "upload_preset", "value": "{{cloudUploadPreset}}" }
+              ]
+            }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.collectionVariables.set('fotoUrl', pm.response.json().secure_url);"
+          ] } }]
+        },
+        {
+          "name": "1.7 Registrar Comercio (con horario de HOY, ventana amplia)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/registro/comercio",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fotoPerfilUrl\": \"{{fotoUrl}}\",\n  \"razonSocial\": \"Razon Social Bug2 Postman\",\n  \"cuit\": \"30712345671\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Bug2 Postman\",\n  \"descripcion\": \"Comercio de prueba para verificar el fix de timezone\",\n  \"telefono\": \"+5492964555555\",\n  \"emailContacto\": \"{{comercioEmail}}\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"{{comercioEmail}}\",\n  \"password\": \"{{comercioPassword}}\",\n  \"direccion\": {\n    \"calle\": \"Av. San Martin\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidadId}}\",\n    \"principal\": true\n  },\n  \"horarios\": [\n    { \"diaSemana\": \"MIERCOLES\", \"horaApertura\": \"00:00:00\", \"horaCierre\": \"23:59:00\" }\n  ],\n  \"redesSociales\": [{ \"tipo\": \"INSTAGRAM\", \"url\": \"https://instagram.com/comercio.bug2.postman\" }],\n  \"nombreRepresentante\": \"Representante\",\n  \"apellidoRepresentante\": \"BugDos\",\n  \"dniRepresentante\": \"30987654\",\n  \"telefonoRepresentante\": \"+5492964666666\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\"\n}"
+            },
+            "description": "IMPORTANTE: cambiar \"diaSemana\" por el día real de hoy (LUNES/MARTES/MIERCOLES/JUEVES/VIERNES/SABADO/DOMINGO) antes de correr."
+          },
+          "event": [
+            { "listen": "prerequest", "script": { "exec": ["pm.collectionVariables.set('comercioEmail', `comercio.bug2.postman.${Date.now()}@bajonea.test`);"] } },
+            { "listen": "test", "script": { "exec": ["pm.test('201 Created', () => pm.response.to.have.status(201));"] } }
+          ]
+        },
+        {
+          "name": "1.8 Obtener código de verificación Comercio (perfil test)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/test/token?email={{comercioEmail}}&tipo=VERIFICACION_EMAIL" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.collectionVariables.set('comercioCodigo', pm.response.json().data);"
+          ] } }]
+        },
+        {
+          "name": "1.9 Verificar cuenta Comercio",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/verificar",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{comercioEmail}}\",\n  \"codigo\": \"{{comercioCodigo}}\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"] } }]
+        },
+        {
+          "name": "1.10 Fijar password de admin conocida (flujo real de recuperación)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/recuperar-password",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@bajonea.ar\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"] } }]
+        },
+        {
+          "name": "1.11 Obtener código de recuperación admin (perfil test)",
+          "request": { "method": "GET", "url": "{{baseUrl}}/test/token?email=admin@bajonea.ar&tipo=RECUPERACION_PASSWORD" },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.collectionVariables.set('adminCodigo', pm.response.json().data);"
+          ] } }]
+        },
+        {
+          "name": "1.12 Confirmar password admin conocida",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/recuperar-password/confirmar",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@bajonea.ar\",\n  \"codigo\": \"{{adminCodigo}}\",\n  \"nuevaPassword\": \"AdminPostmanE2E123\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"] } }]
+        },
+        {
+          "name": "1.13 Login Admin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@bajonea.ar\",\n  \"password\": \"AdminPostmanE2E123\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.collectionVariables.set('adminToken', pm.response.json().data.token);"
+          ] } }]
+        },
+        {
+          "name": "1.14 Listar comercios pendientes (ubicar el id real)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }],
+            "url": "{{baseUrl}}/administrador/comercios/pendientes"
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "const comercioEmail = pm.collectionVariables.get('comercioEmail');",
+            "const encontrado = pm.response.json().data.find(c => c.emailCuenta === comercioEmail);",
+            "if (encontrado) pm.collectionVariables.set('comercioId', encontrado.id);"
+          ] } }]
+        },
+        {
+          "name": "1.15 Aprobar Comercio",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/administrador/comercios/{{comercioId}}/resolver",
+            "body": { "mode": "raw", "raw": "{\n  \"aprobar\": true\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('200 OK', () => pm.response.to.have.status(200));"] } }]
+        },
+        {
+          "name": "1.16 Login Comercio",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{comercioEmail}}\",\n  \"password\": \"{{comercioPassword}}\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('200 OK', () => pm.response.to.have.status(200));",
+            "pm.collectionVariables.set('comercioToken', pm.response.json().data.token);"
+          ] } }]
+        },
+        {
+          "name": "1.17 Crear categoría (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/categorias",
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Categoria Bug2 Postman\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('categoriaId', pm.response.json().data.id);"
+          ] } }]
+        },
+        {
+          "name": "1.18 Crear producto (Comercio)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{comercioToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/productos",
+            "body": { "mode": "raw", "raw": "{\n  \"nombre\": \"Producto Bug2 Postman\",\n  \"precio\": 1000,\n  \"categoriaId\": {{categoriaId}},\n  \"descripcion\": \"Producto de prueba\"\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": [
+            "pm.test('201 Created', () => pm.response.to.have.status(201));",
+            "pm.collectionVariables.set('productoId', pm.response.json().data.id);"
+          ] } }]
+        },
+        {
+          "name": "1.19 Agregar producto al carrito (Cliente)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clienteToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/carrito/items",
+            "body": { "mode": "raw", "raw": "{\n  \"productoId\": {{productoId}},\n  \"cantidad\": 1\n}" }
+          },
+          "event": [{ "listen": "test", "script": { "exec": ["pm.test('201 Created', () => pm.response.to.have.status(201));"] } }]
+        }
+      ]
+    },
+    {
+      "name": "2. Escenarios de horario (el endpoint real que usa el frontend)",
+      "item": [
+        {
+          "name": "A) Justo ANTES de la apertura -> debe RECHAZAR (409)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clienteToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/pedidos/cliente",
+            "body": { "mode": "raw", "raw": "{\n  \"tipoEntrega\": \"RETIRO\",\n  \"direccionId\": null\n}" },
+            "description": "Antes de correr: dejar el comercio ABIERTO (UPDATE horario SET hora_apertura='00:00:00', hora_cierre='23:59:00' WHERE comercio_id={{comercioId}}) y repetir el request 1.19 (agregar al carrito) si ya se vació por un pedido anterior. Recién ahí correr:\n\nUPDATE horario SET hora_apertura='<AHORA+3min HH:mm:ss>', hora_cierre='<AHORA+90min HH:mm:ss>' WHERE comercio_id={{comercioId}} AND dia_semana='<DIA DE HOY EN MAYUSCULAS>';\n\nCorrida real capturada el 2026-09-09 09:38:33 (Argentina) contra el código corregido: apertura=09:41:32 cierre=11:08:32 -> HTTP 409, {\"mensaje\":\"Este comercio está cerrado en este momento. Podés hacer tu pedido dentro de su horario de atención.\",\"data\":null}.\n\nCon el código VIEJO (sin ZoneId, JVM en UTC) esta misma llamada también daba 409 -- este caso por sí solo no distingue viejo/nuevo, ver B y C." },
+          "response": [
+            {
+              "name": "Respuesta real (código corregido, 2026-09-09 09:38:33)",
+              "status": "Conflict",
+              "code": 409,
+              "body": "{\"mensaje\":\"Este comercio está cerrado en este momento. Podés hacer tu pedido dentro de su horario de atención.\",\"data\":null}",
+              "header": [{ "key": "Content-Type", "value": "application/json" }]
+            }
+          ]
+        },
+        {
+          "name": "B) Justo DESPUES de la apertura -> debe PERMITIR (201)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clienteToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/pedidos/cliente",
+            "body": { "mode": "raw", "raw": "{\n  \"tipoEntrega\": \"RETIRO\",\n  \"direccionId\": null\n}" },
+            "description": "Mismo procedimiento que el caso A: reabrir amplio + re-agregar al carrito, después:\n\nUPDATE horario SET hora_apertura='<AHORA-3min>', hora_cierre='<AHORA+90min>' WHERE comercio_id={{comercioId}} AND dia_semana='<HOY>';\n\nCorrida real 2026-09-09 09:38:34: apertura=09:35:33 cierre=11:08:34 -> HTTP 201, pedido #3 creado.\n\nCon el código VIEJO, la misma llamada (mismos horarios relativos a la hora real de Argentina) dio 409 -- el bug real: el comercio estaba realmente abierto y el pedido se rechazaba igual." },
+          "response": [
+            {
+              "name": "Respuesta real (código corregido, 2026-09-09 09:38:34)",
+              "status": "Created",
+              "code": 201,
+              "body": "{\"mensaje\":\"Pedido confirmado correctamente\",\"data\":{\"id\":3,\"clienteId\":3,\"nombreCliente\":\"Clienta Bugdos\",\"comercioId\":1,\"estado\":\"PENDIENTE\",\"tipoEntrega\":\"RETIRO\",\"direccion\":null,\"motivoRechazo\":null,\"comentarioRechazo\":null,\"fechaCreacion\":\"2026-09-09T12:38:34.7566066\",\"detalles\":[{\"productoId\":1,\"nombreProducto\":\"Producto Bug2 Test\",\"precioUnitario\":1000.00,\"cantidad\":2,\"subtotal\":2000.00,\"nota\":null}],\"total\":2000.00}}",
+              "header": [{ "key": "Content-Type", "value": "application/json" }]
+            },
+            {
+              "name": "Respuesta real (CODIGO VIEJO, sin ZoneId -- bug reproducido, 2026-09-09 09:40:44)",
+              "status": "Conflict",
+              "code": 409,
+              "body": "{\"mensaje\":\"Este comercio está cerrado en este momento. Podés hacer tu pedido dentro de su horario de atención.\",\"data\":null}",
+              "header": [{ "key": "Content-Type", "value": "application/json" }]
+            }
+          ]
+        },
+        {
+          "name": "C) Justo ANTES del cierre -> debe PERMITIR (201)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clienteToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/pedidos/cliente",
+            "body": { "mode": "raw", "raw": "{\n  \"tipoEntrega\": \"RETIRO\",\n  \"direccionId\": null\n}" },
+            "description": "Mismo procedimiento: reabrir amplio + re-agregar al carrito, después:\n\nUPDATE horario SET hora_apertura='<AHORA-90min>', hora_cierre='<AHORA+3min>' WHERE comercio_id={{comercioId}} AND dia_semana='<HOY>';\n\nCorrida real 2026-09-09 09:38:36: apertura=08:08:35 cierre=09:41:35 -> HTTP 201, pedido #4 creado.\n\nCon el código VIEJO, misma llamada dio 409 (falso cerrado) -- este es el caso que más se parece al reporte original de Diego (23:35 real, cierre configurado 23:59)." },
+          "response": [
+            {
+              "name": "Respuesta real (código corregido, 2026-09-09 09:38:36)",
+              "status": "Created",
+              "code": 201,
+              "body": "{\"mensaje\":\"Pedido confirmado correctamente\",\"data\":{\"id\":4,\"clienteId\":3,\"nombreCliente\":\"Clienta Bugdos\",\"comercioId\":1,\"estado\":\"PENDIENTE\",\"tipoEntrega\":\"RETIRO\",\"direccion\":null,\"motivoRechazo\":null,\"comentarioRechazo\":null,\"fechaCreacion\":\"2026-09-09T12:38:36.3388031\",\"detalles\":[{\"productoId\":1,\"nombreProducto\":\"Producto Bug2 Test\",\"precioUnitario\":1000.00,\"cantidad\":1,\"subtotal\":1000.00,\"nota\":null}],\"total\":1000.00}}",
+              "header": [{ "key": "Content-Type", "value": "application/json" }]
+            },
+            {
+              "name": "Respuesta real (CODIGO VIEJO, sin ZoneId -- bug reproducido, 2026-09-09 09:40:46)",
+              "status": "Conflict",
+              "code": 409,
+              "body": "{\"mensaje\":\"Este comercio está cerrado en este momento. Podés hacer tu pedido dentro de su horario de atención.\",\"data\":null}",
+              "header": [{ "key": "Content-Type", "value": "application/json" }]
+            }
+          ]
+        },
+        {
+          "name": "D) Justo DESPUES del cierre -> debe RECHAZAR (409)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{clienteToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/pedidos/cliente",
+            "body": { "mode": "raw", "raw": "{\n  \"tipoEntrega\": \"RETIRO\",\n  \"direccionId\": null\n}" },
+            "description": "Mismo procedimiento: reabrir amplio + re-agregar al carrito, después:\n\nUPDATE horario SET hora_apertura='<AHORA-90min>', hora_cierre='<AHORA-3min>' WHERE comercio_id={{comercioId}} AND dia_semana='<HOY>';\n\nCorrida real 2026-09-09 09:38:37: apertura=08:08:37 cierre=09:35:37 -> HTTP 409 (correcto, ya cerró)." },
+          "response": [
+            {
+              "name": "Respuesta real (código corregido, 2026-09-09 09:38:37)",
+              "status": "Conflict",
+              "code": 409,
+              "body": "{\"mensaje\":\"Este comercio está cerrado en este momento. Podés hacer tu pedido dentro de su horario de atención.\",\"data\":null}",
+              "header": [{ "key": "Content-Type", "value": "application/json" }]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
