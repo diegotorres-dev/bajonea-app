@@ -24,7 +24,7 @@ import com.bajonea.backend.util.ComercioValidaciones;
 import com.bajonea.backend.util.TextoUtils;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -48,7 +48,7 @@ public class ComercioService {
     private final HistorialEstadoComercioRepository historialEstadoComercioRepository;
     private final CloudinaryService cloudinaryService;
 
-    private static final ZoneId ZONA_HORARIA_COMERCIO = ZoneId.of("America/Argentina/Ushuaia");
+    private static final ZoneOffset ZONA_HORARIA_COMERCIO = ZoneOffset.of("-03:00");
 
     public ComercioResponseDTO verPerfil(Integer usuarioId) {
         Comercio comercio = obtenerComercioDelUsuario(usuarioId);
