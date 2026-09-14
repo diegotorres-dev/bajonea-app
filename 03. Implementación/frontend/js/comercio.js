@@ -112,21 +112,17 @@ function precioDesdeInput(valorFormateado) {
   return soloDigitos ? Number(soloDigitos) : NaN;
 }
 
-function formatearTiempoRelativo(fechaIso) {
-  const diffMs = Date.now() - new Date(fechaIso).getTime();
-  const diffMin = Math.floor(diffMs / 60000);
-  if (diffMin < 1) return 'Recién';
-  if (diffMin < 60) return `Hace ${diffMin} min`;
-  const diffHoras = Math.floor(diffMin / 60);
-  if (diffHoras < 24) return `Hace ${diffHoras} h`;
-  const diffDias = Math.floor(diffHoras / 24);
-  return `Hace ${diffDias} d`;
+function formatearFechaHoraCorta(fechaIso) {
+  const fecha = new Date(fechaIso);
+  const partes = fecha.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const hora = fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  return `${partes} ${hora}`;
 }
 
 function formatearFecha(fechaIso) {
   const fecha = new Date(fechaIso);
-  const partes = fecha.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
-  const hora = fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  const partes = fecha.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const hora = fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
   return `${partes}, ${hora}`;
 }
 
@@ -328,7 +324,7 @@ function renderPedidoActivoCard(pedido) {
   info.appendChild(clienteEl);
   const cantidadProductos = pedido.detalles.reduce((total, detalle) => total + detalle.cantidad, 0);
   const fechaEl = crear('p', 'pedido-card__fecha');
-  fechaEl.textContent = `Pedido #${pedido.id} · ${cantidadProductos} producto${cantidadProductos === 1 ? '' : 's'} · ${formatearTiempoRelativo(pedido.fechaCreacion)}`;
+  fechaEl.textContent = `Pedido #${pedido.id} · ${cantidadProductos} producto${cantidadProductos === 1 ? '' : 's'} · ${formatearFechaHoraCorta(pedido.fechaCreacion)}`;
   info.appendChild(fechaEl);
   top.appendChild(info);
 
@@ -1306,8 +1302,11 @@ export async function initComercioProductos() {
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Mis productos' });
   renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'productos');
 
-  if (new URLSearchParams(window.location.search).get('productoCreado') === '1') {
+  const paramsProductos = new URLSearchParams(window.location.search);
+  if (paramsProductos.get('productoCreado') === '1') {
     showToast('Producto creado con éxito');
+  } else if (paramsProductos.get('productoActualizado') === '1') {
+    showToast('Producto actualizado con éxito');
   }
 
   const productos = await apiFetch('/productos');
@@ -1787,7 +1786,7 @@ export async function initComercioProductoForm() {
     try {
       if (esEdicion) {
         await apiFetch(`/productos/${productoId}`, { method: 'PUT', body });
-        window.location.href = 'comercio-productos.html';
+        window.location.href = 'comercio-productos.html?productoActualizado=1';
         return;
       }
 

@@ -17,14 +17,16 @@ import org.springframework.stereotype.Service;
  * {@code Sesion} que {@link JwtAuthenticationFilter} consulta en cada request — ver
  * docs/DECISIONES.md, 2026-07-17.
  */
+
+//Se encarga de generar el token cuando alguien se loguea y lo valida cada vez que alguien hace una petición
 @Service
 public class JwtService {
 
     @Value("${jwt.secret}")
-    private String secret;
+    private String secret; //Se firman los tokens para que sean válidos
 
     @Value("${jwt.expiration-ms}")
-    private long expirationMs;
+    private long expirationMs; //Duración del token que viene de un .env
 
     public String generarToken(Usuario usuario, Integer sesionId) {
         Date ahora = new Date();

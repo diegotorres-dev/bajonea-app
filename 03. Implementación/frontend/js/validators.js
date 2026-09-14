@@ -62,6 +62,17 @@ export function esFechaNacimientoValida(fechaTexto) {
   return edad >= 18;
 }
 
+export function esFechaNacimientoNoAnteriorA120Anios(fechaTexto) {
+  if (!fechaTexto) return false;
+  const fecha = new Date(fechaTexto + 'T00:00:00');
+  if (Number.isNaN(fecha.getTime())) return false;
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  const haceCientoVeinteAnios = new Date(hoy);
+  haceCientoVeinteAnios.setFullYear(haceCientoVeinteAnios.getFullYear() - 120);
+  return fecha >= haceCientoVeinteAnios;
+}
+
 const REGEX_NOMBRE_CLIENTE = /^[A-Za-zÁÉÍÓÚáéíóúÑñÜü]+(?:[-' ][A-Za-zÁÉÍÓÚáéíóúÑñÜü]+)*$/;
 
 export function esNombreClienteValido(valor) {

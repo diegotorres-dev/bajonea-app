@@ -16,6 +16,9 @@ import org.springframework.stereotype.Component;
  * antes de llegar al DispatcherServlet — así que escribe el {@link ApiResponse} directo al
  * response para mantener el mismo formato de error en toda la API (CLAUDE.md, regla 3).
  */
+
+//Se encarga de tirar un 401 cuando alguien intenta hacer algo que requiere autenticación y no está autenticado.
+//La petición se rompe acá antes de llegar al controller
 @Component
 public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
 

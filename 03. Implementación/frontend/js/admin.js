@@ -75,7 +75,7 @@ function formatearFecha(fechaIso) {
 function formatearFechaHora(fechaIso) {
   const fecha = new Date(fechaIso);
   const partes = fecha.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const hora = fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  const hora = fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false });
   return `${partes} a las ${hora} hs`;
 }
 

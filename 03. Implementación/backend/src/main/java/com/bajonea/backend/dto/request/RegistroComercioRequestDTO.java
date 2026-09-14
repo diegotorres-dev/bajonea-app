@@ -3,8 +3,8 @@ package com.bajonea.backend.dto.request;
 import com.bajonea.backend.enums.CondicionIva;
 import com.bajonea.backend.enums.TipoComercio;
 import com.bajonea.backend.enums.TipoPersonaJuridica;
-import com.bajonea.backend.validation.annotations.MayorDeEdad;
 import com.bajonea.backend.validation.annotations.ValidarCuit;
+import com.bajonea.backend.validation.annotations.ValidarFechaNacimientoRepresentante;
 import com.bajonea.backend.validation.annotations.ValidarFormatoDni;
 import com.bajonea.backend.validation.annotations.ValidarFormatoEmail;
 import com.bajonea.backend.validation.annotations.ValidarFormatoNombre;
@@ -51,10 +51,15 @@ import lombok.Setter;
  * blanco-tolerante que ya usa {@code RegistroClienteRequestDTO} ({@code nombre}/{@code apellido}
  * → {@link ValidarFormatoNombre}, {@code dni} → {@link ValidarFormatoDni}), con setters manuales
  * de normalización (trim + colapso de espacios / sanitización de separadores) igual que en ese
- * DTO — con una única divergencia intencional: {@code fechaNacimientoRepresentante} mantiene
- * {@link MayorDeEdad} (18 años), a diferencia de {@code RegistroClienteRequestDTO.fechaNacimiento}
- * (que lo perdió el mismo día), porque el representante legal de una empresa sí debe ser mayor de
- * edad — decisión de negocio explícita, no un descuido de sincronización entre ambos DTOs.
+ * DTO — con una única divergencia intencional: {@code fechaNacimientoRepresentante} exige
+ * mayoría de edad (18 años), a diferencia de {@code RegistroClienteRequestDTO.fechaNacimiento}
+ * (que perdió ese piso el mismo día), porque el representante legal de una empresa sí debe ser
+ * mayor de edad — decisión de negocio explícita, no un descuido de sincronización entre ambos
+ * DTOs. Desde 2026-09-14 ese piso de 18 años se combina con el mismo techo de plausibilidad de
+ * 120 años que ya tenía {@code RegistroClienteRequestDTO.fechaNacimiento} (gap real detectado:
+ * antes aceptaba fechas como 01/01/1901), vía la anotación combinada
+ * {@link ValidarFechaNacimientoRepresentante} — ver su Javadoc para por qué no se apiló
+ * {@code @MayorDeEdad} + {@code @ValidarFechaNacimientoPlausible} directamente en el campo.
  * <p>
  * {@code fotoPerfilUrl} es obligatorio ({@code comercio.foto_perfil_url NOT NULL} en
  * {@code bajonea_final}, confirmado por Diego — corrección de un gap real encontrado en la
@@ -168,7 +173,7 @@ public class RegistroComercioRequestDTO {
     private String telefonoRepresentante;
 
     @NotNull(message = "La fecha de nacimiento es obligatoria")
-    @MayorDeEdad
+    @ValidarFechaNacimientoRepresentante
     private LocalDate fechaNacimientoRepresentante;
 
     @NotBlank(message = "Agregá una foto de perfil de tu comercio")

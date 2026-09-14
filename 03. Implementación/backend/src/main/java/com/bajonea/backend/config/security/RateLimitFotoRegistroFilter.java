@@ -29,6 +29,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * pre-registro combinadas (comercio + cliente comparten el mismo contador por IP) alcanzaba en
  * segundos un 429 real contra el propio backend, no contra Cloudinary.
  */
+
+//Limita la cantidad de veces por minuto que un usuario puede subir una foto a Cloudinary por IP
 @Component
 public class RateLimitFotoRegistroFilter extends OncePerRequestFilter {
 

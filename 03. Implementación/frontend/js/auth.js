@@ -8,6 +8,7 @@ import {
   aplicarFortalezaPassword,
   esEmailValido,
   esFechaNacimientoValida,
+  esFechaNacimientoNoAnteriorA120Anios,
   esTelefonoValido,
   esCalleValida,
   esNumeroDireccionValido,
@@ -276,6 +277,10 @@ function validarFechaNacimientoRepresentante(inputId, errorId, requerido) {
   }
   if (!esFechaNoFuturaValida(input.value)) {
     mostrarErrorCampo(errorId, 'La fecha ingresada no es válida');
+    return false;
+  }
+  if (!esFechaNacimientoNoAnteriorA120Anios(input.value)) {
+    mostrarErrorCampo(errorId, 'La fecha ingresada no puede ser anterior a 120 años');
     return false;
   }
   if (!esFechaNacimientoValida(input.value)) {

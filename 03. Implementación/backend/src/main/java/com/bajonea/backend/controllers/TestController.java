@@ -21,6 +21,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/test")
 @RequiredArgsConstructor
 @Profile("test")
+
+// Endpoints para un entorno de prueba. Sirve para Playwright y Postman para obtener tokens sin tener que leer emails.
+// Solo arranca cuando el perfil de test activo, no en producción.
 public class TestController {
 
     private final TestSupportService testSupportService;

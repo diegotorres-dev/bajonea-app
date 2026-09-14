@@ -15,6 +15,8 @@ import org.springframework.stereotype.Component;
  * sobre la ruta. Mismo motivo que {@link CustomAuthenticationEntryPoint} para escribir el
  * {@link ApiResponse} directo al response en vez de pasar por GlobalExceptionHandler.
  */
+
+//Tira un 403 cuando, pese a estar autenticado, no tiene el rol o permisos necesarios para hacer lo que quiere.
 @Component
 public class CustomAccessDeniedHandler implements AccessDeniedHandler {
 

@@ -27,6 +27,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * pero con la sesión cerrada (bloqueo, recuperación/cambio de contraseña, login concurrente,
  * logout) igual se rechaza con 401. Ver CLAUDE.md §7 y docs/DECISIONES.md, 2026-07-17.
  */
+
+// Filtro por el que pasan todas las peticiones antes de llegar al controller (decide si el usuario está
+// autenticado o no).
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -35,6 +38,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final SesionRepository sesionRepository;
     private final AuthenticationEntryPoint authenticationEntryPoint;
 
+    //Primero verifica si la ruta es pública, si es así, no pide nada. Si requiere autenticación, chequea el JWT y los claims
+    //Si el JWT es inválido, tira un 401 (invalido o expiró).
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
