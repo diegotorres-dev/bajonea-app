@@ -8,7 +8,6 @@ const ICONS = {
   pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
   info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
   warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
 };
 
 function crear(tag, className) {
@@ -56,9 +55,10 @@ export async function initCheckout() {
   }
 
   const bannerSlot = document.getElementById('banner-slot');
-  const steps = [document.getElementById('step-1'), document.getElementById('step-2'), document.getElementById('step-3')];
+  const steps = [document.getElementById('step-1'), document.getElementById('step-2'), document.getElementById('step-3'), document.getElementById('step-4')];
   const bars = document.querySelectorAll('.step-progress__bar');
   const labels = document.querySelectorAll('.step-progress__labels span');
+  const backBtn = document.getElementById('back-btn');
   let currentStep = 0;
   let tipoEntregaSeleccionado = null;
 
@@ -68,11 +68,15 @@ export async function initCheckout() {
     bars.forEach((bar, i) => bar.classList.toggle('step-progress__bar--active', i <= index));
     labels.forEach((label, i) => label.classList.toggle('is-active', i === index));
     currentStep = index;
+    backBtn.style.visibility = index === 3 ? 'hidden' : 'visible';
     renderBanner(bannerSlot, 'info', '');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  document.getElementById('back-btn').addEventListener('click', () => {
+  backBtn.addEventListener('click', () => {
+    if (currentStep === 3) {
+      return;
+    }
     if (currentStep > 0) {
       mostrarPaso(currentStep - 1);
     } else {
@@ -175,6 +179,7 @@ export async function initCheckout() {
 
   const step2Content = document.getElementById('step-2-content');
   const step3Content = document.getElementById('step-3-content');
+  const step4Content = document.getElementById('step-4-content');
 
   function renderStep2() {
     step2Content.innerHTML = '';
@@ -326,10 +331,10 @@ export async function initCheckout() {
     confirmBtn.type = 'button';
     confirmBtn.style.marginTop = '24px';
     confirmBtn.setAttribute('data-testid', 'btn-confirmar-pedido');
-    confirmBtn.textContent = `Confirmar Pedido - ${formatearPrecio(carrito.subtotal)}`;
+    confirmBtn.textContent = `Ir a pagar - ${formatearPrecio(carrito.subtotal)}`;
     confirmBtn.addEventListener('click', async () => {
       confirmBtn.disabled = true;
-      confirmBtn.textContent = 'Confirmando...';
+      confirmBtn.textContent = 'Procesando...';
       try {
         const pedido = await apiFetch('/pedidos/cliente', {
           method: 'POST',
@@ -340,10 +345,11 @@ export async function initCheckout() {
         });
         normalizarCampos(pedido.direccion, ['calle']);
         (pedido.detalles || []).forEach((detalle) => normalizarCampos(detalle, ['nombreProducto']));
-        mostrarModalPedidoConfirmado(pedido);
+        renderStep4(pedido);
+        mostrarPaso(3);
       } catch (error) {
         confirmBtn.disabled = false;
-        confirmBtn.textContent = `Confirmar Pedido - ${formatearPrecio(carrito.subtotal)}`;
+        confirmBtn.textContent = `Ir a pagar - ${formatearPrecio(carrito.subtotal)}`;
         renderBanner(bannerSlot, 'error', error instanceof ApiError ? error.message : 'No pudimos confirmar tu pedido. Intentá nuevamente.');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -351,30 +357,49 @@ export async function initCheckout() {
     step3Content.appendChild(confirmBtn);
   }
 
-  function mostrarModalPedidoConfirmado(pedido) {
-    const backdrop = crear('div', 'modal-backdrop');
-    backdrop.setAttribute('data-testid', 'modal-pedido-confirmado');
-    const sheet = crear('div', 'modal-sheet');
-    const icon = crear('div', 'modal-sheet__icon modal-sheet__icon--success');
-    icon.innerHTML = ICONS.check;
-    sheet.appendChild(icon);
-    const title = document.createElement('h2');
-    title.className = 'modal-sheet__title';
-    title.textContent = '¡Pedido enviado!';
-    sheet.appendChild(title);
-    const text = document.createElement('p');
-    text.className = 'modal-sheet__text';
-    text.setAttribute('data-testid', 'mensaje-pedido-confirmado');
-    text.textContent = `Tu pedido #${pedido.id} fue enviado a ${comercio.nombre}. Te avisaremos cuando el comercio lo confirme.`;
-    sheet.appendChild(text);
-    const cta = document.createElement('a');
-    cta.className = 'btn btn-primary';
-    cta.href = 'index.html';
-    cta.setAttribute('data-testid', 'btn-volver-catalogo');
-    cta.textContent = 'Volver al catálogo';
-    sheet.appendChild(cta);
-    backdrop.appendChild(sheet);
-    document.body.appendChild(backdrop);
+  function renderStep4(pedido) {
+    step4Content.innerHTML = '';
+
+    const h1 = document.createElement('h1');
+    h1.className = 'title-md';
+    h1.textContent = 'Pago';
+    step4Content.appendChild(h1);
+
+    const p = document.createElement('p');
+    p.className = 'subtitle';
+    p.textContent = `Tu pedido #${pedido.id} a ${comercio.nombre} fue creado. Te vamos a redirigir a Mercado Pago para completar el pago.`;
+    step4Content.appendChild(p);
+
+    const totalLine = crear('div', 'order-line order-line--total');
+    totalLine.style.marginTop = '16px';
+    const totalLabel = document.createElement('span');
+    totalLabel.textContent = 'Total';
+    totalLine.appendChild(totalLabel);
+    const totalValue = document.createElement('span');
+    totalValue.textContent = formatearPrecio(pedido.total);
+    totalLine.appendChild(totalValue);
+    step4Content.appendChild(totalLine);
+
+    const irAPagarBtn = crear('button', 'btn btn-primary');
+    irAPagarBtn.type = 'button';
+    irAPagarBtn.style.marginTop = '24px';
+    irAPagarBtn.setAttribute('data-testid', 'btn-ir-a-pagar');
+    irAPagarBtn.textContent = 'Ir a pagar con Mercado Pago';
+    irAPagarBtn.addEventListener('click', async () => {
+      irAPagarBtn.disabled = true;
+      const original = irAPagarBtn.textContent;
+      irAPagarBtn.textContent = 'Generando link de pago...';
+      try {
+        const pago = await apiFetch(`/pedidos/cliente/${pedido.id}/pago`, { method: 'POST' });
+        window.location.href = pago.urlPago;
+      } catch (error) {
+        renderBanner(bannerSlot, 'error', error instanceof ApiError ? error.message : 'No pudimos generar el link de pago. Intentá nuevamente.');
+        irAPagarBtn.disabled = false;
+        irAPagarBtn.textContent = original;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    });
+    step4Content.appendChild(irAPagarBtn);
   }
 
   mostrarPaso(0);

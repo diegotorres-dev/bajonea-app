@@ -29,7 +29,7 @@ export function showToast(mensaje, kind = 'success') {
   const toast = crear('div', 'toast');
   const banner = crear('div', `banner banner-${kind}`);
   const iconWrap = crear('span');
-  iconWrap.innerHTML = ICONS.check;
+  iconWrap.innerHTML = kind === 'error' ? ICONS.close : ICONS.check;
   banner.appendChild(iconWrap.firstElementChild);
   const text = document.createElement('span');
   text.textContent = mensaje;

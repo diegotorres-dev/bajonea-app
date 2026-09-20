@@ -15,4 +15,14 @@ public interface PedidoRepository extends JpaRepository<Pedido, Integer> {
     List<Pedido> findByComercioId(Integer comercioId);
 
     List<Pedido> findByComercioIdAndFechaCreacionBetween(Integer comercioId, LocalDateTime inicio, LocalDateTime fin);
+
+    List<Pedido> findByEstado(EstadoPedido estado);
+
+    List<Pedido> findByEstadoAndFechaCreacionBefore(EstadoPedido estado, LocalDateTime corte);
+
+    List<Pedido> findByEstadoAndPrimerAvisoEmitidoFalse(EstadoPedido estado);
+
+    List<Pedido> findByEstadoAndSuspensionRetiroExpiraLessThan(EstadoPedido estado, LocalDateTime ahora);
+
+    List<Pedido> findByComercioIdAndEstadoIn(Integer comercioId, List<EstadoPedido> estados);
 }

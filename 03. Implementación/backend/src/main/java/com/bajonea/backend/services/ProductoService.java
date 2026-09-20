@@ -169,7 +169,7 @@ public class ProductoService {
     public ProductosPaginadosResponseDTO listarCatalogoGlobal(
             Integer categoriaId, List<Integer> tagIds, String busqueda, Integer pagina) {
         List<Producto> productos = productoRepository
-                .findByComercio_EstadoAndEstadoNot(EstadoComercio.APROBADO, EstadoProducto.DESCONTINUADO);
+                .findByComercio_EstadoAndEstadoNot(EstadoComercio.APTO_VENTA, EstadoProducto.DESCONTINUADO);
 
         if (categoriaId != null) {
             productos = productos.stream()
@@ -218,7 +218,7 @@ public class ProductoService {
      */
     public FiltrosCatalogoResponseDTO listarFiltrosDisponibles() {
         List<Producto> productos = productoRepository
-                .findByComercio_EstadoAndEstadoNot(EstadoComercio.APROBADO, EstadoProducto.DESCONTINUADO);
+                .findByComercio_EstadoAndEstadoNot(EstadoComercio.APTO_VENTA, EstadoProducto.DESCONTINUADO);
 
         List<CategoriaFiltroResponseDTO> categorias = productos.stream()
                 .map(Producto::getCategoria)

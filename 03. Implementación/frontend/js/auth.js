@@ -94,7 +94,7 @@ export async function resolverHomePorRol(usuario) {
   if (comercio.estado === 'RECHAZADO') {
     return 'comercio-rechazado.html';
   }
-  if (comercio.estado === 'APROBADO') {
+  if (comercio.estado === 'APROBADO' || comercio.estado === 'APTO_VENTA') {
     return 'comercio-dashboard.html';
   }
   return null;

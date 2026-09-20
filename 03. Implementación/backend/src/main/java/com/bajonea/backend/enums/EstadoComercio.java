@@ -6,5 +6,6 @@ public enum EstadoComercio {
     RECHAZADO,
     SUSPENDIDO,
     INACTIVO,
-    CERRADO_TEMPORALMENTE
+    CERRADO_TEMPORALMENTE,
+    APTO_VENTA
 }

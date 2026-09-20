@@ -1,6 +1,9 @@
 package com.bajonea.backend.dto.response;
 
+import com.bajonea.backend.enums.CanceladoPor;
+import com.bajonea.backend.enums.EstadoPagoPedido;
 import com.bajonea.backend.enums.EstadoPedido;
+import com.bajonea.backend.enums.FuenteEntrega;
 import com.bajonea.backend.enums.MotivoRechazo;
 import com.bajonea.backend.enums.TipoEntrega;
 import java.math.BigDecimal;
@@ -14,7 +17,9 @@ import lombok.Getter;
  * tanda, pero indispensable: sin esto, un pedido rechazado no tendría forma de mostrarle al
  * cliente por qué. {@code direccion} viaja completa (no solo su id) porque solo aplica
  * cuando {@code tipoEntrega = DOMICILIO} y ahí es información necesaria para el cliente, no
- * una relación secundaria.
+ * una relación secundaria. {@code pagoEstado}/{@code canceladoPor}/{@code fuenteEntrega}/
+ * {@code fechaEntrega}/{@code motivoAnulacion} sumados en la Fase 19 (máquina de estados
+ * completa del Pedido) — el frontend los necesita para renderizar cada uno de los 11 estados.
  */
 @Getter
 public class PedidoResponseDTO {
@@ -24,11 +29,16 @@ public class PedidoResponseDTO {
     private final String nombreCliente;
     private final Integer comercioId;
     private final EstadoPedido estado;
+    private final EstadoPagoPedido pagoEstado;
     private final TipoEntrega tipoEntrega;
     private final DireccionResponseDTO direccion;
     private final MotivoRechazo motivoRechazo;
     private final String comentarioRechazo;
+    private final CanceladoPor canceladoPor;
+    private final FuenteEntrega fuenteEntrega;
+    private final String motivoAnulacion;
     private final LocalDateTime fechaCreacion;
+    private final LocalDateTime fechaEntrega;
     private final List<DetallePedidoResponseDTO> detalles;
     private final BigDecimal total;
 
@@ -38,11 +48,16 @@ public class PedidoResponseDTO {
             String nombreCliente,
             Integer comercioId,
             EstadoPedido estado,
+            EstadoPagoPedido pagoEstado,
             TipoEntrega tipoEntrega,
             DireccionResponseDTO direccion,
             MotivoRechazo motivoRechazo,
             String comentarioRechazo,
+            CanceladoPor canceladoPor,
+            FuenteEntrega fuenteEntrega,
+            String motivoAnulacion,
             LocalDateTime fechaCreacion,
+            LocalDateTime fechaEntrega,
             List<DetallePedidoResponseDTO> detalles,
             BigDecimal total) {
         this.id = id;
@@ -50,11 +65,16 @@ public class PedidoResponseDTO {
         this.nombreCliente = nombreCliente;
         this.comercioId = comercioId;
         this.estado = estado;
+        this.pagoEstado = pagoEstado;
         this.tipoEntrega = tipoEntrega;
         this.direccion = direccion;
         this.motivoRechazo = motivoRechazo;
         this.comentarioRechazo = comentarioRechazo;
+        this.canceladoPor = canceladoPor;
+        this.fuenteEntrega = fuenteEntrega;
+        this.motivoAnulacion = motivoAnulacion;
         this.fechaCreacion = fechaCreacion;
+        this.fechaEntrega = fechaEntrega;
         this.detalles = detalles;
         this.total = total;
     }

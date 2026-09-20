@@ -1,5 +1,5 @@
-import { apiFetch, getUsuario } from './api.js';
-import { renderTopBar, renderBottomNav, pintarAvatarComercio, renderPedidoEstadoHeader } from './catalogo.js';
+import { apiFetch, ApiError, getUsuario } from './api.js';
+import { renderTopBar, renderBottomNav, pintarAvatarComercio, renderPedidoEstadoHeader, showToast } from './catalogo.js';
 import { normalizarCampos } from './validators.js';
 
 function normalizarPedido(pedido) {
@@ -21,6 +21,7 @@ const ICONS = {
   clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
   flame: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
   xCircle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+  checkCircle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
   list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
   pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>',
   truck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
@@ -28,8 +29,17 @@ const ICONS = {
   alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
 };
 
+const ICON_CLASS = 'pedido-detail__icon--pendiente';
+
 const ESTADO_INFO = {
-  PENDIENTE: {
+  PENDIENTE_PAGO: {
+    label: 'Esperando pago',
+    dotClass: 'pedido-estado__dot--pendiente',
+    iconClass: ICON_CLASS,
+    icon: ICONS.clock,
+    texto: () => 'Todavía no confirmamos tu pago. Si ya pagaste, esperá unos segundos y actualizá esta pantalla.',
+  },
+  PENDIENTE_CONFIRMACION_COMERCIO: {
     label: 'Pendiente',
     dotClass: 'pedido-estado__dot--pendiente',
     iconClass: 'pedido-detail__icon--pendiente',
@@ -43,12 +53,61 @@ const ESTADO_INFO = {
     icon: ICONS.flame,
     texto: (nombreComercio) => `${nombreComercio} aceptó tu pedido y lo está preparando.`,
   },
+  EN_CAMINO: {
+    label: 'En camino',
+    dotClass: 'pedido-estado__dot--positivo',
+    iconClass: ICON_CLASS,
+    icon: ICONS.truck,
+    texto: (nombreComercio) => `Tu pedido de ${nombreComercio} está en camino.`,
+  },
+  LISTO_PARA_RETIRAR: {
+    label: 'Listo para retirar',
+    dotClass: 'pedido-estado__dot--positivo',
+    iconClass: ICON_CLASS,
+    icon: ICONS.bag,
+    texto: (nombreComercio) => `Tu pedido está listo para retirar en ${nombreComercio}.`,
+  },
+  ENTREGADO: {
+    label: 'Entregado',
+    dotClass: 'pedido-estado__dot--positivo',
+    iconClass: ICON_CLASS,
+    icon: ICONS.checkCircle,
+    texto: () => 'Tu pedido fue entregado.',
+  },
   RECHAZADO: {
     label: 'Rechazado',
     dotClass: 'pedido-estado__dot--rechazado',
     iconClass: 'pedido-detail__icon--rechazado',
     icon: ICONS.xCircle,
     texto: (nombreComercio) => `${nombreComercio} rechazó tu pedido.`,
+  },
+  CANCELADO: {
+    label: 'Cancelado',
+    dotClass: 'pedido-estado__dot--rechazado',
+    iconClass: ICON_CLASS,
+    icon: ICONS.xCircle,
+    texto: () => 'Cancelaste este pedido.',
+  },
+  ANULADO: {
+    label: 'Anulado',
+    dotClass: 'pedido-estado__dot--rechazado',
+    iconClass: ICON_CLASS,
+    icon: ICONS.xCircle,
+    texto: (nombreComercio) => `${nombreComercio} anuló tu pedido.`,
+  },
+  CANCELADO_POR_SISTEMA: {
+    label: 'Cancelado',
+    dotClass: 'pedido-estado__dot--rechazado',
+    iconClass: ICON_CLASS,
+    icon: ICONS.xCircle,
+    texto: () => 'Tu pedido fue cancelado automáticamente.',
+  },
+  EXPIRADO: {
+    label: 'Expirado',
+    dotClass: 'pedido-estado__dot--rechazado',
+    iconClass: ICON_CLASS,
+    icon: ICONS.clock,
+    texto: () => 'El comercio no respondió a tiempo. El reembolso está en proceso.',
   },
 };
 
@@ -222,6 +281,80 @@ function renderNoEncontrado(container) {
   );
 }
 
+function renderAccionesCliente(container, pedido, onActualizado, { procesando = false } = {}) {
+  container.innerHTML = '';
+
+  async function ejecutar(boton, endpoint, textoCargando, mensajeExito, mensajeError) {
+    boton.disabled = true;
+    const original = boton.textContent;
+    boton.textContent = textoCargando;
+    try {
+      const actualizado = await apiFetch(endpoint, { method: 'PUT' });
+      normalizarPedido(actualizado);
+      showToast(mensajeExito);
+      onActualizado(actualizado);
+    } catch (error) {
+      showToast(error instanceof ApiError ? error.message : mensajeError, 'error');
+      boton.disabled = false;
+      boton.textContent = original;
+    }
+  }
+
+  if (pedido.estado === 'PENDIENTE_PAGO') {
+    if (pedido.pagoEstado === 'PAGADO') {
+      return;
+    }
+    const irAPagarBtn = crear('button', 'btn btn-primary');
+    irAPagarBtn.type = 'button';
+    irAPagarBtn.setAttribute('data-testid', 'btn-ir-a-pagar');
+    if (procesando) {
+      irAPagarBtn.disabled = true;
+      irAPagarBtn.textContent = 'El pago se está procesando';
+      container.appendChild(irAPagarBtn);
+      return;
+    }
+    irAPagarBtn.textContent = 'Ir a pagar con Mercado Pago';
+    irAPagarBtn.addEventListener('click', async () => {
+      irAPagarBtn.disabled = true;
+      const original = irAPagarBtn.textContent;
+      irAPagarBtn.textContent = 'Generando link de pago...';
+      try {
+        const pago = await apiFetch(`/pedidos/cliente/${pedido.id}/pago`, { method: 'POST' });
+        window.location.href = pago.urlPago;
+      } catch (error) {
+        showToast(error instanceof ApiError ? error.message : 'No pudimos generar el link de pago', 'error');
+        irAPagarBtn.disabled = false;
+        irAPagarBtn.textContent = original;
+      }
+    });
+    container.appendChild(irAPagarBtn);
+    return;
+  }
+
+  if (pedido.estado === 'PENDIENTE_CONFIRMACION_COMERCIO' || pedido.estado === 'EN_PREPARACION') {
+    const cancelarBtn = crear('button', 'btn btn-secondary');
+    cancelarBtn.type = 'button';
+    cancelarBtn.style.borderColor = 'var(--color-error)';
+    cancelarBtn.style.color = 'var(--color-error)';
+    cancelarBtn.setAttribute('data-testid', 'btn-cancelar-pedido');
+    cancelarBtn.textContent = 'Cancelar pedido';
+    cancelarBtn.addEventListener('click', () => ejecutar(cancelarBtn, `/pedidos/cliente/${pedido.id}/cancelar`,
+      'Cancelando...', 'Pedido cancelado', 'No pudimos cancelar el pedido'));
+    container.appendChild(cancelarBtn);
+    return;
+  }
+
+  if (pedido.estado === 'EN_CAMINO') {
+    const entregarBtn = crear('button', 'btn btn-primary');
+    entregarBtn.type = 'button';
+    entregarBtn.setAttribute('data-testid', 'btn-confirmar-entrega');
+    entregarBtn.textContent = 'Confirmar que recibí mi pedido';
+    entregarBtn.addEventListener('click', () => ejecutar(entregarBtn, `/pedidos/cliente/${pedido.id}/entregar`,
+      'Confirmando...', 'Entrega confirmada', 'No pudimos confirmar la entrega'));
+    container.appendChild(entregarBtn);
+  }
+}
+
 export async function initPedidoDetalle() {
   const usuario = getUsuario();
   if (!usuario || usuario.rol !== 'CLIENTE') {
@@ -233,19 +366,32 @@ export async function initPedidoDetalle() {
   const pedidoId = Number(params.get('id'));
   const container = document.getElementById('detalle-content');
 
+  const vueltaMpParam = params.get('pago');
+  const vueltaMp = ['exito', 'pendiente', 'fallo'].includes(vueltaMpParam) ? vueltaMpParam : null;
+  const paymentIdParam = params.get('payment_id') || params.get('collection_id');
+  const paymentId = paymentIdParam && /^[0-9]{1,20}$/.test(paymentIdParam) ? paymentIdParam : null;
+  const MENSAJE_PROCESANDO = 'Tu pago se está procesando. Esto puede tardar unos segundos.';
+  const MENSAJE_PENDIENTE = 'Tu pago está pendiente de confirmación.';
+  const MENSAJE_PAGADO = 'Tu pago se realizó correctamente';
+  const MENSAJE_RECHAZADO = 'El pago no se pudo procesar. Podés intentar de nuevo desde la sección "Mis pedidos".';
+  const INTERVALO_MS = 3000;
+  const MAX_INTENTOS = 15;
+
   if (!pedidoId) {
     renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Pedido' });
     renderNoEncontrado(container);
     return;
   }
 
-  const [pedidos, comercios] = await Promise.all([
-    apiFetch('/pedidos/cliente'),
-    apiFetch('/catalogo/comercios', { auth: false }),
-  ]);
-  pedidos.forEach(normalizarPedido);
+  async function cargarPedido() {
+    const lista = await apiFetch('/pedidos/cliente');
+    lista.forEach(normalizarPedido);
+    return lista.find((p) => p.id === pedidoId);
+  }
+
+  const comercios = await apiFetch('/catalogo/comercios', { auth: false });
   normalizarComercios(comercios);
-  const pedido = pedidos.find((p) => p.id === pedidoId);
+  let pedido = await cargarPedido();
 
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: pedido ? `Pedido #${pedido.id}` : 'Pedido' });
 
@@ -255,85 +401,186 @@ export async function initPedidoDetalle() {
   }
 
   const comercio = comercios.find((c) => c.id === pedido.comercioId);
-  const info = ESTADO_INFO[pedido.estado];
 
-  renderPedidoEstadoHeader(container, {
-    iconClass: info.iconClass,
-    icono: info.icon,
-    label: info.label,
-    texto: info.texto(comercio ? comercio.nombre : 'El comercio'),
-    numeroTexto: `Pedido #${pedido.id} · ${formatearFecha(pedido.fechaCreacion)}`,
-    motivoRechazo: pedido.estado === 'RECHAZADO' && pedido.motivoRechazo
-      ? {
-        motivoLabel: MOTIVO_RECHAZO_LABEL[pedido.motivoRechazo] || pedido.motivoRechazo,
-        comentario: pedido.comentarioRechazo,
-      }
-      : null,
-  });
-
-  const body = crear('div', 'screen-body screen-body--tight');
-
-  const modalidadCard = crear('div', 'summary-card');
-  const modalidadIcon = crear('div', 'summary-card__icon');
-  modalidadIcon.innerHTML = pedido.tipoEntrega === 'DOMICILIO' ? ICONS.truck : ICONS.bag;
-  modalidadCard.appendChild(modalidadIcon);
-  const modalidadBody = crear('div', 'summary-card__body');
-  const modalidadTitulo = document.createElement('h3');
-  modalidadTitulo.textContent = pedido.tipoEntrega === 'DOMICILIO' ? 'Envío a domicilio' : 'Retiro en el local';
-  modalidadBody.appendChild(modalidadTitulo);
-  const modalidadTexto = document.createElement('p');
-  if (pedido.tipoEntrega === 'DOMICILIO' && pedido.direccion) {
-    modalidadTexto.textContent = formatearDireccion(pedido.direccion);
-  } else if (comercio) {
-    modalidadTexto.textContent = comercio.direccion ? formatearDireccion(comercio.direccion) : comercio.nombre;
-  } else {
-    modalidadTexto.textContent = '';
+  function renderActual() {
+    renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: `Pedido #${pedido.id}` });
+    renderDetalle();
   }
-  modalidadBody.appendChild(modalidadTexto);
-  modalidadCard.appendChild(modalidadBody);
-  body.appendChild(modalidadCard);
 
-  const desglose = crear('div', 'section-heading');
-  desglose.style.marginTop = '20px';
-  desglose.textContent = 'Desglose del pedido';
-  body.appendChild(desglose);
+  function renderDetalle() {
+    const info = ESTADO_INFO[pedido.estado];
 
-  pedido.detalles.forEach((detalle) => {
-    const line = crear('div', 'order-line');
-    const label = document.createElement('span');
-    label.textContent = `${detalle.cantidad}x ${detalle.nombreProducto}`;
-    line.appendChild(label);
-    const value = document.createElement('span');
-    value.textContent = formatearPrecio(detalle.subtotal);
-    line.appendChild(value);
-    body.appendChild(line);
-    if (detalle.nota) {
-      const nota = crear('p', 'field__hint');
-      nota.style.marginTop = '-4px';
-      nota.style.marginBottom = '6px';
-      nota.textContent = `Nota: "${detalle.nota}"`;
-      body.appendChild(nota);
+    let motivoInfo = null;
+    if (pedido.estado === 'RECHAZADO' && pedido.motivoRechazo) {
+      motivoInfo = { motivoLabel: MOTIVO_RECHAZO_LABEL[pedido.motivoRechazo] || pedido.motivoRechazo, comentario: pedido.comentarioRechazo };
+    } else if (pedido.estado === 'ANULADO' && pedido.motivoAnulacion) {
+      motivoInfo = { motivoLabel: pedido.motivoAnulacion, comentario: null };
     }
-  });
 
-  const totalLine = crear('div', 'order-line order-line--total');
-  const totalLabel = document.createElement('span');
-  totalLabel.textContent = 'Total';
-  totalLine.appendChild(totalLabel);
-  const totalValue = document.createElement('span');
-  totalValue.textContent = formatearPrecio(pedido.total);
-  totalLine.appendChild(totalValue);
-  body.appendChild(totalLine);
+    renderPedidoEstadoHeader(container, {
+      iconClass: info.iconClass,
+      icono: info.icon,
+      label: info.label,
+      texto: info.texto(comercio ? comercio.nombre : 'El comercio'),
+      numeroTexto: `Pedido #${pedido.id} · ${formatearFecha(pedido.fechaCreacion)}`,
+      motivoRechazo: motivoInfo,
+    });
 
-  if (comercio) {
-    const verComercio = document.createElement('a');
-    verComercio.className = 'btn btn-secondary';
-    verComercio.style.marginTop = '24px';
-    verComercio.href = `comercio-detalle.html?id=${comercio.id}`;
-    verComercio.setAttribute('data-testid', 'btn-ver-comercio');
-    verComercio.textContent = 'Ver comercio';
-    body.appendChild(verComercio);
+    const body = crear('div', 'screen-body screen-body--tight');
+
+    const modalidadCard = crear('div', 'summary-card');
+    const modalidadIcon = crear('div', 'summary-card__icon');
+    modalidadIcon.innerHTML = pedido.tipoEntrega === 'DOMICILIO' ? ICONS.truck : ICONS.bag;
+    modalidadCard.appendChild(modalidadIcon);
+    const modalidadBody = crear('div', 'summary-card__body');
+    const modalidadTitulo = document.createElement('h3');
+    modalidadTitulo.textContent = pedido.tipoEntrega === 'DOMICILIO' ? 'Envío a domicilio' : 'Retiro en el local';
+    modalidadBody.appendChild(modalidadTitulo);
+    const modalidadTexto = document.createElement('p');
+    if (pedido.tipoEntrega === 'DOMICILIO' && pedido.direccion) {
+      modalidadTexto.textContent = formatearDireccion(pedido.direccion);
+    } else if (comercio) {
+      modalidadTexto.textContent = comercio.direccion ? formatearDireccion(comercio.direccion) : comercio.nombre;
+    } else {
+      modalidadTexto.textContent = '';
+    }
+    modalidadBody.appendChild(modalidadTexto);
+    modalidadCard.appendChild(modalidadBody);
+    body.appendChild(modalidadCard);
+
+    const desglose = crear('div', 'section-heading');
+    desglose.style.marginTop = '20px';
+    desglose.textContent = 'Desglose del pedido';
+    body.appendChild(desglose);
+
+    pedido.detalles.forEach((detalle) => {
+      const line = crear('div', 'order-line');
+      const label = document.createElement('span');
+      label.textContent = `${detalle.cantidad}x ${detalle.nombreProducto}`;
+      line.appendChild(label);
+      const value = document.createElement('span');
+      value.textContent = formatearPrecio(detalle.subtotal);
+      line.appendChild(value);
+      body.appendChild(line);
+      if (detalle.nota) {
+        const nota = crear('p', 'field__hint');
+        nota.style.marginTop = '-4px';
+        nota.style.marginBottom = '6px';
+        nota.textContent = `Nota: "${detalle.nota}"`;
+        body.appendChild(nota);
+      }
+    });
+
+    const totalLine = crear('div', 'order-line order-line--total');
+    const totalLabel = document.createElement('span');
+    totalLabel.textContent = 'Total';
+    totalLine.appendChild(totalLabel);
+    const totalValue = document.createElement('span');
+    totalValue.textContent = formatearPrecio(pedido.total);
+    totalLine.appendChild(totalValue);
+    body.appendChild(totalLine);
+
+    const accionesSlot = crear('div');
+    accionesSlot.style.marginTop = '24px';
+    body.appendChild(accionesSlot);
+    renderAccionesCliente(accionesSlot, pedido, (actualizado) => {
+      pedido = actualizado;
+      renderActual();
+    }, { procesando: pagoEnProceso() });
+
+    if (comercio) {
+      const verComercio = document.createElement('a');
+      verComercio.className = 'btn btn-secondary';
+      verComercio.style.marginTop = '12px';
+      verComercio.href = `comercio-detalle.html?id=${comercio.id}`;
+      verComercio.setAttribute('data-testid', 'btn-ver-comercio');
+      verComercio.textContent = 'Ver comercio';
+      body.appendChild(verComercio);
+    }
+
+    container.appendChild(body);
   }
 
-  container.appendChild(body);
+  function pagoEnProceso() {
+    return (vueltaMp === 'exito' || vueltaMp === 'pendiente')
+      && pedido.estado === 'PENDIENTE_PAGO'
+      && pedido.pagoEstado === 'PENDIENTE';
+  }
+
+  renderDetalle();
+
+  if (!vueltaMp) {
+    return;
+  }
+
+  let abandonado = false;
+  window.addEventListener('pagehide', () => { abandonado = true; });
+
+  function mostrarResultado(finalizado) {
+    if (pedido.pagoEstado === 'PAGADO') {
+      showToast(MENSAJE_PAGADO);
+    } else if (pedido.estado === 'PENDIENTE_PAGO' && pedido.pagoEstado === 'RECHAZADO') {
+      showToast(MENSAJE_RECHAZADO, 'error');
+    } else if (pedido.estado === 'PENDIENTE_PAGO') {
+      if (vueltaMp === 'exito' && !finalizado) {
+        showToast(MENSAJE_PROCESANDO);
+      } else {
+        showToast(MENSAJE_PENDIENTE);
+      }
+    }
+  }
+
+  async function sincronizar() {
+    const actualizado = await apiFetch(`/pedidos/cliente/${pedidoId}/pago/sincronizar`, {
+      method: 'POST',
+      body: paymentId ? { paymentId } : undefined,
+    });
+    normalizarPedido(actualizado);
+    return actualizado;
+  }
+
+  function esperar(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  let ultimoEstado = `${pedido.estado}|${pedido.pagoEstado}`;
+
+  async function ciclo() {
+    const maxIntentos = vueltaMp === 'fallo' ? 1 : MAX_INTENTOS;
+    for (let intento = 1; intento <= maxIntentos; intento += 1) {
+      if (abandonado) {
+        return;
+      }
+      try {
+        pedido = await sincronizar();
+      } catch (error) {
+        if (error instanceof ApiError && (error.status === 401 || error.status === 404)) {
+          return;
+        }
+        if (intento === maxIntentos) {
+          renderActual();
+          mostrarResultado(true);
+          return;
+        }
+      }
+      if (abandonado) {
+        return;
+      }
+      const estadoActual = `${pedido.estado}|${pedido.pagoEstado}`;
+      const cambio = estadoActual !== ultimoEstado;
+      ultimoEstado = estadoActual;
+      const sigueEsperando = pagoEnProceso();
+      const ultimo = intento === maxIntentos || !sigueEsperando;
+      if (cambio || intento === 1 || ultimo) {
+        renderActual();
+        mostrarResultado(ultimo);
+      }
+      if (ultimo) {
+        return;
+      }
+      await esperar(INTERVALO_MS);
+    }
+  }
+
+  await ciclo();
 }

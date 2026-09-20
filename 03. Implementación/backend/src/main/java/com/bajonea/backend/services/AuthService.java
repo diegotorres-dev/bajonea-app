@@ -78,6 +78,7 @@ public class AuthService {
     private final TokenRepository tokenRepository;
     private final SesionRepository sesionRepository;
     private final ComercioRepository comercioRepository;
+    private final CuentaMercadoPagoService cuentaMercadoPagoService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final EmailService emailService;
@@ -300,20 +301,30 @@ public class AuthService {
             return;
         }
         comercioRepository.findByDuenoId(usuario.getId()).ifPresent(comercio -> {
-            if (comercio.getEstado() == EstadoComercio.APROBADO) {
+            if (comercio.getEstado() == EstadoComercio.APROBADO || comercio.getEstado() == EstadoComercio.APTO_VENTA) {
                 comercio.setEstado(EstadoComercio.CERRADO_TEMPORALMENTE);
                 comercioRepository.save(comercio);
             }
         });
     }
 
+    /**
+     * Restaura a {@code APTO_VENTA} si el Dueño sigue teniendo una cuenta de Mercado Pago activa,
+     * y a {@code APROBADO} si no. {@code propagarBloqueoAComercio} no escribe
+     * {@code HistorialEstadoComercio}, así que el estado previo al bloqueo no se puede
+     * reconstruir de ahí; {@code CuentaMercadoPago.activa} es la fuente de verdad real de si el
+     * comercio era apto para vender, y además cubre el caso borde de una cuenta desvinculada
+     * mientras el comercio estaba cerrado (vuelve a {@code APROBADO}, nunca a un
+     * {@code APTO_VENTA} sin cuenta que lo respalde). No re-verifica contra la API de Mercado Pago.
+     */
     private void restaurarComercioSiCorresponde(Usuario usuario, EstadoComercio estadoOrigenEsperado) {
         if (usuario.getRol() != RolUsuario.DUENO || estadoOrigenEsperado == null) {
             return;
         }
         comercioRepository.findByDuenoId(usuario.getId()).ifPresent(comercio -> {
             if (comercio.getEstado() == estadoOrigenEsperado) {
-                comercio.setEstado(EstadoComercio.APROBADO);
+                boolean cuentaMpActiva = cuentaMercadoPagoService.buscarActivaPorDueno(usuario.getId()).isPresent();
+                comercio.setEstado(cuentaMpActiva ? EstadoComercio.APTO_VENTA : EstadoComercio.APROBADO);
                 comercioRepository.save(comercio);
             }
         });

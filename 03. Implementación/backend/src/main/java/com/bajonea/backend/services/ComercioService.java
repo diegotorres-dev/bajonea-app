@@ -10,6 +10,7 @@ import com.bajonea.backend.dto.response.HorarioResponseDTO;
 import com.bajonea.backend.dto.response.RepresentanteResponseDTO;
 import com.bajonea.backend.entities.Comercio;
 import com.bajonea.backend.entities.Direccion;
+import com.bajonea.backend.entities.HistorialEstadoComercio;
 import com.bajonea.backend.entities.Horario;
 import com.bajonea.backend.entities.PersonaFisica;
 import com.bajonea.backend.enums.DiaSemana;
@@ -85,13 +86,13 @@ public class ComercioService {
     }
 
     public List<ComercioPublicoResponseDTO> listarAprobados() {
-        return comercioRepository.findByEstado(EstadoComercio.APROBADO).stream()
+        return comercioRepository.findByEstado(EstadoComercio.APTO_VENTA).stream()
                 .map(this::aPublicoResponseDTO)
                 .toList();
     }
 
     public void validarAceptaPedidos(Comercio comercio) {
-        if (comercio.getEstado() != EstadoComercio.APROBADO) {
+        if (comercio.getEstado() != EstadoComercio.APTO_VENTA) {
             throw new ConflictoDeNegocioException("Este comercio no está aceptando pedidos en este momento");
         }
         List<Horario> horarios = horarioRepository.findByComercioId(comercio.getId());
@@ -116,9 +117,55 @@ public class ComercioService {
 
     public ComercioPublicoResponseDTO buscarAprobadoPorId(Integer comercioId) {
         Comercio comercio = comercioRepository.findById(comercioId)
-                .filter(c -> c.getEstado() == EstadoComercio.APROBADO)
+                .filter(c -> c.getEstado() == EstadoComercio.APTO_VENTA)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
         return aPublicoResponseDTO(comercio);
+    }
+
+    /**
+     * Transición automática APROBADO -&gt; APTO_VENTA disparada al vincular la cuenta de
+     * MercadoPago del Dueño ({@code MercadoPagoOAuthService}). No es-operación (silenciosa) si
+     * el comercio no está en APROBADO — por ejemplo, si está SUSPENDIDO o ya está APTO_VENTA por
+     * un reintento de vinculación — mismo criterio que
+     * {@code AuthService.restaurarComercioSiCorresponde}, que solo actúa "si corresponde".
+     */
+    public void activarAptoVenta(Integer duenoId) {
+        Comercio comercio = obtenerComercioDelUsuario(duenoId);
+        if (comercio.getEstado() != EstadoComercio.APROBADO) {
+            return;
+        }
+        registrarTransicionAutomatica(comercio, EstadoComercio.APROBADO, EstadoComercio.APTO_VENTA,
+                "Vinculación automática de cuenta de Mercado Pago");
+    }
+
+    /**
+     * Transición automática APTO_VENTA -&gt; APROBADO disparada al desvincular la cuenta de
+     * MercadoPago del Dueño. No-operación si el comercio no está en APTO_VENTA.
+     */
+    public void desactivarAptoVenta(Integer duenoId) {
+        Comercio comercio = obtenerComercioDelUsuario(duenoId);
+        if (comercio.getEstado() != EstadoComercio.APTO_VENTA) {
+            return;
+        }
+        registrarTransicionAutomatica(comercio, EstadoComercio.APTO_VENTA, EstadoComercio.APROBADO,
+                "Desvinculación de cuenta de Mercado Pago");
+    }
+
+    private void registrarTransicionAutomatica(Comercio comercio, EstadoComercio estadoOrigen,
+            EstadoComercio estadoDestino, String motivo) {
+        comercio.setEstado(estadoDestino);
+        comercio.setFechaModificacion(LocalDateTime.now());
+        comercioRepository.save(comercio);
+
+        HistorialEstadoComercio historial = HistorialEstadoComercio.builder()
+                .comercio(comercio)
+                .administrador(null)
+                .estadoOrigen(estadoOrigen)
+                .estadoDestino(estadoDestino)
+                .motivo(motivo)
+                .fechaHora(LocalDateTime.now())
+                .build();
+        historialEstadoComercioRepository.save(historial);
     }
 
     private Comercio obtenerComercioDelUsuario(Integer usuarioId) {

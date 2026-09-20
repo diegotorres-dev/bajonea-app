@@ -85,6 +85,7 @@ const MOTIVO_RECHAZO_LABEL = Object.fromEntries(MOTIVOS_RECHAZO.map((motivo) => 
 const RUTA_POR_ESTADO = {
   PENDIENTE: 'comercio-pendiente.html',
   APROBADO: 'comercio-dashboard.html',
+  APTO_VENTA: 'comercio-dashboard.html',
   RECHAZADO: 'comercio-rechazado.html',
 };
 
@@ -178,7 +179,8 @@ function formatearFechaLarga(fechaTexto) {
   return fecha.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-export async function initComercioEstadoPagina(estadoEsperado) {
+export async function initComercioEstadoPagina(estadosPermitidos) {
+  const permitidos = Array.isArray(estadosPermitidos) ? estadosPermitidos : [estadosPermitidos];
   const usuario = getUsuario();
   if (!usuario || usuario.rol !== 'DUENO') {
     window.location.href = 'login.html';
@@ -191,7 +193,7 @@ export async function initComercioEstadoPagina(estadoEsperado) {
 
   const comercio = await apiFetch('/comercios/perfil');
   normalizarComercio(comercio);
-  if (comercio.estado !== estadoEsperado) {
+  if (!permitidos.includes(comercio.estado)) {
     window.location.href = RUTA_POR_ESTADO[comercio.estado] || 'login.html';
     return null;
   }
@@ -305,9 +307,16 @@ function renderMetricas(container, resumen) {
 }
 
 const ESTADO_BADGE_COMERCIO = {
-  PENDIENTE: { label: 'Nuevo', dotClass: 'pedido-estado__dot--pendiente' },
+  PENDIENTE_CONFIRMACION_COMERCIO: { label: 'Nuevo', dotClass: 'pedido-estado__dot--pendiente' },
   EN_PREPARACION: { label: 'En preparación', dotClass: 'pedido-estado__dot--positivo' },
+  EN_CAMINO: { label: 'En camino', dotClass: 'pedido-estado__dot--positivo' },
+  LISTO_PARA_RETIRAR: { label: 'Listo para retirar', dotClass: 'pedido-estado__dot--positivo' },
+  ENTREGADO: { label: 'Entregado', dotClass: 'pedido-estado__dot--positivo' },
   RECHAZADO: { label: 'Rechazado', dotClass: 'pedido-estado__dot--rechazado' },
+  ANULADO: { label: 'Anulado', dotClass: 'pedido-estado__dot--rechazado' },
+  CANCELADO: { label: 'Cancelado', dotClass: 'pedido-estado__dot--rechazado' },
+  CANCELADO_POR_SISTEMA: { label: 'Cancelado', dotClass: 'pedido-estado__dot--rechazado' },
+  EXPIRADO: { label: 'Expirado', dotClass: 'pedido-estado__dot--rechazado' },
 };
 
 function renderPedidoActivoCard(pedido) {
@@ -352,12 +361,14 @@ function renderPedidoActivoCard(pedido) {
   return card;
 }
 
+const ESTADOS_ACTIVOS_DASHBOARD = ['PENDIENTE_CONFIRMACION_COMERCIO', 'EN_PREPARACION', 'EN_CAMINO', 'LISTO_PARA_RETIRAR'];
+
 function renderPedidosActivos(listContainer, badgeContainer, pedidos) {
   const activos = pedidos
-    .filter((pedido) => pedido.estado === 'PENDIENTE' || pedido.estado === 'EN_PREPARACION')
+    .filter((pedido) => ESTADOS_ACTIVOS_DASHBOARD.includes(pedido.estado))
     .sort((a, b) => new Date(a.fechaCreacion) - new Date(b.fechaCreacion));
 
-  const nuevos = activos.filter((pedido) => pedido.estado === 'PENDIENTE').length;
+  const nuevos = activos.filter((pedido) => pedido.estado === 'PENDIENTE_CONFIRMACION_COMERCIO').length;
   badgeContainer.innerHTML = '';
   if (nuevos > 0) {
     const badge = crear('span', 'status-badge status-badge--nueva');
@@ -381,7 +392,7 @@ function renderPedidosActivos(listContainer, badgeContainer, pedidos) {
 }
 
 export async function initComercioDashboard() {
-  const comercio = await initComercioEstadoPagina('APROBADO');
+  const comercio = await initComercioEstadoPagina(['APROBADO', 'APTO_VENTA']);
   if (!comercio) {
     return;
   }
@@ -430,12 +441,26 @@ export async function initComercioDashboard() {
 
 const FILTROS_PEDIDOS = [
   { key: null, label: 'Todos' },
-  { key: 'PENDIENTE', label: 'Pendientes' },
+  { key: 'PENDIENTE_CONFIRMACION_COMERCIO', label: 'Pendientes' },
   { key: 'EN_PREPARACION', label: 'En preparación' },
+  { key: 'EN_CAMINO', label: 'En camino' },
+  { key: 'LISTO_PARA_RETIRAR', label: 'Listo para retirar' },
   { key: 'RECHAZADO', label: 'Rechazados' },
 ];
 
-const PRIORIDAD_ESTADO_PEDIDO = { PENDIENTE: 0, EN_PREPARACION: 1, RECHAZADO: 2 };
+const PRIORIDAD_ESTADO_PEDIDO = {
+  PENDIENTE_CONFIRMACION_COMERCIO: 0,
+  EN_PREPARACION: 1,
+  EN_CAMINO: 2,
+  LISTO_PARA_RETIRAR: 2,
+  RECHAZADO: 3,
+  ANULADO: 3,
+  ENTREGADO: 4,
+  CANCELADO: 4,
+  CANCELADO_POR_SISTEMA: 4,
+  EXPIRADO: 4,
+  PENDIENTE_PAGO: 5,
+};
 
 export async function initComercioPedidos() {
   const usuario = getUsuario();
@@ -501,7 +526,7 @@ export async function initComercioPedidos() {
 }
 
 const ESTADO_DETALLE_COMERCIO = {
-  PENDIENTE: {
+  PENDIENTE_CONFIRMACION_COMERCIO: {
     label: 'Pendiente',
     iconClass: 'pedido-detail__icon--pendiente',
     icon: ICONS.clock,
@@ -513,11 +538,53 @@ const ESTADO_DETALLE_COMERCIO = {
     icon: ICONS.flame,
     texto: 'Aceptaste este pedido. Lo tenés en preparación.',
   },
+  EN_CAMINO: {
+    label: 'En camino',
+    iconClass: 'pedido-detail__icon--pendiente',
+    icon: ICONS.truck,
+    texto: 'Despachaste este pedido. Está en camino al cliente.',
+  },
+  LISTO_PARA_RETIRAR: {
+    label: 'Listo para retirar',
+    iconClass: 'pedido-detail__icon--pendiente',
+    icon: ICONS.bag,
+    texto: 'Este pedido está listo, esperando que el cliente lo retire.',
+  },
+  ENTREGADO: {
+    label: 'Entregado',
+    iconClass: 'pedido-detail__icon--pendiente',
+    icon: ICONS.check,
+    texto: 'Este pedido fue entregado.',
+  },
   RECHAZADO: {
     label: 'Rechazado',
     iconClass: 'pedido-detail__icon--rechazado',
     icon: ICONS.xCircle,
     texto: 'Rechazaste este pedido.',
+  },
+  ANULADO: {
+    label: 'Anulado',
+    iconClass: 'pedido-detail__icon--pendiente',
+    icon: ICONS.xCircle,
+    texto: 'Anulaste este pedido.',
+  },
+  CANCELADO: {
+    label: 'Cancelado',
+    iconClass: 'pedido-detail__icon--pendiente',
+    icon: ICONS.xCircle,
+    texto: 'El cliente canceló este pedido.',
+  },
+  CANCELADO_POR_SISTEMA: {
+    label: 'Cancelado',
+    iconClass: 'pedido-detail__icon--pendiente',
+    icon: ICONS.xCircle,
+    texto: 'Este pedido se canceló automáticamente.',
+  },
+  EXPIRADO: {
+    label: 'Expirado',
+    iconClass: 'pedido-detail__icon--pendiente',
+    icon: ICONS.clock,
+    texto: 'Este pedido expiró por falta de respuesta a tiempo.',
   },
 };
 
@@ -644,8 +711,130 @@ function renderAccionesPendiente(container, pedido, onActualizado) {
   container.appendChild(rechazarBtn);
 }
 
+function mostrarModalAnularPedido(pedido, onConfirmar) {
+  const backdrop = crear('div', 'modal-backdrop');
+  backdrop.setAttribute('data-testid', 'modal-anular-pedido');
+  backdrop.innerHTML = `
+    <div class="product-modal-sheet">
+      <div class="product-modal-sheet__handle"><span></span></div>
+      <div class="product-modal-sheet__body">
+        <h2 style="font-size:19px;margin-bottom:16px;">Anular pedido #${pedido.id}</h2>
+        <form class="form" id="form-anular-pedido" novalidate>
+          <div class="field">
+            <label class="field__label" for="anulacion-motivo">Motivo de la anulación</label>
+            <div class="textarea-shell" id="anulacion-motivo-shell"><textarea id="anulacion-motivo" maxlength="500" placeholder="Contale al cliente por qué se anula el pedido" data-testid="input-motivo-anulacion"></textarea></div>
+            <div class="field__error" id="anulacion-error-motivo" style="display:none;" data-testid="mensaje-error-motivo-anulacion"></div>
+          </div>
+          <button class="btn btn-primary" type="submit" style="background:var(--color-error);margin-bottom:10px;" data-testid="btn-confirmar-anulacion">Anular pedido</button>
+          <button class="btn btn-tertiary" type="button" id="cancelar-anulacion-btn" data-testid="btn-cancelar-anulacion">Cancelar</button>
+        </form>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(backdrop);
+
+  const form = backdrop.querySelector('#form-anular-pedido');
+  const motivoShell = form.querySelector('#anulacion-motivo-shell');
+  const motivoTextarea = form.querySelector('#anulacion-motivo');
+
+  motivoTextarea.addEventListener('input', () => {
+    motivoShell.classList.remove('textarea-shell--error');
+    limpiarErrorCampo('anulacion-error-motivo');
+  });
+
+  backdrop.querySelector('#cancelar-anulacion-btn').addEventListener('click', () => backdrop.remove());
+  backdrop.addEventListener('click', (event) => {
+    if (event.target === backdrop) {
+      backdrop.remove();
+    }
+  });
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const motivo = motivoTextarea.value.trim();
+    if (!motivo) {
+      motivoShell.classList.add('textarea-shell--error');
+      mostrarErrorCampo('anulacion-error-motivo', 'Ingresá el motivo de la anulación.');
+      return;
+    }
+    backdrop.remove();
+    onConfirmar({ motivo });
+  });
+}
+
+function renderAccionesEnPreparacion(container, pedido, onActualizado) {
+  container.innerHTML = '';
+
+  const despacharBtn = crear('button', 'btn btn-primary');
+  despacharBtn.type = 'button';
+  despacharBtn.style.marginBottom = '10px';
+  despacharBtn.setAttribute('data-testid', 'btn-despachar-pedido');
+  despacharBtn.textContent = pedido.tipoEntrega === 'DOMICILIO' ? 'Marcar como despachado' : 'Marcar como listo para retirar';
+  despacharBtn.addEventListener('click', async () => {
+    setLoading(despacharBtn, 'Actualizando...', true);
+    try {
+      const actualizado = await apiFetch(`/pedidos/comercio/${pedido.id}/despachar`, { method: 'PUT' });
+      normalizarPedido(actualizado);
+      showToast('Pedido actualizado');
+      onActualizado(actualizado);
+    } catch (error) {
+      showToast(error instanceof ApiError ? error.message : 'No pudimos actualizar el pedido', 'error');
+      setLoading(despacharBtn, '', false, pedido.tipoEntrega === 'DOMICILIO' ? 'Marcar como despachado' : 'Marcar como listo para retirar');
+    }
+  });
+  container.appendChild(despacharBtn);
+
+  const anularBtn = crear('button', 'btn btn-secondary');
+  anularBtn.type = 'button';
+  anularBtn.style.borderColor = 'var(--color-error)';
+  anularBtn.style.color = 'var(--color-error)';
+  anularBtn.setAttribute('data-testid', 'btn-anular-pedido');
+  anularBtn.textContent = 'Anular pedido';
+  anularBtn.addEventListener('click', () => {
+    mostrarModalAnularPedido(pedido, async ({ motivo }) => {
+      try {
+        const actualizado = await apiFetch(`/pedidos/comercio/${pedido.id}/anular`, { method: 'PUT', body: { motivo } });
+        normalizarPedido(actualizado);
+        showToast('Pedido anulado');
+        onActualizado(actualizado);
+      } catch (error) {
+        showToast(error instanceof ApiError ? error.message : 'No pudimos anular el pedido', 'error');
+      }
+    });
+  });
+  container.appendChild(anularBtn);
+}
+
+function renderAccionesListoParaRetirar(container, pedido, onActualizado) {
+  container.innerHTML = '';
+
+  const entregarBtn = crear('button', 'btn btn-primary');
+  entregarBtn.type = 'button';
+  entregarBtn.setAttribute('data-testid', 'btn-confirmar-retiro');
+  entregarBtn.textContent = 'Confirmar retiro';
+  entregarBtn.addEventListener('click', async () => {
+    setLoading(entregarBtn, 'Confirmando...', true);
+    try {
+      const actualizado = await apiFetch(`/pedidos/comercio/${pedido.id}/entregar`, { method: 'PUT' });
+      normalizarPedido(actualizado);
+      showToast('Retiro confirmado');
+      onActualizado(actualizado);
+    } catch (error) {
+      showToast(error instanceof ApiError ? error.message : 'No pudimos confirmar el retiro', 'error');
+      setLoading(entregarBtn, '', false, 'Confirmar retiro');
+    }
+  });
+  container.appendChild(entregarBtn);
+}
+
 function renderPedidoDetalleComercio(container, pedido, onActualizado) {
   const info = ESTADO_DETALLE_COMERCIO[pedido.estado];
+
+  let motivoInfo = null;
+  if (pedido.estado === 'RECHAZADO' && pedido.motivoRechazo) {
+    motivoInfo = { motivoLabel: MOTIVO_RECHAZO_LABEL[pedido.motivoRechazo] || pedido.motivoRechazo, comentario: pedido.comentarioRechazo };
+  } else if (pedido.estado === 'ANULADO' && pedido.motivoAnulacion) {
+    motivoInfo = { motivoLabel: pedido.motivoAnulacion, comentario: null };
+  }
 
   renderPedidoEstadoHeader(container, {
     iconClass: info.iconClass,
@@ -653,12 +842,7 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado) {
     label: info.label,
     texto: info.texto,
     numeroTexto: `Pedido #${pedido.id} · ${formatearFecha(pedido.fechaCreacion)}`,
-    motivoRechazo: pedido.estado === 'RECHAZADO' && pedido.motivoRechazo
-      ? {
-        motivoLabel: MOTIVO_RECHAZO_LABEL[pedido.motivoRechazo] || pedido.motivoRechazo,
-        comentario: pedido.comentarioRechazo,
-      }
-      : null,
+    motivoRechazo: motivoInfo,
   });
 
   const body = crear('div', 'screen-body screen-body--tight');
@@ -727,11 +911,17 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado) {
   totalLine.appendChild(totalValue);
   body.appendChild(totalLine);
 
-  if (pedido.estado === 'PENDIENTE') {
+  if (pedido.estado === 'PENDIENTE_CONFIRMACION_COMERCIO' || pedido.estado === 'EN_PREPARACION' || pedido.estado === 'LISTO_PARA_RETIRAR') {
     const accionesSlot = crear('div');
     accionesSlot.style.marginTop = '24px';
     body.appendChild(accionesSlot);
-    renderAccionesPendiente(accionesSlot, pedido, onActualizado);
+    if (pedido.estado === 'PENDIENTE_CONFIRMACION_COMERCIO') {
+      renderAccionesPendiente(accionesSlot, pedido, onActualizado);
+    } else if (pedido.estado === 'EN_PREPARACION') {
+      renderAccionesEnPreparacion(accionesSlot, pedido, onActualizado);
+    } else {
+      renderAccionesListoParaRetirar(accionesSlot, pedido, onActualizado);
+    }
   }
 
   container.appendChild(body);
@@ -829,6 +1019,50 @@ function mostrarModalConfirmarLogout() {
   });
 }
 
+function mostrarModalConfirmarDesvincularMp(onConfirmar) {
+  const backdrop = crear('div', 'modal-backdrop');
+  backdrop.setAttribute('data-testid', 'modal-confirmar-desvincular-mp');
+  backdrop.innerHTML = `
+    <div class="modal-sheet">
+      <div class="modal-sheet__icon">${ICONS.alert}</div>
+      <h2 class="modal-sheet__title">¿Desvincular Mercado Pago?</h2>
+      <p class="modal-sheet__text">Tu comercio dejará de ser visible para tus clientes hasta que vuelvas a vincular una cuenta.</p>
+      <button class="btn btn-primary" type="button" id="confirmar-desvincular-mp-btn" style="background:var(--color-error);margin-bottom:12px;" data-testid="btn-confirmar-desvincular-mp">Sí, desvincular</button>
+      <button class="btn btn-tertiary" type="button" id="cancelar-desvincular-mp-btn" data-testid="btn-cancelar-desvincular-mp">Cancelar</button>
+    </div>
+  `;
+  document.body.appendChild(backdrop);
+  document.getElementById('cancelar-desvincular-mp-btn').addEventListener('click', () => backdrop.remove());
+  document.getElementById('confirmar-desvincular-mp-btn').addEventListener('click', () => {
+    backdrop.remove();
+    onConfirmar();
+  });
+  backdrop.addEventListener('click', (event) => {
+    if (event.target === backdrop) {
+      backdrop.remove();
+    }
+  });
+}
+
+async function cargarEstadoMercadoPago() {
+  const pendienteBox = document.getElementById('mp-estado-pendiente');
+  const vinculadoBox = document.getElementById('mp-estado-vinculado');
+  pendienteBox.classList.add('is-hidden');
+  vinculadoBox.classList.add('is-hidden');
+  try {
+    const estado = await apiFetch('/oauth/mercadopago/cuenta');
+    if (estado.vinculada) {
+      document.getElementById('mp-cuenta-usuario').textContent = `Cuenta de Mercado Pago vinculada: ${estado.mpUserId}`;
+      document.getElementById('mp-cuenta-fecha').textContent = `Vinculada el ${formatearFecha(estado.fechaVinculacion)}`;
+      vinculadoBox.classList.remove('is-hidden');
+    } else {
+      pendienteBox.classList.remove('is-hidden');
+    }
+  } catch (error) {
+    showToast(error instanceof ApiError ? error.message : 'No pudimos obtener el estado de Mercado Pago', 'error');
+  }
+}
+
 function mostrarModalFotoPerfilComercio({ onEditar }) {
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
@@ -923,6 +1157,43 @@ export async function initComercioPerfil() {
   });
 
   document.getElementById('cerrar-sesion-link').addEventListener('click', mostrarModalConfirmarLogout);
+
+  document.getElementById('mercadopago-link').addEventListener('click', () => {
+    mostrarVista('view-mercadopago');
+    cargarEstadoMercadoPago();
+  });
+
+  document.getElementById('btn-vincular-mp').addEventListener('click', async () => {
+    try {
+      const { url } = await apiFetch('/oauth/mercadopago/iniciar');
+      window.location.href = url;
+    } catch (error) {
+      showToast(error instanceof ApiError ? error.message : 'No pudimos iniciar la vinculación con Mercado Pago', 'error');
+    }
+  });
+
+  document.getElementById('btn-desvincular-mp').addEventListener('click', () => {
+    mostrarModalConfirmarDesvincularMp(async () => {
+      try {
+        await apiFetch('/oauth/mercadopago/desvincular', { method: 'DELETE' });
+        showToast('Cuenta de Mercado Pago desvinculada', 'success');
+        cargarEstadoMercadoPago();
+      } catch (error) {
+        showToast(error instanceof ApiError ? error.message : 'No pudimos desvincular la cuenta', 'error');
+      }
+    });
+  });
+
+  const resultadoVinculacionMp = new URLSearchParams(window.location.search).get('vinculacionMp');
+  if (resultadoVinculacionMp === 'exito') {
+    showToast('Tu cuenta de Mercado Pago quedó vinculada', 'success');
+    mostrarVista('view-mercadopago');
+    cargarEstadoMercadoPago();
+  } else if (resultadoVinculacionMp === 'error') {
+    showToast('No pudimos vincular tu cuenta de Mercado Pago. Probá de nuevo.', 'error');
+    mostrarVista('view-mercadopago');
+    cargarEstadoMercadoPago();
+  }
 
   const inputAvatar = document.getElementById('input-avatar');
   inputAvatar.addEventListener('change', async () => {

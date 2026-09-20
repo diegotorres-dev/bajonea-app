@@ -28,6 +28,12 @@ const ICONS = {
   clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>',
   logoutIcon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
+  percent: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>',
+};
+
+const LABELS_TIPO_CARGO = {
+  FIJO: 'Monto fijo ($)',
+  PORCENTAJE: 'Porcentaje (%)',
 };
 
 const LABELS_CONDICION_IVA = {
@@ -81,6 +87,24 @@ function formatearFechaHora(fechaIso) {
 
 function formatearSoloFecha(fechaIso) {
   return new Date(fechaIso).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+}
+
+function formatearPrecio(valor) {
+  const entero = Math.round(Number(valor));
+  return `$${entero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
+}
+
+function formatearCargo(valor, tipo) {
+  if (tipo === 'PORCENTAJE') {
+    const numero = Number(valor);
+    const texto = numero % 1 === 0 ? numero.toFixed(0) : numero.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+    return `${texto}%`;
+  }
+  return formatearPrecio(valor);
+}
+
+function labelResumenCargo(tipo) {
+  return tipo === 'PORCENTAJE' ? 'Sobre el subtotal' : 'Monto fijo por pedido';
 }
 
 const LABELS_ESTADO_USUARIO = {
@@ -173,6 +197,7 @@ export async function initAdminDashboard() {
     { icon: ICONS.users, titulo: 'Clientes', subtitulo: `${metricas.clientesTotal} registrados`, href: 'admin-clientes.html' },
     { icon: ICONS.tag, titulo: 'Categorías', subtitulo: `${metricas.categoriasActivas} activas`, href: 'admin-categorias.html' },
     { icon: ICONS.hash, titulo: 'Tags', subtitulo: `${metricas.tagsActivos} activos`, href: 'admin-tags.html' },
+    { icon: ICONS.percent, titulo: 'Tarifas', subtitulo: 'Cargos y comisiones', href: 'admin-tarifas.html' },
   ];
 
   const grid = document.getElementById('gestion-grid');
@@ -406,6 +431,9 @@ function renderComercioDetailSections(body, comercio) {
   const datosComercioTitulo = crear('p', 'detail-section__title');
   datosComercioTitulo.textContent = 'Datos del Comercio';
   datosComercio.appendChild(datosComercioTitulo);
+  if (comercio.estado === 'SUSPENDIDO') {
+    datosComercio.appendChild(detailRow('Estado', 'Suspendido'));
+  }
   datosComercio.appendChild(detailRow('Nombre comercial', comercio.nombre));
   datosComercio.appendChild(detailRow('Tipo', labelTipoComercio(comercio.tipoComercio)));
   datosComercio.appendChild(detailRow('Teléfono de contacto', comercio.telefono));
@@ -601,7 +629,67 @@ export async function initAdminComercioDetalle() {
   });
 }
 
-function mostrarModalDetalleComercio(comercio) {
+function mostrarModalSuspenderComercio(comercio, onConfirmar) {
+  const backdrop = crear('div', 'modal-backdrop');
+  backdrop.setAttribute('data-testid', 'modal-suspender-comercio');
+  backdrop.innerHTML = `
+    <div class="product-modal-sheet">
+      <div class="product-modal-sheet__handle"><span></span></div>
+      <div class="product-modal-sheet__body">
+        <h2 style="font-size:19px;margin-bottom:6px;">Suspender comercio</h2>
+        <p class="product-modal-sheet__description" style="margin-bottom:16px;">El comercio deja de operar y sus pedidos activos se cancelan. El Dueño recibe una notificación con el motivo.</p>
+        <form class="form" id="form-suspender-comercio" novalidate>
+          <div class="field">
+            <label class="field__label" for="suspension-motivo">Motivo de la suspensión</label>
+            <div class="textarea-shell" id="suspension-motivo-shell"><textarea id="suspension-motivo" maxlength="500" placeholder="Describí el motivo de la suspensión..." data-testid="input-motivo-suspension"></textarea></div>
+            <div class="textarea-counter"><span id="suspension-contador">0/500</span></div>
+            <div id="suspension-error" class="field__error" style="display:none;" data-testid="mensaje-error-motivo-suspension">${ICONS.xCircle}<span>El motivo es obligatorio para suspender un comercio.</span></div>
+          </div>
+          <button class="btn btn-primary" type="submit" id="confirmar-suspension-btn" style="background:var(--color-error);margin-bottom:10px;" disabled data-testid="btn-confirmar-suspension">Confirmar suspensión</button>
+          <button class="btn btn-tertiary" type="button" id="cancelar-suspension-btn" data-testid="btn-cancelar-suspension">Cancelar</button>
+        </form>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(backdrop);
+
+  const textarea = backdrop.querySelector('#suspension-motivo');
+  const shell = backdrop.querySelector('#suspension-motivo-shell');
+  const contador = backdrop.querySelector('#suspension-contador');
+  const errorEl = backdrop.querySelector('#suspension-error');
+  const submitBtn = backdrop.querySelector('#confirmar-suspension-btn');
+
+  textarea.addEventListener('input', () => {
+    contador.textContent = `${textarea.value.length}/500`;
+    const valido = textarea.value.trim().length > 0;
+    submitBtn.disabled = !valido;
+    if (valido) {
+      shell.classList.remove('textarea-shell--error');
+      errorEl.style.display = 'none';
+    }
+  });
+
+  backdrop.querySelector('#cancelar-suspension-btn').addEventListener('click', () => backdrop.remove());
+  backdrop.addEventListener('click', (event) => {
+    if (event.target === backdrop) {
+      backdrop.remove();
+    }
+  });
+
+  backdrop.querySelector('#form-suspender-comercio').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const motivo = textarea.value.trim();
+    if (!motivo) {
+      shell.classList.add('textarea-shell--error');
+      errorEl.style.display = 'flex';
+      return;
+    }
+    backdrop.remove();
+    onConfirmar(motivo);
+  });
+}
+
+function mostrarModalDetalleComercio(comercio, onSuspendido) {
   const backdrop = crear('div', 'modal-backdrop');
   backdrop.setAttribute('data-testid', 'modal-detalle-comercio');
   const sheet = crear('div', 'product-modal-sheet');
@@ -617,6 +705,34 @@ function mostrarModalDetalleComercio(comercio) {
   body.appendChild(h2);
 
   renderComercioDetailSections(body, comercio);
+
+  if (comercio.estado === 'APROBADO' || comercio.estado === 'APTO_VENTA') {
+    const suspenderBtn = crear('button', 'btn btn-secondary');
+    suspenderBtn.type = 'button';
+    suspenderBtn.style.marginTop = '4px';
+    suspenderBtn.style.borderColor = 'var(--color-error)';
+    suspenderBtn.style.color = 'var(--color-error)';
+    suspenderBtn.setAttribute('data-testid', 'btn-suspender-comercio');
+    suspenderBtn.textContent = 'Suspender';
+    suspenderBtn.addEventListener('click', () => {
+      mostrarModalSuspenderComercio(comercio, async (motivo) => {
+        try {
+          await apiFetch(`/administrador/comercios/${comercio.id}/suspender`, {
+            method: 'PUT',
+            body: { motivo },
+          });
+          backdrop.remove();
+          showToast('Comercio suspendido');
+          if (onSuspendido) {
+            onSuspendido();
+          }
+        } catch (error) {
+          showToast(error instanceof ApiError ? error.message : 'No pudimos suspender el comercio', 'error');
+        }
+      });
+    });
+    body.appendChild(suspenderBtn);
+  }
 
   const cerrarBtn = crear('button', 'btn btn-tertiary');
   cerrarBtn.type = 'button';
@@ -636,7 +752,7 @@ function mostrarModalDetalleComercio(comercio) {
   });
 }
 
-function renderComercioAdminRow(comercio) {
+function renderComercioAdminRow(comercio, onSuspendido) {
   const row = crear('div', 'comercio-admin-row');
   row.setAttribute('data-testid', `comercio-admin-item-${comercio.id}`);
 
@@ -657,7 +773,7 @@ function renderComercioAdminRow(comercio) {
   detalleBtn.type = 'button';
   detalleBtn.setAttribute('data-testid', `btn-ver-detalle-comercio-${comercio.id}`);
   detalleBtn.innerHTML = `<span>Ver detalle</span>${ICONS.chevronRight}`;
-  detalleBtn.addEventListener('click', () => mostrarModalDetalleComercio(comercio));
+  detalleBtn.addEventListener('click', () => mostrarModalDetalleComercio(comercio, onSuspendido));
   row.appendChild(detalleBtn);
 
   return row;
@@ -688,7 +804,7 @@ export async function initAdminComercios() {
 
   comercios
     .sort((a, b) => a.nombre.localeCompare(b.nombre))
-    .forEach((comercio) => container.appendChild(renderComercioAdminRow(comercio)));
+    .forEach((comercio) => container.appendChild(renderComercioAdminRow(comercio, initAdminComercios)));
 }
 
 function renderClienteAdminRow(cliente) {
@@ -1267,6 +1383,280 @@ export async function initAdminTags() {
   }
 
   fab.addEventListener('click', () => abrirModalTag(null));
+
+  render();
+}
+
+function crearCampoCargo(idPrefix, tituloLabel, tipoDefault) {
+  const field = crear('div', 'field');
+  const label = document.createElement('label');
+  label.className = 'field__label';
+  label.setAttribute('for', `${idPrefix}-valor`);
+  label.textContent = tituloLabel;
+  field.appendChild(label);
+
+  const row = crear('div', 'schedule-row');
+
+  const selectShell = crear('div', 'select-shell');
+  selectShell.style.flex = '1';
+  const select = document.createElement('select');
+  select.id = `${idPrefix}-tipo`;
+  select.setAttribute('data-testid', `select-tipo-${idPrefix}`);
+  Object.entries(LABELS_TIPO_CARGO).forEach(([valor, texto]) => {
+    const option = document.createElement('option');
+    option.value = valor;
+    option.textContent = texto;
+    select.appendChild(option);
+  });
+  select.value = tipoDefault;
+  selectShell.appendChild(select);
+  const chevron = document.createElement('span');
+  chevron.innerHTML = '<svg class="select-shell__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+  selectShell.appendChild(chevron.firstChild);
+  row.appendChild(selectShell);
+
+  const inputShell = crear('div', 'input-shell');
+  inputShell.style.flex = '1';
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.min = '0';
+  input.step = '0.01';
+  input.id = `${idPrefix}-valor`;
+  input.placeholder = '0';
+  input.setAttribute('data-testid', `input-valor-${idPrefix}`);
+  inputShell.appendChild(input);
+  row.appendChild(inputShell);
+
+  field.appendChild(row);
+
+  const error = crear('div', 'field__error');
+  error.style.display = 'none';
+  error.setAttribute('data-testid', `mensaje-error-${idPrefix}`);
+  const errorTexto = document.createElement('span');
+  error.innerHTML = ICONS.xCircle;
+  error.appendChild(errorTexto);
+  field.appendChild(error);
+
+  return { field, select, input, inputShell, error, errorTexto };
+}
+
+function mostrarModalConfirmarTarifa(datos, formBackdrop, onGuardado) {
+  const backdrop = crear('div', 'modal-backdrop');
+  backdrop.setAttribute('data-testid', 'modal-confirmar-tarifa');
+  const resumenCliente = `${formatearCargo(datos.cargoCliente, datos.tipoCargoCliente)} al cliente`;
+  const resumenComercio = `${formatearCargo(datos.cargoComercio, datos.tipoCargoComercio)} al comercio`;
+  backdrop.innerHTML = `
+    <div class="modal-sheet">
+      <h2 class="modal-sheet__title">¿Confirmás aplicar esta tarifa desde ahora?</h2>
+      <p class="modal-sheet__text" style="margin-bottom:20px;">${resumenCliente} · ${resumenComercio}</p>
+      <button class="btn btn-primary" type="button" id="confirmar-tarifa-btn" style="margin-bottom:12px;" data-testid="btn-confirmar-nueva-tarifa">Confirmar</button>
+      <button class="btn btn-tertiary" type="button" id="cancelar-tarifa-btn" data-testid="btn-cancelar-confirmar-tarifa">Cancelar</button>
+    </div>
+  `;
+  document.body.appendChild(backdrop);
+
+  document.getElementById('cancelar-tarifa-btn').addEventListener('click', () => backdrop.remove());
+
+  const confirmarBtn = document.getElementById('confirmar-tarifa-btn');
+  confirmarBtn.addEventListener('click', async () => {
+    confirmarBtn.disabled = true;
+    try {
+      await apiFetch('/administrador/tarifas', { method: 'POST', body: datos });
+      backdrop.remove();
+      formBackdrop.remove();
+      showToast('Tarifa creada correctamente');
+      await onGuardado();
+    } catch (error) {
+      showToast(error instanceof ApiError ? error.message : 'No pudimos guardar la tarifa', 'error');
+      confirmarBtn.disabled = false;
+    }
+  });
+
+  backdrop.addEventListener('click', (event) => {
+    if (event.target === backdrop) {
+      backdrop.remove();
+    }
+  });
+}
+
+function mostrarModalNuevaTarifa(onGuardado) {
+  const backdrop = crear('div', 'modal-backdrop');
+  backdrop.setAttribute('data-testid', 'modal-nueva-tarifa');
+  const sheet = crear('div', 'product-modal-sheet');
+  const handle = crear('div', 'product-modal-sheet__handle');
+  handle.innerHTML = '<span></span>';
+  sheet.appendChild(handle);
+
+  const body = crear('div', 'product-modal-sheet__body');
+  const h2 = document.createElement('h2');
+  h2.style.marginBottom = '6px';
+  h2.textContent = 'Nueva configuración de tarifa';
+  body.appendChild(h2);
+  const descripcion = crear('p', 'product-modal-sheet__description');
+  descripcion.style.marginBottom = '16px';
+  descripcion.textContent = 'Se aplica a todos los pedidos nuevos a partir de este momento.';
+  body.appendChild(descripcion);
+
+  const form = crear('form', 'form');
+  form.setAttribute('novalidate', '');
+
+  const campoCliente = crearCampoCargo('cargo-cliente', 'Cargo al cliente', 'FIJO');
+  form.appendChild(campoCliente.field);
+  const campoComercio = crearCampoCargo('cargo-comercio', 'Cargo al comercio', 'PORCENTAJE');
+  form.appendChild(campoComercio.field);
+
+  const submitBtn = crear('button', 'btn btn-primary');
+  submitBtn.type = 'submit';
+  submitBtn.style.marginTop = '8px';
+  submitBtn.setAttribute('data-testid', 'btn-guardar-nueva-tarifa');
+  submitBtn.textContent = 'Guardar nueva tarifa';
+  form.appendChild(submitBtn);
+
+  const cancelBtn = crear('button', 'btn btn-tertiary');
+  cancelBtn.type = 'button';
+  cancelBtn.setAttribute('data-testid', 'btn-cancelar-nueva-tarifa');
+  cancelBtn.textContent = 'Cancelar';
+  cancelBtn.addEventListener('click', () => backdrop.remove());
+  form.appendChild(cancelBtn);
+
+  body.appendChild(form);
+  sheet.appendChild(body);
+  backdrop.appendChild(sheet);
+  document.body.appendChild(backdrop);
+
+  function limpiarError(campo) {
+    campo.inputShell.classList.remove('input-shell--error');
+    campo.error.style.display = 'none';
+  }
+  function mostrarError(campo, mensaje) {
+    campo.inputShell.classList.add('input-shell--error');
+    campo.error.style.display = 'flex';
+    campo.errorTexto.textContent = mensaje;
+  }
+  [campoCliente, campoComercio].forEach((campo) => {
+    campo.input.addEventListener('input', () => limpiarError(campo));
+  });
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    let valido = true;
+    [campoCliente, campoComercio].forEach((campo) => {
+      const valor = campo.input.value.trim();
+      if (valor === '' || Number.isNaN(Number(valor)) || Number(valor) < 0) {
+        mostrarError(campo, 'Ingresá un valor numérico igual o mayor a 0.');
+        valido = false;
+      }
+    });
+    if (!valido) {
+      return;
+    }
+
+    const datos = {
+      cargoCliente: Number(campoCliente.input.value),
+      tipoCargoCliente: campoCliente.select.value,
+      cargoComercio: Number(campoComercio.input.value),
+      tipoCargoComercio: campoComercio.select.value,
+    };
+
+    mostrarModalConfirmarTarifa(datos, backdrop, onGuardado);
+  });
+
+  backdrop.addEventListener('click', (event) => {
+    if (event.target === backdrop) {
+      backdrop.remove();
+    }
+  });
+}
+
+export async function initAdminTarifas() {
+  if (!requireAdmin()) {
+    return;
+  }
+
+  const content = document.getElementById('tarifas-content');
+
+  let vigente = await apiFetch('/administrador/tarifas/vigente');
+  let historial = await apiFetch('/administrador/tarifas/historial');
+
+  async function recargar() {
+    [vigente, historial] = await Promise.all([
+      apiFetch('/administrador/tarifas/vigente'),
+      apiFetch('/administrador/tarifas/historial'),
+    ]);
+    render();
+  }
+
+  function renderVigente() {
+    const section = crear('div', 'detail-section');
+
+    const badge = crear('span', 'status-badge status-badge--nueva');
+    badge.style.marginBottom = '12px';
+    badge.textContent = `Activa desde ${formatearSoloFecha(vigente.fechaVigencia)}`;
+    section.appendChild(badge);
+
+    const bar = crear('div', 'stats-bar');
+    bar.style.margin = '12px 0 16px';
+    [
+      { titulo: formatearCargo(vigente.cargoCliente, vigente.tipoCargoCliente), label: `Cargo al cliente · ${labelResumenCargo(vigente.tipoCargoCliente)}` },
+      { titulo: formatearCargo(vigente.cargoComercio, vigente.tipoCargoComercio), label: `Cargo al comercio · ${labelResumenCargo(vigente.tipoCargoComercio)}` },
+    ].forEach((col) => {
+      const wrap = crear('div', 'stats-bar__col');
+      const valor = crear('p', 'stats-bar__value');
+      valor.textContent = col.titulo;
+      wrap.appendChild(valor);
+      const label = crear('p', 'stats-bar__label');
+      label.textContent = col.label;
+      wrap.appendChild(label);
+      bar.appendChild(wrap);
+    });
+    section.appendChild(bar);
+
+    const nuevaBtn = crear('button', 'btn btn-primary');
+    nuevaBtn.type = 'button';
+    nuevaBtn.setAttribute('data-testid', 'btn-nueva-tarifa');
+    nuevaBtn.textContent = '+ Nueva configuración';
+    nuevaBtn.addEventListener('click', () => mostrarModalNuevaTarifa(recargar));
+    section.appendChild(nuevaBtn);
+
+    return section;
+  }
+
+  function renderHistorial() {
+    const section = crear('div', 'detail-section');
+    const anteriores = historial.filter((item) => item.id !== vigente.id);
+
+    if (anteriores.length === 0) {
+      const vacio = document.createElement('p');
+      vacio.className = 'field__hint';
+      vacio.textContent = 'Todavía no hay configuraciones anteriores.';
+      section.appendChild(vacio);
+      return section;
+    }
+
+    anteriores.forEach((item) => {
+      section.appendChild(detailRow(
+        formatearFechaHora(item.fechaVigencia),
+        `${formatearCargo(item.cargoCliente, item.tipoCargoCliente)} cliente · ${formatearCargo(item.cargoComercio, item.tipoCargoComercio)} comercio`,
+      ));
+    });
+    return section;
+  }
+
+  function render() {
+    content.innerHTML = '';
+
+    const headingVigente = crear('p', 'section-heading');
+    headingVigente.style.marginTop = '0';
+    headingVigente.textContent = 'Tarifa vigente';
+    content.appendChild(headingVigente);
+    content.appendChild(renderVigente());
+
+    const headingHistorial = crear('p', 'section-heading');
+    headingHistorial.style.marginTop = '24px';
+    headingHistorial.textContent = 'Historial';
+    content.appendChild(headingHistorial);
+    content.appendChild(renderHistorial());
+  }
 
   render();
 }

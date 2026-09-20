@@ -10,5 +10,7 @@ public interface ComercioRepository extends JpaRepository<Comercio, Integer> {
 
     List<Comercio> findByEstado(EstadoComercio estado);
 
+    List<Comercio> findByEstadoIn(List<EstadoComercio> estados);
+
     Optional<Comercio> findByDuenoId(Integer duenoId);
 }

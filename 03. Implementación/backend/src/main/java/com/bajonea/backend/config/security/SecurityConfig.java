@@ -56,6 +56,20 @@ public class SecurityConfig {
      * {@code TestSupportService} llevan {@code @Profile("test")}, así que fuera de ese perfil
      * Spring nunca registra el bean ni la ruta — permitirla acá no la hace alcanzable en el
      * perfil normal/producción, donde ni siquiera existe un handler que responda.
+     * <p>
+     * {@code /api/v1/oauth/mercadopago/callback} (tramo MercadoPago 02, vinculación OAuth) es
+     * público porque lo invoca el navegador del Dueño por redirect de MercadoPago, nunca un
+     * fetch autenticado del frontend — a esa altura del flujo el navegador no manda el JWT de
+     * Bajoneá. La identidad del Dueño se resuelve del lado del servidor vía el {@code state} de
+     * PKCE (tabla {@code codigo_vinculacion_mp}), no vía sesión. El resto de
+     * {@code /api/v1/oauth/mercadopago/**} ({@code /iniciar}, {@code /desvincular},
+     * {@code /cuenta}) sigue protegido por el matcher {@code hasRole("DUENO")} de más abajo.
+     * <p>
+     * {@code /api/v1/webhooks/mercadopago} (tramo MercadoPago 03, creación de preferencia +
+     * webhook) es público por el mismo motivo estructural que el callback OAuth: lo invoca
+     * MercadoPago directamente, nunca el frontend de Bajoneá, así que no hay JWT que validar.
+     * La autenticidad de cada notificación se valida vía el header {@code x-signature}
+     * ({@code MercadoPagoPagoService.validarFirma}), no vía Spring Security.
      */
     private static final String[] RUTAS_PUBLICAS = {
             "/api/v1/auth/registro/**",
@@ -75,7 +89,9 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/error",
-            "/api/v1/test/**"
+            "/api/v1/test/**",
+            "/api/v1/oauth/mercadopago/callback",
+            "/api/v1/webhooks/mercadopago"
     };
 
     @Bean
@@ -97,6 +113,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/carrito/**", "/api/v1/pedidos/cliente/**", "/api/v1/clientes/**")
                         .hasRole("CLIENTE")
                         .requestMatchers("/api/v1/pedidos/comercio/**").hasRole("DUENO")
+                        .requestMatchers("/api/v1/oauth/mercadopago/**").hasRole("DUENO")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(rateLimitFotoRegistroFilter, JwtAuthenticationFilter.class);

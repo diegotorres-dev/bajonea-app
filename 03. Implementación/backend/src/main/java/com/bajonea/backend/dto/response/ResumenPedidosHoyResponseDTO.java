@@ -9,7 +9,7 @@ import lombok.Getter;
  * {@code ENTREGADO} — ver docs/DECISIONES.md, deuda técnica a revisar cuando ese estado
  * exista). {@code cantidadPedidosHoy} cuenta **todos** los pedidos creados hoy sin importar su
  * estado (Tramo 16.20, ver docs/DECISIONES.md). {@code cantidadPendientes} cuenta los
- * {@code PENDIENTE} de hoy por separado.
+ * {@code PENDIENTE_CONFIRMACION_COMERCIO} de hoy por separado.
  */
 @Getter
 public class ResumenPedidosHoyResponseDTO {

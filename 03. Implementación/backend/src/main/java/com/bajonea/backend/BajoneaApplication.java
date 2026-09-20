@@ -2,8 +2,10 @@ package com.bajonea.backend;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
+@EnableScheduling
 public class BajoneaApplication {
 
 	public static void main(String[] args) {
@@ -14,4 +16,6 @@ public class BajoneaApplication {
 	//for /f "tokens=5" %a in ('netstat -aon ^| find ":8080" ^| find "LISTENING"') do taskkill /f /pid %a
 	//export const API_BASE_URL = 'https://bajonea-app-production.up.railway.app/api/v1';
 	//export const API_BASE_URL = 'http://localhost:8080/api/v1';
+    //ngrok http 8080 --domain=washbowl-delete-doorman.ngrok-free.dev
+    //$env:MERCADOPAGO_TEST_TOKEN="true"
 }

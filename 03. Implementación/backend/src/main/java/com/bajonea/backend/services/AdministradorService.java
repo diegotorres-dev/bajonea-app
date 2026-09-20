@@ -1,6 +1,7 @@
 package com.bajonea.backend.services;
 
 import com.bajonea.backend.dto.request.AprobacionComercioRequestDTO;
+import com.bajonea.backend.dto.request.SuspensionComercioRequestDTO;
 import com.bajonea.backend.dto.response.AdministradorResponseDTO;
 import com.bajonea.backend.dto.response.ClienteAdminResponseDTO;
 import com.bajonea.backend.dto.response.ComercioAdminResponseDTO;
@@ -58,6 +59,7 @@ public class AdministradorService {
     private final CategoriaRepository categoriaRepository;
     private final TagRepository tagRepository;
     private final NotificacionService notificacionService;
+    private final PedidoService pedidoService;
 
     public List<ComercioAdminResponseDTO> listarComerciosPendientes() {
         return comercioRepository.findByEstado(EstadoComercio.PENDIENTE).stream()
@@ -65,8 +67,14 @@ public class AdministradorService {
                 .toList();
     }
 
+    /**
+     * Incluye {@code SUSPENDIDO} además de {@code APROBADO} (Fase 19) — si filtrara
+     * exclusivamente por {@code APROBADO}, un comercio recién suspendido desaparecería de este
+     * listado y el Administrador no podría verificar el resultado de {@link #suspenderComercio}.
+     */
     public List<ComercioAdminResponseDTO> listarComerciosAprobados() {
-        return comercioRepository.findByEstado(EstadoComercio.APROBADO).stream()
+        return comercioRepository.findByEstadoIn(
+                        List.of(EstadoComercio.APROBADO, EstadoComercio.APTO_VENTA, EstadoComercio.SUSPENDIDO)).stream()
                 .map(this::aAdminResponseDTO)
                 .toList();
     }
@@ -137,6 +145,47 @@ public class AdministradorService {
 
         notificacionService.crear(comercio.getDueno().getPersonaJuridica().getPersona().getUsuario().getId(), mensaje,
                 tipo, TipoEntidadNotificacion.COMERCIO, comercio.getId());
+    }
+
+    /**
+     * Suspensión de Comercio por Administrador (Fase 19, sumada al alcance por pedido explícito
+     * de Diego). Solo cubre la dirección Comercio -> {@code SUSPENDIDO} desde
+     * {@code APROBADO} — sin "levantar suspensión" en este tramo (no pedido, y reabre
+     * decisiones de otro alcance: a qué estado vuelve el comercio, qué pasa con los pedidos ya
+     * cancelados). Dispara la lógica reactiva de {@code PedidoService} sobre los pedidos activos
+     * de este comercio.
+     */
+    public void suspenderComercio(Integer comercioId, Integer administradorId, SuspensionComercioRequestDTO request) {
+        Comercio comercio = comercioRepository.findById(comercioId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
+
+        if (comercio.getEstado() != EstadoComercio.APROBADO && comercio.getEstado() != EstadoComercio.APTO_VENTA) {
+            throw new ConflictoDeNegocioException("Solo se puede suspender un comercio aprobado");
+        }
+
+        Administrador administrador = administradorRepository.findById(administradorId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Administrador no encontrado"));
+
+        EstadoComercio estadoOrigen = comercio.getEstado();
+        comercio.setEstado(EstadoComercio.SUSPENDIDO);
+        comercio.setFechaModificacion(LocalDateTime.now());
+        comercioRepository.save(comercio);
+
+        HistorialEstadoComercio historial = HistorialEstadoComercio.builder()
+                .comercio(comercio)
+                .administrador(administrador)
+                .estadoOrigen(estadoOrigen)
+                .estadoDestino(EstadoComercio.SUSPENDIDO)
+                .motivo(request.getMotivo())
+                .fechaHora(LocalDateTime.now())
+                .build();
+        historialEstadoComercioRepository.save(historial);
+
+        notificacionService.crear(comercio.getDueno().getPersonaJuridica().getPersona().getUsuario().getId(),
+                "Tu comercio '" + comercio.getNombre() + "' fue suspendido. Motivo: " + request.getMotivo(),
+                TipoNotificacion.COMERCIO_SUSPENDIDO, TipoEntidadNotificacion.COMERCIO, comercio.getId());
+
+        pedidoService.cancelarPedidosPorSuspensionComercio(comercio.getId());
     }
 
     private ComercioAdminResponseDTO aAdminResponseDTO(Comercio comercio) {
