@@ -45,6 +45,8 @@ import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -89,6 +91,8 @@ public class PedidoService {
     private EntityManager entityManager;
 
     private static final BigDecimal SUBTOTAL_MAXIMO = new BigDecimal("99999999");
+    private static final List<EstadoPedido> ESTADOS_FACTURADOS = List.of(
+            EstadoPedido.EN_PREPARACION, EstadoPedido.EN_CAMINO, EstadoPedido.LISTO_PARA_RETIRAR, EstadoPedido.ENTREGADO);
 
     public PedidoResponseDTO confirmarPedido(Integer usuarioId, PedidoRequestDTO request) {
         Cliente cliente = clienteRepository.findById(usuarioId)
@@ -388,8 +392,10 @@ public class PedidoService {
     }
 
     public List<PedidoResponseDTO> listarPedidosCliente(Integer usuarioId) {
-        return pedidoRepository.findByClienteId(usuarioId).stream()
-                .map(this::aResponseDTO)
+        List<Pedido> pedidos = pedidoRepository.findByClienteId(usuarioId);
+        Map<Integer, LocalDateTime> fechasPago = fechasPagoAprobado(pedidos);
+        return pedidos.stream()
+                .map(pedido -> aResponseDTO(pedido, fechasPago.get(pedido.getId())))
                 .toList();
     }
 
@@ -401,9 +407,10 @@ public class PedidoService {
     public List<PedidoResponseDTO> listarPedidosComercio(Integer usuarioId) {
         Comercio comercio = comercioRepository.findByDuenoId(usuarioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
-        return pedidoRepository.findByComercioId(comercio.getId()).stream()
-                .filter(pedido -> pedido.getEstado() != EstadoPedido.PENDIENTE_PAGO)
-                .map(this::aResponseDTO)
+        List<Pedido> pedidos = pedidoRepository.findLlegadosPagadosByComercioId(comercio.getId());
+        Map<Integer, LocalDateTime> fechasPago = fechasPagoAprobado(pedidos);
+        return pedidos.stream()
+                .map(pedido -> aResponseDTO(pedido, fechasPago.get(pedido.getId())))
                 .toList();
     }
 
@@ -413,13 +420,17 @@ public class PedidoService {
 
         LocalDateTime inicioHoy = LocalDate.now().atStartOfDay();
         LocalDateTime finHoy = inicioHoy.plusDays(1);
-        List<Pedido> pedidosHoy = pedidoRepository.findByComercioIdAndFechaCreacionBetween(comercio.getId(), inicioHoy, finHoy)
-                .stream()
-                .filter(pedido -> pedido.getEstado() != EstadoPedido.PENDIENTE_PAGO)
+        List<Pedido> llegadosPagados = pedidoRepository.findLlegadosPagadosByComercioId(comercio.getId());
+        Map<Integer, LocalDateTime> fechasPago = fechasPagoAprobado(llegadosPagados);
+        List<Pedido> pedidosHoy = llegadosPagados.stream()
+                .filter(pedido -> {
+                    LocalDateTime fecha = fechasPago.get(pedido.getId());
+                    return fecha != null && !fecha.isBefore(inicioHoy) && fecha.isBefore(finHoy);
+                })
                 .toList();
 
         BigDecimal totalFacturadoHoy = pedidosHoy.stream()
-                .filter(pedido -> pedido.getEstado() == EstadoPedido.EN_PREPARACION)
+                .filter(pedido -> ESTADOS_FACTURADOS.contains(pedido.getEstado()))
                 .map(Pedido::getSubtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         int cantidadPedidosHoy = pedidosHoy.size();
@@ -595,13 +606,29 @@ public class PedidoService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado"));
-        if (!pedido.getComercio().getId().equals(comercio.getId())) {
+        if (!pedido.getComercio().getId().equals(comercio.getId()) || !pedidoRepository.llegoPagado(pedidoId)) {
             throw new RecursoNoEncontradoException("Pedido no encontrado");
         }
         return pedido;
     }
 
+    private Map<Integer, LocalDateTime> fechasPagoAprobado(List<Pedido> pedidos) {
+        if (pedidos.isEmpty()) {
+            return Map.of();
+        }
+        List<Integer> ids = pedidos.stream().map(Pedido::getId).toList();
+        Map<Integer, LocalDateTime> fechas = new HashMap<>();
+        for (Object[] fila : historialEstadoPedidoRepository.findPrimeraEntradaAEstadoPorPedido(ids, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO)) {
+            fechas.put((Integer) fila[0], (LocalDateTime) fila[1]);
+        }
+        return fechas;
+    }
+
     private PedidoResponseDTO aResponseDTO(Pedido pedido) {
+        return aResponseDTO(pedido, fechasPagoAprobado(List.of(pedido)).get(pedido.getId()));
+    }
+
+    private PedidoResponseDTO aResponseDTO(Pedido pedido, LocalDateTime fechaPagoAprobado) {
         List<DetallePedidoResponseDTO> detalles = detallePedidoRepository.findByPedidoId(pedido.getId()).stream()
                 .map(this::aResponseDTO)
                 .toList();
@@ -632,6 +659,7 @@ public class PedidoService {
                 pedido.getFuenteEntrega(),
                 pedido.getEstado() == EstadoPedido.ANULADO ? pedido.getMotivo() : null,
                 pedido.getFechaCreacion(),
+                fechaPagoAprobado,
                 pedido.getFechaEntrega(),
                 detalles,
                 pedido.getTotal());

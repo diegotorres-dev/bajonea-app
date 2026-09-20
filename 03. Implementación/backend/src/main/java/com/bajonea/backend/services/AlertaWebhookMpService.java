@@ -53,4 +53,25 @@ public class AlertaWebhookMpService {
                 .build();
         alertaWebhookMpRepository.save(alerta);
     }
+
+    /**
+     * Un pago aprobado con un id distinto del ya registrado en {@code pago} llegó para un pedido
+     * que ya tenía su pago aprobado. Ni el pedido ni {@code pago} se modifican; el duplicado queda
+     * solo en esta alerta (punto de enganche del reembolso futuro). Idempotente por (pedido, pago, motivo).
+     */
+    public void registrarPagoAprobadoDuplicado(Pedido pedido, String mpPaymentId, String ipOrigen) {
+        if (alertaWebhookMpRepository.existsByPedidoIdAndMpPaymentIdAndMotivo(
+                pedido.getId(), mpPaymentId, MotivoAlertaWebhookMp.PAGO_APROBADO_DUPLICADO)) {
+            return;
+        }
+        AlertaWebhookMp alerta = AlertaWebhookMp.builder()
+                .pedido(pedido)
+                .mpPaymentId(mpPaymentId)
+                .mpExternalReference(pedido.getId().toString())
+                .motivo(MotivoAlertaWebhookMp.PAGO_APROBADO_DUPLICADO)
+                .fechaCreacion(LocalDateTime.now())
+                .ipOrigen(ipOrigen)
+                .build();
+        alertaWebhookMpRepository.save(alerta);
+    }
 }

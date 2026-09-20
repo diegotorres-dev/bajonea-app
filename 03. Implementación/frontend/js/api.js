@@ -92,7 +92,7 @@ async function parseBody(response) {
   }
 }
 
-export async function apiFetch(path, { method = 'GET', body, auth = true, handle401Globally = true } = {}) {
+export async function apiFetch(path, { method = 'GET', body, auth = true, handle401Globally = true, handle5xxGlobally = true } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   const token = getToken();
   const hadToken = Boolean(auth && token);
@@ -124,7 +124,7 @@ export async function apiFetch(path, { method = 'GET', body, auth = true, handle
 
   const parsed = await parseBody(response);
 
-  if (response.status >= 500) {
+  if (response.status >= 500 && handle5xxGlobally) {
     redirectTo('errores/500.html', true);
     throw new ApiError(response.status, parsed.mensaje, parsed.data);
   }

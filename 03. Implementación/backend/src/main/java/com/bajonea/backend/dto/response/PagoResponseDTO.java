@@ -14,6 +14,8 @@ public class PagoResponseDTO {
     private final String urlPago;
     private final LocalDateTime fechaCreacion;
     private final LocalDateTime fechaConfirmacion;
+    private final boolean yaPagado;
+    private final boolean enRevision;
 
     public PagoResponseDTO(
             Integer pedidoId,
@@ -21,12 +23,16 @@ public class PagoResponseDTO {
             BigDecimal monto,
             String urlPago,
             LocalDateTime fechaCreacion,
-            LocalDateTime fechaConfirmacion) {
+            LocalDateTime fechaConfirmacion,
+            boolean yaPagado,
+            boolean enRevision) {
         this.pedidoId = pedidoId;
         this.estado = estado;
         this.monto = monto;
         this.urlPago = urlPago;
         this.fechaCreacion = fechaCreacion;
         this.fechaConfirmacion = fechaConfirmacion;
+        this.yaPagado = yaPagado;
+        this.enRevision = enRevision;
     }
 }

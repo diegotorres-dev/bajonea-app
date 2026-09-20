@@ -80,6 +80,20 @@ public class PagoService {
                 pago.getMonto(),
                 urlPago,
                 pago.getFechaCreacion(),
-                pago.getFechaConfirmacion());
+                pago.getFechaConfirmacion(),
+                false,
+                false);
+    }
+
+    public PagoResponseDTO aResponseDTOSinLink(Pago pago, Pedido pedido, boolean yaPagado, boolean enRevision) {
+        return new PagoResponseDTO(
+                pedido.getId(),
+                pedido.getPagoEstado(),
+                pago == null ? pedido.getTotal() : pago.getMonto(),
+                null,
+                pago == null ? null : pago.getFechaCreacion(),
+                pago == null ? null : pago.getFechaConfirmacion(),
+                yaPagado,
+                enRevision);
     }
 }

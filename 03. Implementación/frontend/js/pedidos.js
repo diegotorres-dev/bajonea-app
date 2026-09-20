@@ -319,8 +319,25 @@ function renderAccionesCliente(container, pedido, onActualizado, { procesando = 
       const original = irAPagarBtn.textContent;
       irAPagarBtn.textContent = 'Generando link de pago...';
       try {
-        const pago = await apiFetch(`/pedidos/cliente/${pedido.id}/pago`, { method: 'POST' });
-        window.location.href = pago.urlPago;
+        const pago = await apiFetch(`/pedidos/cliente/${pedido.id}/pago`, { method: 'POST', handle5xxGlobally: false });
+        if (pago.yaPagado) {
+          showToast('Tu pago se realizó correctamente');
+          const lista = await apiFetch('/pedidos/cliente');
+          lista.forEach(normalizarPedido);
+          const actualizado = lista.find((p) => p.id === pedido.id);
+          if (actualizado) {
+            onActualizado(actualizado);
+            return;
+          }
+        } else if (pago.enRevision) {
+          showToast('Tu pago está pendiente de confirmación');
+          irAPagarBtn.disabled = false;
+          irAPagarBtn.textContent = original;
+          return;
+        } else {
+          window.location.href = pago.urlPago;
+          return;
+        }
       } catch (error) {
         showToast(error instanceof ApiError ? error.message : 'No pudimos generar el link de pago', 'error');
         irAPagarBtn.disabled = false;

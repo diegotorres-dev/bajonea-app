@@ -1,6 +1,7 @@
 package com.bajonea.backend.services;
 
 import com.bajonea.backend.config.MercadoPagoConfig;
+import com.bajonea.backend.config.PedidoTimeoutProperties;
 import com.bajonea.backend.dto.response.PagoResponseDTO;
 import com.bajonea.backend.dto.response.PedidoResponseDTO;
 import com.bajonea.backend.enums.EstadoPagoPedido;
@@ -12,12 +13,19 @@ import com.bajonea.backend.entities.Pedido;
 import com.bajonea.backend.enums.EstadoPedido;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
+import com.bajonea.backend.exceptions.ServicioNoDisponibleException;
 import com.bajonea.backend.repositories.DetallePedidoRepository;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
@@ -28,9 +36,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 
 /**
@@ -72,8 +82,21 @@ public class MercadoPagoPagoService {
     private final DetallePedidoRepository detallePedidoRepository;
     private final MercadoPagoConfig mercadoPagoConfig;
     private final AlertaWebhookMpService alertaWebhookMpService;
+    private final PedidoTimeoutProperties timeoutProperties;
 
-    private final RestClient restClient = RestClient.create();
+    private static final ZoneOffset ZONA_PREFERENCIA = ZoneOffset.of("-03:00");
+    private static final DateTimeFormatter FORMATO_FECHA_MP = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSxxx");
+    private static final int TIMEOUT_MP_MS = 5000;
+    private static final String MENSAJE_VERIFICACION_FALLIDA = "No pudimos verificar el estado de tu pago. Probá de nuevo en unos segundos.";
+
+    private final RestClient restClient = crearRestClient();
+
+    private static RestClient crearRestClient() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(TIMEOUT_MP_MS);
+        factory.setReadTimeout(TIMEOUT_MP_MS);
+        return RestClient.builder().requestFactory(factory).build();
+    }
 
     @Value("${app.frontend-base-url}")
     private String frontendBaseUrl;
@@ -83,14 +106,27 @@ public class MercadoPagoPagoService {
 
     public PagoResponseDTO iniciarOReusarPago(Integer usuarioId, Integer pedidoId) {
         Pedido pedido = pedidoService.obtenerPedidoDelCliente(usuarioId, pedidoId);
+        Pago pago = pagoService.buscarPorPedido(pedidoId).orElse(null);
+        if (pedido.getPagoEstado() == EstadoPagoPedido.PAGADO) {
+            return pagoService.aResponseDTOSinLink(pago, pedido, true, false);
+        }
         if (pedido.getEstado() != EstadoPedido.PENDIENTE_PAGO) {
             throw new ConflictoDeNegocioException("El pedido no está esperando el pago");
         }
 
         CuentaMercadoPago cuenta = obtenerCuentaDelComercio(pedido);
 
-        Pago pago = pagoService.buscarPorPedido(pedidoId).orElse(null);
         if (pago != null && pago.getMpPreferenciaId() != null) {
+            PagoMpResponse mejor = buscarMejorPagoOFallar(pedidoId, cuenta.getAccessToken());
+            if (mejor != null && mejor.id() != null) {
+                validarYAplicarResultado(pago, String.valueOf(mejor.id()), mejor, null);
+                if (pedido.getPagoEstado() == EstadoPagoPedido.PAGADO) {
+                    return pagoService.aResponseDTOSinLink(pago, pedido, true, false);
+                }
+                if (!ESTADO_APROBADO.equals(mejor.status()) && !ESTADOS_RECHAZO.contains(mejor.status())) {
+                    return pagoService.aResponseDTOSinLink(pago, pedido, false, true);
+                }
+            }
             return pagoService.aResponseDTO(pago, pedido, esSandbox(cuenta));
         }
 
@@ -237,8 +273,9 @@ public class MercadoPagoPagoService {
 
         if (aprobado) {
             if (yaHayPagoAprobado && !paymentId.equals(pago.getIdTransaccionMp())) {
-                log.warn("MercadoPago: pago aprobado {} ignorado para pedidoId={}, ya tiene el pago aprobado {}",
+                log.warn("MercadoPago: pago aprobado {} duplicado para pedidoId={}, ya tiene el pago aprobado {}",
                         paymentId, pedido.getId(), pago.getIdTransaccionMp());
+                alertaWebhookMpService.registrarPagoAprobadoDuplicado(pedido, paymentId, ipOrigen);
                 return;
             }
             pagoService.registrarResultado(pago, paymentId, pagoMp.status(), pagoMp.paymentTypeId(), true);
@@ -261,27 +298,44 @@ public class MercadoPagoPagoService {
 
     private PagoMpResponse buscarMejorPagoPorReferencia(Integer pedidoId, String accessToken) {
         try {
-            PagoMpBusquedaResponse busqueda = restClient.get()
-                    .uri(URL_BUSCAR_PAGOS + "?external_reference={ref}&sort=date_created&criteria=desc&limit=20", pedidoId.toString())
-                    .header("Authorization", "Bearer " + accessToken)
-                    .retrieve()
-                    .body(PagoMpBusquedaResponse.class);
-            if (busqueda == null || busqueda.results() == null || busqueda.results().isEmpty()) {
-                return null;
-            }
-            List<PagoMpResponse> resultados = busqueda.results();
-            for (PagoMpResponse candidato : resultados) {
-                if (ESTADO_APROBADO.equals(candidato.status())) {
-                    return candidato;
-                }
-            }
-            return resultados.stream()
-                    .max(Comparator.comparing(p -> p.dateCreated() == null ? "" : p.dateCreated()))
-                    .orElse(null);
+            return elegirMejorPago(pedidoId, accessToken);
         } catch (RestClientResponseException ex) {
             log.warn("No se pudo buscar pagos por external_reference={} en Mercado Pago: {}", pedidoId, ex.getStatusCode());
             return null;
         }
+    }
+
+    /**
+     * Variante estricta para "Ir a pagar": cualquier falla al consultar a MercadoPago (red, error de
+     * la API, tiempo agotado) bloquea la operación con 503 en vez de degradar a "sin pagos".
+     */
+    private PagoMpResponse buscarMejorPagoOFallar(Integer pedidoId, String accessToken) {
+        try {
+            return elegirMejorPago(pedidoId, accessToken);
+        } catch (RestClientException ex) {
+            log.warn("No se pudo verificar el pago del pedidoId={} en Mercado Pago: {}", pedidoId, ex.getMessage());
+            throw new ServicioNoDisponibleException(MENSAJE_VERIFICACION_FALLIDA);
+        }
+    }
+
+    private PagoMpResponse elegirMejorPago(Integer pedidoId, String accessToken) {
+        PagoMpBusquedaResponse busqueda = restClient.get()
+                .uri(URL_BUSCAR_PAGOS + "?external_reference={ref}&sort=date_created&criteria=desc&limit=20", pedidoId.toString())
+                .header("Authorization", "Bearer " + accessToken)
+                .retrieve()
+                .body(PagoMpBusquedaResponse.class);
+        if (busqueda == null || busqueda.results() == null || busqueda.results().isEmpty()) {
+            return null;
+        }
+        List<PagoMpResponse> resultados = busqueda.results();
+        for (PagoMpResponse candidato : resultados) {
+            if (ESTADO_APROBADO.equals(candidato.status())) {
+                return candidato;
+            }
+        }
+        return resultados.stream()
+                .max(Comparator.comparing(p -> p.dateCreated() == null ? "" : p.dateCreated()))
+                .orElse(null);
     }
 
     private CuentaMercadoPago obtenerCuentaDelComercio(Pedido pedido) {
@@ -321,7 +375,17 @@ public class MercadoPagoPagoService {
 
         BigDecimal marketplaceFee = pedido.getCargoServicioCliente().add(pedido.getCargoServicioComercio());
 
-        PreferenciaRequest request = new PreferenciaRequest(items, backUrls, notificationUrl, "approved", pedidoIdStr, marketplaceFee);
+        Duration restante = Duration.ofMinutes(timeoutProperties.getPagoMinutos())
+                .minus(Duration.between(pedido.getFechaCreacion(), LocalDateTime.now()));
+        if (restante.isZero() || restante.isNegative()) {
+            throw new ConflictoDeNegocioException("El pedido venció, ya no se puede pagar");
+        }
+        OffsetDateTime ahora = OffsetDateTime.now(ZONA_PREFERENCIA);
+        String vigenteDesde = ahora.truncatedTo(ChronoUnit.SECONDS).format(FORMATO_FECHA_MP);
+        String vigenteHasta = ahora.plus(restante).format(FORMATO_FECHA_MP);
+
+        PreferenciaRequest request = new PreferenciaRequest(items, backUrls, notificationUrl, "approved", pedidoIdStr, marketplaceFee,
+                true, vigenteDesde, vigenteHasta);
 
         try {
             PreferenciaResponse respuesta = restClient.post()
@@ -387,7 +451,10 @@ public class MercadoPagoPagoService {
             @JsonProperty("notification_url") String notificationUrl,
             @JsonProperty("auto_return") String autoReturn,
             @JsonProperty("external_reference") String externalReference,
-            @JsonProperty("marketplace_fee") BigDecimal marketplaceFee) {
+            @JsonProperty("marketplace_fee") BigDecimal marketplaceFee,
+            boolean expires,
+            @JsonProperty("expiration_date_from") String expirationDateFrom,
+            @JsonProperty("expiration_date_to") String expirationDateTo) {
     }
 
     private record PreferenciaResponse(

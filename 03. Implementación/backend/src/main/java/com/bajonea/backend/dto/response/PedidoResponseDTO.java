@@ -38,6 +38,7 @@ public class PedidoResponseDTO {
     private final FuenteEntrega fuenteEntrega;
     private final String motivoAnulacion;
     private final LocalDateTime fechaCreacion;
+    private final LocalDateTime fechaPagoAprobado;
     private final LocalDateTime fechaEntrega;
     private final List<DetallePedidoResponseDTO> detalles;
     private final BigDecimal total;
@@ -57,6 +58,7 @@ public class PedidoResponseDTO {
             FuenteEntrega fuenteEntrega,
             String motivoAnulacion,
             LocalDateTime fechaCreacion,
+            LocalDateTime fechaPagoAprobado,
             LocalDateTime fechaEntrega,
             List<DetallePedidoResponseDTO> detalles,
             BigDecimal total) {
@@ -74,6 +76,7 @@ public class PedidoResponseDTO {
         this.fuenteEntrega = fuenteEntrega;
         this.motivoAnulacion = motivoAnulacion;
         this.fechaCreacion = fechaCreacion;
+        this.fechaPagoAprobado = fechaPagoAprobado;
         this.fechaEntrega = fechaEntrega;
         this.detalles = detalles;
         this.total = total;

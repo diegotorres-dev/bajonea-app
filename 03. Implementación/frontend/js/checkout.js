@@ -1,5 +1,5 @@
 import { apiFetch, ApiError, getUsuario } from './api.js';
-import { estadoHorario } from './catalogo.js';
+import { estadoHorario, showToast } from './catalogo.js';
 import { normalizarCampos } from './validators.js';
 
 const ICONS = {
@@ -390,9 +390,26 @@ export async function initCheckout() {
       const original = irAPagarBtn.textContent;
       irAPagarBtn.textContent = 'Generando link de pago...';
       try {
-        const pago = await apiFetch(`/pedidos/cliente/${pedido.id}/pago`, { method: 'POST' });
+        const pago = await apiFetch(`/pedidos/cliente/${pedido.id}/pago`, { method: 'POST', handle5xxGlobally: false });
+        if (pago.yaPagado) {
+          showToast('Tu pago se realizó correctamente');
+          window.location.href = `pedido-detalle.html?id=${pedido.id}&pago=exito`;
+          return;
+        }
+        if (pago.enRevision) {
+          showToast('Tu pago está pendiente de confirmación');
+          irAPagarBtn.disabled = false;
+          irAPagarBtn.textContent = original;
+          return;
+        }
         window.location.href = pago.urlPago;
       } catch (error) {
+        if (error instanceof ApiError && error.status === 503) {
+          showToast(error.message, 'error');
+          irAPagarBtn.disabled = false;
+          irAPagarBtn.textContent = original;
+          return;
+        }
         renderBanner(bannerSlot, 'error', error instanceof ApiError ? error.message : 'No pudimos generar el link de pago. Intentá nuevamente.');
         irAPagarBtn.disabled = false;
         irAPagarBtn.textContent = original;

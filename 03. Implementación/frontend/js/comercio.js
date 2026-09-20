@@ -333,7 +333,7 @@ function renderPedidoActivoCard(pedido) {
   info.appendChild(clienteEl);
   const cantidadProductos = pedido.detalles.reduce((total, detalle) => total + detalle.cantidad, 0);
   const fechaEl = crear('p', 'pedido-card__fecha');
-  fechaEl.textContent = `Pedido #${pedido.id} · ${cantidadProductos} producto${cantidadProductos === 1 ? '' : 's'} · ${formatearFechaHoraCorta(pedido.fechaCreacion)}`;
+  fechaEl.textContent = `Pedido #${pedido.id} · ${cantidadProductos} producto${cantidadProductos === 1 ? '' : 's'} · ${formatearFechaHoraCorta(pedido.fechaPagoAprobado)}`;
   info.appendChild(fechaEl);
   top.appendChild(info);
 
@@ -366,7 +366,7 @@ const ESTADOS_ACTIVOS_DASHBOARD = ['PENDIENTE_CONFIRMACION_COMERCIO', 'EN_PREPAR
 function renderPedidosActivos(listContainer, badgeContainer, pedidos) {
   const activos = pedidos
     .filter((pedido) => ESTADOS_ACTIVOS_DASHBOARD.includes(pedido.estado))
-    .sort((a, b) => new Date(a.fechaCreacion) - new Date(b.fechaCreacion));
+    .sort((a, b) => new Date(a.fechaPagoAprobado) - new Date(b.fechaPagoAprobado));
 
   const nuevos = activos.filter((pedido) => pedido.estado === 'PENDIENTE_CONFIRMACION_COMERCIO').length;
   badgeContainer.innerHTML = '';
@@ -503,7 +503,7 @@ export async function initComercioPedidos() {
       .filter((pedido) => filtroEstado === null || pedido.estado === filtroEstado)
       .sort((a, b) => {
         const diferenciaPrioridad = PRIORIDAD_ESTADO_PEDIDO[a.estado] - PRIORIDAD_ESTADO_PEDIDO[b.estado];
-        return diferenciaPrioridad !== 0 ? diferenciaPrioridad : new Date(b.fechaCreacion) - new Date(a.fechaCreacion);
+        return diferenciaPrioridad !== 0 ? diferenciaPrioridad : new Date(b.fechaPagoAprobado) - new Date(a.fechaPagoAprobado);
       });
 
     if (filtrados.length === 0) {
@@ -841,7 +841,7 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado) {
     icono: info.icon,
     label: info.label,
     texto: info.texto,
-    numeroTexto: `Pedido #${pedido.id} · ${formatearFecha(pedido.fechaCreacion)}`,
+    numeroTexto: `Pedido #${pedido.id} · ${formatearFecha(pedido.fechaPagoAprobado)}`,
     motivoRechazo: motivoInfo,
   });
 

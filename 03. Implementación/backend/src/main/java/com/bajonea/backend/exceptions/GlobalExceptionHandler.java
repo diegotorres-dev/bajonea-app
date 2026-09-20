@@ -76,6 +76,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiResponse<>(ex.getMessage(), null));
     }
 
+    @ExceptionHandler(ServicioNoDisponibleException.class)
+    public ResponseEntity<ApiResponse<?>> handleServicioNoDisponible(ServicioNoDisponibleException ex) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new ApiResponse<>(ex.getMessage(), null));
+    }
+
     @ExceptionHandler(ValidacionException.class)
     public ResponseEntity<ApiResponse<?>> handleValidacion(ValidacionException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse<>(ex.getMessage(), null));
