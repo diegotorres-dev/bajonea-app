@@ -148,7 +148,11 @@ test.describe('Aprobación y rechazo de Comercio (Administrador)', () => {
     await page.getByTestId('input-password').fill(comercio.password);
     await page.getByTestId('btn-ingresar').click();
     await page.waitForURL('**/comercio-rechazado.html');
-    await expect(page.getByTestId('email-usuario-rechazado')).toHaveText(comercio.email);
+    // comercio-rechazado.html nunca mostró el email del comercio (mismo criterio que
+    // comercio-pendiente.html, decisión de Diego) -- lo que sí muestra es el motivo real de
+    // rechazo, cargado por initComercioEstadoPagina desde el perfil del comercio logueado.
+    await expect(page.getByTestId('motivo-rechazo-comercio')).toBeVisible();
+    await expect(page.getByTestId('motivo-rechazo-comercio')).toContainText(motivo);
 
     await page.goto('/notificaciones.html');
     const notificacion = page.locator('[data-testid^="notificacion-item-"]').first();

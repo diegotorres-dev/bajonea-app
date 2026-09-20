@@ -173,7 +173,7 @@ test.describe('CRUD de producto del Comercio', () => {
     const respuesta = await editarResponse;
     expect(respuesta.status()).toBe(200);
 
-    await page.waitForURL('**/comercio-productos.html', { timeout: 20000 });
+    await page.waitForURL('**/comercio-productos.html*', { timeout: 20000 });
     const fila = page.getByTestId(`producto-item-${productoId}`);
     await expect(fila).toContainText(nombreNuevo);
     await expect(fila).toContainText('$2.500');
@@ -282,6 +282,11 @@ test.describe('CRUD de producto del Comercio', () => {
     await page.goto('/comercio-producto-form.html');
     await page.getByTestId('input-precio-producto').fill('1500');
     await page.getByTestId('select-categoria-producto').selectOption(String(categoriaId));
+    // La regla "al menos 1 foto obligatoria" (js/comercio.js) es real -- se respeta acá para que
+    // este bloque quede fiel al flujo real de un Comercio armando el formulario, aunque el chequeo
+    // de nombre/categoría corre antes que el de fotos en el submit.
+    await subirFotoViaCropUi(page, { modo: 'crear' });
+    await expect(page.getByTestId('galeria-fotos-producto').locator('img')).toHaveCount(1);
 
     let seEnvioAlgo = false;
     const detectarEnvio = (req: import('@playwright/test').Request) => {

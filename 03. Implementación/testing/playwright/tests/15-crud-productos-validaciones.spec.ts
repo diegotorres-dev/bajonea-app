@@ -1,3 +1,5 @@
+import path from 'node:path';
+import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
 import {
@@ -10,7 +12,11 @@ import {
   crearTag,
   sufijoUnico,
   diaDeHoy,
+  nombreArchivoFixture,
 } from './helpers/backend';
+
+const FIXTURE_PATH = path.resolve(__dirname, '../fixtures/bajonea-e2e-producto.png');
+const FIXTURE_BUFFER = readFileSync(FIXTURE_PATH);
 
 async function loginUi(page: Page, email: string, password: string) {
   await page.goto('/login.html');
@@ -18,6 +24,22 @@ async function loginUi(page: Page, email: string, password: string) {
   await page.getByTestId('input-password').fill(password);
   await page.getByTestId('btn-ingresar').click();
   await page.waitForURL('**/comercio-dashboard.html');
+}
+
+/**
+ * Alta nueva (sin id): confirmar el recorte solo deja la foto en `fotosStaged`, sin pegarle a
+ * Cloudinary todavía -- ver la misma función en 06-crud-productos.spec.ts.
+ */
+async function subirFotoCreacionViaCropUi(page: Page) {
+  await page.getByTestId('input-foto-producto').setInputFiles({
+    name: nombreArchivoFixture(),
+    mimeType: 'image/png',
+    buffer: FIXTURE_BUFFER,
+  });
+  await expect(page.getByTestId('modal-recorte-imagen')).toBeVisible();
+  await page.getByTestId('btn-confirmar-recorte').click();
+  await expect(page.getByTestId('modal-recorte-imagen')).toHaveCount(0);
+  await expect(page.getByTestId('galeria-fotos-producto').locator('img')).toHaveCount(1);
 }
 
 /**
@@ -90,6 +112,9 @@ test.describe('CRUD de producto del Comercio: validaciones exclusivas de UI', ()
     await page.getByTestId('input-nombre-producto').fill(`Producto Sin Categoria E2E ${suf}`);
     await page.getByTestId('input-precio-producto').fill('1500');
     // La categoría queda en el placeholder ("Seleccioná una categoría", value="") a propósito.
+    // La regla "al menos 1 foto obligatoria" (js/comercio.js) es real -- se respeta acá para que
+    // el submit real llegue a evaluar la categoría, no solo el nombre.
+    await subirFotoCreacionViaCropUi(page);
 
     let seEnvioAlgo = false;
     const detectarEnvio = (req: import('@playwright/test').Request) => {

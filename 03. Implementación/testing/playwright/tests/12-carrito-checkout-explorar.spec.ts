@@ -66,17 +66,8 @@ test.describe('Carrito: stepper y nota (boundary visual)', () => {
     const mas = page.getByTestId('btn-sumar-cantidad-producto');
     const valor = page.getByTestId('cantidad-producto-modal');
 
-    // Piso: arranca en 1. Hallazgo real (no corregido en este tramo, ver mapeo de Playwright):
-    // catalogo.js solo llama actualizarStepper() desde los listeners de click, nunca al crear
-    // el stepper -- así que minusBtn.disabled arranca en `false` (su default) aunque cantidad
-    // ya sea 1, y recién queda deshabilitado de verdad después del primer click sobre "−"
-    // (que no cambia el valor, pero sí corre actualizarStepper()). No hay forma de bajar de 1
-    // en ningún momento (Math.max(1, ...) lo impide funcionalmente), pero el botón no refleja
-    // ese piso visualmente hasta ese primer click -- inconsistente con el resto de los
-    // steppers del proyecto (carrito.html sí lo deja bien puesto desde el primer render).
-    await expect(valor).toHaveText('1');
-    await expect(menos).toBeEnabled();
-    await menos.click();
+    // Piso: arranca en 1 con "−" ya deshabilitado desde el primer render (catalogo.js fija
+    // minusBtn.disabled al crear el stepper, no solo en el listener de click).
     await expect(valor).toHaveText('1');
     await expect(menos).toBeDisabled();
 

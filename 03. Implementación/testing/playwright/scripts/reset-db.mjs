@@ -63,7 +63,7 @@ async function main() {
     // utf8mb4_unicode_ci, no _general_ci: tiene que coincidir con el charset/collation real
     // de bajonea_final (V1__baseline_bajonea_final.sql), no con el de la base vieja `bajonea`
     // (versión anterior de este script, ver docs/DECISIONES.md).
-    'Paso 1/4 -- recrear bajonea_test vacía (mismo charset/collation que bajonea_final)',
+    'Paso 1/6 -- recrear bajonea_test vacía (mismo charset/collation que bajonea_final)',
     `"${mysqlExe}" -u root -e "DROP DATABASE IF EXISTS bajonea_test; CREATE DATABASE bajonea_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"`,
   );
 
@@ -75,7 +75,7 @@ async function main() {
     // script real para recrear el schema desde cero" -- por eso se corre acá directo con el
     // cliente mysql, no con Flyway, antes del paso 4 (que sí usa Flyway/baseline para V1 en
     // adelante, una vez que el schema físico ya existe).
-    'Paso 2/4 -- aplicar el schema físico completo (V1, 41 tablas, sin datos)',
+    'Paso 2/6 -- aplicar el schema físico completo (V1, 41 tablas, sin datos)',
     `"${mysqlExe}" -u root --default-character-set=utf8mb4 bajonea_test < "${baselineSql}"`,
   );
 
@@ -85,7 +85,7 @@ async function main() {
     // Windows, no de la DB), así que sin este flag reinterpreta los bytes UTF-8 del seed
     // como cp850 al importarlo -- corrompe en silencio cualquier nombre con tilde ("Río
     // Grande" -> "R├¡o Grande"). Bug real encontrado corriendo la Fase 17 (specs 02/03/09).
-    'Paso 3/4 -- cargar catálogo geográfico (seed real del ETL de Georef, Fase 2bis)',
+    'Paso 3/6 -- cargar catálogo geográfico (seed real del ETL de Georef, Fase 2bis)',
     `"${mysqlExe}" -u root --default-character-set=utf8mb4 bajonea_test < "${georefSeed}"`,
   );
 
@@ -94,7 +94,7 @@ async function main() {
     // un schema no vacío sin historial propio -- baseline-on-migrate=true (application.properties)
     // inserta un marcador de versión 1 sin re-ejecutar V1, y a partir de ahí aplica V2/V3/V4
     // como migraciones normales. Mismo comportamiento real ya verificado contra bajonea_final.
-    'Paso 4/5 -- Flyway baselinea V1 y aplica V2-V4 (perfil test, puerto de migración 8091)',
+    'Paso 4/6 -- Flyway baselinea V1 y aplica V2-V4 (perfil test, puerto de migración 8091)',
     [
       'spring-boot:run',
       '-Dspring-boot.run.profiles=test',
@@ -115,12 +115,29 @@ async function main() {
     // de password_hash es un valor cualquiera (bcrypt válido pero de contraseña desconocida) --
     // el propio helper de test lo pisa enseguida vía el flujo real de recuperación de
     // contraseña, nunca se usa para loguear directamente.
-    'Paso 5/5 -- sembrar admin@bajonea.ar (gap real de V1__baseline_bajonea_final.sql, sin seed propio todavía)',
+    'Paso 5/6 -- sembrar admin@bajonea.ar (gap real de V1__baseline_bajonea_final.sql, sin seed propio todavía)',
     `"${mysqlExe}" -u root --default-character-set=utf8mb4 bajonea_test -e "` +
       `INSERT INTO usuario (email, password_hash, rol, estado, intentos_fallidos) VALUES ('admin@bajonea.ar', '$2a$10$0mUU7IYzopUjCwhmxjeNK.yRR/Zq413QmiKkoRVAXZAsQgQuRbS7q', 'ADMINISTRADOR', 'ACTIVO', 0); ` +
       `INSERT INTO persona (id) SELECT id FROM usuario WHERE email = 'admin@bajonea.ar'; ` +
       `INSERT INTO persona_fisica (id, nombre, apellido, dni, fecha_nacimiento, telefono) SELECT id, 'Admin', 'Bajonea', '00000001', '1990-01-01', '+5492964000000' FROM usuario WHERE email = 'admin@bajonea.ar'; ` +
       `INSERT INTO administrador (id) SELECT id FROM usuario WHERE email = 'admin@bajonea.ar';"`,
+  );
+
+  run(
+    // Mismo gap que el admin (Paso 5), detectado el 2026-09-16 probando ConfiguracionTarifa
+    // por Playwright: V10__configuracion_tarifa_tipo_cargo.sql resuelve el admin del seed por
+    // email hardcodeado ('admin@bajonea.com'), que no existe en bajonea_test (acá el admin es
+    // 'admin@bajonea.ar', sembrado en el Paso 5) -- el INSERT...SELECT de V10 no encuentra
+    // ninguna fila y no inserta nada, silenciosamente (sin error de Flyway), dejando
+    // configuracion_tarifa vacía. No se toca V10 (ya aplicada con checksum registrado contra
+    // bajonea_final/bajonea_practicas3/Railway) -- se sigue el mismo criterio ya usado para el
+    // admin: sembrar acá, fuera de Flyway, resolviendo el admin real de este ambiente.
+    // WHERE NOT EXISTS de todas formas por si el gap de V10 se corrige más adelante.
+    'Paso 6/6 -- sembrar configuracion_tarifa (gap real de V10, que busca un admin que no existe en bajonea_test)',
+    `"${mysqlExe}" -u root --default-character-set=utf8mb4 bajonea_test -e "` +
+      `INSERT INTO configuracion_tarifa (administrador_id, cargo_cliente, tipo_cargo_cliente, cargo_comercio, tipo_cargo_comercio, fecha_vigencia) ` +
+      `SELECT a.id, 200.00, 'FIJO', 1.00, 'PORCENTAJE', NOW() FROM administrador a JOIN usuario u ON u.id = a.id ` +
+      `WHERE u.email = 'admin@bajonea.ar' AND NOT EXISTS (SELECT 1 FROM configuracion_tarifa) LIMIT 1;"`,
   );
 
   console.log('\n== Listo: bajonea_test recreada con el esquema vigente de bajonea_final ==');

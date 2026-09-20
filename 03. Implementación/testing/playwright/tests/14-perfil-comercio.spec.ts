@@ -190,8 +190,13 @@ test.describe('Perfil de Comercio: edición de datos, cambio de contraseña, fot
     await registrarComercioAprobadoYLoguear(page, request, `Comercio Foto E2E ${suf}`);
 
     await page.goto('/comercio-perfil.html');
-    await page.getByTestId('btn-editar-perfil-comercio').click();
-    await expect(page.getByTestId('btn-cambiar-foto-comercio')).toBeVisible();
+    // El avatar (btn-foto-perfil-comercio) es tocable directo desde la vista principal, sin pasar
+    // por "Editar datos del comercio" -- el registro ya deja fotoPerfilUrl cargada (obligatoria
+    // desde el wizard), así que el click abre el modal "Foto de perfil" con la opción "Editar foto".
+    await expect(page.getByTestId('btn-foto-perfil-comercio')).toBeVisible();
+    await page.getByTestId('btn-foto-perfil-comercio').click();
+    await expect(page.getByTestId('modal-foto-perfil-comercio')).toBeVisible();
+    await page.getByTestId('btn-editar-foto-perfil-comercio').click();
 
     await page.getByTestId('input-foto-comercio').setInputFiles({
       name: nombreArchivoFixture(),
@@ -208,8 +213,9 @@ test.describe('Perfil de Comercio: edición de datos, cambio de contraseña, fot
     const respuesta = await putFotoResponse;
     expect(respuesta.status()).toBe(200);
 
-    await expect(page.locator('#editar-avatar img')).toHaveCount(1);
-    await page.getByTestId('btn-volver-perfil').click();
+    // Flujo real (js/comercio.js, listener de #input-avatar): la subida actualiza el mismo
+    // #perfil-avatar de la vista principal in place -- no hay una vista/avatar de edición
+    // separada (#editar-avatar no existe en comercio-perfil.html).
     await expect(page.locator('#perfil-avatar img')).toHaveCount(1);
   });
 
@@ -247,8 +253,10 @@ test.describe('Perfil de Comercio: edición de datos, cambio de contraseña, fot
     const respuesta = await putFotoResponse;
     expect(respuesta.status()).toBe(400);
 
-    await expect(page.getByTestId('mensaje-banner')).toBeVisible();
-    await expect(page.getByTestId('mensaje-banner')).toContainText('no puede superar los 500 caracteres');
+    // El error de una URL de Cloudinary demasiado larga se muestra como toast (showToast, se
+    // esfuma solo a los 2200ms), no como banner fijo -- decisión de Diego, mismo patrón que
+    // 11-perfil-cliente.spec.ts.
+    await expect(page.locator('.toast')).toContainText('no puede superar los 500 caracteres');
     // La pantalla sigue funcional -- no quedó ningún avatar roto ni la vista trabada.
     await expect(page.getByTestId('btn-guardar-perfil-comercio')).toBeVisible();
   });

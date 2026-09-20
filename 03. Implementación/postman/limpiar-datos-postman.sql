@@ -17,6 +17,15 @@
 -- `dueno` (+ su `persona_fisica_id` de representante, que NO cuelga de ningún `usuario`
 -- propio), `red_social`, `historial_estado_comercio`, `historial_estado_pedido`,
 -- `historial_estado_usuario`, `item_carrito_extra`, `detalle_pedido_extra`.
+--
+-- Corregido el 2026-09-16 (testing de ConfiguracionTarifa): el filtro de usuario se amplía de
+-- 'postman.%@bajonea.test' a '%@bajonea.test' completo -- las carpetas 22-41 (matrices de
+-- campo por campo) usan el prefijo 'matriz.' sin 'postman.', que el filtro anterior no
+-- cubría, dejando decenas de cuentas de esas carpetas sin limpiar entre corridas. El dominio
+-- .test es exclusivo de fixtures de testing en todo este proyecto, nunca una cuenta real, así
+-- que ampliar el filtro a todo el dominio es seguro. `categoria`/`tag` siguen sin tocarse acá
+-- a propósito (ver docs/DECISIONES.md, memoria "datos-prueba-vs-reales") -- cualquier fila de
+-- prueba que quede en esas 2 tablas se reporta para que Diego decida, nunca se borra sola.
 SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TEMPORARY TABLE IF EXISTS tmp_usr;
@@ -25,7 +34,7 @@ DROP TEMPORARY TABLE IF EXISTS tmp_dueno_repfisica;
 DROP TEMPORARY TABLE IF EXISTS tmp_pedido;
 
 CREATE TEMPORARY TABLE tmp_usr AS
-SELECT id FROM usuario WHERE email LIKE 'postman.%@bajonea.test' OR email LIKE '%postman%@bajonea.test';
+SELECT id FROM usuario WHERE email LIKE '%@bajonea.test';
 
 -- comercio.dueno_id = dueno.id = persona_juridica.id = persona.id = usuario.id (cadena @MapsId)
 -- para la cuenta de Dueño que se registró con un email postman.*

@@ -31059,6 +31059,906 @@
           ]
         }
       ]
+    },
+    {
+      "name": "45 - Matriz Administrador - Configuración de Tarifas",
+      "item": [
+        {
+          "name": "[negativo] Crear tarifa con cargoCliente negativo (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cargoCliente\": -5,\n  \"tipoCargoCliente\": \"FIJO\",\n  \"cargoComercio\": 1,\n  \"tipoCargoComercio\": \"PORCENTAJE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.data['cargoCliente']).to.eql('El cargo al cliente no puede ser negativo'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[negativo] Crear tarifa con cargoComercio negativo (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cargoCliente\": 200,\n  \"tipoCargoCliente\": \"FIJO\",\n  \"cargoComercio\": -1,\n  \"tipoCargoComercio\": \"PORCENTAJE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.data['cargoComercio']).to.eql('El cargo al comercio no puede ser negativo'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[negativo] Crear tarifa con cargoCliente faltante (null, 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoCargoCliente\": \"FIJO\",\n  \"cargoComercio\": 1,\n  \"tipoCargoComercio\": \"PORCENTAJE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.data['cargoCliente']).to.eql('El cargo al cliente es obligatorio'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[negativo] Crear tarifa con tipoCargoCliente faltante (null, 400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cargoCliente\": 200,\n  \"cargoComercio\": 1,\n  \"tipoCargoComercio\": \"PORCENTAJE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.data['tipoCargoCliente']).to.eql('Seleccioná el tipo de cargo al cliente'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[negativo] Crear tarifa con tipoCargoCliente fuera del enum (400, no 500)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cargoCliente\": 200,\n  \"tipoCargoCliente\": \"NOEXISTE\",\n  \"cargoComercio\": 1,\n  \"tipoCargoComercio\": \"PORCENTAJE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400 (no 500 crudo)', () => pm.response.to.have.status(400));",
+                  "pm.test('Mensaje de body invalido, no un stacktrace', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql('El cuerpo de la solicitud contiene datos con formato inválido'); pm.expect(json.data).to.be.null; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[negativo] Crear tarifa con body vacio (400, no 500)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Los 4 campos obligatorios aparecen en data', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data['cargoCliente']).to.eql('El cargo al cliente es obligatorio');",
+                  "  pm.expect(json.data['cargoComercio']).to.eql('El cargo al comercio es obligatorio');",
+                  "  pm.expect(json.data['tipoCargoCliente']).to.eql('Seleccioná el tipo de cargo al cliente');",
+                  "  pm.expect(json.data['tipoCargoComercio']).to.eql('Seleccioná el tipo de cargo al comercio');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[boundary] Crear tarifa con montos en 0 exacto (acepta, cargo $0/0%)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cargoCliente\": 0,\n  \"tipoCargoCliente\": \"FIJO\",\n  \"cargoComercio\": 0,\n  \"tipoCargoComercio\": \"PORCENTAJE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201 (0 es un monto valido, @DecimalMin es inclusivo)', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('cargoCliente y cargoComercio persistidos en 0', () => { pm.expect(Number(json.data.cargoCliente)).to.eql(0); pm.expect(Number(json.data.cargoComercio)).to.eql(0); });",
+                  "pm.environment.set('tarifa_boundary_cero_id', json.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[boundary] Crear tarifa con mas de 2 decimales (acepta, redondea silenciosamente en la base)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cargoCliente\": 200.999,\n  \"tipoCargoCliente\": \"FIJO\",\n  \"cargoComercio\": 1,\n  \"tipoCargoComercio\": \"PORCENTAJE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201 (no rechaza por decimales de mas, no hay @Digits en el DTO)', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.test('La respuesta inmediata del POST devuelve el valor CRUDO sin redondear (200.999), porque el objeto en memoria no se relee de la base tras el INSERT - la columna real es DECIMAL(10,2) y redondea a 201.00 (confirmado por SELECT directo, ver docs/DECISIONES.md)', () => { pm.expect(Number(json.data.cargoCliente)).to.eql(200.999); });",
+                  "pm.environment.set('tarifa_boundary_decimales_id', json.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[negativo] GET vigente con token de Cliente (rol insuficiente, 403)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_cliente}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas/vigente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas",
+                "vigente"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));",
+                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql('No tiene permisos para acceder a este recurso'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[negativo] GET historial con token de Cliente (rol insuficiente, 403)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_cliente}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas/historial",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas",
+                "historial"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));",
+                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql('No tiene permisos para acceder a este recurso'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[negativo] POST tarifas con token de Cliente (rol insuficiente, 403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_cliente}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cargoCliente\": 200,\n  \"tipoCargoCliente\": \"FIJO\",\n  \"cargoComercio\": 1,\n  \"tipoCargoComercio\": \"PORCENTAJE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));",
+                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql('No tiene permisos para acceder a este recurso'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[negativo] GET vigente con token de Dueno/Comercio (rol insuficiente, 403)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_comercio}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas/vigente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas",
+                "vigente"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));",
+                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql('No tiene permisos para acceder a este recurso'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[negativo] GET historial con token de Dueno/Comercio (rol insuficiente, 403)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_comercio}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas/historial",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas",
+                "historial"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));",
+                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql('No tiene permisos para acceder a este recurso'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[negativo] POST tarifas con token de Dueno/Comercio (rol insuficiente, 403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_comercio}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cargoCliente\": 200,\n  \"tipoCargoCliente\": \"FIJO\",\n  \"cargoComercio\": 1,\n  \"tipoCargoComercio\": \"PORCENTAJE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));",
+                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql('No tiene permisos para acceder a este recurso'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[negativo] GET vigente sin token (401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas/vigente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas",
+                "vigente"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql('No autenticado: token ausente, inválido, expirado o sesión cerrada'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[negativo] GET historial sin token (401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas/historial",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas",
+                "historial"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql('No autenticado: token ausente, inválido, expirado o sesión cerrada'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[negativo] POST tarifas sin token (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cargoCliente\": 200,\n  \"tipoCargoCliente\": \"FIJO\",\n  \"cargoComercio\": 1,\n  \"tipoCargoComercio\": \"PORCENTAJE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql('No autenticado: token ausente, inválido, expirado o sesión cerrada'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[valido] GET tarifas/vigente con token Admin (200)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas/vigente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas",
+                "vigente"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Devuelve una configuracion con id', () => { const json = pm.response.json(); pm.expect(json.data.id).to.exist; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[valido] GET tarifas/historial con token Admin (200, devuelve un array)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas/historial",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas",
+                "historial"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('data es un array con al menos 1 fila', () => { const json = pm.response.json(); pm.expect(Array.isArray(json.data)).to.be.true; pm.expect(json.data.length).to.be.at.least(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[valido] POST tarifas con token Admin (201, confirma que el rol correcto sigue funcionando)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/tarifas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "tarifas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cargoCliente\": 200,\n  \"tipoCargoCliente\": \"FIJO\",\n  \"cargoComercio\": 1,\n  \"tipoCargoComercio\": \"PORCENTAJE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "pm.environment.set('tarifa_boundary_final_id', json.data.id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }
