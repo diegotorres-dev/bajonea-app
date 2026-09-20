@@ -49,6 +49,7 @@ comercios se encuentran en Requisitos Funcionales — Dueño.
 - **Aprobado:** habilitado para operar. Aparece en catálogo solo si además su Dueño
   tiene la cuenta de MercadoPago vinculada y está en estado Activo, dentro del horario
   de atención del comercio, y `cerrado_manualmente = false`.
+- **Apto para Venta (APTO_VENTA):** comercio Aprobado cuyo Dueño vinculó su cuenta de MercadoPago. Se alcanza automáticamente al vincular la cuenta y vuelve a Aprobado al desvincularla. Es el estado que habilita la visibilidad en el catálogo y la recepción de pedidos.
 - **Rechazado:** solicitud denegada por el Administrador con motivo registrado.
 - **Suspendido:** inhabilitado por el Administrador ante una infracción. Se oculta del
   catálogo. Afecta únicamente a este comercio puntual, no a los demás comercios del
@@ -70,15 +71,15 @@ comercios se encuentran en Requisitos Funcionales — Dueño.
 
 ## Regla de Visibilidad en Catálogo
 
-Un comercio aparece en el catálogo público si su estado es Aprobado con la cuenta de
-MercadoPago de su Dueño vinculada, o si su estado es Cerrado Temporalmente. En el
+Un comercio aparece en el catálogo público si su estado es Apto para Venta (Aprobado con
+la cuenta de MercadoPago de su Dueño vinculada), o si su estado es Cerrado Temporalmente. En el
 segundo caso, aparece con indicador de "temporalmente cerrado" y sin posibilidad de
 recibir pedidos.
 
 Un comercio se muestra como abierto y disponible para recibir pedidos solo si se
 cumplen simultáneamente:
-- `Comercio.estado == APROBADO`
-- `Comercio.dueño.mp_vinculado == true`
+- `Comercio.estado == APTO_VENTA` (Aprobado, con la cuenta de MercadoPago del Dueño
+  vinculada)
 - `Comercio.dueño.usuario.estado == ACTIVO`
 - El horario de consulta está dentro de las franjas horarias del comercio.
 - `Comercio.cerrado_manualmente == false`
@@ -152,19 +153,19 @@ posibilidad de recibir pedidos — si se cumple alguna de estas condiciones:
 ## Gestión de Pedidos
 
 - El Dueño o un Empleado autorizado debe recibir una notificación ante cada nuevo
-  pedido entrante (estado PENDIENTE).
+  pedido entrante (estado PENDIENTE_CONFIRMACION_COMERCIO).
 - El sistema debe validar que el horario de confirmación del pedido esté dentro de las
   franjas horarias del comercio. Si está cerrado, se informa al cliente el horario de
   atención disponible.
 - El Dueño o un Empleado autorizado debe poder aceptar o rechazar un pedido en estado
-  PENDIENTE. El rechazo requiere seleccionar un **motivo predefinido** de la siguiente
+  PENDIENTE_CONFIRMACION_COMERCIO. El rechazo requiere seleccionar un **motivo predefinido** de la siguiente
   lista: Sin Stock, Local Cerrado, Alto Volumen de Pedidos, Producto No Disponible
   Temporalmente, Sin Delivery Disponible, Problema Técnico u Otro. Si el motivo es
   "Otro", debe ingresar obligatoriamente una descripción adicional. Para cualquier
   motivo puede agregar comentarios adicionales opcionales. El estado resultante del
   rechazo es RECHAZADO.
-- **Flujo de estados — Domicilio:** PENDIENTE → EN_PREPARACION → EN_CAMINO → ENTREGADO.
-- **Flujo de estados — Retiro:** PENDIENTE → EN_PREPARACION → LISTO_PARA_RETIRAR →
+- **Flujo de estados — Domicilio:** PENDIENTE_CONFIRMACION_COMERCIO → EN_PREPARACION → EN_CAMINO → ENTREGADO.
+- **Flujo de estados — Retiro:** PENDIENTE_CONFIRMACION_COMERCIO → EN_PREPARACION → LISTO_PARA_RETIRAR →
   ENTREGADO.
 - El Dueño o un Empleado autorizado debe poder confirmar la entrega de un pedido de
   retiro cuando el cliente se presente a retirarlo (ENTREGADO, fuente: COMERCIO).
@@ -177,6 +178,9 @@ posibilidad de recibir pedidos — si se cumple alguna de estas condiciones:
   reembolso al cliente. No aplica desde estados posteriores.
 - El pedido vence automáticamente (estado EXPIRADO) si nadie responde en 1 hora desde
   la confirmación del pago, generando el reembolso correspondiente al cliente.
+- El Dueño o un Empleado autorizado ve únicamente los pedidos que llegaron al comercio con el pago aprobado (los que pasaron por PENDIENTE_CONFIRMACION_COMERCIO). Un pedido que nunca llegó pagado no aparece en la lista, en el resumen ni en el detalle de pago, y sus acciones responden como recurso inexistente.
+- La fecha de un pedido para el comercio es la de la confirmación del pago, no la de su creación, y es la que define qué pedidos cuentan como "de hoy".
+- El panel muestra tres contadores del día: pedidos de hoy (los que llegaron pagados hoy, sin importar cómo terminaron), pendientes (los que están en PENDIENTE_CONFIRMACION_COMERCIO) y facturado hoy (suma del subtotal de los que llegaron pagados hoy y hoy están en EN_PREPARACION, EN_CAMINO, LISTO_PARA_RETIRAR o ENTREGADO).
 
 ---
 
@@ -198,6 +202,6 @@ posibilidad de recibir pedidos — si se cumple alguna de estas condiciones:
   pedido (`cargo_servicio_cliente`, `cargo_servicio_comercio`). Estos valores no se
   modifican aunque las tarifas cambien posteriormente.
 - El split de pagos con MercadoPago se configura en cada solicitud de cobro con el
-  `application_fee` correspondiente: `application_fee = cargo_servicio_cliente +
+  `marketplace_fee` correspondiente: `marketplace_fee = cargo_servicio_cliente +
   cargo_servicio_comercio`. La cuenta de MercadoPago del Dueño titular del comercio
   recibe automáticamente: `subtotal - cargo_servicio_comercio`.

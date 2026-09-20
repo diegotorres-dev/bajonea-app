@@ -89,3 +89,10 @@ Como Dueño o Empleado autorizado, quiero poder cerrar temporalmente mi local de
 panel aunque todavía esté dentro de mi horario de atención, para detener la recepción
 de pedidos cuando me quedo sin stock u ocurre algo imprevisto, y reabrirlo cuando esté
 listo, sin que esto afecte el estado de la cuenta ni los pedidos ya en curso.
+
+## HU-CO14: Ver Solo los Pedidos ya Pagados
+
+Como Dueño o Empleado autorizado, quiero ver únicamente los pedidos cuyo pago ya fue
+confirmado, con la fecha en que se pagaron y los contadores del día (pedidos de hoy,
+pendientes y facturado), para gestionar solo ventas reales y tener un resumen fiel de mi
+jornada.

@@ -10,7 +10,7 @@ para revisarlo y gestionarlo sin demoras.
 ## HU-A02: Ver Solicitudes Pendientes de Comercios
 
 Como administrador, quiero ver comercios pendientes con sus datos de registro completos
-(incluyendo tipo de comercio, modalidades de entrega e historial de acciones previas si
+(incluyendo tipo de comercio, modalidades de entrega e historial de estados previos si
 las hubiera), para evaluar cada solicitud de forma ordenada.
 
 ## HU-A03: Aprobar un Comercio

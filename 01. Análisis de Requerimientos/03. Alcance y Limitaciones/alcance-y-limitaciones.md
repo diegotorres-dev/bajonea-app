@@ -50,7 +50,7 @@ El sistema gestiona cuatro roles: Cliente, Dueño, Empleado y Administrador.
 ### Acceso público
 La visualización de comercios y menús es pública y no requiere registro. El catálogo
 muestra los comercios que cumplen las siguientes condiciones:
-- Estado **Aprobado** con la cuenta de MercadoPago de su Dueño vinculada y
+- Estado **Apto para Venta** (Aprobado, con la cuenta de MercadoPago de su Dueño vinculada) y
   `cerrado_manualmente = false`: aparecen como disponibles si están dentro de su
   horario de atención.
 - Estado **Aprobado** con `cerrado_manualmente = true`: aparecen en el catálogo con
@@ -65,8 +65,7 @@ verificada.
 
 Un comercio puede recibir pedidos únicamente si se cumplen en simultáneo todas las
 siguientes condiciones:
-- `Comercio.estado == APROBADO`
-- `Comercio.dueño.mp_vinculado == true` (cuenta de MercadoPago del Dueño titular vinculada)
+- `Comercio.estado == APTO_VENTA` (Aprobado, con la cuenta de MercadoPago del Dueño titular vinculada)
 - `Dueño.usuario.estado == ACTIVO`
 - El horario de consulta está dentro de las franjas horarias del comercio.
 - `Comercio.cerrado_manualmente == false`
@@ -87,10 +86,12 @@ con split de pagos. El flujo de pago funciona de la siguiente manera:
 
 1. El pedido se crea en estado **Pendiente de Pago** y el cliente es redirigido a MP.
 2. La confirmación llega de forma asíncrona vía **webhook de MercadoPago**. Solo
-   al recibir esta confirmación el pedido avanza al estado **Pendiente** (esperando
+   al recibir esta confirmación el pedido avanza al estado **Pendiente de Confirmación** (esperando
    al comercio) y el carrito se limpia.
 3. Si el pago no se confirma en 30 minutos, el pedido expira automáticamente
-   sin generar reembolso (no hubo cobro).
+   sin generar reembolso (no hubo cobro). Un pago rechazado no cancela el pedido: el
+   cliente puede reintentar hasta que se apruebe un pago o venza el plazo, y el link de
+   pago vence junto con el pedido.
 4. Si el comercio no responde al pedido en 1 hora desde la confirmación del pago,
    el pedido pasa a estado **Expirado** y se genera el reembolso completo al cliente.
 
@@ -136,15 +137,15 @@ Los pedidos atraviesan los siguientes estados a lo largo de su ciclo de vida:
 | Estado | Descripción |
 |--------|-------------|
 | Pendiente de Pago | Pedido creado, esperando confirmación de pago por MP |
-| Pendiente | Pago confirmado, esperando respuesta del comercio (1 h de margen) |
+| Pendiente de Confirmación | Pago confirmado, esperando respuesta del comercio (1 h de margen) |
 | En Preparación | Pedido aceptado por el comercio |
 | En Camino | Pedido despachado (solo domicilio) |
 | Listo para Retirar | Pedido listo para ser retirado (solo retiro) |
 | Entregado | Pedido completado |
-| Rechazado | Comercio rechazó el pedido en estado Pendiente. Genera reembolso |
+| Rechazado | Comercio rechazó el pedido en estado Pendiente de Confirmación. Genera reembolso |
 | Cancelado | Cliente canceló antes del despacho o de que estuviera listo. Genera reembolso |
 | Anulado | Comercio anuló desde En Preparación. Genera reembolso |
-| Cancelado por Sistema | Cancelación automática (suspensión del comercio, pago rechazado). Genera reembolso si hubo cobro |
+| Cancelado por Sistema | Cancelación automática (suspensión del comercio, pago no confirmado o rechazado al vencer el plazo). Genera reembolso si hubo cobro |
 | Expirado | Comercio no respondió en 1 hora. Genera reembolso automático |
 
 ---
@@ -186,3 +187,32 @@ Los pedidos atraviesan los siguientes estados a lo largo de su ciclo de vida:
 - **Timer de retiro durante suspensión:** Si un comercio es suspendido y tiene pedidos
   en estado Listo para Retirar, el cliente dispone de 90 minutos para presentarse. Si
   no lo hace, el pedido se cierra automáticamente sin reembolso.
+
+---
+
+## Limitaciones Conocidas de Implementación
+
+Diferencias entre lo especificado en este documento y en los Requisitos Funcionales, y lo implementado al 2026-09-20. Son funcionalidades especificadas y todavía no implementadas, no cambios de alcance.
+
+**Pagos y reembolsos**
+- **Nota de crédito y reembolso:** la entidad `NotaCredito` existe, pero el flujo de reembolso no. Los estados que la especificación marca "con reembolso" (rechazo, cancelación, anulación, expiración por falta de respuesta y cancelación por suspensión) hoy cambian el estado del pedido sin devolver el dinero; el código lo deja marcado con un TODO en `PedidoService`.
+- **Pago tardío y pago duplicado:** un pago aprobado sobre un pedido ya cancelado, o un segundo pago aprobado sobre un pedido ya pagado, solo generan una alerta registrada en base de datos (`alerta_webhook_mp`). No se devuelve el dinero y la consulta de las alertas por pantalla no existe.
+- **Cancelación y anulación con devolución de dinero** y **reembolso parcial por ítem:** sin implementar.
+- **Pago en revisión:** mientras un pago está `pending` o `in_process` no se puede reintentar el pago hasta que se resuelva o venza el pedido. Es un comportamiento intencional.
+
+**Integración con MercadoPago**
+- **Renovación de tokens:** no existe refresh. El token de acceso de la cuenta vinculada vence a los ~6 meses.
+- **Verificación del monto:** el webhook y la sincronización no verifican que el monto pagado coincida con el total del pedido.
+- **Firma del webhook:** se valida solo si el secreto `MERCADOPAGO_WEBHOOK_SECRET` está configurado; sin él se omite y se registra una advertencia.
+- **Identificador de pedido no numérico en el webhook:** responde con un error 500.
+- **Loggers dedicados de MercadoPago** (`webhook.mercadopago`, `jobs.*`, `audit`): no existen; se usa el logger estándar de cada clase.
+
+**Pedidos y comercios**
+- **EN_CAMINO al suspender un comercio:** no está implementado. Al suspender, los pedidos en PENDIENTE_CONFIRMACION_COMERCIO y EN_PREPARACION se cancelan y los LISTO_PARA_RETIRAR inician el timer de 90 minutos, pero los EN_CAMINO no se modifican: siguen su curso normal (confirmación del cliente o autoconfirmación a los 90 minutos).
+- **Cierre manual (`cerrado_manualmente`):** la columna existe en la base de datos, pero ningún código la usa: no hay control en el panel ni se verifica al recibir pedidos.
+- **Catálogo y estado Cerrado Temporalmente:** el catálogo público lista únicamente comercios en estado APTO_VENTA; los comercios en CERRADO_TEMPORALMENTE no aparecen con el indicador de "temporalmente cerrado".
+- **Historial de estados del comercio (`HistorialEstadoComercio`):** hoy se escribe solo al aprobar, rechazar y suspender un comercio (Administrador) y en las transiciones automáticas `APROBADO ↔ APTO_VENTA` al vincular o desvincular MercadoPago. No registran historial la propagación de bloqueo (`CERRADO_TEMPORALMENTE`), su restauración al recuperar la contraseña, la inactivación ni la restauración por reactivación de cuenta. El código lo deja documentado en `AuthService`.
+- **Levantar la suspensión de un comercio:** no está implementado (no existe el endpoint ni el método de servicio), por lo que tampoco se registra esa transición.
+- **Empleado:** no existe código que le permita ver ni operar pedidos.
+- **Login y registro por nombre de usuario:** no implementados.
+- **Zona horaria:** las fechas y el "hoy" del panel del comercio dependen de la zona horaria de la JVM del servidor (en local, -03:00). La verificación de horario de atención usa -03:00 fijo.

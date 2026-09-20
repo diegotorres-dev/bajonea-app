@@ -91,7 +91,7 @@ flowchart LR
     P6 -- Notificaciones push --> ADMIN
 
     %% ── Flujos internos: Automatismos ────────────────────
-    P7 -- Timeout PENDIENTE_PAGO\n(30 min) y PENDIENTE (1 h) --> P4
+    P7 -- Timeout PENDIENTE_PAGO\n(30 min) y PENDIENTE_CONFIRMACION_COMERCIO (1 h) --> P4
     P7 -- Reintento de reembolsos\nfallidos --> P5
     P7 -- Inactivación automática\nde usuarios (90 días) --> P1
     P7 -- Propagación de estado\nDueño → sus comercios --> P2

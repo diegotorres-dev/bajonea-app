@@ -20,7 +20,9 @@
   inactivación automática del sistema).
 - El endpoint receptor de webhooks de MercadoPago debe validar la autenticidad de
   cada notificación mediante la firma provista por MP, rechazando cualquier solicitud
-  que no supere esta verificación.
+  que no supere esta verificación. Limitación actual: la verificación se aplica solo si el
+  secreto de firma está configurado; sin él se omite y se registra una advertencia.
+- Los tokens OAuth de MercadoPago (acceso y renovación) deben almacenarse cifrados en la base de datos (AES-GCM).
 - El acceso a cada funcionalidad debe estar restringido según el rol del usuario
   autenticado (Cliente, Dueño, Empleado, Administrador), impidiendo el acceso a
   recursos no autorizados. Dentro de un mismo comercio, el sistema debe distinguir
@@ -72,7 +74,7 @@
 
 - El sistema debe integrarse con MercadoPago bajo el modelo Marketplace con split
   de pagos, permitiendo la distribución automática de cobros entre la plataforma y
-  los comercios mediante el campo `application_fee` en cada transacción.
+  los comercios mediante el campo `marketplace_fee` en cada transacción.
 - El sistema debe procesar los webhooks de MercadoPago para confirmar pagos de forma
   asíncrona, actualizar los estados de pedido correspondientes y gestionar reembolsos
   según los estándares de seguridad de MP.
@@ -81,13 +83,15 @@
   que administra.
 - El sistema debe reintentar automáticamente los reembolsos fallidos hasta su
   procesamiento exitoso.
+- Las llamadas a la API de MercadoPago deben tener un tiempo máximo de espera (5 segundos de conexión y de lectura); ante una falla o demora, el sistema responde con un error de servicio no disponible en lugar de asumir un estado.
+- El procesamiento de los webhooks y de la sincronización de pagos debe ser idempotente y seguro ante notificaciones simultáneas sobre el mismo pedido (bloqueo pesimista del pedido); un pago aprobado nunca se sobrescribe.
 
 ---
 
 ## Registro de Eventos del Sistema (Logging)
 
 El sistema debe generar registros de log categorizados, distintos del historial de
-negocio persistido en BD (`HistorialEstadoPedido`, `HistorialAccionComercio`,
+negocio persistido en BD (`HistorialEstadoPedido`, `HistorialEstadoComercio`,
 `Notificacion`). Estos logs son archivos de aplicación gestionados por el
 framework de logging (SLF4J + Logback de Spring Boot), con rotación y retención
 configuradas en el VPS de DonWeb, e identificados a partir de los DFD Nivel 2.
@@ -115,6 +119,8 @@ Cada tipo se implementa mediante loggers dedicados por módulo (`jobs.*`,
 `webhook.mercadopago`, `audit`), separados del registro de notificaciones
 (`Notificacion`, ver diagrama Entidad-Relación), que es un dato de negocio
 y no un log de infraestructura.
+
+Estado actual: los loggers dedicados por módulo no están implementados; el sistema usa el logger estándar SLF4J de cada clase. Queda pendiente.
 
 ---
 

@@ -32,6 +32,7 @@ erDiagram
     Administrador ||--o{ HistorialEstadoComercio : "ejecuta"
     Administrador ||--o{ ConfiguracionTarifa : "configura"
     Dueno ||--o| CuentaMercadoPago : "vincula"
+    Dueno ||--o{ CodigoVinculacionMp : "inicia"
     Empleado ||--o{ EmpleadoComercio : "extiende"
     Comercio ||--o{ EmpleadoComercio : "activo_en"
 
@@ -61,4 +62,6 @@ erDiagram
     Extra ||--o{ DetallePedidoExtra : "selecciona"
     Pedido ||--o{ HistorialEstadoPedido : "registra"
     Pedido ||--|| Pago : "genera"
+    Pedido ||--o{ AlertaWebhookMp : "origina"
+    Usuario ||--o{ HistorialEstadoPedido : "ejecuta"
     Pago ||--|| NotaCredito : "emite"

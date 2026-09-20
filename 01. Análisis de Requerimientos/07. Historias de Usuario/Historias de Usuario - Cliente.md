@@ -95,3 +95,9 @@ situación y obtener el reembolso correspondiente si aplica.
 Como cliente suspendido, quiero poder enviar un mensaje al administrador explicando
 mi situación, para solicitar la revisión de la suspensión de mi cuenta y tener la
 oportunidad de reactivarla si corresponde.
+
+## HU-C16: Reintentar y Verificar mi Pago
+
+Como cliente, quiero poder volver al checkout de MercadoPago si mi pago fue rechazado
+y ver el estado real de mi pago al volver, para completar mi pedido sin pagar dos veces
+ni perderlo mientras el plazo de pago siga vigente.

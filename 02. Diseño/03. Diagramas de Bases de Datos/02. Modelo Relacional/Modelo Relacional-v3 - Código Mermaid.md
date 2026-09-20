@@ -1,6 +1,6 @@
 # Modelo Relacional — Bajoneá (v3)
 
-Generado a partir de `diccionario-de-datos.md` v1.3: 41 tablas, 268 campos, 53 relaciones FK. Pegar el bloque en [mermaid.live](https://mermaid.live) para exportar el PNG.
+Actualizado a `diccionario-de-datos.md` v1.6: 43 tablas (se agregaron `CodigoVinculacionMp` y `AlertaWebhookMp`; los conteos de campos y relaciones no se recalcularon). Pegar el bloque en [mermaid.live](https://mermaid.live) para exportar el PNG.
 
 ```mermaid
 erDiagram
@@ -122,13 +122,22 @@ erDiagram
         INT id PK
         INT dueño_id FK
         VARCHAR50 mp_user_id
-        VARCHAR255 access_token
-        VARCHAR255 refresh_token
+        VARCHAR500 access_token
+        VARCHAR500 refresh_token
         VARCHAR255 public_key
         TINYINT1 activa
+        TINYINT1 es_cuenta_prueba
         DATETIME fecha_vinculacion
         DATETIME fecha_desvinculacion
         DATETIME token_expira
+    }
+    CodigoVinculacionMp {
+        INT id PK
+        INT dueno_id FK
+        VARCHAR64 identificador_intento UK
+        VARCHAR128 codigo_verificacion
+        DATETIME fecha_creacion
+        TINYINT1 usado
     }
     EmpleadoComercio {
         INT id PK
@@ -151,7 +160,9 @@ erDiagram
         INT id PK
         INT administrador_id FK
         DECIMAL10,2 cargo_cliente
+        ENUM_TipoCargo tipo_cargo_cliente
         DECIMAL10,2 cargo_comercio
+        ENUM_TipoCargo tipo_cargo_comercio
         DATETIME fecha_vigencia
     }
     Token {
@@ -330,15 +341,29 @@ erDiagram
         INT id PK
         INT pedido_id FK
         ENUM_EstadoPedido estado
-        ENUM_CanceladoPor cancelado_por
-        ENUM_FuenteEntrega fuente_entrega
+        ENUM_ActorPedido actor_rol
+        INT actor_usuario_id FK
+        ENUM_MotivoTimeoutPedido motivo_timeout
         DATETIME fecha_hora
+    }
+    AlertaWebhookMp {
+        INT id PK
+        INT pedido_id FK
+        VARCHAR50 mp_payment_id
+        VARCHAR120 mp_external_reference
+        ENUM_MotivoAlertaWebhookMp motivo
+        DATETIME fecha_creacion
+        VARCHAR45 ip_origen
     }
     Pago {
         INT id PK
         INT pedido_id FK
+        VARCHAR120 mp_preferencia_id
+        VARCHAR500 mp_init_point
+        VARCHAR500 mp_sandbox_init_point
         DECIMAL10,2 monto
         VARCHAR30 metodo_pago
+        VARCHAR30 mp_estado
         VARCHAR50 id_transaccion_mp
         DATETIME fecha_creacion
         DATETIME fecha_confirmacion
@@ -407,4 +432,7 @@ erDiagram
     Pedido }o--|| HistorialEstadoPedido : "pedido_id"
     Pedido ||--|| Pago : "pedido_id"
     Pago ||--|| NotaCredito : "pago_id"
+    Dueno ||--o{ CodigoVinculacionMp : "dueno_id"
+    Pedido ||--o{ AlertaWebhookMp : "pedido_id"
+    Usuario ||--o{ HistorialEstadoPedido : "actor_usuario_id"
 ```

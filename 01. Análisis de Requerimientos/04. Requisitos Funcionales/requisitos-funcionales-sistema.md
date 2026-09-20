@@ -47,15 +47,15 @@ Acciones ejecutadas automáticamente por el sistema, sin intervención de ningú
 Los pedidos pueden encontrarse en los siguientes estados:
 
 - **PENDIENTE_PAGO**: pedido creado, redirigido a MercadoPago, esperando confirmación de cobro.
-- **PENDIENTE**: pago confirmado por MP vía webhook, esperando aceptación o rechazo por el comercio.
+- **PENDIENTE_CONFIRMACION_COMERCIO**: pago confirmado por MP vía webhook, esperando aceptación o rechazo por el comercio.
 - **EN_PREPARACION**: pedido aceptado por el comercio, en proceso de preparación.
 - **EN_CAMINO**: pedido despachado. Aplica solo a modalidad domicilio.
 - **LISTO_PARA_RETIRAR**: pedido listo. Aplica solo a modalidad retiro.
 - **ENTREGADO**: pedido completado, ya sea por confirmación del cliente, del comercio o por el sistema.
-- **RECHAZADO**: el comercio rechazó el pedido estando en estado PENDIENTE. Genera reembolso automático.
+- **RECHAZADO**: el comercio rechazó el pedido estando en estado PENDIENTE_CONFIRMACION_COMERCIO. Genera reembolso automático.
 - **CANCELADO**: cancelado por el cliente antes del despacho (domicilio) o antes de estar listo (retiro). Genera reembolso automático.
 - **ANULADO**: anulado por el comercio desde estado EN_PREPARACION. Genera reembolso automático.
-- **CANCELADO_POR_SISTEMA**: cancelado automáticamente por el sistema ante suspensión del comercio, pago no confirmado (timeout) o pago rechazado por MP. Genera reembolso solo si el pago fue previamente confirmado.
+- **CANCELADO_POR_SISTEMA**: cancelado automáticamente por el sistema ante suspensión del comercio o por vencimiento del plazo de pago (pago no confirmado, o pago rechazado sin un reintento aprobado dentro del plazo). Genera reembolso solo si el pago fue previamente confirmado.
 - **EXPIRADO**: el comercio no respondió dentro de la hora de margen tras la confirmación del pago. Genera reembolso automático al cliente.
 
 ### Campo Discriminador
@@ -65,20 +65,28 @@ La tabla Pedido incluye el campo `cancelado_por` (enum nullable: CLIENTE, COMERC
 ### Creación de Pedido y Carrito
 
 - El sistema crea el pedido en estado PENDIENTE_PAGO antes de redirigir al cliente a MercadoPago. El carrito no se limpia en este momento.
-- El sistema limpia el carrito del cliente únicamente al recibir la confirmación exitosa de pago vía webhook de MP (transición a PENDIENTE).
-- Si el carrito se limpia por timeout de PENDIENTE_PAGO, permanece intacto para que el cliente pueda reintentar.
+- El sistema limpia el carrito del cliente únicamente al recibir la confirmación exitosa de pago vía webhook de MP (transición a PENDIENTE_CONFIRMACION_COMERCIO), y solo si el carrito actual del cliente es del mismo comercio del pedido pagado.
+- Ante un pago rechazado o el vencimiento del plazo de PENDIENTE_PAGO, el carrito permanece intacto para que el cliente pueda reintentar.
+
+### Pago con MercadoPago (Checkout Pro)
+
+- El sistema genera el link de pago creando una preferencia de Checkout Pro con el access token del Dueño titular del comercio. El cargo total de servicio (`cargo_servicio_cliente + cargo_servicio_comercio`) se envía como `marketplace_fee`, e `external_reference` es el identificador del pedido. Cada pedido tiene a lo sumo un registro de pago.
+- El link de pago vence junto con el pedido: la preferencia se crea con el tiempo restante del plazo de pago (30 minutos desde la creación del pedido).
+- Al pedir el link de un pedido que ya tiene preferencia, el sistema consulta primero el estado real del pago en MercadoPago: si ya está aprobado informa que el pedido está pagado sin abrir un nuevo checkout; si el pago está en revisión (`pending` o `in_process`) no abre el checkout hasta que se resuelva o venza el pedido; si la verificación falla o tarda responde con un error de servicio no disponible.
+- Al volver del checkout, el cliente puede sincronizar el pago del pedido: el sistema aplica el resultado con la misma rutina que el webhook, sin confiar en el identificador de pago que envía el frontend (se cruza siempre el `external_reference`).
 
 ### Webhook de MercadoPago
 
-- El sistema debe exponer un endpoint seguro para recibir las notificaciones (webhooks) de MercadoPago, validando la autenticidad de cada notificación mediante la firma enviada por MP.
-- Al recibir confirmación de pago aprobado: actualizar el pedido de PENDIENTE_PAGO a PENDIENTE, limpiar el carrito del cliente y notificar al comercio del nuevo pedido.
-- Al recibir notificación de pago rechazado: actualizar el pedido de PENDIENTE_PAGO a CANCELADO_POR_SISTEMA (motivo: pago rechazado por MP, cancelado_por: SISTEMA), sin generar reembolso. El carrito del cliente permanece intacto.
+- El sistema debe exponer un endpoint seguro para recibir las notificaciones (webhooks) de MercadoPago, validando la autenticidad de cada notificación mediante la firma enviada por MP. La notificación debe ser de tipo `payment`; el sistema no confía en su contenido: consulta el pago a MercadoPago con el token del Dueño y cruza su `external_reference` con el pedido. El procesamiento es idempotente.
+- Al recibir confirmación de pago aprobado: actualizar el pedido de PENDIENTE_PAGO a PENDIENTE_CONFIRMACION_COMERCIO, limpiar el carrito del cliente y notificar al comercio del nuevo pedido.
+- Al recibir notificación de pago rechazado (`rejected` o `cancelled`): el pedido NO se cancela. Permanece en PENDIENTE_PAGO con el estado de pago RECHAZADO, de modo que el cliente pueda reintentar sobre la misma preferencia, hasta que se apruebe un pago o venza el plazo de pago. El carrito del cliente permanece intacto.
 - Si el webhook llega para un pedido ya en estado CANCELADO_POR_SISTEMA (por ejemplo, el timeout fue procesado antes de que llegara el webhook de pago aprobado), el sistema debe generar el reembolso correspondiente inmediatamente, ya que el cobro efectivamente se realizó.
+- El sistema debe registrar en la base de datos una alerta cuando detecta un caso que no puede resolver automáticamente: pago aprobado sobre un pedido ya cancelado (pago tardío), segundo pago aprobado con otro identificador sobre un pedido ya pagado (pago duplicado), o `external_reference` que no coincide con el pedido. Las alertas solo dejan rastro (motivo, pedido, identificador de pago, IP de origen y fecha): no modifican el pedido ni el pago. La consulta de las alertas por pantalla está pendiente de implementación.
 
 ### Timeouts Automáticos
 
-- **Timeout PENDIENTE_PAGO (30 minutos):** un job periódico detecta pedidos en estado PENDIENTE_PAGO con más de 30 minutos de antigüedad sin recibir confirmación de MP. El sistema los cancela con estado CANCELADO_POR_SISTEMA (motivo: pago no confirmado, cancelado_por: SISTEMA), sin generar reembolso. El carrito permanece intacto.
-- **Timeout PENDIENTE — Expiración por falta de respuesta del comercio (1 hora):** un job periódico detecta pedidos en estado PENDIENTE con más de 1 hora de antigüedad sin respuesta del comercio. El sistema cambia su estado a EXPIRADO (cancelado_por: SISTEMA), genera la nota de crédito y solicita el reembolso correspondiente, y notifica al cliente y al comercio.
+- **Timeout PENDIENTE_PAGO (30 minutos):** un job periódico detecta pedidos en estado PENDIENTE_PAGO con más de 30 minutos de antigüedad sin recibir confirmación de MP (el plazo es configurable y el job corre cada 60 segundos). El sistema los cancela con estado CANCELADO_POR_SISTEMA (cancelado_por: SISTEMA, motivo: `Pago no confirmado` si no hubo un pago resuelto, o `Pago rechazado` si el último pago fue rechazado), sin generar reembolso. El carrito permanece intacto.
+- **Timeout PENDIENTE_CONFIRMACION_COMERCIO — Expiración por falta de respuesta del comercio (1 hora):** un job periódico (cada 5 minutos, plazo configurable) detecta pedidos en estado PENDIENTE_CONFIRMACION_COMERCIO con más de 1 hora en ese estado, medida desde la confirmación del pago, sin respuesta del comercio. El sistema cambia su estado a EXPIRADO (cancelado_por: SISTEMA), genera la nota de crédito y solicita el reembolso correspondiente, y notifica al cliente y al comercio.
 
 ### Timer de Entrega a Domicilio (75/90 minutos)
 
@@ -90,19 +98,24 @@ La tabla Pedido incluye el campo `cancelado_por` (enum nullable: CLIENTE, COMERC
 
 Al suspenderse un comercio por el Administrador, el sistema debe procesar los pedidos activos de la siguiente manera:
 
-- **PENDIENTE y EN_PREPARACION:** cancelar con estado CANCELADO_POR_SISTEMA (motivo: comercio suspendido, cancelado_por: SISTEMA), generar nota de crédito y reembolso para cada pedido abonado, y notificar a cada cliente afectado con el motivo de la cancelación.
+- **PENDIENTE_CONFIRMACION_COMERCIO y EN_PREPARACION:** cancelar con estado CANCELADO_POR_SISTEMA (motivo: comercio suspendido, cancelado_por: SISTEMA), generar nota de crédito y reembolso para cada pedido abonado, y notificar a cada cliente afectado con el motivo de la cancelación.
 - **EN_CAMINO:** marcar automáticamente como ENTREGADO (fuente_entrega: SISTEMA). El envío ya estaba en curso y el comercio había cumplido su parte. Sin reembolso.
 - **LISTO_PARA_RETIRAR:** iniciar un timer de 90 minutos para cada pedido en este estado. Si el cliente se presenta y el comercio (o el sistema) confirma el retiro antes del vencimiento, el pedido se marca ENTREGADO normalmente. Si vencen los 90 minutos sin retiro confirmado, el sistema marca el pedido como ENTREGADO automáticamente (fuente_entrega: SISTEMA, sin reembolso). El cliente es notificado de la situación al momento de la suspensión.
 
 ### Inactivación de Comercio — Gestión de Pedidos Activos
 
-Al inactivarse automáticamente un comercio por inactividad (3 meses sin actividad del Dueño titular), el sistema cancela los pedidos en estado PENDIENTE y EN_PREPARACION con estado CANCELADO_POR_SISTEMA, genera los reembolsos correspondientes y notifica a los clientes afectados. Los pedidos EN_CAMINO o LISTO_PARA_RETIRAR siguen su curso normal (la inactivación por 3 meses de inactividad implica que no hay entregas activas en ese momento).
+Al inactivarse automáticamente un comercio por inactividad (3 meses sin actividad del Dueño titular), el sistema cancela los pedidos en estado PENDIENTE_CONFIRMACION_COMERCIO y EN_PREPARACION con estado CANCELADO_POR_SISTEMA, genera los reembolsos correspondientes y notifica a los clientes afectados. Los pedidos EN_CAMINO o LISTO_PARA_RETIRAR siguen su curso normal (la inactivación por 3 meses de inactividad implica que no hay entregas activas en ese momento).
+
+### Historial de Estados del Pedido
+
+- Cada cambio de estado de un pedido genera un registro de historial con el estado resultante, la fecha y hora, el rol del actor (Cliente, Dueño, Empleado o Sistema), el usuario que ejecutó la transición (nulo cuando el actor es el Sistema) y, cuando la transición la produjo un timeout automático, el motivo del timeout (pago, respuesta del comercio, entrega o retiro por suspensión).
+- El historial es la fuente de las fechas del ciclo de vida del pedido, en particular de la fecha de llegada al comercio con el pago aprobado.
 
 ---
 
-## Historial de Acciones sobre Comercios
+## Historial de Estados de Comercios
 
-- El sistema debe registrar en la entidad HistorialAccionComercio cada acción administrativa realizada sobre un comercio: aprobación, rechazo, suspensión y reactivación por levantamiento de suspensión. Cada registro incluye: fecha y hora, rol e identificador del actor (administrador), tipo de acción, motivo (cuando aplica) y estado resultante del comercio.
+- El sistema debe registrar en la entidad HistorialEstadoComercio cada transición de estado de un comercio: aprobación, rechazo, suspensión y reactivación por levantamiento de suspensión, además de las transiciones automáticas del sistema. Cada registro incluye: fecha y hora, estado de origen, estado resultante, motivo (cuando aplica) y el administrador responsable (vacío cuando la transición es automática). El tipo de acción se deduce del estado resultante.
 
 ---
 
@@ -170,7 +183,7 @@ El sistema emite notificaciones push (y en algunos casos email) ante los siguien
 
 - El sistema debe pasar el carrito a estado inactivo al detectar que la sesión del cliente ha expirado o cerrado manualmente.
 - El sistema debe pasar el carrito a estado inactivo cuando el usuario sea inactivado automáticamente.
-- El sistema no limpia el carrito al crear un pedido en PENDIENTE_PAGO. Solo lo limpia al confirmar el pago (transición a PENDIENTE).
+- El sistema no limpia el carrito al crear un pedido en PENDIENTE_PAGO. Solo lo limpia al confirmar el pago (transición a PENDIENTE_CONFIRMACION_COMERCIO).
 
 ---
 

@@ -54,6 +54,8 @@ por el Dueño como por un Empleado autorizado.
 - El monto recibido en cada cobro refleja el total menos el cargo de servicio vía split
   de pagos (ver Requisitos Funcionales — Comercio, sección Gestión de Valores en
   Pedidos).
+- La vinculación se realiza mediante el flujo OAuth authorization_code con PKCE. Al completarla, los comercios Aprobados del Dueño pasan automáticamente a Apto para Venta (APTO_VENTA); al desvincular, vuelven a Aprobado.
+- Los tokens de acceso y de renovación de MercadoPago se almacenan cifrados. La renovación automática del token no está implementada (ver Alcance y Limitaciones).
 
 ---
 

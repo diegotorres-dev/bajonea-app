@@ -13,7 +13,7 @@
 
 ## Exploración de Comercios y Menús
 
-- El sistema debe mostrar el listado de comercios disponibles de forma pública, sin requerir autenticación. Solo se muestran comercios con estado Aprobado cuyo Dueño tenga su cuenta de MercadoPago vinculada, o comercios en estado Cerrado Temporalmente. Estos últimos aparecen con indicador visual de "temporalmente cerrado" y sin posibilidad de realizar pedidos.
+- El sistema debe mostrar el listado de comercios disponibles de forma pública, sin requerir autenticación. Solo se muestran comercios en estado Apto para Venta (APTO_VENTA: Aprobado, con la cuenta de MercadoPago de su Dueño vinculada), o comercios en estado Cerrado Temporalmente. Estos últimos aparecen con indicador visual de "temporalmente cerrado" y sin posibilidad de realizar pedidos.
 - El cliente debe poder acceder al menú de un comercio y visualizar sus productos activos con nombre, descripción, precio, foto, categoría y tags.
 - El cliente debe poder filtrar productos dentro de un menú por categoría y/o tags.
 - El sistema debe informar al usuario no autenticado que debe iniciar sesión para poder realizar un pedido.
@@ -29,7 +29,7 @@
 - El cliente debe poder modificar la cantidad de un ítem, eliminarlo individualmente o vaciar el carrito completo.
 - El sistema debe calcular y mostrar el subtotal del carrito en tiempo real, incluyendo el precio de los extras seleccionados en cada ítem.
 - El carrito debe vincularse a la sesión activa del cliente, pasando a estado inactivo al expirar la sesión o al inactivarse la cuenta.
-- El carrito solo se limpia automáticamente una vez confirmado el pago (transición del pedido a estado PENDIENTE). En caso de pago fallido o timeout de pago, el carrito permanece intacto.
+- El carrito solo se limpia automáticamente una vez confirmado el pago (transición del pedido a estado PENDIENTE_CONFIRMACION_COMERCIO), y solo si el carrito actual es del mismo comercio del pedido pagado. En caso de pago fallido o timeout de pago, el carrito permanece intacto.
 
 ---
 
@@ -37,13 +37,13 @@
 
 - El cliente autenticado puede tener múltiples pedidos activos simultáneamente, siempre que cada pedido individual sea de un único comercio.
 - El cliente autenticado debe poder confirmar su pedido desde el carrito, seleccionando la modalidad de entrega: retiro en el local o envío a domicilio. La opción de envío a domicilio solo se muestra si el comercio lo acepta; la de retiro, solo si el comercio lo acepta.
-- El sistema debe validar, al momento de confirmar el pedido: que el comercio esté Aprobado, que su Dueño tenga la cuenta de MercadoPago vinculada, que esté dentro de su horario de atención, que todos los productos sigan activos, que se haya seleccionado al menos un extra en cada grupo obligatorio, y —en caso de domicilio— que el cliente tenga una dirección principal configurada.
+- El sistema debe validar, al momento de confirmar el pedido: que el comercio esté en estado APTO_VENTA (Aprobado y con la cuenta de MercadoPago de su Dueño vinculada), que esté dentro de su horario de atención, que todos los productos sigan activos, que se haya seleccionado al menos un extra en cada grupo obligatorio, y —en caso de domicilio— que el cliente tenga una dirección principal configurada.
 - El sistema debe registrar el pedido con todos sus ítems, precios al momento de la compra, comercio, modalidad de entrega, tarifa de servicio vigente al cliente y al comercio (ambas persistidas en el registro del pedido), y fecha.
 - El resumen del pedido debe mostrar: subtotal, cargo de servicio al cliente (valor vigente al momento del pedido) y total a pagar.
 - El cliente debe poder visualizar el historial completo de sus pedidos con su estado actual y detalle de cada uno.
 - El cliente puede cancelar su pedido según modalidad:
-  - **Domicilio:** hasta el momento en que el comercio lo marca como EN_CAMINO (estados cancelables: PENDIENTE y EN_PREPARACION).
-  - **Retiro:** hasta el momento en que el comercio lo marca como LISTO_PARA_RETIRAR (estados cancelables: PENDIENTE y EN_PREPARACION).
+  - **Domicilio:** hasta el momento en que el comercio lo marca como EN_CAMINO (estados cancelables: PENDIENTE_CONFIRMACION_COMERCIO y EN_PREPARACION).
+  - **Retiro:** hasta el momento en que el comercio lo marca como LISTO_PARA_RETIRAR (estados cancelables: PENDIENTE_CONFIRMACION_COMERCIO y EN_PREPARACION).
 - En pedidos a domicilio en estado EN_CAMINO, el cliente debe poder confirmar la recepción del pedido. Esta confirmación cierra el pedido como ENTREGADO.
 - En pedidos de retiro, la confirmación de entrega la realiza el comercio.
 - El cliente debe poder iniciar un reclamo ante un pedido a domicilio marcado como ENTREGADO que no fue recibido. El sistema también debe ofrecer la opción de contactar directamente al comercio como vía alternativa.
@@ -61,3 +61,6 @@
 
 - El cliente debe poder abonar su pedido a través de MercadoPago como único medio de pago disponible en la plataforma.
 - Ante rechazo del pedido por el comercio, anulación por el comercio, cancelación por el cliente, expiración por falta de respuesta del comercio o aprobación de un reclamo, el cliente debe recibir el reembolso del monto total abonado mediante nota de crédito procesada vía MercadoPago.
+- Si MercadoPago rechaza un pago, el pedido no se cancela: permanece pendiente de pago y el cliente puede reintentar sobre el mismo link hasta que se apruebe un pago o venza el plazo de pago (30 minutos desde la creación del pedido). El link de pago vence junto con el pedido.
+- Si un pago está en revisión en MercadoPago (`pending` o `in_process`), el sistema no permite iniciar otro checkout hasta que se resuelva o venza el pedido.
+- Al volver del checkout, el sistema verifica el estado real del pago en MercadoPago; si el pedido ya está pagado se informa sin abrir un nuevo checkout.
