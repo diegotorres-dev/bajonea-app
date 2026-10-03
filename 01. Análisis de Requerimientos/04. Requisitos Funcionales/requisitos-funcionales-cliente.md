@@ -4,8 +4,11 @@
 
 ## Registro y Perfil
 
-- El sistema debe permitir el registro de nuevos clientes solicitando: nombre, apellido, DNI, fecha de nacimiento, teléfono, email, contraseña y una dirección de entrega inicial (que queda registrada automáticamente como dirección principal).
+- El sistema debe permitir el registro de nuevos clientes solicitando: nombre, apellido, DNI, fecha de nacimiento, teléfono, email, nombre de usuario, contraseña y una dirección de entrega inicial (que queda registrada automáticamente como dirección principal).
 - El cliente debe poder editar sus datos personales (nombre, apellido, teléfono) desde su perfil autenticado.
+- El cliente debe poder cambiar su nombre de usuario desde su perfil autenticado, hasta 3 veces cada 30 días corridos (ventana deslizante hacia atrás desde el momento del intento, no mes calendario). El sistema debe registrar cada cambio y, al alcanzar el límite, informar los días reales que faltan para volver a poder cambiarlo.
+- El cambio de nombre de usuario requiere confirmar la contraseña actual. Una contraseña incorrecta cuenta como intento fallido, con el mismo bloqueo de cuenta a los 3 intentos que el login y el cambio de contraseña, y con el mismo aviso previo ("Cuidado: si fallás una vez más, tu cuenta se bloqueará.").
+- El cambio de nombre de usuario no cierra las sesiones existentes.
 - El cliente debe poder cargar y editar una foto de perfil desde su perfil autenticado. Es opcional.
 - El cliente debe poder gestionar múltiples direcciones de entrega: agregar, editar, eliminar y designar una como dirección principal. La dirección principal no puede eliminarse si es la única registrada; primero debe designarse otra como principal.
 

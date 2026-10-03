@@ -81,9 +81,11 @@ preservando las tarifas históricas en los pedidos ya existentes.
 
 ## HU-A15: Gestionar Re-solicitudes de Comercios Rechazados
 
-Como administrador, quiero recibir una notificación y poder revisar cuando un comercio
-rechazado reenvíe su solicitud de habilitación, para evaluarla con el historial de
-acciones previas visible.
+Como administrador, quiero ver en una bandeja propia (sin notificación) los comercios
+rechazados que su Dueño corrigió y volvió a solicitar, con el motivo del rechazo anterior,
+el número de intento y los datos que cambió, para evaluarlos con el historial de acciones
+previas visible y poder rechazarlos de forma definitiva cuando corresponda (en el último
+intento el rechazo definitivo es automático y así se me avisa).
 
 ## HU-A16: Atender Mensajes de Soporte
 

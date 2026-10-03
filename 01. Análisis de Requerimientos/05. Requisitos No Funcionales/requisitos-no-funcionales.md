@@ -84,6 +84,7 @@
 - El sistema debe reintentar automáticamente los reembolsos fallidos hasta su
   procesamiento exitoso.
 - Las llamadas a la API de MercadoPago deben tener un tiempo máximo de espera (5 segundos de conexión y de lectura); ante una falla o demora, el sistema responde con un error de servicio no disponible en lugar de asumir un estado.
+- La verificación de que el split se aplicó (comparación de `fee_details` contra el `marketplace_fee` esperado) es informativa: ante una diferencia registra una alerta y nunca bloquea ni revierte el pago del cliente.
 - El procesamiento de los webhooks y de la sincronización de pagos debe ser idempotente y seguro ante notificaciones simultáneas sobre el mismo pedido (bloqueo pesimista del pedido); un pago aprobado nunca se sobrescribe.
 
 ---

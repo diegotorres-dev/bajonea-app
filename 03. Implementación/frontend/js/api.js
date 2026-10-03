@@ -146,7 +146,7 @@ async function parseBody(response) {
   }
 }
 
-export async function apiFetch(path, { method = 'GET', body, auth = true, handle401Globally = true, handle5xxGlobally = true, comercioId, sinComercio = false } = {}) {
+export async function apiFetch(path, { method = 'GET', body, auth = true, handle401Globally = true, handle5xxGlobally = true, comercioId, sinComercio = false, conMensaje = false } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   const token = getToken();
   const hadToken = Boolean(auth && token);
@@ -202,5 +202,5 @@ export async function apiFetch(path, { method = 'GET', body, auth = true, handle
     throw new ApiError(response.status, parsed.mensaje, parsed.data);
   }
 
-  return parsed.data;
+  return conMensaje ? { mensaje: parsed.mensaje, data: parsed.data } : parsed.data;
 }

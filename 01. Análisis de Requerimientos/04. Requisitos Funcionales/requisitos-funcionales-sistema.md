@@ -70,10 +70,12 @@ La tabla Pedido incluye el campo `cancelado_por` (enum nullable: CLIENTE, COMERC
 
 ### Pago con MercadoPago (Checkout Pro)
 
-- El sistema genera el link de pago creando una preferencia de Checkout Pro con el access token del Dueño titular del comercio. El cargo total de servicio (`cargo_servicio_cliente + cargo_servicio_comercio`) se envía como `marketplace_fee`, e `external_reference` es el identificador del pedido. Cada pedido tiene a lo sumo un registro de pago.
+- El sistema genera el link de pago creando una preferencia de Checkout Pro con el access token del Dueño titular del comercio. El cargo total de servicio (`cargo_servicio_cliente + cargo_servicio_comercio`) se envía como `marketplace_fee`, e `external_reference` es el identificador del pedido. Cada pedido tiene a lo sumo un registro de pago. `marketplace_fee` es el único mecanismo de split que usa el sistema; la entrada `application_fee` que MercadoPago devuelve dentro de `fee_details` es solo el nombre con que informa esa misma comisión.
 - El link de pago vence junto con el pedido: la preferencia se crea con el tiempo restante del plazo de pago (30 minutos desde la creación del pedido).
 - Al pedir el link de un pedido que ya tiene preferencia, el sistema consulta primero el estado real del pago en MercadoPago: si ya está aprobado informa que el pedido está pagado sin abrir un nuevo checkout; si el pago está en revisión (`pending` o `in_process`) no abre el checkout hasta que se resuelva o venza el pedido; si la verificación falla o tarda responde con un error de servicio no disponible.
 - Al volver del checkout, el cliente puede sincronizar el pago del pedido: el sistema aplica el resultado con la misma rutina que el webhook, sin confiar en el identificador de pago que envía el frontend (se cruza siempre el `external_reference`).
+
+- Al confirmarse un pago aprobado, el sistema debe verificar que el split se aplicó: consulta el pago a MercadoPago (`GET /v1/payments/{id}`), lee la comisión de marketplace de `fee_details` y la compara contra el monto esperado (`cargo_servicio_cliente + cargo_servicio_comercio`, con tolerancia de $0,01). Si la entrada falta o el monto no coincide, registra una alerta `SPLIT_NO_APLICADO` con el monto esperado y el capturado. Esta verificación nunca bloquea ni revierte el pago ni el pedido del cliente.
 
 ### Webhook de MercadoPago
 
@@ -81,12 +83,12 @@ La tabla Pedido incluye el campo `cancelado_por` (enum nullable: CLIENTE, COMERC
 - Al recibir confirmación de pago aprobado: actualizar el pedido de PENDIENTE_PAGO a PENDIENTE_CONFIRMACION_COMERCIO, limpiar el carrito del cliente y notificar al comercio del nuevo pedido.
 - Al recibir notificación de pago rechazado (`rejected` o `cancelled`): el pedido NO se cancela. Permanece en PENDIENTE_PAGO con el estado de pago RECHAZADO, de modo que el cliente pueda reintentar sobre la misma preferencia, hasta que se apruebe un pago o venza el plazo de pago. El carrito del cliente permanece intacto.
 - Si el webhook llega para un pedido ya en estado CANCELADO_POR_SISTEMA (por ejemplo, el timeout fue procesado antes de que llegara el webhook de pago aprobado), el sistema debe generar el reembolso correspondiente inmediatamente, ya que el cobro efectivamente se realizó.
-- El sistema debe registrar en la base de datos una alerta cuando detecta un caso que no puede resolver automáticamente: pago aprobado sobre un pedido ya cancelado (pago tardío), segundo pago aprobado con otro identificador sobre un pedido ya pagado (pago duplicado), o `external_reference` que no coincide con el pedido. Las alertas solo dejan rastro (motivo, pedido, identificador de pago, IP de origen y fecha): no modifican el pedido ni el pago. La consulta de las alertas por pantalla está pendiente de implementación.
+- El sistema debe registrar en la base de datos una alerta cuando detecta un caso que no puede resolver automáticamente: pago aprobado sobre un pedido ya cancelado (pago tardío), segundo pago aprobado con otro identificador sobre un pedido ya pagado (pago duplicado), o `external_reference` que no coincide con el pedido, o split no aplicado (la comisión de marketplace no figura en `fee_details` o su monto no coincide con el esperado). Las alertas solo dejan rastro (motivo, pedido, identificador de pago, IP de origen y fecha): no modifican el pedido ni el pago. La consulta de las alertas por pantalla está pendiente de implementación.
 
 ### Timeouts Automáticos
 
 - **Timeout PENDIENTE_PAGO (30 minutos):** un job periódico detecta pedidos en estado PENDIENTE_PAGO con más de 30 minutos de antigüedad sin recibir confirmación de MP (el plazo es configurable y el job corre cada 60 segundos). El sistema los cancela con estado CANCELADO_POR_SISTEMA (cancelado_por: SISTEMA, motivo: `Pago no confirmado` si no hubo un pago resuelto, o `Pago rechazado` si el último pago fue rechazado), sin generar reembolso. El carrito permanece intacto.
-- **Timeout PENDIENTE_CONFIRMACION_COMERCIO — Expiración por falta de respuesta del comercio (1 hora):** un job periódico (cada 5 minutos, plazo configurable) detecta pedidos en estado PENDIENTE_CONFIRMACION_COMERCIO con más de 1 hora en ese estado, medida desde la confirmación del pago, sin respuesta del comercio. El sistema cambia su estado a EXPIRADO (cancelado_por: SISTEMA), genera la nota de crédito y solicita el reembolso correspondiente, y notifica al cliente y al comercio.
+- **Timeout PENDIENTE_CONFIRMACION_COMERCIO — Expiración por falta de respuesta del comercio (30 minutos):** un job periódico (cada 5 minutos, plazo configurable) detecta pedidos en estado PENDIENTE_CONFIRMACION_COMERCIO con más de 30 minutos en ese estado, medida desde la confirmación del pago, sin respuesta del comercio. El sistema cambia su estado a EXPIRADO (cancelado_por: SISTEMA), genera la nota de crédito y solicita el reembolso correspondiente, y notifica al cliente y al comercio.
 
 ### Timer de Entrega a Domicilio (75/90 minutos)
 
@@ -115,7 +117,7 @@ Al inactivarse automáticamente un comercio por inactividad (3 meses sin activid
 
 ## Historial de Estados de Comercios
 
-- El sistema debe registrar en la entidad HistorialEstadoComercio cada transición de estado de un comercio: aprobación, rechazo, suspensión y reactivación por levantamiento de suspensión, además de las transiciones automáticas del sistema. Cada registro incluye: fecha y hora, estado de origen, estado resultante, motivo (cuando aplica) y el administrador responsable (vacío cuando la transición es automática). El tipo de acción se deduce del estado resultante.
+- El sistema debe registrar en la entidad HistorialEstadoComercio cada transición de estado de un comercio: aprobación, rechazo (incluido el rechazo definitivo), re-solicitud del Dueño tras un rechazo, suspensión y reactivación por levantamiento de suspensión, además de las transiciones automáticas del sistema. Cada re-solicitud guarda además qué datos cambió el Dueño (HistorialCambioComercio: un registro por campo, con valor anterior y nuevo). Cada registro incluye: fecha y hora, estado de origen, estado resultante, motivo (cuando aplica) y el administrador responsable (vacío cuando la transición es automática). El tipo de acción se deduce del estado resultante.
 
 ---
 
@@ -142,7 +144,7 @@ El sistema emite notificaciones push (y en algunos casos email) ante los siguien
 | T15 | Comercio rechazado (con motivo) | Dueño | Push + Panel + Email |
 | T16 | Comercio suspendido (con motivo) | Dueño y Empleados activos del comercio | Push + Panel + Email |
 | T17 | Nuevo comercio pendiente de revisión | Administrador | Push + Panel |
-| T18 | Nueva re-solicitud de comercio rechazado | Administrador | Push + Panel |
+| T18 | Nueva re-solicitud de comercio rechazado | — (no se notifica al Administrador: la re-solicitud aparece en su bandeja de re-solicitudes) | — |
 | T19 | Nuevo reclamo iniciado por cliente | Administrador | Push + Panel |
 | T20 | Reclamo aprobado — reembolso en proceso | Cliente | Push + Panel |
 | T21 | Reclamo rechazado (con motivo) | Cliente | Push + Panel |

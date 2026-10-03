@@ -3,7 +3,7 @@
 **Proyecto:** Bajoneá — Plataforma de pedidos gastronómicos en línea  
 **Motor de base de datos:** MySQL (InnoDB)  
 **ORM / Migraciones:** Spring Data JPA + Hibernate / Flyway  
-**Versión del modelo:** 1.6  
+**Versión del modelo:** 1.9  
 
 ## 1. Tipos Enumerados (ENUMs)
 
@@ -94,6 +94,7 @@ Categoría de negocio del comercio dentro de la plataforma.
 | `BAR` | Bar. |
 | `KIOSCO` | Kiosco / almacén de cercanía. |
 | `FOOD_TRUCK` | Food truck / gastronomía móvil. |
+| `HAMBURGUESERIA` | Hamburguesería. Agregado por la migración `V20`. |
 | `OTRO` | Categoría no contemplada en los valores anteriores. |
 
 > Clasificación informativa y visual; todos los tipos de comercio tienen las mismas funcionalidades dentro de la plataforma. Campo candidato a usarse como filtro del catálogo público en una futura versión (no implementado en esta).
@@ -124,10 +125,11 @@ Ciclo de vida del comercio en la plataforma.
 |-------|-------------|
 | `PENDIENTE` | Solicitud de alta enviada; pendiente de revisión por el Administrador. No visible en el catálogo. |
 | `APROBADO` | Aprobado por el Administrador. Todavía no es visible en el catálogo ni puede recibir pedidos: para eso el Dueno debe vincular su cuenta de MercadoPago, lo que lo pasa a `APTO_VENTA`. |
-| `RECHAZADO` | Solicitud rechazada por el Administrador con motivo. Puede presentar una re-solicitud de aprobación. |
+| `RECHAZADO` | Solicitud rechazada por el Administrador con motivo. El Dueno puede corregir los datos del mismo comercio y volver a solicitar su aprobación (re-solicitud, hasta 3 veces por comercio: `comercio.resolicitudes.max`); la re-solicitud lo devuelve a `PENDIENTE`. |
 | `SUSPENDIDO` | Suspendido por el Administrador. Oculto del catálogo. El Dueno titular puede enviar mensaje de soporte. |
 | `INACTIVO` | Inactivado por propagación desde el Dueno titular (3 meses sin actividad). Oculto del catálogo. |
 | `CERRADO_TEMPORALMENTE` | Cerrado automáticamente por bloqueo del Dueno titular. Se restaura al recuperar la contraseña: a `APTO_VENTA` si el Dueno tiene una `CuentaMercadoPago` activa, o a `APROBADO` si no. |
+| `RECHAZO_DEFINITIVO` | Estado terminal, sin salida desde la aplicación. Se llega desde `PENDIENTE` cuando el Administrador rechaza de forma definitiva (a pedido suyo, sobre el alta original o sobre una re-solicitud) o cuando rechaza una re-solicitud y el comercio ya usó todas las que tenía (`cantidad_resolicitudes >= comercio.resolicitudes.max`; lo decide el servidor). El Dueno no puede corregirlo ni volver a solicitarlo; reabrirlo es una operación manual sobre la base (estado a `RECHAZADO`, `cantidad_resolicitudes` en 2 y una fila de historial "reabierto manualmente"). No cuenta para la elegibilidad de agregar otros comercios, pero sí como duplicado. No es visible en el catálogo ni recibe pedidos, y no lo toca el bloqueo ni la suspensión de cuenta (migración `V24`). |
 | `APTO_VENTA` | Aprobado, con la cuenta de MercadoPago del Dueno titular vinculada (`CuentaMercadoPago.activa = true`). Se alcanza automáticamente al vincular la cuenta (`APROBADO → APTO_VENTA`) y vuelve a `APROBADO` al desvincularla. Es el único estado en el que el comercio aparece en el catálogo público y puede recibir pedidos (migración `V12`). |
 
 > **Regla de visibilidad y venta (implementada):** el catálogo público lista únicamente comercios con `estado = APTO_VENTA`, y un pedido solo se acepta si además la hora actual está dentro de alguna franja de `Horario` (`ComercioService.validarAceptaPedidos`). Diseño pendiente de implementar: la condición `cerrado_manualmente = false` (la columna existe, ningún código la usa) y la aparición de comercios `CERRADO_TEMPORALMENTE` con indicador de "temporalmente cerrado".
@@ -258,7 +260,7 @@ Estados del ciclo de vida de un pedido.
 | `CANCELADO` | Cancelado por el cliente antes del despacho (domicilio) o antes de estar listo (retiro). | Sí |
 | `ANULADO` | Anulado por el comercio desde estado `EN_PREPARACION`. | Sí |
 | `CANCELADO_POR_SISTEMA` | Cancelado automáticamente por el sistema (vencimiento del plazo de pago, con el pago sin resolver o rechazado; suspensión o inactivación del comercio). El reembolso se genera **solo** si el pago ya había sido confirmado previamente. | Condicional |
-| `EXPIRADO` | El comercio no respondió dentro de 1 hora tras la confirmación del pago. | Sí |
+| `EXPIRADO` | El comercio no respondió dentro de 30 minutos (`pedido.timeout.respuesta-comercio-minutos`) tras la confirmación del pago. | Sí |
 
 > **Valor `PENDIENTE` residual:** la migración `V6` renombró el estado histórico `PENDIENTE` a `PENDIENTE_CONFIRMACION_COMERCIO`, pero conservó el literal `PENDIENTE` en el ENUM físico de MySQL de `pedido.estado` e `historial_estado_pedido.estado` para no invalidar pedidos de prueba ya guardados con ese valor. El enum Java `EstadoPedido` no lo contempla; ningún código lo escribe.
 
@@ -311,7 +313,7 @@ Timeout automático que disparó una transición. Se registra en `HistorialEstad
 |-------|-------------|
 | `TIMEOUT_PAGO` | Venció el plazo de pago (30 minutos, configurable) con el pedido en `PENDIENTE_PAGO`. |
 | `TIMEOUT_ENTREGA` | Autoconfirmación de entrega a los 90 minutos en `EN_CAMINO`. |
-| `TIMEOUT_RESPUESTA_COMERCIO` | El comercio no respondió en 1 hora desde `PENDIENTE_CONFIRMACION_COMERCIO`. |
+| `TIMEOUT_RESPUESTA_COMERCIO` | El comercio no respondió en 30 minutos (configurable) desde `PENDIENTE_CONFIRMACION_COMERCIO`. |
 | `TIMEOUT_RETIRO_SUSPENSION` | Venció el timer de 90 minutos de un pedido `LISTO_PARA_RETIRAR` de un comercio suspendido. |
 
 ---
@@ -325,6 +327,7 @@ Causa de una alerta registrada en `AlertaWebhookMp`.
 | `EXTERNAL_REFERENCE_MISMATCH` | El `external_reference` que devuelve MercadoPago no coincide con el pedido reclamado en la notificación. |
 | `PAGO_APROBADO_SOBRE_PEDIDO_CANCELADO` | Llegó un pago aprobado para un pedido que ya no estaba esperando el pago (pago tardío). |
 | `PAGO_APROBADO_DUPLICADO` | Llegó un segundo pago aprobado, con otro id, para un pedido que ya tenía su pago aprobado. |
+| `SPLIT_NO_APLICADO` | Se aprobó un pago pero el `fee_details` que devolvió MercadoPago no trae la comisión de marketplace esperada (falta la entrada o su monto no coincide con `marketplace_fee`). Solo se registra: no bloquea ni revierte el pago ni el pedido. Agregado por la migración `V22`. |
 
 ---
 
@@ -366,7 +369,22 @@ Estado del proceso de reembolso gestionado a través de la API de MercadoPago.
 | `PENDIENTE` | Reembolso generado; aún no procesado por la API de MP. |
 | `PROCESADO` | Reembolso confirmado exitosamente por MercadoPago. |
 | `PENDIENTE_REINTENTO` | Primer intento de reembolso fallido; el job periódico lo reintentará. |
-| `FALLIDO` | Máximo de 5 intentos alcanzado sin éxito. Requiere intervención manual del Administrador. Se emite notificación T27. |
+| `FALLIDO` | El pedido de reembolso a MercadoPago falló (hoy, en el primer intento: el job de reintentos hasta 5 todavía no existe). El error real queda en `ultimo_error`. Requiere intervención manual del Administrador. La notificación T27 todavía no se emite. |
+| `PENDIENTE_REVISION_MANUAL` | Agregado 2026-09-25. El reembolso no se intentó porque la cuenta de MercadoPago del comercio está desvinculada (`CuentaMercadoPago.activa = false` o inexistente). Queda registrado para que el Administrador lo resuelva a mano; `intentos = 0`. |
+
+---
+
+### ENUM: MotivoNotaCredito
+
+Agregado 2026-09-25. Origen de una nota de crédito (columna `NotaCredito.motivo`).
+
+| Valor | Descripción |
+|-------|-------------|
+| `RECHAZO_COMERCIO` | El comercio rechazó el pedido (`RECHAZADO`). |
+| `CANCELACION_CLIENTE` | El cliente canceló el pedido (`CANCELADO`). Todavía sin llamador (endpoint pendiente). |
+| `ANULACION_COMERCIO` | El comercio anuló el pedido (`ANULADO`). Todavía sin llamador (endpoint pendiente). |
+| `SUSPENSION_COMERCIO` | Cancelación por el sistema por suspensión del comercio (`CANCELADO_POR_SISTEMA`). |
+| `EXPIRACION_SIN_RESPUESTA` | El comercio no respondió a tiempo (`EXPIRADO`). |
 
 ---
 
@@ -434,7 +452,7 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 | `PEDIDO_CANCELADO_CLIENTE` | T9 | Dueno y Empleados activos del comercio | Push | El cliente canceló un pedido activo. |
 | `PEDIDO_ANULADO_COMERCIO` | T10 | Cliente | Push | El comercio anuló el pedido desde `EN_PREPARACION`. |
 | `PEDIDO_CANCELADO_SISTEMA` | T11 | Cliente | Push + Email | Pedido cancelado por el sistema con motivo (suspensión, timeout, pago rechazado). |
-| `PEDIDO_EXPIRADO_CLIENTE` | T12 | Cliente | Push | El comercio no respondió en 1 hora; pedido expirado y reembolso en proceso. |
+| `PEDIDO_EXPIRADO_CLIENTE` | T12 | Cliente | Push | El comercio no respondió en 30 minutos; pedido expirado y devolución del pago en gestión. |
 | `PEDIDO_EXPIRADO_COMERCIO` | T13 | Dueno y Empleados activos del comercio | Push | Aviso al comercio de pedido expirado por falta de respuesta. |
 | `COMERCIO_APROBADO` | T14 | Dueno | Push + Email | La solicitud del comercio fue aprobada por el Administrador. |
 | `COMERCIO_RECHAZADO` | T15 | Dueno | Push + Email | La solicitud del comercio fue rechazada con motivo. |
@@ -540,7 +558,8 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
 | `id` | INT | NO | AI | PK, AI | Identificador único del usuario. Compartido con `Persona` (mismo valor). |
-| `email` | VARCHAR(254) | NO | — | NN, UQ | Dirección de email. Identificador de acceso único en toda la plataforma. Ampliado de `VARCHAR(150)` a `VARCHAR(254)` (máximo teórico real de un email según RFC 5321/5322) en el tramo de perfeccionamiento de validaciones de "01. Datos Personales" de `registro-cliente.html` — ver `docs/DECISIONES.md` y la migración `V4__ampliar_usuario_email_varchar254.sql`. |
+| `email` | VARCHAR(254) | NO | — | NN, UQ | Dirección de email, única en toda la plataforma. Ya **no** es la credencial de login (ver `nombre_usuario`): se usa para verificación de cuenta, recuperación de contraseña y reactivación de cuenta. Ampliado de `VARCHAR(150)` a `VARCHAR(254)` (máximo teórico real de un email según RFC 5321/5322) en el tramo de perfeccionamiento de validaciones de "01. Datos Personales" de `registro-cliente.html` — ver `docs/DECISIONES.md` y la migración `V4__ampliar_usuario_email_varchar254.sql`. |
+| `nombre_usuario` | VARCHAR(20) `utf8mb4_bin` | NO | — | NN, UQ, CK | **Credencial de login** (migración `V19`). De 8 a 20 caracteres, solo letras y números ASCII, al menos una letra; se guarda y se muestra normalizado a minúsculas. Único en toda la tabla sin importar el rol. La collation `utf8mb4_bin` más el `CHECK (nombre_usuario = LOWER(nombre_usuario))` (`ck_usuario_nombre_usuario_minusculas`) hacen que la base rechace mayúsculas aunque se escriba por fuera del backend, sin depender de la collation del servidor. El backend rechaza además una lista de nombres reservados (comparación exacta). El Cliente puede cambiarlo desde su perfil (ver `HistorialCambioNombreUsuario`). |
 | `password_hash` | VARCHAR(255) | NO | — | NN | Hash de la contraseña generado con BCrypt. Nunca se almacena en texto plano. |
 | `rol` | ENUM RolUsuario | NO | — | NN | Rol funcional: `CLIENTE`, `DUENO`, `EMPLEADO` o `ADMINISTRADOR`. Determina las entidades asociadas y los permisos de la API. |
 | `estado` | ENUM EstadoUsuario | NO | `'PENDIENTE'` | NN | Estado operacional actual del usuario. Consultado en cada validación de seguridad. |
@@ -553,9 +572,10 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 
 > **Campos eliminados en v1.2:** `fecha_bloqueo`, `fecha_suspension`, `motivo_suspension`, `fecha_inactivo`, `fecha_reactivacion`. Todos se derivan desde `HistorialEstadoUsuario`: `SELECT estado_destino, motivo, fecha_hora FROM HistorialEstadoUsuario WHERE usuario_id = ? ORDER BY fecha_hora DESC`.
 
-**Índices:** `PRIMARY KEY (id)` | `UNIQUE (email)` | `INDEX (rol)` | `INDEX (estado)`
+**Índices:** `PRIMARY KEY (id)` | `UNIQUE (email)` | `UNIQUE (nombre_usuario)` (`uq_usuario_nombre_usuario`) | `INDEX (rol)` | `INDEX (estado)`
 
 **Reglas de negocio:**
+- El login es exclusivamente por `nombre_usuario` y contraseña. El `sub` del JWT es el `id` del usuario, no el email ni el nombre de usuario, por lo que cambiar el nombre de usuario no invalida las sesiones existentes.
 - Al registrarse: `estado = PENDIENTE`, `email_verificado = false`. Se inserta la primera fila en `HistorialEstadoUsuario` con `estado_origen = NULL`, `estado_destino = PENDIENTE`.
 - Tras 3 intentos fallidos: `estado → BLOQUEADO`, `intentos_fallidos` se resetea a 0. Se inserta fila en `HistorialEstadoUsuario`.
 - `fecha_ultimo_acceso` se actualiza en cada login exitoso y es el único criterio para la inactivación por 3 meses.
@@ -582,6 +602,27 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 - Tabla de solo inserción (append-only). No se modifica ni elimina ningún registro.
 - El estado actual del usuario se obtiene desde `Usuario.estado`. El historial completo, desde esta tabla ordenada por `fecha_hora ASC`.
 - Para obtener la última suspensión: `SELECT motivo, fecha_hora FROM HistorialEstadoUsuario WHERE usuario_id = ? AND estado_destino = 'SUSPENDIDO' ORDER BY fecha_hora DESC LIMIT 1`.
+
+---
+
+### Tabla: HistorialCambioNombreUsuario
+
+**Descripción:** Registro de auditoría de cada cambio de `Usuario.nombre_usuario` hecho desde el perfil (migración `V21`). Sirve para calcular el límite de cambios. Tabla chica de un evento puntual, sin relación con otras tablas de negocio más allá del usuario dueño del cambio. Hoy solo el Cliente puede cambiar su nombre de usuario.
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `id` | INT | NO | AI | PK, AI | Identificador único del registro. |
+| `usuario_id` | INT | NO | — | FK → Usuario.id, NN, `ON DELETE CASCADE` | Usuario que cambió su nombre de usuario. |
+| `nombre_usuario_anterior` | VARCHAR(20) | NO | — | NN | Nombre de usuario antes del cambio. |
+| `nombre_usuario_nuevo` | VARCHAR(20) | NO | — | NN | Nombre de usuario después del cambio. |
+| `fecha_cambio` | DATETIME | NO | `NOW()` | NN | Fecha y hora del cambio. |
+
+**Índices:** `PRIMARY KEY (id)` | `INDEX (usuario_id, fecha_cambio)` (`idx_historial_cambio_nombre_usuario_usuario_fecha`)
+
+**Reglas de negocio:**
+- Tabla de solo inserción (append-only).
+- Límite: máximo 3 cambios cada 30 días corridos (ventana deslizante hacia atrás desde el momento del intento, no mes calendario). Si ya hay 3 cambios en la ventana, el cupo se libera cuando sale de ella el más antiguo de esos cambios, y el mensaje informa los días reales restantes.
+- Cada cambio exige la contraseña actual; una contraseña incorrecta cuenta como intento fallido con el mismo bloqueo a los 3 intentos que el login y el cambio de contraseña.
 
 ---
 
@@ -711,12 +752,13 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | `foto_perfil_url` | VARCHAR(500) | NO | — | NN | URL del logo/imagen de perfil del comercio almacenada en Cloudinary. Campo propio de cada comercio: no se comparte entre los distintos comercios de un mismo Dueno, a diferencia de `Usuario.foto_perfil_url` (foto personal del Dueno/Empleado). |
 | `telefono` | VARCHAR(30) | NO | — | NN | Teléfono de contacto del comercio. Se usa para generar enlace `wa.me`. |
 | `email` | VARCHAR(150) | NO | — | NN | Email de contacto del comercio (puede ser distinto al email del Dueno titular). |
-| `tipo_comercio` | ENUM TipoComercio | NO | — | NN | Categoría del negocio (ver ENUM TipoComercio, 12 valores). Clasificación informativa y visual; no altera funcionalidades. |
+| `tipo_comercio` | ENUM TipoComercio | NO | — | NN | Categoría del negocio (ver ENUM TipoComercio, 13 valores). Clasificación informativa y visual; no altera funcionalidades. |
 | `acepta_delivery` | TINYINT(1) | NO | `false` | NN | `true` si el comercio ofrece entrega a domicilio. |
 | `acepta_retiro` | TINYINT(1) | NO | `false` | NN | `true` si el comercio permite retiro en el local. |
 | `estado` | ENUM EstadoComercio | NO | `'PENDIENTE'` | NN | Estado operacional actual del comercio. Consultado en cada validación de pedido. |
 | `cerrado_manualmente` | TINYINT(1) | NO | `false` | NN | `true` si el comerciante cerró manualmente su tienda. Independiente del estado y del horario. Se combina con ambos para determinar la disponibilidad real. |
-| `fecha_resolicitud` | DATETIME | SÍ | NULL | — | Fecha y hora en que el comercio presentó una nueva solicitud de aprobación tras ser rechazado. Permite al Administrador distinguir re-solicitudes de solicitudes iniciales en el panel de revisión. |
+| `fecha_resolicitud` | DATETIME | SÍ | NULL | — | Fecha y hora de la última re-solicitud: el Dueno corrigió el comercio rechazado y volvió a pedir su aprobación. `NULL` mientras nunca se re-solicitó. Se escribe en la misma transacción que `cantidad_resolicitudes` y que la fila `RECHAZADO → PENDIENTE` del historial. |
+| `cantidad_resolicitudes` | INT | NO | `0` | NN | Cuántas veces el Dueno volvió a solicitar la aprobación de este comercio. Es igual a la cantidad de filas `RECHAZADO → PENDIENTE` de `HistorialEstadoComercio` de este comercio (la aplicación mantiene las dos cosas en la misma transacción). Con `0` y `estado = PENDIENTE` es una solicitud nueva; con más de `0`, una re-solicitud: la bandeja del Administrador las muestra por separado. Tope: `comercio.resolicitudes.max` (3). Migración `V25`. |
 | `mp_vinculado` | TINYINT(1) | NO | `false` | NN | Columna existente en el schema (`V1`) **sin uso en el código**: ninguna Entity ni Service la lee ni la escribe (queda en su default). Su función la cumple el estado `APTO_VENTA` de `estado` (ver ENUM EstadoComercio). Se conserva por compatibilidad con el diseño original. |
 | `fecha_registro` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación del comercio en el sistema. Inmutable. |
 | `fecha_modificacion` | DATETIME | SÍ | NULL | — | Fecha y hora de la última modificación del perfil del comercio (nombre, descripción, teléfono, foto, modalidades). |
@@ -736,6 +778,9 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 - Para obtener el motivo y fecha del último rechazo: `SELECT motivo, fecha_hora FROM HistorialEstadoComercio WHERE comercio_id = ? AND estado_destino = 'RECHAZADO' ORDER BY fecha_hora DESC LIMIT 1`.
 - Para obtener el motivo y fecha de la última suspensión: ídem con `estado_destino = 'SUSPENDIDO'`.
 - Para obtener la fecha de la última aprobación o reactivación: ídem con `estado_destino = 'APROBADO'`.
+- Corrección y re-solicitud (multi-comercio, tramo 3A): solo el Dueno del comercio, solo mientras está `RECHAZADO`, siempre sobre el mismo comercio. Corrige todos los datos del negocio y, solo si nunca tuvo un comercio aprobado, también los datos fiscales y del representante; usuario, email de la cuenta y contraseña no se tocan. Un reenvío sin ningún dato cambiado se rechaza. Cada reenvío deja una fila `RECHAZADO → PENDIENTE` (sin administrador, motivo "Nueva solicitud del Dueño") y un registro por campo cambiado en `HistorialCambioComercio`. No se avisa al Administrador: la re-solicitud aparece en su bandeja.
+- Un `RECHAZO_DEFINITIVO` no se puede suspender ni lo mueve el bloqueo o la restauración de cuenta del Dueno, y cuenta como duplicado ("mismo nombre en la misma dirección") al agregar otro comercio; un `RECHAZADO` no cuenta como duplicado.
+- Elegibilidad para agregar un comercio adicional: el Dueno tiene al menos un comercio `APROBADO` o `APTO_VENTA`, o tiene al menos un comercio y todos están en `RECHAZO_DEFINITIVO`. Cualquier otra combinación no es elegible.
 
 ---
 
@@ -788,8 +833,8 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
 | `id` | INT | NO | AI | PK, AI | Identificador único del registro. |
-| `dueno_id` | INT | NO | — | FK → Dueno.id, NN, UQ | Dueno al que pertenece la cuenta vinculada. UNIQUE: un solo registro por Dueno, compartido por todos sus comercios. |
-| `mp_user_id` | VARCHAR(50) | NO | — | NN | ID del usuario en la plataforma de MercadoPago (obtenido durante el flujo OAuth). |
+| `dueno_id` | INT | NO | — | FK → Dueno.id, NN, UQ | Dueno al que pertenece la cuenta vinculada. UNIQUE: un solo registro por Dueno, compartido por todos sus comercios. Un Dueno tiene una sola cuenta de MercadoPago activa: con una activa no puede iniciar otra vinculación ni vincular otra distinta sin desvincular antes. |
+| `mp_user_id` | VARCHAR(50) | NO | — | NN | ID del usuario en la plataforma de MercadoPago (obtenido durante el flujo OAuth). Una misma cuenta no puede estar activa en dos Dueños a la vez (ver `mp_user_id_activo`); una fila inactiva de otro Dueno con el mismo `mp_user_id` no cuenta. |
 | `access_token` | VARCHAR(500) | NO | — | NN | Token de acceso OAuth para llamadas a la API de MP en nombre del Dueno. Sensible: se guarda cifrado con AES-GCM (IV aleatorio de 12 bytes prefijado al texto cifrado; clave en la variable de entorno `MERCADOPAGO_TOKEN_ENCRYPTION_KEY`; conversor `MercadoPagoTokenConverter`). La columna se amplió a `VARCHAR(500)` en la migración `V11` para alojar el texto cifrado. |
 | `refresh_token` | VARCHAR(500) | NO | — | NN | Token de renovación OAuth para obtener un nuevo `access_token` antes de que expire. Sensible: se guarda cifrado igual que `access_token`. No se usa: la renovación (refresh) no está implementada. |
 | `public_key` | VARCHAR(255) | SÍ | NULL | — | Clave pública del Dueno en MercadoPago. Puede usarse para inicializar el SDK en el frontend. |
@@ -798,13 +843,15 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | `fecha_vinculacion` | DATETIME | NO | `NOW()` | NN | Fecha y hora en que el Dueno completó el flujo OAuth exitosamente. |
 | `fecha_desvinculacion` | DATETIME | SÍ | NULL | — | Fecha y hora en que el Dueno desvinculó su cuenta. Se popula al desvincular. |
 | `token_expira` | DATETIME | SÍ | NULL | — | Fecha y hora de expiración del `access_token`. Se calcula con `expires_in` de la respuesta OAuth (~6 meses). El diseño prevé renovar antes de que venza, pero el refresh no está implementado: un token vencido no se renueva. |
+| `mp_user_id_activo` | VARCHAR(50) | SÍ | generada | UQ, columna generada `STORED` | Agregada en la migración `V27` (2026-10-03, multi-comercio tramo 5). Vale `mp_user_id` mientras `activa = 1` y `NULL` si no: `GENERATED ALWAYS AS (CASE WHEN activa = 1 THEN mp_user_id ELSE NULL END) STORED`. Su `UNIQUE` impide que una misma cuenta de MercadoPago esté activa en dos Dueños a la vez y deja convivir filas inactivas (los `NULL` no chocan). La entidad JPA no la mapea y la aplicación nunca la escribe. |
 
-**Índices:** `PRIMARY KEY (id)` | `UNIQUE (dueno_id)`
+**Índices:** `PRIMARY KEY (id)` | `UNIQUE (dueno_id)` | `UNIQUE uq_cuenta_mp_user_id_activo (mp_user_id_activo)`
 
 **Reglas de negocio:**
-- Al desvincular: `activa = false`, `fecha_desvinculacion = NOW()`; el comercio del Dueno que estuviera en `APTO_VENTA` vuelve a `APROBADO` (`ComercioService.desactivarAptoVenta`).
-- Al vincular (nueva o renovación): `activa = true`; el comercio del Dueno que estuviera en `APROBADO` pasa a `APTO_VENTA` (`ComercioService.activarAptoVenta`). La vinculación usa OAuth `authorization_code` con PKCE (ver `CodigoVinculacionMp`).
-- El código actual opera sobre un único comercio por Dueno (multi-comercio pendiente).
+- Al desvincular: `activa = false`, `fecha_desvinculacion = NOW()`; **todos** los comercios del Dueno que estuvieran en `APTO_VENTA` vuelven a `APROBADO`, con una fila de `historial_estado_comercio` por comercio (`ComercioService.desactivarAptoVenta`). Los tokens guardados no se borran. Se rechaza con `409` mientras algún comercio del Dueno tenga pedidos en `PENDIENTE_PAGO` (un cliente podría estar pagando contra esa cuenta): el error trae la hora aproximada para reintentar (fecha de creación del pedido más reciente más `pedido.timeout.pago-minutos`). Los demás pedidos en curso (`PENDIENTE_CONFIRMACION_COMERCIO`, `EN_PREPARACION`, `EN_CAMINO`, `LISTO_PARA_RETIRAR`) siguen su flujo; un reembolso posterior con la cuenta inactiva nace `PENDIENTE_REVISION_MANUAL`. Orden de bloqueo: cuenta, comercios (`FOR UPDATE`), pedidos `PENDIENTE_PAGO` (lectura con bloqueo compartido, filas y no un conteo).
+- Al vincular (nueva o renovación): `activa = true`; **todos** los comercios del Dueno que estuvieran en `APROBADO` pasan a `APTO_VENTA` (`ComercioService.activarAptoVenta`). La vinculación usa OAuth `authorization_code` con PKCE (ver `CodigoVinculacionMp`). Volver a vincular la misma cuenta es idempotente y refresca los datos; vincular otra distinta con una activa da `409`; vincular una cuenta activa en otro Dueno da `409` sin revelar quién la tiene (la violación de `uq_cuenta_mp_user_id_activo` en una carrera se traduce a ese mismo error).
+- Crear un pedido lee el estado del comercio con bloqueo compartido y revalida `APTO_VENTA` dentro de la transacción, así que nunca queda un pedido nuevo sobre una cuenta ya desvinculada.
+- Con más de un comercio, la cuenta sigue siendo una sola por Dueno y alcanza a todos los comercios aprobados. Cuando `APTO_VENTA` exija además documentación, una etiqueta de "falta vincular cobro" tendrá que leer la cuenta del Dueno y no solo el estado del comercio.
 
 ---
 
@@ -859,16 +906,39 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | `administrador_id` | INT | SÍ | NULL | FK → Administrador.id | Administrador que ejecutó la transición. NULL cuando la transición es automática (sistema). |
 | `estado_origen` | ENUM EstadoComercio | NO | — | NN | Estado del comercio antes de la transición. |
 | `estado_destino` | ENUM EstadoComercio | NO | — | NN | Estado del comercio después de la transición. |
-| `motivo` | VARCHAR(500) | SÍ | NULL | — | Motivo de la transición. Obligatorio para transiciones hacia `RECHAZADO` y `SUSPENDIDO`. Opcional en los demás casos. |
+| `motivo` | VARCHAR(500) | SÍ | NULL | — | Motivo de la transición. Obligatorio para transiciones hacia `RECHAZADO`, `RECHAZO_DEFINITIVO` y `SUSPENDIDO`. Opcional en los demás casos. La re-solicitud del Dueno (`RECHAZADO → PENDIENTE`) lleva el motivo fijo "Nueva solicitud del Dueño". |
 | `fecha_hora` | DATETIME | NO | `NOW()` | NN | Fecha y hora exacta de la transición. |
 
 **Índices:** `PRIMARY KEY (id)` | `INDEX (comercio_id)` | `INDEX (administrador_id)` | `INDEX (fecha_hora)`
 
 **Reglas de negocio:**
 - Tabla append-only. Nunca se modifica ni elimina ningún registro.
-- `administrador_id = NULL` identifica transiciones automáticas del sistema (implementado: `APROBADO ↔ APTO_VENTA` al vincular o desvincular MercadoPago; previsto, pero sin registrar todavía: `APROBADO → CERRADO_TEMPORALMENTE` por bloqueo del Dueno titular).
-- Para obtener el motivo y fecha del último rechazo: `SELECT motivo, fecha_hora FROM HistorialEstadoComercio WHERE comercio_id = ? AND estado_destino = 'RECHAZADO' ORDER BY fecha_hora DESC LIMIT 1`.
+- `administrador_id = NULL` identifica transiciones automáticas del sistema o hechas por el Dueno (implementado: `APROBADO ↔ APTO_VENTA` al vincular o desvincular MercadoPago, bloqueo y restauración de cuenta, y la re-solicitud `RECHAZADO → PENDIENTE`).
+- Las filas nuevas por re-solicitud y por rechazo definitivo (`PENDIENTE → RECHAZO_DEFINITIVO`, con el motivo del Administrador) siguen el mismo esquema; el estado nuevo está en los dos ENUM `estado_origen` y `estado_destino` (migración `V24`).
+- La última fila se determina por `fecha_hora` y, a igual `fecha_hora`, por `id` (la columna no guarda fracciones de segundo).
+- Para obtener el motivo y fecha del último rechazo: `SELECT motivo, fecha_hora FROM HistorialEstadoComercio WHERE comercio_id = ? AND estado_destino IN ('RECHAZADO', 'RECHAZO_DEFINITIVO') ORDER BY fecha_hora DESC, id DESC LIMIT 1`.
 - Para obtener el motivo y fecha de la última suspensión: ídem con `estado_destino = 'SUSPENDIDO'`.
+
+---
+
+### Tabla: HistorialCambioComercio
+
+**Descripción:** Qué datos cambió el Dueno al corregir y volver a solicitar un comercio rechazado: una fila por cada campo que realmente cambió, colgada de la fila `RECHAZADO → PENDIENTE` de `HistorialEstadoComercio` que dejó esa re-solicitud (relación N:1, `ON DELETE CASCADE`). La bandeja de re-solicitudes del Administrador la usa para mostrar "antes y después". Tabla de solo inserción (migración `V26`).
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `id` | INT | NO | AI | PK, AI | Identificador único del registro. |
+| `historial_estado_comercio_id` | INT | NO | — | FK → HistorialEstadoComercio.id, NN, ON DELETE CASCADE | Fila de historial de estados de la re-solicitud a la que pertenece el cambio. |
+| `campo` | VARCHAR(40) | NO | — | NN | Dato que cambió. Es un enum Java (`CampoCambioComercio`), no un ENUM de MySQL: `NOMBRE`, `DESCRIPCION`, `TELEFONO`, `EMAIL_CONTACTO`, `TIPO_COMERCIO`, `MODALIDADES`, `FOTO_PERFIL`, `DIRECCION`, `HORARIOS`, `REDES_SOCIALES`, `RAZON_SOCIAL`, `CUIT`, `CONDICION_IVA`, `TIPO_SOCIEDAD`, `DOMICILIO_FISCAL`, `FECHA_INICIO_ACTIVIDADES`, `REPRESENTANTE_NOMBRE`, `REPRESENTANTE_APELLIDO`, `REPRESENTANTE_DNI`, `REPRESENTANTE_TELEFONO`, `REPRESENTANTE_FECHA_NACIMIENTO`. |
+| `valor_anterior` | TEXT | SÍ | NULL | — | Valor antes del cambio, como texto legible (la dirección, los horarios, las redes sociales y las modalidades ya serializados). `NULL` si el dato estaba vacío. |
+| `valor_nuevo` | TEXT | SÍ | NULL | — | Valor después del cambio, con el mismo formato. `NULL` si el dato se quitó. |
+
+**Índices:** `PRIMARY KEY (id)` | `UNIQUE (historial_estado_comercio_id, campo)`
+
+**Reglas de negocio:**
+- A lo sumo una fila por campo y por re-solicitud (`UNIQUE`). Un campo que no cambió no tiene fila: el valor se compara después de normalizarlo como en el alta (Title Case en nombres y calle, código postal canónico, vacío igual a `NULL`, horas a nivel minuto; horarios y redes como conjuntos ordenados).
+- Los datos fiscales y del representante se guardan en texto plano (CUIT y DNI incluidos), igual que en `PersonaJuridica` y `PersonaFisica`, y solo aparecen si el Dueno pudo corregirlos (nunca tuvo un comercio aprobado).
+- Para ver lo que cambió en la última re-solicitud: `SELECT campo, valor_anterior, valor_nuevo FROM HistorialCambioComercio WHERE historial_estado_comercio_id = (SELECT MAX(id) FROM HistorialEstadoComercio WHERE comercio_id = ? AND estado_destino = 'PENDIENTE')`.
 
 ---
 
@@ -1363,7 +1433,7 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 
 ### Tabla: AlertaWebhookMp
 
-**Descripción:** Rastro persistente de casos del webhook o la sincronización de MercadoPago que el sistema no resuelve automáticamente (migraciones `V15`, `V17`, `V18`). Solo registra: no modifica el pedido ni `Pago`. No tiene relación con `Pago` ni con `CuentaMercadoPago`. La consulta de las alertas por pantalla o endpoint no existe todavía.
+**Descripción:** Rastro persistente de casos del webhook o la sincronización de MercadoPago que el sistema no resuelve automáticamente (migraciones `V15`, `V17`, `V18`, `V22`). Solo registra: no modifica el pedido ni `Pago`. No tiene relación con `Pago` ni con `CuentaMercadoPago`. La consulta de las alertas por pantalla o endpoint no existe todavía.
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
@@ -1374,26 +1444,31 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | `motivo` | ENUM MotivoAlertaWebhookMp | NO | — | NN | Causa de la alerta (ver ENUM). |
 | `fecha_creacion` | DATETIME | NO | `NOW()` | NN | Fecha y hora en que se registró la alerta. |
 | `ip_origen` | VARCHAR(45) | SÍ | NULL | — | IP de la request que disparó la alerta. |
+| `monto_esperado` | DECIMAL(10,2) | SÍ | NULL | — | Solo para `SPLIT_NO_APLICADO` (migración `V22`): `marketplace_fee` que se envió en la preferencia (`cargo_servicio_cliente + cargo_servicio_comercio`). |
+| `monto_capturado` | DECIMAL(10,2) | SÍ | NULL | — | Solo para `SPLIT_NO_APLICADO`: monto de la entrada de comisión de marketplace que devolvió MercadoPago en `fee_details`, o NULL si esa entrada faltaba. |
 
 **Índices:** `PRIMARY KEY (id)` | `INDEX (pedido_id)` | `INDEX (mp_payment_id)`
 
 **Reglas de negocio:**
-- Los motivos `PAGO_APROBADO_SOBRE_PEDIDO_CANCELADO` y `PAGO_APROBADO_DUPLICADO` son idempotentes por (pedido, pago, motivo): un aviso repetido no genera una segunda fila.
+- Los motivos `PAGO_APROBADO_SOBRE_PEDIDO_CANCELADO`, `PAGO_APROBADO_DUPLICADO` y `SPLIT_NO_APLICADO` son idempotentes por (pedido, pago, motivo): un aviso repetido no genera una segunda fila.
 
 ---
 
 ### Tabla: NotaCredito
 
-**Descripción:** *(Entidad implementada, flujo de reembolso pendiente: ningún Service genera notas de crédito todavía; los puntos del código que deberían hacerlo están marcados con un TODO en `PedidoService`.)* Solicitud de reembolso al cliente. Se genera automáticamente ante eventos que implican devolución de dinero. Vinculada N:1 con `Pago` — desde 2026-08-28 (ver `docs/DECISIONES.md`) un mismo pago puede tener más de una nota de crédito asociada, una por cada cancelación/anulación parcial de ítems de su pedido (además del caso de reembolso total ya existente). El job periódico reintenta los reembolsos fallidos hasta un máximo de 5 intentos; al superarlos, emite la notificación T27 al Administrador.
+**Descripción:** *(Reembolso total implementado el 2026-09-25 para `RECHAZADO`, `EXPIRADO` y la cancelación por suspensión de comercio — ver `ReembolsoService`. `CANCELADO`/`ANULADO` y el reembolso parcial por ítem siguen pendientes, marcados con TODO en `PedidoService`.)* Solicitud de reembolso al cliente. Se genera automáticamente ante eventos que implican devolución de dinero. Vinculada N:1 con `Pago` — desde 2026-08-28 (ver `docs/DECISIONES.md`) un mismo pago puede tener más de una nota de crédito asociada, una por cada cancelación/anulación parcial de ítems de su pedido (además del caso de reembolso total ya existente). El job periódico reintenta los reembolsos fallidos hasta un máximo de 5 intentos; al superarlos, emite la notificación T27 al Administrador.
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
 | `id` | INT | NO | AI | PK, AI | Identificador único de la nota de crédito. |
 | `pago_id` | INT | NO | — | FK → Pago.id, NN | Pago sobre el cual se realiza el reembolso. Ya **no** es UNIQUE desde 2026-08-28: un mismo pago puede tener varias notas de crédito (reembolso total, o una por cada cancelación/anulación parcial de ítems). |
 | `monto` | DECIMAL(10,2) | NO | — | NN | Monto a reembolsar. Antes de 2026-08-28 siempre igual al `Pago.monto` (solo reembolso total); con la cancelación parcial de ítems puede ser un monto parcial, igual a la suma de los `DetallePedido.subtotal` cancelados/anulados en esa nota. |
+| `motivo` | ENUM MotivoNotaCredito | SÍ | NULL | — | Origen de la nota de crédito. Agregado 2026-09-25 (V23). Nullable en el schema por compatibilidad; el código siempre lo completa. |
 | `estado` | ENUM EstadoNotaCredito | NO | `'PENDIENTE'` | NN | Estado del proceso de reembolso ante la API de MercadoPago. |
-| `intentos` | INT | NO | `0` | NN | Contador de intentos de solicitud de reembolso realizados. Máximo: 5. Al alcanzarlo sin éxito, `estado → FALLIDO`. |
+| `intentos` | INT | NO | `0` | NN | Contador de intentos reales de solicitud de reembolso contra MercadoPago (una nota que nunca se intentó queda en 0). Diseño: máximo 5 con job de reintentos (pendiente); hoy un único intento. |
 | `refund_id_mp` | VARCHAR(50) | SÍ | NULL | — | ID del reembolso en MercadoPago (`refund_id`). Se popula al confirmar el reembolso exitoso por la API. |
+| `mp_payment_id` | VARCHAR(50) | SÍ | NULL | — | Id del pago de MercadoPago que se reembolsa (copia de `Pago.id_transaccion_mp` al crear la nota). Agregado 2026-09-25 (V23). |
+| `ultimo_error` | VARCHAR(500) | SÍ | NULL | — | Último error del intento de reembolso (respuesta real de MercadoPago) o motivo de la revisión manual. Se limpia al procesarse con éxito. Agregado 2026-09-25 (V23). |
 | `fecha_emision` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación de la nota de crédito (momento en que se origina la solicitud de reembolso). |
 | `fecha_proceso` | DATETIME | SÍ | NULL | — | Fecha y hora en que el reembolso fue procesado exitosamente por MercadoPago. Se registra al pasar a `PROCESADO`. |
 | `fecha_fallido` | DATETIME | SÍ | NULL | — | Fecha y hora en que se alcanzó el máximo de intentos fallidos. Se emite notificación T27 al Administrador en este momento. |
@@ -1401,10 +1476,11 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 **Índices:** `PRIMARY KEY (id)` | `INDEX (pago_id)` | `INDEX (estado)`
 
 **Reglas de negocio:**
-- El job periódico procesa registros con `estado = PENDIENTE_REINTENTO`.
-- Flujo de reintentos: `PENDIENTE → [primer fallo] → PENDIENTE_REINTENTO → [fallo hasta 5 intentos] → FALLIDO`.
-- Al alcanzar 5 intentos: `estado = FALLIDO`, `fecha_fallido = NOW()`, notificación T27 al Administrador.
-- El reembolso para `CANCELADO_POR_SISTEMA` se genera solo si `Pago.id_transaccion_mp` no es NULL (pago confirmado previamente).
+- **Criterio de pago reembolsable (corregido 2026-09-25):** `Pago.mp_estado = 'approved'` **y** `Pago.fecha_confirmacion` no nula. `Pago.id_transaccion_mp` por sí solo NO sirve: también se completa en pagos rechazados.
+- Reembolso total: monto = `Pago.monto` completo (incluye el cargo de servicio; Bajoneá no retiene nada), pedido a `POST /v1/payments/{id}/refunds` con el `access_token` del Dueño y `X-Idempotency-Key` por intento.
+- Flujo implementado: `PENDIENTE → PROCESADO` (éxito) o `PENDIENTE → FALLIDO` (error de MercadoPago, con el error en `ultimo_error`). Si la cuenta de MercadoPago del comercio está desvinculada, la nota nace directamente en `PENDIENTE_REVISION_MANUAL` y no se llama a MercadoPago. No se crea una nota nueva si las existentes (`PENDIENTE`/`PROCESADO`/`PENDIENTE_REINTENTO`/`PENDIENTE_REVISION_MANUAL`) ya cubren el monto del pago.
+- Diseño pendiente de implementar: job periódico de reintentos (`PENDIENTE_REINTENTO`, hasta 5 intentos) y notificación T27 al Administrador al pasar a `FALLIDO`.
+- `CANCELADO_POR_SISTEMA` sin pago confirmado (timeout de `PENDIENTE_PAGO`) nunca llama al reembolso ni genera nota.
 - **Agregado 2026-08-28:** una `NotaCredito` puede corresponder a un reembolso total del pedido (sin ningún `DetallePedido` asociado, criterio anterior a esta fecha) o a un reembolso parcial originado por uno o más `DetallePedido.nota_credito_id` apuntando a ella (cancelación/anulación de ítems puntuales). Sin ningún Service/Controller que implemente esta segunda vía todavía — ver nota de alcance en `Tabla: DetallePedido` y en `docs/DECISIONES.md`.
 
 ---
@@ -1436,7 +1512,8 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | 21 | `Reclamo` | `pedido_id` | `Pedido` | 1:1 | 1 reclamo ↔ 1 pedido | Un reclamo por pedido (UNIQUE). |
 | 22 | `Reclamo` | `administrador_id` | `Administrador` | N:1 | N reclamos → 1 administrador | Administrador que resolvió el reclamo. |
 | 23 | `HistorialEstadoComercio` | `comercio_id` | `Comercio` | N:1 | N registros → 1 comercio | Historial de transiciones de estado del comercio. |
-| 24 | `HistorialEstadoComercio` | `administrador_id` | `Administrador` | N:1 | N registros → 1 administrador | Administrador que ejecutó la transición (NULL si fue el sistema). |
+| 24 | `HistorialEstadoComercio` | `administrador_id` | `Administrador` | N:1 | N registros → 1 administrador | Administrador que ejecutó la transición (NULL si fue el sistema o el Dueno). |
+| 24b | `HistorialCambioComercio` | `historial_estado_comercio_id` | `HistorialEstadoComercio` | N:1 | N cambios → 1 fila de historial | Campos que el Dueno cambió al re-solicitar un comercio rechazado (`ON DELETE CASCADE`). |
 | 25 | `ConfiguracionTarifa` | `administrador_id` | `Administrador` | N:1 | N configs → 1 administrador | Configuraciones de tarifa registradas por el admin. |
 | 26 | `CuentaMercadoPago` | `dueno_id` | `Dueno` | 1:1 | 1 cuenta ↔ 1 Dueno | Credenciales OAuth MP del Dueno, compartidas por todos sus comercios (UNIQUE). |
 | 27 | `EmpleadoComercio` | `empleado_id` | `Empleado` | N:1 | N relaciones → 1 empleado | Comercios donde opera el empleado. |
@@ -1470,6 +1547,7 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | 55 | `DetallePedido` | `nota_credito_id` | `NotaCredito` | N:1 | N ítems → 1 nota de crédito | Nota de crédito parcial asociada a la cancelación/anulación de este ítem puntual. Agregada 2026-08-28; NULL mientras `estado = ACTIVO`. |
 | 56 | `AlertaWebhookMp` | `pedido_id` | `Pedido` | N:1 | N alertas → 1 pedido | Rastro de casos no resueltos del webhook de MercadoPago (`ON DELETE SET NULL`). |
 | 57 | `CodigoVinculacionMp` | `dueno_id` | `Dueno` | N:1 | N intentos → 1 Dueno | Intentos de vinculación OAuth de MercadoPago. |
+| 58 | `HistorialCambioNombreUsuario` | `usuario_id` | `Usuario` | N:1 | N cambios → 1 usuario | Auditoría de los cambios de nombre de usuario (`ON DELETE CASCADE`). |
 
 ---
 
@@ -1478,11 +1556,13 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | Tabla | Campo(s) | Descripción |
 |-------|----------|-------------|
 | `Usuario` | `email` | Email único en toda la plataforma. |
+| `Usuario` | `nombre_usuario` | Nombre de usuario (credencial de login) único en toda la plataforma, sin importar el rol. |
 | `PersonaFisica` | `dni` | DNI único en toda la plataforma. |
 | `PersonaJuridica` | `cuit` | CUIT único en toda la plataforma. |
 | `Direccion` | `comercio_id` | Un comercio tiene exactamente una dirección. |
 | `Token` | `token` | Valor de token irrepetible (UUID v4 en el diseño original; código numérico de 6 dígitos en el MVP desde el Tramo 16.12 para los tipos existentes en ese momento — ver `docs/modelo-mvp.md`). |
 | `CuentaMercadoPago` | `dueno_id` | Un Dueno tiene como máximo una cuenta MP, compartida por todos sus comercios. |
+| `CuentaMercadoPago` | `mp_user_id_activo` | Una cuenta de MercadoPago activa pertenece a un solo Dueno (índice único sobre la columna generada, migración `V27`). |
 | `RedSocial` | `(comercio_id, tipo)` | Un comercio no puede tener dos links activos del mismo tipo (validado a nivel aplicación, solo filas activas). |
 | `EmpleadoComercio` | `(empleado_id, comercio_id)` | Un empleado no puede tener más de una relación con el mismo comercio. |
 | `Categoria` | `nombre` | Nombre de categoría único. |
@@ -1514,6 +1594,18 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | Inactivación automática (3 meses sin actividad) | `INACTIVO` | `INACTIVO` |
 | Reactivación por token de reactivación | `ACTIVO` | `APTO_VENTA` con cuenta MP activa, o `APROBADO` sin ella (si era `INACTIVO`) |
 
+### Solicitud de comercio: rechazo, corrección y rechazo definitivo
+
+| Evento | Estado Comercio resultante | Historial |
+|--------|---------------------------|-----------|
+| Alta (primer comercio o adicional) | `PENDIENTE` (`cantidad_resolicitudes = 0`) | — |
+| El Administrador aprueba | `APROBADO`, o `APTO_VENTA` si el Dueno tiene una `CuentaMercadoPago` activa | `PENDIENTE → APROBADO` (con el Administrador) y, si corresponde, `APROBADO → APTO_VENTA` (sin administrador) |
+| El Administrador rechaza (motivo obligatorio) | `RECHAZADO` | `PENDIENTE → RECHAZADO` |
+| El Dueno corrige y vuelve a solicitar (hasta 3 veces por comercio) | `PENDIENTE` (`cantidad_resolicitudes + 1`, `fecha_resolicitud`) | `RECHAZADO → PENDIENTE` + un registro por campo cambiado en `HistorialCambioComercio` |
+| El Administrador rechaza una re-solicitud y ya se usaron todas (decide el servidor), o rechaza pidiendo el rechazo definitivo | `RECHAZO_DEFINITIVO` | `PENDIENTE → RECHAZO_DEFINITIVO` |
+
+`RECHAZO_DEFINITIVO` no tiene salida desde la aplicación. Notificaciones al Dueno (tipo `COMERCIO_RECHAZADO`): "Tu comercio {nombre} fue rechazado. Motivo: …" y "Tu comercio {nombre} fue rechazado de forma definitiva. Motivo: …" (sin comillas). La re-solicitud no genera ninguna notificación al Administrador.
+
 ### Ciclo de vida del pedido
 
 ```
@@ -1524,7 +1616,7 @@ PENDIENTE_PAGO ──[webhook aprobado]──→ PENDIENTE_CONFIRMACION_COMERCIO
 
 PENDIENTE_PAGO ──[timeout 30 min]──────────────────────→ CANCELADO_POR_SISTEMA (sin reembolso)
 PENDIENTE_PAGO ──[pago rechazado por MP]───────────────→ sin cambio de estado (queda en PENDIENTE_PAGO con pago_estado RECHAZADO; se puede reintentar hasta el timeout)
-PENDIENTE_CONFIRMACION_COMERCIO ──[timeout 1 hora]─────→ EXPIRADO (con reembolso)
+PENDIENTE_CONFIRMACION_COMERCIO ──[timeout 30 min]─────→ EXPIRADO (con reembolso)
 PENDIENTE_CONFIRMACION_COMERCIO ──[comercio rechaza]───→ RECHAZADO (con reembolso)
 EN_PREPARACION ──[comercio anula]──────────────────────→ ANULADO (con reembolso)
 PENDIENTE_CONFIRMACION_COMERCIO / EN_PREPARACION ──[suspensión comercio]─────→ CANCELADO_POR_SISTEMA (con reembolso)
@@ -1541,13 +1633,14 @@ LISTO_PARA_RETIRAR ──[90 min durante suspensión]───────→ EN
 - Si el ítem tiene extras seleccionados, el costo de los extras se suma al subtotal del ítem: `SUM(DetallePedidoExtra.precio_unitario) × DetallePedido.cantidad` — cada extra se multiplica por la cantidad del producto padre (criterio confirmado, ver tabla `DetallePedidoExtra`).
 - `Pedido.subtotal` = suma de todos los `DetallePedido.subtotal` del pedido (incluyendo extras). Calculado al crear.
 - `Pedido.total` = `subtotal + cargo_servicio_cliente`. Calculado al crear.
+- `marketplace_fee` de la preferencia de Checkout Pro = `Pedido.cargo_servicio_cliente + Pedido.cargo_servicio_comercio`, enviado ya calculado en pesos (monto absoluto, no porcentaje). MercadoPago acredita el pago completo en la cuenta del comercio y transfiere ese monto a la cuenta dueña de la aplicación. Al aprobarse el pago, el sistema compara ese monto contra el `fee_details` del pago; si no coincide se registra `SPLIT_NO_APLICADO` en `AlertaWebhookMp` sin bloquear nada.
 - `Pago.monto` = `Pedido.total`. Diseño pendiente de implementar: verificarlo al procesar el webhook; hoy el webhook y la sincronización no lo verifican.
 
 ### Gestión de reembolsos
 
 - Los reembolsos siempre se canalizan a través de `NotaCredito`. Nunca se emiten directamente desde `Pedido`.
 - `CANCELADO_POR_SISTEMA` sin pago confirmado (timeout de `PENDIENTE_PAGO`, con el pago sin resolver o rechazado) **no** genera `NotaCredito`.
-- Pendiente de implementar: el flujo de `NotaCredito` y reembolso vía API de MercadoPago. Hoy los estados con reembolso (`RECHAZADO`, `CANCELADO`, `ANULADO`, `EXPIRADO`, cancelación por suspensión) solo cambian de estado; el código lo marca con un TODO en `PedidoService`.
+- Reembolso total implementado (2026-09-25) para `RECHAZADO`, `EXPIRADO` y la cancelación por suspensión de comercio. Pendiente: `CANCELADO` y `ANULADO` (todavía sin endpoint real; solo cambian de estado, con un TODO en `PedidoService`) y el reembolso parcial por ítem.
 - Máximo 5 intentos de reembolso vía API de MP. Al agotar los intentos: `estado = FALLIDO`, notificación T27.
 
 ### Gestión del carrito
@@ -1559,4 +1652,4 @@ LISTO_PARA_RETIRAR ──[90 min durante suspensión]───────→ EN
 
 ---
 
-*Diccionario de Datos — Proyecto Bajoneá — Versión 1.6*
+*Diccionario de Datos — Proyecto Bajoneá — Versión 1.9*

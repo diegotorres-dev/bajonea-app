@@ -54,7 +54,7 @@ verlos listados en mi panel, para gestionarlos a tiempo y no perder ventas.
 ## HU-CO08: Aceptar un Pedido
 
 Como Dueño o Empleado autorizado, quiero aceptar un pedido pendiente, para confirmarle
-al cliente que su compra está siendo procesada. Sé que dispongo de 1 hora para
+al cliente que su compra está siendo procesada. Sé que dispongo de 30 minutos para
 responder antes de que el pedido expire automáticamente.
 
 ## HU-CO09: Rechazar un Pedido

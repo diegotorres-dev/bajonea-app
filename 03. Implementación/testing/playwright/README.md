@@ -46,6 +46,8 @@ carrera. Además el backend único de desarrollo y Cloudinary no toleran esa con
 confirmado real: con paralelismo por defecto fallaban ~45 tests. Ver `docs/DECISIONES.md`,
 entrada del 2026-09-25.
 
+Estado al 2026-10-03: **369/369 en verde** (`npx playwright test`, `workers: 1`, 11,3 min, desde una base reseteada con `preparar-entorno-test.sh`; 29 archivos de spec, con el `29` nuevo de 15 tests). Registro histórico siguiente:
+
 Estado al 2026-09-25: **137/137 tests en verde, sin exclusiones** en los 19 specs anteriores; el spec `20` (3 tests, revisión manual de reembolsos) se agregó después y pasa 3/3 (`npx playwright test --list`: 140 tests en 20 archivos; la suite completa de 140 todavía no se corrió junta).
 
 ## Estructura
@@ -79,6 +81,8 @@ Estado al 2026-09-25: **137/137 tests en verde, sin exclusiones** en los 19 spec
 | `23-multicomercio-tramo2b-alta-adicional-ui` | Multi-comercio, tramo 2B (UI, viewport móvil): `agregar-comercio.html` (acceso, elegibilidad, formulario de 3 pasos, duplicado, confirmación de salida), bandeja y detalle del Administrador con la etiqueta "Comercio adicional" y los otros comercios del Dueño, aprobación con y sin cuenta de Mercado Pago simulada |
 | `24-multicomercio-tramo3a-correccion-rechazados` | Multi-comercio, tramo 3A (a nivel API): precarga de la corrección (`404` idénticos), reenvío con cambios por campo, token de versión, datos fiscales (solo sin comercio aprobado previo, choque de CUIT/DNI), duplicados, límite de 3 re-solicitudes y rechazo definitivo, bandeja y métricas del Administrador, nueva elegibilidad para agregar comercios y que `RECHAZO_DEFINITIVO` no se cuele en suspensión, bloqueo, catálogo ni pedidos |
 | `27-multicomercio-tramo4-selector` | Multi-comercio, tramo 4B (UI, viewport móvil): selector de comercio del Dueño (orden de entrada al login, franja en las 4 pestañas, panel "Tus comercios", pantallas de estado por `?id`, "Volver a mis comercios", campana y lista por comercio, polling único, mantener apretado el avatar, header `X-Comercio-Id`) |
+| `28-multicomercio-tramo5-api` | Multi-comercio, tramo 5A (a nivel API): una cuenta de Mercado Pago por Dueño y una cuenta activa en un solo Dueño, `iniciar`, previa de la desvinculación (forma, aislamiento, `404`, `403`), desvinculación con y sin pedidos en `PENDIENTE_PAGO`, pedidos en curso que siguen su flujo, nota en revisión manual y revalidación de `APTO_VENTA` al crear el pedido |
+| `29-multicomercio-tramo5-ui` | Multi-comercio, tramo 5B (UI, viewport móvil): aviso "Vinculá Mercado Pago" del panel "Tus comercios", lista de comercios operativos en la cuenta de cobro, modal de desvincular (pedidos en curso por comercio con singular/plural, sin pedidos, skeleton, Cancelar sin DELETE), bloqueo por pagos pendientes con la hora HH:mm, desvinculación con refresco inmediato, carrera entre la previa y el DELETE, `404`, resultados del callback `vinculacionMp` (con limpieza del parámetro) y pedidos en curso que siguen su flujo |
 
 Todos los elementos interactivos de `frontend/` tienen `data-testid` (convención documentada en `docs/DATA-TESTID-FASE17.md`) — preferir `getByTestId(...)` a selectores de clase CSS, que van a seguir moviéndose en rondas de pulido futuras.
 

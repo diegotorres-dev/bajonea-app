@@ -92,7 +92,7 @@ con split de pagos. El flujo de pago funciona de la siguiente manera:
    sin generar reembolso (no hubo cobro). Un pago rechazado no cancela el pedido: el
    cliente puede reintentar hasta que se apruebe un pago o venza el plazo, y el link de
    pago vence junto con el pedido.
-4. Si el comercio no responde al pedido en 1 hora desde la confirmación del pago,
+4. Si el comercio no responde al pedido en 30 minutos desde la confirmación del pago,
    el pedido pasa a estado **Expirado** y se genera el reembolso completo al cliente.
 
 Cada transacción aplica automáticamente las tarifas de servicio configuradas por el
@@ -146,7 +146,7 @@ Los pedidos atraviesan los siguientes estados a lo largo de su ciclo de vida:
 | Cancelado | Cliente canceló antes del despacho o de que estuviera listo. Genera reembolso |
 | Anulado | Comercio anuló desde En Preparación. Genera reembolso |
 | Cancelado por Sistema | Cancelación automática (suspensión del comercio, pago no confirmado o rechazado al vencer el plazo). Genera reembolso si hubo cobro |
-| Expirado | Comercio no respondió en 1 hora. Genera reembolso automático |
+| Expirado | Comercio no respondió en 30 minutos. Genera reembolso automático |
 
 ---
 
@@ -192,7 +192,7 @@ Los pedidos atraviesan los siguientes estados a lo largo de su ciclo de vida:
 
 ## Limitaciones Conocidas de Implementación
 
-Diferencias entre lo especificado en este documento y en los Requisitos Funcionales, y lo implementado al 2026-09-20. Son funcionalidades especificadas y todavía no implementadas, no cambios de alcance.
+Diferencias entre lo especificado en este documento y en los Requisitos Funcionales, y lo implementado al 2026-09-25. Son funcionalidades especificadas y todavía no implementadas, no cambios de alcance.
 
 **Pagos y reembolsos**
 - **Nota de crédito y reembolso:** la entidad `NotaCredito` existe, pero el flujo de reembolso no. Los estados que la especificación marca "con reembolso" (rechazo, cancelación, anulación, expiración por falta de respuesta y cancelación por suspensión) hoy cambian el estado del pedido sin devolver el dinero; el código lo deja marcado con un TODO en `PedidoService`.
@@ -201,7 +201,12 @@ Diferencias entre lo especificado en este documento y en los Requisitos Funciona
 - **Pago en revisión:** mientras un pago está `pending` o `in_process` no se puede reintentar el pago hasta que se resuelva o venza el pedido. Es un comportamiento intencional.
 
 **Integración con MercadoPago**
+- **Verificación del split:** solo deja rastro. Si `fee_details` no trae la comisión de marketplace esperada o su monto no coincide, se registra una alerta `SPLIT_NO_APLICADO` en `alerta_webhook_mp` y no se hace nada más (no se bloquea ni se revierte el pago). La consulta de las alertas por pantalla no existe.
+- **Cuenta de prueba:** que una cuenta vinculada quede marcada como de prueba (`es_cuenta_prueba`) depende de la variable de entorno `MERCADOPAGO_TEST_TOKEN` al momento de vincular, no de inspeccionar la cuenta real. Si el backend arranca sin ella, una cuenta de prueba queda marcada como de producción; el backend lo advierte con un WARN al arrancar.
+- **Etiqueta del cargo al comercio:** el detalle de pedido del comercio muestra "Cargo por servicio (1%)" con el porcentaje fijo en la pantalla, aunque la tarifa es configurable por el Administrador; el monto sí es el real del pedido.
 - **Renovación de tokens:** no existe refresh. El token de acceso de la cuenta vinculada vence a los ~6 meses.
+- **Desvinculación de la cuenta (multi-comercio, tramo 5):** los tokens guardados no se borran, solo la cuenta pasa a inactiva. La desvinculación se rechaza mientras algún comercio del Dueño tenga pedidos en `PENDIENTE_PAGO`, así que puede demorar hasta 30 minutos (el vencimiento del pedido más reciente, con el job de vencimiento corriendo cada 60 segundos); con tráfico alto un cliente podría mantener el bloqueo de forma continua, y el cierre manual del comercio, que lo evitaría, no está implementado. Plan B si molesta en el uso real: desvincular igual y seguir verificando solo los pagos de pedidos ya existentes con los tokens guardados, aunque la cuenta esté inactiva. Los pedidos en curso que quedan al desvincular (`PENDIENTE_CONFIRMACION_COMERCIO`, `EN_PREPARACION`, `EN_CAMINO`, `LISTO_PARA_RETIRAR`) siguen su flujo, y un reembolso posterior nace `PENDIENTE_REVISION_MANUAL`. La hora para reintentar es aproximada y se calcula en la zona horaria de la JVM, como el resto de las fechas.
+- **Una cuenta por Dueño y una cuenta en un solo Dueño:** si dos Dueños intentan vincular la misma cuenta a la vez, uno gana y el otro recibe el error de cuenta en uso (lo garantiza un índice único en la base). Dos primeras vinculaciones simultáneas del mismo Dueño pueden dar un error genérico de dato duplicado en una de las dos (comportamiento anterior a este tramo).
 - **Verificación del monto:** el webhook y la sincronización no verifican que el monto pagado coincida con el total del pedido.
 - **Firma del webhook:** se valida solo si el secreto `MERCADOPAGO_WEBHOOK_SECRET` está configurado; sin él se omite y se registra una advertencia.
 - **Identificador de pedido no numérico en el webhook:** responde con un error 500.
@@ -211,8 +216,14 @@ Diferencias entre lo especificado en este documento y en los Requisitos Funciona
 - **EN_CAMINO al suspender un comercio:** no está implementado. Al suspender, los pedidos en PENDIENTE_CONFIRMACION_COMERCIO y EN_PREPARACION se cancelan y los LISTO_PARA_RETIRAR inician el timer de 90 minutos, pero los EN_CAMINO no se modifican: siguen su curso normal (confirmación del cliente o autoconfirmación a los 90 minutos).
 - **Cierre manual (`cerrado_manualmente`):** la columna existe en la base de datos, pero ningún código la usa: no hay control en el panel ni se verifica al recibir pedidos.
 - **Catálogo y estado Cerrado Temporalmente:** el catálogo público lista únicamente comercios en estado APTO_VENTA; los comercios en CERRADO_TEMPORALMENTE no aparecen con el indicador de "temporalmente cerrado".
-- **Historial de estados del comercio (`HistorialEstadoComercio`):** hoy se escribe solo al aprobar, rechazar y suspender un comercio (Administrador) y en las transiciones automáticas `APROBADO ↔ APTO_VENTA` al vincular o desvincular MercadoPago. No registran historial la propagación de bloqueo (`CERRADO_TEMPORALMENTE`), su restauración al recuperar la contraseña, la inactivación ni la restauración por reactivación de cuenta. El código lo deja documentado en `AuthService`.
+- **Historial de estados del comercio (`HistorialEstadoComercio`):** se escribe al aprobar, rechazar (incluido el rechazo definitivo) y suspender un comercio (Administrador), en las transiciones automáticas `APROBADO ↔ APTO_VENTA` al vincular o desvincular MercadoPago, en la propagación de bloqueo (`CERRADO_TEMPORALMENTE`) y su restauración (recuperación de contraseña y reactivación de cuenta) y en la re-solicitud del Dueño (`RECHAZADO → PENDIENTE`). No registra la inactivación automática por inactividad (no implementada).
+- **Corrección y re-solicitud de comercios rechazados (backend y pantallas implementados):** el Dueño puede corregir el mismo comercio y volver a solicitarlo (hasta 3 veces; la tercera rechazada o un rechazo pedido como definitivo lo deja en `RECHAZO_DEFINITIVO`). Limitaciones conocidas: (a) la pantalla de corrección se abre sola desde la pantalla de rechazo cuando el comercio rechazado es el único del Dueño; para un comercio rechazado que no es el que muestra el panel (un adicional) solo se abre por dirección directa (`comercio-corregir.html?id=…`) hasta el selector de comercios del tramo 4; (b) no hay una pantalla del Administrador que liste los comercios rechazados ni los de rechazo definitivo; (c) el backend no bloquea por estado las operaciones de un comercio rechazado o en rechazo definitivo (productos, pedidos y perfil siguen sin guarda de estado); (d) no se envían emails por estos cambios; (e) la notificación de rechazo no enlaza a la corrección (depende del selector de comercio del tramo 4); (f) el botón de contacto con soporte queda oculto hasta que exista el módulo de soporte; (g) reabrir un rechazo definitivo es una operación manual sobre la base (ver `docs/DECISIONES.md`).
 - **Levantar la suspensión de un comercio:** no está implementado (no existe el endpoint ni el método de servicio), por lo que tampoco se registra esa transición.
 - **Empleado:** no existe código que le permita ver ni operar pedidos.
-- **Login y registro por nombre de usuario:** no implementados.
+- **Login y registro por nombre de usuario:** implementados para Cliente y Dueño (el login es exclusivamente por nombre de usuario; el email queda para verificación, recuperación y reactivación de cuenta). Limitaciones conocidas:
+  - El login revela si una cuenta existe pero está en un estado distinto de activo (pendiente, bloqueada, inactiva o suspendida) antes de pedir la contraseña. Es comportamiento heredado y una decisión consciente de no cambiarlo.
+  - El aviso de "intentos restantes" ante una contraseña incorrecta también revela que el usuario existe, por el mismo criterio.
+  - El endpoint público de disponibilidad de nombre de usuario no tiene límite de consultas (rate limit).
+  - Dueño y Administrador no ven su nombre de usuario en ninguna pantalla (no tienen pantalla de datos personales) y no pueden cambiarlo; solo el Cliente puede cambiarlo, desde su perfil.
+  - Empleado no está modelado: su nombre de usuario se definirá con su alta, en un tramo futuro de multirol.
 - **Zona horaria:** las fechas y el "hoy" del panel del comercio dependen de la zona horaria de la JVM del servidor (en local, -03:00). La verificación de horario de atención usa -03:00 fijo.

@@ -68,7 +68,11 @@
 
 ## Gestión de Re-solicitudes y Soporte
 
-- El sistema debe notificar al administrador cuando un comercio rechazado envíe una nueva solicitud de revisión.
-- El administrador debe poder visualizar las re-solicitudes pendientes con el detalle del comercio y el historial de estados previos.
+- El sistema no genera una notificación al administrador cuando un comercio rechazado envía una nueva solicitud de revisión (re-solicitud): la re-solicitud aparece en su propia bandeja, separada de las solicitudes nuevas, y el panel cuenta las dos por separado.
+- El administrador debe poder visualizar las re-solicitudes pendientes con el detalle completo del comercio (datos fiscales incluidos), el número de intento sobre el máximo permitido (3 por comercio), el motivo del rechazo anterior y los datos que el Dueño cambió respecto de lo rechazado (valor anterior y nuevo).
+- Al rechazar un comercio, el administrador puede indicar que el rechazo es definitivo: el comercio queda en estado Rechazo definitivo, sin posibilidad de corrección ni de nueva solicitud. Si rechaza una re-solicitud y el comercio ya usó todas las que tenía, el sistema lo pasa a rechazo definitivo por sí mismo.
+- Al rechazar cualquier solicitud (nueva o re-solicitud), el modal de rechazo incluye un interruptor "Rechazo definitivo". Cuando se rechaza una re-solicitud que es el último intento, el modal avisa que el rechazo será definitivo y el interruptor queda activado y bloqueado.
+- En la bandeja de re-solicitudes, cada una muestra el comercio, la fecha y "Intento N de 3"; su detalle muestra el motivo del rechazo anterior, una tarjeta por dato cambiado (antes y ahora; la foto, lado a lado) y, plegado, los datos que no cambiaron.
+- Pendiente (no implementado): una pantalla del administrador que liste los comercios rechazados y los de rechazo definitivo.
 - El sistema debe notificar al administrador cuando un comercio o cliente suspendido envíe una solicitud de contacto con su descargo.
 - El administrador debe poder visualizar los mensajes de soporte recibidos y decidir manualmente si reactivar la cuenta o mantener la suspensión.

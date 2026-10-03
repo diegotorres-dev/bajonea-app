@@ -2,8 +2,8 @@
 
 ## HU-C01: Registrarse como Cliente
 
-Como cliente, quiero registrarme en la plataforma ingresando mis datos personales y
-una dirección de entrega inicial, para poder realizar pedidos en los comercios
+Como cliente, quiero registrarme en la plataforma eligiendo un nombre de usuario y mi
+contraseña, e ingresando mis datos personales y una dirección de entrega inicial, para poder realizar pedidos en los comercios
 disponibles con una dirección principal ya configurada desde el comienzo.
 
 ## HU-C02: Verificar mi Cuenta
@@ -101,3 +101,9 @@ oportunidad de reactivarla si corresponde.
 Como cliente, quiero poder volver al checkout de MercadoPago si mi pago fue rechazado
 y ver el estado real de mi pago al volver, para completar mi pedido sin pagar dos veces
 ni perderlo mientras el plazo de pago siga vigente.
+
+## HU-C17: Cambiar mi Nombre de Usuario
+
+Como cliente, quiero poder cambiar mi nombre de usuario desde mi perfil, confirmando mi
+contraseña actual, para mantener una credencial de acceso que me resulte cómoda, con un
+límite de 3 cambios cada 30 días que evita abusos.

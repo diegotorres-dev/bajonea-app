@@ -7,6 +7,7 @@ import {
   contarNotificacionesNoLeidasActivo,
   destinoDeNavegacion,
   getComercioActivoEnMemoria,
+  getComerciosEnMemoria,
   marcarNotificacionesDelComercioLeidas,
   refrescarComercios,
   resolverComercioActivo,
@@ -1184,34 +1185,234 @@ function mostrarModalConfirmarLogout() {
   });
 }
 
-function mostrarModalConfirmarDesvincularMp(onConfirmar) {
+const TEXTO_PEDIDOS_EN_CURSO = {
+  PENDIENTE_CONFIRMACION_COMERCIO: { singular: 'esperando tu confirmación', plural: 'esperando tu confirmación' },
+  EN_PREPARACION: { singular: ESTADO_BADGE_COMERCIO.EN_PREPARACION.label.toLowerCase(), plural: ESTADO_BADGE_COMERCIO.EN_PREPARACION.label.toLowerCase() },
+  EN_CAMINO: { singular: ESTADO_BADGE_COMERCIO.EN_CAMINO.label.toLowerCase(), plural: ESTADO_BADGE_COMERCIO.EN_CAMINO.label.toLowerCase() },
+  LISTO_PARA_RETIRAR: { singular: ESTADO_BADGE_COMERCIO.LISTO_PARA_RETIRAR.label.toLowerCase(), plural: 'listos para retirar' },
+};
+
+const MENSAJES_VINCULACION_MP = {
+  exito: { texto: 'Tu cuenta de Mercado Pago quedó vinculada', tipo: 'success' },
+  error: { texto: 'No pudimos vincular tu cuenta de Mercado Pago. Probá de nuevo.', tipo: 'error' },
+  'cuenta-en-uso': { texto: 'Esa cuenta de Mercado Pago ya está en uso por otro Dueño. Usá otra cuenta, o pedí que la desvinculen primero.', tipo: 'error' },
+  'cuenta-ya-vinculada': { texto: 'Ya tenés una cuenta de Mercado Pago vinculada. Desvinculala antes de vincular otra.', tipo: 'error' },
+};
+
+function lineasPedidosEnCurso(comercios) {
+  return comercios
+    .map((comercio) => {
+      const partes = comercio.pedidosEnCurso
+        .filter((pedidos) => pedidos.cantidad > 0 && TEXTO_PEDIDOS_EN_CURSO[pedidos.estado])
+        .map((pedidos) => {
+          const textos = TEXTO_PEDIDOS_EN_CURSO[pedidos.estado];
+          return `${pedidos.cantidad} ${pedidos.cantidad === 1 ? textos.singular : textos.plural}`;
+        });
+      return partes.length > 0 ? `${comercio.nombre}: ${partes.join(', ')}` : null;
+    })
+    .filter(Boolean);
+}
+
+function textoBloqueoPagosPendientes(previa) {
+  const cantidad = previa.pagosPendientes.cantidadTotal;
+  const detalle = previa.comercios
+    .filter((comercio) => comercio.cantidadPagosPendientes > 0)
+    .map((comercio) => `${comercio.nombre}: ${comercio.cantidadPagosPendientes}`)
+    .join(', ');
+  const sujeto = cantidad === 1 ? '1 cliente pagando un pedido' : `${cantidad} clientes pagando un pedido`;
+  const consecuencia = cantidad === 1 ? 'ese pago no se podría confirmar' : 'esos pagos no se podrían confirmar';
+  return `Hay ${sujeto} en Mercado Pago (${detalle}). Si desvinculás ahora, ${consecuencia}.`;
+}
+
+function textoPieBloqueo(previa) {
+  const hora = /T(\d{2}:\d{2})/.exec(previa.pagosPendientes.puedeReintentarDesde || '');
+  const vencimiento = 'Un pedido sin pagar vence a los 30 minutos.';
+  return hora ? `Probá de nuevo alrededor de las ${hora[1]}. ${vencimiento}` : vencimiento;
+}
+
+function crearIconoModalMp() {
+  const icono = crear('div', 'modal-sheet__icon');
+  icono.innerHTML = ICONS.alert;
+  return icono;
+}
+
+function crearParrafoMp(className, texto, testid) {
+  const parrafo = crear('p', className);
+  parrafo.textContent = texto;
+  if (testid) {
+    parrafo.setAttribute('data-testid', testid);
+  }
+  return parrafo;
+}
+
+function crearTituloModalMp(texto) {
+  const titulo = crear('h2', 'modal-sheet__title');
+  titulo.textContent = texto;
+  titulo.setAttribute('data-testid', 'titulo-desvincular-mp');
+  return titulo;
+}
+
+function crearBotonMp(className, texto, testid) {
+  const boton = crear('button', className);
+  boton.type = 'button';
+  boton.textContent = texto;
+  boton.setAttribute('data-testid', testid);
+  return boton;
+}
+
+function abrirModalDesvincularMp({ alTerminar }) {
   const backdrop = crear('div', 'modal-backdrop');
-  backdrop.setAttribute('data-testid', 'modal-confirmar-desvincular-mp');
-  backdrop.innerHTML = `
-    <div class="modal-sheet">
-      <div class="modal-sheet__icon">${ICONS.alert}</div>
-      <h2 class="modal-sheet__title">¿Desvincular Mercado Pago?</h2>
-      <p class="modal-sheet__text">Tu comercio dejará de ser visible para tus clientes hasta que vuelvas a vincular una cuenta.</p>
-      <button class="btn btn-primary" type="button" id="confirmar-desvincular-mp-btn" style="background:var(--color-error);margin-bottom:12px;" data-testid="btn-confirmar-desvincular-mp">Sí, desvincular</button>
-      <button class="btn btn-tertiary" type="button" id="cancelar-desvincular-mp-btn" data-testid="btn-cancelar-desvincular-mp">Cancelar</button>
-    </div>
-  `;
+  backdrop.setAttribute('data-testid', 'modal-desvincular-mp');
+  const hoja = crear('div', 'modal-sheet');
+  backdrop.appendChild(hoja);
   document.body.appendChild(backdrop);
-  document.getElementById('cancelar-desvincular-mp-btn').addEventListener('click', () => backdrop.remove());
-  document.getElementById('confirmar-desvincular-mp-btn').addEventListener('click', () => {
+  let ocupado = false;
+
+  function cerrar() {
     backdrop.remove();
-    onConfirmar();
-  });
+  }
+
   backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
+    if (event.target === backdrop && !ocupado) {
+      cerrar();
     }
   });
+
+  function mostrarCargando() {
+    const esqueleto = crear('div', 'desvincular-mp__esqueleto');
+    esqueleto.setAttribute('aria-busy', 'true');
+    esqueleto.setAttribute('data-testid', 'esqueleto-desvincular-mp');
+    esqueleto.appendChild(crear('div', 'skeleton mp-esqueleto-linea'));
+    esqueleto.appendChild(crear('div', 'skeleton mp-esqueleto-linea'));
+    esqueleto.appendChild(crear('div', 'skeleton mp-esqueleto-linea mp-esqueleto-linea--corta'));
+    hoja.replaceChildren(esqueleto);
+  }
+
+  function mostrarBloqueo(previa) {
+    const entendido = crearBotonMp('btn btn-primary', 'Entendido', 'btn-entendido-desvincular-mp');
+    entendido.addEventListener('click', cerrar);
+    hoja.replaceChildren(
+      crearIconoModalMp(),
+      crearTituloModalMp('Todavía no se puede desvincular'),
+      crearParrafoMp('modal-sheet__text desvincular-mp__texto-bloqueo', textoBloqueoPagosPendientes(previa), 'texto-bloqueo-desvincular-mp'),
+      crearParrafoMp('desvincular-mp__pie', textoPieBloqueo(previa), 'pie-bloqueo-desvincular-mp'),
+      entendido,
+    );
+  }
+
+  function crearBloquePedidosEnCurso(previa) {
+    const lineas = lineasPedidosEnCurso(previa.comercios);
+    const bloque = crear('div', 'desvincular-mp__bloque');
+    if (lineas.length === 0) {
+      bloque.textContent = 'No tenés pedidos en curso';
+      bloque.setAttribute('data-testid', 'sin-pedidos-en-curso-desvincular-mp');
+      return bloque;
+    }
+    bloque.setAttribute('data-testid', 'bloque-pedidos-en-curso-desvincular-mp');
+    const titulo = crear('p', 'desvincular-mp__bloque-titulo');
+    titulo.textContent = 'Pedidos en curso, siguen su camino';
+    const lista = crear('ul', 'desvincular-mp__lista');
+    lineas.forEach((linea) => {
+      const item = crear('li');
+      item.textContent = linea;
+      item.setAttribute('data-testid', 'linea-pedidos-en-curso-desvincular-mp');
+      lista.appendChild(item);
+    });
+    bloque.appendChild(titulo);
+    bloque.appendChild(lista);
+    return bloque;
+  }
+
+  function mostrarConfirmacion(previa) {
+    const desvincular = crearBotonMp('btn btn-primary desvincular-mp__confirmar', 'Desvincular', 'btn-confirmar-desvincular-mp');
+    const cancelar = crearBotonMp('btn btn-tertiary', 'Cancelar', 'btn-cancelar-desvincular-mp');
+    cancelar.addEventListener('click', cerrar);
+    desvincular.addEventListener('click', () => confirmar(desvincular, cancelar));
+    hoja.replaceChildren(
+      crearIconoModalMp(),
+      crearTituloModalMp('¿Desvincular Mercado Pago?'),
+      crearParrafoMp('modal-sheet__text', 'Tus comercios dejarán de recibir pedidos nuevos y saldrán del catálogo hasta que vuelvas a vincular una cuenta.', 'texto-desvincular-mp'),
+      crearBloquePedidosEnCurso(previa),
+      crearParrafoMp('desvincular-mp__nota', 'Si hay que devolver el dinero de alguno de estos pedidos, lo gestiona el equipo de Bajoneá de forma manual.', 'nota-desvincular-mp'),
+      desvincular,
+      cancelar,
+    );
+  }
+
+  function resolverPrevia(previa) {
+    if (previa.puedeDesvincular) {
+      mostrarConfirmacion(previa);
+    } else {
+      mostrarBloqueo(previa);
+    }
+  }
+
+  async function terminarConAviso(mensaje, tipo) {
+    cerrar();
+    showToast(mensaje, tipo);
+    await alTerminar();
+  }
+
+  async function confirmar(desvincular, cancelar) {
+    if (ocupado) {
+      return;
+    }
+    ocupado = true;
+    desvincular.disabled = true;
+    cancelar.disabled = true;
+    try {
+      const { mensaje } = await apiFetch('/oauth/mercadopago/desvincular', { method: 'DELETE', conMensaje: true });
+      await terminarConAviso(mensaje, 'success');
+    } catch (error) {
+      const status = error instanceof ApiError ? error.status : null;
+      if (status === 409) {
+        try {
+          const previaNueva = await apiFetch('/oauth/mercadopago/desvinculacion/previa');
+          ocupado = false;
+          resolverPrevia(previaNueva);
+        } catch (errorPrevia) {
+          await terminarConAviso(errorPrevia instanceof ApiError ? errorPrevia.message : error.message, 'error');
+        }
+        return;
+      }
+      await terminarConAviso(error instanceof ApiError ? error.message : 'No pudimos desvincular la cuenta', 'error');
+    }
+  }
+
+  async function cargar() {
+    mostrarCargando();
+    try {
+      resolverPrevia(await apiFetch('/oauth/mercadopago/desvinculacion/previa'));
+    } catch (error) {
+      const esNoEncontrada = error instanceof ApiError && error.status === 404;
+      cerrar();
+      showToast(error instanceof ApiError ? error.message : 'No pudimos verificar tu cuenta de Mercado Pago', 'error');
+      if (esNoEncontrada) {
+        await alTerminar();
+      }
+    }
+  }
+
+  return cargar();
+}
+
+function pintarComerciosOperativos(lista) {
+  lista.replaceChildren();
+  (getComerciosEnMemoria() || [])
+    .filter((comercio) => comercio.operativo)
+    .forEach((comercio) => {
+      const item = crear('li');
+      item.textContent = comercio.nombre;
+      item.setAttribute('data-testid', 'mp-comercio-operativo');
+      lista.appendChild(item);
+    });
 }
 
 async function cargarEstadoMercadoPago() {
+  const cargandoBox = document.getElementById('mp-estado-cargando');
   const pendienteBox = document.getElementById('mp-estado-pendiente');
   const vinculadoBox = document.getElementById('mp-estado-vinculado');
+  cargandoBox.classList.remove('is-hidden');
   pendienteBox.classList.add('is-hidden');
   vinculadoBox.classList.add('is-hidden');
   try {
@@ -1219,13 +1420,29 @@ async function cargarEstadoMercadoPago() {
     if (estado.vinculada) {
       document.getElementById('mp-cuenta-usuario').textContent = `Cuenta de Mercado Pago vinculada: ${estado.mpUserId}`;
       document.getElementById('mp-cuenta-fecha').textContent = `Vinculada el ${formatearFecha(estado.fechaVinculacion)}`;
+      pintarComerciosOperativos(document.getElementById('mp-lista-comercios-vinculada'));
       vinculadoBox.classList.remove('is-hidden');
     } else {
+      pintarComerciosOperativos(document.getElementById('mp-lista-comercios-sin-vincular'));
       pendienteBox.classList.remove('is-hidden');
     }
   } catch (error) {
     showToast(error instanceof ApiError ? error.message : 'No pudimos obtener el estado de Mercado Pago', 'error');
+  } finally {
+    cargandoBox.classList.add('is-hidden');
   }
+}
+
+async function actualizarCuentaMercadoPago() {
+  await Promise.allSettled([cargarEstadoMercadoPago(), refrescarComercios()]);
+}
+
+function limpiarParametrosMercadoPago() {
+  const parametros = new URLSearchParams(window.location.search);
+  parametros.delete('vinculacionMp');
+  parametros.delete('vista');
+  const resto = parametros.toString();
+  window.history.replaceState(null, '', `${window.location.pathname}${resto ? `?${resto}` : ''}`);
 }
 
 function mostrarModalFotoPerfilComercio({ onEditar }) {
@@ -1341,26 +1558,23 @@ export async function initComercioPerfil() {
   });
 
   document.getElementById('btn-desvincular-mp').addEventListener('click', () => {
-    mostrarModalConfirmarDesvincularMp(async () => {
-      try {
-        await apiFetch('/oauth/mercadopago/desvincular', { method: 'DELETE' });
-        showToast('Cuenta de Mercado Pago desvinculada', 'success');
-        cargarEstadoMercadoPago();
-      } catch (error) {
-        showToast(error instanceof ApiError ? error.message : 'No pudimos desvincular la cuenta', 'error');
-      }
-    });
+    if (document.getElementById('modal-desvincular-mp')) {
+      return;
+    }
+    abrirModalDesvincularMp({ alTerminar: actualizarCuentaMercadoPago });
   });
 
-  const resultadoVinculacionMp = new URLSearchParams(window.location.search).get('vinculacionMp');
-  if (resultadoVinculacionMp === 'exito') {
-    showToast('Tu cuenta de Mercado Pago quedó vinculada', 'success');
+  const parametrosUrl = new URLSearchParams(window.location.search);
+  const resultadoVinculacionMp = MENSAJES_VINCULACION_MP[parametrosUrl.get('vinculacionMp')];
+  if (resultadoVinculacionMp) {
+    showToast(resultadoVinculacionMp.texto, resultadoVinculacionMp.tipo);
+  }
+  if (resultadoVinculacionMp || parametrosUrl.get('vista') === 'mercadopago') {
     mostrarVista('view-mercadopago');
-    cargarEstadoMercadoPago();
-  } else if (resultadoVinculacionMp === 'error') {
-    showToast('No pudimos vincular tu cuenta de Mercado Pago. Probá de nuevo.', 'error');
-    mostrarVista('view-mercadopago');
-    cargarEstadoMercadoPago();
+    actualizarCuentaMercadoPago();
+  }
+  if (parametrosUrl.has('vinculacionMp') || parametrosUrl.has('vista')) {
+    limpiarParametrosMercadoPago();
   }
 
   const inputAvatar = document.getElementById('input-avatar');

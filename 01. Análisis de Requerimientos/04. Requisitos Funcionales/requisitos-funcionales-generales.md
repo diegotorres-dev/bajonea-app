@@ -6,7 +6,7 @@ Requisitos aplicables a todos los roles del sistema: Cliente, Dueño, Empleado y
 
 ## Autenticación
 
-- El sistema debe permitir el inicio de sesión mediante email y contraseña.
+- El sistema debe permitir el inicio de sesión mediante nombre de usuario y contraseña. El email no es credencial de login: se usa para la verificación de cuenta, la recuperación de contraseña y la reactivación de cuenta.
 - El sistema debe soportar cuatro roles de usuario: Cliente, Dueño, Empleado y Administrador.
 - El sistema debe bloquear la cuenta tras tres intentos fallidos consecutivos de inicio de sesión.
 - El sistema debe bloquear la cuenta tras tres intentos fallidos de ingreso de contraseña actual en el flujo de cambio de contraseña desde perfil, invalidando la sesión activa.
@@ -17,6 +17,18 @@ Requisitos aplicables a todos los roles del sistema: Cliente, Dueño, Empleado y
   de contexto activo (equivalente al selector de comercio activo del Dueño) para que
   la persona elija con qué rol va a operar, sin que esto implique múltiples sesiones
   ni múltiples logins.
+
+---
+
+## Nombre de Usuario
+
+- Todo usuario tiene un nombre de usuario, que es su credencial de login. Debe tener entre 8 y 20 caracteres, solo letras y números (sin espacios ni símbolos) y al menos una letra.
+- El sistema debe normalizar el nombre de usuario a minúsculas al guardarlo y al mostrarlo, y debe garantizar que sea único en toda la plataforma sin importar el rol, incluso a nivel de base de datos.
+- El sistema debe rechazar una lista de nombres reservados (por ejemplo "administrador", "bajonea", "soporte"), comparados de forma exacta.
+- El nombre de usuario se solicita en el registro de Cliente y en el registro de Dueño. El de Administrador se crea junto con su cuenta sembrada. El alta de Empleado no está modelada todavía, por lo que su nombre de usuario se definirá cuando se implemente.
+- Los formularios de registro deben informar en vivo si un nombre de usuario está disponible, mediante un endpoint público de consulta de disponibilidad.
+- Ante credenciales inválidas en el login, el sistema debe mostrar un mensaje genérico ("Usuario o contraseña incorrectos") que no distinga entre un usuario inexistente y una contraseña incorrecta. En el registro y en la consulta de disponibilidad sí se informa si un nombre de usuario ya está en uso.
+- El identificador que viaja en el token de sesión es el id del usuario, no su nombre de usuario ni su email; por eso un cambio de nombre de usuario no invalida las sesiones existentes.
 
 ---
 
@@ -33,6 +45,7 @@ Requisitos aplicables a todos los roles del sistema: Cliente, Dueño, Empleado y
 - El sistema debe generar un token único de verificación con fecha de creación, uso y vencimiento de 24 horas, registrando si fue utilizado.
 - Un usuario sin email verificado permanece en estado Pendiente.
 - Ante token expirado o inválido, el sistema debe permitir reenviar la verificación.
+- La pantalla de verificación debe funcionar tanto cuando se llega con el email en la dirección (flujo normal posterior al registro) como cuando se llega sin él (por ejemplo desde el aviso de "cuenta no verificada" del login, que no tiene el email a mano); en este segundo caso el sistema debe pedir el email como paso previo.
 
 ---
 

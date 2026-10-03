@@ -19,6 +19,7 @@ const ID_TITULO_PANEL = 'panel-comercios-titulo';
 const DURACION_MANTENER_APRETADO_MS = 500;
 const TOLERANCIA_MOVIMIENTO_PX = 8;
 const FILAS_ESQUELETO = 3;
+const RUTA_CUENTA_DE_COBRO = 'comercio-perfil.html?vista=mercadopago';
 
 const ICONOS = {
   chevronAbajo: [['polyline', { points: '6 9 12 15 18 9' }]],
@@ -254,6 +255,10 @@ function crearEsqueletoFila() {
   return fila;
 }
 
+function hayOperativoSinCuentaDeCobro(comercios) {
+  return Boolean(comercios) && comercios.some((comercio) => comercio.operativo && comercio.estado === 'APROBADO');
+}
+
 function pintarLista(lista, comercios, alElegir) {
   lista.replaceChildren();
   lista.setAttribute('aria-busy', 'false');
@@ -311,6 +316,21 @@ export function abrirPanelComercios() {
   titulo.textContent = 'Tus comercios';
   hoja.appendChild(titulo);
 
+  const aviso = crear('div', 'banner banner-warning panel-comercios__aviso is-hidden');
+  aviso.setAttribute('data-testid', 'aviso-vincular-mercadopago');
+  const textoAviso = crear('span', 'panel-comercios__aviso-texto');
+  textoAviso.textContent = 'Vinculá Mercado Pago para empezar a vender';
+  const vincular = crear('button', 'btn btn-secondary banner__accion');
+  vincular.type = 'button';
+  vincular.textContent = 'Vincular cuenta';
+  vincular.setAttribute('data-testid', 'btn-aviso-vincular-mercadopago');
+  vincular.addEventListener('click', () => {
+    window.location.href = RUTA_CUENTA_DE_COBRO;
+  });
+  aviso.appendChild(textoAviso);
+  aviso.appendChild(vincular);
+  hoja.appendChild(aviso);
+
   const lista = crear('div', 'panel-comercios__lista');
   lista.setAttribute('data-testid', 'lista-comercios');
   hoja.appendChild(lista);
@@ -342,7 +362,10 @@ export function abrirPanelComercios() {
     window.location.href = rutaDeEstado(comercio);
   }
 
-  const repintar = (comercios) => pintarLista(lista, comercios, alElegir);
+  const repintar = (comercios) => {
+    pintarLista(lista, comercios, alElegir);
+    aviso.classList.toggle('is-hidden', !hayOperativoSinCuentaDeCobro(comercios));
+  };
   repintar(getComerciosEnMemoria());
   const desuscribir = suscribirComercios(repintar);
   refrescarComercios().catch(() => {

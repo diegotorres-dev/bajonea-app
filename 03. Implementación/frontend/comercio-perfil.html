@@ -33,7 +33,7 @@
           </button>
           <button class="profile-link" type="button" id="mercadopago-link" data-testid="btn-ir-mercadopago">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
-            <span id="mercadopago-link-texto">Cobros con Mercado Pago</span>
+            <span>Cobros con Mercado Pago</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
           <button class="profile-link" type="button" id="cambiar-password-link" data-testid="btn-cambiar-password">
@@ -159,11 +159,18 @@
         <span class="app-header__title">Cobros con Mercado Pago</span>
       </header>
       <div class="screen-body">
-        <div id="mercadopago-banner-slot" data-testid="mensaje-banner-mercadopago"></div>
+
+        <div id="mp-estado-cargando" class="form-section" aria-busy="true" data-testid="mp-estado-cargando">
+          <div class="skeleton mp-esqueleto-linea"></div>
+          <div class="skeleton mp-esqueleto-linea"></div>
+          <div class="skeleton mp-esqueleto-linea mp-esqueleto-linea--corta"></div>
+        </div>
 
         <div id="mp-estado-pendiente" class="form-section is-hidden" data-testid="mp-estado-pendiente">
           <p class="section-heading">Empezá a cobrar con Mercado Pago</p>
           <p class="section-note">Tu comercio todavía no se encuentra visible para tus clientes. Vinculá tu cuenta de Mercado Pago para empezar a recibir pedidos y cobrar directo en tu cuenta.</p>
+          <p class="section-note mp-cuenta-alcance" data-testid="mp-texto-alcance-sin-vincular">Esta cuenta va a cobrar por todos tus comercios</p>
+          <ul class="mp-comercios-lista" id="mp-lista-comercios-sin-vincular" data-testid="mp-lista-comercios-sin-vincular"></ul>
           <button class="btn btn-primary" type="button" id="btn-vincular-mp" data-testid="btn-vincular-mercadopago">Vincular Mercado Pago</button>
         </div>
 
@@ -176,6 +183,8 @@
               <p id="mp-cuenta-fecha" style="font-size:12px;color:var(--color-text-muted);" data-testid="mp-cuenta-fecha"></p>
             </div>
           </div>
+          <p class="section-note mp-cuenta-alcance" data-testid="mp-texto-alcance-vinculada">Esta cuenta cobra por todos tus comercios</p>
+          <ul class="mp-comercios-lista" id="mp-lista-comercios-vinculada" data-testid="mp-lista-comercios-vinculada"></ul>
           <button class="btn" type="button" id="btn-desvincular-mp" style="margin-top:16px;background:var(--color-error);color:#ffffff;" data-testid="btn-desvincular-mercadopago">Desvincular cuenta</button>
         </div>
       </div>

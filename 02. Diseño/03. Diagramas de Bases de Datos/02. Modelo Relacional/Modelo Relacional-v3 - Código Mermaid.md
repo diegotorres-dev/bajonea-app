@@ -1,6 +1,6 @@
 # Modelo Relacional — Bajoneá (v3)
 
-Actualizado a `diccionario-de-datos.md` v1.6: 43 tablas (se agregaron `CodigoVinculacionMp` y `AlertaWebhookMp`; los conteos de campos y relaciones no se recalcularon). Pegar el bloque en [mermaid.live](https://mermaid.live) para exportar el PNG.
+Actualizado a `diccionario-de-datos.md` v1.7: 44 tablas (se agregaron `CodigoVinculacionMp`, `AlertaWebhookMp` y `HistorialCambioNombreUsuario`; `Usuario` suma `nombre_usuario` y `AlertaWebhookMp` suma `monto_esperado`/`monto_capturado`; los conteos de campos y relaciones no se recalcularon). Pegar el bloque en [mermaid.live](https://mermaid.live) para exportar el PNG.
 
 ```mermaid
 erDiagram
@@ -31,6 +31,7 @@ erDiagram
     Usuario {
         INT id PK
         VARCHAR150 email UK
+        VARCHAR20 nombre_usuario UK
         VARCHAR255 password_hash
         ENUM_RolUsuario rol
         ENUM_EstadoUsuario estado
@@ -40,6 +41,13 @@ erDiagram
         DATETIME fecha_registro
         DATETIME fecha_ultimo_acceso
         DATETIME fecha_actualizacion
+    }
+    HistorialCambioNombreUsuario {
+        INT id PK
+        INT usuario_id FK
+        VARCHAR20 nombre_usuario_anterior
+        VARCHAR20 nombre_usuario_nuevo
+        DATETIME fecha_cambio
     }
     HistorialEstadoUsuario {
         INT id PK
@@ -98,6 +106,7 @@ erDiagram
         ENUM_EstadoComercio estado
         TINYINT1 cerrado_manualmente
         DATETIME fecha_resolicitud
+        INT cantidad_resolicitudes
         TINYINT1 mp_vinculado
         DATETIME fecha_registro
         DATETIME fecha_modificacion
@@ -130,6 +139,7 @@ erDiagram
         DATETIME fecha_vinculacion
         DATETIME fecha_desvinculacion
         DATETIME token_expira
+        VARCHAR50 mp_user_id_activo UK
     }
     CodigoVinculacionMp {
         INT id PK
@@ -155,6 +165,13 @@ erDiagram
         ENUM_EstadoComercio estado_destino
         VARCHAR500 motivo
         DATETIME fecha_hora
+    }
+    HistorialCambioComercio {
+        INT id PK
+        INT historial_estado_comercio_id FK
+        VARCHAR40 campo
+        TEXT valor_anterior
+        TEXT valor_nuevo
     }
     ConfiguracionTarifa {
         INT id PK
@@ -351,6 +368,8 @@ erDiagram
         INT pedido_id FK
         VARCHAR50 mp_payment_id
         VARCHAR120 mp_external_reference
+        DECIMAL10,2 monto_esperado
+        DECIMAL10,2 monto_capturado
         ENUM_MotivoAlertaWebhookMp motivo
         DATETIME fecha_creacion
         VARCHAR45 ip_origen
@@ -392,6 +411,7 @@ erDiagram
     Cliente }o--|| Direccion : "cliente_id"
     Comercio ||--|| Direccion : "comercio_id"
     Usuario }o--|| HistorialEstadoUsuario : "usuario_id"
+    Usuario ||--o{ HistorialCambioNombreUsuario : "usuario_id"
     Comercio }o--|| Horario : "comercio_id"
     Comercio }o--|| RedSocial : "comercio_id"
     Usuario }o--|| Token : "usuario_id"
@@ -403,6 +423,7 @@ erDiagram
     Administrador }o--|| Reclamo : "administrador_id"
     Comercio }o--|| HistorialEstadoComercio : "comercio_id"
     Administrador }o--|| HistorialEstadoComercio : "administrador_id"
+    HistorialEstadoComercio }o--|| HistorialCambioComercio : "historial_estado_comercio_id"
     Administrador }o--|| ConfiguracionTarifa : "administrador_id"
     Dueno ||--|| CuentaMercadoPago : "dueño_id"
     Empleado }o--|| EmpleadoComercio : "empleado_id"

@@ -50,7 +50,8 @@ comercios se encuentran en Requisitos Funcionales — Dueño.
   tiene la cuenta de MercadoPago vinculada y está en estado Activo, dentro del horario
   de atención del comercio, y `cerrado_manualmente = false`.
 - **Apto para Venta (APTO_VENTA):** comercio Aprobado cuyo Dueño vinculó su cuenta de MercadoPago. Se alcanza automáticamente al vincular la cuenta y vuelve a Aprobado al desvincularla. Es el estado que habilita la visibilidad en el catálogo y la recepción de pedidos.
-- **Rechazado:** solicitud denegada por el Administrador con motivo registrado.
+- **Rechazado:** solicitud denegada por el Administrador con motivo registrado. El Dueño puede corregir los datos y volver a solicitar la aprobación (hasta 3 veces por comercio).
+- **Rechazo definitivo:** solicitud denegada de forma definitiva, a pedido del Administrador o porque se agotaron las re-solicitudes. No tiene salida desde la aplicación; no aparece en el catálogo ni recibe pedidos.
 - **Suspendido:** inhabilitado por el Administrador ante una infracción. Se oculta del
   catálogo. Afecta únicamente a este comercio puntual, no a los demás comercios del
   mismo Dueño.
@@ -176,7 +177,7 @@ posibilidad de recibir pedidos — si se cumple alguna de estas condiciones:
   EN_PREPARACION, seleccionando un **motivo predefinido** de la lista de motivos de
   rechazo. Esta acción es irreversible y genera automáticamente la nota de crédito y el
   reembolso al cliente. No aplica desde estados posteriores.
-- El pedido vence automáticamente (estado EXPIRADO) si nadie responde en 1 hora desde
+- El pedido vence automáticamente (estado EXPIRADO) si nadie responde en 30 minutos desde
   la confirmación del pago, generando el reembolso correspondiente al cliente.
 - El Dueño o un Empleado autorizado ve únicamente los pedidos que llegaron al comercio con el pago aprobado (los que pasaron por PENDIENTE_CONFIRMACION_COMERCIO). Un pedido que nunca llegó pagado no aparece en la lista, en el resumen ni en el detalle de pago, y sus acciones responden como recurso inexistente.
 - La fecha de un pedido para el comercio es la de la confirmación del pago, no la de su creación, y es la que define qué pedidos cuentan como "de hoy".
@@ -205,3 +206,5 @@ posibilidad de recibir pedidos — si se cumple alguna de estas condiciones:
   `marketplace_fee` correspondiente: `marketplace_fee = cargo_servicio_cliente +
   cargo_servicio_comercio`. La cuenta de MercadoPago del Dueño titular del comercio
   recibe automáticamente: `subtotal - cargo_servicio_comercio`.
+- `marketplace_fee` es el campo que el sistema envía en la preferencia de Checkout Pro. Es un monto absoluto en pesos, ya calculado, que MercadoPago transfiere a la cuenta dueña de la aplicación; no admite fórmulas ni desglose. La entrada de la respuesta de MercadoPago que informa esa comisión se llama `application_fee` dentro de `fee_details`: es solo el nombre con que MercadoPago la devuelve y no implica usar el mecanismo `application_fee` de la API de Pagos.
+- El panel del comercio debe mostrar en el detalle de cada pedido el cargo de servicio al comercio y, como total, lo que el comercio efectivamente factura (`subtotal - cargo_servicio_comercio`), no lo que pagó el cliente. El indicador "Facturado hoy" del panel se calcula con el mismo criterio neto.

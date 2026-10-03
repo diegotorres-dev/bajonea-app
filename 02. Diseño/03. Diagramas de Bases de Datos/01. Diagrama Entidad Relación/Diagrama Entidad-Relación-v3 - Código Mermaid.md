@@ -19,6 +19,7 @@ erDiagram
     Comercio ||--|| Direccion : "ubicacion"
 
     Usuario ||--o{ HistorialEstadoUsuario : "registra"
+    Usuario ||--o{ HistorialCambioNombreUsuario : "cambia su nombre de usuario"
     Comercio ||--o{ Horario : "tiene"
     Comercio ||--o{ RedSocial : "tiene"
     Usuario ||--o{ Token : "genera"
@@ -30,6 +31,7 @@ erDiagram
     Administrador ||--o{ Reclamo : "resuelve"
     Comercio ||--o{ HistorialEstadoComercio : "registra"
     Administrador ||--o{ HistorialEstadoComercio : "ejecuta"
+    HistorialEstadoComercio ||--o{ HistorialCambioComercio : "detalla"
     Administrador ||--o{ ConfiguracionTarifa : "configura"
     Dueno ||--o| CuentaMercadoPago : "vincula"
     Dueno ||--o{ CodigoVinculacionMp : "inicia"

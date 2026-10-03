@@ -14,6 +14,7 @@ por el Dueño como por un Empleado autorizado.
   los datos de la persona jurídica (razón social, CUIT, domicilio fiscal, condición
   frente al IVA, tipo de sociedad e inicio de actividades) y los datos de su primer
   comercio (ver Requisitos Funcionales — Comercio, sección Perfil del Negocio).
+- El registro del Dueño solicita también el nombre de usuario de su cuenta, que es su credencial de login (ver Requisitos Funcionales — Generales, sección Nombre de Usuario). El Dueño no tiene, en esta versión, una pantalla para ver ni cambiar su nombre de usuario.
 - Un Dueño que ya tiene una cuenta activa debe poder dar de alta un comercio adicional
   desde su panel sin volver a solicitar sus datos fiscales, ya cargados en su registro
   como persona jurídica.
@@ -25,8 +26,25 @@ por el Dueño como por un Empleado autorizado.
   forma individual por el Administrador, incluso si el Dueño ya tiene otros comercios
   aprobados.
 - Un comercio rechazado puede solicitar una revisión de su solicitud desde el panel del
-  Dueño, pudiendo editar sus datos antes de reenviarla. Al hacerlo vuelve a estado
-  Pendiente y el Administrador recibe una nueva notificación.
+  Dueño, pudiendo corregir sus datos antes de reenviarla (el mismo comercio, no uno
+  nuevo). Al hacerlo vuelve a estado Pendiente y aparece en la bandeja de re-solicitudes
+  del Administrador (no se le envía una notificación). Puede corregir todos los datos del
+  negocio y, solo si nunca tuvo un comercio aprobado, también sus datos fiscales y los del
+  representante; el usuario, el email de la cuenta y la contraseña no se modifican. Un
+  reenvío sin ningún dato cambiado se rechaza. Cada comercio admite hasta 3 re-solicitudes;
+  si el Administrador rechaza la tercera, o rechaza pidiendo que sea definitivo, el comercio
+  pasa a Rechazo definitivo y ya no se puede corregir.
+- La pantalla de un comercio rechazado muestra el motivo del rechazo y cuántos intentos le
+  quedan, y ofrece corregir y volver a solicitar. La corrección es un formulario por pasos
+  (Negocio, Legales solo si todavía no tuvo ningún comercio aprobado, Horarios y Redes) con
+  todo precargado, que indica el número de intento y el motivo del rechazo. Si el comercio
+  pasó a Rechazo definitivo, el Dueño solo ve una pantalla informativa con el motivo, desde
+  la que puede agregar un comercio nuevo (únicamente si cumple la regla de más abajo) y,
+  cuando exista el módulo de soporte, contactar al soporte.
+- Un Dueño puede agregar un comercio nuevo si tiene al menos un comercio Aprobado o Apto
+  para venta, o si tiene al menos un comercio y todos están en Rechazo definitivo. Un
+  comercio en Rechazo definitivo cuenta como duplicado (mismo nombre en la misma dirección);
+  uno solo Rechazado, no.
 - Un Dueño con un comercio suspendido puede contactar al soporte desde su panel
   completando un formulario con su descargo. El Administrador recibe la solicitud y
   decide manualmente.
@@ -51,7 +69,31 @@ por el Dueño como por un Empleado autorizado.
   ninguno aparece en el catálogo público.
 - Al desvincular la cuenta, todos los comercios del Dueño quedan bloqueados para
   nuevos pedidos y desaparecen del catálogo hasta que se vuelva a vincular.
-- El monto recibido en cada cobro refleja el total menos el cargo de servicio vía split
+- Un Dueño tiene una sola cuenta de MercadoPago activa para todos sus comercios. Con una
+  cuenta activa no puede iniciar otra vinculación ni vincular una cuenta distinta sin
+  desvincular antes; volver a vincular la misma cuenta no tiene efecto adverso.
+- Una cuenta de MercadoPago no puede estar activa en dos Dueños a la vez. Si ya está en
+  uso por otro Dueño, el sistema lo informa sin revelar quién la tiene; se libera cuando
+  ese otro Dueño la desvincula.
+- La pantalla de la cuenta de cobro lista los comercios operativos del Dueño (Aprobados o
+  Aptos para venta) e indica que la cuenta cobra por todos ellos, o que va a cobrar por
+  todos ellos si todavía no hay una cuenta vinculada.
+- Mientras algún comercio operativo del Dueño esté Aprobado (sin cuenta de cobro), el panel
+  de comercios muestra el aviso "Vinculá Mercado Pago para empezar a vender" con un acceso
+  directo a la pantalla de la cuenta de cobro. El aviso no se puede cerrar y solo aparece
+  en el panel.
+- Antes de desvincular, el Dueño ve qué pasaría: sus comercios (en cualquier estado) con
+  la cantidad de pedidos en curso de cada uno y los clientes que todavía están pagando.
+  La confirmación del Dueño no es vinculante para el sistema: lo único que se revalida
+  siempre al desvincular es la regla siguiente.
+- No se puede desvincular la cuenta mientras algún comercio del Dueño tenga pedidos
+  esperando el pago (un cliente podría estar pagando contra esa cuenta): el sistema indica
+  la hora aproximada para volver a intentarlo, que es cuando vence el pedido más reciente
+  (30 minutos desde su creación). Sin pedidos esperando el pago, la cuenta se desvincula y
+  los demás pedidos en curso siguen su flujo normal; un reembolso posterior queda en
+  revisión manual porque ya no hay cuenta con la que devolver el dinero.
+- Al desvincular, los tokens guardados no se borran: solo la cuenta pasa a inactiva.
+- El monto recibido en cada cobro refleja el subtotal menos el cargo de servicio al comercio, vía split
   de pagos (ver Requisitos Funcionales — Comercio, sección Gestión de Valores en
   Pedidos).
 - La vinculación se realiza mediante el flujo OAuth authorization_code con PKCE. Al completarla, los comercios Aprobados del Dueño pasan automáticamente a Apto para Venta (APTO_VENTA); al desvincular, vuelven a Aprobado.
