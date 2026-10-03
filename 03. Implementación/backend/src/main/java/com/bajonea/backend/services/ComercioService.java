@@ -34,9 +34,9 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Autoservicio de perfil del propio Comercio, incluida la foto de perfil vía firma de
  * Cloudinary (Fase 11 — flujo separado del de la galería de {@code ProductoService}, sin
- * límite de cantidad). No incluye CRUD de Producto — ver {@code ProductoService}, misma
- * tanda de resolución {@code usuarioId (JWT) → Comercio} vía
- * {@code ComercioRepository.findByDuenoId}.
+ * límite de cantidad). No incluye CRUD de Producto — ver {@code ProductoService}. Las operaciones
+ * de autoservicio reciben el {@code comercioId} ya resuelto y validado por
+ * {@code ComercioActivoService} (header {@code X-Comercio-Id}), nunca el id del usuario.
  */
 @Service
 @RequiredArgsConstructor
@@ -51,14 +51,14 @@ public class ComercioService {
 
     private static final ZoneOffset ZONA_HORARIA_COMERCIO = ZoneOffset.of("-03:00");
 
-    public ComercioResponseDTO verPerfil(Integer usuarioId) {
-        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+    public ComercioResponseDTO verPerfil(Integer comercioId) {
+        Comercio comercio = obtenerComercio(comercioId);
         return aResponseDTO(comercio);
     }
 
-    public ComercioResponseDTO editarPerfil(Integer usuarioId, ComercioPerfilRequestDTO request) {
+    public ComercioResponseDTO editarPerfil(Integer comercioId, ComercioPerfilRequestDTO request) {
         ComercioValidaciones.validarModalidadesEntrega(request.isAceptaDelivery(), request.isAceptaRetiro());
-        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+        Comercio comercio = obtenerComercio(comercioId);
 
         comercio.setNombre(TextoUtils.aTitleCase(request.getNombre()));
         comercio.setDescripcion(request.getDescripcion());
@@ -72,13 +72,13 @@ public class ComercioService {
         return aResponseDTO(comercio);
     }
 
-    public CloudinarySignatureResponseDTO generarFirmaFotoPerfil(Integer usuarioId) {
-        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+    public CloudinarySignatureResponseDTO generarFirmaFotoPerfil(Integer comercioId) {
+        Comercio comercio = obtenerComercio(comercioId);
         return cloudinaryService.generarFirmaFotoPerfilComercio(comercio.getId());
     }
 
-    public ComercioResponseDTO actualizarFotoPerfil(Integer usuarioId, FotoPerfilComercioRequestDTO request) {
-        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+    public ComercioResponseDTO actualizarFotoPerfil(Integer comercioId, FotoPerfilComercioRequestDTO request) {
+        Comercio comercio = obtenerComercio(comercioId);
         comercio.setFotoPerfilUrl(request.getUrl());
         comercio.setFechaModificacion(LocalDateTime.now());
         comercioRepository.save(comercio);
@@ -92,7 +92,15 @@ public class ComercioService {
     }
 
     public void validarAceptaPedidos(Comercio comercio) {
-        if (comercio.getEstado() != EstadoComercio.APTO_VENTA) {
+        validarAceptaPedidos(comercio, comercio.getEstado());
+    }
+
+    /**
+     * Misma validación con el estado ya leído por quien llama (por ejemplo bajo bloqueo compartido, en la
+     * creación de un pedido) en vez del que tenga cargado la entidad.
+     */
+    public void validarAceptaPedidos(Comercio comercio, EstadoComercio estadoActual) {
+        if (estadoActual != EstadoComercio.APTO_VENTA) {
             throw new ConflictoDeNegocioException("Este comercio no está aceptando pedidos en este momento");
         }
         List<Horario> horarios = horarioRepository.findByComercioId(comercio.getId());
@@ -124,13 +132,27 @@ public class ComercioService {
 
     /**
      * Transición automática APROBADO -&gt; APTO_VENTA disparada al vincular la cuenta de
-     * MercadoPago del Dueño ({@code MercadoPagoOAuthService}). No es-operación (silenciosa) si
-     * el comercio no está en APROBADO — por ejemplo, si está SUSPENDIDO o ya está APTO_VENTA por
-     * un reintento de vinculación — mismo criterio que
+     * MercadoPago del Dueño ({@code MercadoPagoOAuthService}). Se aplica a cada comercio del
+     * Dueño, y es no-operación (silenciosa) sobre los que no están en APROBADO — por ejemplo,
+     * SUSPENDIDO o ya APTO_VENTA por un reintento de vinculación — mismo criterio que
      * {@code AuthService.restaurarComercioSiCorresponde}, que solo actúa "si corresponde".
+     * <p>
+     * Lee los comercios con bloqueo ({@code findByDuenoIdConBloqueo}) y no con una lectura común: la
+     * aprobación de un comercio por el Administrador decide {@code APROBADO} vs {@code APTO_VENTA} bajo
+     * bloqueo de {@code cuenta_mercado_pago}, y esta transición tiene que ver un comercio recién
+     * aprobado aunque esa aprobación se haya confirmado después de que empezara esta transacción
+     * (con {@code REPEATABLE READ} una lectura común vería la foto anterior y lo dejaría en
+     * {@code APROBADO} con una cuenta ya vinculada).
      */
     public void activarAptoVenta(Integer duenoId) {
-        Comercio comercio = obtenerComercioDelUsuario(duenoId);
+        comercioRepository.findByDuenoIdConBloqueo(duenoId).forEach(this::activarAptoVenta);
+    }
+
+    /**
+     * Misma transición que {@link #activarAptoVenta(Integer)} pero sobre un único comercio; usada
+     * también por el atajo de entorno de test, que no debe arrastrar a los demás comercios del Dueño.
+     */
+    public void activarAptoVenta(Comercio comercio) {
         if (comercio.getEstado() != EstadoComercio.APROBADO) {
             return;
         }
@@ -140,18 +162,31 @@ public class ComercioService {
 
     /**
      * Transición automática APTO_VENTA -&gt; APROBADO disparada al desvincular la cuenta de
-     * MercadoPago del Dueño. No-operación si el comercio no está en APTO_VENTA.
+     * MercadoPago del Dueño. Se aplica a cada comercio del Dueño; no-operación sobre los que no
+     * están en APTO_VENTA. Misma lectura con bloqueo que {@link #activarAptoVenta(Integer)}, por el
+     * mismo motivo (un comercio recién aprobado como {@code APTO_VENTA} tiene que verse acá).
      */
     public void desactivarAptoVenta(Integer duenoId) {
-        Comercio comercio = obtenerComercioDelUsuario(duenoId);
-        if (comercio.getEstado() != EstadoComercio.APTO_VENTA) {
-            return;
+        for (Comercio comercio : comercioRepository.findByDuenoIdConBloqueo(duenoId)) {
+            if (comercio.getEstado() != EstadoComercio.APTO_VENTA) {
+                continue;
+            }
+            registrarTransicionAutomatica(comercio, EstadoComercio.APTO_VENTA, EstadoComercio.APROBADO,
+                    "Desvinculación de cuenta de Mercado Pago");
         }
-        registrarTransicionAutomatica(comercio, EstadoComercio.APTO_VENTA, EstadoComercio.APROBADO,
-                "Desvinculación de cuenta de Mercado Pago");
     }
 
-    private void registrarTransicionAutomatica(Comercio comercio, EstadoComercio estadoOrigen,
+    /**
+     * Cambia el estado del comercio, actualiza {@code fechaModificacion} y deja una fila en
+     * {@code historial_estado_comercio} con {@code administrador = null} (la transición la dispara el
+     * sistema, no una persona) y el motivo indicado. Compartida por las transiciones de Mercado Pago, por
+     * el bloqueo/restauración de cuenta ({@code AuthService}) y por la aprobación que nace
+     * {@code APTO_VENTA} ({@code AdministradorService}). Todo sale de datos ya en memoria: no hace
+     * ninguna consulta que pueda fallar, así que es segura dentro de las transacciones con
+     * {@code noRollbackFor} de {@code AuthService}. Devuelve la fila de historial que dejó, para que quien
+     * necesite colgarle algo (la corrección de un comercio rechazado, sus cambios) no tenga que buscarla.
+     */
+    public HistorialEstadoComercio registrarTransicionAutomatica(Comercio comercio, EstadoComercio estadoOrigen,
             EstadoComercio estadoDestino, String motivo) {
         comercio.setEstado(estadoDestino);
         comercio.setFechaModificacion(LocalDateTime.now());
@@ -165,11 +200,11 @@ public class ComercioService {
                 .motivo(motivo)
                 .fechaHora(LocalDateTime.now())
                 .build();
-        historialEstadoComercioRepository.save(historial);
+        return historialEstadoComercioRepository.save(historial);
     }
 
-    private Comercio obtenerComercioDelUsuario(Integer usuarioId) {
-        return comercioRepository.findByDuenoId(usuarioId)
+    private Comercio obtenerComercio(Integer comercioId) {
+        return comercioRepository.findById(comercioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
     }
 
@@ -203,10 +238,10 @@ public class ComercioService {
     }
 
     private String obtenerMotivoRechazo(Comercio comercio) {
-        if (comercio.getEstado() != EstadoComercio.RECHAZADO) {
+        if (comercio.getEstado() != EstadoComercio.RECHAZADO && comercio.getEstado() != EstadoComercio.RECHAZO_DEFINITIVO) {
             return null;
         }
-        return historialEstadoComercioRepository.findTopByComercioIdOrderByFechaHoraDesc(comercio.getId())
+        return historialEstadoComercioRepository.findTopByComercioIdOrderByFechaHoraDescIdDesc(comercio.getId())
                 .map(historial -> historial.getMotivo() != null && !historial.getMotivo().isBlank() ? historial.getMotivo() : null)
                 .orElse(null);
     }

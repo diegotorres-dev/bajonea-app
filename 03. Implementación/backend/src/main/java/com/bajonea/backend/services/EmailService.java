@@ -18,6 +18,10 @@ import org.springframework.stereotype.Service;
  * {@code RegistroService}/{@code AuthService} no deben perder el {@code Token} ya
  * persistido solo porque el correo no salió — el usuario puede reintentar el envío más
  * adelante sin que eso invalide el token generado.
+ * <p>
+ * Con {@code email.envio-habilitado=false} (el perfil {@code test}) no se llama a Resend: se
+ * registra en el log el destinatario y el asunto, nunca el cuerpo, que lleva el código o el
+ * token. Por defecto el envío está habilitado.
  */
 @Service
 @RequiredArgsConstructor
@@ -29,6 +33,9 @@ public class EmailService {
 
     @Value("${mail.from}")
     private String remitente;
+
+    @Value("${email.envio-habilitado:true}")
+    private boolean envioHabilitado;
 
     public void enviarVerificacion(String destinatario, String token) {
         enviarTextoPlano(destinatario, "Tu código de verificación — Bajoneá",
@@ -64,6 +71,12 @@ public class EmailService {
     }
 
     private void enviarTextoPlano(String destinatario, String asunto, String cuerpo) {
+        if (!envioHabilitado) {
+            log.info("Envío de email deshabilitado (email.envio-habilitado=false): no se envía a {} el asunto \"{}\"",
+                    destinatario, asunto);
+            return;
+        }
+
         CreateEmailOptions params = CreateEmailOptions.builder()
                 .from(remitente)
                 .to(destinatario)

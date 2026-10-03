@@ -14,22 +14,16 @@ import {
   generarTelefono,
   diaDeHoy,
   ADMIN_EMAIL,
+  ADMIN_USUARIO,
   ADMIN_PASSWORD_CONOCIDA,
   type SesionApi,
+  nombreUsuarioUnico,
 } from './helpers/backend';
 
-/**
- * `registrarYVerificarComercio` (helpers/backend.ts) sube una foto real a Cloudinary vía
- * `subirFotoPreRegistro` -- necesita credenciales reales configuradas en el backend. Este
- * spec solo necesita UNA cuenta con rol DUENO para el chequeo de redirect por rol, sin que
- * le importe la foto -- se registra acá con una URL con dominio válido (pasa
- * `@ValidarUrlCloudinary`, que solo valida esquema/host, no que el recurso exista) para no
- * depender de Cloudinary real, mismo criterio ya usado manualmente contra bajonea_practicas3
- * en el testing de ConfiguracionTarifa por Postman (ver docs/DECISIONES.md).
- */
 async function registrarYVerificarComercioSinCloudinaryReal(request: APIRequestContext, localidadId: string) {
   const suf = sufijoUnico();
   const email = `comercio.tarifas.e2e.${suf}@bajonea.test`;
+  const nombreUsuario = nombreUsuarioUnico('com');
   const password = 'Testing123';
   const payload = {
     fotoPerfilUrl: 'https://res.cloudinary.com/demo/image/upload/v1/comercios/fixture.jpg',
@@ -46,6 +40,7 @@ async function registrarYVerificarComercioSinCloudinaryReal(request: APIRequestC
     tipoComercio: 'RESTAURANTE',
     aceptaDelivery: true,
     aceptaRetiro: false,
+    nombreUsuario,
     email,
     password,
     direccion: {
@@ -69,16 +64,11 @@ async function registrarYVerificarComercioSinCloudinaryReal(request: APIRequestC
     throw new Error(`No se pudo registrar el comercio ${email}: ${status} ${JSON.stringify(body)}`);
   }
   await verificarCuenta(request, email);
-  return { email, password };
+  return { nombreUsuario, email, password };
 }
 
 const MYSQL_EXE = 'C:/xampp/mysql/bin/mysql.exe';
 
-// configuracion_tarifa es append-only (nunca UPDATE/DELETE en producción) -- no existe
-// ningún endpoint de la API para deshacer un POST de prueba. Se limpia por SQL directo
-// contra bajonea_test al final de la suite, mismo mecanismo ya usado por
-// scripts/reset-db.mjs (mysql.exe embebido de XAMPP), para que correr este spec repetidas
-// veces no vaya acumulando filas de prueba.
 const idsTarifaCreados: number[] = [];
 
 function formatearCargoTest(valor: number, tipo: string): string {
@@ -91,19 +81,13 @@ function formatearCargoTest(valor: number, tipo: string): string {
 
 async function loginAdminUi(page: Page) {
   await page.goto('/login.html');
-  await page.getByTestId('input-email').fill(ADMIN_EMAIL);
+  await page.getByTestId('input-nombre-usuario').fill(ADMIN_USUARIO);
   await page.getByTestId('input-password').fill(ADMIN_PASSWORD_CONOCIDA);
   await page.getByTestId('btn-ingresar').click();
   await page.waitForURL('**/admin-dashboard.html');
 }
 
 test.describe('Configuración de Tarifas (Administrador)', () => {
-  // fijarPasswordAdminYLoguear() se pide DENTRO de cada test que lo necesita (no en un
-  // beforeAll del describe): con fullyParallel, los 2 tests de este archivo pueden caer en
-  // workers distintos, y un beforeAll a nivel describe corre una vez POR WORKER -- 2 logins
-  // concurrentes contra la misma cuenta admin@bajonea.ar invalidan la sesión del otro
-  // (sesión única por cuenta), rompiendo al que perdió la carrera. Solo el primer test usa
-  // el token de Admin; el segundo ni lo necesita.
   test.afterAll(() => {
     if (idsTarifaCreados.length === 0) {
       return;
@@ -202,7 +186,7 @@ test.describe('Configuración de Tarifas (Administrador)', () => {
 
     const cliente = await registrarYVerificarCliente(request, localidadId);
     await page.goto('/login.html');
-    await page.getByTestId('input-email').fill(cliente.email);
+    await page.getByTestId('input-nombre-usuario').fill(cliente.nombreUsuario);
     await page.getByTestId('input-password').fill(cliente.password);
     await page.getByTestId('btn-ingresar').click();
     await page.waitForURL('**/index.html');
@@ -212,12 +196,10 @@ test.describe('Configuración de Tarifas (Administrador)', () => {
 
     const comercio = await registrarYVerificarComercioSinCloudinaryReal(request, localidadId);
     await page.goto('/login.html');
-    await page.getByTestId('input-email').fill(comercio.email);
+    await page.getByTestId('input-nombre-usuario').fill(comercio.nombreUsuario);
     await page.getByTestId('input-password').fill(comercio.password);
     await page.getByTestId('btn-ingresar').click();
-    // El comercio queda PENDIENTE (no se aprueba en este test, no hace falta para lo que se
-    // verifica) -- login lo manda a comercio-pendiente.html, no a comercio-dashboard.html.
-    await page.waitForURL('**/comercio-pendiente.html');
+    await page.waitForURL('**/comercio-pendiente.html?id=*');
 
     await page.goto('/admin-tarifas.html');
     await page.waitForURL('**/login.html');

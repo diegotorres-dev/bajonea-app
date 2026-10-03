@@ -16,15 +16,24 @@ import {
   sufijoUnico,
   diaDeHoy,
   ADMIN_EMAIL,
+  ADMIN_USUARIO,
   ADMIN_PASSWORD_CONOCIDA,
 } from './helpers/backend';
 
-async function loginAdminUi(page: Page) {
+async function completarLoginAdminUi(page: Page) {
   await page.goto('/login.html');
-  await page.getByTestId('input-email').fill(ADMIN_EMAIL);
+  await page.getByTestId('input-nombre-usuario').fill(ADMIN_USUARIO);
   await page.getByTestId('input-password').fill(ADMIN_PASSWORD_CONOCIDA);
+}
+
+async function loginAdminUi(page: Page) {
+  await completarLoginAdminUi(page);
   await page.getByTestId('btn-ingresar').click();
   await page.waitForURL('**/admin-dashboard.html');
+}
+
+async function esperarDashboardAdminListo(page: Page) {
+  await expect(page.getByTestId('tile-gestion-reembolsos')).toBeVisible();
 }
 
 function horarioAbierto24hs() {
@@ -53,6 +62,7 @@ test.describe('Validaciones exhaustivas de Administrador (Fase 4, Playwright)', 
       await page.goto(`/admin-comercio-detalle.html?id=${pendiente.id}`);
       await page.getByTestId('btn-rechazar-comercio').click();
       await expect(page.getByTestId('modal-rechazar-comercio')).toBeVisible();
+      await expect(page.getByTestId('fila-rechazo-definitivo')).toContainText('El Dueño no podrá volver a solicitar este comercio.');
 
       const textarea = page.getByTestId('input-motivo-rechazo-comercio');
       const confirmarBtn = page.getByTestId('btn-confirmar-rechazo-comercio');
@@ -101,7 +111,7 @@ test.describe('Validaciones exhaustivas de Administrador (Fase 4, Playwright)', 
         nombre: `Comercio Sin Redes E2E ${sufijoUnico()}`,
         horarios: horarioAbierto24hs(),
       });
-      const comercioSesion = await login(request, sinRedes.email, sinRedes.password);
+      const comercioSesion = await login(request, sinRedes.nombreUsuario, sinRedes.password);
       await eliminarTodasLasRedesSociales(request, comercioSesion.token);
 
       const adminSesion2 = await fijarPasswordAdminYLoguear(request);
@@ -153,10 +163,10 @@ test.describe('Validaciones exhaustivas de Administrador (Fase 4, Playwright)', 
         const adminPage = await adminContext.newPage();
 
         await comercioPage.goto('/login.html');
-        await comercioPage.getByTestId('input-email').fill(comercio.email);
+        await comercioPage.getByTestId('input-nombre-usuario').fill(comercio.nombreUsuario);
         await comercioPage.getByTestId('input-password').fill(comercio.password);
         await comercioPage.getByTestId('btn-ingresar').click();
-        await comercioPage.waitForURL('**/comercio-pendiente.html');
+        await comercioPage.waitForURL('**/comercio-pendiente.html?id=*');
         await expect(comercioPage.getByTestId('btn-ir-a-inicio')).toBeVisible();
 
         const adminSesion = await fijarPasswordAdminYLoguear(request);
@@ -244,9 +254,12 @@ test.describe('Validaciones exhaustivas de Administrador (Fase 4, Playwright)', 
         horarios: horarioAbierto24hs(),
       });
 
-      await loginAdminUi(page);
-      const metricasResponse = page.waitForResponse((res) => res.url().endsWith('/administrador/metricas'));
-      await page.goto('/admin-dashboard.html');
+      await completarLoginAdminUi(page);
+      const metricasResponse = page.waitForResponse(
+        (res) => res.url().endsWith('/administrador/metricas') && res.status() === 200,
+      );
+      await page.getByTestId('btn-ingresar').click();
+      await page.waitForURL('**/admin-dashboard.html');
       const metricas = (await (await metricasResponse).json()).data;
       const pendientesReales = metricas.comerciosPendientes as number;
       expect(pendientesReales).toBeGreaterThan(0);
@@ -255,10 +268,19 @@ test.describe('Validaciones exhaustivas de Administrador (Fase 4, Playwright)', 
         pendientesReales === 1 ? '1 solicitud de aprobación' : `${pendientesReales} solicitudes de aprobación`;
       await expect(page.locator('#alert-comercios-pendientes [data-subtitulo]')).toHaveText(textoEsperado);
       await expect(page.getByTestId('contador-comercios-pendientes')).toBeVisible();
+      await expect(page.getByTestId('btn-resolicitudes')).toContainText('Re-solicitudes');
+      await expect(page.getByTestId('btn-resolicitudes')).toContainText('Comercios corregidos por su Dueño');
+      const resolicitudesPendientes = metricas.resolicitudesPendientes as number;
+      if (resolicitudesPendientes > 0) {
+        await expect(page.getByTestId('contador-resolicitudes-pendientes')).toHaveText(String(resolicitudesPendientes));
+      } else {
+        await expect(page.getByTestId('contador-resolicitudes-pendientes')).toBeHidden();
+      }
     });
 
     test('cerrar sesión desde el dashboard de Administrador cierra la sesión real y redirige a login', async ({ page }) => {
       await loginAdminUi(page);
+      await esperarDashboardAdminListo(page);
       await page.getByTestId('btn-cerrar-sesion').click();
       await expect(page.getByTestId('modal-confirmar-logout')).toBeVisible();
       await page.getByTestId('btn-confirmar-logout').click();

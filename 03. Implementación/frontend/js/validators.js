@@ -33,6 +33,16 @@ export function calcularFortalezaPassword(password) {
   return { score, label: labels[score] };
 }
 
+export function mensajeNombreUsuarioInvalido(valor) {
+  const texto = String(valor || '');
+  if (!texto.trim()) return 'El nombre de usuario es obligatorio';
+  if (!/^[A-Za-z0-9]+$/.test(texto)) return 'Solo se permiten letras y números';
+  if (!/[A-Za-z]/.test(texto)) return 'El nombre de usuario debe contener al menos una letra.';
+  if (texto.length < 8) return 'El nombre de usuario debe tener al menos 8 caracteres';
+  if (texto.length > 20) return 'El nombre de usuario no puede superar los 20 caracteres';
+  return '';
+}
+
 export function esEmailValido(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || ''));
 }

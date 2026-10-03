@@ -1,5 +1,5 @@
 import { apiFetch, ApiError, getUsuario, clearSesion } from './api.js';
-import { logout, construirTelefono } from './auth.js';
+import { logout, construirTelefono, bindNombreUsuario } from './auth.js';
 import {
   esPasswordSegura,
   esTelefonoValido,
@@ -23,6 +23,7 @@ const ICONS = {
   logout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>',
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  lock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
 };
 
 function renderBanner(slot, kind, texto) {
@@ -119,6 +120,88 @@ function mostrarModalConfirmarLogout() {
   });
 }
 
+function mostrarModalConfirmarNombreUsuario({ onConfirmar, onErrorNoPassword }) {
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.setAttribute('data-testid', 'modal-confirmar-nombre-usuario');
+  backdrop.innerHTML = `
+    <div class="modal-sheet">
+      <div class="modal-sheet__icon">${ICONS.lock}</div>
+      <h2 class="modal-sheet__title">Confirmá tu contraseña</h2>
+      <p class="modal-sheet__text">Por seguridad, ingresá tu contraseña para confirmar el cambio de nombre de usuario.</p>
+      <div class="field" style="width:100%;">
+        <div class="input-shell" id="shell-password-confirmar-nombre-usuario">
+          <input type="password" id="password-confirmar-nombre-usuario" placeholder="Tu contraseña actual" data-testid="input-password-confirmar-nombre-usuario" />
+          <button type="button" class="input-shell__toggle" id="toggle-password-confirmar-nombre-usuario" aria-label="Mostrar contraseña" data-testid="btn-mostrar-password-confirmar-nombre-usuario">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+        <div class="field__error" id="error-password-confirmar-nombre-usuario" style="display:none;" data-testid="mensaje-error-password-confirmar-nombre-usuario"></div>
+        <p class="field__warning" id="warning-bloqueo-confirmar-nombre-usuario" style="display:none;" data-testid="mensaje-advertencia-bloqueo-confirmar-nombre-usuario">Cuidado: si fallás una vez más, tu cuenta se bloqueará.</p>
+      </div>
+      <button class="btn btn-primary" type="button" id="confirmar-nombre-usuario-btn" style="width:100%;margin-bottom:12px;margin-top:8px;" data-testid="btn-confirmar-nombre-usuario">Confirmar</button>
+      <button class="btn btn-tertiary" type="button" id="cancelar-nombre-usuario-btn" style="width:100%;" data-testid="btn-cancelar-nombre-usuario">Cancelar</button>
+    </div>
+  `;
+  document.body.appendChild(backdrop);
+
+  const passwordInput = document.getElementById('password-confirmar-nombre-usuario');
+  const shell = document.getElementById('shell-password-confirmar-nombre-usuario');
+  const errorEl = document.getElementById('error-password-confirmar-nombre-usuario');
+  const warningBloqueo = document.getElementById('warning-bloqueo-confirmar-nombre-usuario');
+  const confirmarBtn = document.getElementById('confirmar-nombre-usuario-btn');
+  bindPasswordToggle(document.getElementById('toggle-password-confirmar-nombre-usuario'), passwordInput);
+
+  function cerrar() {
+    backdrop.remove();
+  }
+
+  document.getElementById('cancelar-nombre-usuario-btn').addEventListener('click', cerrar);
+  backdrop.addEventListener('click', (event) => {
+    if (event.target === backdrop) {
+      cerrar();
+    }
+  });
+
+  confirmarBtn.addEventListener('click', async () => {
+    shell.classList.remove('input-shell--error');
+    errorEl.style.display = 'none';
+    warningBloqueo.style.display = 'none';
+    if (!passwordInput.value) {
+      shell.classList.add('input-shell--error');
+      errorEl.textContent = 'Ingresá tu contraseña actual.';
+      errorEl.style.display = 'flex';
+      return;
+    }
+    setLoading(confirmarBtn, 'Confirmando...', true);
+    try {
+      await onConfirmar(passwordInput.value);
+      cerrar();
+    } catch (error) {
+      if (manejarBloqueoPorCambioPassword(error)) {
+        cerrar();
+        return;
+      }
+      if (error instanceof ApiError && error.status === 401) {
+        shell.classList.add('input-shell--error');
+        errorEl.textContent = 'La contraseña actual no es correcta.';
+        errorEl.style.display = 'flex';
+        const intentosRestantes = error.data && typeof error.data.intentosRestantes === 'number' ? error.data.intentosRestantes : null;
+        if (intentosRestantes === 1) {
+          warningBloqueo.style.display = 'block';
+        }
+      } else {
+        cerrar();
+        onErrorNoPassword(error);
+      }
+    } finally {
+      if (document.body.contains(backdrop)) {
+        setLoading(confirmarBtn, '', false, 'Confirmar');
+      }
+    }
+  });
+}
+
 export async function initPerfil() {
   const usuarioSesion = getUsuario();
   if (!usuarioSesion) {
@@ -136,6 +219,8 @@ export async function initPerfil() {
   document.getElementById('perfil-nombre').textContent = `${cliente.nombre} ${cliente.apellido}`;
   document.getElementById('perfil-email').textContent = cliente.email;
 
+  const nombreUsuarioCtl = bindNombreUsuario({ inputId: 'editar-nombre-usuario', valorOriginal: () => cliente.nombreUsuario });
+
   const avatarPerfil = document.getElementById('perfil-avatar');
   function actualizarAvatares() {
     const inicial = (cliente.nombre || '?').trim().charAt(0).toUpperCase();
@@ -151,6 +236,8 @@ export async function initPerfil() {
     document.getElementById('editar-nombre').value = cliente.nombre;
     document.getElementById('editar-apellido').value = cliente.apellido;
     document.getElementById('editar-telefono').value = cliente.telefono.replace(/^\+549/, '');
+    document.getElementById('editar-nombre-usuario').value = cliente.nombreUsuario;
+    nombreUsuarioCtl.reiniciar();
     document.getElementById('editar-email').value = cliente.email;
     document.getElementById('editar-dni').value = cliente.dni;
     renderBanner(document.getElementById('editar-banner-slot'), 'warning', '');
@@ -235,11 +322,13 @@ export async function initPerfil() {
       { inputId: 'editar-apellido', errorId: 'error-editar-apellido', validador: esNombrePropioValido, mensajeVacio: 'El apellido es obligatorio.', mensajeInvalido: 'Debe contener solo letras, espacios y guiones' },
       { inputId: 'editar-telefono', errorId: 'error-editar-telefono', validador: esTelefonoValido, mensajeVacio: 'Ingresá tu teléfono.', mensajeInvalido: 'Ingresá un teléfono argentino válido (código de área + número).' },
     ]);
-    if (!camposValidos) {
+    const nombreUsuarioValido = await nombreUsuarioCtl.validarParaContinuar();
+    if (!camposValidos || !nombreUsuarioValido) {
       scrollAlPrimerError();
       return;
     }
     setLoading(submitEditarBtn, 'Guardando...', true);
+    let guardadoOk = false;
     try {
       const actualizado = await apiFetch('/clientes/perfil', {
         method: 'PUT',
@@ -254,8 +343,7 @@ export async function initPerfil() {
       cliente.apellido = actualizado.apellido;
       cliente.telefono = actualizado.telefono;
       document.getElementById('perfil-nombre').textContent = `${actualizado.nombre} ${actualizado.apellido}`;
-      mostrarVista('view-principal');
-      showToast('Datos actualizados correctamente');
+      guardadoOk = true;
     } catch (error) {
       const mapaErrores = {
         nombre: 'error-editar-nombre',
@@ -269,6 +357,35 @@ export async function initPerfil() {
     } finally {
       setLoading(submitEditarBtn, '', false, 'Guardar');
     }
+    if (!guardadoOk) {
+      return;
+    }
+    if (!nombreUsuarioCtl.haCambiado()) {
+      mostrarVista('view-principal');
+      showToast('Datos actualizados correctamente');
+      return;
+    }
+    const nuevoNombreUsuario = document.getElementById('editar-nombre-usuario').value.trim().toLowerCase();
+    mostrarModalConfirmarNombreUsuario({
+      onConfirmar: async (password) => {
+        const actualizado = await apiFetch('/clientes/perfil/nombre-usuario', {
+          method: 'PUT',
+          handle401Globally: false,
+          body: { nombreUsuario: nuevoNombreUsuario, passwordActual: password },
+        });
+        cliente.nombreUsuario = actualizado.nombreUsuario;
+        mostrarVista('view-principal');
+        showToast('Nombre de usuario actualizado correctamente');
+      },
+      onErrorNoPassword: (error) => {
+        mostrarVista('view-editar-datos');
+        const mapaErrores = { nombreUsuario: 'error-editar-nombre-usuario' };
+        if (!(error instanceof ApiError && error.data && mapearErroresBackend(error.data, mapaErrores))) {
+          renderBanner(bannerEditar, 'error', error instanceof ApiError ? error.message : 'No pudimos actualizar tu nombre de usuario. Intentá nuevamente.');
+        }
+        scrollAlPrimerError();
+      },
+    });
   });
 
   const formPassword = document.getElementById('form-cambiar-password');
@@ -337,7 +454,7 @@ export async function initPerfil() {
         errorPasswordActual.style.display = 'flex';
         const intentosRestantes = error.data && typeof error.data.intentosRestantes === 'number' ? error.data.intentosRestantes : null;
         if (intentosRestantes === 1) {
-          renderBanner(bannerPassword, 'warning', 'Cuidado: si fallás 1 vez más, tu cuenta se bloqueará.');
+          renderBanner(bannerPassword, 'warning', 'Cuidado: si fallás una vez más, tu cuenta se bloqueará.');
         }
       } else if (!(error instanceof ApiError && error.data && mapearErroresBackend(error.data, mapaErrores))) {
         renderBanner(bannerPassword, 'error', error instanceof ApiError ? error.message : 'No pudimos cambiar tu contraseña. Intentá nuevamente.');

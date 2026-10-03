@@ -1,9 +1,11 @@
 package com.bajonea.backend.dto.request;
 
+import com.bajonea.backend.validation.NombreUsuarioPolicy;
 import com.bajonea.backend.validation.annotations.ValidarFechaNacimientoPlausible;
 import com.bajonea.backend.validation.annotations.ValidarFormatoDni;
 import com.bajonea.backend.validation.annotations.ValidarFormatoEmail;
 import com.bajonea.backend.validation.annotations.ValidarFormatoNombre;
+import com.bajonea.backend.validation.annotations.ValidarNombreUsuario;
 import com.bajonea.backend.validation.annotations.ValidarPasswordSegura;
 import com.bajonea.backend.validation.annotations.ValidarTelefonoArgentino;
 import com.bajonea.backend.validation.annotations.ValidarUrlCloudinary;
@@ -59,6 +61,11 @@ public class RegistroClienteRequestDTO {
     @Size(max = 30, message = "El teléfono no puede superar los 30 caracteres")
     private String telefono;
 
+    @NotBlank(message = "El nombre de usuario es obligatorio")
+    @ValidarNombreUsuario
+    @Size(max = 20, message = "El nombre de usuario no puede superar los 20 caracteres")
+    private String nombreUsuario;
+
     @NotBlank(message = "El email es obligatorio")
     @ValidarFormatoEmail
     @Size(max = 254, message = "El email no puede superar los 254 caracteres")
@@ -90,6 +97,10 @@ public class RegistroClienteRequestDTO {
 
     public void setTelefono(String telefono) {
         this.telefono = telefono == null ? null : telefono.replaceAll("[ ()\\-]", "");
+    }
+
+    public void setNombreUsuario(String nombreUsuario) {
+        this.nombreUsuario = NombreUsuarioPolicy.normalizar(nombreUsuario);
     }
 
     public void setEmail(String email) {

@@ -17,7 +17,7 @@ test.describe('Login', () => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
 
     await page.goto('/login.html');
-    await page.getByTestId('input-email').fill(cliente.email);
+    await page.getByTestId('input-nombre-usuario').fill(cliente.nombreUsuario);
     await page.getByTestId('input-password').fill(cliente.password);
     await page.getByTestId('btn-ingresar').click();
 
@@ -29,12 +29,12 @@ test.describe('Login', () => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
 
     await page.goto('/login.html');
-    await page.getByTestId('input-email').fill(cliente.email);
+    await page.getByTestId('input-nombre-usuario').fill(cliente.nombreUsuario);
     await page.getByTestId('input-password').fill('ContraseñaIncorrecta1');
     await page.getByTestId('btn-ingresar').click();
 
     await expect(page.getByTestId('mensaje-error-login')).toBeVisible();
-    await expect(page.getByTestId('mensaje-error-login')).toContainText('Email o contraseña incorrectos');
+    await expect(page.getByTestId('mensaje-error-login')).toContainText('Usuario o contraseña incorrectos');
     await expect(page).toHaveURL(/login\.html/);
   });
 
@@ -42,7 +42,7 @@ test.describe('Login', () => {
     const cliente = await registrarCliente(request, localidadId);
 
     await page.goto('/login.html');
-    await page.getByTestId('input-email').fill(cliente.email);
+    await page.getByTestId('input-nombre-usuario').fill(cliente.nombreUsuario);
     await page.getByTestId('input-password').fill(cliente.password);
     await page.getByTestId('btn-ingresar').click();
 
@@ -87,20 +87,12 @@ test.describe('Login', () => {
     await page.getByTestId('btn-ir-a-login-exito').click();
     await page.waitForURL('**/login.html');
 
-    await page.getByTestId('input-email').fill(cliente.email);
+    await page.getByTestId('input-nombre-usuario').fill(cliente.nombreUsuario);
     await page.getByTestId('input-password').fill(nuevaPassword);
     await page.getByTestId('btn-ingresar').click();
     await page.waitForURL('**/index.html');
   });
 
-  // Reactivación de cuenta: en el alcance del MVP (CLAUDE.md §1, enmienda de Fase 7), pero
-  // sin ningún endpoint real que deje a un usuario en estado INACTIVO (AuthService solo
-  // *lee* ese estado, nunca lo escribe -- confirmado también como gap conocido en el cierre
-  // de Fase 14, docs/DECISIONES.md 2026-07-31). Sin una cuenta INACTIVO real no hay ningún
-  // código de reactivación real que pedir, así que el flujo completo de confirmación no es
-  // ejercitable sin mockear una fila de la tabla -- se cubre acá solo lo que sí es real: el
-  // paso de solicitud (pantalla de código real) y el rechazo real de un código para una
-  // cuenta sin token de reactivación pendiente.
   test('reactivar cuenta: la solicitud llega a la pantalla de código y un código sin token pendiente es rechazado', async ({
     page,
     request,

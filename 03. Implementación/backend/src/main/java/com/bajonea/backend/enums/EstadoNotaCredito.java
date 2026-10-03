@@ -4,5 +4,6 @@ public enum EstadoNotaCredito {
     PENDIENTE,
     PROCESADO,
     PENDIENTE_REINTENTO,
-    FALLIDO
+    FALLIDO,
+    PENDIENTE_REVISION_MANUAL
 }

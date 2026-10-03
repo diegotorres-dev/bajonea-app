@@ -1,6 +1,7 @@
 package com.bajonea.backend.controllers;
 
 import com.bajonea.backend.dto.response.ApiResponse;
+import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.TipoToken;
 import com.bajonea.backend.services.TestSupportService;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +9,9 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,5 +43,31 @@ public class TestController {
             @RequestParam String email, @RequestParam TipoToken tipo) {
         String token = testSupportService.obtenerTokenPendiente(email, tipo);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Token obtenido", token));
+    }
+
+    @PutMapping("/comercios/{id}/apto-venta")
+    public ResponseEntity<ApiResponse<Void>> marcarAptoVenta(@PathVariable Integer id) {
+        testSupportService.marcarAptoVenta(id);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Comercio marcado como APTO_VENTA", null));
+    }
+
+    @PostMapping("/comercios/{id}/clonar")
+    public ResponseEntity<ApiResponse<Integer>> clonarComercio(@PathVariable Integer id, @RequestParam String nombre,
+            @RequestParam(required = false) EstadoComercio estado) {
+        Integer clonId = testSupportService.clonarComercio(id, nombre, estado);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>("Comercio clonado", clonId));
+    }
+
+    @PostMapping("/duenos/{id}/mercadopago-simulada")
+    public ResponseEntity<ApiResponse<Void>> vincularCuentaMercadoPagoSimulada(@PathVariable Integer id,
+            @RequestParam(required = false) String mpUserId) {
+        testSupportService.vincularCuentaMercadoPagoSimulada(id, mpUserId);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Cuenta de Mercado Pago simulada vinculada", null));
+    }
+
+    @PutMapping("/pedidos/{id}/pago-aprobado")
+    public ResponseEntity<ApiResponse<Void>> confirmarPagoAprobado(@PathVariable Integer id) {
+        testSupportService.confirmarPagoAprobado(id);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pago del pedido confirmado", null));
     }
 }

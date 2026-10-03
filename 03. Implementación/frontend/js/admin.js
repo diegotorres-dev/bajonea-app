@@ -1,12 +1,13 @@
 import { apiFetch, ApiError, getUsuario } from './api.js';
-import { showToast, renderTopBar, pintarAvatarComercio, pintarAvatarUsuario } from './catalogo.js';
-import { logout, LABELS_TIPO_COMERCIO, LABELS_TIPO_RED_SOCIAL } from './auth.js';
+import { showToast, renderTopBar, pintarAvatarComercio, pintarAvatarUsuario, crearBloqueMotivoRechazo } from './catalogo.js';
+import { logout, LABELS_TIPO_COMERCIO, LABELS_TIPO_RED_SOCIAL, LABELS_TIPO_SOCIEDAD } from './auth.js';
 import { normalizarCampos } from './validators.js';
 
 function normalizarComercioAdmin(comercio) {
   normalizarCampos(comercio, ['nombre', 'razonSocial']);
   normalizarCampos(comercio.direccion, ['calle']);
   normalizarCampos(comercio.representante, ['nombre', 'apellido']);
+  (comercio.otrosComercios || []).forEach((otro) => normalizarCampos(otro, ['nombre']));
   return comercio;
 }
 
@@ -28,6 +29,7 @@ const ICONS = {
   clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>',
   logoutIcon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
+  refund: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>',
   percent: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>',
 };
 
@@ -42,6 +44,17 @@ const LABELS_CONDICION_IVA = {
   NO_INSCRIPTO: 'No Inscripto',
   MONOTRIBUTO: 'Monotributista',
   RESPONSABLE_NACIONAL: 'Responsable Nacional',
+};
+
+const BADGE_ESTADO_COMERCIO = {
+  APROBADO: { label: 'Aprobado', className: 'status-badge--exito' },
+  APTO_VENTA: { label: 'Listo para vender', className: 'status-badge--exito' },
+  PENDIENTE: { label: 'Pendiente', className: 'status-badge--pendiente' },
+  RECHAZADO: { label: 'Rechazado', className: 'status-badge--error' },
+  RECHAZO_DEFINITIVO: { label: 'Rechazo definitivo', className: 'status-badge--error' },
+  SUSPENDIDO: { label: 'Suspendido', className: 'status-badge--pendiente' },
+  CERRADO_TEMPORALMENTE: { label: 'Cerrado temporalmente', className: 'status-badge--neutro' },
+  INACTIVO: { label: 'Inactivo', className: 'status-badge--neutro' },
 };
 
 const LABELS_DIA_SEMANA = {
@@ -192,12 +205,18 @@ export async function initAdminDashboard() {
   alertLink.querySelector('[data-subtitulo]').textContent =
     metricas.comerciosPendientes === 1 ? '1 solicitud de aprobación' : `${metricas.comerciosPendientes} solicitudes de aprobación`;
 
+  const resolicitudesLink = document.getElementById('alert-resolicitudes');
+  const contadorResolicitudes = resolicitudesLink.querySelector('[data-count]');
+  contadorResolicitudes.textContent = String(metricas.resolicitudesPendientes);
+  contadorResolicitudes.style.display = metricas.resolicitudesPendientes > 0 ? 'flex' : 'none';
+
   const tiles = [
     { icon: ICONS.store, titulo: 'Comercios', subtitulo: `${metricas.comerciosTotal} registrados`, href: 'admin-comercios.html' },
     { icon: ICONS.users, titulo: 'Clientes', subtitulo: `${metricas.clientesTotal} registrados`, href: 'admin-clientes.html' },
     { icon: ICONS.tag, titulo: 'Categorías', subtitulo: `${metricas.categoriasActivas} activas`, href: 'admin-categorias.html' },
     { icon: ICONS.hash, titulo: 'Tags', subtitulo: `${metricas.tagsActivos} activos`, href: 'admin-tags.html' },
     { icon: ICONS.percent, titulo: 'Tarifas', subtitulo: 'Cargos y comisiones', href: 'admin-tarifas.html' },
+    { icon: ICONS.refund, titulo: 'Reembolsos', subtitulo: 'Revisión manual', href: 'admin-reembolsos.html' },
   ];
 
   const grid = document.getElementById('gestion-grid');
@@ -230,9 +249,17 @@ function renderRequestCard(comercio) {
   const h3 = document.createElement('h3');
   h3.textContent = comercio.nombre;
   top.appendChild(h3);
+  const badges = crear('div', 'request-card__badges');
   const badge = crear('span', 'status-badge status-badge--nueva');
   badge.textContent = 'Nueva';
-  top.appendChild(badge);
+  badges.appendChild(badge);
+  if (comercio.esAdicional) {
+    const badgeAdicional = crear('span', 'status-badge status-badge--adicional');
+    badgeAdicional.setAttribute('data-testid', `badge-comercio-adicional-${comercio.id}`);
+    badgeAdicional.textContent = 'Comercio adicional';
+    badges.appendChild(badgeAdicional);
+  }
+  top.appendChild(badges);
   card.appendChild(top);
 
   const rows = crear('div', 'request-card__rows');
@@ -366,14 +393,15 @@ function mostrarModalConfirmarAprobacion(comercio, onConfirmar) {
   });
 }
 
-function mostrarModalRechazarComercio(comercio, onConfirmar) {
+function mostrarModalRechazarComercio(comercio, onConfirmar, { esUltimoIntento = false } = {}) {
   const backdrop = crear('div', 'modal-backdrop');
   backdrop.setAttribute('data-testid', 'modal-rechazar-comercio');
   backdrop.innerHTML = `
     <div class="product-modal-sheet">
       <div class="product-modal-sheet__handle"><span></span></div>
       <div class="product-modal-sheet__body">
-        <h2 style="font-size:19px;margin-bottom:6px;">Rechazar Solicitud</h2>
+        <h2 style="font-size:19px;margin-bottom:6px;">Rechazar solicitud</h2>
+        <p class="product-modal-sheet__description" id="rechazo-nombre-comercio" style="margin-bottom:6px;font-weight:700;color:var(--color-text);" data-testid="nombre-comercio-rechazo"></p>
         <p class="product-modal-sheet__description" style="margin-bottom:16px;">El comercio recibirá una notificación con el motivo del rechazo.</p>
         <form class="form" id="form-rechazar-comercio" novalidate>
           <div class="field">
@@ -382,12 +410,21 @@ function mostrarModalRechazarComercio(comercio, onConfirmar) {
             <div class="textarea-counter"><span id="rechazo-contador">0/500</span></div>
             <div id="rechazo-error" class="field__error" style="display:none;" data-testid="mensaje-error-motivo-rechazo-comercio">${ICONS.xCircle}<span>El motivo es obligatorio para rechazar una solicitud.</span></div>
           </div>
-          <button class="btn btn-primary" type="submit" id="confirmar-rechazo-btn" style="background:var(--color-error);margin-bottom:10px;" disabled data-testid="btn-confirmar-rechazo-comercio">Confirmar Rechazo</button>
+          <div class="aviso-ultimo-intento is-hidden" id="aviso-ultimo-intento" data-testid="aviso-ultimo-intento">${ICONS.alert}<span>Esta es la última re-solicitud: el rechazo será definitivo.</span></div>
+          <div class="switch-row switch-row--peligro" id="rechazo-definitivo-fila" aria-pressed="false" style="margin-bottom:16px;" data-testid="fila-rechazo-definitivo">
+            <span class="switch-row__texto">
+              <span class="switch-row__label">Rechazo definitivo</span>
+              <span class="switch-row__ayuda" id="rechazo-definitivo-ayuda" data-testid="ayuda-rechazo-definitivo">El Dueño no podrá volver a solicitar este comercio.</span>
+            </span>
+            <button type="button" class="switch" id="rechazo-definitivo-switch" aria-pressed="false" aria-label="Rechazo definitivo" data-testid="switch-rechazo-definitivo"><span class="switch__knob"></span></button>
+          </div>
+          <button class="btn btn-primary" type="submit" id="confirmar-rechazo-btn" style="margin-bottom:10px;" disabled data-testid="btn-confirmar-rechazo-comercio">Confirmar Rechazo</button>
           <button class="btn btn-tertiary" type="button" id="cancelar-rechazo-btn" data-testid="btn-cancelar-rechazo-comercio">Cancelar</button>
         </form>
       </div>
     </div>
   `;
+  backdrop.querySelector('#rechazo-nombre-comercio').textContent = comercio.nombre;
   document.body.appendChild(backdrop);
 
   const textarea = backdrop.querySelector('#rechazo-motivo');
@@ -395,6 +432,32 @@ function mostrarModalRechazarComercio(comercio, onConfirmar) {
   const contador = backdrop.querySelector('#rechazo-contador');
   const errorEl = backdrop.querySelector('#rechazo-error');
   const submitBtn = backdrop.querySelector('#confirmar-rechazo-btn');
+  const fila = backdrop.querySelector('#rechazo-definitivo-fila');
+  const interruptor = backdrop.querySelector('#rechazo-definitivo-switch');
+  const ayuda = backdrop.querySelector('#rechazo-definitivo-ayuda');
+
+  function definitivoActivo() {
+    return interruptor.getAttribute('aria-pressed') === 'true';
+  }
+
+  function fijarDefinitivo(activo) {
+    interruptor.setAttribute('aria-pressed', String(activo));
+    fila.setAttribute('aria-pressed', String(activo));
+    submitBtn.textContent = activo ? 'Rechazar definitivamente' : 'Confirmar Rechazo';
+    submitBtn.style.background = activo ? '' : 'var(--color-error)';
+    submitBtn.classList.toggle('btn-peligro', activo);
+  }
+
+  if (esUltimoIntento) {
+    backdrop.querySelector('#aviso-ultimo-intento').classList.remove('is-hidden');
+    fijarDefinitivo(true);
+    interruptor.disabled = true;
+    fila.classList.add('switch-row--bloqueado');
+    ayuda.textContent = 'Bloqueado: este intento ya es el último.';
+  } else {
+    fijarDefinitivo(false);
+    interruptor.addEventListener('click', () => fijarDefinitivo(!definitivoActivo()));
+  }
 
   textarea.addEventListener('input', () => {
     contador.textContent = `${textarea.value.length}/500`;
@@ -422,11 +485,67 @@ function mostrarModalRechazarComercio(comercio, onConfirmar) {
       return;
     }
     backdrop.remove();
-    onConfirmar(motivo);
+    onConfirmar(motivo, definitivoActivo());
   });
 }
 
+function iniciales(nombre, apellido) {
+  return `${(nombre || '').trim().charAt(0)}${(apellido || '').trim().charAt(0)}`.toUpperCase();
+}
+
+function renderDuenoYOtrosComercios(body, comercio) {
+  const otros = comercio.otrosComercios || [];
+  if (otros.length === 0) {
+    return;
+  }
+
+  const representante = comercio.representante;
+  const resumen = crear('div', 'dueno-resumen');
+  resumen.setAttribute('data-testid', 'resumen-dueno');
+  const circulo = crear('div', 'dueno-resumen__iniciales');
+  circulo.textContent = representante ? iniciales(representante.nombre, representante.apellido) : iniciales(comercio.nombre, '');
+  resumen.appendChild(circulo);
+  const textos = crear('div');
+  const nombreEl = crear('div', 'dueno-resumen__nombre');
+  nombreEl.setAttribute('data-testid', 'nombre-dueno');
+  nombreEl.textContent = representante ? `${representante.nombre} ${representante.apellido}` : comercio.emailCuenta;
+  textos.appendChild(nombreEl);
+  if (comercio.esAdicional) {
+    const nota = crear('div', 'dueno-resumen__nota');
+    nota.setAttribute('data-testid', 'nota-datos-fiscales-revisados');
+    nota.innerHTML = ICONS.check;
+    const notaTexto = document.createElement('span');
+    notaTexto.textContent = 'Datos fiscales ya revisados y aprobados';
+    nota.appendChild(notaTexto);
+    textos.appendChild(nota);
+  }
+  resumen.appendChild(textos);
+  body.appendChild(resumen);
+
+  const seccion = crear('div', 'detail-section');
+  seccion.setAttribute('data-testid', 'seccion-otros-comercios');
+  const titulo = crear('p', 'detail-section__title');
+  titulo.textContent = 'Otros comercios de este Dueño';
+  seccion.appendChild(titulo);
+  otros.forEach((otro) => {
+    const fila = crear('div', 'otro-comercio-row');
+    fila.setAttribute('data-testid', `otro-comercio-${otro.id}`);
+    const nombre = crear('span', 'otro-comercio-row__nombre');
+    nombre.textContent = otro.nombre;
+    fila.appendChild(nombre);
+    const info = BADGE_ESTADO_COMERCIO[otro.estado] || { label: otro.estado, className: 'status-badge--neutro' };
+    const badge = crear('span', `status-badge ${info.className}`);
+    badge.setAttribute('data-testid', `estado-otro-comercio-${otro.id}`);
+    badge.textContent = info.label;
+    fila.appendChild(badge);
+    seccion.appendChild(fila);
+  });
+  body.appendChild(seccion);
+}
+
 function renderComercioDetailSections(body, comercio) {
+  renderDuenoYOtrosComercios(body, comercio);
+
   const datosComercio = crear('div', 'detail-section');
   const datosComercioTitulo = crear('p', 'detail-section__title');
   datosComercioTitulo.textContent = 'Datos del Comercio';
@@ -565,11 +684,11 @@ function renderDetalle(container, comercio, onResuelto) {
   rechazarBtn.setAttribute('data-testid', 'btn-rechazar-comercio');
   rechazarBtn.textContent = 'Rechazar';
   rechazarBtn.addEventListener('click', () => {
-    mostrarModalRechazarComercio(comercio, async (motivo) => {
+    mostrarModalRechazarComercio(comercio, async (motivo, definitivo) => {
       try {
         await apiFetch(`/administrador/comercios/${comercio.id}/resolver`, {
           method: 'PUT',
-          body: { aprobar: false, motivo },
+          body: { aprobar: false, motivo, definitivo },
         });
         onResuelto();
       } catch (error) {
@@ -1659,4 +1778,609 @@ export async function initAdminTarifas() {
   }
 
   render();
+}
+
+const LABELS_ESTADO_REEMBOLSO = {
+  PENDIENTE_REVISION_MANUAL: 'Revisión manual',
+  FALLIDO: 'Fallido',
+};
+
+const DOT_ESTADO_REEMBOLSO = {
+  PENDIENTE_REVISION_MANUAL: 'cliente-estado__dot--pendiente',
+  FALLIDO: 'cliente-estado__dot--bloqueado',
+};
+
+const LABELS_MOTIVO_REEMBOLSO = {
+  RECHAZO_COMERCIO: 'Rechazo del comercio',
+  CANCELACION_CLIENTE: 'Cancelación del cliente',
+  ANULACION_COMERCIO: 'Anulación del comercio',
+  SUSPENSION_COMERCIO: 'Suspensión del comercio',
+  EXPIRACION_SIN_RESPUESTA: 'Sin respuesta del comercio',
+};
+
+const FILTROS_REEMBOLSOS = [
+  { key: null, label: 'Todos' },
+  { key: 'PENDIENTE_REVISION_MANUAL', label: 'Revisión manual' },
+  { key: 'FALLIDO', label: 'Fallidos' },
+];
+
+function renderReembolsoRow(nota, onReintentar) {
+  const row = crear('div', 'cliente-admin-row reembolso-row');
+  row.setAttribute('data-testid', `reembolso-item-${nota.id}`);
+
+  const top = crear('div', 'cliente-admin-row__top');
+  const h3 = document.createElement('h3');
+  h3.textContent = nota.codigo;
+  h3.setAttribute('data-testid', 'codigo-reembolso');
+  top.appendChild(h3);
+  const badge = crear('span', 'cliente-estado');
+  badge.setAttribute('data-testid', 'estado-reembolso');
+  badge.appendChild(crear('span', `cliente-estado__dot ${DOT_ESTADO_REEMBOLSO[nota.estado] || ''}`));
+  const label = document.createElement('span');
+  label.textContent = LABELS_ESTADO_REEMBOLSO[nota.estado] || nota.estado;
+  badge.appendChild(label);
+  top.appendChild(badge);
+  row.appendChild(top);
+
+  row.appendChild(detailRow('Pedido', `#${nota.pedidoId}`));
+  row.appendChild(detailRow('Cliente', nota.nombreCliente));
+  row.appendChild(detailRow('Comercio', nota.nombreComercio));
+  row.appendChild(detailRow('Monto', formatearPrecio(nota.monto)));
+  row.appendChild(detailRow('Fecha', formatearSoloFecha(nota.fechaEmision)));
+  row.appendChild(detailRow('Motivo', LABELS_MOTIVO_REEMBOLSO[nota.motivo] || nota.motivo || '—'));
+
+  if (nota.ultimoError) {
+    const error = crear('p', 'reembolso-row__error');
+    error.setAttribute('data-testid', 'error-reembolso');
+    error.textContent = nota.ultimoError;
+    row.appendChild(error);
+  }
+
+  const aviso = crear('p', 'reembolso-row__aviso');
+  aviso.setAttribute('data-testid', 'aviso-reembolso');
+  aviso.style.display = 'none';
+  row.appendChild(aviso);
+
+  const boton = crear('button', 'btn btn-secondary');
+  boton.type = 'button';
+  boton.setAttribute('data-testid', 'btn-reintentar-reembolso');
+  boton.textContent = 'Reintentar reembolso';
+  boton.addEventListener('click', async () => {
+    boton.disabled = true;
+    boton.textContent = 'Reintentando...';
+    aviso.style.display = 'none';
+    try {
+      const actualizada = await apiFetch(`/administrador/reembolsos/${nota.id}/reintentar`, { method: 'POST' });
+      if (actualizada.estado === 'PROCESADO') {
+        showToast('Reembolso procesado correctamente');
+      } else {
+        showToast('Mercado Pago rechazó el reintento del reembolso', 'error');
+      }
+      onReintentar();
+    } catch (error) {
+      if (!(error instanceof ApiError)) {
+        throw error;
+      }
+      aviso.textContent = error.message;
+      aviso.style.display = 'block';
+      boton.disabled = false;
+      boton.textContent = 'Reintentar reembolso';
+      if (error.status === 409) {
+        showToast('No se pudo reintentar el reembolso', 'error');
+      }
+    }
+  });
+  row.appendChild(boton);
+
+  return row;
+}
+
+export async function initAdminReembolsos() {
+  if (!requireAdmin()) {
+    return;
+  }
+
+  let filtroEstado = null;
+  let notas = await apiFetch('/administrador/reembolsos');
+  const contenido = document.getElementById('reembolsos-content');
+
+  const chipRow = crear('div', 'chip-row');
+  FILTROS_REEMBOLSOS.forEach((filtro) => {
+    const chip = crear('button', 'chip');
+    chip.type = 'button';
+    chip.textContent = filtro.label;
+    chip.setAttribute('data-testid', `chip-filtro-${(filtro.key || 'todos').toLowerCase()}`);
+    chip.setAttribute('aria-pressed', String(filtroEstado === filtro.key));
+    chip.addEventListener('click', () => {
+      filtroEstado = filtro.key;
+      chipRow.querySelectorAll('.chip').forEach((otro) => otro.setAttribute('aria-pressed', 'false'));
+      chip.setAttribute('aria-pressed', 'true');
+      render();
+    });
+    chipRow.appendChild(chip);
+  });
+  document.getElementById('filtros-slot').appendChild(chipRow);
+
+  async function recargar() {
+    notas = await apiFetch('/administrador/reembolsos');
+    render();
+  }
+
+  function render() {
+    contenido.innerHTML = '';
+    const visibles = filtroEstado ? notas.filter((nota) => nota.estado === filtroEstado) : notas;
+
+    if (visibles.length === 0) {
+      const wrapper = crear('div', 'state-page');
+      wrapper.setAttribute('data-testid', 'estado-vacio');
+      const icon = crear('div', 'state-page__icon');
+      icon.innerHTML = ICONS.check;
+      wrapper.appendChild(icon);
+      const h1 = document.createElement('h1');
+      h1.className = 'state-page__title';
+      h1.textContent = 'No hay reembolsos pendientes de revisión';
+      wrapper.appendChild(h1);
+      contenido.appendChild(wrapper);
+      return;
+    }
+
+    const lista = crear('div', 'cliente-admin-list');
+    visibles.forEach((nota) => lista.appendChild(renderReembolsoRow(nota, recargar)));
+    contenido.appendChild(lista);
+  }
+
+  render();
+}
+
+const ETIQUETAS_CAMPO_CAMBIO = {
+  NOMBRE: 'Nombre del comercio',
+  DESCRIPCION: 'Descripción',
+  TELEFONO: 'Teléfono de contacto',
+  EMAIL_CONTACTO: 'Email de contacto',
+  TIPO_COMERCIO: 'Tipo de comercio',
+  MODALIDADES: 'Modalidades de entrega',
+  FOTO_PERFIL: 'Foto del comercio',
+  DIRECCION: 'Dirección del local',
+  HORARIOS: 'Horarios de atención',
+  REDES_SOCIALES: 'Redes sociales',
+  RAZON_SOCIAL: 'Razón social',
+  CUIT: 'CUIT',
+  CONDICION_IVA: 'Condición ante el IVA',
+  TIPO_SOCIEDAD: 'Tipo de sociedad',
+  DOMICILIO_FISCAL: 'Domicilio fiscal',
+  FECHA_INICIO_ACTIVIDADES: 'Fecha de inicio de actividades',
+  REPRESENTANTE_NOMBRE: 'Nombre del representante',
+  REPRESENTANTE_APELLIDO: 'Apellido del representante',
+  REPRESENTANTE_DNI: 'DNI del representante',
+  REPRESENTANTE_TELEFONO: 'Teléfono del representante',
+  REPRESENTANTE_FECHA_NACIMIENTO: 'Fecha de nacimiento del representante',
+};
+
+const ORDEN_CAMPOS_CAMBIO = Object.keys(ETIQUETAS_CAMPO_CAMBIO);
+
+const CAMPOS_LEGALES_CAMBIO = ORDEN_CAMPOS_CAMBIO.slice(ORDEN_CAMPOS_CAMBIO.indexOf('RAZON_SOCIAL'));
+
+const TEXTO_SIN_DATO = 'Sin dato';
+
+function textoModalidades(delivery, retiro) {
+  if (delivery && retiro) return 'Delivery y retiro';
+  if (delivery) return 'Solo delivery';
+  return retiro ? 'Solo retiro' : 'Ninguna';
+}
+
+function textoDireccion(direccion) {
+  const calle = direccion.pisoDepto ? `${direccion.calle} ${direccion.numero}, ${direccion.pisoDepto}` : `${direccion.calle} ${direccion.numero}`;
+  return `${calle}, ${direccion.nombreLocalidad}, ${direccion.nombreProvincia} (${direccion.codigoPostal})`;
+}
+
+function textoHorarios(horarios) {
+  return [...horarios]
+    .sort((a, b) => ORDEN_DIA_SEMANA.indexOf(a.diaSemana) - ORDEN_DIA_SEMANA.indexOf(b.diaSemana) || a.horaApertura.localeCompare(b.horaApertura))
+    .map((h) => `${LABELS_DIA_SEMANA[h.diaSemana] || h.diaSemana} ${h.horaApertura.slice(0, 5)}-${h.horaCierre.slice(0, 5)}`)
+    .join('\n');
+}
+
+function textoRedes(redes) {
+  return [...redes]
+    .sort((a, b) => a.tipo.localeCompare(b.tipo))
+    .map((r) => `${LABELS_TIPO_RED_SOCIAL[r.tipo] || r.tipo}: ${r.url}`)
+    .join('\n');
+}
+
+function formatearValorCambio(campo, valor) {
+  if (valor === null || valor === undefined || valor === '') {
+    return TEXTO_SIN_DATO;
+  }
+  switch (campo) {
+    case 'TIPO_COMERCIO':
+      return LABELS_TIPO_COMERCIO[valor] || valor;
+    case 'CONDICION_IVA':
+      return LABELS_CONDICION_IVA[valor] || valor;
+    case 'TIPO_SOCIEDAD':
+      return LABELS_TIPO_SOCIEDAD[valor] || valor;
+    case 'FECHA_INICIO_ACTIVIDADES':
+    case 'REPRESENTANTE_FECHA_NACIMIENTO':
+      return formatearFecha(valor);
+    case 'HORARIOS':
+      return valor.split('; ').join('\n');
+    case 'REDES_SOCIALES':
+      return valor.split('; ').map((par) => {
+        const corte = par.indexOf(': ');
+        if (corte < 0) return par;
+        const tipo = par.slice(0, corte);
+        return `${LABELS_TIPO_RED_SOCIAL[tipo] || tipo}: ${par.slice(corte + 2)}`;
+      }).join('\n');
+    default:
+      return valor;
+  }
+}
+
+function valoresActualesDeComercio(comercio) {
+  const representante = comercio.representante;
+  return {
+    NOMBRE: comercio.nombre,
+    DESCRIPCION: comercio.descripcion,
+    TELEFONO: comercio.telefono,
+    EMAIL_CONTACTO: comercio.emailContacto,
+    TIPO_COMERCIO: labelTipoComercio(comercio.tipoComercio),
+    MODALIDADES: textoModalidades(comercio.aceptaDelivery, comercio.aceptaRetiro),
+    FOTO_PERFIL: comercio.fotoPerfilUrl,
+    DIRECCION: comercio.direccion ? textoDireccion(comercio.direccion) : null,
+    HORARIOS: textoHorarios(comercio.horarios || []),
+    REDES_SOCIALES: textoRedes(comercio.redesSociales || []),
+    RAZON_SOCIAL: comercio.razonSocial,
+    CUIT: comercio.cuit,
+    CONDICION_IVA: LABELS_CONDICION_IVA[comercio.condicionIva] || comercio.condicionIva,
+    TIPO_SOCIEDAD: LABELS_TIPO_SOCIEDAD[comercio.tipoSociedad] || comercio.tipoSociedad,
+    DOMICILIO_FISCAL: comercio.domicilioFiscal,
+    FECHA_INICIO_ACTIVIDADES: comercio.fechaInicioActividades || null,
+    REPRESENTANTE_NOMBRE: representante ? representante.nombre : null,
+    REPRESENTANTE_APELLIDO: representante ? representante.apellido : null,
+    REPRESENTANTE_DNI: representante ? representante.dni : null,
+    REPRESENTANTE_TELEFONO: representante ? representante.telefono : null,
+    REPRESENTANTE_FECHA_NACIMIENTO: representante ? representante.fechaNacimiento : null,
+  };
+}
+
+function circuloFoto(url, nombre) {
+  const circulo = crear('div', 'cambio-foto__circulo');
+  if (url) {
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = '';
+    circulo.appendChild(img);
+  } else {
+    const inicial = crear('span', 'avatar-inicial');
+    inicial.textContent = (nombre || '?').trim().charAt(0).toUpperCase();
+    circulo.appendChild(inicial);
+  }
+  return circulo;
+}
+
+function renderCambioFoto(tarjeta, cambio, comercio) {
+  const fotos = crear('div', 'cambio-fotos');
+  [['Antes', cambio.valorAnterior], ['Ahora', cambio.valorNuevo]].forEach(([etiqueta, url]) => {
+    const foto = crear('div', 'cambio-foto');
+    foto.setAttribute('data-testid', `cambio-foto-${etiqueta.toLowerCase()}`);
+    foto.appendChild(circuloFoto(url, comercio.nombre));
+    const texto = document.createElement('span');
+    texto.textContent = etiqueta;
+    foto.appendChild(texto);
+    fotos.appendChild(foto);
+  });
+  tarjeta.appendChild(fotos);
+}
+
+function renderCambioTexto(tarjeta, cambio) {
+  const antes = crear('div', 'cambio-fila');
+  const antesEtiqueta = crear('span', 'cambio-fila__etiqueta');
+  antesEtiqueta.textContent = 'Antes';
+  const antesValor = crear('span', 'cambio-fila__valor cambio-fila__valor--antes');
+  antesValor.setAttribute('data-testid', `cambio-antes-${cambio.campo}`);
+  antesValor.textContent = formatearValorCambio(cambio.campo, cambio.valorAnterior);
+  antes.appendChild(antesEtiqueta);
+  antes.appendChild(antesValor);
+  tarjeta.appendChild(antes);
+
+  const ahora = crear('div', 'cambio-fila');
+  const ahoraEtiqueta = crear('span', 'cambio-fila__etiqueta');
+  ahoraEtiqueta.textContent = 'Ahora';
+  const ahoraValor = crear('span', 'cambio-fila__valor cambio-fila__valor--ahora');
+  ahoraValor.setAttribute('data-testid', `cambio-ahora-${cambio.campo}`);
+  ahoraValor.textContent = formatearValorCambio(cambio.campo, cambio.valorNuevo);
+  ahora.appendChild(ahoraEtiqueta);
+  ahora.appendChild(ahoraValor);
+  tarjeta.appendChild(ahora);
+}
+
+function renderTarjetaCambio(cambio, comercio) {
+  const tarjeta = crear('div', 'cambio-card');
+  tarjeta.setAttribute('data-testid', `cambio-${cambio.campo}`);
+  const titulo = crear('p', 'detail-section__title');
+  titulo.textContent = ETIQUETAS_CAMPO_CAMBIO[cambio.campo] || cambio.campo;
+  tarjeta.appendChild(titulo);
+  if (cambio.campo === 'FOTO_PERFIL') {
+    renderCambioFoto(tarjeta, cambio, comercio);
+  } else {
+    renderCambioTexto(tarjeta, cambio);
+  }
+  return tarjeta;
+}
+
+function renderSinCambios(comercio, camposSinCambio) {
+  const valores = valoresActualesDeComercio(comercio);
+  const detalle = document.createElement('details');
+  detalle.className = 'sin-cambios';
+  detalle.setAttribute('data-testid', 'bloque-sin-cambios');
+  const resumen = document.createElement('summary');
+  resumen.className = 'sin-cambios__resumen';
+  resumen.setAttribute('data-testid', 'resumen-sin-cambios');
+  resumen.textContent = `Sin cambios (${camposSinCambio.length} ${camposSinCambio.length === 1 ? 'campo' : 'campos'})`;
+  detalle.appendChild(resumen);
+  const cuerpo = crear('div', 'sin-cambios__cuerpo');
+  camposSinCambio.forEach((campo) => {
+    if (campo === 'FOTO_PERFIL') {
+      const fila = crear('div', 'detail-row');
+      fila.setAttribute('data-testid', `sin-cambio-${campo}`);
+      const etiqueta = document.createElement('span');
+      etiqueta.textContent = ETIQUETAS_CAMPO_CAMBIO[campo];
+      fila.appendChild(etiqueta);
+      const foto = crear('span', 'sin-cambios__foto');
+      foto.appendChild(circuloFoto(valores.FOTO_PERFIL, comercio.nombre));
+      fila.appendChild(foto);
+      cuerpo.appendChild(fila);
+      return;
+    }
+    const fila = detailRow(ETIQUETAS_CAMPO_CAMBIO[campo], formatearValorCambio(campo, valores[campo]));
+    fila.setAttribute('data-testid', `sin-cambio-${campo}`);
+    fila.classList.add('detail-row--multilinea');
+    cuerpo.appendChild(fila);
+  });
+  detalle.appendChild(cuerpo);
+  return detalle;
+}
+
+function renderResolicitudCard(resolicitud) {
+  const comercio = resolicitud.comercio;
+  const card = crear('div', 'request-card');
+  card.setAttribute('data-testid', `resolicitud-item-${comercio.id}`);
+
+  const top = crear('div', 'request-card__top request-card__top--avatar');
+  const avatar = crear('div', 'request-card__avatar');
+  pintarAvatarComercio(avatar, comercio);
+  top.appendChild(avatar);
+  const titulos = crear('div', 'request-card__titulos');
+  const h3 = document.createElement('h3');
+  h3.textContent = comercio.nombre;
+  titulos.appendChild(h3);
+  if (comercio.direccion) {
+    const localidad = crear('span', 'request-card__sub');
+    localidad.textContent = comercio.direccion.nombreLocalidad;
+    titulos.appendChild(localidad);
+  }
+  top.appendChild(titulos);
+  card.appendChild(top);
+
+  const badges = crear('div', 'request-card__badges request-card__badges--inicio');
+  const badgeIntento = crear('span', 'status-badge status-badge--adicional');
+  badgeIntento.setAttribute('data-testid', `badge-intento-${comercio.id}`);
+  badgeIntento.textContent = `Intento ${resolicitud.intento} de ${resolicitud.maximoResolicitudes}`;
+  badges.appendChild(badgeIntento);
+  if (resolicitud.esUltimoIntento) {
+    const badgeUltimo = crear('span', 'status-badge status-badge--error');
+    badgeUltimo.setAttribute('data-testid', `badge-ultimo-intento-${comercio.id}`);
+    badgeUltimo.textContent = 'Último intento';
+    badges.appendChild(badgeUltimo);
+  }
+  card.appendChild(badges);
+
+  const rows = crear('div', 'request-card__rows');
+  const fechaRow = crear('div', 'comercio-info__row');
+  fechaRow.innerHTML = ICONS.calendar;
+  const fechaTexto = document.createElement('span');
+  fechaTexto.textContent = `Re-solicitado ${formatearTiempoRelativo(resolicitud.fechaResolicitud).toLowerCase()}`;
+  fechaRow.appendChild(fechaTexto);
+  rows.appendChild(fechaRow);
+  card.appendChild(rows);
+
+  const footer = document.createElement('a');
+  footer.className = 'request-card__footer';
+  footer.href = `admin-resolicitud-detalle.html?id=${comercio.id}`;
+  footer.setAttribute('data-testid', `btn-ver-resolicitud-${comercio.id}`);
+  const label = document.createElement('span');
+  label.textContent = 'Ver re-solicitud';
+  footer.appendChild(label);
+  const chevron = document.createElement('span');
+  chevron.innerHTML = ICONS.chevronRight;
+  footer.appendChild(chevron);
+  card.appendChild(footer);
+
+  return card;
+}
+
+export async function initAdminResolicitudes() {
+  if (!requireAdmin()) {
+    return;
+  }
+
+  if (new URLSearchParams(window.location.search).get('comercioResuelto') === '1') {
+    showToast('El comercio fue notificado de tu decisión');
+  }
+
+  const resolicitudes = await apiFetch('/administrador/comercios/resolicitudes');
+  resolicitudes.forEach((resolicitud) => normalizarComercioAdmin(resolicitud.comercio));
+
+  const headerBadge = document.getElementById('header-badge');
+  headerBadge.textContent = String(resolicitudes.length);
+  headerBadge.style.display = resolicitudes.length > 0 ? 'flex' : 'none';
+
+  const container = document.getElementById('resolicitudes-content');
+  container.removeAttribute('aria-busy');
+  container.innerHTML = '';
+
+  if (resolicitudes.length === 0) {
+    const wrapper = crear('div', 'state-page');
+    const icon = crear('div', 'state-page__icon');
+    icon.innerHTML = ICONS.check;
+    wrapper.appendChild(icon);
+    const h1 = document.createElement('h1');
+    h1.className = 'state-page__title';
+    h1.textContent = 'No hay re-solicitudes pendientes';
+    wrapper.appendChild(h1);
+    const p = document.createElement('p');
+    p.className = 'state-page__text';
+    p.textContent = 'Acá aparecen los comercios rechazados que su Dueño corrigió y volvió a solicitar.';
+    wrapper.appendChild(p);
+    container.appendChild(wrapper);
+    return;
+  }
+
+  resolicitudes
+    .sort((a, b) => new Date(a.fechaResolicitud) - new Date(b.fechaResolicitud))
+    .forEach((resolicitud) => container.appendChild(renderResolicitudCard(resolicitud)));
+}
+
+function renderResolicitudNoEncontrada(container) {
+  container.removeAttribute('aria-busy');
+  container.innerHTML = '';
+  const wrapper = crear('div', 'state-page');
+  const icon = crear('div', 'state-page__icon');
+  icon.innerHTML = ICONS.alert;
+  wrapper.appendChild(icon);
+  const h1 = document.createElement('h1');
+  h1.className = 'state-page__title';
+  h1.textContent = 'No encontramos esta re-solicitud';
+  wrapper.appendChild(h1);
+  const p = document.createElement('p');
+  p.className = 'state-page__text';
+  p.textContent = 'La re-solicitud ya fue resuelta o el enlace no es válido.';
+  wrapper.appendChild(p);
+  const actions = crear('div', 'state-page__actions');
+  const cta = document.createElement('a');
+  cta.className = 'btn btn-primary';
+  cta.href = 'admin-resolicitudes.html';
+  cta.setAttribute('data-testid', 'btn-ver-resolicitudes');
+  cta.textContent = 'Ver re-solicitudes';
+  actions.appendChild(cta);
+  wrapper.appendChild(actions);
+  container.appendChild(wrapper);
+}
+
+function renderResolicitudDetalle(container, resolicitud, onResuelto) {
+  const comercio = resolicitud.comercio;
+  container.removeAttribute('aria-busy');
+  container.innerHTML = '';
+
+  const hero = crear('div', 'request-hero');
+  const avatar = crear('div', 'comercio-detail-header__avatar');
+  avatar.style.marginBottom = '12px';
+  pintarAvatarComercio(avatar, comercio);
+  hero.appendChild(avatar);
+  const h1 = document.createElement('h1');
+  h1.textContent = comercio.nombre;
+  hero.appendChild(h1);
+  const fecha = crear('p', 'request-hero__fecha');
+  fecha.textContent = `Re-solicitud enviada: ${formatearFechaHora(resolicitud.fechaResolicitud)}`;
+  hero.appendChild(fecha);
+  container.appendChild(hero);
+
+  const body = crear('div', 'screen-body screen-body--tight');
+
+  if (resolicitud.motivoRechazoAnterior) {
+    body.appendChild(crearBloqueMotivoRechazo({
+      titulo: 'Motivo del rechazo anterior',
+      motivo: resolicitud.motivoRechazoAnterior,
+      testid: 'motivo-rechazo-anterior',
+    }));
+  }
+
+  const cambios = [...resolicitud.cambios]
+    .sort((a, b) => ORDEN_CAMPOS_CAMBIO.indexOf(a.campo) - ORDEN_CAMPOS_CAMBIO.indexOf(b.campo));
+  const resumen = crear('p', 'cambios-resumen');
+  resumen.setAttribute('data-testid', 'resumen-cambios');
+  resumen.textContent = cambios.length === 1 ? '1 campo cambió' : `${cambios.length} campos cambiaron`;
+  body.appendChild(resumen);
+
+  cambios.forEach((cambio) => body.appendChild(renderTarjetaCambio(cambio, comercio)));
+
+  const camposCambiados = new Set(cambios.map((cambio) => cambio.campo));
+  const camposSinCambio = ORDEN_CAMPOS_CAMBIO.filter((campo) => !camposCambiados.has(campo)
+    && (!CAMPOS_LEGALES_CAMBIO.includes(campo) || !comercio.esAdicional));
+  if (camposSinCambio.length > 0) {
+    body.appendChild(renderSinCambios(comercio, camposSinCambio));
+  }
+  container.appendChild(body);
+
+  const footer = crear('div', 'request-footer');
+  const rechazarBtn = crear('button', 'btn btn-secondary');
+  rechazarBtn.type = 'button';
+  rechazarBtn.style.borderColor = 'var(--color-error)';
+  rechazarBtn.style.color = 'var(--color-error)';
+  rechazarBtn.setAttribute('data-testid', 'btn-rechazar-comercio');
+  rechazarBtn.textContent = 'Rechazar';
+  rechazarBtn.addEventListener('click', () => {
+    mostrarModalRechazarComercio(comercio, async (motivo, definitivo) => {
+      try {
+        await apiFetch(`/administrador/comercios/${comercio.id}/resolver`, {
+          method: 'PUT',
+          body: { aprobar: false, motivo, definitivo },
+        });
+        onResuelto();
+      } catch (error) {
+        showToast(error instanceof ApiError ? error.message : 'No pudimos rechazar el comercio', 'error');
+      }
+    }, { esUltimoIntento: resolicitud.esUltimoIntento });
+  });
+  footer.appendChild(rechazarBtn);
+
+  const aprobarBtn = crear('button', 'btn btn-primary');
+  aprobarBtn.type = 'button';
+  aprobarBtn.setAttribute('data-testid', 'btn-aprobar-comercio');
+  aprobarBtn.textContent = 'Aprobar comercio';
+  aprobarBtn.addEventListener('click', () => {
+    mostrarModalConfirmarAprobacion(comercio, async () => {
+      try {
+        await apiFetch(`/administrador/comercios/${comercio.id}/resolver`, {
+          method: 'PUT',
+          body: { aprobar: true, motivo: null },
+        });
+        onResuelto();
+      } catch (error) {
+        showToast(error instanceof ApiError ? error.message : 'No pudimos aprobar el comercio', 'error');
+      }
+    });
+  });
+  footer.appendChild(aprobarBtn);
+  container.appendChild(footer);
+}
+
+export async function initAdminResolicitudDetalle() {
+  if (!requireAdmin()) {
+    return;
+  }
+
+  const comercioId = Number(new URLSearchParams(window.location.search).get('id'));
+  const container = document.getElementById('detalle-content');
+
+  if (!comercioId) {
+    renderResolicitudNoEncontrada(container);
+    return;
+  }
+
+  const resolicitudes = await apiFetch('/administrador/comercios/resolicitudes');
+  resolicitudes.forEach((resolicitud) => normalizarComercioAdmin(resolicitud.comercio));
+  const resolicitud = resolicitudes.find((r) => r.comercio.id === comercioId);
+
+  if (!resolicitud) {
+    renderResolicitudNoEncontrada(container);
+    return;
+  }
+
+  const intentoBadge = document.getElementById('intento-badge');
+  intentoBadge.textContent = `Intento ${resolicitud.intento} de ${resolicitud.maximoResolicitudes}`;
+  intentoBadge.classList.remove('is-hidden');
+
+  renderResolicitudDetalle(container, resolicitud, () => {
+    window.location.href = 'admin-resolicitudes.html?comercioResuelto=1';
+  });
 }

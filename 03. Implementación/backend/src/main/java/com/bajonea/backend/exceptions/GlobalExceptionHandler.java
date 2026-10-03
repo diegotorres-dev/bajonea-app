@@ -1,6 +1,7 @@
 package com.bajonea.backend.exceptions;
 
 import com.bajonea.backend.dto.response.ApiResponse;
+import com.bajonea.backend.dto.response.DesvinculacionBloqueadaResponseDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -51,6 +52,11 @@ public class GlobalExceptionHandler {
         boolean esViolacionUnique = causaRaiz instanceof SQLException sqlEx
                 && sqlEx.getErrorCode() == MYSQL_ERROR_DUPLICATE_ENTRY;
 
+        if (esViolacionUnique && String.valueOf(causaRaiz.getMessage()).contains("uq_usuario_nombre_usuario")) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ApiResponse<>("Ese nombre de usuario ya está en uso", null));
+        }
+
         if (esViolacionUnique) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(new ApiResponse<>("Ya existe un registro con alguno de los datos ingresados", null));
@@ -76,9 +82,20 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiResponse<>(ex.getMessage(), null));
     }
 
+    @ExceptionHandler(DesvinculacionBloqueadaException.class)
+    public ResponseEntity<ApiResponse<?>> handleDesvinculacionBloqueada(DesvinculacionBloqueadaException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiResponse<>(ex.getMessage(),
+                new DesvinculacionBloqueadaResponseDTO(ex.getCantidadPagosPendientes(), ex.getPuedeReintentarDesde())));
+    }
+
     @ExceptionHandler(ServicioNoDisponibleException.class)
     public ResponseEntity<ApiResponse<?>> handleServicioNoDisponible(ServicioNoDisponibleException ex) {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new ApiResponse<>(ex.getMessage(), null));
+    }
+
+    @ExceptionHandler(GeneracionTokenException.class)
+    public ResponseEntity<ApiResponse<?>> handleGeneracionToken(GeneracionTokenException ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<>(ex.getMessage(), null));
     }
 
     @ExceptionHandler(ValidacionException.class)

@@ -10,6 +10,8 @@ import {
   crearCategoria,
   crearProducto,
   login,
+  marcarAptoVenta,
+  confirmarPagoTest,
   sufijoUnico,
   diaDeHoy,
 } from './helpers/backend';
@@ -19,17 +21,19 @@ function formatearPrecio(valor: number): string {
   return `$${entero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
 }
 
-async function loginClienteUi(page: Page, email: string, password: string) {
+const CARGO_SERVICIO_CLIENTE_FIJO = 200;
+
+async function loginClienteUi(page: Page, nombreUsuario: string, password: string) {
   await page.goto('/login.html');
-  await page.getByTestId('input-email').fill(email);
+  await page.getByTestId('input-nombre-usuario').fill(nombreUsuario);
   await page.getByTestId('input-password').fill(password);
   await page.getByTestId('btn-ingresar').click();
   await page.waitForURL('**/index.html');
 }
 
-async function loginComercioUi(page: Page, email: string, password: string) {
+async function loginComercioUi(page: Page, nombreUsuario: string, password: string) {
   await page.goto('/login.html');
-  await page.getByTestId('input-email').fill(email);
+  await page.getByTestId('input-nombre-usuario').fill(nombreUsuario);
   await page.getByTestId('input-password').fill(password);
   await page.getByTestId('btn-ingresar').click();
   await page.waitForURL('**/comercio-dashboard.html');
@@ -45,14 +49,6 @@ test.describe('Flujo completo de pedido: Cliente pide, Comercio resuelve, ambos 
     categoriaId = await crearCategoria(request, adminSesion.token, `Categoría Pedidos E2E ${sufijoUnico()}`);
   });
 
-  /**
-   * Cada test registra su PROPIO comercio (en vez de compartir uno entre los dos tests de este
-   * archivo): el login de Comercio y el login de Cliente son cuentas distintas, así que no
-   * chocan entre sí -- pero si dos tests reusaran el MISMO comercio y ambos hicieran login por
-   * UI, el segundo login invalidaría la sesión del primero (Sesion.activa, modelo de sesión
-   * única, ver CLAUDE.md §7) apenas corrieran en paralelo. Comercio nuevo por test evita
-   * depender de --workers=1 para que este archivo sea correcto por diseño.
-   */
   async function crearComercioConProducto(
     request: import('@playwright/test').APIRequestContext,
     adminToken: string,
@@ -66,27 +62,25 @@ test.describe('Flujo completo de pedido: Cliente pide, Comercio resuelve, ambos 
     });
     const pendiente = await buscarComercioPendientePorEmail(request, adminToken, comercio.email);
     await resolverComercio(request, adminToken, pendiente.id, true);
-    const comercioSesion = await login(request, comercio.email, comercio.password);
+    await marcarAptoVenta(request, pendiente.id);
+    const comercioSesion = await login(request, comercio.nombreUsuario, comercio.password);
     const productoId = await crearProducto(request, comercioSesion.token, {
       nombre: `Producto Pedido E2E ${sufijoUnico()}`,
       precio: opciones.precio,
       categoriaId,
     });
-    return { comercioId: pendiente.id, comercioEmail: comercio.email, comercioPassword: comercio.password, productoId };
+    return { comercioId: pendiente.id, comercioUsuario: comercio.nombreUsuario, comercioPassword: comercio.password, productoId };
   }
 
   test('envío a domicilio: pedido nuevo -> el comercio lo acepta -> el cliente ve el estado actualizado y recibe la notificación real por polling', async ({
     browser,
     request,
   }) => {
-    // El default de 30s no alcanza: hay que dejarle margen real al polling de 15s de
-    // notificaciones (js/notificaciones.js) además de los 2 logins, el checkout completo y las
-    // varias navegaciones del lado del comercio.
     test.setTimeout(60000);
 
     const adminSesion = await fijarPasswordAdminYLoguear(request);
     const precio = 4500;
-    const { comercioId, comercioEmail, comercioPassword, productoId } = await crearComercioConProducto(request, adminSesion.token, {
+    const { comercioId, comercioUsuario, comercioPassword, productoId } = await crearComercioConProducto(request, adminSesion.token, {
       aceptaDelivery: true,
       aceptaRetiro: false,
       nombre: `Comercio Pedido Domicilio E2E ${sufijoUnico()}`,
@@ -100,7 +94,7 @@ test.describe('Flujo completo de pedido: Cliente pide, Comercio resuelve, ambos 
       const clientePage = await clienteContext.newPage();
       const comercioPage = await comercioContext.newPage();
 
-      await loginClienteUi(clientePage, cliente.email, cliente.password);
+      await loginClienteUi(clientePage, cliente.nombreUsuario, cliente.password);
       await clientePage.goto(`/comercio-detalle.html?id=${comercioId}`);
       await clientePage.getByTestId(`producto-item-${productoId}`).click();
       await expect(clientePage.getByTestId('modal-detalle-producto')).toBeVisible();
@@ -118,7 +112,7 @@ test.describe('Flujo completo de pedido: Cliente pide, Comercio resuelve, ambos 
       await clientePage.getByTestId('btn-modalidad-domicilio').click();
       await clientePage.getByTestId('btn-continuar-modalidad').click();
       await clientePage.getByTestId('btn-confirmar-direccion').click();
-      await expect(clientePage.getByTestId('total-carrito')).toHaveText(formatearPrecio(precio));
+      await expect(clientePage.getByTestId('total-carrito')).toHaveText(formatearPrecio(precio + CARGO_SERVICIO_CLIENTE_FIJO));
 
       const confirmarPedidoResponse = clientePage.waitForResponse(
         (res) => res.url().endsWith('/pedidos/cliente') && res.request().method() === 'POST',
@@ -128,10 +122,10 @@ test.describe('Flujo completo de pedido: Cliente pide, Comercio resuelve, ambos 
       expect(respuestaPedido.status()).toBe(201);
       const pedidoId = (await respuestaPedido.json()).data.id as number;
 
-      await expect(clientePage.getByTestId('modal-pedido-confirmado')).toBeVisible();
-      await expect(clientePage.getByTestId('mensaje-pedido-confirmado')).toContainText(`#${pedidoId}`);
+      await expect(clientePage.getByTestId('btn-ir-a-pagar')).toBeVisible();
+      await confirmarPagoTest(request, pedidoId);
 
-      await loginComercioUi(comercioPage, comercioEmail, comercioPassword);
+      await loginComercioUi(comercioPage, comercioUsuario, comercioPassword);
       await comercioPage.goto('/comercio-pedidos.html');
       const filaComercio = comercioPage.getByTestId(`pedido-item-${pedidoId}`);
       await expect(filaComercio).toBeVisible();
@@ -142,11 +136,6 @@ test.describe('Flujo completo de pedido: Cliente pide, Comercio resuelve, ambos 
       await expect(comercioPage.getByTestId('nombre-cliente-pedido')).toContainText(cliente.nombre);
       await expect(comercioPage.getByTestId('estado-pedido')).toContainText('esperando tu confirmación');
 
-      // El cliente abre la pantalla de notificaciones justo ANTES de que el comercio acepte (no
-      // antes, no reload después): así el reloj de los 15s de polling real (js/notificaciones.js,
-      // POLLING_INTERVAL_MS) arranca a contar recién acá, y la espera de abajo queda acotada a
-      // como mucho un intervalo -- confirma que la notificación llega sola, sin recargar la
-      // pestaña del cliente (mismo comportamiento ya documentado en CLAUDE.md, Fase 16 Tramo 7).
       await clientePage.goto('/notificaciones.html');
       await expect(clientePage.getByTestId('estado-vacio')).toBeVisible();
 
@@ -179,7 +168,7 @@ test.describe('Flujo completo de pedido: Cliente pide, Comercio resuelve, ambos 
 
     const adminSesion = await fijarPasswordAdminYLoguear(request);
     const precio = 2200;
-    const { comercioId, comercioEmail, comercioPassword, productoId } = await crearComercioConProducto(request, adminSesion.token, {
+    const { comercioId, comercioUsuario, comercioPassword, productoId } = await crearComercioConProducto(request, adminSesion.token, {
       aceptaDelivery: false,
       aceptaRetiro: true,
       nombre: `Comercio Pedido Retiro E2E ${sufijoUnico()}`,
@@ -195,7 +184,7 @@ test.describe('Flujo completo de pedido: Cliente pide, Comercio resuelve, ambos 
       const clientePage = await clienteContext.newPage();
       const comercioPage = await comercioContext.newPage();
 
-      await loginClienteUi(clientePage, cliente.email, cliente.password);
+      await loginClienteUi(clientePage, cliente.nombreUsuario, cliente.password);
       await clientePage.goto(`/comercio-detalle.html?id=${comercioId}`);
       await clientePage.getByTestId(`producto-item-${productoId}`).click();
       await expect(clientePage.getByTestId('modal-detalle-producto')).toBeVisible();
@@ -213,7 +202,7 @@ test.describe('Flujo completo de pedido: Cliente pide, Comercio resuelve, ambos 
       await clientePage.getByTestId('btn-modalidad-retiro').click();
       await clientePage.getByTestId('btn-continuar-modalidad').click();
       await clientePage.getByTestId('btn-confirmar-retiro').click();
-      await expect(clientePage.getByTestId('total-carrito')).toHaveText(formatearPrecio(precio));
+      await expect(clientePage.getByTestId('total-carrito')).toHaveText(formatearPrecio(precio + CARGO_SERVICIO_CLIENTE_FIJO));
 
       const confirmarPedidoResponse = clientePage.waitForResponse(
         (res) => res.url().endsWith('/pedidos/cliente') && res.request().method() === 'POST',
@@ -223,8 +212,10 @@ test.describe('Flujo completo de pedido: Cliente pide, Comercio resuelve, ambos 
       expect(respuestaPedido.status()).toBe(201);
       const pedidoId = (await respuestaPedido.json()).data.id as number;
       expect((await respuestaPedido.json()).data.tipoEntrega).toBe('RETIRO');
+      await expect(clientePage.getByTestId('btn-ir-a-pagar')).toBeVisible();
+      await confirmarPagoTest(request, pedidoId);
 
-      await loginComercioUi(comercioPage, comercioEmail, comercioPassword);
+      await loginComercioUi(comercioPage, comercioUsuario, comercioPassword);
       await comercioPage.goto(`/comercio-pedido-detalle.html?id=${pedidoId}`);
       await expect(comercioPage.getByTestId('btn-rechazar-pedido')).toBeVisible();
 

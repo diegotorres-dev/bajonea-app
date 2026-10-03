@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rechazo definitivo — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header app-header--brand">
+    <img class="header-logo" src="assets/img/bajonea-logo-orange-header.png" alt="Bajoneá" />
+  </header>
+  <main class="app-main">
+    <div id="cargando-container" class="state-page" aria-busy="true" data-testid="skeleton-rechazo-definitivo">
+      <div class="skeleton" style="height:64px;width:64px;border-radius:50%;margin-bottom:16px;"></div>
+      <div class="skeleton" style="height:28px;width:220px;margin-bottom:12px;"></div>
+      <div class="skeleton" style="height:64px;width:100%;max-width:320px;margin-bottom:24px;"></div>
+      <div class="skeleton" style="height:72px;width:100%;max-width:320px;"></div>
+    </div>
+    <div id="contenido-container" class="state-page is-hidden">
+      <div class="state-page__icon state-page__icon--error">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+      </div>
+      <h1 class="state-page__title">Rechazo definitivo</h1>
+      <div id="motivo-rechazo-slot" class="motivo-rechazo-slot"></div>
+      <p class="state-page__text" data-testid="texto-rechazo-definitivo">Este comercio fue rechazado de forma definitiva, así que ya no se puede volver a solicitar. Si creés que se trata de un error, contactá a soporte.</p>
+      <div class="state-page__actions">
+        <a class="btn btn-primary is-hidden" id="agregar-comercio-btn" href="agregar-comercio.html" data-testid="btn-agregar-comercio-nuevo">Agregar un comercio nuevo</a>
+        <a class="btn btn-secondary is-hidden" id="soporte-btn" target="_blank" rel="noopener" data-testid="btn-contactar-soporte">Contactar a soporte</a>
+        <button class="btn btn-secondary" type="button" id="volver-comercios-btn" data-testid="btn-volver-a-mis-comercios">Volver a mis comercios</button>
+        <button class="btn btn-tertiary" type="button" id="logout-btn" data-testid="btn-cerrar-sesion">Cerrar sesión</button>
+      </div>
+    </div>
+  </main>
+</div>
+<script type="module">
+import { logout } from './js/auth.js';
+import { initComercioRechazoDefinitivo } from './js/comercio.js';
+initComercioRechazoDefinitivo();
+document.getElementById('logout-btn').addEventListener('click', () => logout());
+</script>
+</body>
+</html>

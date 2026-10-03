@@ -1,6 +1,7 @@
 package com.bajonea.backend.controllers;
 
 import com.bajonea.backend.config.security.AuthenticatedUser;
+import com.bajonea.backend.config.security.ComercioActivo;
 import com.bajonea.backend.dto.request.AnulacionPedidoRequestDTO;
 import com.bajonea.backend.dto.request.PedidoRequestDTO;
 import com.bajonea.backend.dto.request.RechazoPedidoRequestDTO;
@@ -73,8 +74,8 @@ public class PedidoController {
 
     @GetMapping("/comercio/{id}/pago")
     public ResponseEntity<ApiResponse<PagoResponseDTO>> consultarPagoComercio(@PathVariable Integer id,
-            @AuthenticationPrincipal AuthenticatedUser usuario) {
-        PagoResponseDTO response = mercadoPagoPagoService.consultarComoComercio(usuario.userId(), id);
+            ComercioActivo comercio) {
+        PagoResponseDTO response = mercadoPagoPagoService.consultarComoComercio(comercio.comercioId(), id);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pago obtenido correctamente", response));
     }
 
@@ -94,50 +95,50 @@ public class PedidoController {
 
     @GetMapping("/comercio")
     public ResponseEntity<ApiResponse<List<PedidoResponseDTO>>> listarPedidosComercio(
-            @AuthenticationPrincipal AuthenticatedUser usuario) {
-        List<PedidoResponseDTO> pedidos = pedidoService.listarPedidosComercio(usuario.userId());
+            ComercioActivo comercio) {
+        List<PedidoResponseDTO> pedidos = pedidoService.listarPedidosComercio(comercio.comercioId());
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pedidos obtenidos correctamente", pedidos));
     }
 
     @GetMapping("/comercio/resumen-hoy")
     public ResponseEntity<ApiResponse<ResumenPedidosHoyResponseDTO>> obtenerResumenHoy(
-            @AuthenticationPrincipal AuthenticatedUser usuario) {
-        ResumenPedidosHoyResponseDTO response = pedidoService.obtenerResumenHoy(usuario.userId());
+            ComercioActivo comercio) {
+        ResumenPedidosHoyResponseDTO response = pedidoService.obtenerResumenHoy(comercio.comercioId());
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Resumen obtenido correctamente", response));
     }
 
     @PutMapping("/comercio/{id}/aceptar")
     public ResponseEntity<ApiResponse<PedidoResponseDTO>> aceptarPedido(@PathVariable Integer id,
-            @AuthenticationPrincipal AuthenticatedUser usuario) {
-        PedidoResponseDTO response = pedidoService.aceptarPedido(usuario.userId(), id);
+            ComercioActivo comercio) {
+        PedidoResponseDTO response = pedidoService.aceptarPedido(comercio, id);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pedido aceptado correctamente", response));
     }
 
     @PutMapping("/comercio/{id}/rechazar")
     public ResponseEntity<ApiResponse<PedidoResponseDTO>> rechazarPedido(@PathVariable Integer id,
-            @Valid @RequestBody RechazoPedidoRequestDTO request, @AuthenticationPrincipal AuthenticatedUser usuario) {
-        PedidoResponseDTO response = pedidoService.rechazarPedido(usuario.userId(), id, request);
+            @Valid @RequestBody RechazoPedidoRequestDTO request, ComercioActivo comercio) {
+        PedidoResponseDTO response = pedidoService.rechazarPedido(comercio, id, request);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pedido rechazado correctamente", response));
     }
 
     @PutMapping("/comercio/{id}/despachar")
     public ResponseEntity<ApiResponse<PedidoResponseDTO>> avanzarAEntregaEnCurso(@PathVariable Integer id,
-            @AuthenticationPrincipal AuthenticatedUser usuario) {
-        PedidoResponseDTO response = pedidoService.avanzarAEntregaEnCurso(usuario.userId(), id);
+            ComercioActivo comercio) {
+        PedidoResponseDTO response = pedidoService.avanzarAEntregaEnCurso(comercio, id);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pedido despachado correctamente", response));
     }
 
     @PutMapping("/comercio/{id}/entregar")
     public ResponseEntity<ApiResponse<PedidoResponseDTO>> confirmarEntregaComercio(@PathVariable Integer id,
-            @AuthenticationPrincipal AuthenticatedUser usuario) {
-        PedidoResponseDTO response = pedidoService.confirmarEntregaComercio(usuario.userId(), id);
+            ComercioActivo comercio) {
+        PedidoResponseDTO response = pedidoService.confirmarEntregaComercio(comercio, id);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Entrega confirmada correctamente", response));
     }
 
     @PutMapping("/comercio/{id}/anular")
     public ResponseEntity<ApiResponse<PedidoResponseDTO>> anularPedido(@PathVariable Integer id,
-            @Valid @RequestBody AnulacionPedidoRequestDTO request, @AuthenticationPrincipal AuthenticatedUser usuario) {
-        PedidoResponseDTO response = pedidoService.anularPedido(usuario.userId(), id, request);
+            @Valid @RequestBody AnulacionPedidoRequestDTO request, ComercioActivo comercio) {
+        PedidoResponseDTO response = pedidoService.anularPedido(comercio, id, request);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pedido anulado correctamente", response));
     }
 }

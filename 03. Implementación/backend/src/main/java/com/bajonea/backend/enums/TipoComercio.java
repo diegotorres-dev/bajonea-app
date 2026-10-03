@@ -12,5 +12,6 @@ public enum TipoComercio {
     BAR,
     KIOSCO,
     FOOD_TRUCK,
+    HAMBURGUESERIA,
     OTRO
 }

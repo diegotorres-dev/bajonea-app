@@ -1,6 +1,7 @@
 package com.bajonea.backend.services;
 
 import com.bajonea.backend.config.PedidoTimeoutProperties;
+import com.bajonea.backend.config.security.ComercioActivo;
 import com.bajonea.backend.dto.request.AnulacionPedidoRequestDTO;
 import com.bajonea.backend.dto.request.PedidoRequestDTO;
 import com.bajonea.backend.dto.request.RechazoPedidoRequestDTO;
@@ -16,13 +17,16 @@ import com.bajonea.backend.entities.DetallePedido;
 import com.bajonea.backend.entities.Direccion;
 import com.bajonea.backend.entities.HistorialEstadoPedido;
 import com.bajonea.backend.entities.ItemCarrito;
+import com.bajonea.backend.entities.NotaCredito;
 import com.bajonea.backend.entities.Pedido;
 import com.bajonea.backend.enums.ActorPedido;
 import com.bajonea.backend.enums.CanceladoPor;
+import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.EstadoDetallePedido;
 import com.bajonea.backend.enums.EstadoPagoPedido;
 import com.bajonea.backend.enums.EstadoPedido;
 import com.bajonea.backend.enums.FuenteEntrega;
+import com.bajonea.backend.enums.MotivoNotaCredito;
 import com.bajonea.backend.enums.MotivoRechazo;
 import com.bajonea.backend.enums.MotivoTimeoutPedido;
 import com.bajonea.backend.enums.TipoEntidadNotificacion;
@@ -64,8 +68,10 @@ import org.springframework.transaction.annotation.Transactional;
  * ({@code MercadoPagoPagoService}), nunca directamente el Cliente.
  * {@code HistorialEstadoPedido} es la fuente canónica de todos los timestamps y actores del
  * ciclo de vida (ver diccionario de datos); {@code Pedido} solo conserva el estado actual.
- * Todo estado terminal negativo con reembolso pendiente queda con un TODO explícito — sin
- * {@code NotaCredito} en este tramo (ver docs/DECISIONES.md).
+ * Los estados terminales negativos con reembolso pendiente llaman a {@link ReembolsoService}
+ * ({@code RECHAZADO}, {@code EXPIRADO} y la cancelación por suspensión de comercio); los de
+ * {@code CANCELADO} y {@code ANULADO} conservan su TODO hasta que existan sus endpoints reales
+ * (ver docs/DECISIONES.md).
  */
 @Service
 @RequiredArgsConstructor
@@ -86,6 +92,8 @@ public class PedidoService {
     private final ComercioService comercioService;
     private final ConfiguracionTarifaService configuracionTarifaService;
     private final PedidoTimeoutProperties timeoutProperties;
+    private final ReembolsoService reembolsoService;
+    private final NotaCreditoService notaCreditoService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -106,7 +114,15 @@ public class PedidoService {
         }
 
         Comercio comercio = carrito.getComercio();
-        comercioService.validarAceptaPedidos(comercio);
+        // Estado leído con bloqueo compartido (no una lectura común): es el último confirmado aunque la
+        // transacción ya tenga una foto vieja, y mantiene el comercio bloqueado contra escritura hasta el
+        // commit. Así la desvinculación de la cuenta de Mercado Pago (que bloquea el comercio FOR UPDATE antes
+        // de mirar los pagos pendientes) y esta creación de pedido se serializan: o el pedido ve APROBADO y se
+        // rechaza, o la desvinculación ve el pedido nuevo en PENDIENTE_PAGO y se rechaza.
+        EstadoComercio estadoComercio = comercioRepository.leerEstadoConBloqueoCompartido(comercio.getId())
+                .map(EstadoComercio::valueOf)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
+        comercioService.validarAceptaPedidos(comercio, estadoComercio);
 
         if (request.getTipoEntrega() == TipoEntrega.DOMICILIO && !comercio.isAceptaDelivery()) {
             throw new ConflictoDeNegocioException("El comercio no ofrece entrega a domicilio");
@@ -246,8 +262,8 @@ public class PedidoService {
         return aResponseDTO(pedido);
     }
 
-    public PedidoResponseDTO aceptarPedido(Integer usuarioId, Integer pedidoId) {
-        Pedido pedido = obtenerPedidoDelComercio(usuarioId, pedidoId);
+    public PedidoResponseDTO aceptarPedido(ComercioActivo comercioActivo, Integer pedidoId) {
+        Pedido pedido = obtenerPedidoDelComercio(comercioActivo.comercioId(), pedidoId);
 
         if (pedido.getEstado() != EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO) {
             throw new ConflictoDeNegocioException("El pedido ya fue resuelto, no está en estado PENDIENTE_CONFIRMACION_COMERCIO");
@@ -255,7 +271,7 @@ public class PedidoService {
 
         pedido.setEstado(EstadoPedido.EN_PREPARACION);
         pedidoRepository.save(pedido);
-        registrarHistorial(pedido, ActorPedido.DUENO, usuarioId);
+        registrarHistorial(pedido, ActorPedido.DUENO, comercioActivo.duenoId());
 
         notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
                 "Tu pedido a " + pedido.getComercio().getNombre() + " fue aceptado y está en preparación.",
@@ -264,8 +280,8 @@ public class PedidoService {
         return aResponseDTO(pedido);
     }
 
-    public PedidoResponseDTO rechazarPedido(Integer usuarioId, Integer pedidoId, RechazoPedidoRequestDTO request) {
-        Pedido pedido = obtenerPedidoDelComercio(usuarioId, pedidoId);
+    public PedidoResponseDTO rechazarPedido(ComercioActivo comercioActivo, Integer pedidoId, RechazoPedidoRequestDTO request) {
+        Pedido pedido = obtenerPedidoDelComercio(comercioActivo.comercioId(), pedidoId);
 
         if (pedido.getEstado() != EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO) {
             throw new ConflictoDeNegocioException("El pedido ya fue resuelto, no está en estado PENDIENTE_CONFIRMACION_COMERCIO");
@@ -281,8 +297,8 @@ public class PedidoService {
         pedido.setMotivoRechazo(request.getMotivo());
         pedido.setComentarioRechazo(request.getComentario());
         pedidoRepository.save(pedido);
-        registrarHistorial(pedido, ActorPedido.DUENO, usuarioId);
-        // TODO: genera reembolso, pendiente de NotaCredito.
+        registrarHistorial(pedido, ActorPedido.DUENO, comercioActivo.duenoId());
+        reembolsoService.procesarReembolsoTotal(pedido, MotivoNotaCredito.RECHAZO_COMERCIO);
 
         String mensaje = "Tu pedido #" + pedido.getId() + " a " + pedido.getComercio().getNombre()
                 + " fue rechazado por el comercio. Motivo: " + request.getMotivo().getEtiqueta() + ".";
@@ -296,8 +312,8 @@ public class PedidoService {
         return aResponseDTO(pedido);
     }
 
-    public PedidoResponseDTO avanzarAEntregaEnCurso(Integer usuarioId, Integer pedidoId) {
-        Pedido pedido = obtenerPedidoDelComercio(usuarioId, pedidoId);
+    public PedidoResponseDTO avanzarAEntregaEnCurso(ComercioActivo comercioActivo, Integer pedidoId) {
+        Pedido pedido = obtenerPedidoDelComercio(comercioActivo.comercioId(), pedidoId);
 
         if (pedido.getEstado() != EstadoPedido.EN_PREPARACION) {
             throw new ConflictoDeNegocioException("El pedido no está en preparación");
@@ -308,7 +324,7 @@ public class PedidoService {
                 : EstadoPedido.LISTO_PARA_RETIRAR;
         pedido.setEstado(destino);
         pedidoRepository.save(pedido);
-        registrarHistorial(pedido, ActorPedido.DUENO, usuarioId);
+        registrarHistorial(pedido, ActorPedido.DUENO, comercioActivo.duenoId());
 
         TipoNotificacion tipo = destino == EstadoPedido.EN_CAMINO
                 ? TipoNotificacion.PEDIDO_EN_CAMINO
@@ -336,15 +352,15 @@ public class PedidoService {
         return aResponseDTO(pedido);
     }
 
-    public PedidoResponseDTO confirmarEntregaComercio(Integer usuarioId, Integer pedidoId) {
-        Pedido pedido = obtenerPedidoDelComercio(usuarioId, pedidoId);
+    public PedidoResponseDTO confirmarEntregaComercio(ComercioActivo comercioActivo, Integer pedidoId) {
+        Pedido pedido = obtenerPedidoDelComercio(comercioActivo.comercioId(), pedidoId);
 
         if (pedido.getEstado() != EstadoPedido.LISTO_PARA_RETIRAR) {
             throw new ConflictoDeNegocioException("El pedido no está listo para retirar");
         }
 
         marcarEntregado(pedido, FuenteEntrega.COMERCIO);
-        registrarHistorial(pedido, ActorPedido.DUENO, usuarioId);
+        registrarHistorial(pedido, ActorPedido.DUENO, comercioActivo.duenoId());
 
         return aResponseDTO(pedido);
     }
@@ -369,8 +385,8 @@ public class PedidoService {
         return aResponseDTO(pedido);
     }
 
-    public PedidoResponseDTO anularPedido(Integer usuarioId, Integer pedidoId, AnulacionPedidoRequestDTO request) {
-        Pedido pedido = obtenerPedidoDelComercio(usuarioId, pedidoId);
+    public PedidoResponseDTO anularPedido(ComercioActivo comercioActivo, Integer pedidoId, AnulacionPedidoRequestDTO request) {
+        Pedido pedido = obtenerPedidoDelComercio(comercioActivo.comercioId(), pedidoId);
 
         if (pedido.getEstado() != EstadoPedido.EN_PREPARACION) {
             throw new ConflictoDeNegocioException("El pedido no está en preparación");
@@ -380,7 +396,7 @@ public class PedidoService {
         pedido.setCanceladoPor(CanceladoPor.COMERCIO);
         pedido.setMotivo(request.getMotivo());
         pedidoRepository.save(pedido);
-        registrarHistorial(pedido, ActorPedido.DUENO, usuarioId);
+        registrarHistorial(pedido, ActorPedido.DUENO, comercioActivo.duenoId());
         // TODO: genera reembolso, pendiente de NotaCredito.
 
         notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
@@ -394,8 +410,9 @@ public class PedidoService {
     public List<PedidoResponseDTO> listarPedidosCliente(Integer usuarioId) {
         List<Pedido> pedidos = pedidoRepository.findByClienteId(usuarioId);
         Map<Integer, LocalDateTime> fechasPago = fechasPagoAprobado(pedidos);
+        Map<Integer, NotaCredito> notas = ultimasNotasCredito(pedidos);
         return pedidos.stream()
-                .map(pedido -> aResponseDTO(pedido, fechasPago.get(pedido.getId())))
+                .map(pedido -> aResponseDTO(pedido, fechasPago.get(pedido.getId()), notas.get(pedido.getId())))
                 .toList();
     }
 
@@ -404,23 +421,19 @@ public class PedidoService {
      * pago esté confirmado (T1 dispara recién en {@link #confirmarPagoAprobado}); hasta
      * entonces solo el Cliente tiene visibilidad y única acción posible sobre ese pedido.
      */
-    public List<PedidoResponseDTO> listarPedidosComercio(Integer usuarioId) {
-        Comercio comercio = comercioRepository.findByDuenoId(usuarioId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
-        List<Pedido> pedidos = pedidoRepository.findLlegadosPagadosByComercioId(comercio.getId());
+    public List<PedidoResponseDTO> listarPedidosComercio(Integer comercioId) {
+        List<Pedido> pedidos = pedidoRepository.findLlegadosPagadosByComercioId(comercioId);
         Map<Integer, LocalDateTime> fechasPago = fechasPagoAprobado(pedidos);
+        Map<Integer, NotaCredito> notas = ultimasNotasCredito(pedidos);
         return pedidos.stream()
-                .map(pedido -> aResponseDTO(pedido, fechasPago.get(pedido.getId())))
+                .map(pedido -> aResponseDTO(pedido, fechasPago.get(pedido.getId()), notas.get(pedido.getId())))
                 .toList();
     }
 
-    public ResumenPedidosHoyResponseDTO obtenerResumenHoy(Integer usuarioId) {
-        Comercio comercio = comercioRepository.findByDuenoId(usuarioId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
-
+    public ResumenPedidosHoyResponseDTO obtenerResumenHoy(Integer comercioId) {
         LocalDateTime inicioHoy = LocalDate.now().atStartOfDay();
         LocalDateTime finHoy = inicioHoy.plusDays(1);
-        List<Pedido> llegadosPagados = pedidoRepository.findLlegadosPagadosByComercioId(comercio.getId());
+        List<Pedido> llegadosPagados = pedidoRepository.findLlegadosPagadosByComercioId(comercioId);
         Map<Integer, LocalDateTime> fechasPago = fechasPagoAprobado(llegadosPagados);
         List<Pedido> pedidosHoy = llegadosPagados.stream()
                 .filter(pedido -> {
@@ -431,7 +444,7 @@ public class PedidoService {
 
         BigDecimal totalFacturadoHoy = pedidosHoy.stream()
                 .filter(pedido -> ESTADOS_FACTURADOS.contains(pedido.getEstado()))
-                .map(Pedido::getSubtotal)
+                .map(pedido -> pedido.getSubtotal().subtract(pedido.getCargoServicioComercio()))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         int cantidadPedidosHoy = pedidosHoy.size();
         int cantidadPendientes = (int) pedidosHoy.stream()
@@ -456,7 +469,9 @@ public class PedidoService {
             pedido.setCanceladoPor(CanceladoPor.SISTEMA);
             pedidoRepository.save(pedido);
             registrarHistorial(pedido, ActorPedido.SISTEMA, null);
-            // TODO: genera reembolso, pendiente de NotaCredito.
+            if (pedido.getPagoEstado() == EstadoPagoPedido.PAGADO) {
+                reembolsoService.procesarReembolsoTotal(pedido, MotivoNotaCredito.SUSPENSION_COMERCIO);
+            }
             notificarCancelacionSistema(pedido, "el comercio fue suspendido");
         }
 
@@ -528,10 +543,11 @@ public class PedidoService {
             pedido.setCanceladoPor(CanceladoPor.SISTEMA);
             pedidoRepository.save(pedido);
             registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.TIMEOUT_RESPUESTA_COMERCIO);
-            // TODO: genera reembolso, pendiente de NotaCredito.
+            reembolsoService.procesarReembolsoTotal(pedido, MotivoNotaCredito.EXPIRACION_SIN_RESPUESTA);
 
             notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
-                    "El comercio no respondió a tiempo tu pedido #" + pedido.getId() + ". Se canceló y el reembolso está en proceso.",
+                    "El comercio no respondió en " + timeoutProperties.getRespuestaComercioMinutos() + " minutos tu pedido #" + pedido.getId()
+                            + ". Se canceló y estamos gestionando la devolución de tu pago; podés ver su estado en el detalle del pedido.",
                     TipoNotificacion.PEDIDO_EXPIRADO_CLIENTE, TipoEntidadNotificacion.PEDIDO, pedido.getId());
             notificacionService.crear(pedido.getComercio().getDueno().getPersonaJuridica().getPersona().getUsuario().getId(),
                     "El pedido #" + pedido.getId() + " expiró por falta de respuesta.",
@@ -601,12 +617,10 @@ public class PedidoService {
     }
 
     /** Sin {@code private}: mismo motivo que {@link #obtenerPedidoDelCliente}. */
-    Pedido obtenerPedidoDelComercio(Integer usuarioId, Integer pedidoId) {
-        Comercio comercio = comercioRepository.findByDuenoId(usuarioId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
+    Pedido obtenerPedidoDelComercio(Integer comercioId, Integer pedidoId) {
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado"));
-        if (!pedido.getComercio().getId().equals(comercio.getId()) || !pedidoRepository.llegoPagado(pedidoId)) {
+        if (!pedido.getComercio().getId().equals(comercioId) || !pedidoRepository.llegoPagado(pedidoId)) {
             throw new RecursoNoEncontradoException("Pedido no encontrado");
         }
         return pedido;
@@ -624,11 +638,21 @@ public class PedidoService {
         return fechas;
     }
 
-    private PedidoResponseDTO aResponseDTO(Pedido pedido) {
-        return aResponseDTO(pedido, fechasPagoAprobado(List.of(pedido)).get(pedido.getId()));
+    private Map<Integer, NotaCredito> ultimasNotasCredito(List<Pedido> pedidos) {
+        Map<Integer, NotaCredito> ultimas = new HashMap<>();
+        for (NotaCredito nota : notaCreditoService.listarPorPedidos(pedidos.stream().map(Pedido::getId).toList())) {
+            ultimas.merge(nota.getPago().getPedido().getId(), nota,
+                    (actual, nueva) -> nueva.getId() > actual.getId() ? nueva : actual);
+        }
+        return ultimas;
     }
 
-    private PedidoResponseDTO aResponseDTO(Pedido pedido, LocalDateTime fechaPagoAprobado) {
+    private PedidoResponseDTO aResponseDTO(Pedido pedido) {
+        return aResponseDTO(pedido, fechasPagoAprobado(List.of(pedido)).get(pedido.getId()),
+                ultimasNotasCredito(List.of(pedido)).get(pedido.getId()));
+    }
+
+    private PedidoResponseDTO aResponseDTO(Pedido pedido, LocalDateTime fechaPagoAprobado, NotaCredito notaCredito) {
         List<DetallePedidoResponseDTO> detalles = detallePedidoRepository.findByPedidoId(pedido.getId()).stream()
                 .map(this::aResponseDTO)
                 .toList();
@@ -662,7 +686,12 @@ public class PedidoService {
                 fechaPagoAprobado,
                 pedido.getFechaEntrega(),
                 detalles,
-                pedido.getTotal());
+                pedido.getSubtotal(),
+                pedido.getCargoServicioCliente(),
+                pedido.getCargoServicioComercio(),
+                pedido.getTotal(),
+                notaCredito == null ? null : notaCredito.getEstado(),
+                notaCredito == null ? null : notaCredito.getMonto());
     }
 
     private DetallePedidoResponseDTO aResponseDTO(DetallePedido detalle) {

@@ -73,8 +73,8 @@ public class ProductoService {
     private final NotificacionService notificacionService;
     private final CloudinaryService cloudinaryService;
 
-    public ProductoResponseDTO crearProducto(Integer usuarioId, ProductoRequestDTO request) {
-        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+    public ProductoResponseDTO crearProducto(Integer comercioId, ProductoRequestDTO request) {
+        Comercio comercio = obtenerComercio(comercioId);
         Categoria categoria = obtenerCategoria(request.getCategoriaId());
 
         Producto producto = Producto.builder()
@@ -93,8 +93,8 @@ public class ProductoService {
         return aResponseDTO(producto);
     }
 
-    public ProductoResponseDTO editarProducto(Integer usuarioId, Integer productoId, ProductoRequestDTO request) {
-        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+    public ProductoResponseDTO editarProducto(Integer comercioId, Integer productoId, ProductoRequestDTO request) {
+        Comercio comercio = obtenerComercio(comercioId);
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
 
         if (producto.getEstado() == EstadoProducto.DESCONTINUADO) {
@@ -120,8 +120,8 @@ public class ProductoService {
         return aResponseDTO(producto);
     }
 
-    public List<ProductoResponseDTO> listarProductosDelComercio(Integer usuarioId) {
-        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+    public List<ProductoResponseDTO> listarProductosDelComercio(Integer comercioId) {
+        Comercio comercio = obtenerComercio(comercioId);
         return productoRepository.findByComercioId(comercio.getId()).stream()
                 .map(this::aResponseDTO)
                 .toList();
@@ -238,8 +238,8 @@ public class ProductoService {
         return new FiltrosCatalogoResponseDTO(categorias, tags);
     }
 
-    public ProductoResponseDTO cambiarEstado(Integer usuarioId, Integer productoId, EstadoProducto nuevoEstado) {
-        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+    public ProductoResponseDTO cambiarEstado(Integer comercioId, Integer productoId, EstadoProducto nuevoEstado) {
+        Comercio comercio = obtenerComercio(comercioId);
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
 
         EstadoProducto estadoActual = producto.getEstado();
@@ -262,21 +262,21 @@ public class ProductoService {
         return aResponseDTO(producto);
     }
 
-    public CloudinarySignatureResponseDTO generarFirmaImagen(Integer usuarioId, Integer productoId) {
-        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+    public CloudinarySignatureResponseDTO generarFirmaImagen(Integer comercioId, Integer productoId) {
+        Comercio comercio = obtenerComercio(comercioId);
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
         return cloudinaryService.generarFirmaImagenProducto(comercio.getId(), producto.getId());
     }
 
-    public CloudinarySignatureResponseDTO generarFirmaRecorteImagen(Integer usuarioId, Integer productoId, Integer imagenId) {
-        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+    public CloudinarySignatureResponseDTO generarFirmaRecorteImagen(Integer comercioId, Integer productoId, Integer imagenId) {
+        Comercio comercio = obtenerComercio(comercioId);
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
         obtenerImagenDelProducto(imagenId, producto);
         return cloudinaryService.generarFirmaRecorteImagen(comercio.getId(), producto.getId());
     }
 
-    public ImagenProductoResponseDTO agregarImagen(Integer usuarioId, Integer productoId, ImagenProductoRequestDTO request) {
-        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+    public ImagenProductoResponseDTO agregarImagen(Integer comercioId, Integer productoId, ImagenProductoRequestDTO request) {
+        Comercio comercio = obtenerComercio(comercioId);
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
 
         long existentes = imagenProductoRepository.countByProductoId(productoId);
@@ -301,16 +301,16 @@ public class ProductoService {
         return new ImagenProductoResponseDTO(imagen.getId(), imagen.getUrl(), imagen.getOrden(), imagen.isEsPrincipal());
     }
 
-    public void eliminarImagen(Integer usuarioId, Integer productoId, Integer imagenId) {
-        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+    public void eliminarImagen(Integer comercioId, Integer productoId, Integer imagenId) {
+        Comercio comercio = obtenerComercio(comercioId);
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
         ImagenProducto imagen = obtenerImagenDelProducto(imagenId, producto);
         imagenProductoRepository.delete(imagen);
         recalcularImagenPrincipal(productoId);
     }
 
-    public ImagenProductoResponseDTO reordenarImagen(Integer usuarioId, Integer productoId, Integer imagenId, Integer nuevoOrden) {
-        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+    public ImagenProductoResponseDTO reordenarImagen(Integer comercioId, Integer productoId, Integer imagenId, Integer nuevoOrden) {
+        Comercio comercio = obtenerComercio(comercioId);
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
         ImagenProducto imagen = obtenerImagenDelProducto(imagenId, producto);
 
@@ -322,8 +322,8 @@ public class ProductoService {
         return new ImagenProductoResponseDTO(actualizada.getId(), actualizada.getUrl(), actualizada.getOrden(), actualizada.isEsPrincipal());
     }
 
-    public ImagenProductoResponseDTO actualizarUrlImagen(Integer usuarioId, Integer productoId, Integer imagenId, String nuevaUrl) {
-        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+    public ImagenProductoResponseDTO actualizarUrlImagen(Integer comercioId, Integer productoId, Integer imagenId, String nuevaUrl) {
+        Comercio comercio = obtenerComercio(comercioId);
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
         ImagenProducto imagen = obtenerImagenDelProducto(imagenId, producto);
 
@@ -395,8 +395,8 @@ public class ProductoService {
         }
     }
 
-    private Comercio obtenerComercioDelUsuario(Integer usuarioId) {
-        return comercioRepository.findByDuenoId(usuarioId)
+    private Comercio obtenerComercio(Integer comercioId) {
+        return comercioRepository.findById(comercioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
     }
 

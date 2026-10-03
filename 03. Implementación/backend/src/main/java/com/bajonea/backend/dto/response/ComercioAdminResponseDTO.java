@@ -3,6 +3,8 @@ package com.bajonea.backend.dto.response;
 import com.bajonea.backend.enums.CondicionIva;
 import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.TipoComercio;
+import com.bajonea.backend.enums.TipoPersonaJuridica;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Getter;
@@ -13,7 +15,8 @@ import lombok.Getter;
  * comercios ya aprobados (Fase 16 Tramo 8 y Tramo 21). Nunca usada por {@code ComercioController}
  * (perfil propio, mismo campo {@code representante}) ni {@code CatalogoController} (público, usa
  * {@code ComercioPublicoResponseDTO}, sin este campo). Suma {@code fechaRegistro},
- * {@code condicionIva}, {@code emailCuenta} (email de login, {@code Usuario.email}) y
+ * {@code condicionIva}, {@code tipoSociedad}, {@code domicilioFiscal}, {@code fechaInicioActividades}
+ * (los datos fiscales completos, para que el Administrador compare una re-solicitud), {@code emailCuenta} (email de login, {@code Usuario.email}) y
  * {@code fotoPerfilUrl}, datos que un Administrador necesita para revisar o listar un comercio
  * pero que no corresponde exponer en el perfil público de un comercio ya aprobado.
  * {@code representante} puede ser {@code null} para comercios registrados antes de la corrección
@@ -21,6 +24,11 @@ import lombok.Getter;
  * {@code PersonaFisica} asociada. {@code redesSociales} suma las redes sociales activas del
  * comercio (Bloque 1 de la corrección del gap de la Fase 2 de Postman de Administrador, ver
  * docs/DECISIONES.md) — lista vacía si el comercio no tiene ninguna activa, nunca {@code null}.
+ * <p>
+ * {@code duenoId}, {@code esAdicional} y {@code otrosComercios} (multi-comercio, tramo 2A) solo se
+ * pueblan en el listado de pendientes: dicen si la solicitud es de un Dueño que ya tuvo otro comercio
+ * aprobado y cuáles son los demás comercios de ese Dueño (en cualquier estado, incluidas otras altas
+ * pendientes). En el listado de aprobados valen {@code null}, {@code false} y lista vacía.
  */
 @Getter
 public class ComercioAdminResponseDTO {
@@ -39,11 +47,17 @@ public class ComercioAdminResponseDTO {
     private final String razonSocial;
     private final String cuit;
     private final CondicionIva condicionIva;
+    private final TipoPersonaJuridica tipoSociedad;
+    private final String domicilioFiscal;
+    private final LocalDate fechaInicioActividades;
     private final LocalDateTime fechaRegistro;
     private final DireccionResponseDTO direccion;
     private final List<HorarioResponseDTO> horarios;
     private final RepresentanteResponseDTO representante;
     private final List<RedSocialResponseDTO> redesSociales;
+    private final Integer duenoId;
+    private final boolean esAdicional;
+    private final List<OtroComercioDuenoResponseDTO> otrosComercios;
 
     public ComercioAdminResponseDTO(
             Integer id,
@@ -60,11 +74,17 @@ public class ComercioAdminResponseDTO {
             String razonSocial,
             String cuit,
             CondicionIva condicionIva,
+            TipoPersonaJuridica tipoSociedad,
+            String domicilioFiscal,
+            LocalDate fechaInicioActividades,
             LocalDateTime fechaRegistro,
             DireccionResponseDTO direccion,
             List<HorarioResponseDTO> horarios,
             RepresentanteResponseDTO representante,
-            List<RedSocialResponseDTO> redesSociales) {
+            List<RedSocialResponseDTO> redesSociales,
+            Integer duenoId,
+            boolean esAdicional,
+            List<OtroComercioDuenoResponseDTO> otrosComercios) {
         this.id = id;
         this.nombre = nombre;
         this.descripcion = descripcion;
@@ -79,10 +99,16 @@ public class ComercioAdminResponseDTO {
         this.razonSocial = razonSocial;
         this.cuit = cuit;
         this.condicionIva = condicionIva;
+        this.tipoSociedad = tipoSociedad;
+        this.domicilioFiscal = domicilioFiscal;
+        this.fechaInicioActividades = fechaInicioActividades;
         this.fechaRegistro = fechaRegistro;
         this.direccion = direccion;
         this.horarios = horarios;
         this.representante = representante;
         this.redesSociales = redesSociales;
+        this.duenoId = duenoId;
+        this.esAdicional = esAdicional;
+        this.otrosComercios = otrosComercios;
     }
 }

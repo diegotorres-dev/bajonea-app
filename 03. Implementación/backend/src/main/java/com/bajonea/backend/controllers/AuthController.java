@@ -14,6 +14,7 @@ import com.bajonea.backend.dto.request.ValidarCodigoRecuperacionRequestDTO;
 import com.bajonea.backend.dto.request.VerificarCodigoRequestDTO;
 import com.bajonea.backend.dto.response.ApiResponse;
 import com.bajonea.backend.dto.response.CloudinarySignatureResponseDTO;
+import com.bajonea.backend.dto.response.DisponibilidadNombreUsuarioResponseDTO;
 import com.bajonea.backend.dto.response.LoginResponseDTO;
 import com.bajonea.backend.dto.response.UsuarioResponseDTO;
 import com.bajonea.backend.services.AuthService;
@@ -30,6 +31,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -47,6 +49,13 @@ public class AuthController {
             @Valid @RequestBody RegistroClienteRequestDTO request) {
         UsuarioResponseDTO response = registroService.registrarCliente(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>("Cliente registrado correctamente, verificá tu email", response));
+    }
+
+    @GetMapping("/nombre-usuario/disponibilidad")
+    public ResponseEntity<ApiResponse<DisponibilidadNombreUsuarioResponseDTO>> consultarDisponibilidadNombreUsuario(
+            @RequestParam String nombreUsuario) {
+        DisponibilidadNombreUsuarioResponseDTO response = registroService.consultarDisponibilidadNombreUsuario(nombreUsuario);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Consulta realizada correctamente", response));
     }
 
     @PostMapping("/registro/cliente/foto-firma")

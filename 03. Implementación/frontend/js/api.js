@@ -2,6 +2,11 @@ export const API_BASE_URL = 'http://localhost:8080/api/v1';
 
 const TOKEN_KEY = 'bajonea_token';
 const USUARIO_KEY = 'bajonea_usuario';
+const COMERCIO_ACTIVO_KEY = 'bajonea_comercio_activo';
+const ULTIMO_COMERCIO_PREFIX = 'bajonea_ultimo_comercio_';
+const HEADER_COMERCIO_ID = 'X-Comercio-Id';
+const RUTAS_DEL_DUENO = /^\/(comercios\/(perfil|redes-sociales)|productos|pedidos\/comercio|notificaciones)(?=[/?]|$)/;
+const RUTAS_DEL_DUENO_SIN_HEADER = /^\/notificaciones\/comercio\//;
 const REQUEST_TIMEOUT_MS = 15000;
 
 export class ApiError extends Error {
@@ -29,6 +34,55 @@ export function getUsuario() {
 export function clearSesion() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USUARIO_KEY);
+  clearComercioActivoId();
+}
+
+export function getComercioActivoId() {
+  const usuario = getUsuario();
+  if (!usuario) {
+    return null;
+  }
+  try {
+    const guardado = JSON.parse(sessionStorage.getItem(COMERCIO_ACTIVO_KEY));
+    if (guardado && guardado.usuarioId === usuario.id && Number.isInteger(guardado.comercioId)) {
+      return guardado.comercioId;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+export function getUltimoComercioId() {
+  const usuario = getUsuario();
+  if (!usuario) {
+    return null;
+  }
+  const valor = Number(localStorage.getItem(`${ULTIMO_COMERCIO_PREFIX}${usuario.id}`));
+  return Number.isInteger(valor) && valor > 0 ? valor : null;
+}
+
+export function setComercioActivoId(comercioId) {
+  const usuario = getUsuario();
+  if (!usuario) {
+    return;
+  }
+  sessionStorage.setItem(COMERCIO_ACTIVO_KEY, JSON.stringify({ usuarioId: usuario.id, comercioId }));
+  localStorage.setItem(`${ULTIMO_COMERCIO_PREFIX}${usuario.id}`, String(comercioId));
+}
+
+export function clearComercioActivoId() {
+  sessionStorage.removeItem(COMERCIO_ACTIVO_KEY);
+}
+
+function comercioParaLaRequest(path, usuario, comercioId, sinComercio) {
+  if (sinComercio || !usuario || usuario.rol !== 'DUENO') {
+    return null;
+  }
+  if (!RUTAS_DEL_DUENO.test(path) || RUTAS_DEL_DUENO_SIN_HEADER.test(path)) {
+    return null;
+  }
+  return comercioId !== undefined && comercioId !== null ? comercioId : getComercioActivoId();
 }
 
 function redirectTo(path, includeRetorno = false) {
@@ -92,12 +146,16 @@ async function parseBody(response) {
   }
 }
 
-export async function apiFetch(path, { method = 'GET', body, auth = true, handle401Globally = true, handle5xxGlobally = true } = {}) {
+export async function apiFetch(path, { method = 'GET', body, auth = true, handle401Globally = true, handle5xxGlobally = true, comercioId, sinComercio = false } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   const token = getToken();
   const hadToken = Boolean(auth && token);
   if (hadToken) {
     headers.Authorization = `Bearer ${token}`;
+    const comercio = comercioParaLaRequest(path, getUsuario(), comercioId, sinComercio);
+    if (comercio !== null) {
+      headers[HEADER_COMERCIO_ID] = String(comercio);
+    }
   }
 
   const controller = new AbortController();

@@ -11,18 +11,13 @@ import {
   diaDeHoy,
   diaDistintoDeHoy,
   nombreArchivoFixture,
+  nombreUsuarioUnico,
+  esperarImagenCargadaEnRecorte,
 } from './helpers/backend';
 
 const FIXTURE_PATH = path.resolve(__dirname, '../fixtures/bajonea-e2e-producto.png');
 const FIXTURE_BUFFER = readFileSync(FIXTURE_PATH);
 
-/**
- * Tramo dedicado a lo que solo tiene sentido probar con navegador real sobre el wizard de
- * registro de Comercio (4 pasos): retención de datos entre pasos, bloqueo de teclado en vivo,
- * boundary de maxlength, y el comportamiento de los 2 tabs de "3. Horarios" sobre el mismo
- * array subyacente. El flujo feliz completo y los casos de "campo vacío"/"CUIT inválido" en
- * paso 1/2 ya están cubiertos en 01-registro-y-verificacion.spec.ts -- no se repiten acá.
- */
 test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado en vivo y horarios', () => {
   let localidadId: string;
 
@@ -45,6 +40,7 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
     await expect(page.getByTestId('modal-recorte-imagen')).toBeVisible();
     await expect(page.getByTestId('canvas-recorte')).toBeVisible();
     await expect(page.getByTestId('input-zoom-recorte')).toBeVisible();
+    await esperarImagenCargadaEnRecorte(page);
     await page.getByTestId('btn-confirmar-recorte').click();
     await expect(page.getByTestId('modal-recorte-imagen')).toHaveCount(0);
   }
@@ -93,6 +89,7 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
     await page.getByTestId('input-dni-representante').fill(datos.dniRepresentante);
     await page.getByTestId('input-fecha-nacimiento-representante').fill('1985-03-15');
     await page.getByTestId('input-telefono-representante').fill(datos.telefonoRepresentante);
+    await page.getByTestId('input-nombre-usuario').fill(nombreUsuarioUnico('com'));
     await page.getByTestId('input-email').fill(datos.email);
     await page.getByTestId('input-password').fill(datos.password);
     await page.getByTestId('input-confirmar-password').fill(datos.password);
@@ -114,8 +111,6 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
     await page.getByTestId('btn-continuar').click();
     await expect(page.getByTestId('input-razon-social')).toBeVisible();
 
-    // Razón social queda vacía a propósito -- el resto de paso 2 sí se completa, para aislar
-    // la validación de un único campo.
     const cuit = generarCuit();
     const dniRepresentante = generarDni();
     const telefonoRepresentante = generarTelefono();
@@ -129,6 +124,7 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
     await page.getByTestId('input-dni-representante').fill(dniRepresentante);
     await page.getByTestId('input-fecha-nacimiento-representante').fill('1985-03-15');
     await page.getByTestId('input-telefono-representante').fill(telefonoRepresentante);
+    await page.getByTestId('input-nombre-usuario').fill(nombreUsuarioUnico('com'));
     await page.getByTestId('input-email').fill(`comercio.wizard.login.${suf}@bajonea.test`);
     await page.getByTestId('input-password').fill('Testing123');
     await page.getByTestId('input-confirmar-password').fill('Testing123');
@@ -136,10 +132,8 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
     await page.getByTestId('btn-continuar-2').click();
     await expect(page.getByTestId('mensaje-error-razon-social')).toBeVisible();
     await expect(page.getByTestId('mensaje-error-razon-social')).toContainText('La razón social es obligatoria');
-    // Sigue en paso 2, no avanzó a horarios.
     await expect(page.getByTestId('lista-horarios')).toBeHidden();
 
-    // Volver al paso 1 con el botón de "atrás" del wizard (no el back del navegador).
     await page.getByTestId('btn-volver').click();
     await expect(page.getByTestId('input-nombre')).toBeVisible();
     await expect(page.getByTestId('input-nombre')).toHaveValue(paso1.nombre);
@@ -148,11 +142,8 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
     await expect(page.getByTestId('input-calle')).toHaveValue(paso1.calle);
     await expect(page.getByTestId('input-numero')).toHaveValue(paso1.numero);
     await expect(page.getByTestId('input-codigo-postal')).toHaveValue(paso1.codigoPostal);
-    // La foto ya recortada tampoco se resetea -- avanza sin volver a pedirla.
     await page.getByTestId('btn-continuar').click();
 
-    // De vuelta en paso 2: los datos que sí se habían completado (incluida la razón social,
-    // que quedó vacía) siguen ahí, no se limpiaron al ir y volver.
     await expect(page.getByTestId('input-cuit')).toHaveValue(cuit);
     await expect(page.getByTestId('input-dni-representante')).toHaveValue(dniRepresentante);
     await expect(page.getByTestId('input-razon-social')).toHaveValue('');
@@ -174,18 +165,14 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
 
     const cuitInput = page.getByTestId('input-cuit');
     await cuitInput.pressSequentially('ab30-12345678-9cd');
-    // cuitInput filtra no-dígitos y trunca a 11 en cada keystroke (auth.js) -- de la cadena de
-    // arriba solo sobreviven los dígitos "301234567 89", truncados a los primeros 11.
     await expect(cuitInput).toHaveValue('30123456789');
 
     const dniInput = page.getByTestId('input-dni-representante');
     await dniInput.pressSequentially('xy12.345-678zw90');
-    // Mismo criterio: solo dígitos, truncado a 8 mientras se tipea.
     await expect(dniInput).toHaveValue('12345678');
 
     const telefonoRepInput = page.getByTestId('input-telefono-representante');
     await telefonoRepInput.pressSequentially('29-64 abc987654321');
-    // Solo dígitos, truncado a 10 mientras se tipea.
     await expect(telefonoRepInput).toHaveValue('2964987654');
   });
 
@@ -241,8 +228,6 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
     });
     await page.getByTestId('btn-continuar-2').click();
 
-    // Arranca en el tab "Horario fijo" (activo por default). Ahí cargamos una franja rápida
-    // para "hoy".
     await expect(page.getByTestId('panel-horario-fijo')).toBeVisible();
     await page.getByTestId(`chip-dia-franja-rapida-${diaDeHoy()}`).click();
     await page.getByTestId('input-franja-rapida-desde').fill('09:00');
@@ -250,12 +235,8 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
     await page.getByTestId('btn-aplicar-franja-rapida').click();
     await expect(page.getByTestId('fila-resumen-horario')).toHaveCount(1);
 
-    // Cambiamos al tab "Personalizado" y cargamos una segunda franja a mano, para un día
-    // distinto -- sobre el mismo array subyacente (horarioList) que ya tiene la fila de arriba.
     await page.getByTestId('tab-horario-personalizado').click();
     await expect(page.getByTestId('panel-horario-personalizado')).toBeVisible();
-    // La fila que ya había cargado la franja rápida vive en el mismo <div id="horario-list">
-    // que este tab muestra -- confirmamos que ya está ahí antes de agregar la segunda a mano.
     await expect(page.getByTestId('fila-horario')).toHaveCount(1);
     await page.getByTestId('btn-agregar-horario').click();
     await expect(page.getByTestId('fila-horario')).toHaveCount(2);
@@ -264,8 +245,6 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
     await filas.nth(1).getByTestId('input-apertura-horario').fill('10:00');
     await filas.nth(1).getByTestId('input-cierre-horario').fill('20:00');
 
-    // Volvemos al tab "Horario fijo": el resumen "Ya cargaste" tiene que mostrar las 2 franjas,
-    // la de la franja rápida y la cargada recién a mano en "Personalizado".
     await page.getByTestId('tab-horario-fijo').click();
     await expect(page.getByTestId('panel-horario-fijo')).toBeVisible();
     await expect(page.getByTestId('fila-resumen-horario')).toHaveCount(2);
@@ -301,9 +280,6 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
 
     const hoy = diaDeHoy();
     await page.getByTestId('tab-horario-personalizado').click();
-    // "lista-horarios" (<div id="horario-list">) todavía está vacío en este punto -- un
-    // contenedor sin filas colapsa a altura 0 y Playwright lo reporta "hidden" pese a que el
-    // panel que lo envuelve sí está visible. Confirmamos el panel, no el contenedor vacío.
     await expect(page.getByTestId('panel-horario-personalizado')).toBeVisible();
     await page.getByTestId('btn-agregar-horario').click();
     const filas = page.getByTestId('fila-horario');
@@ -311,21 +287,16 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
     await filas.nth(0).getByTestId('input-apertura-horario').fill('09:00');
     await filas.nth(0).getByTestId('input-cierre-horario').fill('13:00');
 
-    // Segunda franja, mismo día, que se superpone con la anterior (12:00 cae dentro de 09-13).
     await page.getByTestId('btn-agregar-horario').click();
     await expect(filas).toHaveCount(2);
     await filas.nth(1).getByTestId('select-dia-horario').selectOption(hoy);
     await filas.nth(1).getByTestId('input-apertura-horario').fill('12:00');
-    // El listener de "change" sobre horario-cierre dispara validarFilaHorario() apenas se
-    // completa la fila -- no hace falta enviar el formulario para ver el mensaje en el DOM.
     await filas.nth(1).getByTestId('input-cierre-horario').fill('16:00');
 
     await expect(page.getByTestId('mensaje-error-horarios')).toBeVisible();
     await expect(page.getByTestId('mensaje-error-horarios')).toContainText('se superpone con este');
     await expect(page.getByTestId('mensaje-error-horarios')).toContainText('09:00 a 13:00');
 
-    // El botón "Continuar" del paso 3 corre la misma validación sobre el conjunto completo y
-    // bloquea el avance mientras el conflicto siga ahí.
     await page.getByTestId('btn-continuar-3').click();
     await expect(page.getByTestId('lista-redes-sociales')).toBeHidden();
     await expect(page.getByTestId('mensaje-banner')).toContainText('se superpone con este');

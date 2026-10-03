@@ -79,6 +79,14 @@ public class Comercio {
     private EstadoComercio estado;
 
     @Setter
+    @Column(name = "fecha_resolicitud")
+    private LocalDateTime fechaResolicitud;
+
+    @Setter
+    @Column(name = "cantidad_resolicitudes", nullable = false)
+    private int cantidadResolicitudes;
+
+    @Setter
     @Column(name = "fecha_registro", nullable = false, updatable = false)
     private LocalDateTime fechaRegistro;
 

@@ -14,16 +14,16 @@
   <main class="app-main">
     <div class="screen-body">
       <h1 class="title-lg">Bienvenido de vuelta</h1>
-      <p class="subtitle">Ingresá con tu email y contraseña.</p>
+      <p class="subtitle">Ingresá con tu nombre de usuario y contraseña.</p>
       <div id="banner-slot" data-testid="mensaje-banner"></div>
       <form class="form" id="login-form" novalidate>
-        <div class="field" id="field-email">
-          <label class="field__label" for="email">Email</label>
-          <div class="input-shell" id="shell-email">
+        <div class="field" id="field-nombre-usuario">
+          <label class="field__label" for="nombreUsuario">Nombre de usuario</label>
+          <div class="input-shell" id="shell-nombre-usuario">
             <span class="input-shell__icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             </span>
-            <input type="email" id="email" name="email" placeholder="tu@email.com" autocomplete="username" required data-testid="input-email" />
+            <input type="text" id="nombreUsuario" name="nombreUsuario" placeholder="Usuario" autocomplete="username" autocapitalize="none" spellcheck="false" required data-testid="input-nombre-usuario" />
           </div>
         </div>
         <div class="field" id="field-password">

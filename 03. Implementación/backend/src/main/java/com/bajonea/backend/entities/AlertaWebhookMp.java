@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -46,6 +47,14 @@ public class AlertaWebhookMp {
     @Setter
     @Column(name = "mp_external_reference", length = 120)
     private String mpExternalReference;
+
+    @Setter
+    @Column(name = "monto_esperado", precision = 10, scale = 2)
+    private BigDecimal montoEsperado;
+
+    @Setter
+    @Column(name = "monto_capturado", precision = 10, scale = 2)
+    private BigDecimal montoCapturado;
 
     @Setter
     @Enumerated(EnumType.STRING)

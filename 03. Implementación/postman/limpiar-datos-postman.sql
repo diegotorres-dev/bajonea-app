@@ -62,12 +62,16 @@ DELETE FROM producto_tag WHERE producto_id IN (SELECT id FROM producto WHERE com
 DELETE FROM imagen_producto WHERE producto_id IN (SELECT id FROM producto WHERE comercio_id IN (SELECT id FROM tmp_com));
 DELETE FROM producto WHERE comercio_id IN (SELECT id FROM tmp_com);
 DELETE FROM horario WHERE comercio_id IN (SELECT id FROM tmp_com);
+DELETE FROM historial_cambio_comercio WHERE historial_estado_comercio_id IN (SELECT id FROM historial_estado_comercio WHERE comercio_id IN (SELECT id FROM tmp_com));
 DELETE FROM historial_estado_comercio WHERE comercio_id IN (SELECT id FROM tmp_com);
 DELETE FROM historial_estado_usuario WHERE usuario_id IN (SELECT id FROM tmp_usr);
 DELETE FROM direccion WHERE cliente_id IN (SELECT id FROM tmp_usr) OR comercio_id IN (SELECT id FROM tmp_com);
 DELETE FROM sesion WHERE usuario_id IN (SELECT id FROM tmp_usr);
 DELETE FROM token WHERE usuario_id IN (SELECT id FROM tmp_usr);
 DELETE FROM comercio WHERE id IN (SELECT id FROM tmp_com);
+-- Tramo 5 multi-comercio: la cuenta activa de un Dueño de prueba (mp_user_id fijo en la carpeta 52)
+-- tiene que desaparecer con el, o la unicidad de cuenta activa bloquearia la proxima corrida.
+DELETE FROM cuenta_mercado_pago WHERE dueno_id IN (SELECT id FROM tmp_usr);
 DELETE FROM dueno WHERE id IN (SELECT id FROM tmp_usr);
 DELETE FROM cliente WHERE id IN (SELECT id FROM tmp_usr);
 DELETE FROM administrador WHERE id IN (SELECT id FROM tmp_usr);

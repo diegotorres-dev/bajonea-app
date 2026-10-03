@@ -75,6 +75,7 @@ public class MercadoPagoPagoService {
     private static final String MONEDA = "ARS";
     private static final String ESTADO_APROBADO = "approved";
     private static final List<String> ESTADOS_RECHAZO = List.of("rejected", "cancelled");
+    private static final BigDecimal TOLERANCIA_SPLIT = new BigDecimal("0.01");
 
     private final PedidoService pedidoService;
     private final PagoService pagoService;
@@ -139,8 +140,8 @@ public class MercadoPagoPagoService {
         return consultar(pedidoService.obtenerPedidoDelCliente(usuarioId, pedidoId));
     }
 
-    public PagoResponseDTO consultarComoComercio(Integer usuarioId, Integer pedidoId) {
-        return consultar(pedidoService.obtenerPedidoDelComercio(usuarioId, pedidoId));
+    public PagoResponseDTO consultarComoComercio(Integer comercioId, Integer pedidoId) {
+        return consultar(pedidoService.obtenerPedidoDelComercio(comercioId, pedidoId));
     }
 
     private PagoResponseDTO consultar(Pedido pedido) {
@@ -284,6 +285,7 @@ public class MercadoPagoPagoService {
             } else if (pedido.getPagoEstado() != EstadoPagoPedido.PAGADO) {
                 alertaWebhookMpService.registrarPagoAprobadoSobrePedidoCancelado(pedido, paymentId, ipOrigen);
             }
+            verificarSplitAplicado(pedido, paymentId, pagoMp, ipOrigen);
             return;
         }
 
@@ -294,6 +296,33 @@ public class MercadoPagoPagoService {
         if (ESTADOS_RECHAZO.contains(pagoMp.status())) {
             pedidoService.marcarPagoRechazado(pedido.getId());
         }
+    }
+
+    /**
+     * Confirma contra la propia respuesta de MercadoPago (nunca contra lo que Bajoneá calculó de
+     * antemano) que el split de marketplace se aplicó de verdad sobre este pago aprobado. Nunca
+     * bloquea ni revierte nada del pedido/pago — el cliente ya pagó y el comercio ya tiene su
+     * pedido; si el split falló o vino con un monto distinto al esperado, queda solo como
+     * {@link AlertaWebhookMpService#registrarSplitNoAplicado} para revisión manual.
+     */
+    private void verificarSplitAplicado(Pedido pedido, String paymentId, PagoMpResponse pagoMp, String ipOrigen) {
+        BigDecimal montoEsperado = pedido.getCargoServicioCliente().add(pedido.getCargoServicioComercio());
+        BigDecimal montoCapturado = pagoMp.feeDetails() == null ? null : pagoMp.feeDetails().stream()
+                .filter(fee -> "application_fee".equals(fee.type()))
+                .map(FeeDetail::amount)
+                .findFirst()
+                .orElse(null);
+
+        boolean coincide = montoCapturado != null
+                && montoEsperado.subtract(montoCapturado).abs().compareTo(TOLERANCIA_SPLIT) <= 0;
+        if (coincide) {
+            log.info("MercadoPago: split de marketplace confirmado para pedidoId={}, paymentId={} — monto={}",
+                    pedido.getId(), paymentId, montoCapturado);
+            return;
+        }
+        log.warn("MercadoPago: split de marketplace no coincide para pedidoId={}, paymentId={} — esperado={}, capturado={}",
+                pedido.getId(), paymentId, montoEsperado, montoCapturado);
+        alertaWebhookMpService.registrarSplitNoAplicado(pedido, paymentId, montoEsperado, montoCapturado, ipOrigen);
     }
 
     private PagoMpResponse buscarMejorPagoPorReferencia(Integer pedidoId, String accessToken) {
@@ -472,6 +501,17 @@ public class MercadoPagoPagoService {
             String status,
             @JsonProperty("status_detail") String statusDetail,
             @JsonProperty("external_reference") String externalReference,
-            @JsonProperty("payment_type_id") String paymentTypeId) {
+            @JsonProperty("payment_type_id") String paymentTypeId,
+            @JsonProperty("fee_details") List<FeeDetail> feeDetails) {
+    }
+
+    /**
+     * Tal como lo documenta MercadoPago para el recurso {@code Payment}: {@code fee_details} trae
+     * una entrada por cada comisión aplicada al pago. La del split de marketplace (nuestro
+     * {@code marketplace_fee} de la preferencia) aparece siempre con {@code type=application_fee}
+     * — mismo nombre de tipo que usa la API de Pagos para su propio campo {@code application_fee},
+     * aunque acá el split se haya originado por {@code marketplace_fee} en la preferencia.
+     */
+    private record FeeDetail(String type, @JsonProperty("fee_payer") String feePayer, BigDecimal amount) {
     }
 }

@@ -16,27 +16,20 @@ import {
   sufijoUnico,
   diaDeHoy,
   aTitleCase,
+  esperarImagenCargadaEnRecorte,
 } from './helpers/backend';
 
 const FIXTURE_PATH = path.resolve(__dirname, '../fixtures/bajonea-e2e-producto.png');
 const FIXTURE_BUFFER = readFileSync(FIXTURE_PATH);
 
-async function loginUi(page: import('@playwright/test').Page, email: string, password: string) {
+async function loginUi(page: import('@playwright/test').Page, usuario: string, password: string) {
   await page.goto('/login.html');
-  await page.getByTestId('input-email').fill(email);
+  await page.getByTestId('input-nombre-usuario').fill(usuario);
   await page.getByTestId('input-password').fill(password);
   await page.getByTestId('btn-ingresar').click();
   await page.waitForURL('**/comercio-dashboard.html');
 }
 
-/**
- * Sube una foto pasando por el editor de recorte real (js/crop.js). En modo "editar" (producto
- * ya existente) confirmar el recorte dispara la subida real a Cloudinary de inmediato
- * (js/comercio.js, listener de #input-foto -> subirImagenProducto). En modo "crear" (alta nueva,
- * sin id todavía) confirmar el recorte solo deja la foto en `fotosStaged` -- la subida real recién
- * ocurre más tarde, dentro del mismo click de "Crear producto" (ver el for de fotosStaged en el
- * submit handler) -- por eso acá NO hay que esperar ninguna respuesta de red.
- */
 async function subirFotoViaCropUi(
   page: import('@playwright/test').Page,
   { modo = 'editar', esperar409 = false }: { modo?: 'crear' | 'editar'; esperar409?: boolean } = {},
@@ -51,6 +44,7 @@ async function subirFotoViaCropUi(
   await expect(page.getByTestId('input-zoom-recorte')).toBeVisible();
 
   if (modo === 'crear') {
+    await esperarImagenCargadaEnRecorte(page);
     await page.getByTestId('btn-confirmar-recorte').click();
     await expect(page.getByTestId('modal-recorte-imagen')).toHaveCount(0);
     return null;
@@ -59,6 +53,7 @@ async function subirFotoViaCropUi(
   const firmaResponse = page.waitForResponse(
     (res) => res.url().endsWith('/cloudinary/firma') && res.request().method() === 'POST',
   );
+  await esperarImagenCargadaEnRecorte(page);
   await page.getByTestId('btn-confirmar-recorte').click();
   const respuesta = await firmaResponse;
   if (esperar409) {
@@ -70,7 +65,7 @@ async function subirFotoViaCropUi(
 }
 
 test.describe('CRUD de producto del Comercio', () => {
-  let comercioEmail: string;
+  let comercioUsuario: string;
   let comercioPassword: string;
   let categoriaId: number;
   let localidadId: string;
@@ -87,16 +82,15 @@ test.describe('CRUD de producto del Comercio', () => {
     });
     const pendiente = await buscarComercioPendientePorEmail(request, adminSesion.token, comercio.email);
     await resolverComercio(request, adminSesion.token, pendiente.id, true);
-    comercioEmail = comercio.email;
+    comercioUsuario = comercio.nombreUsuario;
     comercioPassword = comercio.password;
   });
 
   test('crear un producto con nombre, precio, categoría e imagen real (recorte + Cloudinary): aparece en el listado con su foto', async ({ page }) => {
     const suf = sufijoUnico();
-    // ProductoService normaliza el nombre a Title Case al persistir -- "E2E" vuelve "E2e".
     const nombre = aTitleCase(`Producto Nuevo E2E ${suf}`);
 
-    await loginUi(page, comercioEmail, comercioPassword);
+    await loginUi(page, comercioUsuario, comercioPassword);
     await page.goto('/comercio-productos.html');
     await page.getByTestId('btn-crear-producto').click();
     await page.waitForURL('**/comercio-producto-form.html');
@@ -117,10 +111,6 @@ test.describe('CRUD de producto del Comercio', () => {
     expect(respuesta.status()).toBe(201);
     const productoId = (await respuesta.json()).data.id as number;
 
-    // La subida real de la foto staged (firma + Cloudinary + POST /imagenes) ocurre recién acá,
-    // en el mismo submit, después de que el producto ya se creó -- por eso el timeout generoso.
-    // El alta redirige con "?productoCreado=1" (la edición no agrega query string) -- el patrón
-    // sin comodín final no matcheaba esa query string y el waitForURL colgaba hasta el timeout.
     await page.waitForURL('**/comercio-productos.html*', { timeout: 20000 });
 
     const fila = page.getByTestId(`producto-item-${productoId}`);
@@ -132,7 +122,7 @@ test.describe('CRUD de producto del Comercio', () => {
 
   test('editar un producto: cambia nombre y precio, saca la foto original y agrega una nueva', async ({ page, request }) => {
     const suf = sufijoUnico();
-    const comercioSesion = await login(request, comercioEmail, comercioPassword);
+    const comercioSesion = await login(request, comercioUsuario, comercioPassword);
     const productoId = await crearProducto(request, comercioSesion.token, {
       nombre: `Producto Editar E2E ${suf}`,
       precio: 1000,
@@ -143,14 +133,12 @@ test.describe('CRUD de producto del Comercio', () => {
       esPrincipal: true,
     });
 
-    // ProductoService normaliza el nombre a Title Case al persistir -- "E2E" vuelve "E2e".
     const nombreNuevo = aTitleCase(`Producto Editado E2E ${suf}`);
 
-    await loginUi(page, comercioEmail, comercioPassword);
+    await loginUi(page, comercioUsuario, comercioPassword);
     await page.goto(`/comercio-producto-form.html?id=${productoId}`);
 
     await expect(page.getByTestId('galeria-fotos-producto').locator('img')).toHaveCount(1);
-    // ProductoService normaliza el nombre a Title Case al persistir -- "E2E" vuelve "E2e".
     await expect(page.getByTestId('input-nombre-producto')).toHaveValue(aTitleCase(`Producto Editar E2E ${suf}`));
 
     const eliminarResponse = page.waitForResponse(
@@ -181,14 +169,14 @@ test.describe('CRUD de producto del Comercio', () => {
 
   test('ciclo de estados: agotado, disponible de nuevo, y descontinuar (irreversible)', async ({ page, request }) => {
     const suf = sufijoUnico();
-    const comercioSesion = await login(request, comercioEmail, comercioPassword);
+    const comercioSesion = await login(request, comercioUsuario, comercioPassword);
     const productoId = await crearProducto(request, comercioSesion.token, {
       nombre: `Producto Estados E2E ${suf}`,
       precio: 3000,
       categoriaId,
     });
 
-    await loginUi(page, comercioEmail, comercioPassword);
+    await loginUi(page, comercioUsuario, comercioPassword);
     await page.goto('/comercio-productos.html');
 
     const fila = page.getByTestId(`producto-item-${productoId}`);
@@ -239,19 +227,7 @@ test.describe('CRUD de producto del Comercio', () => {
   test('casos negativos: nombre vacío no se envía, precio negativo lo rechaza el backend, y el límite de 5 fotos por producto se respeta', async ({ page, request }) => {
     const suf = sufijoUnico();
 
-    // El input de precio (js/comercio.js, formatearMilesInput) filtra cualquier caracter que no
-    // sea dígito en cada tecleo -- un usuario real no puede escribir "-500" ni "abc" en ese campo,
-    // así que el caso "precio negativo o no numérico" no es alcanzable desde la UI. Se prueba acá
-    // directo contra el backend real (misma cuenta bajonea_test), para confirmar que el
-    // @Positive de ProductoRequestDTO efectivamente lo rechaza si algo más que este formulario
-    // (Postman, otro cliente) intentara mandarlo.
-    //
-    // Todo el setup por API (incluido este login) va ANTES del login por UI: el modelo de sesión
-    // única de Bajoneá (Sesion.activa, ver CLAUDE.md §7) invalida la sesión anterior de la MISMA
-    // cuenta en cada login nuevo -- si el login por API fuera después del login por UI, la sesión
-    // del navegador quedaría invalidada a mitad del test ("Sesión cerrada" / 401 en la siguiente
-    // request). El login por UI tiene que ser el último login de este test.
-    const comercioSesion = await login(request, comercioEmail, comercioPassword);
+    const comercioSesion = await login(request, comercioUsuario, comercioPassword);
     const { status: statusNegativo } = await apiPost(request, '/productos', {
       nombre: `Producto Precio Invalido E2E ${suf}`,
       precio: -500,
@@ -277,14 +253,11 @@ test.describe('CRUD de producto del Comercio', () => {
       });
     }
 
-    await loginUi(page, comercioEmail, comercioPassword);
+    await loginUi(page, comercioUsuario, comercioPassword);
 
     await page.goto('/comercio-producto-form.html');
     await page.getByTestId('input-precio-producto').fill('1500');
     await page.getByTestId('select-categoria-producto').selectOption(String(categoriaId));
-    // La regla "al menos 1 foto obligatoria" (js/comercio.js) es real -- se respeta acá para que
-    // este bloque quede fiel al flujo real de un Comercio armando el formulario, aunque el chequeo
-    // de nombre/categoría corre antes que el de fotos en el submit.
     await subirFotoViaCropUi(page, { modo: 'crear' });
     await expect(page.getByTestId('galeria-fotos-producto').locator('img')).toHaveCount(1);
 

@@ -1,9 +1,12 @@
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
-import type { APIRequestContext, APIResponse } from '@playwright/test';
+import { execFileSync } from 'node:child_process';
+import { expect } from '@playwright/test';
+import type { APIRequestContext, APIResponse, Page } from '@playwright/test';
 
-export const API_BASE_URL = 'http://localhost:8080/api/v1';
+export const API_BASE_URL = process.env.E2E_API_BASE_URL || 'http://localhost:8080/api/v1';
 export const ADMIN_EMAIL = 'admin@bajonea.ar';
+export const ADMIN_USUARIO = 'adminbajonea';
 export const ADMIN_PASSWORD_CONOCIDA = 'AdminE2E123';
 
 const FIXTURE_PATH = path.resolve(__dirname, '../../fixtures/bajonea-e2e-producto.png');
@@ -16,6 +19,13 @@ let contadorSufijo = 0;
 export function sufijoUnico(): string {
   contadorSufijo += 1;
   return `${Date.now()}${contadorSufijo}${Math.floor(Math.random() * 1000)}`;
+}
+
+export function nombreUsuarioUnico(prefijo: string): string {
+  const marca = Date.now().toString(36);
+  const azar = Math.floor(Math.random() * 36 ** 4).toString(36).padStart(4, '0');
+  contadorSufijo += 1;
+  return `${prefijo}${marca}${azar}${contadorSufijo.toString(36)}`.slice(0, 20);
 }
 
 export function diaDeHoy(): string {
@@ -35,44 +45,88 @@ async function leerBody(response: APIResponse): Promise<any> {
   }
 }
 
+const HEADER_COMERCIO_ID = 'X-Comercio-Id';
+const RUTAS_DEL_DUENO = /^\/(comercios\/(perfil|redes-sociales)|productos|pedidos\/comercio|notificaciones)(?=[/?]|$)/;
+const RUTAS_DEL_DUENO_SIN_HEADER = /^\/notificaciones\/comercio\//;
+const comercioActivoPorToken = new Map<string, number>();
+
+export function registrarComercioActivo(token: string, comercioId: number): void {
+  comercioActivoPorToken.set(token, comercioId);
+}
+
+export function olvidarComercioActivo(token: string): void {
+  comercioActivoPorToken.delete(token);
+}
+
+function cabecerasDe(path: string, token?: string): Record<string, string> | undefined {
+  if (!token) {
+    return undefined;
+  }
+  const cabeceras: Record<string, string> = { Authorization: `Bearer ${token}` };
+  const comercioId = comercioActivoPorToken.get(token);
+  if (comercioId !== undefined && RUTAS_DEL_DUENO.test(path) && !RUTAS_DEL_DUENO_SIN_HEADER.test(path)) {
+    cabeceras[HEADER_COMERCIO_ID] = String(comercioId);
+  }
+  return cabeceras;
+}
+
 export async function apiGet(request: APIRequestContext, path: string, token?: string) {
-  const response = await request.get(`${API_BASE_URL}${path}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
+  const response = await request.get(`${API_BASE_URL}${path}`, { headers: cabecerasDe(path, token) });
   return { status: response.status(), body: await leerBody(response) };
 }
 
 export async function apiPost(request: APIRequestContext, path: string, data: unknown, token?: string) {
-  const response = await request.post(`${API_BASE_URL}${path}`, {
-    data,
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
+  const response = await request.post(`${API_BASE_URL}${path}`, { data, headers: cabecerasDe(path, token) });
   return { status: response.status(), body: await leerBody(response) };
 }
 
 export async function apiPut(request: APIRequestContext, path: string, data: unknown, token?: string) {
-  const response = await request.put(`${API_BASE_URL}${path}`, {
-    data,
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-  });
+  const response = await request.put(`${API_BASE_URL}${path}`, { data, headers: cabecerasDe(path, token) });
   return { status: response.status(), body: await leerBody(response) };
 }
 
 export async function apiDelete(request: APIRequestContext, path: string, token?: string) {
-  const response = await request.delete(`${API_BASE_URL}${path}`, {
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  const response = await request.delete(`${API_BASE_URL}${path}`, { headers: cabecerasDe(path, token) });
+  return { status: response.status(), body: await leerBody(response) };
+}
+
+export async function apiConHeaders(
+  request: APIRequestContext,
+  metodo: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
+  path: string,
+  token: string | undefined,
+  headers: Record<string, string> = {},
+  data?: unknown,
+) {
+  const response = await request.fetch(`${API_BASE_URL}${path}`, {
+    method: metodo,
+    data,
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...headers },
   });
   return { status: response.status(), body: await leerBody(response) };
 }
 
-/**
- * Mismo algoritmo que TextoUtils.aTitleCase (backend) / aTitleCase (frontend/js/validators.js):
- * RegistroService normaliza nombre/apellido, razonSocial, nombre de comercio y calle a Title
- * Case antes de persistir (Fase 2 del lote de ajustes post-migración, ver docs/DECISIONES.md).
- * Un valor como "Comercio E2E" no vuelve intacto -- vuelve "Comercio E2e" -- así que cualquier
- * assert contra el nombre real guardado en la base necesita pasar por esta misma transformación,
- * no comparar contra el string tal cual se mandó en el registro.
- */
+export async function clonarComercioTest(
+  request: APIRequestContext,
+  comercioId: number,
+  nombre: string,
+  estado?: string,
+): Promise<number> {
+  const query = `nombre=${encodeURIComponent(nombre)}${estado ? `&estado=${estado}` : ''}`;
+  const { status, body } = await apiPost(request, `/test/comercios/${comercioId}/clonar?${query}`, {});
+  if (status !== 201) {
+    throw new Error(`No se pudo clonar el comercio ${comercioId}: ${status} ${JSON.stringify(body)}`);
+  }
+  return body.data as number;
+}
+
+export async function vincularMercadoPagoSimuladoTest(request: APIRequestContext, duenoId: number): Promise<void> {
+  const { status, body } = await apiPost(request, `/test/duenos/${duenoId}/mercadopago-simulada`, {});
+  if (status !== 200) {
+    throw new Error(`No se pudo vincular la cuenta simulada del dueño ${duenoId}: ${status} ${JSON.stringify(body)}`);
+  }
+}
+
 export function aTitleCase(texto: string): string {
   const minusculas = texto.toLowerCase();
   let resultado = '';
@@ -142,23 +196,10 @@ export async function obtenerLocalidadRioGrande(request: APIRequestContext): Pro
   return localidad.id as string;
 }
 
-/**
- * @ValidarTelefonoArgentino ahora exige el formato completo "+549" + 10 dígitos (antes
- * toleraba variantes) -- lo que el frontend arma vía construirTelefono() a partir de lo que
- * el usuario tipea en el input (solo los 10 dígitos). Los tests que llenan el input de la UI
- * usan generarTelefono() tal cual (correcto, el propio JS antepone "+549"); un payload de API
- * directo como los de esta función necesita el número YA completo.
- */
 function generarTelefonoCompleto(): string {
   return `+549${generarTelefono()}`;
 }
 
-/**
- * Sube una foto real a Cloudinary a través de las firmas de pre-registro (públicas, sin
- * comercioId/usuarioId todavía) que exige RegistroComercioRequestDTO.fotoPerfilUrl /
- * RegistroClienteRequestDTO.fotoPerfilUrl -- mismo criterio ya establecido en
- * subirImagenProductoDirecto (spec 06): cuenta real de Cloudinary del proyecto, no bypaseada.
- */
 export async function subirFotoPreRegistro(request: APIRequestContext, tipo: 'cliente' | 'comercio'): Promise<string> {
   const path = tipo === 'comercio' ? '/auth/registro/comercio/foto-firma' : '/auth/registro/cliente/foto-firma';
   const firmaResponse = await request.post(`${API_BASE_URL}${path}`);
@@ -185,6 +226,7 @@ export async function subirFotoPreRegistro(request: APIRequestContext, tipo: 'cl
 }
 
 export interface ClienteRegistrado {
+  nombreUsuario: string;
   email: string;
   password: string;
   nombre: string;
@@ -194,9 +236,10 @@ export interface ClienteRegistrado {
 export async function registrarCliente(
   request: APIRequestContext,
   localidadId: string,
-  overrides: Partial<{ email: string; password: string }> = {},
+  overrides: Partial<{ email: string; password: string; nombreUsuario: string }> = {},
 ): Promise<ClienteRegistrado> {
   const suf = sufijoUnico();
+  const nombreUsuario = overrides.nombreUsuario || nombreUsuarioUnico('cli');
   const email = overrides.email || `cliente.e2e.${suf}@bajonea.test`;
   const password = overrides.password || 'Testing123';
   const nombre = 'Clienta';
@@ -207,6 +250,7 @@ export async function registrarCliente(
     dni: generarDni(),
     fechaNacimiento: '1995-05-20',
     telefono: generarTelefonoCompleto(),
+    nombreUsuario,
     email,
     password,
     direccion: {
@@ -222,7 +266,7 @@ export async function registrarCliente(
   if (status !== 201) {
     throw new Error(`No se pudo registrar el cliente ${email}: ${status} ${JSON.stringify(body)}`);
   }
-  return { email, password, nombre, apellido };
+  return { nombreUsuario, email, password, nombre, apellido };
 }
 
 export async function verificarCuenta(request: APIRequestContext, email: string): Promise<void> {
@@ -236,7 +280,7 @@ export async function verificarCuenta(request: APIRequestContext, email: string)
 export async function registrarYVerificarCliente(
   request: APIRequestContext,
   localidadId: string,
-  overrides: Partial<{ email: string; password: string }> = {},
+  overrides: Partial<{ email: string; password: string; nombreUsuario: string }> = {},
 ): Promise<ClienteRegistrado> {
   const cliente = await registrarCliente(request, localidadId, overrides);
   await verificarCuenta(request, cliente.email);
@@ -250,6 +294,7 @@ export interface HorarioInput {
 }
 
 export interface ComercioRegistrado {
+  nombreUsuario: string;
   email: string;
   password: string;
   nombre: string;
@@ -268,6 +313,7 @@ export async function registrarComercio(
 ): Promise<ComercioRegistrado> {
   const suf = sufijoUnico();
   const email = `comercio.e2e.${suf}@bajonea.test`;
+  const nombreUsuario = nombreUsuarioUnico('com');
   const password = 'Testing123';
   const nombre = opciones.nombre || `Comercio E2E ${suf}`;
   const fotoPerfilUrl = await subirFotoPreRegistro(request, 'comercio');
@@ -286,6 +332,7 @@ export async function registrarComercio(
     tipoComercio: opciones.tipoComercio || 'RESTAURANTE',
     aceptaDelivery: opciones.aceptaDelivery ?? true,
     aceptaRetiro: opciones.aceptaRetiro ?? false,
+    nombreUsuario,
     email,
     password,
     direccion: {
@@ -308,7 +355,7 @@ export async function registrarComercio(
   if (status !== 201) {
     throw new Error(`No se pudo registrar el comercio ${email}: ${status} ${JSON.stringify(body)}`);
   }
-  return { email, password, nombre: aTitleCase(nombre) };
+  return { nombreUsuario, email, password, nombre: aTitleCase(nombre) };
 }
 
 export async function registrarYVerificarComercio(
@@ -326,33 +373,72 @@ export interface SesionApi {
   usuario: { id: number; rol: string };
 }
 
-export async function login(request: APIRequestContext, email: string, password: string): Promise<SesionApi> {
-  const { status, body } = await apiPost(request, '/auth/login', { email, password });
+export async function login(request: APIRequestContext, nombreUsuario: string, password: string): Promise<SesionApi> {
+  const { status, body } = await apiPost(request, '/auth/login', { nombreUsuario, password });
   if (status !== 200) {
-    throw new Error(`Login falló para ${email}: ${status} ${JSON.stringify(body)}`);
+    throw new Error(`Login falló para ${nombreUsuario}: ${status} ${JSON.stringify(body)}`);
   }
-  return body.data as SesionApi;
+  const sesion = body.data as SesionApi;
+  if (sesion.usuario?.rol === 'DUENO') {
+    await registrarComercioActivoDelDueno(request, sesion.token);
+  }
+  return sesion;
 }
 
-/**
- * Mismo mecanismo ya usado manualmente por Diego en sesiones previas (docs/DECISIONES.md,
- * Fase 14/Tramo 16.29): admin@bajonea.ar nace en V13__seed_admin.sql con un hash cuyo
- * texto plano no está documentado, así que la única forma real (no mockeada) de loguearse
- * como Administrador en un bajonea_test recién reseteado es pasar por el flujo real de
- * recuperación de contraseña con el bypass de código de /api/v1/test.
- */
-export async function fijarPasswordAdminYLoguear(request: APIRequestContext): Promise<SesionApi> {
-  await apiPost(request, '/auth/recuperar-password', { email: ADMIN_EMAIL });
-  const codigo = await obtenerCodigoTest(request, ADMIN_EMAIL, 'RECUPERACION_PASSWORD');
-  const { status, body } = await apiPost(request, '/auth/recuperar-password/confirmar', {
-    email: ADMIN_EMAIL,
-    codigo,
-    nuevaPassword: ADMIN_PASSWORD_CONOCIDA,
+const PRIORIDAD_ESTADOS_POR_DEFECTO = [['APROBADO', 'APTO_VENTA'], ['RECHAZADO'], ['PENDIENTE']];
+
+async function registrarComercioActivoDelDueno(request: APIRequestContext, token: string): Promise<void> {
+  const respuesta = await request.get(`${API_BASE_URL}/comercios/mis-comercios`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
-  if (status !== 200) {
-    throw new Error(`No se pudo fijar la contraseña conocida de administrador: ${status} ${JSON.stringify(body)}`);
+  if (!respuesta.ok()) {
+    return;
   }
-  return login(request, ADMIN_EMAIL, ADMIN_PASSWORD_CONOCIDA);
+  const comercios: Array<{ id: number; estado: string }> = (await leerBody(respuesta)).data ?? [];
+  if (comercios.length === 0) {
+    return;
+  }
+  for (const estados of PRIORIDAD_ESTADOS_POR_DEFECTO) {
+    const elegido = comercios.find((comercio) => estados.includes(comercio.estado));
+    if (elegido) {
+      registrarComercioActivo(token, elegido.id);
+      return;
+    }
+  }
+  registrarComercioActivo(token, comercios[0].id);
+}
+
+export async function fijarPasswordAdminYLoguear(request: APIRequestContext): Promise<SesionApi> {
+  const intentosMaximos = 4;
+  let ultimoError: unknown;
+
+  for (let intento = 1; intento <= intentosMaximos; intento += 1) {
+    try {
+      await apiPost(request, '/auth/recuperar-password', { email: ADMIN_EMAIL });
+      const codigo = await obtenerCodigoTest(request, ADMIN_EMAIL, 'RECUPERACION_PASSWORD');
+      const { status, body } = await apiPost(request, '/auth/recuperar-password/confirmar', {
+        email: ADMIN_EMAIL,
+        codigo,
+        nuevaPassword: ADMIN_PASSWORD_CONOCIDA,
+      });
+      if (status !== 200) {
+        throw new Error(`No se pudo fijar la contraseña conocida de administrador: ${status} ${JSON.stringify(body)}`);
+      }
+      return await login(request, ADMIN_USUARIO, ADMIN_PASSWORD_CONOCIDA);
+    } catch (error) {
+      ultimoError = error;
+      if (intento < intentosMaximos) {
+        await new Promise((resolve) => setTimeout(resolve, 150 + Math.floor(Math.random() * 250)));
+      }
+    }
+  }
+
+  throw new Error(
+    `fijarPasswordAdminYLoguear agotó ${intentosMaximos} intentos (carrera real sobre la cuenta ` +
+      `admin@bajonea.ar compartida entre specs) -- último error: ${
+        ultimoError instanceof Error ? ultimoError.message : String(ultimoError)
+      }`,
+  );
 }
 
 export async function resolverComercio(
@@ -361,10 +447,30 @@ export async function resolverComercio(
   comercioId: number,
   aprobar: boolean,
   motivo?: string,
+  definitivo?: boolean,
 ): Promise<void> {
-  const { status, body } = await apiPut(request, `/administrador/comercios/${comercioId}/resolver`, { aprobar, motivo }, adminToken);
+  const { status, body } = await apiPut(
+    request,
+    `/administrador/comercios/${comercioId}/resolver`,
+    { aprobar, motivo, ...(definitivo === undefined ? {} : { definitivo }) },
+    adminToken,
+  );
   if (status !== 200) {
     throw new Error(`No se pudo resolver el comercio ${comercioId}: ${status} ${JSON.stringify(body)}`);
+  }
+}
+
+export async function marcarAptoVenta(request: APIRequestContext, comercioId: number): Promise<void> {
+  const { status, body } = await apiPut(request, `/test/comercios/${comercioId}/apto-venta`, {});
+  if (status !== 200) {
+    throw new Error(`No se pudo marcar APTO_VENTA el comercio ${comercioId}: ${status} ${JSON.stringify(body)}`);
+  }
+}
+
+export async function confirmarPagoTest(request: APIRequestContext, pedidoId: number): Promise<void> {
+  const { status, body } = await apiPut(request, `/test/pedidos/${pedidoId}/pago-aprobado`, {});
+  if (status !== 200) {
+    throw new Error(`No se pudo confirmar el pago del pedido ${pedidoId}: ${status} ${JSON.stringify(body)}`);
   }
 }
 
@@ -450,22 +556,25 @@ export async function crearPedido(
   return body.data.id as number;
 }
 
-/**
- * Nombre de archivo reconocible para que Diego pueda identificar (y borrar manualmente si
- * quiere) las imágenes que dejó la suite E2E en la cuenta real de Cloudinary del proyecto
- * (decisión explícita: spec 06 usa credenciales reales, no bypass -- ver docs/DECISIONES.md).
- */
+export async function esperarImagenCargadaEnRecorte(page: Page): Promise<void> {
+  await expect(page.getByTestId('modal-recorte-imagen')).toBeVisible();
+  await expect
+    .poll(() =>
+      page.getByTestId('canvas-recorte').evaluate((canvas: HTMLCanvasElement) => {
+        const pixeles = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data;
+        for (let i = 3; i < pixeles.length; i += 4) {
+          if (pixeles[i] !== 0) return true;
+        }
+        return false;
+      }),
+    )
+    .toBe(true);
+}
+
 export function nombreArchivoFixture(): string {
   return `bajonea-e2e-producto-${sufijoUnico()}.png`;
 }
 
-/**
- * Sube una imagen directo a Cloudinary (misma firma real que usa js/cloudinary.js,
- * subirImagenProducto) sin pasar por el navegador -- usado para pre-sembrar imágenes de forma
- * rápida en el test del límite de 5 imágenes por producto, que de otro modo necesitaría repetir
- * el editor de recorte real 5 veces solo para llegar al caso negativo. Consume cuota real de
- * Cloudinary igual que la subida por UI (misma cuenta, mismo upload_preset).
- */
 export async function subirImagenProductoDirecto(
   request: APIRequestContext,
   comercioToken: string,
@@ -473,8 +582,9 @@ export async function subirImagenProductoDirecto(
   imagenBuffer: Buffer,
   opciones: { orden: number; esPrincipal?: boolean },
 ): Promise<number> {
-  const firmaResponse = await request.post(`${API_BASE_URL}/productos/${productoId}/cloudinary/firma`, {
-    headers: { Authorization: `Bearer ${comercioToken}` },
+  const rutaFirma = `/productos/${productoId}/cloudinary/firma`;
+  const firmaResponse = await request.post(`${API_BASE_URL}${rutaFirma}`, {
+    headers: cabecerasDe(rutaFirma, comercioToken),
   });
   const firma = (await leerBody(firmaResponse)).data;
   if (!firmaResponse.ok() || !firma) {
@@ -505,4 +615,131 @@ export async function subirImagenProductoDirecto(
     throw new Error(`No se pudo registrar la imagen subida directo a Cloudinary: ${status} ${JSON.stringify(body)}`);
   }
   return body.data.id as number;
+}
+
+export async function subirFotoNuevoComercio(request: APIRequestContext, duenoToken: string): Promise<string> {
+  const firmaResponse = await request.post(`${API_BASE_URL}/comercios/nuevo/foto/firma`, {
+    headers: { Authorization: `Bearer ${duenoToken}` },
+  });
+  const firma = (await leerBody(firmaResponse)).data;
+  if (!firmaResponse.ok() || !firma) {
+    throw new Error(`No se pudo obtener la firma de Cloudinary del alta adicional: ${firmaResponse.status()}`);
+  }
+
+  const uploadResponse = await request.post(`https://api.cloudinary.com/v1_1/${firma.cloudName}/image/upload`, {
+    multipart: {
+      file: { name: nombreArchivoFixture(), mimeType: 'image/png', buffer: FIXTURE_BUFFER },
+      api_key: firma.apiKey,
+      timestamp: String(firma.timestamp),
+      signature: firma.signature,
+      folder: firma.folder,
+      upload_preset: firma.uploadPreset,
+    },
+  });
+  const uploadBody = await leerBody(uploadResponse);
+  if (!uploadResponse.ok() || !uploadBody.secure_url) {
+    throw new Error(`No se pudo subir la foto del alta adicional a Cloudinary: ${uploadResponse.status()} ${JSON.stringify(uploadBody)}`);
+  }
+  return uploadBody.secure_url as string;
+}
+
+export async function subirFotoCorreccionComercio(request: APIRequestContext, duenoToken: string, comercioId: number): Promise<string> {
+  const firmaResponse = await request.post(`${API_BASE_URL}/comercios/${comercioId}/correccion/foto/firma`, {
+    headers: { Authorization: `Bearer ${duenoToken}` },
+  });
+  const firma = (await leerBody(firmaResponse)).data;
+  if (!firmaResponse.ok() || !firma) {
+    throw new Error(`No se pudo obtener la firma de Cloudinary de la corrección: ${firmaResponse.status()}`);
+  }
+  const uploadResponse = await request.post(`https://api.cloudinary.com/v1_1/${firma.cloudName}/image/upload`, {
+    multipart: {
+      file: { name: nombreArchivoFixture(), mimeType: 'image/png', buffer: FIXTURE_BUFFER },
+      api_key: firma.apiKey,
+      timestamp: String(firma.timestamp),
+      signature: firma.signature,
+      folder: firma.folder,
+      upload_preset: firma.uploadPreset,
+    },
+  });
+  const uploadBody = await leerBody(uploadResponse);
+  if (!uploadResponse.ok() || !uploadBody.secure_url) {
+    throw new Error(`No se pudo subir la foto de la corrección a Cloudinary: ${uploadResponse.status()} ${JSON.stringify(uploadBody)}`);
+  }
+  return uploadBody.secure_url as string;
+}
+
+export interface DatosAltaAdicional {
+  nombre: string;
+  descripcion: string;
+  telefono: string;
+  emailContacto: string;
+  tipoComercio: string;
+  aceptaDelivery: boolean;
+  aceptaRetiro: boolean;
+  fotoPerfilUrl: string;
+  direccion: {
+    calle: string;
+    numero: string;
+    pisoDepto: string | null;
+    codigoPostal: string;
+    localidadId: string;
+    principal: boolean;
+  };
+  horarios: HorarioInput[];
+  redesSociales: Array<{ tipo: string; url: string }>;
+}
+
+export function payloadAltaAdicional(
+  localidadId: string,
+  fotoPerfilUrl: string,
+  overrides: Partial<DatosAltaAdicional> = {},
+): DatosAltaAdicional {
+  const suf = sufijoUnico();
+  return {
+    nombre: `Adicional E2E ${suf}`,
+    descripcion: 'Comercio adicional generado por Playwright (multi-comercio, tramo 2A)',
+    telefono: generarTelefonoCompleto(),
+    emailContacto: `adicional.e2e.${suf}@bajonea.test`,
+    tipoComercio: 'RESTAURANTE',
+    aceptaDelivery: true,
+    aceptaRetiro: false,
+    fotoPerfilUrl,
+    direccion: {
+      calle: 'Belgrano',
+      numero: '250',
+      pisoDepto: null,
+      codigoPostal: '9420',
+      localidadId,
+      principal: false,
+    },
+    horarios: [{ diaSemana: diaDeHoy(), horaApertura: '00:00', horaCierre: '23:59' }],
+    redesSociales: [{ tipo: 'INSTAGRAM', url: `https://instagram.com/adicional.e2e.${suf}` }],
+    ...overrides,
+  };
+}
+
+export async function registrarComercioAdicional(
+  request: APIRequestContext,
+  duenoToken: string,
+  localidadId: string,
+  overrides: Partial<DatosAltaAdicional> = {},
+  headers: Record<string, string> = {},
+) {
+  const fotoPerfilUrl = overrides.fotoPerfilUrl ?? (await subirFotoNuevoComercio(request, duenoToken));
+  const payload = payloadAltaAdicional(localidadId, fotoPerfilUrl, overrides);
+  const respuesta = await apiConHeaders(request, 'POST', '/comercios', duenoToken, headers, payload);
+  return { ...respuesta, payload };
+}
+
+export function sqlTest(consulta: string): string {
+  return execFileSync('C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '--default-character-set=utf8mb4', '-N', '-B', 'bajonea_test', '-e', consulta])
+    .toString()
+    .trim();
+}
+
+export async function suspenderComercio(request: APIRequestContext, adminToken: string, comercioId: number, motivo: string): Promise<void> {
+  const { status, body } = await apiPut(request, `/administrador/comercios/${comercioId}/suspender`, { motivo }, adminToken);
+  if (status !== 200) {
+    throw new Error(`No se pudo suspender el comercio ${comercioId}: ${status} ${JSON.stringify(body)}`);
+  }
 }

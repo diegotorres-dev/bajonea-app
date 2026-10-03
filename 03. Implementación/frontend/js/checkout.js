@@ -317,13 +317,26 @@ export async function initCheckout() {
       step3Content.appendChild(line);
     });
 
+    const cargoServicio = carrito.cargoServicioCliente || 0;
+    const totalConCargo = carrito.subtotal + cargoServicio;
+
+    const cargoLine = crear('div', 'order-line');
+    const cargoLabel = document.createElement('span');
+    cargoLabel.textContent = 'Cargo por servicio';
+    cargoLine.appendChild(cargoLabel);
+    const cargoValue = document.createElement('span');
+    cargoValue.setAttribute('data-testid', 'cargo-servicio-carrito');
+    cargoValue.textContent = formatearPrecio(cargoServicio);
+    cargoLine.appendChild(cargoValue);
+    step3Content.appendChild(cargoLine);
+
     const totalLine = crear('div', 'order-line order-line--total');
     const totalLabel = document.createElement('span');
     totalLabel.textContent = 'Total';
     totalLine.appendChild(totalLabel);
     const totalValue = document.createElement('span');
     totalValue.setAttribute('data-testid', 'total-carrito');
-    totalValue.textContent = formatearPrecio(carrito.subtotal);
+    totalValue.textContent = formatearPrecio(totalConCargo);
     totalLine.appendChild(totalValue);
     step3Content.appendChild(totalLine);
 
@@ -331,7 +344,7 @@ export async function initCheckout() {
     confirmBtn.type = 'button';
     confirmBtn.style.marginTop = '24px';
     confirmBtn.setAttribute('data-testid', 'btn-confirmar-pedido');
-    confirmBtn.textContent = `Ir a pagar - ${formatearPrecio(carrito.subtotal)}`;
+    confirmBtn.textContent = `Ir a pagar - ${formatearPrecio(totalConCargo)}`;
     confirmBtn.addEventListener('click', async () => {
       confirmBtn.disabled = true;
       confirmBtn.textContent = 'Procesando...';
@@ -349,7 +362,7 @@ export async function initCheckout() {
         mostrarPaso(3);
       } catch (error) {
         confirmBtn.disabled = false;
-        confirmBtn.textContent = `Ir a pagar - ${formatearPrecio(carrito.subtotal)}`;
+        confirmBtn.textContent = `Ir a pagar - ${formatearPrecio(totalConCargo)}`;
         renderBanner(bannerSlot, 'error', error instanceof ApiError ? error.message : 'No pudimos confirmar tu pedido. Intentá nuevamente.');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
@@ -367,7 +380,7 @@ export async function initCheckout() {
 
     const p = document.createElement('p');
     p.className = 'subtitle';
-    p.textContent = `Tu pedido #${pedido.id} a ${comercio.nombre} fue creado. Te vamos a redirigir a Mercado Pago para completar el pago.`;
+    p.textContent = 'Te vamos a redirigir a Mercado Pago para completar el pago.';
     step4Content.appendChild(p);
 
     const totalLine = crear('div', 'order-line order-line--total');

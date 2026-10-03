@@ -1,6 +1,20 @@
 import { apiFetch, ApiError, getUsuario, clearSesion } from './api.js';
-import { logout, construirTelefono, LABELS_TIPO_SOCIEDAD, LABELS_CONDICION_IVA } from './auth.js';
-import { estadoHorario, renderTopBar, showToast, pintarAvatarComercio, renderPedidoEstadoHeader, manejarBloqueoPorCambioPassword } from './catalogo.js';
+import { logout, construirTelefono, resolverHomePorRol, LABELS_TIPO_SOCIEDAD, LABELS_CONDICION_IVA } from './auth.js';
+import { estadoHorario, renderTopBar, showToast, pintarAvatarComercio, renderPedidoEstadoHeader, manejarBloqueoPorCambioPassword, crearBloqueMotivoRechazo } from './catalogo.js';
+import { SOPORTE_CONTACTO_URL } from './config.js';
+import {
+  activarComercio,
+  contarNotificacionesNoLeidasActivo,
+  destinoDeNavegacion,
+  getComercioActivoEnMemoria,
+  marcarNotificacionesDelComercioLeidas,
+  refrescarComercios,
+  resolverComercioActivo,
+  rutaDeEstado,
+  suscribirComercios,
+  RUTA_DASHBOARD,
+} from './comercio-activo.js';
+import { abrirPanelComercios, enlazarMantenerApretado, prepararPaginaDueno } from './selector-comercio.js';
 import {
   subirImagenProducto,
   eliminarImagenProducto,
@@ -81,13 +95,6 @@ const MOTIVOS_RECHAZO = [
 ];
 
 const MOTIVO_RECHAZO_LABEL = Object.fromEntries(MOTIVOS_RECHAZO.map((motivo) => [motivo.value, motivo.label]));
-
-const RUTA_POR_ESTADO = {
-  PENDIENTE: 'comercio-pendiente.html',
-  APROBADO: 'comercio-dashboard.html',
-  APTO_VENTA: 'comercio-dashboard.html',
-  RECHAZADO: 'comercio-rechazado.html',
-};
 
 function crear(tag, className) {
   const node = document.createElement(tag);
@@ -179,8 +186,21 @@ function formatearFechaLarga(fechaTexto) {
   return fecha.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
-export async function initComercioEstadoPagina(estadosPermitidos) {
-  const permitidos = Array.isArray(estadosPermitidos) ? estadosPermitidos : [estadosPermitidos];
+async function redirigirPorDefecto() {
+  try {
+    window.location.href = destinoDeNavegacion(await resolverComercioActivo());
+  } catch {
+    window.location.href = 'login.html';
+  }
+}
+
+function leerComercioIdDeLaUrl() {
+  const crudo = new URLSearchParams(window.location.search).get('id');
+  const valor = Number(crudo);
+  return crudo !== null && Number.isInteger(valor) && valor > 0 ? valor : null;
+}
+
+export async function initComercioEstadoPagina(estadoEsperado) {
   const usuario = getUsuario();
   if (!usuario || usuario.rol !== 'DUENO') {
     window.location.href = 'login.html';
@@ -191,13 +211,124 @@ export async function initComercioEstadoPagina(estadosPermitidos) {
     emailEl.textContent = usuario.email;
   }
 
-  const comercio = await apiFetch('/comercios/perfil');
-  normalizarComercio(comercio);
-  if (!permitidos.includes(comercio.estado)) {
-    window.location.href = RUTA_POR_ESTADO[comercio.estado] || 'login.html';
+  const volverBtn = document.getElementById('volver-comercios-btn');
+  if (volverBtn) {
+    volverBtn.addEventListener('click', () => abrirPanelComercios());
+  }
+
+  const comercioId = leerComercioIdDeLaUrl();
+  if (comercioId === null) {
+    await redirigirPorDefecto();
     return null;
   }
+
+  let comercio;
+  try {
+    comercio = await apiFetch('/comercios/perfil', { comercioId });
+  } catch (error) {
+    if (error instanceof ApiError && (error.status === 404 || error.status === 400)) {
+      await redirigirPorDefecto();
+      return null;
+    }
+    throw error;
+  }
+  normalizarComercio(comercio);
+
+  if (comercio.estado !== estadoEsperado) {
+    if (comercio.estado === 'APROBADO' || comercio.estado === 'APTO_VENTA') {
+      activarComercio(comercio.id);
+      window.location.href = RUTA_DASHBOARD;
+      return null;
+    }
+    const ruta = rutaDeEstado(comercio);
+    if (ruta) {
+      window.location.href = ruta;
+    } else {
+      await redirigirPorDefecto();
+    }
+    return null;
+  }
+
+  try {
+    await marcarNotificacionesDelComercioLeidas(comercio.id);
+  } catch {
+  }
   return comercio;
+}
+
+function textoIntentosRestantes(restantes) {
+  return restantes === 1 ? 'Te queda 1 intento.' : `Te quedan ${restantes} intentos.`;
+}
+
+function mostrarContenidoEstado() {
+  document.getElementById('cargando-container').classList.add('is-hidden');
+  document.getElementById('contenido-container').classList.remove('is-hidden');
+}
+
+export async function initComercioRechazado() {
+  const comercio = await initComercioEstadoPagina('RECHAZADO');
+  if (!comercio) {
+    return;
+  }
+
+  let correccion;
+  try {
+    correccion = await apiFetch(`/comercios/${comercio.id}/correccion`);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) {
+      const destino = await resolverHomePorRol(getUsuario()).catch(() => null);
+      window.location.href = destino || 'login.html';
+      return;
+    }
+    throw error;
+  }
+
+  const motivo = correccion.motivoRechazo || comercio.motivoRechazo;
+  if (motivo) {
+    document.getElementById('motivo-rechazo-slot').appendChild(crearBloqueMotivoRechazo({
+      titulo: 'Motivo del rechazo',
+      motivo,
+      testid: 'motivo-rechazo-comercio',
+    }));
+  }
+
+  const texto = document.getElementById('texto-correccion');
+  const corregirBtn = document.getElementById('corregir-btn');
+  if (correccion.intentosRestantes > 0) {
+    texto.textContent = `Podés corregir los datos y volver a solicitarla. ${textoIntentosRestantes(correccion.intentosRestantes)}`;
+    corregirBtn.href = `comercio-corregir.html?id=${comercio.id}`;
+    corregirBtn.classList.remove('is-hidden');
+  } else {
+    texto.textContent = 'Ya usaste todos los intentos para volver a solicitar este comercio. Si creés que se trata de un error, contactá a soporte.';
+  }
+  mostrarContenidoEstado();
+}
+
+export async function initComercioRechazoDefinitivo() {
+  const comercio = await initComercioEstadoPagina('RECHAZO_DEFINITIVO');
+  if (!comercio) {
+    return;
+  }
+
+  if (comercio.motivoRechazo) {
+    document.getElementById('motivo-rechazo-slot').appendChild(crearBloqueMotivoRechazo({
+      titulo: 'Motivo del rechazo',
+      motivo: comercio.motivoRechazo,
+      testid: 'motivo-rechazo-comercio',
+    }));
+  }
+
+  const elegibilidad = await apiFetch('/comercios/alta-adicional/elegibilidad');
+  if (elegibilidad.elegible) {
+    document.getElementById('agregar-comercio-btn').classList.remove('is-hidden');
+  }
+
+  if (SOPORTE_CONTACTO_URL) {
+    const soporteBtn = document.getElementById('soporte-btn');
+    soporteBtn.href = SOPORTE_CONTACTO_URL;
+    soporteBtn.classList.remove('is-hidden');
+  }
+  mostrarContenidoEstado();
 }
 
 export function renderBottomNavComercio(container, activo) {
@@ -236,25 +367,40 @@ export function renderBottomNavComercio(container, activo) {
   container.appendChild(nav);
 
   if (avatarPerfil) {
-    apiFetch('/comercios/perfil').then((comercio) => {
-      normalizarComercio(comercio);
-      pintarAvatarComercio(avatarPerfil, comercio);
-    }).catch(() => {
+    const perfilLink = avatarPerfil.closest('a');
+    perfilLink.classList.add('bottom-nav__item--selector');
+    enlazarMantenerApretado(perfilLink, () => abrirPanelComercios());
+    let firma = null;
+    const pintar = () => {
+      const activo = getComercioActivoEnMemoria();
+      if (!activo) {
+        return;
+      }
+      const firmaNueva = `${activo.id}|${activo.nombre}|${activo.fotoPerfilUrl || ''}`;
+      if (firmaNueva === firma) {
+        return;
+      }
+      firma = firmaNueva;
+      pintarAvatarComercio(avatarPerfil, { nombre: activo.nombre, fotoPerfilUrl: activo.fotoPerfilUrl });
+      avatarPerfil.querySelectorAll('img').forEach((img) => {
+        img.draggable = false;
+      });
+    };
+    pintar();
+    suscribirComercios(pintar);
+    resolverComercioActivo().then(pintar).catch(() => {
     });
   }
 }
 
-async function actualizarBadgeBell(bellLink) {
+function pintarBadgeBell(bellLink) {
   bellLink.querySelectorAll('.top-bar__badge-dot').forEach((el) => el.remove());
-  try {
-    const contador = await apiFetch('/notificaciones/no-leidas/contador');
-    if (contador > 0) {
-      const dot = crear('span', 'top-bar__badge-dot');
-      dot.setAttribute('data-testid', 'contador-notificaciones');
-      dot.textContent = contador > 9 ? '9+' : String(contador);
-      bellLink.appendChild(dot);
-    }
-  } catch {
+  const contador = contarNotificacionesNoLeidasActivo();
+  if (contador > 0) {
+    const dot = crear('span', 'top-bar__badge-dot');
+    dot.setAttribute('data-testid', 'contador-notificaciones');
+    dot.textContent = contador > 9 ? '9+' : String(contador);
+    bellLink.appendChild(dot);
   }
 }
 
@@ -276,10 +422,8 @@ function renderHeaderDashboard(container) {
   bellLink.setAttribute('data-testid', 'btn-notificaciones');
   bellLink.innerHTML = ICONS.bell;
   bar.appendChild(bellLink);
-  actualizarBadgeBell(bellLink);
-
-  const intervalId = window.setInterval(() => actualizarBadgeBell(bellLink), 15000);
-  window.addEventListener('beforeunload', () => window.clearInterval(intervalId));
+  pintarBadgeBell(bellLink);
+  suscribirComercios(() => pintarBadgeBell(bellLink));
 
   container.appendChild(bar);
 }
@@ -392,13 +536,19 @@ function renderPedidosActivos(listContainer, badgeContainer, pedidos) {
 }
 
 export async function initComercioDashboard() {
-  const comercio = await initComercioEstadoPagina(['APROBADO', 'APTO_VENTA']);
-  if (!comercio) {
+  const usuario = getUsuario();
+  if (!usuario || usuario.rol !== 'DUENO') {
+    window.location.href = 'login.html';
     return;
   }
-
   renderHeaderDashboard(document.getElementById('top-bar-slot'));
   renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'panel');
+  const activo = await prepararPaginaDueno({ slotFranja: document.getElementById('franja-comercio-slot') });
+  if (!activo) {
+    return;
+  }
+  const comercio = await apiFetch('/comercios/perfil');
+  normalizarComercio(comercio);
 
   const { abierto, resumenHoy } = estadoHorario(comercio.horarios);
   renderEstadoBanner(
@@ -471,6 +621,9 @@ export async function initComercioPedidos() {
 
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Pedidos' });
   renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'pedidos');
+  if (!(await prepararPaginaDueno({ slotFranja: document.getElementById('franja-comercio-slot') }))) {
+    return;
+  }
 
   const pedidos = await apiFetch('/pedidos/comercio');
   pedidos.forEach(normalizarPedido);
@@ -902,12 +1055,21 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado) {
     }
   });
 
+  const cargoLine = crear('div', 'order-line');
+  const cargoLabel = document.createElement('span');
+  cargoLabel.textContent = 'Cargo por servicio (1%)';
+  cargoLine.appendChild(cargoLabel);
+  const cargoValue = document.createElement('span');
+  cargoValue.textContent = `-${formatearPrecio(pedido.cargoServicioComercio)}`;
+  cargoLine.appendChild(cargoValue);
+  body.appendChild(cargoLine);
+
   const totalLine = crear('div', 'order-line order-line--total');
   const totalLabel = document.createElement('span');
   totalLabel.textContent = 'Total';
   totalLine.appendChild(totalLabel);
   const totalValue = document.createElement('span');
-  totalValue.textContent = formatearPrecio(pedido.total);
+  totalValue.textContent = formatearPrecio(pedido.subtotal - pedido.cargoServicioComercio);
   totalLine.appendChild(totalValue);
   body.appendChild(totalLine);
 
@@ -960,6 +1122,9 @@ export async function initComercioPedidoDetalle() {
   }
 
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Pedido' });
+  if (!(await prepararPaginaDueno())) {
+    return;
+  }
 
   const params = new URLSearchParams(window.location.search);
   const pedidoId = Number(params.get('id'));
@@ -1101,6 +1266,9 @@ export async function initComercioPerfil() {
 
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarPerfil: false, mostrarCampana: false, centrarLogo: true });
   renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'perfil');
+  if (!(await prepararPaginaDueno({ slotFranja: document.getElementById('franja-comercio-slot') }))) {
+    return;
+  }
 
   const comercio = await apiFetch('/comercios/perfil');
   normalizarComercio(comercio);
@@ -1216,6 +1384,7 @@ export async function initComercioPerfil() {
           const actualizado = await subirFotoPerfilComercio(archivoRecortado);
           comercio.fotoPerfilUrl = actualizado.fotoPerfilUrl;
           actualizarAvatares();
+          refrescarComercios().catch(() => {});
           showToast('Foto de perfil actualizada', 'success');
         } catch (error) {
           const esErrorConocido = error instanceof CloudinaryUploadError || error instanceof ApiError;
@@ -1290,6 +1459,7 @@ export async function initComercioPerfil() {
       comercio.aceptaRetiro = actualizado.aceptaRetiro;
       document.getElementById('perfil-nombre').textContent = actualizado.nombre;
       document.getElementById('perfil-email').textContent = actualizado.emailContacto;
+      refrescarComercios().catch(() => {});
       mostrarVista('view-principal');
       showToast('Datos actualizados correctamente');
     } catch (error) {
@@ -1373,7 +1543,7 @@ export async function initComercioPerfil() {
         errorPasswordActual.style.display = 'flex';
         const intentosRestantes = error.data && typeof error.data.intentosRestantes === 'number' ? error.data.intentosRestantes : null;
         if (intentosRestantes === 1) {
-          renderBanner(bannerPassword, 'warning', 'Cuidado: si fallás 1 vez más, tu cuenta se bloqueará.');
+          renderBanner(bannerPassword, 'warning', 'Cuidado: si fallás una vez más, tu cuenta se bloqueará.');
         }
       } else if (!(error instanceof ApiError && error.data && mapearErroresBackend(error.data, mapaErrores))) {
         renderBanner(bannerPassword, 'error', error instanceof ApiError ? error.message : 'No pudimos cambiar tu contraseña. Intentá nuevamente.');
@@ -1572,6 +1742,9 @@ export async function initComercioProductos() {
 
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Mis productos' });
   renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'productos');
+  if (!(await prepararPaginaDueno({ slotFranja: document.getElementById('franja-comercio-slot') }))) {
+    return;
+  }
 
   const paramsProductos = new URLSearchParams(window.location.search);
   if (paramsProductos.get('productoCreado') === '1') {
@@ -1714,6 +1887,9 @@ export async function initComercioProductoForm() {
     titulo: esEdicion ? 'Editar producto' : 'Nuevo producto',
   });
   document.getElementById('guardar-producto-btn').textContent = esEdicion ? 'Guardar cambios' : 'Crear producto';
+  if (!(await prepararPaginaDueno())) {
+    return;
+  }
 
   const bannerSlot = document.getElementById('form-banner-slot');
   const selectCategoria = document.getElementById('producto-categoria');

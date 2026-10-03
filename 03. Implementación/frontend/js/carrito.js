@@ -223,13 +223,36 @@ function renderConProductos(container, footerSlot, carrito, comercioInfo, produc
 
   footerSlot.innerHTML = '';
   const footer = crear('div', 'cart-footer');
-  const summaryRow = crear('div', 'cart-summary__row cart-summary__row--total');
+  const cargoServicio = carrito.cargoServicioCliente || 0;
+  const total = carrito.subtotal + cargoServicio;
+
+  const subtotalRow = crear('div', 'cart-summary__row');
   const subtotalLabel = document.createElement('span');
   subtotalLabel.textContent = 'Subtotal';
-  summaryRow.appendChild(subtotalLabel);
+  subtotalRow.appendChild(subtotalLabel);
+  const subtotalValue = document.createElement('span');
+  subtotalValue.setAttribute('data-testid', 'subtotal-carrito');
+  subtotalValue.textContent = formatearPrecio(carrito.subtotal);
+  subtotalRow.appendChild(subtotalValue);
+  footer.appendChild(subtotalRow);
+
+  const cargoRow = crear('div', 'cart-summary__row');
+  const cargoLabel = document.createElement('span');
+  cargoLabel.textContent = 'Cargo por servicio';
+  cargoRow.appendChild(cargoLabel);
+  const cargoValue = document.createElement('span');
+  cargoValue.setAttribute('data-testid', 'cargo-servicio-carrito');
+  cargoValue.textContent = formatearPrecio(cargoServicio);
+  cargoRow.appendChild(cargoValue);
+  footer.appendChild(cargoRow);
+
+  const summaryRow = crear('div', 'cart-summary__row cart-summary__row--total');
+  const totalLabel = document.createElement('span');
+  totalLabel.textContent = 'Total';
+  summaryRow.appendChild(totalLabel);
   const value = document.createElement('span');
   value.setAttribute('data-testid', 'total-carrito');
-  value.textContent = formatearPrecio(carrito.subtotal);
+  value.textContent = formatearPrecio(total);
   summaryRow.appendChild(value);
   footer.appendChild(summaryRow);
 
@@ -237,7 +260,7 @@ function renderConProductos(container, footerSlot, carrito, comercioInfo, produc
   confirmarBtn.className = 'btn btn-primary';
   confirmarBtn.href = 'checkout.html';
   confirmarBtn.setAttribute('data-testid', 'btn-confirmar-pedido');
-  confirmarBtn.textContent = `Confirmar pedido - ${formatearPrecio(carrito.subtotal)}`;
+  confirmarBtn.textContent = `Confirmar pedido - ${formatearPrecio(total)}`;
   footer.appendChild(confirmarBtn);
   footerSlot.appendChild(footer);
 }

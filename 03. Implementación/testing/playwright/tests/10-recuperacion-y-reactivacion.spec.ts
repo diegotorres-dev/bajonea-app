@@ -58,8 +58,6 @@ test.describe('Recuperación de contraseña (3 pasos)', () => {
     await solicitudResponse;
     await expect(page.getByTestId('input-codigo-verificacion')).toBeVisible();
 
-    // Paso intermedio con error real: código incorrecto no deja avanzar al paso de nueva
-    // contraseña -- se queda en el paso de código con el error visible.
     const intentoIncorrecto = page.waitForResponse(
       (res) => res.url().endsWith('/auth/recuperar-password/validar-codigo') && res.request().method() === 'POST',
     );
@@ -78,9 +76,6 @@ test.describe('Recuperación de contraseña (3 pasos)', () => {
     await intentoCorrecto;
     await expect(page.getByTestId('input-nueva-password')).toBeVisible();
 
-    // Fortaleza visual: password débil no marca ninguna barra, password fuerte marca las 4.
-    // (Selector plano, no encadenado: las clases --filled se agregan a los mismos divs .bar,
-    // no a hijos nuevos -- barras.locator(...) buscaría descendientes y nunca los encontraría.)
     const barrasLlenas = page.locator('[data-testid="indicador-fortaleza-password"] .strength-meter__bar--filled');
     await page.getByTestId('input-nueva-password').fill('debil');
     await expect(barrasLlenas).toHaveCount(0);
@@ -88,7 +83,6 @@ test.describe('Recuperación de contraseña (3 pasos)', () => {
     await page.getByTestId('input-nueva-password').fill(nuevaPassword);
     await expect(barrasLlenas).toHaveCount(4);
 
-    // Confirmación no coincide: error visible cerca del campo, no envía el form.
     await page.getByTestId('input-confirmar-password').fill('OtraCosa123');
     await page.getByTestId('btn-restablecer-password').click();
     await expect(page.getByTestId('mensaje-error-confirmar-password')).toBeVisible();
@@ -103,10 +97,9 @@ test.describe('Recuperación de contraseña (3 pasos)', () => {
     expect(respuestaConfirmar.status()).toBe(200);
     await expect(page.getByTestId('btn-ir-a-login-exito')).toBeVisible();
 
-    // La contraseña vieja ya no sirve; la nueva sí -- confirma persistencia real, no solo la UI.
-    const sesionNueva = await login(request, cliente.email, nuevaPassword);
+    const sesionNueva = await login(request, cliente.nombreUsuario, nuevaPassword);
     expect(sesionNueva.token).toBeTruthy();
-    await expect(login(request, cliente.email, cliente.password)).rejects.toThrow();
+    await expect(login(request, cliente.nombreUsuario, cliente.password)).rejects.toThrow();
   });
 
   test('reenviar código pide uno nuevo y limpia los boxes del OTP', async ({ page, request }) => {
@@ -148,20 +141,6 @@ test.describe('Reactivación de cuenta (2 pasos)', () => {
     await expect(page.getByTestId('input-codigo-verificacion')).toBeHidden();
   });
 
-  /**
-   * No hay ninguna vía real de API en el MVP para dejar una cuenta en EstadoUsuario.INACTIVO
-   * (sin job de inactivación automática, sin endpoint de baja de cuenta propia ni de
-   * suspensión de Administrador -- mismo gap ya confirmado en el cierre de Fase 14,
-   * docs/AUDITORIA-POSTMAN-FASE10-14.md, y en el tramo de matriz de Postman de Cliente,
-   * docs/MAPEO-ARCHIVOS-TRAMO-MATRIZ-POSTMAN-CLIENTE.md punto 7). El flujo feliz completo
-   * (cuenta inactiva -> reactivar -> loguear) queda sin cobertura E2E por el mismo motivo que
-   * en Postman -- no es simulable sin tocar la base a mano, que va contra la metodología del
-   * proyecto. Lo que SÍ es real y alcanzable: AuthService.solicitarReactivacionCuenta no
-   * genera ningún token para una cuenta ya ACTIVO (anti user-enumeration, sin revelarlo en la
-   * respuesta HTTP) -- así que un código cualquiera después de pedirlo para una cuenta activa
-   * siempre es "código inexistente" real, no simulado. Cubre el mismo caso que la carpeta de
-   * Postman ya documentaba como el único negocio real alcanzable para este formulario.
-   */
   test('cuenta ya activa: pedir reactivación no genera ningún código real, cualquier código se rechaza con error visible', async ({
     page,
     request,
@@ -175,7 +154,6 @@ test.describe('Reactivación de cuenta (2 pasos)', () => {
     );
     await page.getByTestId('btn-enviar-codigo-reactivacion').click();
     const respuestaSolicitud = await solicitudResponse;
-    // Misma respuesta genérica exista o no la cuenta -- anti user-enumeration.
     expect(respuestaSolicitud.status()).toBe(200);
     await expect(page.getByTestId('input-codigo-verificacion')).toBeVisible();
 
@@ -201,8 +179,6 @@ test.describe('Reactivación de cuenta (2 pasos)', () => {
 
     const primerBox = page.getByTestId('input-codigo-digito-1');
     await primerBox.pressSequentially('a7b');
-    // El listener de otp.js filtra no-dígitos y corta a 1 caracter -- "a7b" tipeado letra por
-    // letra deja únicamente el "7", nunca deja pasar la letra ni acumula más de un caracter.
     await expect(primerBox).toHaveValue('7');
   });
 });

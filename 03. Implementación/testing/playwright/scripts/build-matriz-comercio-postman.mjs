@@ -2,6 +2,24 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import crypto from 'node:crypto';
+
+function nombreUsuarioDe(email) {
+  return 'pm' + crypto.createHash('sha1').update(String(email)).digest('hex').slice(0, 12);
+}
+
+function adaptarAutenticacion(urlPath, body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return body;
+  if ((urlPath === '/auth/registro/cliente' || urlPath === '/auth/registro/comercio') && !('nombreUsuario' in body) && typeof body.email === 'string') {
+    return { ...body, nombreUsuario: nombreUsuarioDe(body.email) };
+  }
+  if (urlPath === '/auth/login' && 'email' in body && !('nombreUsuario' in body)) {
+    const { email, ...resto } = body;
+    return { nombreUsuario: email === '{{admin_email}}' ? '{{admin_usuario}}' : nombreUsuarioDe(email), ...resto };
+  }
+  return body;
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const collectionPath = path.resolve(__dirname, '../../../postman/Bajonea-MVP.postman_collection.json');
 
@@ -69,7 +87,7 @@ function req(method, urlPath, body, token) {
     },
   };
   if (body !== undefined) {
-    request.body = { mode: 'raw', raw: JSON.stringify(body, null, 2), options: { raw: { language: 'json' } } };
+    request.body = { mode: 'raw', raw: JSON.stringify(adaptarAutenticacion(urlPath, body), null, 2), options: { raw: { language: 'json' } } };
   }
   return request;
 }
@@ -109,6 +127,16 @@ function assertCreated201() {
   ];
 }
 
+const PREFIJO_BLOQUEADO_MP = '[BLOQUEADO: requiere un pedido en PENDIENTE_CONFIRMACION_COMERCIO, que solo se alcanza con un pago real aprobado de Mercado Pago] ';
+
+function bloqueadoMp(it) {
+  it.name = PREFIJO_BLOQUEADO_MP + it.name;
+  for (const ev of it.event || []) {
+    ev.script.exec = ev.script.exec.map((linea) => linea.split('pm.test(').join('pm.test.skip('));
+  }
+  return it;
+}
+
 function item(name, request, execLines) {
   return { name, request, response: [], event: [{ listen: 'test', script: { type: 'text/javascript', exec: execLines } }] };
 }
@@ -117,9 +145,6 @@ function registroItem(name, overrides, execLines) {
   return item(name, req('POST', '/auth/registro/comercio', baseComercioPayload(overrides)), execLines);
 }
 
-// ---------------------------------------------------------------------------
-// Folder 33 - Paso 1 (Negocio)
-// ---------------------------------------------------------------------------
 const s = (n, c = 'x') => c.repeat(n);
 const folder33 = {
   name: '33 - Matriz Comercio - Registro Paso 1 (Negocio)',
@@ -158,9 +183,6 @@ const folder33 = {
   ],
 };
 
-// ---------------------------------------------------------------------------
-// Folder 34 - Paso 2 (Legales)
-// ---------------------------------------------------------------------------
 const folder34 = {
   name: '34 - Matriz Comercio - Registro Paso 2 (Legales)',
   item: [
@@ -210,12 +232,20 @@ const folder34 = {
 
     registroItem('Registro Comercio - fechaNacimientoRepresentante vacia (null)', { fechaNacimientoRepresentante: null }, assertFieldMessage(400, 'fechaNacimientoRepresentante', 'La fecha de nacimiento es obligatoria')),
     registroItem(
-      '[bug ya corregido - @Past eliminado, MayorDeEdadValidator ahora cubre fecha futura internamente] Registro Comercio - fechaNacimientoRepresentante futura (mensaje ya deterministico)',
+      '[FechaNacimientoRepresentanteValidator distingue fecha futura de menor de edad] Registro Comercio - fechaNacimientoRepresentante futura (mensaje ya deterministico)',
       { fechaNacimientoRepresentante: '2099-01-01' },
-      assertFieldMessage(400, 'fechaNacimientoRepresentante', 'Debe ser mayor de 18 años'),
+      assertFieldMessage(400, 'fechaNacimientoRepresentante', 'La fecha ingresada no es válida'),
     ),
     registroItem('Registro Comercio - fechaNacimientoRepresentante menor de edad (17 anios, violacion unica)', { fechaNacimientoRepresentante: '2009-01-01' }, assertFieldMessage(400, 'fechaNacimientoRepresentante', 'Debe ser mayor de 18 años')),
 
+    registroItem('Registro Comercio - nombreUsuario vacio', { nombreUsuario: '' }, assertFieldMessage(400, 'nombreUsuario', 'El nombre de usuario es obligatorio')),
+    registroItem('Registro Comercio - nombreUsuario corto (7 caracteres, debe rechazar)', { nombreUsuario: 'abcdefg' }, assertFieldMessage(400, 'nombreUsuario', 'El nombre de usuario debe tener al menos 8 caracteres')),
+    registroItem('Registro Comercio - nombreUsuario con simbolo (debe rechazar)', { nombreUsuario: 'abcd_efgh1' }, assertFieldMessage(400, 'nombreUsuario', 'Solo se permiten letras y números')),
+    registroItem('Registro Comercio - nombreUsuario por encima del limite (21 caracteres, debe rechazar)', { nombreUsuario: s(21, 'a') }, assertFieldMessage(400, 'nombreUsuario', 'El nombre de usuario no puede superar los 20 caracteres')),
+    registroItem('Registro Comercio - nombreUsuario limite inferior exacto 8 (debe aceptar)', { nombreUsuario: 'pmcom008', email: 'matriz.c2.usr8@bajonea.test', cuit: '30799009508', dniRepresentante: '30199391' }, assertCreated201()),
+    registroItem('Registro Comercio - nombreUsuario reservado (soporte1, aceptado por no ser exacto)', { nombreUsuario: 'soporte1x', email: 'matriz.c2.usrres@bajonea.test', cuit: '30799009516', dniRepresentante: '30199392' }, assertCreated201()),
+    registroItem('Registro Comercio - nombreUsuario reservado exacto (administrador, 409)', { nombreUsuario: 'administrador' }, assertTopLevelMessage(409, 'Ese nombre de usuario ya está en uso')),
+    registroItem('Registro Comercio - nombreUsuario ya en uso con otra capitalizacion (409)', { nombreUsuario: 'PMCOM008' }, assertTopLevelMessage(409, 'Ese nombre de usuario ya está en uso')),
     registroItem('Registro Comercio - email vacio', { email: '' }, assertFieldMessage(400, 'email', 'El email es obligatorio')),
     registroItem('Registro Comercio - email formato invalido (sin arroba)', { email: 'sin.arroba.test' }, assertFieldMessage(400, 'email', 'Ingresá un email válido')),
 
@@ -228,9 +258,6 @@ const folder34 = {
   ],
 };
 
-// ---------------------------------------------------------------------------
-// Folder 35 - Paso 3 (Horarios)
-// ---------------------------------------------------------------------------
 const folder35 = {
   name: '35 - Matriz Comercio - Registro Paso 3 (Horarios)',
   item: [
@@ -258,9 +285,6 @@ const folder35 = {
   ],
 };
 
-// ---------------------------------------------------------------------------
-// Setup helper for authenticated domains
-// ---------------------------------------------------------------------------
 function setupRegistroComercio(nombreSetup, overrides, tokenVar) {
   const payload = baseComercioPayload(overrides);
   const items = [];
@@ -287,9 +311,6 @@ function setupRegistroComercio(nombreSetup, overrides, tokenVar) {
   return { items, payload };
 }
 
-// ---------------------------------------------------------------------------
-// Folder 36 - Perfil de Comercio
-// ---------------------------------------------------------------------------
 const perfilSetup = setupRegistroComercio('matriz perfil comercio', { email: 'matriz.comercio.perfil@bajonea.test', cuit: '30799000225', dniRepresentante: '30199340' }, 'matriz_comercio_perfil_token');
 function perfilBody(o) {
   return { nombre: 'Comercio Perfil Editado', descripcion: 'desc', telefono: '+5492964555200', emailContacto: 'nuevo.contacto@bajonea.test', aceptaDelivery: true, aceptaRetiro: true, ...o };
@@ -321,9 +342,6 @@ const folder36 = {
   ],
 };
 
-// ---------------------------------------------------------------------------
-// Folder 37 - Cambio de password desde perfil de Comercio
-// ---------------------------------------------------------------------------
 const pwSetup = setupRegistroComercio('matriz password comercio', { email: 'matriz.comercio.pw@bajonea.test', cuit: '30799000403', dniRepresentante: '30199350' }, 'matriz_comercio_pw_token');
 const pwPassword = pwSetup.payload.password;
 const folder37 = {
@@ -342,9 +360,6 @@ const folder37 = {
   ],
 };
 
-// ---------------------------------------------------------------------------
-// Folder 38 - Foto de perfil de Comercio
-// ---------------------------------------------------------------------------
 const fotoSetup = setupRegistroComercio('matriz foto comercio', { email: 'matriz.comercio.foto@bajonea.test', cuit: '30799000411', dniRepresentante: '30199360' }, 'matriz_comercio_foto_token');
 const urlLarga = 'https://res.cloudinary.com/demo/image/upload/v1/' + 'a'.repeat(500) + '.jpg';
 const folder38 = {
@@ -364,9 +379,6 @@ const folder38 = {
   ],
 };
 
-// ---------------------------------------------------------------------------
-// Folder 39 - CRUD de productos (campo por campo)
-// ---------------------------------------------------------------------------
 const productoSetup = setupRegistroComercio('matriz productos comercio', { email: 'matriz.comercio.productos@bajonea.test', cuit: '30799000438', dniRepresentante: '30199370' }, 'matriz_comercio_productos_token');
 function prodBody(o) {
   return { nombre: 'Empanada Matriz', descripcion: 'desc', precio: 1000, categoriaId: '{{matriz_categoria_id}}', tagIds: ['{{matriz_tag_id}}'], ...o };
@@ -433,9 +445,6 @@ const folder39 = {
   ],
 };
 
-// ---------------------------------------------------------------------------
-// Folder 40 - Gestion de imagenes de producto
-// ---------------------------------------------------------------------------
 const folder40 = {
   name: '40 - Matriz Comercio - Gestion de imagenes de producto',
   item: [
@@ -463,9 +472,6 @@ const folder40 = {
   ],
 };
 
-// ---------------------------------------------------------------------------
-// Folder 41 - Rechazo de pedido
-// ---------------------------------------------------------------------------
 const DIAS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
 const pedidoComercioSetup = setupRegistroComercio(
   'matriz pedido comercio',
@@ -487,6 +493,7 @@ const folder41 = {
       "pm.environment.set('matriz_pedido_comercio_id', json.data.id);",
     ]),
     item('Setup - Aprobar Comercio (matriz pedido)', req('PUT', '/administrador/comercios/{{matriz_pedido_comercio_id}}/resolver', { aprobar: true }, 'matriz_admin_token'), assertStatusOnly(200)),
+    item('Setup - Marcar APTO_VENTA (atajo de test, sin vincular Mercado Pago) (matriz pedido)', req('PUT', '/test/comercios/{{matriz_pedido_comercio_id}}/apto-venta', {}), assertStatusOnly(200)),
     item('Setup - Crear categoria (matriz pedido)', req('POST', '/categorias', { nombre: 'Matriz Categoria Pedido' }, 'matriz_admin_token'), [
       "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
       'const json = pm.response.json();',
@@ -530,15 +537,15 @@ const folder41 = {
       req('PUT', '/pedidos/comercio/{{matriz_pedido_1_id}}/rechazar', { motivo: null, comentario: null }, 'matriz_comercio_pedido_token'),
       assertFieldMessage(400, 'motivo', 'no debe ser nulo'),
     ),
-    item('Rechazo pedido - motivo=OTRO sin comentario (obligatoriedad condicional, debe rechazar)', req('PUT', '/pedidos/comercio/{{matriz_pedido_1_id}}/rechazar', { motivo: 'OTRO', comentario: null }, 'matriz_comercio_pedido_token'), assertTopLevelMessage(400, 'Ingresá un comentario para especificar el motivo del rechazo.')),
-    item('Rechazo pedido - motivo=OTRO con comentario string vacio (debe rechazar)', req('PUT', '/pedidos/comercio/{{matriz_pedido_1_id}}/rechazar', { motivo: 'OTRO', comentario: '' }, 'matriz_comercio_pedido_token'), assertTopLevelMessage(400, 'Ingresá un comentario para especificar el motivo del rechazo.')),
-    item(
+    bloqueadoMp(item('Rechazo pedido - motivo=OTRO sin comentario (obligatoriedad condicional, debe rechazar)', req('PUT', '/pedidos/comercio/{{matriz_pedido_1_id}}/rechazar', { motivo: 'OTRO', comentario: null }, 'matriz_comercio_pedido_token'), assertTopLevelMessage(400, 'Ingresá un comentario para especificar el motivo del rechazo.'))),
+    bloqueadoMp(item('Rechazo pedido - motivo=OTRO con comentario string vacio (debe rechazar)', req('PUT', '/pedidos/comercio/{{matriz_pedido_1_id}}/rechazar', { motivo: 'OTRO', comentario: '' }, 'matriz_comercio_pedido_token'), assertTopLevelMessage(400, 'Ingresá un comentario para especificar el motivo del rechazo.'))),
+    bloqueadoMp(item(
       '[confirma que el backend tambien hace trim, no solo el frontend] Rechazo pedido - motivo=OTRO con comentario solo espacios (debe rechazar)',
       req('PUT', '/pedidos/comercio/{{matriz_pedido_1_id}}/rechazar', { motivo: 'OTRO', comentario: '   ' }, 'matriz_comercio_pedido_token'),
       assertTopLevelMessage(400, 'Ingresá un comentario para especificar el motivo del rechazo.'),
-    ),
+    )),
     item('Rechazo pedido - motivo fuera del enum', req('PUT', '/pedidos/comercio/{{matriz_pedido_1_id}}/rechazar', { motivo: 'INVALIDO', comentario: null }, 'matriz_comercio_pedido_token'), assertTopLevelMessage(400, 'El cuerpo de la solicitud contiene datos con formato inválido')),
-    item('Rechazo pedido - motivo=OTRO con comentario valido (debe aceptar, consume pedido 1)', req('PUT', '/pedidos/comercio/{{matriz_pedido_1_id}}/rechazar', { motivo: 'OTRO', comentario: 'Motivo especifico del rechazo' }, 'matriz_comercio_pedido_token'), assertStatusOnly(200)),
+    bloqueadoMp(item('Rechazo pedido - motivo=OTRO con comentario valido (debe aceptar, consume pedido 1)', req('PUT', '/pedidos/comercio/{{matriz_pedido_1_id}}/rechazar', { motivo: 'OTRO', comentario: 'Motivo especifico del rechazo' }, 'matriz_comercio_pedido_token'), assertStatusOnly(200))),
 
     item('Setup - Agregar item al carrito, pedido 2 (matriz pedido)', req('POST', '/carrito/items', { productoId: '{{matriz_pedido_producto_id}}', cantidad: 1 }, 'matriz_pedido_cliente_token'), assertStatusOnly(201)),
     item('Setup - Crear pedido 2 (matriz pedido)', req('POST', '/pedidos/cliente', { tipoEntrega: 'DOMICILIO', direccionId: '{{matriz_pedido_direccion_id}}' }, 'matriz_pedido_cliente_token'), [
@@ -551,13 +558,10 @@ const folder41 = {
       req('PUT', '/pedidos/comercio/{{matriz_pedido_2_id}}/rechazar', { motivo: 'SIN_STOCK', comentario: 'c'.repeat(501) }, 'matriz_comercio_pedido_token'),
       assertFieldMessage(400, 'comentario', 'el tamaño debe estar entre 0 y 500'),
     ),
-    item('Rechazo pedido - motivo != OTRO sin comentario (opcional, debe aceptar, consume pedido 2)', req('PUT', '/pedidos/comercio/{{matriz_pedido_2_id}}/rechazar', { motivo: 'SIN_STOCK', comentario: null }, 'matriz_comercio_pedido_token'), assertStatusOnly(200)),
+    bloqueadoMp(item('Rechazo pedido - motivo != OTRO sin comentario (opcional, debe aceptar, consume pedido 2)', req('PUT', '/pedidos/comercio/{{matriz_pedido_2_id}}/rechazar', { motivo: 'SIN_STOCK', comentario: null }, 'matriz_comercio_pedido_token'), assertStatusOnly(200))),
   ],
 };
 
-// ---------------------------------------------------------------------------
-// Splice into the collection
-// ---------------------------------------------------------------------------
 const collection = JSON.parse(fs.readFileSync(collectionPath, 'utf8'));
 const nuevasFolders = [folder33, folder34, folder35, folder36, folder37, folder38, folder39, folder40, folder41];
 const yaExisten = new Set(collection.item.map((f) => f.name));

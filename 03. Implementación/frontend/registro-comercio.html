@@ -279,11 +279,24 @@
             <p class="section-heading">Acceso a la plataforma</p>
             <div class="form" style="gap:16px;">
               <div class="field">
+                <label class="field__label" for="nombreUsuario">Nombre de usuario</label>
+                <div class="input-shell">
+                  <span class="input-shell__icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  </span>
+                  <input type="text" id="nombreUsuario" placeholder="Elegí tu nombre de usuario" autocomplete="username" autocapitalize="none" spellcheck="false" required maxlength="20" data-testid="input-nombre-usuario" />
+                  <span class="input-shell__status-icon" id="icono-nombreUsuario" style="display:none;" data-testid="icono-estado-nombre-usuario"></span>
+                </div>
+                <p class="field__hint">Entre 8 y 20 caracteres, solo letras y números.</p>
+                <div class="field__status" id="estado-nombreUsuario" style="display:none;" data-testid="estado-nombre-usuario"></div>
+                <div class="field__error" id="error-nombreUsuario" style="display:none;" data-testid="mensaje-error-nombre-usuario"></div>
+              </div>
+              <div class="field">
                 <label class="field__label" for="email">Email de acceso</label>
                 <div class="input-shell">
                   <input type="email" id="email" placeholder="acceso@micomercio.com" required maxlength="254" data-testid="input-email" />
                 </div>
-                <p class="field__hint">Este email se usará para iniciar sesión y recibir notificaciones.</p>
+                <p class="field__hint">Este email se usará para recuperar tu contraseña y recibir notificaciones.</p>
                 <div class="field__error" id="error-email" style="display:none;" data-testid="mensaje-error-email"></div>
               </div>
               <div class="field">

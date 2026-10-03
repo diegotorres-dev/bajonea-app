@@ -8,26 +8,21 @@ import {
   login,
   apiGet,
   nombreArchivoFixture,
+  API_BASE_URL,
+  esperarImagenCargadaEnRecorte,
 } from './helpers/backend';
 
 const FIXTURE_PATH = path.resolve(__dirname, '../fixtures/bajonea-e2e-producto.png');
 const FIXTURE_BUFFER = readFileSync(FIXTURE_PATH);
 
-async function loginUi(page: Page, email: string, password: string) {
+async function loginUi(page: Page, usuario: string, password: string) {
   await page.goto('/login.html');
-  await page.getByTestId('input-email').fill(email);
+  await page.getByTestId('input-nombre-usuario').fill(usuario);
   await page.getByTestId('input-password').fill(password);
   await page.getByTestId('btn-ingresar').click();
   await page.waitForURL('**/index.html');
 }
 
-/**
- * Bajoneá tiene sesión única por cuenta (Sesion.activa) -- un login nuevo por API para la
- * MISMA cuenta invalida el JWT que ya tiene la pestaña del navegador (mismo criterio ya
- * documentado en testing/playwright/README.md para specs futuros). Para verificar estado
- * post-acción sin romper la sesión que la UI todavía va a seguir usando, se lee el token que
- * el propio navegador ya tiene en localStorage en vez de loguear de nuevo por API.
- */
 async function tokenDeSesionUi(page: Page): Promise<string> {
   const token = await page.evaluate(() => localStorage.getItem('bajonea_token'));
   if (!token) {
@@ -47,6 +42,7 @@ async function subirFotoPerfilViaCropUi(page: Page, buffer: Buffer, mimeType = '
   const respuesta = page.waitForResponse(
     (res) => res.url().endsWith('/foto-perfil') && res.request().method() === 'PATCH',
   );
+  await esperarImagenCargadaEnRecorte(page);
   await page.getByTestId('btn-confirmar-recorte').click();
   await expect(page.getByTestId('modal-recorte-imagen')).toHaveCount(0);
   return respuesta;
@@ -61,7 +57,7 @@ test.describe('Perfil de Cliente: editar datos personales', () => {
 
   test('nombre/apellido vacío y con formato inválido muestran el error cerca del campo, sin guardar', async ({ page, request }) => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
-    await loginUi(page, cliente.email, cliente.password);
+    await loginUi(page, cliente.nombreUsuario, cliente.password);
     await page.goto('/perfil.html');
     await page.getByTestId('btn-editar-datos').click();
 
@@ -77,7 +73,7 @@ test.describe('Perfil de Cliente: editar datos personales', () => {
 
   test('el input de nombre no deja escribir más de 100 caracteres (boundary visual del maxlength)', async ({ page, request }) => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
-    await loginUi(page, cliente.email, cliente.password);
+    await loginUi(page, cliente.nombreUsuario, cliente.password);
     await page.goto('/perfil.html');
     await page.getByTestId('btn-editar-datos').click();
 
@@ -89,7 +85,7 @@ test.describe('Perfil de Cliente: editar datos personales', () => {
 
   test('el input de teléfono filtra letras y símbolos en tiempo real, no solo al enviar', async ({ page, request }) => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
-    await loginUi(page, cliente.email, cliente.password);
+    await loginUi(page, cliente.nombreUsuario, cliente.password);
     await page.goto('/perfil.html');
     await page.getByTestId('btn-editar-datos').click();
 
@@ -101,7 +97,7 @@ test.describe('Perfil de Cliente: editar datos personales', () => {
 
   test('guardar datos válidos actualiza el encabezado del perfil y persiste contra el backend real', async ({ page, request }) => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
-    await loginUi(page, cliente.email, cliente.password);
+    await loginUi(page, cliente.nombreUsuario, cliente.password);
     await page.goto('/perfil.html');
     await page.getByTestId('btn-editar-datos').click();
 
@@ -120,7 +116,7 @@ test.describe('Perfil de Cliente: editar datos personales', () => {
 
     await expect(page.getByTestId('nombre-cliente-perfil')).toHaveText('Renombrada Editada');
 
-    const sesion = await login(request, cliente.email, cliente.password);
+    const sesion = await login(request, cliente.nombreUsuario, cliente.password);
     const { body } = await apiGet(request, '/clientes/perfil', sesion.token);
     expect(body.data.nombre).toBe('Renombrada');
     expect(body.data.apellido).toBe('Editada');
@@ -137,7 +133,7 @@ test.describe('Perfil de Cliente: cambiar contraseña', () => {
 
   test('campos vacíos y contraseña nueva insegura muestran el error cerca del campo correspondiente', async ({ page, request }) => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
-    await loginUi(page, cliente.email, cliente.password);
+    await loginUi(page, cliente.nombreUsuario, cliente.password);
     await page.goto('/perfil.html');
     await page.getByTestId('btn-cambiar-password').click();
 
@@ -146,9 +142,6 @@ test.describe('Perfil de Cliente: cambiar contraseña', () => {
     await expect(page.getByTestId('mensaje-error-password-nueva')).toBeVisible();
     await expect(page.getByTestId('mensaje-error-password-confirmar')).toBeVisible();
 
-    // "debilxxx" (8 minúsculas, sin mayúscula ni número) pasa el minlength=8 nativo del input
-    // -- así la validación llega de verdad hasta esPasswordSegura() y muestra el mensaje real
-    // de complejidad, no el genérico de "campo vacío" que dispara checkValidity() con <8.
     await page.getByTestId('input-password-actual').fill(cliente.password);
     await page.getByTestId('input-password-nueva').fill('debilxxx');
     await page.getByTestId('input-password-confirmar').fill('debilxxx');
@@ -158,17 +151,13 @@ test.describe('Perfil de Cliente: cambiar contraseña', () => {
 
   test('la fortaleza visual reacciona en vivo y la confirmación que no coincide bloquea el submit', async ({ page, request }) => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
-    await loginUi(page, cliente.email, cliente.password);
+    await loginUi(page, cliente.nombreUsuario, cliente.password);
     await page.goto('/perfil.html');
     await page.getByTestId('btn-cambiar-password').click();
 
-    // Selector plano (no encadenado, ver nota en 10-recuperacion-y-reactivacion.spec.ts).
     const barrasLlenas = page.locator('[data-testid="indicador-fortaleza-password"] .strength-meter__bar--filled');
     await page.getByTestId('input-password-nueva').fill('debil');
     await expect(barrasLlenas).toHaveCount(0);
-    // calcularFortalezaPassword (validators.js) suma el 4to punto por símbolo especial O
-    // longitud >= 12 -- "Fuerte12345" (11) se queda en 3/4, hace falta un caracter más para
-    // las 4 barras llenas.
     await page.getByTestId('input-password-nueva').fill('Fuerte123456');
     await expect(barrasLlenas).toHaveCount(4);
 
@@ -184,11 +173,10 @@ test.describe('Perfil de Cliente: cambiar contraseña', () => {
   }) => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
     const passwordNueva = 'CambiadaOk123';
-    await loginUi(page, cliente.email, cliente.password);
+    await loginUi(page, cliente.nombreUsuario, cliente.password);
     await page.goto('/perfil.html');
     await page.getByTestId('btn-cambiar-password').click();
 
-    // 1er intento fallido: error puntual, sin advertencia de bloqueo todavía.
     await page.getByTestId('input-password-actual').fill('ContraseñaEquivocada1');
     await page.getByTestId('input-password-nueva').fill(passwordNueva);
     await page.getByTestId('input-password-confirmar').fill(passwordNueva);
@@ -201,7 +189,6 @@ test.describe('Perfil de Cliente: cambiar contraseña', () => {
     await expect(page.getByTestId('mensaje-error-password-actual')).toContainText('no es correcta');
     await expect(page.getByTestId('mensaje-banner-password')).not.toContainText('bloqueará');
 
-    // 2do intento fallido: MAX_INTENTOS_FALLIDOS=3 -- a 1 de distancia del bloqueo, banner real.
     await page.getByTestId('input-password-actual').fill('OtraVezMal2');
     const segundoIntento = page.waitForResponse(
       (res) => res.url().endsWith('/auth/cambiar-password') && res.request().method() === 'POST',
@@ -210,8 +197,6 @@ test.describe('Perfil de Cliente: cambiar contraseña', () => {
     await segundoIntento;
     await expect(page.getByTestId('mensaje-banner-password')).toContainText('se bloqueará');
 
-    // 3er intento con la contraseña actual correcta: éxito, resetea el contador y cierra la
-    // sesión -- redirige a login con el flag de contraseña actualizada.
     await page.getByTestId('input-password-actual').fill(cliente.password);
     const tercerIntento = page.waitForResponse(
       (res) => res.url().endsWith('/auth/cambiar-password') && res.request().method() === 'POST',
@@ -221,7 +206,7 @@ test.describe('Perfil de Cliente: cambiar contraseña', () => {
     expect(respuesta3.status()).toBe(200);
     await page.waitForURL('**/login.html?passwordActualizada=1');
 
-    const sesionNueva = await login(request, cliente.email, passwordNueva);
+    const sesionNueva = await login(request, cliente.nombreUsuario, passwordNueva);
     expect(sesionNueva.token).toBeTruthy();
   });
 });
@@ -238,7 +223,7 @@ test.describe('Perfil de Cliente: foto de perfil', () => {
     request,
   }) => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
-    await loginUi(page, cliente.email, cliente.password);
+    await loginUi(page, cliente.nombreUsuario, cliente.password);
     await page.goto('/perfil.html');
 
     let firmaPedida = false;
@@ -270,11 +255,10 @@ test.describe('Perfil de Cliente: foto de perfil', () => {
 
   test('subir, editar y eliminar la foto de perfil funcionan de punta a punta contra Cloudinary real', async ({ page, request }) => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
-    await loginUi(page, cliente.email, cliente.password);
+    await loginUi(page, cliente.nombreUsuario, cliente.password);
     await page.goto('/perfil.html');
+    await expect(page.getByTestId('nombre-cliente-perfil')).not.toHaveText('');
 
-    // Sin foto todavía: el click en el avatar abre directo el selector de archivo, sin modal
-    // intermedio de "Editar/Eliminar" (mostrarModalFotoPerfil solo aparece si ya hay foto).
     await expect(page.getByTestId('modal-foto-perfil')).toHaveCount(0);
 
     const respuestaSubida = await subirFotoPerfilViaCropUi(page, FIXTURE_BUFFER);
@@ -286,7 +270,6 @@ test.describe('Perfil de Cliente: foto de perfil', () => {
     const { body: perfilConFoto } = await apiGet(request, '/clientes/perfil', token);
     expect(perfilConFoto.data.fotoPerfilUrl).toContain('res.cloudinary.com');
 
-    // Con foto ya cargada, el click abre el modal de Editar/Eliminar en vez del selector directo.
     await page.getByTestId('btn-foto-perfil').click();
     await expect(page.getByTestId('modal-foto-perfil')).toBeVisible();
 
@@ -305,15 +288,12 @@ test.describe('Perfil de Cliente: foto de perfil', () => {
   test('la foto de perfil de un cliente es invisible/inaccesible para otro cliente (aislamiento por id)', async ({ page, request }) => {
     const clienteA = await registrarYVerificarCliente(request, localidadId);
     const clienteB = await registrarYVerificarCliente(request, localidadId);
-    const sesionA = await login(request, clienteA.email, clienteA.password);
-    const sesionB = await login(request, clienteB.email, clienteB.password);
+    const sesionA = await login(request, clienteA.nombreUsuario, clienteA.password);
+    const sesionB = await login(request, clienteB.nombreUsuario, clienteB.password);
     const { body: perfilA } = await apiGet(request, '/clientes/perfil', sesionA.token);
     const idA = perfilA.data.id as number;
 
-    // UsuarioService.validarPropioUsuario compara el {id} del path contra el id del JWT y
-    // lanza RecursoNoEncontradoException (404, no 403) cuando no coinciden -- mismo criterio
-    // que el resto del proyecto para no confirmarle a un usuario ajeno que el id existe.
-    const respuesta = await request.patch(`http://localhost:8080/api/v1/usuarios/${idA}/foto-perfil`, {
+    const respuesta = await request.patch(`${API_BASE_URL}/usuarios/${idA}/foto-perfil`, {
       headers: { Authorization: `Bearer ${sesionB.token}`, 'Content-Type': 'application/json' },
       data: { url: 'https://res.cloudinary.com/demo/image/upload/v1/foto.jpg' },
     });

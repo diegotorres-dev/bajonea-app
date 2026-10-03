@@ -7,6 +7,7 @@ import {
   obtenerCodigoTest,
   registrarCliente,
   sufijoUnico,
+  nombreUsuarioUnico,
   generarDni,
   generarTelefono,
   generarCuit,
@@ -16,6 +17,7 @@ import {
   verificarCuenta,
   login,
   apiGet,
+  esperarImagenCargadaEnRecorte,
 } from './helpers/backend';
 
 const FIXTURE_PATH = path.resolve(__dirname, '../fixtures/bajonea-e2e-producto.png');
@@ -34,13 +36,6 @@ test.describe('Registro y verificación de cuenta', () => {
     await localidadSelect.selectOption(localidadId);
   }
 
-  /**
-   * RegistroComercioRequestDTO.fotoPerfilUrl es obligatorio desde la migración a
-   * bajonea_final (ver CLAUDE.md §1bis, Tramo 4) -- el wizard bloquea el paso 1 -> 2 sin foto
-   * (auth.js, listener de continuar-btn). Confirmar el recorte solo deja la foto en memoria
-   * (fotoComercioStaged): la subida real a Cloudinary ocurre recién en el submit final, así
-   * que acá no hace falta esperar ninguna respuesta de red.
-   */
   async function subirFotoComercioUi(page: Page) {
     await page.getByTestId('input-foto-comercio').setInputFiles({
       name: nombreArchivoFixture(),
@@ -48,11 +43,9 @@ test.describe('Registro y verificación de cuenta', () => {
       buffer: FIXTURE_BUFFER,
     });
     await expect(page.getByTestId('modal-recorte-imagen')).toBeVisible();
-    // Esperar a que la imagen esté cargada en el canvas antes de confirmar -- igual que en
-    // spec 06 (subirFotoViaCropUi): confirmar apenas se abre el modal, antes de que el <img>
-    // termine de cargar, deja el canvas sin dibujar y el recorte se pierde en silencio.
     await expect(page.getByTestId('canvas-recorte')).toBeVisible();
     await expect(page.getByTestId('input-zoom-recorte')).toBeVisible();
+    await esperarImagenCargadaEnRecorte(page);
     await page.getByTestId('btn-confirmar-recorte').click();
     await expect(page.getByTestId('modal-recorte-imagen')).toHaveCount(0);
   }
@@ -73,6 +66,7 @@ test.describe('Registro y verificación de cuenta', () => {
     await page.getByTestId('input-dni').fill(generarDni());
     await page.getByTestId('input-fecha-nacimiento').fill('1995-05-20');
     await page.getByTestId('input-telefono').fill(generarTelefono());
+    await page.getByTestId('input-nombre-usuario').fill(nombreUsuarioUnico('cli'));
     await page.getByTestId('input-email').fill(email);
     await page.getByTestId('input-password').fill('Testing123');
     await page.getByTestId('input-confirmar-password').fill('Testing123');
@@ -103,14 +97,6 @@ test.describe('Registro y verificación de cuenta', () => {
     expect(codigo).toMatch(/^\d{6}$/);
   });
 
-  /**
-   * A diferencia de Comercio (fotoPerfilUrl obligatoria), la foto de perfil de Cliente es
-   * opcional (RegistroClienteRequestDTO.fotoPerfilUrl sin @NotBlank/@NotNull) -- por eso el
-   * resto de los tests de este describe no la cargan. Este test cubre específicamente ese
-   * camino: recorte real (js/crop.js, mismo mecanismo que subirFotoComercioUi) + subida real
-   * a Cloudinary en el submit final + persistencia confirmada contra el backend real después
-   * de verificar la cuenta y loguearse (GET /clientes/perfil).
-   */
   test('registro de cliente con foto de perfil: el recorte funciona sin errores y la URL de Cloudinary queda persistida', async ({ page, request }) => {
     const suf = sufijoUnico();
     const email = `cliente.foto.ui.${suf}@bajonea.test`;
@@ -121,6 +107,7 @@ test.describe('Registro y verificación de cuenta', () => {
       if (msg.type() === 'error') erroresConsola.push(msg.text());
     });
 
+    const nombreUsuario = nombreUsuarioUnico('cli');
     await page.goto('/registro-cliente.html');
 
     await page.getByTestId('input-nombre').fill('Valentina');
@@ -128,14 +115,12 @@ test.describe('Registro y verificación de cuenta', () => {
     await page.getByTestId('input-dni').fill(generarDni());
     await page.getByTestId('input-fecha-nacimiento').fill('1995-05-20');
     await page.getByTestId('input-telefono').fill(generarTelefono());
+    await page.getByTestId('input-nombre-usuario').fill(nombreUsuario);
     await page.getByTestId('input-email').fill(email);
     await page.getByTestId('input-password').fill(password);
     await page.getByTestId('input-confirmar-password').fill(password);
     await page.getByTestId('input-acepta-terminos').check();
 
-    // Mismo mecanismo real que subirFotoComercioUi: seleccionar archivo -> abre el editor de
-    // recorte (js/crop.js, URL.createObjectURL) -> confirmar deja la foto en memoria
-    // (fotoClienteStaged); la subida real a Cloudinary ocurre recién en el submit final.
     await page.getByTestId('input-foto-cliente').setInputFiles({
       name: nombreArchivoFixture(),
       mimeType: 'image/png',
@@ -144,6 +129,7 @@ test.describe('Registro y verificación de cuenta', () => {
     await expect(page.getByTestId('modal-recorte-imagen')).toBeVisible();
     await expect(page.getByTestId('canvas-recorte')).toBeVisible();
     await expect(page.getByTestId('input-zoom-recorte')).toBeVisible();
+    await esperarImagenCargadaEnRecorte(page);
     await page.getByTestId('btn-confirmar-recorte').click();
     await expect(page.getByTestId('modal-recorte-imagen')).toHaveCount(0);
 
@@ -168,10 +154,8 @@ test.describe('Registro y verificación de cuenta', () => {
 
     expect(erroresConsola, `Errores de consola durante el flujo:\n${erroresConsola.join('\n')}`).toEqual([]);
 
-    // Persistencia confirmada de punta a punta: verificar cuenta -> loguear -> leer el perfil
-    // real desde el backend, no solo confiar en lo que devolvió el registro.
     await verificarCuenta(request, email);
-    const sesion = await login(request, email, password);
+    const sesion = await login(request, nombreUsuario, password);
     const { status, body } = await apiGet(request, '/clientes/perfil', sesion.token);
     expect(status).toBe(200);
     expect(body.data.fotoPerfilUrl).toContain('res.cloudinary.com');
@@ -207,16 +191,12 @@ test.describe('Registro y verificación de cuenta', () => {
     await page.getByTestId('input-dni-representante').fill(generarDni());
     await page.getByTestId('input-fecha-nacimiento-representante').fill('1985-03-15');
     await page.getByTestId('input-telefono-representante').fill(generarTelefono());
+    await page.getByTestId('input-nombre-usuario').fill(nombreUsuarioUnico('com'));
     await page.getByTestId('input-email').fill(emailLogin);
     await page.getByTestId('input-password').fill('Testing123');
     await page.getByTestId('input-confirmar-password').fill('Testing123');
     await page.getByTestId('btn-continuar-2').click();
 
-    // El horario tiene 2 tabs -- "Horario fijo" (activo por default) y "Personalizado"
-    // (donde vive lista-horarios/fila-horario) -- hay que cambiar de tab antes de poder
-    // cargar franjas por día. A diferencia de la versión anterior de esta pantalla, la lista
-    // de "Personalizado" arranca vacía (sin ninguna fila precargada) -- hay que agregar la
-    // primera franja a mano con btn-agregar-horario, no asumir que ya existe una.
     await page.getByTestId('tab-horario-personalizado').click();
     const filas = page.getByTestId('fila-horario');
     await page.getByTestId('btn-agregar-horario').click();
@@ -258,7 +238,7 @@ test.describe('Registro y verificación de cuenta', () => {
     const cliente = await registrarCliente(request, localidadId);
 
     await page.goto('/login.html');
-    await page.getByTestId('input-email').fill(cliente.email);
+    await page.getByTestId('input-nombre-usuario').fill(cliente.nombreUsuario);
     await page.getByTestId('input-password').fill(cliente.password);
     await page.getByTestId('btn-ingresar').click();
     await expect(page.getByTestId('mensaje-banner')).toContainText('Todavía no verificaste tu email');
@@ -275,9 +255,6 @@ test.describe('Registro y verificación de cuenta', () => {
     expect(respuestaIncorrecta.status()).toBe(401);
     await expect(page.getByTestId('mensaje-error-codigo')).toBeVisible();
 
-    // Los boxes del OTP todavía tienen los dígitos del intento incorrecto -- hay que
-    // vaciarlos antes de cargar el código correcto, si no un valor mixto (mitad viejo,
-    // mitad nuevo) dispara el auto-submit de crearInputOtp apenas se completan 6 dígitos.
     for (let i = 0; i < 6; i += 1) {
       await page.getByTestId(`input-codigo-digito-${i + 1}`).fill('');
     }
@@ -295,7 +272,7 @@ test.describe('Registro y verificación de cuenta', () => {
 
     await page.getByTestId('btn-ir-a-login').click();
     await page.waitForURL('**/login.html');
-    await page.getByTestId('input-email').fill(cliente.email);
+    await page.getByTestId('input-nombre-usuario').fill(cliente.nombreUsuario);
     await page.getByTestId('input-password').fill(cliente.password);
     await page.getByTestId('btn-ingresar').click();
     await page.waitForURL('**/index.html');
@@ -306,13 +283,10 @@ test.describe('Registro y verificación de cuenta', () => {
 
     const dniInput = page.getByTestId('input-dni');
     await dniInput.pressSequentially('ab12cd345678');
-    // input.js filtra no-dígitos y trunca a 8 en cada keystroke (auth.js, dniInput 'input') --
-    // "ab12cd345678" solo aporta los dígitos "12345678", ya truncados a los primeros 8 al tipear.
     await expect(dniInput).toHaveValue('12345678');
 
     const telefonoInput = page.getByTestId('input-telefono');
     await telefonoInput.pressSequentially('29-64 abc123456789');
-    // Mismo criterio: solo dígitos, truncado a 10 mientras se tipea.
     await expect(telefonoInput).toHaveValue('2964123456');
   });
 
@@ -321,7 +295,6 @@ test.describe('Registro y verificación de cuenta', () => {
 
     await page.getByTestId('input-nombre').fill('Valentina');
     await page.getByTestId('input-apellido').fill('Domínguez');
-    // DNI queda vacío a propósito.
     await page.getByTestId('input-fecha-nacimiento').fill('1995-05-20');
     await page.getByTestId('input-telefono').fill(generarTelefono());
     await page.getByTestId('input-email').fill(`cliente.ui.${sufijoUnico()}@bajonea.test`);
@@ -357,7 +330,6 @@ test.describe('Registro y verificación de cuenta', () => {
   test('registro-comercio: un campo requerido vacío bloquea el paso 1 con el error visible', async ({ page }) => {
     await page.goto('/registro-comercio.html');
 
-    // Nombre del comercio queda vacío a propósito.
     await page.getByTestId('input-telefono').fill(generarTelefono());
     await page.getByTestId('input-email-contacto').fill(`comercio.ui.${sufijoUnico()}@bajonea.test`);
     await page.getByTestId('input-calle').fill('Av. San Martín');
@@ -398,6 +370,7 @@ test.describe('Registro y verificación de cuenta', () => {
     await page.getByTestId('input-dni-representante').fill(generarDni());
     await page.getByTestId('input-fecha-nacimiento-representante').fill('1985-03-15');
     await page.getByTestId('input-telefono-representante').fill(generarTelefono());
+    await page.getByTestId('input-nombre-usuario').fill(nombreUsuarioUnico('com'));
     await page.getByTestId('input-email').fill(`comercio.ui.${suf}@bajonea.test`);
     await page.getByTestId('input-password').fill('Testing123');
     await page.getByTestId('input-confirmar-password').fill('Testing123');

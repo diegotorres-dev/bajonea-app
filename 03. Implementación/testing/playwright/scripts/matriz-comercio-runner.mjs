@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 const BASE = 'http://localhost:8080/api/v1';
 
 function baseComercioPayload(overrides = {}) {
@@ -34,7 +35,11 @@ function baseComercioPayload(overrides = {}) {
     fechaNacimientoRepresentante: '1985-03-15',
     redesSociales: [{ tipo: 'INSTAGRAM', url: 'https://instagram.com/matriz.comercio' }],
   };
-  return deepMerge(payload, overrides);
+  const merged = deepMerge(payload, overrides);
+  if (!merged.nombreUsuario) {
+    merged.nombreUsuario = 'pm' + crypto.createHash('sha1').update(merged.email).digest('hex').slice(0, 12);
+  }
+  return merged;
 }
 
 function deepMerge(base, overrides) {
@@ -56,7 +61,7 @@ async function post(path, body, token) {
   const res = await fetch(`${BASE}${path}`, { method: 'POST', headers, body: JSON.stringify(body) });
   const text = await res.text();
   let json = null;
-  try { json = JSON.parse(text); } catch { /* non-json body */ }
+  try { json = JSON.parse(text); } catch { }
   return { status: res.status, json, text };
 }
 
@@ -66,7 +71,7 @@ async function put(path, body, token) {
   const res = await fetch(`${BASE}${path}`, { method: 'PUT', headers, body: JSON.stringify(body) });
   const text = await res.text();
   let json = null;
-  try { json = JSON.parse(text); } catch { /* non-json body */ }
+  try { json = JSON.parse(text); } catch { }
   return { status: res.status, json, text };
 }
 
@@ -76,7 +81,7 @@ async function patch(path, body, token) {
   const res = await fetch(`${BASE}${path}`, { method: 'PATCH', headers, body: JSON.stringify(body) });
   const text = await res.text();
   let json = null;
-  try { json = JSON.parse(text); } catch { /* non-json body */ }
+  try { json = JSON.parse(text); } catch { }
   return { status: res.status, json, text };
 }
 
@@ -86,7 +91,7 @@ async function del(path, token) {
   const res = await fetch(`${BASE}${path}`, { method: 'DELETE', headers });
   const text = await res.text();
   let json = null;
-  try { json = JSON.parse(text); } catch { /* non-json body */ }
+  try { json = JSON.parse(text); } catch { }
   return { status: res.status, json, text };
 }
 
@@ -96,7 +101,7 @@ async function get(path, token) {
   const res = await fetch(`${BASE}${path}`, { method: 'GET', headers });
   const text = await res.text();
   let json = null;
-  try { json = JSON.parse(text); } catch { /* non-json body */ }
+  try { json = JSON.parse(text); } catch { }
   return { status: res.status, json, text };
 }
 
@@ -126,7 +131,7 @@ async function registrarYVerificarYLogin(payload, tipoUsuario = 'comercio') {
     console.error('FALLO VERIFICAR', JSON.stringify(verif));
     throw new Error('verificacion fallo');
   }
-  const login = await post('/auth/login', { email, password: payload.password });
+  const login = await post('/auth/login', { nombreUsuario: payload.nombreUsuario, password: payload.password });
   if (login.status !== 200) {
     console.error('FALLO LOGIN', JSON.stringify(login));
     throw new Error('login fallo');

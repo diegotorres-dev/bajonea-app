@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 /**
  * Los 4 jobs {@code @Scheduled} de la máquina de estados de Pedido (Fase 19). Las frecuencias
  * de polling son fijas, tal como se definieron con Diego — no configurables. Los umbrales de
- * negocio que cada job evalúa (30/75/90/60/90 min) sí son configurables, ver
+ * negocio que cada job evalúa (30/75/90/30/90 min) sí son configurables, ver
  * {@link com.bajonea.backend.config.PedidoTimeoutProperties} / {@code application.properties}.
  */
 @Component

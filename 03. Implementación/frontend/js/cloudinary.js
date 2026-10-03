@@ -76,6 +76,16 @@ export async function subirFotoPerfilRegistroComercio(file) {
   return subirArchivoConFirma(firma, file);
 }
 
+export async function subirFotoNuevoComercio(file) {
+  const firma = await apiFetch('/comercios/nuevo/foto/firma', { method: 'POST' });
+  return subirArchivoConFirma(firma, file);
+}
+
+export async function subirFotoCorreccionComercio(comercioId, file) {
+  const firma = await apiFetch(`/comercios/${comercioId}/correccion/foto/firma`, { method: 'POST' });
+  return subirArchivoConFirma(firma, file);
+}
+
 export async function subirFotoPerfilRegistroCliente(file) {
   const firma = await apiFetch('/auth/registro/cliente/foto-firma', { method: 'POST', auth: false });
   return subirArchivoConFirma(firma, file);

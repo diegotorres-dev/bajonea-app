@@ -1,6 +1,7 @@
 package com.bajonea.backend.services;
 
 import com.bajonea.backend.config.security.JwtService;
+import com.bajonea.backend.dto.request.CambiarNombreUsuarioRequestDTO;
 import com.bajonea.backend.dto.request.CambioPasswordPerfilRequestDTO;
 import com.bajonea.backend.dto.request.ConfirmarReactivacionCuentaRequestDTO;
 import com.bajonea.backend.dto.request.ConfirmarRecuperacionPasswordRequestDTO;
@@ -13,6 +14,7 @@ import com.bajonea.backend.dto.request.VerificarCodigoRequestDTO;
 import com.bajonea.backend.dto.response.LoginResponseDTO;
 import com.bajonea.backend.dto.response.UsuarioResponseDTO;
 import com.bajonea.backend.entities.Comercio;
+import com.bajonea.backend.entities.HistorialCambioNombreUsuario;
 import com.bajonea.backend.entities.Sesion;
 import com.bajonea.backend.entities.Token;
 import com.bajonea.backend.entities.Usuario;
@@ -27,15 +29,16 @@ import com.bajonea.backend.exceptions.CredencialesInvalidasException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.exceptions.ValidacionException;
 import com.bajonea.backend.repositories.ComercioRepository;
+import com.bajonea.backend.repositories.HistorialCambioNombreUsuarioRepository;
 import com.bajonea.backend.repositories.SesionRepository;
 import com.bajonea.backend.repositories.TokenRepository;
 import com.bajonea.backend.repositories.UsuarioRepository;
-import java.security.SecureRandom;
+import com.bajonea.backend.validation.NombreUsuarioPolicy;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -71,30 +74,37 @@ public class AuthService {
     private static final long EXPIRACION_REACTIVACION_CUENTA_HORAS = 24;
     private static final long EXPIRACION_VERIFICACION_EMAIL_HORAS = 24;
     private static final int MAX_INTENTOS_TOKEN_VERIFICACION = 5;
-    private static final int MAX_INTENTOS_GENERACION_TOKEN = 5;
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final String MOTIVO_BLOQUEO_CUENTA = "Bloqueo de cuenta por intentos fallidos";
+    private static final String MOTIVO_RESTAURACION_RECUPERACION = "Restauración por recuperación de contraseña";
+    private static final String MOTIVO_RESTAURACION_REACTIVACION = "Restauración por reactivación de cuenta";
+    private static final int MAX_CAMBIOS_NOMBRE_USUARIO = 3;
+    private static final long VENTANA_CAMBIO_NOMBRE_USUARIO_DIAS = 30;
+    private static final long SEGUNDOS_POR_DIA = 86400;
 
     private final UsuarioRepository usuarioRepository;
     private final TokenRepository tokenRepository;
+    private final TokenService tokenService;
     private final SesionRepository sesionRepository;
     private final ComercioRepository comercioRepository;
+    private final HistorialCambioNombreUsuarioRepository historialCambioNombreUsuarioRepository;
     private final CuentaMercadoPagoService cuentaMercadoPagoService;
+    private final ComercioService comercioService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final EmailService emailService;
 
     public LoginResponseDTO login(LoginRequestDTO request, String ipOrigen, String userAgent) {
-        // findByEmailConBloqueo (SELECT ... FOR UPDATE): serializa requests concurrentes contra
+        // findByNombreUsuarioConBloqueo (SELECT ... FOR UPDATE): serializa requests concurrentes contra
         // el mismo usuario — ver docs/CONCURRENCIA-Y-TRANSACCIONES.md, sección 1.
-        Usuario usuario = usuarioRepository.findByEmailConBloqueo(request.getEmail())
-                .orElseThrow(() -> new CredencialesInvalidasException("Email o contraseña incorrectos"));
+        Usuario usuario = usuarioRepository.findByNombreUsuarioConBloqueo(request.getNombreUsuario())
+                .orElseThrow(() -> new CredencialesInvalidasException("Usuario o contraseña incorrectos"));
 
         validarEstadoParaLogin(usuario);
 
         if (!passwordEncoder.matches(request.getPassword(), usuario.getPasswordHash())) {
             int intentosRestantes = registrarIntentoFallido(usuario);
             throw new CredencialesInvalidasException(
-                    "Email o contraseña incorrectos", Map.of("intentosRestantes", intentosRestantes));
+                    "Usuario o contraseña incorrectos", Map.of("intentosRestantes", intentosRestantes));
         }
 
         usuario.setIntentosFallidos(0);
@@ -196,7 +206,7 @@ public class AuthService {
         usuarioRepository.save(usuario);
 
         cerrarSesionActivaSiExiste(usuario, TipoCierreSesion.FORZADO);
-        restaurarComercioSiCorresponde(usuario, EstadoComercio.CERRADO_TEMPORALMENTE);
+        restaurarComercioSiCorresponde(usuario, EstadoComercio.CERRADO_TEMPORALMENTE, MOTIVO_RESTAURACION_RECUPERACION);
     }
 
     public void cambiarPasswordDesdePerfil(Integer usuarioId, CambioPasswordPerfilRequestDTO request) {
@@ -219,6 +229,65 @@ public class AuthService {
         usuarioRepository.save(usuario);
 
         cerrarSesionActivaSiExiste(usuario, TipoCierreSesion.FORZADO);
+    }
+
+    /**
+     * Exclusivo de Cliente (restricción aplicada en el Controller/{@code SecurityConfig}, no
+     * acá). Revierte parcialmente la decisión previa de "el nombre de usuario no se puede
+     * cambiar": mismo patrón de confirmación de contraseña + bloqueo por 3 intentos que
+     * {@link #cambiarPasswordDesdePerfil}, sin invalidar la sesión activa (el JWT usa el id
+     * como subject, no el nombre de usuario). Límite de 3 cambios cada 30 días corridos
+     * (ventana rolling, no mes calendario — mismo criterio que el resto de los vencimientos
+     * de este Service); un intento con contraseña incorrecta no consume ese cupo, porque
+     * lanza antes de llegar a la validación de límite.
+     */
+    public void cambiarNombreUsuario(Integer usuarioId, CambiarNombreUsuarioRequestDTO request) {
+        // Mismo lock que cambiarPasswordDesdePerfil() — ver docs/CONCURRENCIA-Y-TRANSACCIONES.md, sección 1.
+        Usuario usuario = usuarioRepository.findByIdConBloqueo(usuarioId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+
+        if (!passwordEncoder.matches(request.getPasswordActual(), usuario.getPasswordHash())) {
+            int intentosRestantes = registrarIntentoFallido(usuario);
+            throw new CredencialesInvalidasException(
+                    "La contraseña actual es incorrecta", Map.of("intentosRestantes", intentosRestantes));
+        }
+
+        String nombreUsuarioNuevo = request.getNombreUsuario();
+        String nombreUsuarioActual = usuario.getNombreUsuario();
+        if (nombreUsuarioNuevo.equals(nombreUsuarioActual)) {
+            throw new ValidacionException("Ingresá un nombre de usuario distinto al actual");
+        }
+
+        if (NombreUsuarioPolicy.esReservado(nombreUsuarioNuevo) || usuarioRepository.existsByNombreUsuario(nombreUsuarioNuevo)) {
+            throw new ConflictoDeNegocioException(NombreUsuarioPolicy.MENSAJE_NO_DISPONIBLE);
+        }
+
+        LocalDateTime ahora = LocalDateTime.now();
+        LocalDateTime desde = ahora.minusDays(VENTANA_CAMBIO_NOMBRE_USUARIO_DIAS);
+        List<HistorialCambioNombreUsuario> cambiosRecientes = historialCambioNombreUsuarioRepository
+                .findByUsuarioIdAndFechaCambioAfterOrderByFechaCambioAsc(usuarioId, desde);
+        if (cambiosRecientes.size() >= MAX_CAMBIOS_NOMBRE_USUARIO) {
+            // El cupo se libera cuando sale de la ventana el más antiguo de los últimos MAX cambios.
+            LocalDateTime liberacion = cambiosRecientes.get(cambiosRecientes.size() - MAX_CAMBIOS_NOMBRE_USUARIO)
+                    .getFechaCambio().plusDays(VENTANA_CAMBIO_NOMBRE_USUARIO_DIAS);
+            long segundosRestantes = Duration.between(ahora, liberacion).getSeconds();
+            long diasRestantes = Math.max(1, (segundosRestantes + SEGUNDOS_POR_DIA - 1) / SEGUNDOS_POR_DIA);
+            throw new ConflictoDeNegocioException(
+                    "Ya alcanzaste el máximo de 3 cambios de nombre de usuario en los últimos 30 días. "
+                            + "Podés volver a intentarlo en " + diasRestantes + (diasRestantes == 1 ? " día." : " días."));
+        }
+
+        usuario.setNombreUsuario(nombreUsuarioNuevo);
+        usuario.setIntentosFallidos(0);
+        usuario.setFechaActualizacion(LocalDateTime.now());
+        usuarioRepository.save(usuario);
+
+        historialCambioNombreUsuarioRepository.save(HistorialCambioNombreUsuario.builder()
+                .usuario(usuario)
+                .nombreUsuarioAnterior(nombreUsuarioActual)
+                .nombreUsuarioNuevo(nombreUsuarioNuevo)
+                .fechaCambio(LocalDateTime.now())
+                .build());
     }
 
     /**
@@ -255,7 +324,7 @@ public class AuthService {
         if (usuario.getEstado() == EstadoUsuario.INACTIVO) {
             usuario.setEstado(EstadoUsuario.ACTIVO);
             usuarioRepository.save(usuario);
-            restaurarComercioSiCorresponde(usuario, EstadoComercio.INACTIVO);
+            restaurarComercioSiCorresponde(usuario, EstadoComercio.INACTIVO, MOTIVO_RESTAURACION_REACTIVACION);
         }
     }
 
@@ -296,38 +365,47 @@ public class AuthService {
         return Math.max(MAX_INTENTOS_FALLIDOS - intentos, 0);
     }
 
+    /**
+     * Cada comercio operativo pasa a {@code CERRADO_TEMPORALMENTE} con una fila en
+     * {@code historial_estado_comercio} (sin administrador, motivo fijo). La fila sale del estado que el
+     * comercio tiene en memoria: no hay ninguna consulta nueva que pueda fallar acá, y esto corre dentro
+     * de la transacción con {@code noRollbackFor} del intento fallido — un error del historial deshacería
+     * el contador y el bloqueo. Sin bloqueo de filas: una lectura común, para no cruzarse con la
+     * aprobación de un comercio pendiente del mismo Dueño (ver docs/APRENDIZAJES-TECNICOS.md).
+     */
     private void propagarBloqueoAComercio(Usuario usuario) {
         if (usuario.getRol() != RolUsuario.DUENO) {
             return;
         }
-        comercioRepository.findByDuenoId(usuario.getId()).ifPresent(comercio -> {
+        for (Comercio comercio : comercioRepository.findByDuenoIdOrderByFechaRegistroAscIdAsc(usuario.getId())) {
             if (comercio.getEstado() == EstadoComercio.APROBADO || comercio.getEstado() == EstadoComercio.APTO_VENTA) {
-                comercio.setEstado(EstadoComercio.CERRADO_TEMPORALMENTE);
-                comercioRepository.save(comercio);
+                comercioService.registrarTransicionAutomatica(comercio, comercio.getEstado(),
+                        EstadoComercio.CERRADO_TEMPORALMENTE, MOTIVO_BLOQUEO_CUENTA);
             }
-        });
+        }
     }
 
     /**
      * Restaura a {@code APTO_VENTA} si el Dueño sigue teniendo una cuenta de Mercado Pago activa,
-     * y a {@code APROBADO} si no. {@code propagarBloqueoAComercio} no escribe
-     * {@code HistorialEstadoComercio}, así que el estado previo al bloqueo no se puede
-     * reconstruir de ahí; {@code CuentaMercadoPago.activa} es la fuente de verdad real de si el
-     * comercio era apto para vender, y además cubre el caso borde de una cuenta desvinculada
-     * mientras el comercio estaba cerrado (vuelve a {@code APROBADO}, nunca a un
+     * y a {@code APROBADO} si no. Aunque {@code propagarBloqueoAComercio} ya deja una fila de historial
+     * con el estado previo, el destino no se lee de ahí: {@code CuentaMercadoPago.activa} es la fuente
+     * de verdad real de si el comercio es apto para vender, y además cubre el caso borde de una cuenta
+     * desvinculada mientras el comercio estaba cerrado (vuelve a {@code APROBADO}, nunca a un
      * {@code APTO_VENTA} sin cuenta que lo respalde). No re-verifica contra la API de Mercado Pago.
+     * Cada comercio restaurado deja su fila de historial, sin administrador y con el {@code motivo}
+     * recibido (recuperación de contraseña o reactivación de cuenta).
      */
-    private void restaurarComercioSiCorresponde(Usuario usuario, EstadoComercio estadoOrigenEsperado) {
+    private void restaurarComercioSiCorresponde(Usuario usuario, EstadoComercio estadoOrigenEsperado, String motivo) {
         if (usuario.getRol() != RolUsuario.DUENO || estadoOrigenEsperado == null) {
             return;
         }
-        comercioRepository.findByDuenoId(usuario.getId()).ifPresent(comercio -> {
+        boolean cuentaMpActiva = cuentaMercadoPagoService.buscarActivaPorDueno(usuario.getId()).isPresent();
+        for (Comercio comercio : comercioRepository.findByDuenoIdOrderByFechaRegistroAscIdAsc(usuario.getId())) {
             if (comercio.getEstado() == estadoOrigenEsperado) {
-                boolean cuentaMpActiva = cuentaMercadoPagoService.buscarActivaPorDueno(usuario.getId()).isPresent();
-                comercio.setEstado(cuentaMpActiva ? EstadoComercio.APTO_VENTA : EstadoComercio.APROBADO);
-                comercioRepository.save(comercio);
+                comercioService.registrarTransicionAutomatica(comercio, estadoOrigenEsperado,
+                        cuentaMpActiva ? EstadoComercio.APTO_VENTA : EstadoComercio.APROBADO, motivo);
             }
-        });
+        }
     }
 
     private void cerrarSesionActivaSiExiste(Usuario usuario, TipoCierreSesion motivo) {
@@ -340,48 +418,18 @@ public class AuthService {
     }
 
     /**
-     * Reintenta ante colisión de código (Tramo 16.12): con solo 1.000.000 de combinaciones
-     * de 6 dígitos compartidas por los 3 tipos de token, y un {@code UNIQUE} de por vida
-     * sobre toda la tabla (las filas usadas nunca se borran), la probabilidad de choque
-     * crece con el tiempo de vida real del sitio en producción — sin reintento, un choque
-     * se traducía en un {@code 409} genérico y confuso para el usuario en vez de,
-     * simplemente, generar otro código.
+     * Invalida los tokens pendientes del mismo tipo y crea uno nuevo. La generación del código
+     * (con chequeo de existencia y reintento ante colisión, incluida la carrera en el INSERT)
+     * vive en {@link TokenService}, compartida con el registro: el {@code UNIQUE} del código es
+     * global y las filas usadas nunca se borran, así que un choque es posible y no debe
+     * traducirse en un error para el usuario.
      */
     private Token generarToken(Usuario usuario, TipoToken tipo, LocalDateTime vencimiento) {
         List<Token> pendientes = tokenRepository.findByUsuarioIdAndTipoAndEstado(usuario.getId(), tipo, EstadoToken.PENDIENTE);
         pendientes.forEach(pendiente -> pendiente.setEstado(EstadoToken.UTILIZADO));
         tokenRepository.saveAll(pendientes);
 
-        for (int intento = 1; intento <= MAX_INTENTOS_GENERACION_TOKEN; intento++) {
-            Token token = Token.builder()
-                    .usuario(usuario)
-                    .tipo(tipo)
-                    .token(generarValorToken())
-                    .fechaCreacion(LocalDateTime.now())
-                    .fechaVencimiento(vencimiento)
-                    .estado(EstadoToken.PENDIENTE)
-                    .intentosFallidos(0)
-                    .build();
-            try {
-                return tokenRepository.save(token);
-            } catch (DataIntegrityViolationException ex) {
-                if (intento == MAX_INTENTOS_GENERACION_TOKEN) {
-                    throw ex;
-                }
-            }
-        }
-        throw new IllegalStateException("No se pudo generar un token único");
-    }
-
-    /**
-     * Los 3 tipos de token usan el mismo formato desde el Tramo 16.12: código numérico de
-     * 6 dígitos, pensado para tipeo manual (extiende a RECUPERACION_PASSWORD/
-     * REACTIVACION_CUENTA la decisión ya tomada para VERIFICACION_EMAIL en el Tramo 16.11).
-     * Los 3 pasan a consumirse siempre por email+código, nunca por link — ver
-     * docs/DECISIONES.md.
-     */
-    private String generarValorToken() {
-        return String.format("%06d", SECURE_RANDOM.nextInt(1_000_000));
+        return tokenService.crear(usuario, tipo, vencimiento);
     }
 
     private void registrarIntentoFallidoToken(Token token) {

@@ -8,13 +8,6 @@ import {
   diaDeHoy,
 } from './helpers/backend';
 
-// Camino más corto real (sin mockear filas) para tener una notificación in-app sin correr el
-// flujo completo de pedido (spec 05, todavía no escrito): AdministradorService.resolverAprobacion
-// dispara notificacionService.crear(...) directo sobre el usuario del Comercio al aprobar o
-// rechazar -- 2 llamadas API (registro de comercio + resolución de Administrador) contra
-// 1 notificación real, sin pasar por carrito/producto/pedido. Ver PedidoService para la otra
-// fuente de notificaciones (nuevo pedido / aceptado / rechazado), que sí depende de ese flujo
-// completo y queda para el spec 05.
 test.describe('Notificaciones in-app', () => {
   test('el comercio ve la notificación real de aprobación en la campana y puede marcarla como leída', async ({
     page,
@@ -31,7 +24,7 @@ test.describe('Notificaciones in-app', () => {
     await resolverComercio(request, adminSesion.token, pendiente.id, true);
 
     await page.goto('/login.html');
-    await page.getByTestId('input-email').fill(comercio.email);
+    await page.getByTestId('input-nombre-usuario').fill(comercio.nombreUsuario);
     await page.getByTestId('input-password').fill(comercio.password);
     await page.getByTestId('btn-ingresar').click();
     await page.waitForURL('**/comercio-dashboard.html');
@@ -44,7 +37,8 @@ test.describe('Notificaciones in-app', () => {
 
     const notificacion = page.locator('[data-testid^="notificacion-item-"]').first();
     await expect(notificacion).toBeVisible();
-    await expect(notificacion).toContainText('Tu comercio fue aprobado');
+    await expect(notificacion).toContainText(`Tu comercio ${comercio.nombre} fue aprobado`);
+    await expect(notificacion).not.toContainText('ya podés vender');
     await expect(notificacion).not.toHaveClass(/notification-item--leida/);
 
     const marcarLeidaResponse = page.waitForResponse(

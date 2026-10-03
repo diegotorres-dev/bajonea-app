@@ -34,7 +34,7 @@ export function abrirEditorRecorte({ origen, aspectRatio, onConfirmar, onCancela
     <input type="range" class="crop-zoom" min="1" max="3" step="0.01" value="1" data-testid="input-zoom-recorte" />
     <div class="crop-actions">
       <button type="button" class="btn btn-tertiary" id="crop-cancelar" data-testid="btn-cancelar-recorte">Cancelar</button>
-      <button type="button" class="btn btn-primary" id="crop-confirmar" data-testid="btn-confirmar-recorte">Confirmar</button>
+      <button type="button" class="btn btn-primary" id="crop-confirmar" disabled data-testid="btn-confirmar-recorte">Confirmar</button>
     </div>
   `;
   backdrop.appendChild(sheet);
@@ -155,6 +155,7 @@ export function abrirEditorRecorte({ origen, aspectRatio, onConfirmar, onCancela
     offsetX = (frameW - img.naturalWidth * baseScale) / 2;
     offsetY = (frameH - img.naturalHeight * baseScale) / 2;
     dibujar();
+    confirmarBtn.disabled = false;
   }).catch(() => {
     cerrar();
     if (onCancelar) onCancelar();

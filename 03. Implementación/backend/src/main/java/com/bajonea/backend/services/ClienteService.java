@@ -1,5 +1,6 @@
 package com.bajonea.backend.services;
 
+import com.bajonea.backend.dto.request.CambiarNombreUsuarioRequestDTO;
 import com.bajonea.backend.dto.request.ClienteEditarPerfilRequestDTO;
 import com.bajonea.backend.dto.response.ClienteResponseDTO;
 import com.bajonea.backend.dto.response.DireccionResponseDTO;
@@ -7,6 +8,8 @@ import com.bajonea.backend.entities.Cliente;
 import com.bajonea.backend.entities.Direccion;
 import com.bajonea.backend.entities.PersonaFisica;
 import com.bajonea.backend.entities.Usuario;
+import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
+import com.bajonea.backend.exceptions.CredencialesInvalidasException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.repositories.ClienteRepository;
 import com.bajonea.backend.repositories.DireccionRepository;
@@ -37,6 +40,7 @@ public class ClienteService {
     private final PersonaFisicaRepository personaFisicaRepository;
     private final DireccionRepository direccionRepository;
     private final UsuarioRepository usuarioRepository;
+    private final AuthService authService;
 
     public ClienteResponseDTO verPerfil(Integer usuarioId) {
         Cliente cliente = obtenerCliente(usuarioId);
@@ -58,6 +62,19 @@ public class ClienteService {
         usuarioRepository.save(usuario);
 
         return aResponseDTO(cliente);
+    }
+
+    /**
+     * {@code noRollbackFor} a nivel de método, mismo motivo que en {@code AuthService}: sin
+     * esto, el rollback por defecto de esta clase (sin {@code noRollbackFor} propio) anularía
+     * el commit del contador de intentos fallidos/bloqueo que {@code authService.cambiarNombreUsuario}
+     * ya decidió preservar — ambas capas comparten la misma transacción física (propagación
+     * {@code REQUIRED}), y alcanza con que una sola marque rollback-only para perder el commit.
+     */
+    @Transactional(noRollbackFor = { CredencialesInvalidasException.class, ConflictoDeNegocioException.class })
+    public ClienteResponseDTO cambiarNombreUsuario(Integer usuarioId, CambiarNombreUsuarioRequestDTO request) {
+        authService.cambiarNombreUsuario(usuarioId, request);
+        return aResponseDTO(obtenerCliente(usuarioId));
     }
 
     private Cliente obtenerCliente(Integer usuarioId) {
@@ -87,6 +104,7 @@ public class ClienteService {
                 personaFisica.getDni(),
                 personaFisica.getFechaNacimiento(),
                 personaFisica.getTelefono(),
+                usuario.getNombreUsuario(),
                 usuario.getEmail(),
                 direccionDTO,
                 usuario.getFotoPerfilUrl());

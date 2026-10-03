@@ -13,23 +13,20 @@ import {
   sufijoUnico,
   diaDeHoy,
   nombreArchivoFixture,
+  esperarImagenCargadaEnRecorte,
 } from './helpers/backend';
 
 const FIXTURE_PATH = path.resolve(__dirname, '../fixtures/bajonea-e2e-producto.png');
 const FIXTURE_BUFFER = readFileSync(FIXTURE_PATH);
 
-async function loginUi(page: Page, email: string, password: string) {
+async function loginUi(page: Page, usuario: string, password: string) {
   await page.goto('/login.html');
-  await page.getByTestId('input-email').fill(email);
+  await page.getByTestId('input-nombre-usuario').fill(usuario);
   await page.getByTestId('input-password').fill(password);
   await page.getByTestId('btn-ingresar').click();
   await page.waitForURL('**/comercio-dashboard.html');
 }
 
-/**
- * Alta nueva (sin id): confirmar el recorte solo deja la foto en `fotosStaged`, sin pegarle a
- * Cloudinary todavía -- ver la misma función en 06-crud-productos.spec.ts.
- */
 async function subirFotoCreacionViaCropUi(page: Page) {
   await page.getByTestId('input-foto-producto').setInputFiles({
     name: nombreArchivoFixture(),
@@ -37,21 +34,14 @@ async function subirFotoCreacionViaCropUi(page: Page) {
     buffer: FIXTURE_BUFFER,
   });
   await expect(page.getByTestId('modal-recorte-imagen')).toBeVisible();
+  await esperarImagenCargadaEnRecorte(page);
   await page.getByTestId('btn-confirmar-recorte').click();
   await expect(page.getByTestId('modal-recorte-imagen')).toHaveCount(0);
   await expect(page.getByTestId('galeria-fotos-producto').locator('img')).toHaveCount(1);
 }
 
-/**
- * Complementa 06-crud-productos.spec.ts (que ya cubre el flujo completo de crear/editar/
- * estados/límite de fotos): acá solo lo que ese archivo no ejercita todavía -- el formateo de
- * miles en vivo del campo precio (formatearMilesInput, comercio.js), el límite de 5 tags con
- * mensaje visible, y la categoría obligatoria. Los casos de puro formato de backend (nombre/
- * descripción por encima del límite, precio con decimales, tagIds inexistente, etc.) ya están
- * cubiertos exhaustivamente en Postman (folder 39) -- no se repiten acá.
- */
 test.describe('CRUD de producto del Comercio: validaciones exclusivas de UI', () => {
-  let comercioEmail: string;
+  let comercioUsuario: string;
   let comercioPassword: string;
   let categoriaId: number;
   let localidadId: string;
@@ -74,29 +64,25 @@ test.describe('CRUD de producto del Comercio: validaciones exclusivas de UI', ()
     });
     const pendiente = await buscarComercioPendientePorEmail(request, adminSesion.token, comercio.email);
     await resolverComercio(request, adminSesion.token, pendiente.id, true);
-    comercioEmail = comercio.email;
+    comercioUsuario = comercio.nombreUsuario;
     comercioPassword = comercio.password;
   });
 
   test('precio: el input formatea miles en vivo mientras se tipea y trunca a 8 dígitos (el error de "más de 8 dígitos" del backend no es alcanzable desde el teclado)', async ({ page }) => {
-    await loginUi(page, comercioEmail, comercioPassword);
+    await loginUi(page, comercioUsuario, comercioPassword);
     await page.goto('/comercio-producto-form.html');
 
     const inputPrecio = page.getByTestId('input-precio-producto');
     await inputPrecio.pressSequentially('1234567');
-    // formatearMilesInput (comercio.js) agrega separador de miles en cada keystroke -- no hace
-    // falta salir del campo (blur) para verlo.
     await expect(inputPrecio).toHaveValue('1.234.567');
 
-    // Un usuario real no puede tipear un 9º dígito: el listener de 'input' trunca a 8 dígitos
-    // en cada tecleo (slice(0,8)) antes de reformatear -- "123456789" solo deja los primeros 8.
     await inputPrecio.fill('');
     await inputPrecio.pressSequentially('123456789');
     await expect(inputPrecio).toHaveValue('12.345.678');
   });
 
   test('nombre: no permite escribir más de 150 caracteres (maxlength nativo)', async ({ page }) => {
-    await loginUi(page, comercioEmail, comercioPassword);
+    await loginUi(page, comercioUsuario, comercioPassword);
     await page.goto('/comercio-producto-form.html');
 
     const inputNombre = page.getByTestId('input-nombre-producto');
@@ -106,14 +92,12 @@ test.describe('CRUD de producto del Comercio: validaciones exclusivas de UI', ()
 
   test('categoría: dejarla sin seleccionar bloquea el guardado con el error visible, sin llegar a enviar la petición', async ({ page }) => {
     const suf = sufijoUnico();
-    await loginUi(page, comercioEmail, comercioPassword);
+    await loginUi(page, comercioUsuario, comercioPassword);
     await page.goto('/comercio-producto-form.html');
+    await expect(page.getByTestId(`chip-tag-producto-${tagIds[0]}`)).toBeVisible();
 
     await page.getByTestId('input-nombre-producto').fill(`Producto Sin Categoria E2E ${suf}`);
     await page.getByTestId('input-precio-producto').fill('1500');
-    // La categoría queda en el placeholder ("Seleccioná una categoría", value="") a propósito.
-    // La regla "al menos 1 foto obligatoria" (js/comercio.js) es real -- se respeta acá para que
-    // el submit real llegue a evaluar la categoría, no solo el nombre.
     await subirFotoCreacionViaCropUi(page);
 
     let seEnvioAlgo = false;
@@ -131,7 +115,7 @@ test.describe('CRUD de producto del Comercio: validaciones exclusivas de UI', ()
   });
 
   test('tags: seleccionar un 6º tag lo bloquea con el mensaje visible, y el chip nunca queda marcado', async ({ page }) => {
-    await loginUi(page, comercioEmail, comercioPassword);
+    await loginUi(page, comercioUsuario, comercioPassword);
     await page.goto('/comercio-producto-form.html');
 
     for (const tagId of tagIds.slice(0, 5)) {
@@ -145,7 +129,6 @@ test.describe('CRUD de producto del Comercio: validaciones exclusivas de UI', ()
     await expect(page.getByTestId('mensaje-error-tags-producto')).toContainText('hasta 5 tags');
     await expect(page.getByTestId(`chip-tag-producto-${sextoTagId}`)).toHaveAttribute('aria-pressed', 'false');
 
-    // Sacar uno de los 5 ya elegidos libera un lugar -- el 6º ahora sí se puede marcar.
     await page.getByTestId(`chip-tag-producto-${tagIds[0]}`).click();
     await expect(page.getByTestId(`chip-tag-producto-${tagIds[0]}`)).toHaveAttribute('aria-pressed', 'false');
     await page.getByTestId(`chip-tag-producto-${sextoTagId}`).click();
@@ -153,7 +136,7 @@ test.describe('CRUD de producto del Comercio: validaciones exclusivas de UI', ()
   });
 
   test('nombre: se normaliza a Title Case al perder el foco, visible antes de guardar', async ({ page }) => {
-    await loginUi(page, comercioEmail, comercioPassword);
+    await loginUi(page, comercioUsuario, comercioPassword);
     await page.goto('/comercio-producto-form.html');
 
     const inputNombre = page.getByTestId('input-nombre-producto');

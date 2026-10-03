@@ -5,6 +5,7 @@ import {
   fijarPasswordAdminYLoguear,
   buscarComercioPendientePorEmail,
   resolverComercio,
+  marcarAptoVenta,
   crearCategoria,
   crearProducto,
   login,
@@ -49,15 +50,15 @@ test.describe('Catálogo público', () => {
     const pendienteAbierto = await buscarComercioPendientePorEmail(request, adminSesion.token, comercioAbierto.email);
     comercioAbiertoId = pendienteAbierto.id;
     await resolverComercio(request, adminSesion.token, comercioAbiertoId, true);
+    await marcarAptoVenta(request, comercioAbiertoId);
 
     const pendienteCerrado = await buscarComercioPendientePorEmail(request, adminSesion.token, comercioCerrado.email);
     comercioCerradoId = pendienteCerrado.id;
     await resolverComercio(request, adminSesion.token, comercioCerradoId, true);
+    await marcarAptoVenta(request, comercioCerradoId);
 
     const categoriaId = await crearCategoria(request, adminSesion.token, `Categoría E2E ${suf}`);
-    const comercioSesion = await login(request, comercioAbierto.email, comercioAbierto.password);
-    // ProductoService normaliza Producto.nombre a Title Case al persistir (igual que
-    // Comercio.nombre, ver aTitleCase en helpers/backend) -- "Producto E2E" vuelve "Producto E2e".
+    const comercioSesion = await login(request, comercioAbierto.nombreUsuario, comercioAbierto.password);
     productoNombre = aTitleCase(`Producto E2E ${suf}`);
     productoId = await crearProducto(request, comercioSesion.token, {
       nombre: productoNombre,
@@ -77,10 +78,6 @@ test.describe('Catálogo público', () => {
   });
 
   test('los chips filtran comercios por modalidad de entrega y por si están abiertos ahora', async ({ page }) => {
-    // El catálogo ya no filtra por tipo de comercio (restaurante/emprendimiento) -- los chips
-    // reales hoy son todos/delivery/retiro/abierto (js/catalogo.js). comercioAbierto acepta
-    // delivery (no retiro) y comercioCerrado acepta retiro (no delivery), mismo criterio que
-    // ya usaba este test para separarlos, solo que ahora vía modalidad en vez de tipo.
     await page.goto('/index.html');
 
     await page.getByTestId('chip-filtro-delivery').click();

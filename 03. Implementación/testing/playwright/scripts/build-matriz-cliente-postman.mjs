@@ -2,12 +2,26 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import crypto from 'node:crypto';
+
+function nombreUsuarioDe(email) {
+  return 'pm' + crypto.createHash('sha1').update(String(email)).digest('hex').slice(0, 12);
+}
+
+function adaptarAutenticacion(urlPath, body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return body;
+  if ((urlPath === '/auth/registro/cliente' || urlPath === '/auth/registro/comercio') && !('nombreUsuario' in body) && typeof body.email === 'string') {
+    return { ...body, nombreUsuario: nombreUsuarioDe(body.email) };
+  }
+  if (urlPath === '/auth/login' && 'email' in body && !('nombreUsuario' in body)) {
+    const { email, ...resto } = body;
+    return { nombreUsuario: email === '{{admin_email}}' ? '{{admin_usuario}}' : nombreUsuarioDe(email), ...resto };
+  }
+  return body;
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const collectionPath = path.resolve(__dirname, '../../../postman/Bajonea-MVP.postman_collection.json');
-
-// ---------------------------------------------------------------------------
-// Helpers genericos (mismo estilo que build-matriz-comercio-postman.mjs)
-// ---------------------------------------------------------------------------
 
 function deepMerge(base, overrides) {
   const out = Array.isArray(base) ? [...base] : { ...base };
@@ -36,7 +50,7 @@ function req(method, urlPath, body, token) {
     },
   };
   if (body !== undefined) {
-    request.body = { mode: 'raw', raw: JSON.stringify(body, null, 2), options: { raw: { language: 'json' } } };
+    request.body = { mode: 'raw', raw: JSON.stringify(adaptarAutenticacion(urlPath, body), null, 2), options: { raw: { language: 'json' } } };
   }
   return request;
 }
@@ -101,14 +115,20 @@ function urlDeLongitud(total) {
   return prefix + 'a'.repeat(Math.max(fillerLen, 0)) + suffix;
 }
 
+function aFechaLocal(d) {
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
 function fechaHaceAnios(anios) {
   const d = new Date();
-  d.setUTCFullYear(d.getUTCFullYear() - anios);
-  return d.toISOString().slice(0, 10);
+  d.setFullYear(d.getFullYear() - anios);
+  return aFechaLocal(d);
 }
 
 function hoy() {
-  return new Date().toISOString().slice(0, 10);
+  return aFechaLocal(new Date());
 }
 
 function cuitValido(base10) {
@@ -120,14 +140,7 @@ function cuitValido(base10) {
   return base10 + String(dv);
 }
 
-// Mensajes de complejidad de password (idénticos en RegistroClienteRequestDTO,
-// CambioPasswordPerfilRequestDTO y ConfirmarRecuperacionPasswordRequestDTO — los 3 usan
-// solo @ValidarPasswordSegura, sin @Size propio desde la corrección del 2026-09-03).
 const MSG_PASSWORD_COMPLEJA = 'Debe tener mínimo 8 caracteres, una mayúscula, una minúscula y un número';
-
-// ---------------------------------------------------------------------------
-// Payload base de Registro Cliente + contador de unicidad
-// ---------------------------------------------------------------------------
 
 let contadorCliente = 0;
 function baseClientePayload(overrides = {}) {
@@ -156,10 +169,6 @@ function baseClientePayload(overrides = {}) {
 function registroClienteItem(name, overrides, execLines) {
   return item(name, req('POST', '/auth/registro/cliente', baseClientePayload(overrides)), execLines);
 }
-
-// ---------------------------------------------------------------------------
-// Folder 22 - Matriz Cliente - Registro (campo por campo) - 54 items
-// ---------------------------------------------------------------------------
 
 const folder22 = {
   name: '22 - Matriz Cliente - Registro (campo por campo)',
@@ -199,6 +208,20 @@ const folder22 = {
     registroClienteItem('Registro Cliente - email limite superior exacto (254 caracteres, debe aceptar)', { email: s(254 - '@bajonea.test'.length, 'a') + '@bajonea.test' }, assertCreated201()),
     registroClienteItem('Registro Cliente - email por encima del limite (255 caracteres, debe rechazar)', { email: s(255 - '@bajonea.test'.length, 'b') + '@bajonea.test' }, assertFieldMessage(400, 'email', 'El email no puede superar los 254 caracteres')),
 
+    registroClienteItem('Registro Cliente - nombreUsuario vacio', { nombreUsuario: '' }, assertFieldMessage(400, 'nombreUsuario', 'El nombre de usuario es obligatorio')),
+    registroClienteItem('Registro Cliente - nombreUsuario corto (7 caracteres, debe rechazar)', { nombreUsuario: 'abcdefg' }, assertFieldMessage(400, 'nombreUsuario', 'El nombre de usuario debe tener al menos 8 caracteres')),
+    registroClienteItem('Registro Cliente - nombreUsuario con simbolo (debe rechazar)', { nombreUsuario: 'abcd_efgh1' }, assertFieldMessage(400, 'nombreUsuario', 'Solo se permiten letras y números')),
+    registroClienteItem('Registro Cliente - nombreUsuario con espacio (debe rechazar)', { nombreUsuario: 'abcd efgh1' }, assertFieldMessage(400, 'nombreUsuario', 'Solo se permiten letras y números')),
+    registroClienteItem('Registro Cliente - nombreUsuario con tilde (debe rechazar)', { nombreUsuario: 'pérezpérez' }, assertFieldMessage(400, 'nombreUsuario', 'Solo se permiten letras y números')),
+    registroClienteItem('Registro Cliente - nombreUsuario por encima del limite (21 caracteres, debe rechazar)', { nombreUsuario: s(21, 'a') }, assertFieldMessage(400, 'nombreUsuario', 'El nombre de usuario no puede superar los 20 caracteres')),
+    registroClienteItem('Registro Cliente - nombreUsuario limite inferior exacto (8 caracteres, debe aceptar)', { nombreUsuario: 'pmlim008' }, assertCreated201()),
+    registroClienteItem('Registro Cliente - nombreUsuario limite superior exacto (20 caracteres, debe aceptar)', { nombreUsuario: 'pmlimite020' + s(9, 'x') }, assertCreated201()),
+    registroClienteItem('Registro Cliente - nombreUsuario en mayusculas se normaliza (debe aceptar)', { nombreUsuario: 'PMMAYUS0001' }, assertCreated201()),
+    registroClienteItem('Registro Cliente - nombreUsuario ya en uso con otra capitalizacion (debe rechazar 409)', { nombreUsuario: 'PmMayus0001' }, assertTopLevelMessage(409, 'Ese nombre de usuario ya está en uso')),
+    registroClienteItem('Registro Cliente - nombreUsuario reservado (administrador, 409)', { nombreUsuario: 'administrador' }, assertTopLevelMessage(409, 'Ese nombre de usuario ya está en uso')),
+    registroClienteItem('Registro Cliente - nombreUsuario reservado con mayusculas (SuperAdmin, 409)', { nombreUsuario: 'SuperAdmin' }, assertTopLevelMessage(409, 'Ese nombre de usuario ya está en uso')),
+    registroClienteItem('Registro Cliente - nombreUsuario que solo contiene una palabra reservada (debe aceptar)', { nombreUsuario: 'pmclientepm' }, assertCreated201()),
+
     registroClienteItem('Registro Cliente - password vacia', { password: '' }, assertFieldMessage(400, 'password', 'La contraseña es obligatoria')),
     registroClienteItem('Registro Cliente - password formato invalido (sin mayuscula)', { password: 'aa1password' }, assertFieldMessage(400, 'password', MSG_PASSWORD_COMPLEJA)),
     registroClienteItem('Registro Cliente - password formato invalido (sin numero)', { password: 'Aapassword' }, assertFieldMessage(400, 'password', MSG_PASSWORD_COMPLEJA)),
@@ -233,22 +256,15 @@ const folder22 = {
   ],
 };
 
-// ---------------------------------------------------------------------------
-// Folder 23 - Matriz Cliente - Login - 3 items
-// ---------------------------------------------------------------------------
-
 const folder23 = {
   name: '23 - Matriz Cliente - Login',
   item: [
-    item('Login - email vacio', req('POST', '/auth/login', { email: '', password: 'Aa1Password2026' }), assertFieldMessage(400, 'email', 'No debe estar vacío')),
-    item('Login - email formato invalido', req('POST', '/auth/login', { email: 'noesunemail', password: 'Aa1Password2026' }), assertFieldMessage(400, 'email', 'Ingresá un email con formato válido')),
-    item('Login - password vacia', req('POST', '/auth/login', { email: 'matriz.login@bajonea.test', password: '' }), assertFieldMessage(400, 'password', 'No debe estar vacío')),
+    item('Login - nombreUsuario vacio', req('POST', '/auth/login', { nombreUsuario: '', password: 'Aa1Password2026' }), assertFieldMessage(400, 'nombreUsuario', 'No debe estar vacío')),
+    item('Login - usuario inexistente (mensaje generico unico)', req('POST', '/auth/login', { nombreUsuario: 'noexiste00000000', password: 'Aa1Password2026' }), assertTopLevelMessage(401, 'Usuario o contraseña incorrectos')),
+    item('Login - un email ya no sirve como usuario (mismo mensaje generico)', req('POST', '/auth/login', { nombreUsuario: 'matriz.login@bajonea.test', password: 'Aa1Password2026' }), assertTopLevelMessage(401, 'Usuario o contraseña incorrectos')),
+    item('Login - password vacia', req('POST', '/auth/login', { nombreUsuario: nombreUsuarioDe('matriz.login@bajonea.test'), password: '' }), assertFieldMessage(400, 'password', 'No debe estar vacío')),
   ],
 };
-
-// ---------------------------------------------------------------------------
-// Folder 24 - Matriz Cliente - Verificacion de cuenta - 11 items
-// ---------------------------------------------------------------------------
 
 const EMAIL_VERIF_REAL = 'postman.matrizverifreal@bajonea.test';
 
@@ -272,10 +288,6 @@ const folder24 = {
     item('Verificar cuenta - codigo real de 6 digitos (debe aceptar)', req('POST', '/auth/verificar', { email: EMAIL_VERIF_REAL, codigo: '{{matriz_verif_codigo}}' }), assertStatusOnly(200)),
   ],
 };
-
-// ---------------------------------------------------------------------------
-// Folder 25 - Matriz Cliente - Recuperacion de password - 18 items
-// ---------------------------------------------------------------------------
 
 const EMAIL_RECUP_REAL = 'postman.matrizrecupreal@bajonea.test';
 
@@ -307,10 +319,6 @@ const folder25 = {
   ],
 };
 
-// ---------------------------------------------------------------------------
-// Folder 26 - Matriz Cliente - Reactivacion de cuenta - 7 items
-// ---------------------------------------------------------------------------
-
 const folder26 = {
   name: '26 - Matriz Cliente - Reactivacion de cuenta',
   item: [
@@ -323,10 +331,6 @@ const folder26 = {
     item('Reactivar cuenta confirmar - codigo longitud corta (5 digitos)', req('POST', '/auth/reactivar-cuenta/confirmar', { email: 'matriz.react@bajonea.test', codigo: '12345' }), assertFieldMessage(400, 'codigo', 'El código debe tener 6 dígitos numéricos')),
   ],
 };
-
-// ---------------------------------------------------------------------------
-// Folder 27 - Matriz Cliente - Perfil (datos personales) - 20 items
-// ---------------------------------------------------------------------------
 
 const EMAIL_PERFIL = 'postman.matrizperfil@bajonea.test';
 
@@ -368,10 +372,6 @@ const folder27 = {
   ],
 };
 
-// ---------------------------------------------------------------------------
-// Folder 28 - Matriz Cliente - Cambio de password desde perfil - 11 items
-// ---------------------------------------------------------------------------
-
 const EMAIL_PW72 = 'postman.matrizperfilpw72@bajonea.test';
 
 const folder28 = {
@@ -398,10 +398,6 @@ const folder28 = {
     item('Cambiar password perfil - passwordNueva limite superior exacto (72 caracteres, debe aceptar)', req('POST', '/auth/cambiar-password', { passwordActual: 'Aa1Password2026', passwordNueva: 'Aa1' + s(69, 'a') }, 'matriz_pw72_token'), assertStatusOnly(200)),
   ],
 };
-
-// ---------------------------------------------------------------------------
-// Folder 29 - Matriz Cliente - Foto de perfil (Usuario) - 12 items
-// ---------------------------------------------------------------------------
 
 const EMAIL_PERFIL_AJENO = 'postman.matrizperfilajeno@bajonea.test';
 
@@ -430,10 +426,6 @@ const folder29 = {
     item('[negativo] Foto perfil Usuario - otro usuario intenta editar la foto de este id (debe dar 404, no 403)', req('PATCH', '/usuarios/{{matriz_perfil_usuario_id}}/foto-perfil', { url: 'https://res.cloudinary.com/demo/image/upload/v1/intento-ajeno.jpg' }, 'matriz_perfil_ajeno_token'), assertTopLevelMessage(404, 'Usuario no encontrado')),
   ],
 };
-
-// ---------------------------------------------------------------------------
-// Folder 30 - Matriz Cliente - Carrito (alta y edicion de cantidad) - 29 items
-// ---------------------------------------------------------------------------
 
 const EMAIL_CARRITO_CLIENTE = 'postman.matrizcarrito@bajonea.test';
 const EMAIL_CARRITO_COMERCIO = 'postman.matrizcomerciocarrito@bajonea.test';
@@ -514,6 +506,7 @@ const folder30 = {
       "pm.environment.set('matriz_carrito_comercio_id', comercio.id);",
     ]),
     item('Setup - Admin: aprobar Comercio (matriz carrito)', req('PUT', '/administrador/comercios/{{matriz_carrito_comercio_id}}/resolver', { aprobar: true }, 'token_admin'), assertStatusOnly(200)),
+    item('Setup - Marcar APTO_VENTA (atajo de test, sin vincular Mercado Pago) (matriz carrito)', req('PUT', '/test/comercios/{{matriz_carrito_comercio_id}}/apto-venta', {}), assertStatusOnly(200)),
     item('Setup - Crear categoria (matriz carrito)', req('POST', '/categorias', { nombre: 'Categoria Matriz Carrito' }, 'token_admin'), [
       "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
       'const json = pm.response.json();',
@@ -547,10 +540,6 @@ const folder30 = {
     item('Carrito editar cantidad - limite superior mas uno (21, debe rechazar)', req('PUT', '/carrito/items/{{matriz_carrito_item_id}}', { cantidad: 21 }, 'matriz_carrito_cliente_token'), assertFieldMessage(400, 'cantidad', 'La cantidad máxima es 20')),
   ],
 };
-
-// ---------------------------------------------------------------------------
-// Folder 31 - Matriz Cliente - Checkout - 15 items
-// ---------------------------------------------------------------------------
 
 const EMAIL_CARRITO_COMERCIO2 = 'postman.matrizcomerciosindelivery@bajonea.test';
 const CUIT_CARRITO_COMERCIO2 = cuitValido('3079900060');
@@ -590,6 +579,8 @@ const folder31 = {
       "pm.environment.set('matriz_carrito_comercio2_id', comercio.id);",
     ]),
     item('Setup - Admin: aprobar Comercio sin delivery (matriz carrito)', req('PUT', '/administrador/comercios/{{matriz_carrito_comercio2_id}}/resolver', { aprobar: true }, 'token_admin'), assertStatusOnly(200)),
+    item('Setup - Marcar APTO_VENTA sin delivery (atajo de test, sin vincular Mercado Pago) (matriz carrito)', req('PUT', '/test/comercios/{{matriz_carrito_comercio2_id}}/apto-venta', {}), assertStatusOnly(200)),
+    item('Setup - Vaciar carrito (el pedido ya no vacia el carrito, se vacia recien al pagar) (matriz carrito)', req('DELETE', '/carrito', undefined, 'matriz_carrito_cliente_token'), assertStatusOnly(200)),
     item('Setup - Crear producto en comercio sin delivery (matriz carrito)', req('POST', '/productos', { nombre: 'Producto Sin Delivery', descripcion: 'Producto de prueba', precio: 1000, categoriaId: '{{matriz_carrito_categoria_id}}', tagIds: [] }, 'matriz_carrito_comercio2_token'), [
       "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
       'const json = pm.response.json();',
@@ -605,10 +596,6 @@ const folder31 = {
     item('Cleanup - vaciar carrito final (matriz carrito)', req('DELETE', '/carrito', undefined, 'matriz_carrito_cliente_token'), assertStatusOnly(200)),
   ],
 };
-
-// ---------------------------------------------------------------------------
-// Folder 32 - Matriz Cliente - Explorar (busqueda y filtros del catalogo) - 7 items
-// ---------------------------------------------------------------------------
 
 const folder32 = {
   name: '32 - Matriz Cliente - Explorar (busqueda y filtros del catalogo)',
@@ -639,12 +626,113 @@ const folder32 = {
   ],
 };
 
-// ---------------------------------------------------------------------------
-// Splice into the collection
-// ---------------------------------------------------------------------------
+
+const NU_EMAIL = 'postman.nombreusuario.h@bajonea.test';
+const NU_USUARIO_MIXTO = 'PmNombreUsuarioH';
+const NU_USUARIO_MINUSCULAS = 'pmnombreusuarioh';
+
+function clienteNombreUsuarioBody(overrides = {}) {
+  return baseClientePayload({ dni: '35700046', email: NU_EMAIL, nombreUsuario: NU_USUARIO_MIXTO, ...overrides });
+}
+
+const folder46 = {
+  name: '46 - Nombre de usuario (login, registro, disponibilidad, carrera)',
+  item: [
+    item('Disponibilidad - nombre libre (200, disponible true)', reqGet('/auth/nombre-usuario/disponibilidad', { nombreUsuario: 'pmlibre46xyz' }), [
+      "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+      'const json = pm.response.json();',
+      "pm.test('disponible es true y es el unico dato', () => { pm.expect(json.data.disponible).to.be.true; pm.expect(Object.keys(json.data)).to.eql(['disponible']); });",
+    ]),
+    item('Disponibilidad - nombre ocupado (adminbajonea, disponible false)', reqGet('/auth/nombre-usuario/disponibilidad', { nombreUsuario: 'adminbajonea' }), [
+      "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+      'const json = pm.response.json();',
+      "pm.test('disponible es false', () => pm.expect(json.data.disponible).to.eql(false));",
+    ]),
+    item('Disponibilidad - nombre ocupado con otra capitalizacion (AdminBajonea, disponible false)', reqGet('/auth/nombre-usuario/disponibilidad', { nombreUsuario: 'AdminBajonea' }), [
+      "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+      'const json = pm.response.json();',
+      "pm.test('disponible es false', () => pm.expect(json.data.disponible).to.eql(false));",
+    ]),
+    item('Disponibilidad - reservado (administrador, disponible false)', reqGet('/auth/nombre-usuario/disponibilidad', { nombreUsuario: 'administrador' }), [
+      "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+      'const json = pm.response.json();',
+      "pm.test('disponible es false', () => pm.expect(json.data.disponible).to.eql(false));",
+    ]),
+    item('Disponibilidad - formato invalido corto (400)', reqGet('/auth/nombre-usuario/disponibilidad', { nombreUsuario: 'abc' }), assertTopLevelMessage(400, 'El nombre de usuario debe tener al menos 8 caracteres')),
+    item('Disponibilidad - formato invalido con simbolo (400)', reqGet('/auth/nombre-usuario/disponibilidad', { nombreUsuario: 'abcd_efgh1' }), assertTopLevelMessage(400, 'Solo se permiten letras y números')),
+    item('Disponibilidad - formato invalido demasiado largo (400)', reqGet('/auth/nombre-usuario/disponibilidad', { nombreUsuario: 'a'.repeat(21) }), assertTopLevelMessage(400, 'El nombre de usuario no puede superar los 20 caracteres')),
+    item('Disponibilidad - vacio (400)', reqGet('/auth/nombre-usuario/disponibilidad', { nombreUsuario: '' }), assertTopLevelMessage(400, 'El nombre de usuario es obligatorio')),
+
+    item('Registro Cliente H con nombreUsuario en mayusculas y espacios (201, se guarda en minusculas)', req('POST', '/auth/registro/cliente', clienteNombreUsuarioBody({ nombreUsuario: '  ' + NU_USUARIO_MIXTO + ' ' })), assertCreated201()),
+    item('Disponibilidad - el nombre recien registrado queda ocupado', reqGet('/auth/nombre-usuario/disponibilidad', { nombreUsuario: NU_USUARIO_MINUSCULAS }), [
+      "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+      'const json = pm.response.json();',
+      "pm.test('disponible es false', () => pm.expect(json.data.disponible).to.eql(false));",
+    ]),
+    item('[negativo] Registro con el mismo nombreUsuario en otra capitalizacion (409, aunque cambie email y DNI)', req('POST', '/auth/registro/cliente', clienteNombreUsuarioBody({ dni: '35700047', email: 'postman.nombreusuario.dup@bajonea.test', nombreUsuario: 'pmNOMBREusuarioH' })), assertTopLevelMessage(409, 'Ese nombre de usuario ya está en uso')),
+    item('[negativo] Registro con nombreUsuario reservado (administrador, 409)', req('POST', '/auth/registro/cliente', clienteNombreUsuarioBody({ dni: '35700048', email: 'postman.nombreusuario.res@bajonea.test', nombreUsuario: 'Administrador' })), assertTopLevelMessage(409, 'Ese nombre de usuario ya está en uso')),
+    item('[negativo] Registro sin el campo nombreUsuario (400)', req('POST', '/auth/registro/cliente', clienteNombreUsuarioBody({ dni: '35700049', email: 'postman.nombreusuario.sin@bajonea.test', nombreUsuario: undefined })), assertFieldMessage(400, 'nombreUsuario', 'El nombre de usuario es obligatorio')),
+    item('Setup - Obtener codigo de verificacion (Cliente H)', reqGet('/test/token', { email: NU_EMAIL, tipo: 'VERIFICACION_EMAIL' }), [
+      "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+      'const json = pm.response.json();',
+      "pm.environment.set('nu_h_codigo', json.data);",
+    ]),
+    item('Setup - Verificar cuenta (Cliente H)', req('POST', '/auth/verificar', { email: NU_EMAIL, codigo: '{{nu_h_codigo}}' }), assertStatusOnly(200)),
+    item('[negativo] Login con el email en lugar del nombre de usuario (401 generico)', req('POST', '/auth/login', { nombreUsuario: NU_EMAIL, password: 'Aa1Password2026' }), assertTopLevelMessage(401, 'Usuario o contraseña incorrectos')),
+    item('[negativo] Login con usuario inexistente (mismo 401 generico)', req('POST', '/auth/login', { nombreUsuario: 'noexiste46000000', password: 'Aa1Password2026' }), assertTopLevelMessage(401, 'Usuario o contraseña incorrectos')),
+    item('[negativo] Login con el campo email del contrato viejo (400)', req('POST', '/auth/login', { email: NU_EMAIL, nombreUsuario: undefined, password: 'Aa1Password2026' }), assertFieldMessage(400, 'nombreUsuario', 'No debe estar vacío')),
+    item('Login Cliente H escribiendo el nombre de usuario en MAYUSCULAS (200) y el JWT lleva el id como subject', req('POST', '/auth/login', { nombreUsuario: NU_USUARIO_MIXTO.toUpperCase(), password: 'Aa1Password2026' }), [
+      "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+      'const json = pm.response.json();',
+      "const payload = JSON.parse(atob(json.data.token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));",
+      "pm.test('sub es el id de usuario, no un email', () => { pm.expect(payload.sub).to.eql(String(json.data.usuario.id)); pm.expect(payload.sub).to.not.include('@'); });",
+      "pm.environment.set('nu_h_token', json.data.token);",
+    ]),
+    item('Perfil Cliente H muestra el nombreUsuario en minusculas', req('GET', '/clientes/perfil', undefined, 'nu_h_token'), [
+      "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+      'const json = pm.response.json();',
+      `pm.test('nombreUsuario en minusculas', () => pm.expect(json.data.nombreUsuario).to.eql('${NU_USUARIO_MINUSCULAS}'));`,
+    ]),
+    item('PUT perfil intentando cambiar nombreUsuario (se ignora)', req('PUT', '/clientes/perfil', { nombre: 'Cliente', apellido: 'Editado', telefono: '+5492964701046', nombreUsuario: 'hackeado1234' }, 'nu_h_token'), [
+      "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+      'const json = pm.response.json();',
+      `pm.test('nombreUsuario sin cambios', () => pm.expect(json.data.nombreUsuario).to.eql('${NU_USUARIO_MINUSCULAS}'));`,
+    ]),
+    item('Recuperacion de password sigue usando email (200)', req('POST', '/auth/recuperar-password', { email: NU_EMAIL }), assertStatusOnly(200)),
+    item('Setup - Obtener codigo de recuperacion (Cliente H)', reqGet('/test/token', { email: NU_EMAIL, tipo: 'RECUPERACION_PASSWORD' }), [
+      "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+      'const json = pm.response.json();',
+      "pm.environment.set('nu_h_codigo_recup', json.data);",
+    ]),
+    item('Confirmar recuperacion con email + codigo (200)', req('POST', '/auth/recuperar-password/confirmar', { email: NU_EMAIL, codigo: '{{nu_h_codigo_recup}}', nuevaPassword: 'Aa1PasswordNueva' }), assertStatusOnly(200)),
+    item('Login Cliente H con la password nueva, por nombre de usuario (200)', req('POST', '/auth/login', { nombreUsuario: NU_USUARIO_MINUSCULAS, password: 'Aa1PasswordNueva' }), assertStatusOnly(200)),
+    item('Carrera: 6 registros simultaneos con el mismo nombreUsuario, uno entra (201) y el resto recibe 409 sin 500', reqGet('/health'), [
+      "const base = pm.environment.get('base_url');",
+      "const suf = Date.now().toString(36).slice(-6);",
+      "const nombre = 'pmcarrera' + suf;",
+      'const total = 6;',
+      'const estados = [];',
+      'const mensajes = [];',
+      "const loc = pm.environment.get('localidad_id') || '94008010';",
+      'for (let i = 0; i < total; i++) {',
+      "  const cuerpo = { nombre: 'Carrera', apellido: 'Prueba', dni: String(36100000 + Math.floor(Math.random() * 800000) * 10 + i), fechaNacimiento: '1995-05-20', telefono: '+549296470' + String(2000 + i), nombreUsuario: i % 2 ? nombre.toUpperCase() : nombre, email: 'postman.carrera.' + suf + '.' + i + '@bajonea.test', password: 'Aa1Password2026', direccion: { calle: 'Belgrano', numero: '100', pisoDepto: null, codigoPostal: '9420', localidadId: loc, principal: true } };",
+      "  pm.sendRequest({ url: base + '/auth/registro/cliente', method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify(cuerpo) } }, (err, res) => {",
+      '    estados.push(err ? -1 : res.code);',
+      '    mensajes.push(err ? String(err) : res.json().mensaje);',
+      '    if (estados.length === total) {',
+      "      pm.test('Exactamente un registro devuelve 201', () => pm.expect(estados.filter((s) => s === 201).length).to.eql(1));",
+      "      pm.test('Los otros 5 devuelven 409', () => pm.expect(estados.filter((s) => s === 409).length).to.eql(5));",
+      "      pm.test('Ninguno devuelve 500', () => pm.expect(estados.filter((s) => s >= 500 || s === -1).length).to.eql(0));",
+      "      pm.test('Los 409 informan que el nombre esta en uso', () => pm.expect(mensajes.filter((m) => m === 'Ese nombre de usuario ya está en uso').length).to.eql(5));",
+      '    }',
+      '  });',
+      '}',
+    ]),
+  ],
+};
 
 const collection = JSON.parse(fs.readFileSync(collectionPath, 'utf8'));
-const nuevasFolders = [folder22, folder23, folder24, folder25, folder26, folder27, folder28, folder29, folder30, folder31, folder32];
+const nuevasFolders = [folder22, folder23, folder24, folder25, folder26, folder27, folder28, folder29, folder30, folder31, folder32, folder46];
 const yaExisten = new Set(collection.item.map((f) => f.name));
 for (const f of nuevasFolders) {
   if (yaExisten.has(f.name)) {

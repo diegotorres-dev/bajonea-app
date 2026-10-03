@@ -24,15 +24,15 @@ public class RedSocialService {
     private final RedSocialRepository redSocialRepository;
     private final ComercioRepository comercioRepository;
 
-    public List<RedSocialResponseDTO> listarActivas(Integer usuarioId) {
-        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+    public List<RedSocialResponseDTO> listarActivas(Integer comercioId) {
+        Comercio comercio = obtenerComercio(comercioId);
         return redSocialRepository.findByComercioIdAndFechaBajaIsNull(comercio.getId()).stream()
                 .map(this::aResponseDTO)
                 .toList();
     }
 
-    public RedSocialResponseDTO agregar(Integer usuarioId, RedSocialRequestDTO request) {
-        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+    public RedSocialResponseDTO agregar(Integer comercioId, RedSocialRequestDTO request) {
+        Comercio comercio = obtenerComercio(comercioId);
         RedSocial existente = redSocialRepository.findByComercioIdAndTipo(comercio.getId(), request.getTipo())
                 .orElse(null);
 
@@ -65,8 +65,8 @@ public class RedSocialService {
         return aResponseDTO(existente);
     }
 
-    public RedSocialResponseDTO editar(Integer usuarioId, Integer redSocialId, RedSocialRequestDTO request) {
-        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+    public RedSocialResponseDTO editar(Integer comercioId, Integer redSocialId, RedSocialRequestDTO request) {
+        Comercio comercio = obtenerComercio(comercioId);
         RedSocial redSocial = obtenerRedSocialDelComercio(redSocialId, comercio);
 
         redSocial.setUrl(request.getUrl());
@@ -75,16 +75,16 @@ public class RedSocialService {
         return aResponseDTO(redSocial);
     }
 
-    public void darDeBaja(Integer usuarioId, Integer redSocialId) {
-        Comercio comercio = obtenerComercioDelUsuario(usuarioId);
+    public void darDeBaja(Integer comercioId, Integer redSocialId) {
+        Comercio comercio = obtenerComercio(comercioId);
         RedSocial redSocial = obtenerRedSocialDelComercio(redSocialId, comercio);
 
         redSocial.setFechaBaja(LocalDateTime.now());
         redSocialRepository.save(redSocial);
     }
 
-    private Comercio obtenerComercioDelUsuario(Integer usuarioId) {
-        return comercioRepository.findByDuenoId(usuarioId)
+    private Comercio obtenerComercio(Integer comercioId) {
+        return comercioRepository.findById(comercioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
     }
 

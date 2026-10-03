@@ -1,6 +1,7 @@
 package com.bajonea.backend.controllers;
 
 import com.bajonea.backend.config.security.AuthenticatedUser;
+import com.bajonea.backend.dto.request.CambiarNombreUsuarioRequestDTO;
 import com.bajonea.backend.dto.request.ClienteEditarPerfilRequestDTO;
 import com.bajonea.backend.dto.response.ApiResponse;
 import com.bajonea.backend.dto.response.ClienteResponseDTO;
@@ -34,5 +35,12 @@ public class ClienteController {
             @AuthenticationPrincipal AuthenticatedUser usuario) {
         ClienteResponseDTO response = clienteService.editarPerfil(usuario.userId(), request);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Perfil actualizado correctamente", response));
+    }
+
+    @PutMapping("/perfil/nombre-usuario")
+    public ResponseEntity<ApiResponse<ClienteResponseDTO>> cambiarNombreUsuario(
+            @Valid @RequestBody CambiarNombreUsuarioRequestDTO request, @AuthenticationPrincipal AuthenticatedUser usuario) {
+        ClienteResponseDTO response = clienteService.cambiarNombreUsuario(usuario.userId(), request);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Nombre de usuario actualizado correctamente", response));
     }
 }

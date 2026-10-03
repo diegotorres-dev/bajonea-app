@@ -54,6 +54,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             Claims claims = jwtService.validarYExtraerClaims(token);
             Integer sesionId = jwtService.extraerSesionId(claims);
+            if (!jwtService.subjectCoincideConUserId(claims)) {
+                throw new JwtException("Token emitido con un formato anterior");
+            }
 
             boolean sesionActiva = sesionRepository.findById(sesionId)
                     .map(Sesion::isActiva)
@@ -68,9 +71,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             Integer userId = jwtService.extraerUserId(claims);
             RolUsuario rol = jwtService.extraerRol(claims);
-            String email = claims.getSubject();
 
-            AuthenticatedUser principal = new AuthenticatedUser(userId, sesionId, email, rol);
+            AuthenticatedUser principal = new AuthenticatedUser(userId, sesionId, rol);
             List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + rol.name()));
             var authentication = new UsernamePasswordAuthenticationToken(principal, null, authorities);
             SecurityContextHolder.getContext().setAuthentication(authentication);

@@ -10,8 +10,12 @@ import com.bajonea.backend.dto.response.ClienteAdminResponseDTO;
 import com.bajonea.backend.dto.response.ComercioAdminResponseDTO;
 import com.bajonea.backend.dto.response.ConfiguracionTarifaResponseDTO;
 import com.bajonea.backend.dto.response.MetricasAdminResponseDTO;
+import com.bajonea.backend.dto.response.NotaCreditoAdminResponseDTO;
+import com.bajonea.backend.dto.response.ReSolicitudComercioAdminResponseDTO;
+import com.bajonea.backend.enums.EstadoNotaCredito;
 import com.bajonea.backend.services.AdministradorService;
 import com.bajonea.backend.services.ConfiguracionTarifaService;
+import com.bajonea.backend.services.NotaCreditoAdminService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -37,11 +41,18 @@ public class AdministradorController {
 
     private final AdministradorService administradorService;
     private final ConfiguracionTarifaService configuracionTarifaService;
+    private final NotaCreditoAdminService notaCreditoAdminService;
 
     @GetMapping("/comercios/pendientes")
     public ResponseEntity<ApiResponse<List<ComercioAdminResponseDTO>>> listarComerciosPendientes() {
         List<ComercioAdminResponseDTO> comercios = administradorService.listarComerciosPendientes();
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Comercios pendientes obtenidos correctamente", comercios));
+    }
+
+    @GetMapping("/comercios/resolicitudes")
+    public ResponseEntity<ApiResponse<List<ReSolicitudComercioAdminResponseDTO>>> listarResolicitudes() {
+        List<ReSolicitudComercioAdminResponseDTO> resolicitudes = administradorService.listarResolicitudes();
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Re-solicitudes de comercios obtenidas correctamente", resolicitudes));
     }
 
     @GetMapping("/comercios")
@@ -99,5 +110,20 @@ public class AdministradorController {
             @Valid @RequestBody ConfiguracionTarifaRequestDTO request, @AuthenticationPrincipal AuthenticatedUser administrador) {
         ConfiguracionTarifaResponseDTO tarifa = configuracionTarifaService.crear(request, administrador.userId());
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>("Tarifa creada correctamente", tarifa));
+    }
+
+    @GetMapping("/reembolsos")
+    public ResponseEntity<ApiResponse<List<NotaCreditoAdminResponseDTO>>> listarReembolsosPendientesDeRevision() {
+        List<NotaCreditoAdminResponseDTO> notas = notaCreditoAdminService.listarPendientesDeRevision();
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Reembolsos pendientes de revisión obtenidos correctamente", notas));
+    }
+
+    @PostMapping("/reembolsos/{notaCreditoId}/reintentar")
+    public ResponseEntity<ApiResponse<NotaCreditoAdminResponseDTO>> reintentarReembolso(@PathVariable Integer notaCreditoId) {
+        NotaCreditoAdminResponseDTO nota = notaCreditoAdminService.reintentar(notaCreditoId);
+        String mensaje = nota.getEstado() == EstadoNotaCredito.PROCESADO
+                ? "Reembolso procesado correctamente"
+                : "Mercado Pago rechazó el reintento del reembolso";
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>(mensaje, nota));
     }
 }

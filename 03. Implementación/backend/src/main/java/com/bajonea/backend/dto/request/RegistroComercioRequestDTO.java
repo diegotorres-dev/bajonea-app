@@ -1,35 +1,36 @@
 package com.bajonea.backend.dto.request;
 
 import com.bajonea.backend.enums.CondicionIva;
-import com.bajonea.backend.enums.TipoComercio;
 import com.bajonea.backend.enums.TipoPersonaJuridica;
+import com.bajonea.backend.validation.NombreUsuarioPolicy;
 import com.bajonea.backend.validation.annotations.ValidarCuit;
 import com.bajonea.backend.validation.annotations.ValidarFechaNacimientoRepresentante;
 import com.bajonea.backend.validation.annotations.ValidarFormatoDni;
 import com.bajonea.backend.validation.annotations.ValidarFormatoEmail;
 import com.bajonea.backend.validation.annotations.ValidarFormatoNombre;
+import com.bajonea.backend.validation.annotations.ValidarNombreUsuario;
 import com.bajonea.backend.validation.annotations.ValidarPasswordSegura;
 import com.bajonea.backend.validation.annotations.ValidarTelefonoArgentino;
-import com.bajonea.backend.validation.annotations.ValidarUrlCloudinary;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Locale;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Body de {@code POST /api/v1/auth/registro/comercio} (Fase 9). Combina en un solo request
+ * Body de {@code POST /api/v1/auth/registro/comercio} (Fase 9). Extiende
+ * {@link DatosNegocioComercioRequestDTO} (multi-comercio, tramo 2A): los datos del negocio
+ * ({@code nombre}, {@code descripcion}, {@code telefono}, {@code emailContacto}, {@code tipoComercio},
+ * modalidades, {@code direccion}, {@code horarios}, {@code fotoPerfilUrl} y {@code redesSociales}, con
+ * todo lo que se explica más abajo sobre ellos) viven en esa superclase, compartida con el alta de un
+ * comercio adicional; acá quedan los datos fiscales, del representante y de la cuenta. El JSON del
+ * request no cambia. Combina en un solo request
  * plano los campos de {@code PersonaJuridica} + {@code PersonaFisica} (representante) +
  * {@code Comercio} + las credenciales de acceso del {@code Usuario} que se crea junto con el
  * comercio — ninguna de esas entidades tiene un DTO propio (ver {@code CLAUDE.md} §5bis).
@@ -79,8 +80,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
-public class RegistroComercioRequestDTO {
+public class RegistroComercioRequestDTO extends DatosNegocioComercioRequestDTO {
 
     @NotBlank(message = "La razón social es obligatoria")
     @Pattern(regexp = ".*[\\p{L}0-9].*", message = "La razón social no puede contener solo caracteres especiales")
@@ -107,30 +107,11 @@ public class RegistroComercioRequestDTO {
     @PastOrPresent(message = "La fecha ingresada no es válida")
     private LocalDate fechaInicioActividades;
 
-    @NotBlank(message = "El nombre del comercio es obligatorio")
-    @Pattern(regexp = ".*[\\p{L}0-9].*", message = "Ingresá un nombre de comercio válido")
-    @Size(max = 150, message = "El nombre no puede superar los 150 caracteres")
-    private String nombre;
-
-    @Size(max = 2000, message = "La descripción no puede superar los 2000 caracteres")
-    private String descripcion;
-
-    @NotBlank(message = "El teléfono de contacto es obligatorio")
-    @ValidarTelefonoArgentino
-    @Size(max = 30, message = "El teléfono no puede superar los 30 caracteres")
-    private String telefono;
-
-    @NotBlank(message = "El email de contacto es obligatorio")
-    @Email(message = "Ingresá un email de contacto con formato válido")
-    @Size(max = 150, message = "El email no puede superar los 150 caracteres")
-    private String emailContacto;
-
-    @NotNull(message = "Seleccioná el tipo de comercio")
-    private TipoComercio tipoComercio;
-
-    private boolean aceptaDelivery;
-
-    private boolean aceptaRetiro;
+    @NotBlank(message = "El nombre de usuario es obligatorio")
+    @ValidarNombreUsuario
+    @Size(max = 20, message = "El nombre de usuario no puede superar los 20 caracteres")
+    @Setter(AccessLevel.NONE)
+    private String nombreUsuario;
 
     @NotBlank(message = "El email es obligatorio")
     @ValidarFormatoEmail
@@ -141,14 +122,6 @@ public class RegistroComercioRequestDTO {
     @NotBlank(message = "La contraseña es obligatoria")
     @ValidarPasswordSegura
     private String password;
-
-    @NotNull(message = "La dirección es obligatoria")
-    @Valid
-    private DireccionRequestDTO direccion;
-
-    @NotEmpty(message = "No debe estar vacío")
-    @Valid
-    private List<HorarioRequestDTO> horarios;
 
     @NotBlank(message = "El nombre es obligatorio")
     @ValidarFormatoNombre(message = "El nombre solo puede contener letras")
@@ -176,18 +149,12 @@ public class RegistroComercioRequestDTO {
     @ValidarFechaNacimientoRepresentante
     private LocalDate fechaNacimientoRepresentante;
 
-    @NotBlank(message = "Agregá una foto de perfil de tu comercio")
-    @ValidarUrlCloudinary
-    @Size(max = 500, message = "La foto de perfil no puede superar los 500 caracteres")
-    private String fotoPerfilUrl;
-
-    @NotEmpty(message = "Debés cargar al menos una red social")
-    @Size(max = 5, message = "No podés cargar más de 5 redes sociales")
-    @Valid
-    private List<RedSocialRequestDTO> redesSociales;
-
     public void setCuit(String cuit) {
         this.cuit = cuit == null ? null : cuit.replaceAll("[^0-9]", "");
+    }
+
+    public void setNombreUsuario(String nombreUsuario) {
+        this.nombreUsuario = NombreUsuarioPolicy.normalizar(nombreUsuario);
     }
 
     public void setEmail(String email) {

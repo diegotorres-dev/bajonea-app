@@ -1,6 +1,7 @@
 package com.bajonea.backend.entities;
 
 import com.bajonea.backend.enums.EstadoNotaCredito;
+import com.bajonea.backend.enums.MotivoNotaCredito;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -10,7 +11,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -36,13 +37,18 @@ public class NotaCredito {
     private Integer id;
 
     @Setter
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pago_id", nullable = false, unique = true)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pago_id", nullable = false)
     private Pago pago;
 
     @Setter
     @Column(name = "monto", precision = 10, scale = 2, nullable = false)
     private BigDecimal monto;
+
+    @Setter
+    @Enumerated(EnumType.STRING)
+    @Column(name = "motivo")
+    private MotivoNotaCredito motivo;
 
     @Setter
     @Enumerated(EnumType.STRING)
@@ -56,6 +62,14 @@ public class NotaCredito {
     @Setter
     @Column(name = "refund_id_mp", length = 50)
     private String refundIdMp;
+
+    @Setter
+    @Column(name = "mp_payment_id", length = 50)
+    private String mpPaymentId;
+
+    @Setter
+    @Column(name = "ultimo_error", length = 500)
+    private String ultimoError;
 
     @Setter
     @Column(name = "fecha_emision", nullable = false)

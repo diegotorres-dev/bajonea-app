@@ -37,6 +37,10 @@ public class Usuario {
     private String email;
 
     @Setter
+    @Column(name = "nombre_usuario", length = 20, nullable = false, unique = true)
+    private String nombreUsuario;
+
+    @Setter
     @Column(name = "password_hash", length = 255, nullable = false)
     private String passwordHash;
 

@@ -12,7 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
- * Genera, valida y parsea el JWT (claims {@code sub}=email, {@code userId}, {@code rol},
+ * Genera, valida y parsea el JWT (claims {@code sub}=id de usuario, {@code userId}, {@code rol},
  * {@code sesionId}, {@code iat}, {@code exp}). {@code sesionId} referencia la fila de
  * {@code Sesion} que {@link JwtAuthenticationFilter} consulta en cada request — ver
  * docs/DECISIONES.md, 2026-07-17.
@@ -33,7 +33,7 @@ public class JwtService {
         Date expiracion = new Date(ahora.getTime() + expirationMs);
 
         return Jwts.builder()
-                .subject(usuario.getEmail())
+                .subject(String.valueOf(usuario.getId()))
                 .claim("userId", usuario.getId())
                 .claim("rol", usuario.getRol().name())
                 .claim("sesionId", sesionId)
@@ -53,6 +53,11 @@ public class JwtService {
 
     public Integer extraerUserId(Claims claims) {
         return claims.get("userId", Integer.class);
+    }
+
+    public boolean subjectCoincideConUserId(Claims claims) {
+        Integer userId = extraerUserId(claims);
+        return userId != null && String.valueOf(userId).equals(claims.getSubject());
     }
 
     public Integer extraerSesionId(Claims claims) {

@@ -2,10 +2,12 @@ package com.bajonea.backend.services;
 
 import com.bajonea.backend.dto.response.CloudinarySignatureResponseDTO;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
+import com.bajonea.backend.exceptions.ValidacionException;
 import com.bajonea.backend.repositories.ImagenProductoRepository;
 import com.cloudinary.Cloudinary;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -92,6 +94,48 @@ public class CloudinaryService {
 
     public CloudinarySignatureResponseDTO generarFirmaFotoPerfilRegistroCliente() {
         return firmar("usuarios/pre-registro/");
+    }
+
+    public CloudinarySignatureResponseDTO generarFirmaFotoNuevoComercio(Integer duenoId) {
+        return firmar(carpetaFotoNuevoComercio(duenoId));
+    }
+
+    /**
+     * La URL tiene que ser una imagen de esta cuenta de Cloudinary
+     * ({@code https://res.cloudinary.com/{cloudName}/image/upload/}) y estar dentro de
+     * {@code duenos/{duenoId}/comercios-nuevos/} (con o sin el segmento de versión {@code v123/}). Solo
+     * estas firmas escriben en esa carpeta, así que evita que un Dueño use una imagen de otro Dueño, del
+     * pre-registro o de un producto como foto de su comercio. {@code ValidarUrlCloudinary} en el DTO
+     * solo mira el dominio; esto agrega cuenta y carpeta.
+     */
+    public void validarFotoNuevoComercio(Integer duenoId, String url) {
+        validarUrlEnCarpeta(carpetaFotoNuevoComercio(duenoId), url);
+    }
+
+    /**
+     * Igual que {@link #validarFotoNuevoComercio}, pero para una foto subida con la firma de
+     * {@link #generarFirmaFotoPerfilComercio}: tiene que estar dentro de {@code comercios/{comercioId}/perfil/}.
+     * Lo usa la corrección de un comercio rechazado, que cambia la foto sin pasar por
+     * {@code PUT /comercios/perfil/foto}.
+     */
+    public void validarFotoPerfilComercio(Integer comercioId, String url) {
+        validarUrlEnCarpeta("comercios/" + comercioId + "/perfil/", url);
+    }
+
+    private void validarUrlEnCarpeta(String carpetaEsperada, String url) {
+        String prefijo = "https://res.cloudinary.com/" + cloudName + "/image/upload/";
+        if (url == null || !url.startsWith(prefijo)) {
+            throw new ValidacionException("La foto de perfil no es válida. Subila de nuevo desde el formulario.");
+        }
+        String resto = url.substring(prefijo.length());
+        Pattern carpeta = Pattern.compile("^(v\\d+/)?" + Pattern.quote(carpetaEsperada) + "[^/]+$");
+        if (!carpeta.matcher(resto).matches()) {
+            throw new ValidacionException("La foto de perfil no es válida. Subila de nuevo desde el formulario.");
+        }
+    }
+
+    private String carpetaFotoNuevoComercio(Integer duenoId) {
+        return "duenos/" + duenoId + "/comercios-nuevos/";
     }
 
     private CloudinarySignatureResponseDTO firmar(String folder) {

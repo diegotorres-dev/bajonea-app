@@ -4,6 +4,7 @@ import com.bajonea.backend.entities.AlertaWebhookMp;
 import com.bajonea.backend.entities.Pedido;
 import com.bajonea.backend.enums.MotivoAlertaWebhookMp;
 import com.bajonea.backend.repositories.AlertaWebhookMpRepository;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -69,6 +70,32 @@ public class AlertaWebhookMpService {
                 .mpPaymentId(mpPaymentId)
                 .mpExternalReference(pedido.getId().toString())
                 .motivo(MotivoAlertaWebhookMp.PAGO_APROBADO_DUPLICADO)
+                .fechaCreacion(LocalDateTime.now())
+                .ipOrigen(ipOrigen)
+                .build();
+        alertaWebhookMpRepository.save(alerta);
+    }
+
+    /**
+     * Un pago se aprobó pero el {@code fee_details} que devolvió MercadoPago no trae la comisión
+     * de marketplace esperada (falta la entrada {@code type=application_fee}, o su monto no
+     * coincide con {@code cargoServicioCliente + cargoServicioComercio}). El pedido y el pago del
+     * Cliente NUNCA se revierten por esto (ver {@code MercadoPagoPagoService#aplicarResultadoPago})
+     * — el comercio ya tiene su pedido y el cliente ya pagó; esto queda solo como rastro para
+     * revisión manual/reembolso del lado de Bajoneá. Idempotente por (pedido, pago, motivo).
+     */
+    public void registrarSplitNoAplicado(Pedido pedido, String mpPaymentId, BigDecimal montoEsperado, BigDecimal montoCapturado, String ipOrigen) {
+        if (alertaWebhookMpRepository.existsByPedidoIdAndMpPaymentIdAndMotivo(
+                pedido.getId(), mpPaymentId, MotivoAlertaWebhookMp.SPLIT_NO_APLICADO)) {
+            return;
+        }
+        AlertaWebhookMp alerta = AlertaWebhookMp.builder()
+                .pedido(pedido)
+                .mpPaymentId(mpPaymentId)
+                .mpExternalReference(pedido.getId().toString())
+                .montoEsperado(montoEsperado)
+                .montoCapturado(montoCapturado)
+                .motivo(MotivoAlertaWebhookMp.SPLIT_NO_APLICADO)
                 .fechaCreacion(LocalDateTime.now())
                 .ipOrigen(ipOrigen)
                 .build();

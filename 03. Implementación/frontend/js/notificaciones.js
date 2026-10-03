@@ -1,5 +1,6 @@
 import { apiFetch, getUsuario } from './api.js';
 import { renderTopBar } from './catalogo.js';
+import { prepararPaginaDueno } from './selector-comercio.js';
 
 const POLLING_INTERVAL_MS = 15000;
 
@@ -109,6 +110,10 @@ export async function initNotificaciones() {
   }
 
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Notificaciones' });
+
+  if (usuario.rol === 'DUENO' && !(await prepararPaginaDueno())) {
+    return;
+  }
 
   const container = document.getElementById('notif-content');
   let ultimaFirma = '';

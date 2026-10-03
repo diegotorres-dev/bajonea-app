@@ -17,6 +17,16 @@
       <p class="subtitle" id="verificar-texto"></p>
       <div id="banner-slot" data-testid="mensaje-banner"></div>
       <form class="form" id="verificar-form" novalidate>
+        <div class="field is-hidden" id="field-email-verificacion">
+          <label class="field__label" for="email-verificacion">Email</label>
+          <div class="input-shell">
+            <span class="input-shell__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
+            </span>
+            <input type="email" id="email-verificacion" placeholder="tu@email.com" autocomplete="email" maxlength="254" data-testid="input-email" />
+          </div>
+          <div class="field__error" id="error-email-verificacion" style="display:none;" data-testid="mensaje-error-email"></div>
+        </div>
         <div class="field">
           <label class="field__label">Código de verificación</label>
           <div id="otp-container" data-testid="input-codigo-verificacion"></div>

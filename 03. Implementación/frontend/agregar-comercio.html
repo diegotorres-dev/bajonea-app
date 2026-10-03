@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Agregar comercio — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header">
+    <button class="app-header__back" type="button" id="back-btn" aria-label="Volver" data-testid="btn-volver">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span class="app-header__title">Agregar comercio</span>
+  </header>
+  <main class="app-main">
+    <div id="cargando-container" class="screen-body screen-body--tight" aria-busy="true" data-testid="skeleton-agregar-comercio">
+      <div class="skeleton" style="height:12px;width:100%;margin-bottom:8px;"></div>
+      <div class="skeleton" style="height:56px;width:100%;margin-bottom:24px;"></div>
+      <div class="skeleton" style="height:88px;width:88px;border-radius:50%;margin:0 auto 24px;"></div>
+      <div class="skeleton" style="height:48px;width:100%;margin-bottom:16px;"></div>
+      <div class="skeleton" style="height:48px;width:100%;margin-bottom:16px;"></div>
+      <div class="skeleton" style="height:48px;width:100%;margin-bottom:16px;"></div>
+    </div>
+    <div id="no-elegible-container" class="state-page is-hidden" data-testid="pantalla-no-elegible">
+      <div class="state-page__icon state-page__icon--warning">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <h1 class="state-page__title">Todavía no podés agregar otro comercio</h1>
+      <p class="state-page__text">Para agregar un nuevo comercio, necesitás tener al menos uno aprobado previamente</p>
+      <div class="state-page__actions">
+        <a class="btn btn-primary" href="comercio-dashboard.html" data-testid="btn-volver-inicio-no-elegible">Volver al inicio</a>
+      </div>
+    </div>
+    <div id="step-progress-container" class="step-progress is-hidden">
+      <div class="step-progress__bars">
+        <div class="step-progress__bar step-progress__bar--active"></div>
+        <div class="step-progress__bar"></div>
+        <div class="step-progress__bar"></div>
+      </div>
+      <div class="step-progress__labels">
+        <span class="is-active">1. Negocio</span>
+        <span>2. Horarios</span>
+        <span>3. Redes</span>
+      </div>
+    </div>
+    <div id="wizard-container" class="screen-body screen-body--tight is-hidden">
+      <div id="banner-slot" data-testid="mensaje-banner"></div>
+      <section id="step-1">
+        <div class="info-box info-box--acento" style="margin-bottom:20px;" data-testid="aviso-datos-reutilizados">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><polyline points="9 16.5 11 18.5 15 14.5"/></svg>
+          <span id="aviso-datos-reutilizados-texto"></span>
+        </div>
+        <form class="form" id="form-step-1" novalidate>
+          <div class="field" style="text-align:center;">
+            <button type="button" class="foto-picker" id="foto-comercio-avatar" aria-label="Agregar foto del comercio" data-testid="btn-agregar-foto-comercio">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2Z"/><circle cx="12" cy="13" r="4"/></svg>
+            </button>
+            <p class="field__label" style="margin-bottom:2px;">Foto del comercio</p>
+            <p class="field__hint" style="margin-top:0;">Es la foto que ven tus clientes en el catálogo</p>
+            <input type="file" id="input-foto-comercio" accept="image/jpeg,image/png,image/webp" class="is-hidden" data-testid="input-foto-comercio" />
+            <div class="field__error" id="error-foto-comercio" style="display:none;" data-testid="mensaje-error-foto-comercio"></div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="nombre">Nombre del comercio</label>
+            <div class="input-shell">
+              <input type="text" id="nombre" placeholder="Ingresá el nombre de tu comercio" required maxlength="150" data-testid="input-nombre" />
+            </div>
+            <div class="field__error" id="error-nombre" style="display:none;" data-testid="mensaje-error-nombre"></div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="tipoComercio">Tipo de comercio</label>
+            <div class="select-shell">
+              <select id="tipoComercio" required data-testid="select-tipo-comercio"></select>
+              <svg class="select-shell__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="field__error" id="error-tipoComercio" style="display:none;" data-testid="mensaje-error-tipo-comercio"></div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="descripcion">Descripción</label>
+            <div class="textarea-shell">
+              <textarea id="descripcion" placeholder="Contales a tus clientes qué ofrecés (opcional)" maxlength="2000" data-testid="input-descripcion"></textarea>
+            </div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="telefono">Teléfono de contacto del comercio</label>
+            <div class="input-shell">
+              <span class="input-prefix">+54 9</span>
+              <input type="tel" id="telefono" inputmode="numeric" placeholder="2964 000000" required data-testid="input-telefono" />
+            </div>
+            <div class="field__error" id="error-telefono" style="display:none;" data-testid="mensaje-error-telefono"></div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="emailContacto">Email de contacto del comercio</label>
+            <div class="input-shell">
+              <span class="input-shell__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
+              </span>
+              <input type="email" id="emailContacto" placeholder="Ingresá el email de tu comercio" required data-testid="input-email-contacto" />
+            </div>
+            <div class="field__error" id="error-emailContacto" style="display:none;" data-testid="mensaje-error-email-contacto"></div>
+          </div>
+          <div class="form-section">
+            <p class="section-heading">Dirección del local</p>
+            <div class="form" style="gap:16px;">
+              <div class="field">
+                <label class="field__label" for="provincia">Provincia</label>
+                <div class="select-shell">
+                  <select id="provincia" required data-testid="select-provincia"></select>
+                  <svg class="select-shell__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="field__error" id="error-provincia" style="display:none;" data-testid="mensaje-error-provincia"></div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="localidad">Localidad</label>
+                <div class="select-shell">
+                  <select id="localidad" required data-testid="select-localidad"></select>
+                  <svg class="select-shell__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="field__error" id="error-localidad" style="display:none;" data-testid="mensaje-error-localidad"></div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="calle">Calle</label>
+                <div class="input-shell">
+                  <span class="input-shell__icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+                  </span>
+                  <input type="text" id="calle" placeholder="Nombre de la calle" required data-testid="input-calle" />
+                </div>
+                <div class="field__error" id="error-calle" style="display:none;" data-testid="mensaje-error-calle"></div>
+              </div>
+              <div class="form-row">
+                <div class="field">
+                  <label class="field__label" for="numero">Número</label>
+                  <div class="input-shell">
+                    <input type="text" id="numero" inputmode="numeric" placeholder="1234" required data-testid="input-numero" />
+                  </div>
+                  <div class="field__error" id="error-numero" style="display:none;" data-testid="mensaje-error-numero"></div>
+                </div>
+                <div class="field">
+                  <label class="field__label" for="pisoDepto">Piso / depto (opcional)</label>
+                  <div class="input-shell">
+                    <input type="text" id="pisoDepto" placeholder="Local 3" data-testid="input-piso-depto" />
+                  </div>
+                  <div class="field__error" id="error-pisoDepto" style="display:none;" data-testid="mensaje-error-piso-depto"></div>
+                </div>
+              </div>
+              <div class="field">
+                <label class="field__label" for="codigoPostal">Código Postal</label>
+                <div class="input-shell">
+                  <span class="input-shell__icon">#</span>
+                  <input type="text" id="codigoPostal" placeholder="9420" required data-testid="input-codigo-postal" />
+                </div>
+                <div class="field__error" id="error-codigoPostal" style="display:none;" data-testid="mensaje-error-codigo-postal"></div>
+              </div>
+            </div>
+          </div>
+          <div class="form-section">
+            <p class="section-heading">Cómo entregás</p>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div class="switch-row" aria-pressed="true">
+                <span class="switch-row__label">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                  Delivery a domicilio
+                </span>
+                <button type="button" class="switch" id="switch-delivery" aria-pressed="true" data-testid="btn-switch-delivery"><span class="switch__knob"></span></button>
+              </div>
+              <div class="switch-row" aria-pressed="false">
+                <span class="switch-row__label">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></svg>
+                  Retiro en el local
+                </span>
+                <button type="button" class="switch" id="switch-retiro" aria-pressed="false" data-testid="btn-switch-retiro"><span class="switch__knob"></span></button>
+              </div>
+            </div>
+            <p class="field__hint" style="padding-left:2px;">Debés ofrecer al menos una modalidad.</p>
+            <div class="field__error" id="error-modalidad" style="display:none;" data-testid="mensaje-error-modalidad"></div>
+          </div>
+        </form>
+        <button class="btn btn-primary" type="button" id="continuar-btn" style="margin-top:24px;" data-testid="btn-continuar">Continuar</button>
+      </section>
+      <section id="step-2" class="is-hidden">
+        <h1 class="title-md">Horarios de atención</h1>
+        <p class="subtitle" style="margin-bottom:20px;">Cargá al menos una franja horaria de atención.</p>
+        <form class="form" id="form-step-2" novalidate>
+          <div class="segmented-control" role="tablist" data-testid="tabs-horarios">
+            <button type="button" class="segmented-control__btn" id="tab-horario-fijo" role="tab" aria-selected="true" data-testid="tab-horario-fijo">Horario fijo</button>
+            <button type="button" class="segmented-control__btn" id="tab-horario-personalizado" role="tab" aria-selected="false" data-testid="tab-horario-personalizado">Personalizado</button>
+          </div>
+          <div id="panel-horario-fijo" data-testid="panel-horario-fijo">
+            <div class="quick-schedule" data-testid="bloque-franja-rapida">
+              <p class="section-note" style="margin-top:0;">Tildá los días y cargá un horario para aplicarlo a todos de una sola vez.</p>
+              <div class="chip-row chip-row--wrap" id="dia-chip-row" style="padding:4px 0;" data-testid="chips-dia-franja-rapida"></div>
+              <div class="form-row" style="margin-top:4px;">
+                <div class="field">
+                  <label class="field__label" for="franja-rapida-desde">Desde</label>
+                  <div class="input-shell">
+                    <input type="time" id="franja-rapida-desde" data-testid="input-franja-rapida-desde" />
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="field__label" for="franja-rapida-hasta">Hasta</label>
+                  <div class="input-shell">
+                    <input type="time" id="franja-rapida-hasta" data-testid="input-franja-rapida-hasta" />
+                  </div>
+                </div>
+              </div>
+              <p class="field__hint" data-testid="texto-formato-24hs-rapida">Formato 24 hrs (00:00 a 23:59 hrs)</p>
+              <div class="field__error" id="error-franja-rapida" style="display:none;" data-testid="mensaje-error-franja-rapida"></div>
+              <button type="button" class="btn btn-secondary" id="aplicar-franja-rapida-btn" style="margin-top:8px;" data-testid="btn-aplicar-franja-rapida">Aplicar a los días seleccionados</button>
+            </div>
+            <div style="margin-top:20px;">
+              <p class="section-heading" style="margin-top:0;" data-testid="titulo-ya-cargaste">Tus horarios</p>
+              <div id="horario-resumen-fijo" data-testid="resumen-horarios-cargados"></div>
+              <p class="field__hint" id="horario-resumen-vacio" data-testid="texto-sin-horarios-cargados">Todavía no cargaste ningún horario.</p>
+            </div>
+          </div>
+          <div id="panel-horario-personalizado" class="is-hidden" data-testid="panel-horario-personalizado">
+            <div id="horario-list" class="schedule-list" data-testid="lista-horarios"></div>
+            <button type="button" class="btn btn-tertiary" id="agregar-horario-btn" data-testid="btn-agregar-horario">+ Agregar franja horaria</button>
+            <p class="field__hint" data-testid="texto-formato-24hs">Podés agregar más de una franja por día. Formato 24 hrs (00:00 a 23:59 hrs)</p>
+          </div>
+          <div class="field__error" id="error-horarios" style="display:none;margin-top:12px;" data-testid="mensaje-error-horarios"></div>
+          <button class="btn btn-primary" type="button" id="continuar-btn-2" style="margin-top:8px;" data-testid="btn-continuar-2">Continuar</button>
+        </form>
+      </section>
+      <section id="step-3" class="is-hidden">
+        <h1 class="title-md">Redes sociales</h1>
+        <p class="subtitle" style="margin-bottom:20px;">Cargá al menos una red social. Podés agregar hasta 5.</p>
+        <form class="form" id="form-step-3" novalidate>
+          <div id="red-social-list" class="schedule-list" data-testid="lista-redes-sociales"></div>
+          <button type="button" class="btn btn-tertiary" id="agregar-red-social-btn" data-testid="btn-agregar-red-social">+ Agregar red social</button>
+          <p class="field__hint is-hidden" id="red-social-max-hint" data-testid="mensaje-maximo-redes-sociales">Alcanzaste el máximo de 5 redes sociales.</p>
+          <button class="btn btn-primary" type="submit" id="submit-btn" style="margin-top:8px;" data-testid="btn-enviar-solicitud">Enviar solicitud</button>
+        </form>
+      </section>
+    </div>
+    <div id="exito-container" class="state-page is-hidden" data-testid="pantalla-solicitud-recibida">
+      <div class="state-page__icon state-page__icon--success">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h1 class="state-page__title">Recibimos tu solicitud</h1>
+      <p class="state-page__text" id="exito-texto"></p>
+      <div class="state-page__actions">
+        <a class="btn btn-primary" href="comercio-dashboard.html" data-testid="btn-volver-inicio-exito">Volver al inicio</a>
+      </div>
+    </div>
+  </main>
+</div>
+<script type="module">
+import { initAgregarComercio } from './js/agregar-comercio.js';
+initAgregarComercio();
+</script>
+</body>
+</html>

@@ -10,6 +10,12 @@ public interface RedSocialRepository extends JpaRepository<RedSocial, Integer> {
 
     List<RedSocial> findByComercioIdAndFechaBajaIsNull(Integer comercioId);
 
+    /**
+     * Todas las filas del comercio, también las dadas de baja: la restricción única
+     * {@code (comercio_id, tipo)} las cuenta.
+     */
+    List<RedSocial> findByComercioId(Integer comercioId);
+
     long countByComercioIdAndFechaBajaIsNull(Integer comercioId);
 
     Optional<RedSocial> findByComercioIdAndTipo(Integer comercioId, TipoRedSocial tipo);

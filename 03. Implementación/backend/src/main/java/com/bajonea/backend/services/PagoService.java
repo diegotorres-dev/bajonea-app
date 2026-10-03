@@ -39,6 +39,10 @@ public class PagoService {
         return pagoRepository.findByPedidoId(pedidoId);
     }
 
+    public Optional<Pago> buscarPorPedidoParaActualizar(Integer pedidoId) {
+        return pagoRepository.findByPedidoIdParaActualizar(pedidoId);
+    }
+
     public Pago obtenerPorPedido(Integer pedidoId) {
         return buscarPorPedido(pedidoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("El pedido no tiene ningún pago asociado"));

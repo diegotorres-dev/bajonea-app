@@ -107,9 +107,22 @@ const ESTADO_INFO = {
     dotClass: 'pedido-estado__dot--rechazado',
     iconClass: ICON_CLASS,
     icon: ICONS.clock,
-    texto: () => 'El comercio no respondió a tiempo. El reembolso está en proceso.',
+    texto: () => 'El comercio no respondió a tiempo y el pedido se canceló.',
   },
 };
+
+const ESTADOS_CON_REEMBOLSO = ['RECHAZADO', 'CANCELADO', 'ANULADO', 'CANCELADO_POR_SISTEMA', 'EXPIRADO'];
+
+function textoReembolso(pedido) {
+  if (!ESTADOS_CON_REEMBOLSO.includes(pedido.estado) || !pedido.reembolsoEstado) return null;
+  if (pedido.reembolsoEstado === 'PROCESADO') {
+    return `Te devolvimos ${formatearPrecio(pedido.reembolsoMonto)} a tu medio de pago.`;
+  }
+  if (pedido.reembolsoEstado === 'FALLIDO' || pedido.reembolsoEstado === 'PENDIENTE_REVISION_MANUAL') {
+    return 'No pudimos completar la devolución de tu pago automáticamente. La estamos revisando manualmente.';
+  }
+  return `Estamos procesando la devolución de ${formatearPrecio(pedido.reembolsoMonto)}.`;
+}
 
 function crear(tag, className) {
   const node = document.createElement(tag);
@@ -441,6 +454,7 @@ export async function initPedidoDetalle() {
       texto: info.texto(comercio ? comercio.nombre : 'El comercio'),
       numeroTexto: `Pedido #${pedido.id} · ${formatearFecha(pedido.fechaCreacion)}`,
       motivoRechazo: motivoInfo,
+      reembolsoTexto: textoReembolso(pedido),
     });
 
     const body = crear('div', 'screen-body screen-body--tight');
@@ -487,6 +501,15 @@ export async function initPedidoDetalle() {
         body.appendChild(nota);
       }
     });
+
+    const cargoLine = crear('div', 'order-line');
+    const cargoLabel = document.createElement('span');
+    cargoLabel.textContent = 'Cargo por servicio';
+    cargoLine.appendChild(cargoLabel);
+    const cargoValue = document.createElement('span');
+    cargoValue.textContent = formatearPrecio(pedido.cargoServicioCliente);
+    cargoLine.appendChild(cargoValue);
+    body.appendChild(cargoLine);
 
     const totalLine = crear('div', 'order-line order-line--total');
     const totalLabel = document.createElement('span');

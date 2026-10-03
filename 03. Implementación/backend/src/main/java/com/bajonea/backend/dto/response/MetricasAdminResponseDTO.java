@@ -7,12 +7,15 @@ import lombok.Getter;
  * y {@code clientesTotal} cuentan todos los registros sin filtrar por estado — no existe hoy
  * ningún endpoint de listado completo de comercios/clientes (ver docs/DECISIONES.md, gap
  * heredado de Fase 15 §2.4, AD07/AD11), así que estos 2 campos son deliberadamente solo un
- * conteo agregado, no una lista.
+ * conteo agregado, no una lista. {@code comerciosPendientes} cuenta solo las solicitudes nuevas y
+ * {@code resolicitudesPendientes} las re-solicitudes de comercios rechazados que el Dueño corrigió: cada
+ * una tiene su propia bandeja.
  */
 @Getter
 public class MetricasAdminResponseDTO {
 
     private final long comerciosPendientes;
+    private final long resolicitudesPendientes;
     private final long comerciosTotal;
     private final long clientesTotal;
     private final long categoriasActivas;
@@ -20,11 +23,13 @@ public class MetricasAdminResponseDTO {
 
     public MetricasAdminResponseDTO(
             long comerciosPendientes,
+            long resolicitudesPendientes,
             long comerciosTotal,
             long clientesTotal,
             long categoriasActivas,
             long tagsActivos) {
         this.comerciosPendientes = comerciosPendientes;
+        this.resolicitudesPendientes = resolicitudesPendientes;
         this.comerciosTotal = comerciosTotal;
         this.clientesTotal = clientesTotal;
         this.categoriasActivas = categoriasActivas;

@@ -1,18 +1,13 @@
 import { test, expect } from '@playwright/test';
-import { fijarPasswordAdminYLoguear, sufijoUnico, ADMIN_EMAIL, ADMIN_PASSWORD_CONOCIDA } from './helpers/backend';
+import { fijarPasswordAdminYLoguear, sufijoUnico, ADMIN_EMAIL, ADMIN_USUARIO, ADMIN_PASSWORD_CONOCIDA } from './helpers/backend';
 
 async function loginAdminUi(page: import('@playwright/test').Page) {
   await page.goto('/login.html');
-  await page.getByTestId('input-email').fill(ADMIN_EMAIL);
+  await page.getByTestId('input-nombre-usuario').fill(ADMIN_USUARIO);
   await page.getByTestId('input-password').fill(ADMIN_PASSWORD_CONOCIDA);
   await page.getByTestId('btn-ingresar').click();
   await page.waitForURL('**/admin-dashboard.html');
 }
-
-// admin@bajonea.ar es una cuenta compartida entre specs -- fijarPasswordAdminYLoguear (mismo
-// mecanismo que ya usan los specs 03/09) la deja en una contraseña conocida vía el flujo real
-// de recuperación. Este archivo corre con --workers=1 (ver README.md) para evitar una carrera
-// real sobre esa cuenta si se ejecuta junto con el spec 08, que también la usa.
 
 test.describe('CRUD de Categoría y Tag (Administrador)', () => {
   test.beforeAll(async ({ request }) => {

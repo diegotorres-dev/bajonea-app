@@ -1,5 +1,6 @@
 import { apiFetch, ApiError, getUsuario, mostrarModalCuentaBloqueada } from './api.js';
 import { resolverHomePorRol, LABELS_TIPO_COMERCIO } from './auth.js';
+import { contarNotificacionesNoLeidasActivo, resolverComercioActivo, suscribirComercios } from './comercio-activo.js';
 import { normalizarCampos, excedeSubtotalMaximo, mensajeSubtotalMaximoExcedido } from './validators.js';
 
 const DIA_POR_INDICE = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
@@ -90,7 +91,24 @@ export function estadoHorario(horarios) {
   return { abierto, resumenHoy };
 }
 
+function pintarBadgeDueno(bellLink) {
+  bellLink.querySelectorAll('.top-bar__badge-dot').forEach((el) => el.remove());
+  const contador = contarNotificacionesNoLeidasActivo();
+  if (contador > 0) {
+    const dot = crear('span', 'top-bar__badge-dot');
+    dot.setAttribute('data-testid', 'contador-notificaciones');
+    dot.textContent = contador > 9 ? '9+' : String(contador);
+    bellLink.appendChild(dot);
+  }
+}
+
 async function cargarBadgeNotificaciones(bellLink) {
+  const usuario = getUsuario();
+  if (usuario && usuario.rol === 'DUENO') {
+    suscribirComercios(() => pintarBadgeDueno(bellLink));
+    resolverComercioActivo().then(() => pintarBadgeDueno(bellLink)).catch(() => {});
+    return;
+  }
   try {
     const contador = await apiFetch('/notificaciones/no-leidas/contador');
     if (contador > 0) {
@@ -285,7 +303,7 @@ export function pintarEstadoComercio(el, abierto) {
   el.appendChild(label);
 }
 
-export function renderPedidoEstadoHeader(container, { iconClass, icono, label, texto, numeroTexto, motivoRechazo }) {
+export function renderPedidoEstadoHeader(container, { iconClass, icono, label, texto, numeroTexto, motivoRechazo, reembolsoTexto }) {
   container.innerHTML = '';
   const header = crear('div', 'pedido-detail__header');
   header.setAttribute('data-testid', 'cabecera-estado-pedido');
@@ -300,6 +318,12 @@ export function renderPedidoEstadoHeader(container, { iconClass, icono, label, t
   estadoTexto.setAttribute('data-testid', 'estado-pedido');
   estadoTexto.textContent = texto;
   header.appendChild(estadoTexto);
+  if (reembolsoTexto) {
+    const reembolso = crear('p', 'pedido-detail__estado-texto');
+    reembolso.setAttribute('data-testid', 'estado-reembolso');
+    reembolso.textContent = reembolsoTexto;
+    header.appendChild(reembolso);
+  }
   const numero = crear('p', 'pedido-detail__numero');
   numero.setAttribute('data-testid', 'numero-pedido');
   numero.textContent = numeroTexto;
@@ -326,6 +350,21 @@ function renderAvisoRechazo({ motivoLabel, comentario }) {
   }
   aviso.appendChild(texto);
   return aviso;
+}
+
+export function crearBloqueMotivoRechazo({ titulo, motivo, testid }) {
+  const bloque = document.createElement('div');
+  bloque.className = 'motivo-rechazo';
+  bloque.setAttribute('data-testid', testid);
+  const tituloEl = document.createElement('p');
+  tituloEl.className = 'motivo-rechazo__titulo';
+  tituloEl.textContent = titulo;
+  const textoEl = document.createElement('p');
+  textoEl.className = 'motivo-rechazo__texto';
+  textoEl.textContent = motivo;
+  bloque.appendChild(tituloEl);
+  bloque.appendChild(textoEl);
+  return bloque;
 }
 
 export function pintarAvatarComercio(container, comercio) {

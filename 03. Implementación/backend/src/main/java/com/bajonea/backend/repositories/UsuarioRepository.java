@@ -13,6 +13,16 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
 
     boolean existsByEmail(String email);
 
+    boolean existsByNombreUsuario(String nombreUsuario);
+
+    /**
+     * Mismo patrón que {@link #findByEmailConBloqueo}, usado por el login (credencial: nombre de
+     * usuario, siempre normalizado a minúsculas antes de llegar acá).
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT u FROM Usuario u WHERE u.nombreUsuario = :nombreUsuario")
+    Optional<Usuario> findByNombreUsuarioConBloqueo(String nombreUsuario);
+
     /**
      * {@code SELECT ... FOR UPDATE} — serializa requests concurrentes contra el mismo usuario
      * (ej. doble submit de login). Ver docs/CONCURRENCIA-Y-TRANSACCIONES.md, sección 1. Usar

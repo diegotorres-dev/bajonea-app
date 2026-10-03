@@ -74,6 +74,7 @@ public class SecurityConfig {
     private static final String[] RUTAS_PUBLICAS = {
             "/api/v1/auth/registro/**",
             "/api/v1/auth/login",
+            "/api/v1/auth/nombre-usuario/disponibilidad",
             "/api/v1/auth/verificar/**",
             "/api/v1/auth/verificar",
             "/api/v1/auth/reenviar-verificacion",
@@ -114,6 +115,7 @@ public class SecurityConfig {
                         .hasRole("CLIENTE")
                         .requestMatchers("/api/v1/pedidos/comercio/**").hasRole("DUENO")
                         .requestMatchers("/api/v1/oauth/mercadopago/**").hasRole("DUENO")
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/notificaciones/comercio/**").hasRole("DUENO")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(rateLimitFotoRegistroFilter, JwtAuthenticationFilter.class);

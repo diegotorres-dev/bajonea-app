@@ -5,6 +5,7 @@ import com.bajonea.backend.dto.response.CarritoResponseDTO;
 import com.bajonea.backend.dto.response.ItemCarritoResponseDTO;
 import com.bajonea.backend.entities.Carrito;
 import com.bajonea.backend.entities.Cliente;
+import com.bajonea.backend.entities.ConfiguracionTarifa;
 import com.bajonea.backend.entities.ItemCarrito;
 import com.bajonea.backend.entities.Producto;
 import com.bajonea.backend.enums.EstadoProducto;
@@ -37,6 +38,7 @@ public class CarritoService {
     private final ClienteRepository clienteRepository;
     private final ProductoRepository productoRepository;
     private final ComercioService comercioService;
+    private final ConfiguracionTarifaService configuracionTarifaService;
 
     public CarritoResponseDTO verCarrito(Integer usuarioId) {
         Carrito carrito = obtenerOCrearCarrito(usuarioId);
@@ -152,7 +154,13 @@ public class CarritoService {
         Integer comercioId = carrito.getComercio() != null ? carrito.getComercio().getId() : null;
         String nombreComercio = carrito.getComercio() != null ? carrito.getComercio().getNombre() : null;
 
-        return new CarritoResponseDTO(comercioId, nombreComercio, items, subtotal);
+        BigDecimal cargoServicioCliente = BigDecimal.ZERO;
+        if (subtotal.compareTo(BigDecimal.ZERO) > 0) {
+            ConfiguracionTarifa tarifaVigente = configuracionTarifaService.obtenerVigente();
+            cargoServicioCliente = configuracionTarifaService.calcularCargoCliente(subtotal, tarifaVigente);
+        }
+
+        return new CarritoResponseDTO(comercioId, nombreComercio, items, subtotal, cargoServicioCliente);
     }
 
     private ItemCarritoResponseDTO aResponseDTO(ItemCarrito item) {

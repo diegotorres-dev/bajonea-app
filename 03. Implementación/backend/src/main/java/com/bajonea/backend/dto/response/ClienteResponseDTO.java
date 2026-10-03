@@ -24,19 +24,21 @@ public class ClienteResponseDTO {
     private final String dni;
     private final LocalDate fechaNacimiento;
     private final String telefono;
+    private final String nombreUsuario;
     private final String email;
     private final DireccionResponseDTO direccion;
     private final String fotoPerfilUrl;
 
     public ClienteResponseDTO(
             Integer id, String nombre, String apellido, String dni, LocalDate fechaNacimiento, String telefono,
-            String email, DireccionResponseDTO direccion, String fotoPerfilUrl) {
+            String nombreUsuario, String email, DireccionResponseDTO direccion, String fotoPerfilUrl) {
         this.id = id;
         this.nombre = nombre;
         this.apellido = apellido;
         this.dni = dni;
         this.fechaNacimiento = fechaNacimiento;
         this.telefono = telefono;
+        this.nombreUsuario = nombreUsuario;
         this.email = email;
         this.direccion = direccion;
         this.fotoPerfilUrl = fotoPerfilUrl;

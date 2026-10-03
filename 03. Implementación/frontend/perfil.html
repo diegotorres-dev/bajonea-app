@@ -72,6 +72,16 @@
             <div class="field__error" id="error-editar-telefono" style="display:none;" data-testid="mensaje-error-telefono"></div>
           </div>
           <div class="field">
+            <label class="field__label" for="editar-nombre-usuario">Nombre de usuario</label>
+            <div class="input-shell">
+              <input type="text" id="editar-nombre-usuario" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20" data-testid="input-nombre-usuario" />
+              <span class="input-shell__status-icon" id="icono-editar-nombre-usuario" style="display:none;" data-testid="icono-estado-nombre-usuario"></span>
+            </div>
+            <p class="field__hint">Podés cambiar tu nombre de usuario hasta 3 veces cada 30 días.</p>
+            <div class="field__status" id="estado-editar-nombre-usuario" style="display:none;" data-testid="estado-nombre-usuario"></div>
+            <div class="field__error" id="error-editar-nombre-usuario" style="display:none;" data-testid="mensaje-error-nombre-usuario"></div>
+          </div>
+          <div class="field">
             <label class="field__label" for="editar-email">Email</label>
             <div class="input-shell"><input type="email" id="editar-email" disabled data-testid="input-email" /></div>
             <p class="field__hint">El email no se puede modificar.</p>

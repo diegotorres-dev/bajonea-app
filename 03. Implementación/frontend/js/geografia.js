@@ -26,6 +26,12 @@ export async function initGeografiaSelects(provinciaSelect, localidadSelect, pre
   }
 }
 
+export async function preseleccionarGeografia(provinciaSelect, localidadSelect, provinciaId, localidadId) {
+  provinciaSelect.value = provinciaId;
+  await cargarLocalidades(provinciaSelect.value, localidadSelect);
+  localidadSelect.value = localidadId;
+}
+
 async function cargarLocalidades(provinciaId, localidadSelect) {
   localidadSelect.innerHTML = '<option value="">Cargando localidades...</option>';
   localidadSelect.disabled = true;
