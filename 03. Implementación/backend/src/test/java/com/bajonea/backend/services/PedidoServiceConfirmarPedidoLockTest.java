@@ -3,6 +3,7 @@ package com.bajonea.backend.services;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -79,7 +80,48 @@ class PedidoServiceConfirmarPedidoLockTest {
         when(clienteRepository.findById(5)).thenReturn(Optional.of(mock(Cliente.class)));
         when(carritoRepository.findByClienteId(5)).thenReturn(Optional.of(carrito));
         when(itemCarritoRepository.findByCarritoId(3)).thenReturn(List.of(mock(ItemCarrito.class)));
-        when(comercioRepository.leerEstadoConBloqueoCompartido(40)).thenReturn(Optional.of("APROBADO"));
+        when(comercioRepository.leerEstadoConBloqueoCompartido(40)).thenReturn(lectura("APROBADO", false));
+    }
+
+    private static Optional<ComercioRepository.EstadoYCierreComercio> lectura(String estado, boolean cerradoManualmente) {
+        return Optional.of(new ComercioRepository.EstadoYCierreComercio() {
+            @Override
+            public String getEstado() {
+                return estado;
+            }
+
+            @Override
+            public boolean getCerradoManualmente() {
+                return cerradoManualmente;
+            }
+        });
+    }
+
+    @Test
+    void validaElCierreManualLeidoBajoBloqueoYNoElDeLaEntidad() {
+        when(comercioRepository.leerEstadoConBloqueoCompartido(40)).thenReturn(lectura("APTO_VENTA", true));
+        when(comercioDelCarrito.isCerradoManualmente()).thenReturn(false);
+        org.mockito.Mockito.doThrow(new ConflictoDeNegocioException("corta aca"))
+                .when(comercioService).validarAceptaPedidos(any(Comercio.class), any(EstadoComercio.class), anyBoolean());
+
+        assertThrows(ConflictoDeNegocioException.class, () -> pedidoService.confirmarPedido(5, request()));
+
+        verify(comercioService).validarAceptaPedidos(comercioDelCarrito, EstadoComercio.APTO_VENTA, true);
+        verify(pedidoRepository, never()).save(any());
+    }
+
+    @Test
+    void siElComercioSeCerroManualmenteRechazaConElTextoDeCierreAunqueLaEntidadLoVeaAbierto() {
+        when(comercioRepository.leerEstadoConBloqueoCompartido(40)).thenReturn(lectura("APTO_VENTA", true));
+        when(comercioDelCarrito.getEstado()).thenReturn(EstadoComercio.APTO_VENTA);
+        when(comercioDelCarrito.isCerradoManualmente()).thenReturn(false);
+        org.mockito.Mockito.doCallRealMethod().when(comercioService).validarAceptaPedidos(any(Comercio.class), any(EstadoComercio.class), anyBoolean());
+
+        ConflictoDeNegocioException ex = assertThrows(ConflictoDeNegocioException.class,
+                () -> pedidoService.confirmarPedido(5, request()));
+
+        assertEquals("Este comercio está cerrado en este momento", ex.getMessage());
+        verify(pedidoRepository, never()).save(any());
     }
 
     private PedidoRequestDTO request() {
@@ -91,7 +133,7 @@ class PedidoServiceConfirmarPedidoLockTest {
     @Test
     void siElEstadoLeidoBajoBloqueoYaNoEsAptoVentaRechazaAunqueElCarritoLoVeaApto() {
         when(comercioDelCarrito.getEstado()).thenReturn(EstadoComercio.APTO_VENTA);
-        org.mockito.Mockito.doCallRealMethod().when(comercioService).validarAceptaPedidos(any(Comercio.class), any(EstadoComercio.class));
+        org.mockito.Mockito.doCallRealMethod().when(comercioService).validarAceptaPedidos(any(Comercio.class), any(EstadoComercio.class), anyBoolean());
 
         ConflictoDeNegocioException ex = assertThrows(ConflictoDeNegocioException.class,
                 () -> pedidoService.confirmarPedido(5, request()));
@@ -99,20 +141,20 @@ class PedidoServiceConfirmarPedidoLockTest {
         assertEquals("Este comercio no está aceptando pedidos en este momento", ex.getMessage());
         InOrder orden = inOrder(comercioRepository, comercioService);
         orden.verify(comercioRepository).leerEstadoConBloqueoCompartido(40);
-        orden.verify(comercioService).validarAceptaPedidos(comercioDelCarrito, EstadoComercio.APROBADO);
+        orden.verify(comercioService).validarAceptaPedidos(comercioDelCarrito, EstadoComercio.APROBADO, false);
         verify(pedidoRepository, never()).save(any());
     }
 
     @Test
     void validaConElEstadoLeidoBajoBloqueoYNoConElDeLaEntidad() {
-        when(comercioRepository.leerEstadoConBloqueoCompartido(40)).thenReturn(Optional.of("APTO_VENTA"));
+        when(comercioRepository.leerEstadoConBloqueoCompartido(40)).thenReturn(lectura("APTO_VENTA", false));
         when(comercioDelCarrito.getEstado()).thenReturn(EstadoComercio.APROBADO);
         org.mockito.Mockito.doThrow(new ConflictoDeNegocioException("corta aca"))
-                .when(comercioService).validarAceptaPedidos(any(Comercio.class), any(EstadoComercio.class));
+                .when(comercioService).validarAceptaPedidos(any(Comercio.class), any(EstadoComercio.class), anyBoolean());
 
         assertThrows(ConflictoDeNegocioException.class, () -> pedidoService.confirmarPedido(5, request()));
 
-        verify(comercioService).validarAceptaPedidos(comercioDelCarrito, EstadoComercio.APTO_VENTA);
+        verify(comercioService).validarAceptaPedidos(comercioDelCarrito, EstadoComercio.APTO_VENTA, false);
         verify(comercioService, never()).validarAceptaPedidos(comercioDelCarrito);
     }
 }

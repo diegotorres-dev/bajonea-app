@@ -20,9 +20,11 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.DynamicUpdate;
 
 @Entity
 @Table(name = "comercio")
+@DynamicUpdate
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -77,6 +79,10 @@ public class Comercio {
     @Enumerated(EnumType.STRING)
     @Column(name = "estado", nullable = false)
     private EstadoComercio estado;
+
+    @Setter
+    @Column(name = "cerrado_manualmente", nullable = false)
+    private boolean cerradoManualmente;
 
     @Setter
     @Column(name = "fecha_resolicitud")

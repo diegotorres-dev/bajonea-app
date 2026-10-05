@@ -3,7 +3,7 @@
 **Proyecto:** Bajoneá — Plataforma de pedidos gastronómicos en línea  
 **Motor de base de datos:** MySQL (InnoDB)  
 **ORM / Migraciones:** Spring Data JPA + Hibernate / Flyway  
-**Versión del modelo:** 1.9  
+**Versión del modelo:** 1.10  
 
 ## 1. Tipos Enumerados (ENUMs)
 
@@ -132,7 +132,30 @@ Ciclo de vida del comercio en la plataforma.
 | `RECHAZO_DEFINITIVO` | Estado terminal, sin salida desde la aplicación. Se llega desde `PENDIENTE` cuando el Administrador rechaza de forma definitiva (a pedido suyo, sobre el alta original o sobre una re-solicitud) o cuando rechaza una re-solicitud y el comercio ya usó todas las que tenía (`cantidad_resolicitudes >= comercio.resolicitudes.max`; lo decide el servidor). El Dueno no puede corregirlo ni volver a solicitarlo; reabrirlo es una operación manual sobre la base (estado a `RECHAZADO`, `cantidad_resolicitudes` en 2 y una fila de historial "reabierto manualmente"). No cuenta para la elegibilidad de agregar otros comercios, pero sí como duplicado. No es visible en el catálogo ni recibe pedidos, y no lo toca el bloqueo ni la suspensión de cuenta (migración `V24`). |
 | `APTO_VENTA` | Aprobado, con la cuenta de MercadoPago del Dueno titular vinculada (`CuentaMercadoPago.activa = true`). Se alcanza automáticamente al vincular la cuenta (`APROBADO → APTO_VENTA`) y vuelve a `APROBADO` al desvincularla. Es el único estado en el que el comercio aparece en el catálogo público y puede recibir pedidos (migración `V12`). |
 
-> **Regla de visibilidad y venta (implementada):** el catálogo público lista únicamente comercios con `estado = APTO_VENTA`, y un pedido solo se acepta si además la hora actual está dentro de alguna franja de `Horario` (`ComercioService.validarAceptaPedidos`). Diseño pendiente de implementar: la condición `cerrado_manualmente = false` (la columna existe, ningún código la usa) y la aparición de comercios `CERRADO_TEMPORALMENTE` con indicador de "temporalmente cerrado".
+> **Regla de visibilidad y venta (implementada):** el catálogo público lista únicamente comercios con `estado = APTO_VENTA`, y un pedido solo se acepta si además el comercio no está cerrado manualmente (`cerrado_manualmente = false`) y la hora actual está dentro de alguna franja de `Horario` (`ComercioService.validarAceptaPedidos`, en ese orden: estado, cierre manual, horario). Un comercio `APTO_VENTA` cerrado manualmente sigue en el catálogo con el indicador de "temporalmente cerrado" (campo `estadoApertura`). Diseño pendiente de implementar: la aparición de comercios `CERRADO_TEMPORALMENTE` (Dueno bloqueado) con ese indicador.
+
+---
+
+### ENUM: AccionCierre
+
+Acción registrada en `HistorialCierreComercio`.
+
+| Valor | Descripción |
+|-------|-------------|
+| `CERRADO` | El comercio se cerró manualmente (`Comercio.cerrado_manualmente` pasó a `true`). |
+| `REABIERTO` | El cierre manual se apagó (`cerrado_manualmente` pasó a `false`), a mano o por la reapertura automática. |
+
+---
+
+### ENUM: ActorCierre
+
+Quién ejecutó la acción registrada en `HistorialCierreComercio`.
+
+| Valor | Descripción |
+|-------|-------------|
+| `DUENO` | El Dueno titular, desde el panel de un comercio. |
+| `EMPLEADO` | Un Empleado autorizado del comercio. Reservado: el código todavía no lo usa. |
+| `SISTEMA` | El job de reapertura automática. Es el único actor sin usuario (`actor_usuario_id` nulo). |
 
 ---
 
@@ -756,7 +779,7 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | `acepta_delivery` | TINYINT(1) | NO | `false` | NN | `true` si el comercio ofrece entrega a domicilio. |
 | `acepta_retiro` | TINYINT(1) | NO | `false` | NN | `true` si el comercio permite retiro en el local. |
 | `estado` | ENUM EstadoComercio | NO | `'PENDIENTE'` | NN | Estado operacional actual del comercio. Consultado en cada validación de pedido. |
-| `cerrado_manualmente` | TINYINT(1) | NO | `false` | NN | `true` si el comerciante cerró manualmente su tienda. Independiente del estado y del horario. Se combina con ambos para determinar la disponibilidad real. |
+| `cerrado_manualmente` | TINYINT(1) | NO | `false` | NN | `true` si el comerciante cerró manualmente su tienda. Independiente del estado y del horario; se combina con ambos para determinar la disponibilidad real. Solo se puede prender y apagar a mano dentro de una franja de `Horario` y con el comercio `APROBADO` o `APTO_VENTA`; se apaga solo al empezar la primera franja posterior al cierre (ver `HistorialCierreComercio`). Cada cambio deja una fila en `HistorialCierreComercio`, en la misma transacción. |
 | `fecha_resolicitud` | DATETIME | SÍ | NULL | — | Fecha y hora de la última re-solicitud: el Dueno corrigió el comercio rechazado y volvió a pedir su aprobación. `NULL` mientras nunca se re-solicitó. Se escribe en la misma transacción que `cantidad_resolicitudes` y que la fila `RECHAZADO → PENDIENTE` del historial. |
 | `cantidad_resolicitudes` | INT | NO | `0` | NN | Cuántas veces el Dueno volvió a solicitar la aprobación de este comercio. Es igual a la cantidad de filas `RECHAZADO → PENDIENTE` de `HistorialEstadoComercio` de este comercio (la aplicación mantiene las dos cosas en la misma transacción). Con `0` y `estado = PENDIENTE` es una solicitud nueva; con más de `0`, una re-solicitud: la bandeja del Administrador las muestra por separado. Tope: `comercio.resolicitudes.max` (3). Migración `V25`. |
 | `mp_vinculado` | TINYINT(1) | NO | `false` | NN | Columna existente en el schema (`V1`) **sin uso en el código**: ninguna Entity ni Service la lee ni la escribe (queda en su default). Su función la cumple el estado `APTO_VENTA` de `estado` (ver ENUM EstadoComercio). Se conserva por compatibilidad con el diseño original. |
@@ -768,8 +791,11 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 **Índices:** `PRIMARY KEY (id)` | `INDEX (dueno_id)` | `INDEX (estado)`
 
 **Reglas de negocio:**
-- Implementado: un comercio puede recibir pedidos si `estado = APTO_VENTA AND hora actual dentro de Horario` (`ComercioService.validarAceptaPedidos`, horario evaluado con offset fijo -03:00).
-- Diseño pendiente de implementar: además `cerrado_manualmente = false AND Dueno titular con Usuario.estado = ACTIVO` (`cerrado_manualmente` no tiene ningún uso en el código).
+- Implementado: un comercio puede recibir pedidos si `estado = APTO_VENTA AND cerrado_manualmente = false AND hora actual dentro de Horario` (`ComercioService.validarAceptaPedidos`, horario evaluado con offset fijo -03:00; una franja que cierra a las 23:59 se interpreta como fin del día).
+- Diseño pendiente de implementar: además `Dueno titular con Usuario.estado = ACTIVO` como condición propia (hoy se cubre por propagación de estado).
+- Cierre manual: cerrar y abrir solo se puede dentro de una franja, con el comercio `APROBADO` o `APTO_VENTA` (409 si no). Cerrar solo frena pedidos nuevos (agregar al carrito y confirmar el pedido): los pedidos en curso, los productos, los pagos y el flujo del comercio siguen igual. Cerrar o abrir dos veces seguidas no escribe una segunda fila de historial.
+- Reapertura automática: un job (cada 60 segundos) apaga `cerrado_manualmente` cuando empieza la primera franja posterior al momento del cierre (la fecha y hora de la última fila `CERRADO` de `HistorialCierreComercio`), y escribe una fila `REABIERTO` de `SISTEMA`. Si el backend estuvo caído, se pone al día al arrancar.
+- Limitación conocida: las franjas que cruzan la medianoche se cargan como dos filas y no se unen, y una franja partida tiene dos filas del mismo día. Un cierre manual hecho en el primer tramo se reabre al empezar el segundo.
 - Propagación automática desde el estado del `Usuario` del Dueno titular hacia TODOS los comercios que administra: `BLOQUEADO → CERRADO_TEMPORALMENTE`; `INACTIVO → INACTIVO`; `SUSPENDIDO → SUSPENDIDO`.
 - Al recuperar contraseña (desbloqueo del Dueno): se restaura automáticamente el estado de los comercios de ese Dueno que estuvieran en `CERRADO_TEMPORALMENTE`: a `APTO_VENTA` si el Dueno tiene una `CuentaMercadoPago` activa, o a `APROBADO` si no.
 - Al reactivarse la cuenta del Dueno (token de reactivación): se restaura automáticamente el estado de los comercios de ese Dueno que estuvieran en `INACTIVO`: a `APTO_VENTA` si el Dueno tiene una `CuentaMercadoPago` activa, o a `APROBADO` si no.
@@ -939,6 +965,28 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 - A lo sumo una fila por campo y por re-solicitud (`UNIQUE`). Un campo que no cambió no tiene fila: el valor se compara después de normalizarlo como en el alta (Title Case en nombres y calle, código postal canónico, vacío igual a `NULL`, horas a nivel minuto; horarios y redes como conjuntos ordenados).
 - Los datos fiscales y del representante se guardan en texto plano (CUIT y DNI incluidos), igual que en `PersonaJuridica` y `PersonaFisica`, y solo aparecen si el Dueno pudo corregirlos (nunca tuvo un comercio aprobado).
 - Para ver lo que cambió en la última re-solicitud: `SELECT campo, valor_anterior, valor_nuevo FROM HistorialCambioComercio WHERE historial_estado_comercio_id = (SELECT MAX(id) FROM HistorialEstadoComercio WHERE comercio_id = ? AND estado_destino = 'PENDIENTE')`.
+
+---
+
+### Tabla: HistorialCierreComercio
+
+**Descripción:** Registro append-only de cada cierre y reapertura del comercio (bandera `Comercio.cerrado_manualmente`): quién, cuándo y qué acción. La reapertura automática usa la última fila `CERRADO` como momento del cierre para calcular cuándo empieza la próxima franja. Migración `V28`.
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `id` | INT | NO | AI | PK, AI | Identificador único del registro. |
+| `comercio_id` | INT | NO | — | FK → Comercio.id, NN | Comercio que se cerró o reabrió. |
+| `accion` | ENUM AccionCierre | NO | — | NN | `CERRADO` o `REABIERTO`. |
+| `actor_usuario_id` | INT | SÍ | NULL | FK → Usuario.id | Usuario que ejecutó la acción. `NULL` solo cuando `actor_rol = SISTEMA`. |
+| `actor_rol` | ENUM ActorCierre | NO | — | NN | `DUENO`, `EMPLEADO` o `SISTEMA`. |
+| `fecha_hora` | DATETIME | NO | — | NN | Momento de la acción, en `-03:00`, sin fracciones de segundo. Siempre lo escribe la aplicación (la tabla no tiene `DEFAULT`). En la reapertura automática es la hora real en que corrió el job. |
+
+**Índices:** `PRIMARY KEY (id)` | `INDEX (comercio_id, fecha_hora)` | `INDEX (actor_usuario_id)` | `CHECK (actor_rol = 'SISTEMA') = (actor_usuario_id IS NULL)` (`ck_hci_actor`).
+
+**Reglas de negocio:**
+- Para cada comercio las filas alternan `CERRADO`, `REABIERTO`, `CERRADO`…; la última coincide con `Comercio.cerrado_manualmente`. Se escriben en la misma transacción que la bandera, con el comercio bloqueado `FOR UPDATE`.
+- Si un comercio tiene la bandera prendida y ninguna fila `CERRADO` (dato anterior a este tramo), el job lo reabre igual, escribe la fila `REABIERTO` y deja un aviso en el log.
+- Para saber cuándo se cerró el comercio: `SELECT fecha_hora FROM HistorialCierreComercio WHERE comercio_id = ? AND accion = 'CERRADO' ORDER BY fecha_hora DESC, id DESC LIMIT 1`.
 
 ---
 
@@ -1514,6 +1562,8 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | 23 | `HistorialEstadoComercio` | `comercio_id` | `Comercio` | N:1 | N registros → 1 comercio | Historial de transiciones de estado del comercio. |
 | 24 | `HistorialEstadoComercio` | `administrador_id` | `Administrador` | N:1 | N registros → 1 administrador | Administrador que ejecutó la transición (NULL si fue el sistema o el Dueno). |
 | 24b | `HistorialCambioComercio` | `historial_estado_comercio_id` | `HistorialEstadoComercio` | N:1 | N cambios → 1 fila de historial | Campos que el Dueno cambió al re-solicitar un comercio rechazado (`ON DELETE CASCADE`). |
+| 24c | `HistorialCierreComercio` | `comercio_id` | `Comercio` | N:1 | N registros → 1 comercio | Cierres y reaperturas manuales del comercio. |
+| 24d | `HistorialCierreComercio` | `actor_usuario_id` | `Usuario` | N:1 | N registros → 1 usuario | Usuario que cerró o abrió el comercio (NULL si fue el sistema). |
 | 25 | `ConfiguracionTarifa` | `administrador_id` | `Administrador` | N:1 | N configs → 1 administrador | Configuraciones de tarifa registradas por el admin. |
 | 26 | `CuentaMercadoPago` | `dueno_id` | `Dueno` | 1:1 | 1 cuenta ↔ 1 Dueno | Credenciales OAuth MP del Dueno, compartidas por todos sus comercios (UNIQUE). |
 | 27 | `EmpleadoComercio` | `empleado_id` | `Empleado` | N:1 | N relaciones → 1 empleado | Comercios donde opera el empleado. |
@@ -1652,4 +1702,4 @@ LISTO_PARA_RETIRAR ──[90 min durante suspensión]───────→ EN
 
 ---
 
-*Diccionario de Datos — Proyecto Bajoneá — Versión 1.9*
+*Diccionario de Datos — Proyecto Bajoneá — Versión 1.10*

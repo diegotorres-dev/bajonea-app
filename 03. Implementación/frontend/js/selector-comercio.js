@@ -12,6 +12,7 @@ import {
   suscribirComercios,
   RUTA_DASHBOARD,
 } from './comercio-activo.js';
+import { ETIQUETA_CERRADO, mostrarChipCerrado } from './apertura-comercio.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const ID_PANEL = 'panel-comercios';
@@ -133,6 +134,7 @@ export function montarFranjaComercio(slot) {
   let avatarEl = null;
   let nombreEl = null;
   let puntitoEl = null;
+  let chipCerradoEl = null;
   let firma = '';
 
   function construir() {
@@ -143,6 +145,9 @@ export function montarFranjaComercio(slot) {
     avatarEl = crear('span', 'selector-avatar selector-avatar--franja');
     nombreEl = crear('span', 'comercio-franja__nombre');
     nombreEl.setAttribute('data-testid', 'franja-comercio-nombre');
+    chipCerradoEl = crear('span', 'comercio-franja__chip is-hidden');
+    chipCerradoEl.setAttribute('data-testid', 'franja-comercio-chip-cerrado');
+    chipCerradoEl.textContent = ETIQUETA_CERRADO;
     const cambiar = crear('span', 'comercio-franja__cambiar');
     const textoCambiar = crear('span');
     textoCambiar.textContent = 'Cambiar';
@@ -156,6 +161,7 @@ export function montarFranjaComercio(slot) {
     cambiar.appendChild(crearIcono('chevronAbajo'));
     boton.appendChild(avatarEl);
     boton.appendChild(nombreEl);
+    boton.appendChild(chipCerradoEl);
     boton.appendChild(cambiar);
     boton.addEventListener('click', () => abrirPanelComercios());
     slot.replaceChildren(boton);
@@ -176,6 +182,7 @@ export function montarFranjaComercio(slot) {
       nombreEl.textContent = activo.nombre;
       boton.setAttribute('aria-label', `Comercio activo: ${activo.nombre}. Cambiar de comercio`);
     }
+    chipCerradoEl.classList.toggle('is-hidden', !mostrarChipCerrado(activo));
     puntitoEl.classList.toggle('is-hidden', contarNotificacionesNoLeidasOtros() === 0);
   }
 
@@ -211,8 +218,12 @@ function crearFilaComercio(comercio, activoId, alElegir) {
   nombre.textContent = comercio.nombre;
   cuerpo.appendChild(nombre);
   const partes = [];
+  const cerrado = mostrarChipCerrado(comercio);
   if (SUBTITULO_ESTADO[comercio.estado]) {
     partes.push(SUBTITULO_ESTADO[comercio.estado]);
+  }
+  if (cerrado && comercio.textoReapertura) {
+    partes.push(comercio.textoReapertura);
   }
   if (comercio.cantidadNotificacionesNoLeidas > 0) {
     partes.push(textoContador(comercio.cantidadNotificacionesNoLeidas));
@@ -224,6 +235,13 @@ function crearFilaComercio(comercio, activoId, alElegir) {
     cuerpo.appendChild(sub);
   }
   fila.appendChild(cuerpo);
+
+  if (cerrado) {
+    const chip = crear('span', 'panel-comercios__etiqueta panel-comercios__etiqueta--cerrado');
+    chip.setAttribute('data-testid', `chip-cerrado-comercio-${comercio.id}`);
+    chip.textContent = ETIQUETA_CERRADO;
+    fila.appendChild(chip);
+  }
 
   if (esActivo) {
     const tilde = crear('span', 'panel-comercios__tilde');

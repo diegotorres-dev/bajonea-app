@@ -79,12 +79,28 @@ public interface ComercioRepository extends JpaRepository<Comercio, Integer> {
     List<Comercio> findByDuenoIdConBloqueo(Integer duenoId);
 
     /**
-     * El estado actual del comercio leído con bloqueo compartido: devuelve el último estado confirmado
-     * (nunca la foto de {@code REPEATABLE READ}) y mantiene el comercio bloqueado contra escritura hasta el
-     * commit. Lo usa la creación de un pedido para revalidar {@code APTO_VENTA} sin carrera con la
-     * desvinculación de Mercado Pago. Consulta nativa con {@code LOCK IN SHARE MODE} por la misma razón que
+     * El estado y el cierre manual del comercio leídos con bloqueo compartido, en la misma lectura: devuelve
+     * lo último confirmado (nunca la foto de {@code REPEATABLE READ}) y mantiene el comercio bloqueado contra
+     * escritura hasta el commit. Lo usa la creación de un pedido para revalidar {@code APTO_VENTA} y el cierre
+     * manual sin carrera con la desvinculación de Mercado Pago ni con el cierre del comercio. Consulta nativa
+     * con {@code LOCK IN SHARE MODE} por la misma razón que
      * {@code PedidoRepository.findPendientesPagoDeComerciosConBloqueoCompartido}.
      */
-    @Query(value = "SELECT estado FROM comercio WHERE id = :id LOCK IN SHARE MODE", nativeQuery = true)
-    Optional<String> leerEstadoConBloqueoCompartido(@Param("id") Integer id);
+    @Query(value = "SELECT estado AS estado, cerrado_manualmente AS cerradoManualmente FROM comercio WHERE id = :id LOCK IN SHARE MODE",
+            nativeQuery = true)
+    Optional<EstadoYCierreComercio> leerEstadoConBloqueoCompartido(@Param("id") Integer id);
+
+    /**
+     * Ids de los comercios con el cierre manual prendido, sin cargar ninguna entidad: el job de reapertura
+     * bloquea y relee cada comercio en su propia transacción y no puede arrastrar una foto vieja.
+     */
+    @Query("SELECT c.id FROM Comercio c WHERE c.cerradoManualmente = true ORDER BY c.id")
+    List<Integer> findIdsCerradosManualmente();
+
+    interface EstadoYCierreComercio {
+
+        String getEstado();
+
+        boolean getCerradoManualmente();
+    }
 }

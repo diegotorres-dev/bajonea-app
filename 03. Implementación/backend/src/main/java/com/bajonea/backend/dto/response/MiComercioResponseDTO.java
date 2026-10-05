@@ -21,9 +21,14 @@ public class MiComercioResponseDTO {
     private final LocalDateTime fechaRegistro;
     private final boolean operativo;
     private final long cantidadNotificacionesNoLeidas;
+    private final boolean cerradoManualmente;
+    private final boolean abiertoAhora;
+    private final boolean puedeCambiarCierre;
+    private final String textoReapertura;
 
     public MiComercioResponseDTO(Integer id, String nombre, String fotoPerfilUrl, EstadoComercio estado,
-            LocalDateTime fechaRegistro, boolean operativo, long cantidadNotificacionesNoLeidas) {
+            LocalDateTime fechaRegistro, boolean operativo, long cantidadNotificacionesNoLeidas, boolean cerradoManualmente,
+            boolean abiertoAhora, boolean puedeCambiarCierre, String textoReapertura) {
         this.id = id;
         this.nombre = nombre;
         this.fotoPerfilUrl = fotoPerfilUrl;
@@ -31,5 +36,9 @@ public class MiComercioResponseDTO {
         this.fechaRegistro = fechaRegistro;
         this.operativo = operativo;
         this.cantidadNotificacionesNoLeidas = cantidadNotificacionesNoLeidas;
+        this.cerradoManualmente = cerradoManualmente;
+        this.abiertoAhora = abiertoAhora;
+        this.puedeCambiarCierre = puedeCambiarCierre;
+        this.textoReapertura = textoReapertura;
     }
 }

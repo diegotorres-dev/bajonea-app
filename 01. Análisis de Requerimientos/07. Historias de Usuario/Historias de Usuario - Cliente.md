@@ -36,6 +36,17 @@ registrarme, para descubrir opciones gastronómicas antes de crear una cuenta. Q
 poder distinguir los comercios que están abiertos en este momento de los que están
 temporalmente cerrados.
 
+**Criterios de aceptación:**
+- Los comercios cerrados (fuera de su horario o pausados por su Dueño) se ven atenuados en
+  el listado y llevan una etiqueta al final de la tarjeta: "Cerrado" si están fuera de
+  horario y "Cerrado temporalmente" si el Dueño los pausó.
+- Los comercios abiertos aparecen primero, y el filtro "Abierto ahora" muestra solo los
+  abiertos.
+- El detalle de un comercio cerrado muestra la misma etiqueta y cuándo reabre (por
+  ejemplo, "Reabre hoy a las 19:00"), y no permite agregar productos al carrito.
+- Si el comercio se cierra mientras estoy agregando un producto o confirmando mi pedido,
+  el sistema me avisa con un mensaje claro y un botón para volver al catálogo.
+
 ## HU-C07: Ver el Menú de un Comercio
 
 Como cliente, quiero ver el menú de un comercio con todos sus productos activos,

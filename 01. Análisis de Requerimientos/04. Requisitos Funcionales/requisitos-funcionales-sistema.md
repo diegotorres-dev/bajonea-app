@@ -90,6 +90,14 @@ La tabla Pedido incluye el campo `cancelado_por` (enum nullable: CLIENTE, COMERC
 - **Timeout PENDIENTE_PAGO (30 minutos):** un job periódico detecta pedidos en estado PENDIENTE_PAGO con más de 30 minutos de antigüedad sin recibir confirmación de MP (el plazo es configurable y el job corre cada 60 segundos). El sistema los cancela con estado CANCELADO_POR_SISTEMA (cancelado_por: SISTEMA, motivo: `Pago no confirmado` si no hubo un pago resuelto, o `Pago rechazado` si el último pago fue rechazado), sin generar reembolso. El carrito permanece intacto.
 - **Timeout PENDIENTE_CONFIRMACION_COMERCIO — Expiración por falta de respuesta del comercio (30 minutos):** un job periódico (cada 5 minutos, plazo configurable) detecta pedidos en estado PENDIENTE_CONFIRMACION_COMERCIO con más de 30 minutos en ese estado, medida desde la confirmación del pago, sin respuesta del comercio. El sistema cambia su estado a EXPIRADO (cancelado_por: SISTEMA), genera la nota de crédito y solicita el reembolso correspondiente, y notifica al cliente y al comercio.
 
+### Reapertura Automática del Cierre Manual de Comercios
+
+- **Reapertura del cierre manual (cada 60 segundos):** un job periódico recorre los comercios con `cerrado_manualmente = true` y apaga el cierre de cada uno cuando ya empezó la primera franja horaria posterior al momento del cierre (la fecha y hora de la última acción `CERRADO` de HistorialCierreComercio). Registra una acción `REABIERTO` con actor `SISTEMA`, sin usuario, con la hora real en que corrió.
+- Cada comercio se evalúa en su propia transacción y con el comercio bloqueado, de modo que un fallo en uno no frena a los demás y el job convive sin conflicto con el cierre y la apertura manual.
+- Si el backend estuvo caído horas o días, el job se pone al día en la primera corrida: cada comercio se evalúa contra el momento de su propio cierre, no contra la última ejecución del job.
+- Si un comercio tiene el cierre manual prendido y ninguna acción `CERRADO` registrada, el job lo reabre igual, registra la acción `REABIERTO` y deja un aviso en el log.
+- Un comercio sin franjas horarias cargadas no se reabre solo.
+
 ### Timer de Entrega a Domicilio (75/90 minutos)
 
 - El sistema emite un aviso al cliente (notificación T7) cuando su pedido a domicilio supera los 75 minutos en estado EN_CAMINO sin confirmación de recepción.
@@ -193,6 +201,6 @@ El sistema emite notificaciones push (y en algunos casos email) ante los siguien
 
 Todos los procesos automáticos descritos en este documento (expiración de tokens,
 timeouts de pedidos, autoconfirmación de entrega, propagación de estados, timers de
-suspensión y reintento de reembolsos) deben registrar su ejecución según la taxonomía
+suspensión, reintento de reembolsos y reapertura del cierre manual de comercios) deben registrar su ejecución según la taxonomía
 de logs definida en Requisitos No Funcionales — Registro de Eventos del Sistema
 (categorías: ejecución de jobs, error, auditoría e idempotencia/casos borde).

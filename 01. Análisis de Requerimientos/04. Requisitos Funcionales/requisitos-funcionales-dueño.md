@@ -92,6 +92,23 @@ por el Dueño como por un Empleado autorizado.
   (30 minutos desde su creación). Sin pedidos esperando el pago, la cuenta se desvincula y
   los demás pedidos en curso siguen su flujo normal; un reembolso posterior queda en
   revisión manual porque ya no hay cuenta con la que devolver el dinero.
+- Cuando el bloqueo se debe a clientes que todavía están pagando, el mensaje del Dueño
+  ofrece el botón "Cerrar comercio" (o "Cerrar comercios", si son varios) siempre que
+  tenga al menos un comercio Apto para Venta, abierto en este momento y dentro de su
+  horario, con una línea que explica que cerrar evita que entren más pedidos mientras
+  espera. Como la cuenta de cobro es una sola para todos sus comercios, el botón alcanza a
+  todos los que cumplen esa condición, no solo a los que tienen pagos pendientes: cada uno
+  deja de recibir pedidos nuevos (y de generar nuevos pagos pendientes), los pagos ya
+  iniciados vencen en su plazo y el Dueño reintenta la desvinculación a la hora indicada.
+  El botón cierra directamente, sin pedir una confirmación adicional.
+- Los comercios que ya no estén dentro de su horario o que ya no estén operativos cuando se
+  intenta cerrarlos se consideran cerrados y no generan error. Si el cierre de alguno falla
+  por otro motivo (conexión, sesión o error del servidor), el mensaje lo informa con los
+  nombres de esos comercios y el Dueño puede reintentar. Al terminar bien, el mensaje se
+  actualiza solo: desaparece el botón y queda únicamente el texto de espera. Si todos los
+  comercios ya estaban cerrados, el mensaje muestra solo el texto de espera. Cerrar no
+  corta los pedidos ya pagados ni los que están en curso, y cada comercio se reabre solo al
+  empezar su próxima franja o a mano desde el panel.
 - Al desvincular, los tokens guardados no se borran: solo la cuenta pasa a inactiva.
 - El monto recibido en cada cobro refleja el subtotal menos el cargo de servicio al comercio, vía split
   de pagos (ver Requisitos Funcionales — Comercio, sección Gestión de Valores en

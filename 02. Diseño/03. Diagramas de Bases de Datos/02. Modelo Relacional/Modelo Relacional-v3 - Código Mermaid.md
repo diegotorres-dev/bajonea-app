@@ -1,6 +1,6 @@
 # Modelo Relacional — Bajoneá (v3)
 
-Actualizado a `diccionario-de-datos.md` v1.7: 44 tablas (se agregaron `CodigoVinculacionMp`, `AlertaWebhookMp` y `HistorialCambioNombreUsuario`; `Usuario` suma `nombre_usuario` y `AlertaWebhookMp` suma `monto_esperado`/`monto_capturado`; los conteos de campos y relaciones no se recalcularon). Pegar el bloque en [mermaid.live](https://mermaid.live) para exportar el PNG.
+Actualizado a `diccionario-de-datos.md` v1.10: 46 tablas (el bloque suma `HistorialCierreComercio`, tabla del cierre manual del comercio, y `HistorialCambioComercio`, que el encabezado anterior no contaba; antes se agregaron `CodigoVinculacionMp`, `AlertaWebhookMp` y `HistorialCambioNombreUsuario`; `Usuario` suma `nombre_usuario` y `AlertaWebhookMp` suma `monto_esperado`/`monto_capturado`; los conteos de campos y relaciones no se recalcularon). Pegar el bloque en [mermaid.live](https://mermaid.live) para exportar el PNG.
 
 ```mermaid
 erDiagram
@@ -164,6 +164,14 @@ erDiagram
         ENUM_EstadoComercio estado_origen
         ENUM_EstadoComercio estado_destino
         VARCHAR500 motivo
+        DATETIME fecha_hora
+    }
+    HistorialCierreComercio {
+        INT id PK
+        INT comercio_id FK
+        ENUM_AccionCierre accion
+        INT actor_usuario_id FK
+        ENUM_ActorCierre actor_rol
         DATETIME fecha_hora
     }
     HistorialCambioComercio {
@@ -424,6 +432,8 @@ erDiagram
     Comercio }o--|| HistorialEstadoComercio : "comercio_id"
     Administrador }o--|| HistorialEstadoComercio : "administrador_id"
     HistorialEstadoComercio }o--|| HistorialCambioComercio : "historial_estado_comercio_id"
+    Comercio }o--|| HistorialCierreComercio : "comercio_id"
+    Usuario }o--|| HistorialCierreComercio : "actor_usuario_id"
     Administrador }o--|| ConfiguracionTarifa : "administrador_id"
     Dueno ||--|| CuentaMercadoPago : "dueño_id"
     Empleado }o--|| EmpleadoComercio : "empleado_id"

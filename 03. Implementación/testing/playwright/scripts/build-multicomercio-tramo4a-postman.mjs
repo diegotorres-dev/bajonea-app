@@ -115,9 +115,9 @@ const leidas = (nombre, comercioPath, token, headers, testLines) =>
   item(nombre, req('PUT', `/notificaciones/comercio/${comercioPath}/leidas`, { token, headers, body: undefined }), testLines);
 
 const formaDeUnComercio = [
-  "pm.test('Cada comercio trae sus 7 campos con el tipo correcto', () => {",
+  "pm.test('Cada comercio trae sus 11 campos con el tipo correcto', () => {",
   '  pm.response.json().data.forEach((c) => {',
-  "    pm.expect(Object.keys(c).sort()).to.eql(['cantidadNotificacionesNoLeidas', 'estado', 'fechaRegistro', 'fotoPerfilUrl', 'id', 'nombre', 'operativo']);",
+  "    pm.expect(Object.keys(c).sort()).to.eql(['abiertoAhora', 'cantidadNotificacionesNoLeidas', 'cerradoManualmente', 'estado', 'fechaRegistro', 'fotoPerfilUrl', 'id', 'nombre', 'operativo', 'puedeCambiarCierre', 'textoReapertura']);",
   "    pm.expect(c.id).to.be.a('number');",
   "    pm.expect(c.nombre).to.be.a('string');",
   "    pm.expect(c.estado).to.be.a('string');",

@@ -1,5 +1,6 @@
 import { apiFetch, ApiError, getUsuario } from './api.js';
-import { estadoHorario, showToast } from './catalogo.js';
+import { showToast } from './catalogo.js';
+import { crearAvisoCierre, esConflictoDeCierre, estaAbiertoParaClientes } from './apertura-comercio.js';
 import { normalizarCampos } from './validators.js';
 
 const ICONS = {
@@ -45,6 +46,13 @@ function renderBanner(slot, kind, texto) {
   text.textContent = texto;
   banner.appendChild(text);
   slot.appendChild(banner);
+}
+
+function renderAvisoCierre(slot, texto) {
+  slot.innerHTML = '';
+  const aviso = crearAvisoCierre(texto);
+  aviso.style.marginBottom = '20px';
+  slot.appendChild(aviso);
 }
 
 export async function initCheckout() {
@@ -119,8 +127,8 @@ export async function initCheckout() {
   const opcionesContainer = document.getElementById('delivery-options');
   const continuarBtn = document.getElementById('continuar-modalidad-btn');
 
-  if (!estadoHorario(comercio.horarios).abierto) {
-    renderBanner(bannerSlot, 'error', 'Este comercio está cerrado en este momento. No podés completar el pedido hasta que vuelva a abrir.');
+  if (!estaAbiertoParaClientes(comercio)) {
+    renderAvisoCierre(bannerSlot, 'Este comercio está cerrado en este momento. No podés completar el pedido hasta que vuelva a abrir.');
     continuarBtn.disabled = true;
     return;
   }
@@ -361,9 +369,13 @@ export async function initCheckout() {
         renderStep4(pedido);
         mostrarPaso(3);
       } catch (error) {
-        confirmBtn.disabled = false;
         confirmBtn.textContent = `Ir a pagar - ${formatearPrecio(totalConCargo)}`;
-        renderBanner(bannerSlot, 'error', error instanceof ApiError ? error.message : 'No pudimos confirmar tu pedido. Intentá nuevamente.');
+        if (esConflictoDeCierre(error)) {
+          renderAvisoCierre(bannerSlot, error.message);
+        } else {
+          confirmBtn.disabled = false;
+          renderBanner(bannerSlot, 'error', error instanceof ApiError ? error.message : 'No pudimos confirmar tu pedido. Intentá nuevamente.');
+        }
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     });

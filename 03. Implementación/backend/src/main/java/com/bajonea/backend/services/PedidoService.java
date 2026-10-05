@@ -119,10 +119,12 @@ public class PedidoService {
         // commit. Así la desvinculación de la cuenta de Mercado Pago (que bloquea el comercio FOR UPDATE antes
         // de mirar los pagos pendientes) y esta creación de pedido se serializan: o el pedido ve APROBADO y se
         // rechaza, o la desvinculación ve el pedido nuevo en PENDIENTE_PAGO y se rechaza.
-        EstadoComercio estadoComercio = comercioRepository.leerEstadoConBloqueoCompartido(comercio.getId())
-                .map(EstadoComercio::valueOf)
+        // La misma lectura trae el cierre manual: cerrar el comercio y crear un pedido también se serializan, o
+        // el pedido ve el cierre y se rechaza, o el cierre espera al commit del pedido (que nace antes del cierre).
+        ComercioRepository.EstadoYCierreComercio lectura = comercioRepository.leerEstadoConBloqueoCompartido(comercio.getId())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
-        comercioService.validarAceptaPedidos(comercio, estadoComercio);
+        comercioService.validarAceptaPedidos(comercio, EstadoComercio.valueOf(lectura.getEstado()),
+                lectura.getCerradoManualmente());
 
         if (request.getTipoEntrega() == TipoEntrega.DOMICILIO && !comercio.isAceptaDelivery()) {
             throw new ConflictoDeNegocioException("El comercio no ofrece entrega a domicilio");

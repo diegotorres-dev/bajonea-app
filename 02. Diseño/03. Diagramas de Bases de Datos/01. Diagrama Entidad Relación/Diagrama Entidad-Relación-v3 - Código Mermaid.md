@@ -32,6 +32,8 @@ erDiagram
     Comercio ||--o{ HistorialEstadoComercio : "registra"
     Administrador ||--o{ HistorialEstadoComercio : "ejecuta"
     HistorialEstadoComercio ||--o{ HistorialCambioComercio : "detalla"
+    Comercio ||--o{ HistorialCierreComercio : "cierra_y_abre"
+    Usuario ||--o{ HistorialCierreComercio : "ejecuta"
     Administrador ||--o{ ConfiguracionTarifa : "configura"
     Dueno ||--o| CuentaMercadoPago : "vincula"
     Dueno ||--o{ CodigoVinculacionMp : "inicia"

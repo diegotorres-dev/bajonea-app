@@ -13,7 +13,7 @@ import com.bajonea.backend.entities.Direccion;
 import com.bajonea.backend.entities.HistorialEstadoComercio;
 import com.bajonea.backend.entities.Horario;
 import com.bajonea.backend.entities.PersonaFisica;
-import com.bajonea.backend.enums.DiaSemana;
+import com.bajonea.backend.services.DisponibilidadComercioService.Disponibilidad;
 import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
@@ -24,8 +24,6 @@ import com.bajonea.backend.repositories.HorarioRepository;
 import com.bajonea.backend.util.ComercioValidaciones;
 import com.bajonea.backend.util.TextoUtils;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -48,8 +46,7 @@ public class ComercioService {
     private final HorarioRepository horarioRepository;
     private final HistorialEstadoComercioRepository historialEstadoComercioRepository;
     private final CloudinaryService cloudinaryService;
-
-    private static final ZoneOffset ZONA_HORARIA_COMERCIO = ZoneOffset.of("-03:00");
+    private final DisponibilidadComercioService disponibilidadComercioService;
 
     public ComercioResponseDTO verPerfil(Integer comercioId) {
         Comercio comercio = obtenerComercio(comercioId);
@@ -92,35 +89,26 @@ public class ComercioService {
     }
 
     public void validarAceptaPedidos(Comercio comercio) {
-        validarAceptaPedidos(comercio, comercio.getEstado());
+        validarAceptaPedidos(comercio, comercio.getEstado(), comercio.isCerradoManualmente());
     }
 
     /**
-     * Misma validación con el estado ya leído por quien llama (por ejemplo bajo bloqueo compartido, en la
-     * creación de un pedido) en vez del que tenga cargado la entidad.
+     * Misma validación con el estado y el cierre manual ya leídos por quien llama (por ejemplo bajo bloqueo
+     * compartido, en la creación de un pedido) en vez de los que tenga cargados la entidad. Orden: estado,
+     * cierre manual y horario.
      */
-    public void validarAceptaPedidos(Comercio comercio, EstadoComercio estadoActual) {
+    public void validarAceptaPedidos(Comercio comercio, EstadoComercio estadoActual, boolean cerradoManualmente) {
         if (estadoActual != EstadoComercio.APTO_VENTA) {
             throw new ConflictoDeNegocioException("Este comercio no está aceptando pedidos en este momento");
         }
+        if (cerradoManualmente) {
+            throw new ConflictoDeNegocioException("Este comercio está cerrado en este momento");
+        }
         List<Horario> horarios = horarioRepository.findByComercioId(comercio.getId());
-        if (!estaAbiertoAhora(horarios)) {
+        if (!disponibilidadComercioService.dentroDeFranja(horarios, disponibilidadComercioService.ahora())) {
             throw new ConflictoDeNegocioException(
                     "Este comercio está cerrado en este momento. Podés hacer tu pedido dentro de su horario de atención.");
         }
-    }
-
-    private boolean estaAbiertoAhora(List<Horario> horarios) {
-        if (horarios.isEmpty()) {
-            return false;
-        }
-        LocalDateTime ahora = LocalDateTime.now(ZONA_HORARIA_COMERCIO);
-        DiaSemana diaHoy = DiaSemana.values()[ahora.getDayOfWeek().getValue() - 1];
-        LocalTime horaActual = ahora.toLocalTime();
-        return horarios.stream()
-                .filter(horario -> horario.getDiaSemana() == diaHoy)
-                .anyMatch(horario -> !horaActual.isBefore(horario.getHoraApertura())
-                        && horaActual.isBefore(horario.getHoraCierre()));
     }
 
     public ComercioPublicoResponseDTO buscarAprobadoPorId(Integer comercioId) {
@@ -210,7 +198,10 @@ public class ComercioService {
 
     private ComercioResponseDTO aResponseDTO(Comercio comercio) {
         DireccionResponseDTO direccionDTO = aDireccionResponseDTO(comercio);
-        List<HorarioResponseDTO> horarios = aHorariosResponseDTO(comercio);
+        List<Horario> horariosEntidad = horarioRepository.findByComercioId(comercio.getId());
+        List<HorarioResponseDTO> horarios = horariosEntidad.stream().map(this::aResponseDTO).toList();
+        Disponibilidad disponibilidad = disponibilidadComercioService.calcular(comercio, horariosEntidad,
+                disponibilidadComercioService.ahora());
         RepresentanteResponseDTO representante = aRepresentanteResponseDTO(comercio.getDueno().getPersonaFisica());
         String motivoRechazo = obtenerMotivoRechazo(comercio);
 
@@ -234,7 +225,11 @@ public class ComercioService {
                 direccionDTO,
                 horarios,
                 representante,
-                motivoRechazo);
+                motivoRechazo,
+                disponibilidad.cerradoManualmente(),
+                disponibilidad.abiertoAhora(),
+                disponibilidad.puedeCambiarCierre(),
+                disponibilidad.textoReapertura());
     }
 
     private String obtenerMotivoRechazo(Comercio comercio) {
@@ -248,7 +243,10 @@ public class ComercioService {
 
     private ComercioPublicoResponseDTO aPublicoResponseDTO(Comercio comercio) {
         DireccionResponseDTO direccionDTO = aDireccionResponseDTO(comercio);
-        List<HorarioResponseDTO> horarios = aHorariosResponseDTO(comercio);
+        List<Horario> horariosEntidad = horarioRepository.findByComercioId(comercio.getId());
+        List<HorarioResponseDTO> horarios = horariosEntidad.stream().map(this::aResponseDTO).toList();
+        Disponibilidad disponibilidad = disponibilidadComercioService.calcular(comercio, horariosEntidad,
+                disponibilidadComercioService.ahora());
 
         return new ComercioPublicoResponseDTO(
                 comercio.getId(),
@@ -264,7 +262,9 @@ public class ComercioService {
                 comercio.getDueno().getPersonaJuridica().getRazonSocial(),
                 comercio.getDueno().getPersonaJuridica().getCuit(),
                 direccionDTO,
-                horarios);
+                horarios,
+                disponibilidad.estadoApertura(),
+                disponibilidad.textoReapertura());
     }
 
     private DireccionResponseDTO aDireccionResponseDTO(Comercio comercio) {
@@ -279,12 +279,6 @@ public class ComercioService {
                 direccion.getLocalidad().getNombre(),
                 direccion.getLocalidad().getProvincia().getNombre(),
                 direccion.isPrincipal());
-    }
-
-    private List<HorarioResponseDTO> aHorariosResponseDTO(Comercio comercio) {
-        return horarioRepository.findByComercioId(comercio.getId()).stream()
-                .map(this::aResponseDTO)
-                .toList();
     }
 
     private RepresentanteResponseDTO aRepresentanteResponseDTO(PersonaFisica personaFisica) {

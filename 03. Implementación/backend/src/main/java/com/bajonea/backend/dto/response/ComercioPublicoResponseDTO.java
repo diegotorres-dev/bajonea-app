@@ -1,5 +1,6 @@
 package com.bajonea.backend.dto.response;
 
+import com.bajonea.backend.enums.EstadoApertura;
 import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.TipoComercio;
 import java.util.List;
@@ -29,6 +30,8 @@ public class ComercioPublicoResponseDTO {
     private final String cuit;
     private final DireccionResponseDTO direccion;
     private final List<HorarioResponseDTO> horarios;
+    private final EstadoApertura estadoApertura;
+    private final String textoReapertura;
 
     public ComercioPublicoResponseDTO(
             Integer id,
@@ -44,7 +47,9 @@ public class ComercioPublicoResponseDTO {
             String razonSocial,
             String cuit,
             DireccionResponseDTO direccion,
-            List<HorarioResponseDTO> horarios) {
+            List<HorarioResponseDTO> horarios,
+            EstadoApertura estadoApertura,
+            String textoReapertura) {
         this.id = id;
         this.nombre = nombre;
         this.descripcion = descripcion;
@@ -59,5 +64,7 @@ public class ComercioPublicoResponseDTO {
         this.cuit = cuit;
         this.direccion = direccion;
         this.horarios = horarios;
+        this.estadoApertura = estadoApertura;
+        this.textoReapertura = textoReapertura;
     }
 }

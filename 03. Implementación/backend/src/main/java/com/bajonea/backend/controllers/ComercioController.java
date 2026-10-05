@@ -7,12 +7,15 @@ import com.bajonea.backend.dto.request.ComercioPerfilRequestDTO;
 import com.bajonea.backend.dto.request.FotoPerfilComercioRequestDTO;
 import com.bajonea.backend.dto.request.ReSolicitudComercioRequestDTO;
 import com.bajonea.backend.dto.response.ApiResponse;
+import com.bajonea.backend.dto.response.CierreComercioResponseDTO;
 import com.bajonea.backend.dto.response.CloudinarySignatureResponseDTO;
 import com.bajonea.backend.dto.response.ComercioResponseDTO;
 import com.bajonea.backend.dto.response.CorreccionComercioResponseDTO;
 import com.bajonea.backend.dto.response.ElegibilidadAltaAdicionalResponseDTO;
 import com.bajonea.backend.dto.response.MiComercioResponseDTO;
+import com.bajonea.backend.enums.ActorCierre;
 import com.bajonea.backend.services.AltaComercioAdicionalService;
+import com.bajonea.backend.services.CierreComercioService;
 import com.bajonea.backend.services.ComercioCorreccionService;
 import com.bajonea.backend.services.ComercioService;
 import com.bajonea.backend.services.MisComerciosService;
@@ -39,6 +42,7 @@ public class ComercioController {
     private final AltaComercioAdicionalService altaComercioAdicionalService;
     private final ComercioCorreccionService comercioCorreccionService;
     private final MisComerciosService misComerciosService;
+    private final CierreComercioService cierreComercioService;
 
     /**
      * Alta de un comercio adicional del Dueño autenticado (multi-comercio, tramo 2A). Igual que
@@ -131,5 +135,24 @@ public class ComercioController {
             @Valid @RequestBody FotoPerfilComercioRequestDTO request, ComercioActivo comercio) {
         ComercioResponseDTO response = comercioService.actualizarFotoPerfil(comercio.comercioId(), request);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Foto de perfil actualizada correctamente", response));
+    }
+
+    /**
+     * Cierre manual del comercio activo: frena pedidos nuevos, no corta los que están en curso. Solo dentro de
+     * una franja horaria. Idempotente: cerrar un comercio ya cerrado responde {@code 200} con el estado actual.
+     * El actor se pasa al servicio desde el inicio para poder sumar al Empleado sin tocarlo.
+     */
+    @PutMapping("/cerrar")
+    public ResponseEntity<ApiResponse<CierreComercioResponseDTO>> cerrar(ComercioActivo comercio) {
+        CierreComercioResponseDTO response = cierreComercioService.cerrar(comercio.comercioId(), comercio.duenoId(),
+                ActorCierre.DUENO);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Estado de apertura actualizado correctamente", response));
+    }
+
+    @PutMapping("/abrir")
+    public ResponseEntity<ApiResponse<CierreComercioResponseDTO>> abrir(ComercioActivo comercio) {
+        CierreComercioResponseDTO response = cierreComercioService.abrir(comercio.comercioId(), comercio.duenoId(),
+                ActorCierre.DUENO);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Estado de apertura actualizado correctamente", response));
     }
 }

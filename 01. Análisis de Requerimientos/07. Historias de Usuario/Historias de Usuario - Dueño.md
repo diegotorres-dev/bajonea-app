@@ -45,7 +45,10 @@ todos mis comercios aprobados comiencen a aparecer en el catálogo y a recibir p
   y los clientes que todavía están pagando; si hay clientes pagando, en lugar de la
   confirmación veo un mensaje que me indica a qué hora aproximada puedo volver a intentarlo.
 - No puedo desvincular mientras algún cliente esté pagando un pedido de cualquiera de mis
-  comercios: el sistema me indica a qué hora aproximada puedo volver a intentarlo.
+  comercios: el sistema me indica a qué hora aproximada puedo volver a intentarlo y, para
+  mis comercios abiertos que estén dentro de su horario, me ofrece "Cerrar comercio" (o
+  "Cerrar comercios") para que no entren pedidos nuevos mientras vencen los pendientes. Si
+  ya están todos cerrados, solo veo el texto de espera.
 - Al desvincular, todos mis comercios vuelven a Aprobado (dejan de aparecer en el catálogo y
   de recibir pedidos nuevos), mis pedidos en curso siguen su flujo, y los reembolsos que
   hagan falta después quedan para revisión manual del Administrador.

@@ -2,6 +2,7 @@ import { apiFetch, ApiError, getUsuario, mostrarModalCuentaBloqueada } from './a
 import { resolverHomePorRol, LABELS_TIPO_COMERCIO } from './auth.js';
 import { contarNotificacionesNoLeidasActivo, resolverComercioActivo, suscribirComercios } from './comercio-activo.js';
 import { normalizarCampos, excedeSubtotalMaximo, mensajeSubtotalMaximoExcedido } from './validators.js';
+import { crearAvisoCierre, esConflictoDeCierre, estaAbiertoParaClientes, etiquetaCierrePublica } from './apertura-comercio.js';
 
 const DIA_POR_INDICE = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 
@@ -63,32 +64,17 @@ function formatearPrecio(valor) {
   return `$${entero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
 }
 
-function minutosDesdeMedianoche(horaTexto) {
-  const partes = horaTexto.split(':');
-  return Number(partes[0]) * 60 + Number(partes[1]);
-}
-
-export function estadoHorario(horarios) {
+export function resumenHorarioHoy(horarios) {
   if (!horarios || horarios.length === 0) {
-    return { abierto: false, resumenHoy: 'Sin horario cargado' };
+    return { resumenHoy: 'Sin horario cargado', cerradoTodoElDia: false };
   }
-  const ahora = new Date();
-  const diaHoy = DIA_POR_INDICE[ahora.getDay()];
-  const minutosAhora = ahora.getHours() * 60 + ahora.getMinutes();
+  const diaHoy = DIA_POR_INDICE[new Date().getDay()];
   const franjasHoy = horarios.filter((horario) => horario.diaSemana === diaHoy);
-
   if (franjasHoy.length === 0) {
-    return { abierto: false, resumenHoy: 'Cerrado hoy', cerradoTodoElDia: true };
+    return { resumenHoy: 'Cerrado hoy', cerradoTodoElDia: true };
   }
-
-  const abierto = franjasHoy.some((franja) => {
-    const inicio = minutosDesdeMedianoche(franja.horaApertura);
-    const fin = minutosDesdeMedianoche(franja.horaCierre);
-    return minutosAhora >= inicio && minutosAhora < fin;
-  });
-
   const resumenHoy = franjasHoy.map((franja) => `${franja.horaApertura.slice(0, 5)} - ${franja.horaCierre.slice(0, 5)}`).join(' / ');
-  return { abierto, resumenHoy };
+  return { resumenHoy, cerradoTodoElDia: false };
 }
 
 function pintarBadgeDueno(bellLink) {
@@ -292,14 +278,15 @@ export function renderBottomNav(container, activo) {
   });
 }
 
-export function pintarEstadoComercio(el, abierto) {
+export function pintarEstadoComercio(el, comercio) {
+  const abierto = estaAbiertoParaClientes(comercio);
   el.className = `comercio-estado-badge${abierto ? ' comercio-estado-badge--open' : ' comercio-estado-badge--closed'}`;
   el.setAttribute('data-testid', 'estado-comercio');
   el.innerHTML = '';
   const dot = crear('span', 'comercio-estado-badge__dot');
   el.appendChild(dot);
   const label = document.createElement('span');
-  label.textContent = abierto ? 'Abierto' : 'Cerrado';
+  label.textContent = abierto ? 'Abierto' : etiquetaCierrePublica(comercio);
   el.appendChild(label);
 }
 
@@ -398,10 +385,12 @@ export function pintarAvatarUsuario(container, fotoPerfilUrl, textoAlternativo) 
 }
 
 export function renderComercioCard(comercio) {
+  const abierto = estaAbiertoParaClientes(comercio);
   const card = document.createElement('a');
-  card.className = 'comercio-card';
+  card.className = abierto ? 'comercio-card' : 'comercio-card comercio-card--cerrado';
   card.href = `comercio-detalle.html?id=${comercio.id}`;
   card.setAttribute('data-testid', `comercio-card-${comercio.id}`);
+  card.dataset.apertura = comercio.estadoApertura;
 
   const avatar = crear('div', 'comercio-card__avatar');
   pintarAvatarComercio(avatar, comercio);
@@ -409,14 +398,16 @@ export function renderComercioCard(comercio) {
 
   const body = crear('div', 'comercio-card__body');
 
-  const { abierto, resumenHoy } = estadoHorario(comercio.horarios);
+  const { resumenHoy } = resumenHorarioHoy(comercio.horarios);
   const top = crear('div', 'comercio-card__top');
   const nombre = document.createElement('h3');
   nombre.textContent = comercio.nombre;
   top.appendChild(nombre);
-  const badge = document.createElement('span');
-  pintarEstadoComercio(badge, abierto);
-  top.appendChild(badge);
+  if (abierto) {
+    const badge = document.createElement('span');
+    pintarEstadoComercio(badge, comercio);
+    top.appendChild(badge);
+  }
   body.appendChild(top);
 
   const tipoTexto = LABELS_TIPO_COMERCIO[comercio.tipoComercio] || comercio.tipoComercio;
@@ -436,6 +427,14 @@ export function renderComercioCard(comercio) {
     pills.appendChild(pill);
   }
   body.appendChild(pills);
+
+  if (!abierto) {
+    const cierre = crear('div', 'comercio-card__cierre');
+    const etiqueta = document.createElement('span');
+    pintarEstadoComercio(etiqueta, comercio);
+    cierre.appendChild(etiqueta);
+    body.appendChild(cierre);
+  }
 
   card.appendChild(body);
   return card;
@@ -514,7 +513,7 @@ export async function initCatalogo() {
     { key: 'todos', label: 'Todos', test: () => true },
     { key: 'delivery', label: 'Delivery', test: (c) => c.aceptaDelivery },
     { key: 'retiro', label: 'Retiro', test: (c) => c.aceptaRetiro },
-    { key: 'abierto', label: 'Abierto ahora', test: (c) => estadoHorario(c.horarios).abierto },
+    { key: 'abierto', label: 'Abierto ahora', test: (c) => estaAbiertoParaClientes(c) },
   ];
 
   let filtroActivo = 'todos';
@@ -522,9 +521,7 @@ export async function initCatalogo() {
   function pintarLista() {
     const filtro = filtros.find((f) => f.key === filtroActivo);
     const visibles = comercios.filter(filtro.test).sort((a, b) => {
-      const abiertoA = estadoHorario(a.horarios).abierto;
-      const abiertoB = estadoHorario(b.horarios).abierto;
-      return (abiertoB ? 1 : 0) - (abiertoA ? 1 : 0);
+      return (estaAbiertoParaClientes(b) ? 1 : 0) - (estaAbiertoParaClientes(a) ? 1 : 0);
     });
 
     if (comercios.length === 0) {
@@ -849,6 +846,8 @@ function abrirModalProducto(producto) {
           if (error instanceof ApiError && error.status === 409 && error.message && error.message.includes('otro comercio')) {
             backdrop.remove();
             await mostrarModalConflictoComercio(producto, cantidad, notaInput.value.trim());
+          } else if (esConflictoDeCierre(error)) {
+            addBtn.replaceWith(crearAvisoCierre(error.message));
           } else {
             addBtn.disabled = false;
             addBtn.textContent = originalText;
@@ -1026,21 +1025,29 @@ export async function initComercioDetalle() {
 
   document.getElementById('comercio-nombre').textContent = comercio.nombre;
 
-  const { abierto, resumenHoy, cerradoTodoElDia } = estadoHorario(comercio.horarios);
+  const abierto = estaAbiertoParaClientes(comercio);
+  const { resumenHoy, cerradoTodoElDia } = resumenHorarioHoy(comercio.horarios);
   comercioCerradoActual = !abierto;
   const estadoBadge = document.getElementById('comercio-estado-badge');
-  pintarEstadoComercio(estadoBadge, abierto);
+  pintarEstadoComercio(estadoBadge, comercio);
 
   const infoBlock = document.getElementById('comercio-info');
   infoBlock.innerHTML = '';
   const estadoRow = crear('div', 'comercio-info__row');
   estadoRow.innerHTML = ICONS.clock;
   const estadoTexto = document.createElement('span');
-  estadoTexto.textContent = cerradoTodoElDia
-    ? resumenHoy
-    : `${abierto ? 'Abierto ahora' : 'Cerrado ahora'} · ${resumenHoy}`;
+  estadoTexto.textContent = abierto && !cerradoTodoElDia ? `Abierto ahora · ${resumenHoy}` : resumenHoy;
   estadoRow.appendChild(estadoTexto);
   infoBlock.appendChild(estadoRow);
+
+  if (!abierto && comercio.textoReapertura) {
+    const reaperturaRow = crear('div', 'comercio-info__row');
+    reaperturaRow.setAttribute('data-testid', 'texto-reapertura-comercio');
+    const reaperturaTexto = document.createElement('span');
+    reaperturaTexto.textContent = comercio.textoReapertura;
+    reaperturaRow.appendChild(reaperturaTexto);
+    infoBlock.appendChild(reaperturaRow);
+  }
 
   if (comercio.direccion) {
     const direccionRow = crear('div', 'comercio-info__row');

@@ -40995,9 +40995,9 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Cada comercio trae sus 7 campos con el tipo correcto', () => {",
+                  "pm.test('Cada comercio trae sus 11 campos con el tipo correcto', () => {",
                   "  pm.response.json().data.forEach((c) => {",
-                  "    pm.expect(Object.keys(c).sort()).to.eql(['cantidadNotificacionesNoLeidas', 'estado', 'fechaRegistro', 'fotoPerfilUrl', 'id', 'nombre', 'operativo']);",
+                  "    pm.expect(Object.keys(c).sort()).to.eql(['abiertoAhora', 'cantidadNotificacionesNoLeidas', 'cerradoManualmente', 'estado', 'fechaRegistro', 'fotoPerfilUrl', 'id', 'nombre', 'operativo', 'puedeCambiarCierre', 'textoReapertura']);",
                   "    pm.expect(c.id).to.be.a('number');",
                   "    pm.expect(c.nombre).to.be.a('string');",
                   "    pm.expect(c.estado).to.be.a('string');",
@@ -41163,9 +41163,9 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Cada comercio trae sus 7 campos con el tipo correcto', () => {",
+                  "pm.test('Cada comercio trae sus 11 campos con el tipo correcto', () => {",
                   "  pm.response.json().data.forEach((c) => {",
-                  "    pm.expect(Object.keys(c).sort()).to.eql(['cantidadNotificacionesNoLeidas', 'estado', 'fechaRegistro', 'fotoPerfilUrl', 'id', 'nombre', 'operativo']);",
+                  "    pm.expect(Object.keys(c).sort()).to.eql(['abiertoAhora', 'cantidadNotificacionesNoLeidas', 'cerradoManualmente', 'estado', 'fechaRegistro', 'fotoPerfilUrl', 'id', 'nombre', 'operativo', 'puedeCambiarCierre', 'textoReapertura']);",
                   "    pm.expect(c.id).to.be.a('number');",
                   "    pm.expect(c.nombre).to.be.a('string');",
                   "    pm.expect(c.estado).to.be.a('string');",
@@ -58213,6 +58213,3524 @@
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
                   "pm.test('El mensaje es \"Este comercio no está aceptando pedidos en este momento\"', () => pm.expect(pm.response.json().mensaje).to.eql(\"Este comercio no está aceptando pedidos en este momento\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "53 - Cierre manual C1 (cerrar, abrir, fuera de horario, efecto en pedidos y reapertura automatica)",
+      "item": [
+        {
+          "name": "Login Administrador (sesion propia de esta carpeta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{admin_usuario}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('token_admin', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear la categoria de los productos de esta carpeta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categorias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Categoria C1 Postman\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('c1_categoria_id', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Dueño a",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "comercio"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razonSocial\": \"Cierre Manual Postman a SRL\",\n  \"cuit\": \"30910700118\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Direccion fiscal C1 a 100\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Local Cierre Manual a\",\n  \"descripcion\": \"Comercio generado por la coleccion de Postman (cierre manual)\",\n  \"telefono\": \"+5492964555444\",\n  \"emailContacto\": \"contacto.c1ua@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": false,\n  \"aceptaRetiro\": true,\n  \"nombreUsuario\": \"{{c1_ua_usuario}}\",\n  \"email\": \"{{c1_ua_email}}\",\n  \"password\": \"{{c1_ua_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"800\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Carlos\",\n  \"apellidoRepresentante\": \"Sanchez\",\n  \"dniRepresentante\": \"30910401\",\n  \"telefonoRepresentante\": \"+5492964701103\",\n  \"fechaNacimientoRepresentante\": \"1988-04-04\",\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/postman-cierre-a.jpg\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/cierremanuala\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Dueño a",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{c1_ua_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{c1_ua_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c1_ua_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Dueño a",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{c1_ua_email}}\",\n  \"codigo\": \"{{c1_ua_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador busca el comercio pendiente del Dueño a",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/pendientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "pendientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.emailCuenta === pm.environment.get('c1_ua_email').toLowerCase());",
+                  "pm.test('El comercio del Dueño a esta pendiente', () => pm.expect(c).to.exist);",
+                  "pm.environment.set('c1_ua_com', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Dueño a",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c1_ua_usuario}}\",\n  \"password\": \"{{c1_ua_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c1_token_ua', pm.response.json().data.token);",
+                  "pm.environment.set('c1_ua_dueno', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dueño a vincula Mercado Pago (simulada)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/duenos/{{c1_ua_dueno}}/mercadopago-simulada?mpUserId=c1-cuenta-a",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "duenos",
+                "{{c1_ua_dueno}}",
+                "mercadopago-simulada"
+              ],
+              "query": [
+                {
+                  "key": "mpUserId",
+                  "value": "c1-cuenta-a"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador aprueba el comercio del Dueño a",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{c1_ua_com}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{c1_ua_com}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Dueño b",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "comercio"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razonSocial\": \"Cierre Manual Postman b SRL\",\n  \"cuit\": \"30910700215\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Direccion fiscal C1 b 100\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Local Cierre Manual b\",\n  \"descripcion\": \"Comercio generado por la coleccion de Postman (cierre manual)\",\n  \"telefono\": \"+5492964555444\",\n  \"emailContacto\": \"contacto.c1ub@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": false,\n  \"aceptaRetiro\": true,\n  \"nombreUsuario\": \"{{c1_ub_usuario}}\",\n  \"email\": \"{{c1_ub_email}}\",\n  \"password\": \"{{c1_ub_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"800\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": {{c1_horarios_fuera}},\n  \"nombreRepresentante\": \"Carlos\",\n  \"apellidoRepresentante\": \"Sanchez\",\n  \"dniRepresentante\": \"30910402\",\n  \"telefonoRepresentante\": \"+5492964701103\",\n  \"fechaNacimientoRepresentante\": \"1988-04-04\",\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/postman-cierre-b.jpg\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/cierremanualb\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const dias = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];",
+                  "const hoy = new Date(Date.now() - 3 * 3600 * 1000).getUTCDay();",
+                  "const franjas = dias.filter((_, i) => i !== hoy).map((diaSemana) => ({ diaSemana, horaApertura: '00:00:00', horaCierre: '23:59:00' }));",
+                  "pm.environment.set('c1_horarios_fuera', JSON.stringify(franjas));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Dueño b",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{c1_ub_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{c1_ub_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c1_ub_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Dueño b",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{c1_ub_email}}\",\n  \"codigo\": \"{{c1_ub_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador busca el comercio pendiente del Dueño b",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/pendientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "pendientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.emailCuenta === pm.environment.get('c1_ub_email').toLowerCase());",
+                  "pm.test('El comercio del Dueño b esta pendiente', () => pm.expect(c).to.exist);",
+                  "pm.environment.set('c1_ub_com', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Dueño b",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c1_ub_usuario}}\",\n  \"password\": \"{{c1_ub_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c1_token_ub', pm.response.json().data.token);",
+                  "pm.environment.set('c1_ub_dueno', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador aprueba el comercio del Dueño b",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{c1_ub_com}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{c1_ub_com}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Dueño c",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "comercio"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razonSocial\": \"Cierre Manual Postman c SRL\",\n  \"cuit\": \"30910700614\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Direccion fiscal C1 c 100\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Local Cierre Manual c\",\n  \"descripcion\": \"Comercio generado por la coleccion de Postman (cierre manual)\",\n  \"telefono\": \"+5492964555444\",\n  \"emailContacto\": \"contacto.c1uc@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": false,\n  \"aceptaRetiro\": true,\n  \"nombreUsuario\": \"{{c1_uc_usuario}}\",\n  \"email\": \"{{c1_uc_email}}\",\n  \"password\": \"{{c1_uc_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"800\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Carlos\",\n  \"apellidoRepresentante\": \"Sanchez\",\n  \"dniRepresentante\": \"30910403\",\n  \"telefonoRepresentante\": \"+5492964701103\",\n  \"fechaNacimientoRepresentante\": \"1988-04-04\",\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/postman-cierre-c.jpg\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/cierremanualc\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Dueño c",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{c1_uc_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{c1_uc_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c1_uc_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Dueño c",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{c1_uc_email}}\",\n  \"codigo\": \"{{c1_uc_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador busca el comercio pendiente del Dueño c",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/pendientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "pendientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.emailCuenta === pm.environment.get('c1_uc_email').toLowerCase());",
+                  "pm.test('El comercio del Dueño c esta pendiente', () => pm.expect(c).to.exist);",
+                  "pm.environment.set('c1_uc_com', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Dueño c",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c1_uc_usuario}}\",\n  \"password\": \"{{c1_uc_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c1_token_uc', pm.response.json().data.token);",
+                  "pm.environment.set('c1_uc_dueno', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador aprueba el comercio del Dueño c",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{c1_uc_com}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{c1_uc_com}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Dueño p",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "comercio"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razonSocial\": \"Cierre Manual Postman p SRL\",\n  \"cuit\": \"30910700711\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Direccion fiscal C1 p 100\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Local Cierre Manual p\",\n  \"descripcion\": \"Comercio generado por la coleccion de Postman (cierre manual)\",\n  \"telefono\": \"+5492964555444\",\n  \"emailContacto\": \"contacto.c1up@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": false,\n  \"aceptaRetiro\": true,\n  \"nombreUsuario\": \"{{c1_up_usuario}}\",\n  \"email\": \"{{c1_up_email}}\",\n  \"password\": \"{{c1_up_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"800\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Carlos\",\n  \"apellidoRepresentante\": \"Sanchez\",\n  \"dniRepresentante\": \"30910404\",\n  \"telefonoRepresentante\": \"+5492964701103\",\n  \"fechaNacimientoRepresentante\": \"1988-04-04\",\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/postman-cierre-p.jpg\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/cierremanualp\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Dueño p",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{c1_up_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{c1_up_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c1_up_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Dueño p",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{c1_up_email}}\",\n  \"codigo\": \"{{c1_up_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador busca el comercio pendiente del Dueño p",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/pendientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "pendientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.emailCuenta === pm.environment.get('c1_up_email').toLowerCase());",
+                  "pm.test('El comercio del Dueño p esta pendiente', () => pm.expect(c).to.exist);",
+                  "pm.environment.set('c1_up_com', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Dueño p",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c1_up_usuario}}\",\n  \"password\": \"{{c1_up_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c1_token_up', pm.response.json().data.token);",
+                  "pm.environment.set('c1_up_dueno', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Cliente 1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"CierreUno\",\n  \"dni\": \"30910410\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964555000\",\n  \"nombreUsuario\": \"{{c1_cliente1_usuario}}\",\n  \"email\": \"{{c1_cliente1_email}}\",\n  \"password\": \"{{c1_cliente1_password}}\",\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Cliente 1",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{c1_cliente1_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{c1_cliente1_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c1_cliente1_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Cliente 1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{c1_cliente1_email}}\",\n  \"codigo\": \"{{c1_cliente1_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Cliente 1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c1_cliente1_usuario}}\",\n  \"password\": \"{{c1_cliente1_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c1_token_cliente1', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Cliente 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"CierreDos\",\n  \"dni\": \"30910411\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964555000\",\n  \"nombreUsuario\": \"{{c1_cliente2_usuario}}\",\n  \"email\": \"{{c1_cliente2_email}}\",\n  \"password\": \"{{c1_cliente2_password}}\",\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Cliente 2",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{c1_cliente2_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{c1_cliente2_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c1_cliente2_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Cliente 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{c1_cliente2_email}}\",\n  \"codigo\": \"{{c1_cliente2_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Cliente 2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c1_cliente2_usuario}}\",\n  \"password\": \"{{c1_cliente2_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c1_token_cliente2', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Producto del comercio A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Producto C1 A\",\n  \"precio\": 1500,\n  \"categoriaId\": \"{{c1_categoria_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('c1_ua_prod', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[perfil] A abierto: no esta cerrado, se puede cambiar y no hay texto",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cerradoManualmente=false, abiertoAhora=true, puedeCambiarCierre=true', () => { const d = pm.response.json().data; pm.expect(d.cerradoManualmente).to.eql(false); pm.expect(d.abiertoAhora).to.eql(true); pm.expect(d.puedeCambiarCierre).to.eql(true); });",
+                  "pm.test('textoReapertura', () => pm.expect(pm.response.json().data.textoReapertura).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[catalogo] A figura ABIERTO",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/catalogo/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "catalogo",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('c1_ua_com')));",
+                  "pm.test('El comercio esta en el catalogo con estadoApertura ABIERTO', () => { pm.expect(c).to.exist; pm.expect(c.estadoApertura).to.eql('ABIERTO'); pm.expect(c.textoReapertura).to.eql(null); pm.expect(c.estado).to.eql('APTO_VENTA'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[validaciones] Cerrar sin X-Comercio-Id: 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/cerrar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "cerrar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[validaciones] Cerrar con X-Comercio-Id no numerico: 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "abc"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/cerrar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "cerrar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[validaciones] Cerrar con el comercio de otro Dueño: 404",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_uc}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/cerrar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "cerrar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[validaciones] Abrir sin X-Comercio-Id: 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/abrir",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "abrir"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[validaciones] Abrir con el comercio de otro Dueño: 404",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_uc}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/abrir",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "abrir"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[validaciones] Cerrar sin token: 401",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/cerrar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "cerrar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[validaciones] Cerrar siendo Cliente: 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_cliente1}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/cerrar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "cerrar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[validaciones] Abrir siendo Administrador: 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/abrir",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "abrir"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[validaciones] Los rechazos no cambiaron nada en A",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cerradoManualmente=false, abiertoAhora=true, puedeCambiarCierre=true', () => { const d = pm.response.json().data; pm.expect(d.cerradoManualmente).to.eql(false); pm.expect(d.abiertoAhora).to.eql(true); pm.expect(d.puedeCambiarCierre).to.eql(true); });",
+                  "pm.test('textoReapertura', () => pm.expect(pm.response.json().data.textoReapertura).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedidos] Cliente 1 agrega un producto de A (A abierto)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_cliente1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": \"{{c1_ua_prod}}\",\n  \"cantidad\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedidos] Cliente 2 agrega un producto de A (A abierto)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_cliente2}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": \"{{c1_ua_prod}}\",\n  \"cantidad\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedidos] Pedido del Cliente 2, A abierto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_cliente2}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoEntrega\": \"RETIRO\",\n  \"direccionId\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('c1_ped2', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedidos] Se confirma el pago del pedido del Cliente 2",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/pedidos/{{c1_ped2}}/pago-aprobado",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "pedidos",
+                "{{c1_ped2}}",
+                "pago-aprobado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[cerrar] A cierra su comercio dentro de la franja",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/cerrar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "cerrar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cerradoManualmente=true, abiertoAhora=false, puedeCambiarCierre=true', () => { const d = pm.response.json().data; pm.expect(d.cerradoManualmente).to.eql(true); pm.expect(d.abiertoAhora).to.eql(false); pm.expect(d.puedeCambiarCierre).to.eql(true); });",
+                  "pm.test('Texto de reapertura de mañana', () => pm.expect(pm.response.json().data.textoReapertura).to.eql(\"Reabre mañana a las 00:00\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[cerrar] Cerrar de nuevo es idempotente: 200 con el mismo estado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/cerrar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "cerrar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cerradoManualmente=true, abiertoAhora=false, puedeCambiarCierre=true', () => { const d = pm.response.json().data; pm.expect(d.cerradoManualmente).to.eql(true); pm.expect(d.abiertoAhora).to.eql(false); pm.expect(d.puedeCambiarCierre).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[cerrar] El perfil de A refleja el cierre",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cerradoManualmente=true, abiertoAhora=false, puedeCambiarCierre=true', () => { const d = pm.response.json().data; pm.expect(d.cerradoManualmente).to.eql(true); pm.expect(d.abiertoAhora).to.eql(false); pm.expect(d.puedeCambiarCierre).to.eql(true); });",
+                  "pm.test('textoReapertura', () => pm.expect(pm.response.json().data.textoReapertura).to.eql(\"Reabre mañana a las 00:00\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[cerrar] mis-comercios refleja el cierre",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/mis-comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "mis-comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('c1_ua_com')));",
+                  "pm.test('La fila trae los cuatro campos de apertura', () => { pm.expect(c.cerradoManualmente).to.eql(true); pm.expect(c.abiertoAhora).to.eql(false); pm.expect(c.puedeCambiarCierre).to.eql(true); pm.expect(c.textoReapertura).to.eql(\"Reabre mañana a las 00:00\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[cerrar] El catalogo informa CERRADO_TEMPORALMENTE con el texto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/catalogo/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "catalogo",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('c1_ua_com')));",
+                  "pm.test('El comercio esta en el catalogo con estadoApertura CERRADO_TEMPORALMENTE', () => { pm.expect(c).to.exist; pm.expect(c.estadoApertura).to.eql('CERRADO_TEMPORALMENTE'); pm.expect(c.textoReapertura).to.eql(\"Reabre mañana a las 00:00\"); pm.expect(c.estado).to.eql('APTO_VENTA'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[efecto] Cliente 1 no puede crear el pedido: 409 de cierre manual",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_cliente1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoEntrega\": \"RETIRO\",\n  \"direccionId\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test('El mensaje es \"Este comercio está cerrado en este momento\"', () => pm.expect(pm.response.json().mensaje).to.eql(\"Este comercio está cerrado en este momento\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[efecto] Cliente 1 no puede agregar al carrito: 409 de cierre manual",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_cliente1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": \"{{c1_ua_prod}}\",\n  \"cantidad\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test('El mensaje es \"Este comercio está cerrado en este momento\"', () => pm.expect(pm.response.json().mensaje).to.eql(\"Este comercio está cerrado en este momento\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[efecto] El pedido en curso sigue: A acepta el pedido del Cliente 2 estando cerrado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{c1_ped2}}/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{c1_ped2}}",
+                "aceptar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[efecto] A sigue pudiendo listar sus productos estando cerrado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[abrir] A abre su comercio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/abrir",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "abrir"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cerradoManualmente=false, abiertoAhora=true, puedeCambiarCierre=true', () => { const d = pm.response.json().data; pm.expect(d.cerradoManualmente).to.eql(false); pm.expect(d.abiertoAhora).to.eql(true); pm.expect(d.puedeCambiarCierre).to.eql(true); });",
+                  "pm.test('Sin texto de reapertura', () => pm.expect(pm.response.json().data.textoReapertura).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[abrir] Abrir de nuevo es idempotente: 200 con el mismo estado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/abrir",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "abrir"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cerradoManualmente=false, abiertoAhora=true, puedeCambiarCierre=true', () => { const d = pm.response.json().data; pm.expect(d.cerradoManualmente).to.eql(false); pm.expect(d.abiertoAhora).to.eql(true); pm.expect(d.puedeCambiarCierre).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[abrir] Cliente 1 ya puede crear el pedido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_cliente1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoEntrega\": \"RETIRO\",\n  \"direccionId\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.test('Nace PENDIENTE_PAGO', () => pm.expect(pm.response.json().data.estado).to.eql('PENDIENTE_PAGO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[abrir] El catalogo vuelve a ABIERTO",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/catalogo/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "catalogo",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('c1_ua_com')));",
+                  "pm.test('El comercio esta en el catalogo con estadoApertura ABIERTO', () => { pm.expect(c).to.exist; pm.expect(c.estadoApertura).to.eql('ABIERTO'); pm.expect(c.textoReapertura).to.eql(null); pm.expect(c.estado).to.eql('APTO_VENTA'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[horario] B esta fuera de su franja: cerrar da 409",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ub}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ub_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/cerrar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "cerrar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test('El mensaje es \"Solo podés abrir o cerrar dentro de tu horario\"', () => pm.expect(pm.response.json().mensaje).to.eql(\"Solo podés abrir o cerrar dentro de tu horario\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[horario] B esta fuera de su franja: abrir da 409",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ub}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ub_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/abrir",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "abrir"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test('El mensaje es \"Solo podés abrir o cerrar dentro de tu horario\"', () => pm.expect(pm.response.json().mensaje).to.eql(\"Solo podés abrir o cerrar dentro de tu horario\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[horario] B sin vincular Mercado Pago queda APROBADO y fuera de horario",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ub}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ub_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cerradoManualmente=false, abiertoAhora=false, puedeCambiarCierre=false', () => { const d = pm.response.json().data; pm.expect(d.cerradoManualmente).to.eql(false); pm.expect(d.abiertoAhora).to.eql(false); pm.expect(d.puedeCambiarCierre).to.eql(false); });",
+                  "pm.test('Texto de reapertura de mañana', () => pm.expect(pm.response.json().data.textoReapertura).to.eql(\"Reabre mañana a las 00:00\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[no operativo] P, con el comercio pendiente: cerrar da 409",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_up}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_up_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/cerrar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "cerrar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test('El mensaje es \"Este comercio no está operativo\"', () => pm.expect(pm.response.json().mensaje).to.eql(\"Este comercio no está operativo\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[no operativo] P, con el comercio pendiente: abrir da 409",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_up}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_up_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/abrir",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "abrir"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test('El mensaje es \"Este comercio no está operativo\"', () => pm.expect(pm.response.json().mensaje).to.eql(\"Este comercio no está operativo\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[job] A vuelve a cerrar para probar la reapertura",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/cerrar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "cerrar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cerradoManualmente=true, abiertoAhora=false, puedeCambiarCierre=true', () => { const d = pm.response.json().data; pm.expect(d.cerradoManualmente).to.eql(true); pm.expect(d.abiertoAhora).to.eql(false); pm.expect(d.puedeCambiarCierre).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[job] Con el reloj real el job no reabre a A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/jobs/reapertura-comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "jobs",
+                "reapertura-comercios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[job] A sigue cerrado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cerradoManualmente=true, abiertoAhora=false, puedeCambiarCierre=true', () => { const d = pm.response.json().data; pm.expect(d.cerradoManualmente).to.eql(true); pm.expect(d.abiertoAhora).to.eql(false); pm.expect(d.puedeCambiarCierre).to.eql(true); });",
+                  "pm.test('textoReapertura', () => pm.expect(pm.response.json().data.textoReapertura).to.eql(\"Reabre mañana a las 00:00\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[job] Con la hora de pasado manana el job reabre a A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/jobs/reapertura-comercios?ahora={{c1_ahora_pasado_manana}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "jobs",
+                "reapertura-comercios"
+              ],
+              "query": [
+                {
+                  "key": "ahora",
+                  "value": "{{c1_ahora_pasado_manana}}"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const m = new Date(Date.now() - 3 * 3600 * 1000 + 2 * 24 * 3600 * 1000);",
+                  "pm.environment.set('c1_ahora_pasado_manana', m.toISOString().slice(0, 19));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Reabrio al menos un comercio', () => pm.expect(pm.response.json().data).to.be.at.least(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[job] A quedo abierto otra vez",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cerradoManualmente=false, abiertoAhora=true, puedeCambiarCierre=true', () => { const d = pm.response.json().data; pm.expect(d.cerradoManualmente).to.eql(false); pm.expect(d.abiertoAhora).to.eql(true); pm.expect(d.puedeCambiarCierre).to.eql(true); });",
+                  "pm.test('textoReapertura', () => pm.expect(pm.response.json().data.textoReapertura).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[job] Abrir tras la reapertura automatica es idempotente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/abrir",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "abrir"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cerradoManualmente=false, abiertoAhora=true, puedeCambiarCierre=true', () => { const d = pm.response.json().data; pm.expect(d.cerradoManualmente).to.eql(false); pm.expect(d.abiertoAhora).to.eql(true); pm.expect(d.puedeCambiarCierre).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[masivo] A firma la foto de sus comercios adicionales",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/nuevo/foto/firma",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "nuevo",
+                "foto",
+                "firma"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.environment.set('c1_foto_adicional_url', 'https://res.cloudinary.com/' + d.cloudName + '/image/upload/v1/' + d.folder + 'postman-cierre-masivo.png');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[masivo] A da de alta un comercio adicional con horario que no cubre el momento actual",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Masivo Fuera de Horario\",\n  \"descripcion\": \"Comercio adicional del cierre masivo generado por la coleccion de Postman\",\n  \"telefono\": \"+5492964555444\",\n  \"emailContacto\": \"contacto.masivofuera@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": false,\n  \"aceptaRetiro\": true,\n  \"fotoPerfilUrl\": \"{{c1_foto_adicional_url}}\",\n  \"direccion\": {\n    \"calle\": \"Elcano\",\n    \"numero\": \"950\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": {{c1_horarios_fuera_adicional}},\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/masivofuera\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const dias = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];",
+                  "const hoy = new Date(Date.now() - 3 * 3600 * 1000).getUTCDay();",
+                  "const franjas = dias.filter((_, i) => i !== hoy).map((diaSemana) => ({ diaSemana, horaApertura: '00:00:00', horaCierre: '23:59:00' }));",
+                  "pm.environment.set('c1_horarios_fuera_adicional', JSON.stringify(franjas));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('c1_masivo_fuera_com', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[masivo] A da de alta un comercio adicional con horario de todos los dias",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Masivo Ya Cerrado\",\n  \"descripcion\": \"Comercio adicional del cierre masivo generado por la coleccion de Postman\",\n  \"telefono\": \"+5492964555444\",\n  \"emailContacto\": \"contacto.masivocerrado@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": false,\n  \"aceptaRetiro\": true,\n  \"fotoPerfilUrl\": \"{{c1_foto_adicional_url}}\",\n  \"direccion\": {\n    \"calle\": \"Elcano\",\n    \"numero\": \"950\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ],\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/masivocerrado\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('c1_masivo_cerrado_com', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[masivo] Administrador aprueba el adicional fuera de horario: nace APTO_VENTA por la cuenta de A",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{c1_masivo_fuera_com}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{c1_masivo_fuera_com}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[masivo] Administrador aprueba el adicional de todos los dias: nace APTO_VENTA por la cuenta de A",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{c1_masivo_cerrado_com}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{c1_masivo_cerrado_com}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[masivo] El tercer comercio se cierra a mano antes del cierre masivo",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_masivo_cerrado_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/cerrar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "cerrar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cerradoManualmente=true, abiertoAhora=false, puedeCambiarCierre=true', () => { const d = pm.response.json().data; pm.expect(d.cerradoManualmente).to.eql(true); pm.expect(d.abiertoAhora).to.eql(false); pm.expect(d.puedeCambiarCierre).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[masivo] Cierre masivo 1/3: el comercio abierto en franja responde 200",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_ua_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/cerrar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "cerrar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cerradoManualmente=true, abiertoAhora=false, puedeCambiarCierre=true', () => { const d = pm.response.json().data; pm.expect(d.cerradoManualmente).to.eql(true); pm.expect(d.abiertoAhora).to.eql(false); pm.expect(d.puedeCambiarCierre).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[masivo] Cierre masivo 2/3: el comercio fuera de horario responde 409",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_masivo_fuera_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/cerrar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "cerrar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test('El mensaje es \"Solo podés abrir o cerrar dentro de tu horario\"', () => pm.expect(pm.response.json().mensaje).to.eql(\"Solo podés abrir o cerrar dentro de tu horario\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[masivo] Cierre masivo 3/3: el comercio ya cerrado responde 200 idempotente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{c1_masivo_cerrado_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/cerrar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "cerrar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cerradoManualmente=true, abiertoAhora=false, puedeCambiarCierre=true', () => { const d = pm.response.json().data; pm.expect(d.cerradoManualmente).to.eql(true); pm.expect(d.abiertoAhora).to.eql(false); pm.expect(d.puedeCambiarCierre).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[masivo] mis-comercios deja el estado final de los tres",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c1_token_ua}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/mis-comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "mis-comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const lista = pm.response.json().data;",
+                  "const por = (variable) => lista.find((x) => x.id === Number(pm.environment.get(variable)));",
+                  "pm.test('El abierto en franja quedo cerrado a mano', () => { const c = por('c1_ua_com'); pm.expect(c.cerradoManualmente).to.eql(true); pm.expect(c.abiertoAhora).to.eql(false); pm.expect(c.puedeCambiarCierre).to.eql(true); });",
+                  "pm.test('El fuera de horario no cambio y no se puede cambiar', () => { const c = por('c1_masivo_fuera_com'); pm.expect(c.cerradoManualmente).to.eql(false); pm.expect(c.abiertoAhora).to.eql(false); pm.expect(c.puedeCambiarCierre).to.eql(false); });",
+                  "pm.test('El ya cerrado sigue cerrado', () => { const c = por('c1_masivo_cerrado_com'); pm.expect(c.cerradoManualmente).to.eql(true); pm.expect(c.abiertoAhora).to.eql(false); pm.expect(c.puedeCambiarCierre).to.eql(true); });"
                 ]
               }
             }

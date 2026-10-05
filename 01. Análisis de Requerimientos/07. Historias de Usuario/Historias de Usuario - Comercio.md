@@ -90,6 +90,29 @@ panel aunque todavía esté dentro de mi horario de atención, para detener la r
 de pedidos cuando me quedo sin stock u ocurre algo imprevisto, y reabrirlo cuando esté
 listo, sin que esto afecte el estado de la cuenta ni los pedidos ya en curso.
 
+**Criterios de aceptación:**
+- Solo puedo cerrar o abrir mi comercio dentro de una franja de mi horario de atención
+  y mientras esté Aprobado o Apto para Venta; si no, el sistema me lo explica.
+- Al cerrarlo, los clientes dejan de poder agregar productos al carrito y confirmar
+  pedidos de mi comercio, y en el catálogo aparece como "temporalmente cerrado" con el
+  aviso de cuándo reabre. Los pedidos que ya están en curso siguen su camino: puedo
+  aceptarlos o rechazarlos, y los pagos que llegan se registran con normalidad.
+- Si toco "Cerrar" o "Abrir" dos veces seguidas, el sistema no da error y muestra el
+  estado actual.
+- Si no lo reabro yo, el comercio se reabre solo al empezar la próxima franja de mi
+  horario (incluso el mismo día).
+- Cada cierre y cada reapertura quedan registrados con quién los hizo y cuándo.
+- Desde el panel veo un interruptor que me dice en qué estado estoy: "Recibiendo pedidos"
+  (puedo pausarlo dentro de mi horario), "Pedidos pausados" (con el aviso de cuándo
+  reabre) o "Fuera de horario" (apagado y bloqueado, porque fuera de mi horario no puedo
+  cambiarlo).
+- Al cerrar, el sistema me pide una confirmación corta; si cancelo, no pasa nada. Al
+  abrir no me pide confirmación.
+- Solo veo el interruptor y la indicación de "Cerrado" si mi comercio está Apto para
+  Venta; si todavía no vinculé Mercado Pago, veo mi comercio como siempre.
+- Si manejo varios comercios, en el selector veo la etiqueta "Cerrado" en los que están
+  cerrados, y se actualiza sola, incluso cuando un comercio se reabre automáticamente.
+
 ## HU-CO14: Ver Solo los Pedidos ya Pagados
 
 Como Dueño o Empleado autorizado, quiero ver únicamente los pedidos cuyo pago ya fue

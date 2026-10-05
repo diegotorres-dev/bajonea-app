@@ -134,7 +134,7 @@ test.describe('Multi-comercio, tramo 4 (API): mis-comercios y notificaciones por
       expect(comercios.map((c) => c.id)).toEqual(idsEnOrdenDeAlta(dueno.duenoId));
       expect(comercios).toHaveLength(9);
       for (const c of comercios) {
-        expect(Object.keys(c).sort()).toEqual(['cantidadNotificacionesNoLeidas', 'estado', 'fechaRegistro', 'fotoPerfilUrl', 'id', 'nombre', 'operativo']);
+        expect(Object.keys(c).sort()).toEqual(['abiertoAhora', 'cantidadNotificacionesNoLeidas', 'cerradoManualmente', 'estado', 'fechaRegistro', 'fotoPerfilUrl', 'id', 'nombre', 'operativo', 'puedeCambiarCierre', 'textoReapertura']);
         expect(typeof c.nombre).toBe('string');
         expect(typeof c.fotoPerfilUrl).toBe('string');
         expect(typeof c.fechaRegistro).toBe('string');

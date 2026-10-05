@@ -1,6 +1,6 @@
 import { apiFetch, ApiError, getUsuario, clearSesion } from './api.js';
 import { logout, construirTelefono, resolverHomePorRol, LABELS_TIPO_SOCIEDAD, LABELS_CONDICION_IVA } from './auth.js';
-import { estadoHorario, renderTopBar, showToast, pintarAvatarComercio, renderPedidoEstadoHeader, manejarBloqueoPorCambioPassword, crearBloqueMotivoRechazo } from './catalogo.js';
+import { resumenHorarioHoy, renderTopBar, showToast, pintarAvatarComercio, renderPedidoEstadoHeader, manejarBloqueoPorCambioPassword, crearBloqueMotivoRechazo } from './catalogo.js';
 import { SOPORTE_CONTACTO_URL } from './config.js';
 import {
   activarComercio,
@@ -16,6 +16,8 @@ import {
   RUTA_DASHBOARD,
 } from './comercio-activo.js';
 import { abrirPanelComercios, enlazarMantenerApretado, prepararPaginaDueno } from './selector-comercio.js';
+import { montarSwitchCierre } from './cierre-comercio.js';
+import { cerrarVariosComercios, comerciosCerrables } from './apertura-comercio.js';
 import {
   subirImagenProducto,
   eliminarImagenProducto,
@@ -544,6 +546,7 @@ export async function initComercioDashboard() {
   }
   renderHeaderDashboard(document.getElementById('top-bar-slot'));
   renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'panel');
+  montarSwitchCierre(document.getElementById('cierre-comercio-slot'));
   const activo = await prepararPaginaDueno({ slotFranja: document.getElementById('franja-comercio-slot') });
   if (!activo) {
     return;
@@ -551,12 +554,21 @@ export async function initComercioDashboard() {
   const comercio = await apiFetch('/comercios/perfil');
   normalizarComercio(comercio);
 
-  const { abierto, resumenHoy } = estadoHorario(comercio.horarios);
-  renderEstadoBanner(
-    document.getElementById('banner-estado-slot'),
-    abierto,
-    abierto ? `Tu comercio está abierto ahora. ${resumenHoy}` : 'Tu comercio está cerrado en este momento',
-  );
+  const { resumenHoy } = resumenHorarioHoy(comercio.horarios);
+  function pintarBannerEstado() {
+    const enMemoria = getComercioActivoEnMemoria();
+    if (!enMemoria) {
+      return;
+    }
+    const abierto = enMemoria.abiertoAhora;
+    renderEstadoBanner(
+      document.getElementById('banner-estado-slot'),
+      abierto,
+      abierto ? `Tu comercio está abierto ahora. ${resumenHoy}` : 'Tu comercio está cerrado en este momento',
+    );
+  }
+  pintarBannerEstado();
+  suscribirComercios(pintarBannerEstado);
 
   const nombreCorto = comercio.nombre;
   document.getElementById('saludo-titulo').textContent = `Hola, ${nombreCorto} 👋`;
@@ -1288,16 +1300,53 @@ function abrirModalDesvincularMp({ alTerminar }) {
     hoja.replaceChildren(esqueleto);
   }
 
-  function mostrarBloqueo(previa) {
-    const entendido = crearBotonMp('btn btn-primary', 'Entendido', 'btn-entendido-desvincular-mp');
+  function mostrarBloqueo(previa, { fallidos = [] } = {}) {
+    const cerrables = comerciosCerrables(getComerciosEnMemoria());
+    const hayCierre = cerrables.length > 0;
+    const entendido = crearBotonMp(hayCierre ? 'btn btn-tertiary' : 'btn btn-primary', 'Entendido', 'btn-entendido-desvincular-mp');
     entendido.addEventListener('click', cerrar);
-    hoja.replaceChildren(
+    const nodos = [
       crearIconoModalMp(),
-      crearTituloModalMp('Todavía no se puede desvincular'),
+      crearTituloModalMp('No podés desvincular ahora'),
       crearParrafoMp('modal-sheet__text desvincular-mp__texto-bloqueo', textoBloqueoPagosPendientes(previa), 'texto-bloqueo-desvincular-mp'),
-      crearParrafoMp('desvincular-mp__pie', textoPieBloqueo(previa), 'pie-bloqueo-desvincular-mp'),
-      entendido,
-    );
+    ];
+    if (hayCierre) {
+      const plural = cerrables.length > 1;
+      nodos.push(crearParrafoMp(
+        'desvincular-mp__cierre',
+        plural
+          ? 'Cerrá los comercios para que no entren más pedidos mientras esperás.'
+          : 'Cerrá el comercio para que no entren más pedidos mientras esperás.',
+        'texto-cierre-desvincular-mp',
+      ));
+    }
+    nodos.push(crearParrafoMp('desvincular-mp__pie', textoPieBloqueo(previa), 'pie-bloqueo-desvincular-mp'));
+    if (fallidos.length > 0) {
+      const error = crearParrafoMp('desvincular-mp__error', `No se pudo cerrar: ${fallidos.map((comercio) => comercio.nombre).join(', ')}`, 'error-cierre-desvincular-mp');
+      error.setAttribute('role', 'alert');
+      nodos.push(error);
+    }
+    if (hayCierre) {
+      const cerrarBtn = crearBotonMp('btn btn-primary cierre-modal__confirmar', cerrables.length > 1 ? 'Cerrar comercios' : 'Cerrar comercio', 'btn-cerrar-comercios-desvincular-mp');
+      cerrarBtn.addEventListener('click', () => cerrarComerciosCerrables(previa, cerrarBtn, entendido));
+      nodos.push(cerrarBtn);
+    }
+    nodos.push(entendido);
+    hoja.replaceChildren(...nodos);
+  }
+
+  async function cerrarComerciosCerrables(previa, cerrarBtn, entendido) {
+    if (ocupado) {
+      return;
+    }
+    ocupado = true;
+    cerrarBtn.disabled = true;
+    entendido.disabled = true;
+    const objetivo = comerciosCerrables(getComerciosEnMemoria());
+    const fallidos = await cerrarVariosComercios(objetivo);
+    await refrescarComercios().catch(() => {});
+    ocupado = false;
+    mostrarBloqueo(previa, { fallidos });
   }
 
   function crearBloquePedidosEnCurso(previa) {
@@ -1367,7 +1416,10 @@ function abrirModalDesvincularMp({ alTerminar }) {
       const status = error instanceof ApiError ? error.status : null;
       if (status === 409) {
         try {
-          const previaNueva = await apiFetch('/oauth/mercadopago/desvinculacion/previa');
+          const [previaNueva] = await Promise.all([
+            apiFetch('/oauth/mercadopago/desvinculacion/previa'),
+            refrescarComercios().catch(() => {}),
+          ]);
           ocupado = false;
           resolverPrevia(previaNueva);
         } catch (errorPrevia) {
@@ -1382,7 +1434,11 @@ function abrirModalDesvincularMp({ alTerminar }) {
   async function cargar() {
     mostrarCargando();
     try {
-      resolverPrevia(await apiFetch('/oauth/mercadopago/desvinculacion/previa'));
+      const [previa] = await Promise.all([
+        apiFetch('/oauth/mercadopago/desvinculacion/previa'),
+        refrescarComercios().catch(() => {}),
+      ]);
+      resolverPrevia(previa);
     } catch (error) {
       const esNoEncontrada = error instanceof ApiError && error.status === 404;
       cerrar();

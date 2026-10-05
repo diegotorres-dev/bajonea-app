@@ -63,10 +63,12 @@ comercios se encuentran en Requisitos Funcionales — Dueño.
   recuperación de contraseña, restaurando a Aprobado todos los comercios de ese Dueño
   que estuvieran en este estado.
 - **Cerrado Manualmente:** el comercio activó el cierre temporal desde su panel estando
-  en estado Aprobado y con el Dueño en estado Activo. Se representa mediante el campo
+  en estado Aprobado o Apto para Venta, con el Dueño en estado Activo y dentro de una
+  franja de su horario de atención. Se representa mediante el campo
   `cerrado_manualmente = true` en la tabla Comercio, sin alterar el estado del comercio
   ni el del Dueño. Aparece en el catálogo con indicador de "temporalmente cerrado" y no
-  puede recibir pedidos. Se revierte exclusivamente de forma manual.
+  puede recibir pedidos nuevos. Se revierte de forma manual o automáticamente al empezar
+  la primera franja horaria posterior al momento del cierre.
 
 ---
 
@@ -88,21 +90,57 @@ cumplen simultáneamente:
 Un comercio aparece en el catálogo con indicador **"temporalmente cerrado"** — y sin
 posibilidad de recibir pedidos — si se cumple alguna de estas condiciones:
 - Su estado es `CERRADO_TEMPORALMENTE` (Dueño titular bloqueado), o
-- Su estado es `APROBADO` con `cerrado_manualmente = true` (cierre manual voluntario).
+- Su estado es `APTO_VENTA` con `cerrado_manualmente = true` (cierre manual voluntario).
+
+Un comercio `APTO_VENTA` fuera de todas las franjas de su horario se muestra como cerrado por
+horario, también con el aviso de cuándo reabre.
 
 ---
 
 ## Cierre y Apertura Manual
 
 - El Dueño o un Empleado autorizado de un comercio aprobado debe poder activar y
-  desactivar el cierre manual desde el panel en cualquier momento dentro de su horario
-  de atención, sin modificar el estado del comercio ni el del Dueño.
+  desactivar el cierre manual desde el panel únicamente dentro de una franja de su
+  horario de atención, sin modificar el estado del comercio ni el del Dueño. Fuera de
+  horario, o con el comercio en un estado no operativo, el sistema no lo permite.
+- Cerrar un comercio ya cerrado, o abrir uno ya abierto (por doble clic, dos personas a la
+  vez o un reintento), no es un error: el sistema informa el estado actual y no registra
+  una segunda acción en el historial.
+- Cada cierre y cada reapertura quedan registrados con quién los hizo (Dueño, Empleado o
+  sistema) y cuándo (HistorialCierreComercio).
 - Al activar el cierre manual (`cerrado_manualmente = true`), el comercio dejará de
-  recibir nuevos pedidos y aparecerá en el catálogo con indicador de "temporalmente
-  cerrado". Los pedidos ya en curso no se ven afectados.
+  recibir nuevos pedidos (no se puede agregar productos al carrito ni confirmar el
+  pedido) y aparecerá en el catálogo con indicador de "temporalmente cerrado" y el aviso
+  de cuándo reabre ("Reabre hoy a las HH:mm", "Reabre mañana a las HH:mm" o "Reabre el
+  <día> a las HH:mm"). Los pedidos ya en curso, los pagos, los productos y el resto de la
+  operación del comercio no se ven afectados.
 - Al desactivar el cierre manual (`cerrado_manualmente = false`), el comercio vuelve a
   recibir pedidos si se cumplen las demás condiciones de visibilidad.
-- El cierre manual no se revierte automáticamente; debe reabrirse manualmente.
+- En el panel del comercio, el Dueño dispone de un interruptor de recepción de pedidos con
+  tres estados: "Recibiendo pedidos" (abierto, se puede pausar dentro del horario),
+  "Pedidos pausados" (cerrado a mano, con el aviso de cuándo reabre) y "Fuera de horario"
+  (apagado y bloqueado, porque el cierre y la apertura manual solo se permiten dentro de
+  una franja). Mientras se cargan los datos se muestra un indicador de carga, nunca un
+  estado por defecto.
+- Cerrar desde el interruptor pide una confirmación breve ("¿Dejar de recibir pedidos?",
+  con el aviso de que los pedidos en curso siguen su camino); cancelarla no cambia nada.
+  Abrir no pide confirmación. Mientras se procesa un cambio, el interruptor no admite un
+  segundo clic.
+- El interruptor y las indicaciones de "Cerrado" solo se muestran para los comercios en
+  estado Apto para Venta. Un comercio Aprobado sin cuenta de cobro, Pendiente, Suspendido
+  u otro estado conserva su etiqueta habitual y no muestra interruptor ni indicación de
+  cierre.
+- En el selector de comercio (franja bajo el encabezado y panel "Tus comercios"), un
+  comercio Apto para Venta cerrado, a mano o por horario, muestra la etiqueta "Cerrado"
+  (y, en el panel, el aviso de cuándo reabre); uno abierto no muestra ninguna. Estos
+  estados se actualizan solos, incluida la reapertura automática, sin recargar la
+  pantalla.
+- El cierre manual se revierte automáticamente al empezar la primera franja horaria
+  posterior al momento del cierre (la próxima franja, incluso el mismo día), o antes si el
+  comercio se reabre a mano. Las franjas que cruzan la medianoche se cargan como dos
+  filas y no se unen (ver Alcance y Limitaciones).
+- Un comercio fuera de su horario de atención también aparece como cerrado, con el aviso
+  de cuándo reabre.
 
 ---
 

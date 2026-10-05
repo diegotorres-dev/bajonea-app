@@ -13,7 +13,7 @@ import {
   sqlTest as sql,
   vincularMercadoPagoSimuladoTest,
 } from './backend';
-import type { SesionApi } from './backend';
+import type { HorarioInput, SesionApi } from './backend';
 
 export interface Dueno {
   sesion: SesionApi;
@@ -33,10 +33,11 @@ export async function registrarPendiente(
   adminToken: string,
   localidadId: string,
   nombre?: string,
+  horarios: HorarioInput[] = [{ diaSemana: diaDeHoy(), horaApertura: '00:00', horaCierre: '23:59' }],
 ): Promise<Dueno> {
   const comercio = await registrarYVerificarComercio(request, localidadId, {
     nombre,
-    horarios: [{ diaSemana: diaDeHoy(), horaApertura: '00:00', horaCierre: '23:59' }],
+    horarios,
     aceptaDelivery: false,
     aceptaRetiro: true,
   });
@@ -71,13 +72,37 @@ export async function prepararAprobado(
   adminToken: string,
   localidadId: string,
   conMercadoPago = false,
+  horarios?: HorarioInput[],
 ): Promise<Dueno> {
-  const dueno = await registrarPendiente(request, adminToken, localidadId);
+  const dueno = await registrarPendiente(request, adminToken, localidadId, undefined, horarios);
   if (conMercadoPago) {
     await vincularMercadoPagoSimuladoTest(request, dueno.duenoId);
   }
   await resolverComercio(request, adminToken, dueno.comercioId, true);
   return dueno;
+}
+
+export function reemplazarHorarios(comercioId: number, horarios: HorarioInput[]): void {
+  sql(`DELETE FROM horario WHERE comercio_id = ${comercioId};`);
+  horarios.forEach((horario) => {
+    sql(
+      `INSERT INTO horario (comercio_id, dia_semana, hora_apertura, hora_cierre) ` +
+        `VALUES (${comercioId}, '${horario.diaSemana}', '${horario.horaApertura}', '${horario.horaCierre}');`,
+    );
+  });
+}
+
+export async function agregarComercioApto(
+  request: APIRequestContext,
+  dueno: Dueno,
+  nombre: string,
+  horarios?: HorarioInput[],
+): Promise<number> {
+  const comercioId = await clonarComercioTest(request, dueno.comercioId, nombre, 'APTO_VENTA');
+  if (horarios) {
+    reemplazarHorarios(comercioId, horarios);
+  }
+  return comercioId;
 }
 
 export async function clonarConRedes(request: APIRequestContext, comercioId: number, nombre: string, estado: string): Promise<number> {

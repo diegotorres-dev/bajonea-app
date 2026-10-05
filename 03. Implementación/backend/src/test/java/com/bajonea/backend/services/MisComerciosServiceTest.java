@@ -10,6 +10,8 @@ import com.bajonea.backend.dto.response.MiComercioResponseDTO;
 import com.bajonea.backend.entities.Comercio;
 import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.repositories.ComercioRepository;
+import com.bajonea.backend.repositories.HistorialCierreComercioRepository;
+import com.bajonea.backend.repositories.HorarioRepository;
 import com.bajonea.backend.repositories.NotificacionRepository;
 import com.bajonea.backend.repositories.NotificacionRepository.ContadorNoLeidasPorComercio;
 import java.time.LocalDateTime;
@@ -26,13 +28,16 @@ class MisComerciosServiceTest {
 
     private ComercioRepository comercioRepository;
     private NotificacionRepository notificacionRepository;
+    private HorarioRepository horarioRepository;
     private MisComerciosService service;
 
     @BeforeEach
     void preparar() {
         comercioRepository = mock(ComercioRepository.class);
         notificacionRepository = mock(NotificacionRepository.class);
-        service = new MisComerciosService(comercioRepository, notificacionRepository);
+        horarioRepository = mock(HorarioRepository.class);
+        service = new MisComerciosService(comercioRepository, notificacionRepository, horarioRepository,
+                new DisponibilidadComercioService(horarioRepository, mock(HistorialCierreComercioRepository.class)));
     }
 
     private static Comercio comercio(int id, String nombre, EstadoComercio estado, LocalDateTime fechaRegistro) {

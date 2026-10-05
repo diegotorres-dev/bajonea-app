@@ -47,6 +47,10 @@ public class ComercioResponseDTO {
     private final List<HorarioResponseDTO> horarios;
     private final RepresentanteResponseDTO representante;
     private final String motivoRechazo;
+    private final boolean cerradoManualmente;
+    private final boolean abiertoAhora;
+    private final boolean puedeCambiarCierre;
+    private final String textoReapertura;
 
     public ComercioResponseDTO(
             Integer id,
@@ -68,7 +72,11 @@ public class ComercioResponseDTO {
             DireccionResponseDTO direccion,
             List<HorarioResponseDTO> horarios,
             RepresentanteResponseDTO representante,
-            String motivoRechazo) {
+            String motivoRechazo,
+            boolean cerradoManualmente,
+            boolean abiertoAhora,
+            boolean puedeCambiarCierre,
+            String textoReapertura) {
         this.id = id;
         this.nombre = nombre;
         this.descripcion = descripcion;
@@ -89,5 +97,9 @@ public class ComercioResponseDTO {
         this.horarios = horarios;
         this.representante = representante;
         this.motivoRechazo = motivoRechazo;
+        this.cerradoManualmente = cerradoManualmente;
+        this.abiertoAhora = abiertoAhora;
+        this.puedeCambiarCierre = puedeCambiarCierre;
+        this.textoReapertura = textoReapertura;
     }
 }

@@ -5,7 +5,7 @@ const USUARIO_KEY = 'bajonea_usuario';
 const COMERCIO_ACTIVO_KEY = 'bajonea_comercio_activo';
 const ULTIMO_COMERCIO_PREFIX = 'bajonea_ultimo_comercio_';
 const HEADER_COMERCIO_ID = 'X-Comercio-Id';
-const RUTAS_DEL_DUENO = /^\/(comercios\/(perfil|redes-sociales)|productos|pedidos\/comercio|notificaciones)(?=[/?]|$)/;
+const RUTAS_DEL_DUENO = /^\/(comercios\/(perfil|redes-sociales|cerrar|abrir)|productos|pedidos\/comercio|notificaciones)(?=[/?]|$)/;
 const RUTAS_DEL_DUENO_SIN_HEADER = /^\/notificaciones\/comercio\//;
 const REQUEST_TIMEOUT_MS = 15000;
 
@@ -146,7 +146,7 @@ async function parseBody(response) {
   }
 }
 
-export async function apiFetch(path, { method = 'GET', body, auth = true, handle401Globally = true, handle5xxGlobally = true, comercioId, sinComercio = false, conMensaje = false } = {}) {
+export async function apiFetch(path, { method = 'GET', body, auth = true, handle401Globally = true, handle5xxGlobally = true, comercioId, sinComercio = false, conMensaje = false, handleRedGlobally = true } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   const token = getToken();
   const hadToken = Boolean(auth && token);
@@ -171,6 +171,9 @@ export async function apiFetch(path, { method = 'GET', body, auth = true, handle
     });
   } catch (error) {
     clearTimeout(timeoutId);
+    if (!handleRedGlobally) {
+      throw new ApiError(0, 'Sin conexión', null);
+    }
     if (error.name === 'AbortError') {
       redirectTo('errores/timeout.html', true);
     } else {

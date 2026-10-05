@@ -291,7 +291,7 @@ test.describe('Multi-comercio, tramo 5B: Mercado Pago con varios comercios (UI)'
     const desvinculaciones = registrarDesvinculaciones(page);
     await abrirCuentaDeCobro(page, dueno);
     await page.getByTestId('btn-desvincular-mercadopago').click();
-    await expect(page.getByTestId('titulo-desvincular-mp')).toHaveText('Todavía no se puede desvincular');
+    await expect(page.getByTestId('titulo-desvincular-mp')).toHaveText('No podés desvincular ahora');
     const previaUno = await apiGet(request, '/oauth/mercadopago/desvinculacion/previa', dueno.token);
     const horaUno = (previaUno.body.data.pagosPendientes.puedeReintentarDesde as string).slice(11, 16);
     expect(horaUno).toMatch(/^\d{2}:\d{2}$/);
@@ -374,7 +374,7 @@ test.describe('Multi-comercio, tramo 5B: Mercado Pago con varios comercios (UI)'
     await page.getByTestId('btn-confirmar-desvincular-mp').click();
     expect((await respuesta).status()).toBe(409);
 
-    await expect(page.getByTestId('titulo-desvincular-mp')).toHaveText('Todavía no se puede desvincular');
+    await expect(page.getByTestId('titulo-desvincular-mp')).toHaveText('No podés desvincular ahora');
     await expect(page.getByTestId('texto-bloqueo-desvincular-mp')).toHaveText(
       `Hay 1 cliente pagando un pedido en Mercado Pago (${nombres[dueno.comercioId]}: 1). Si desvinculás ahora, ese pago no se podría confirmar.`,
     );

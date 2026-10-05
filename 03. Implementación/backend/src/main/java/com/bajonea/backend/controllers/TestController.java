@@ -3,9 +3,13 @@ package com.bajonea.backend.controllers;
 import com.bajonea.backend.dto.response.ApiResponse;
 import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.TipoToken;
+import com.bajonea.backend.services.DisponibilidadComercioService;
+import com.bajonea.backend.services.ReaperturaComerciosJob;
 import com.bajonea.backend.services.TestSupportService;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,6 +35,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class TestController {
 
     private final TestSupportService testSupportService;
+    private final ReaperturaComerciosJob reaperturaComerciosJob;
+    private final DisponibilidadComercioService disponibilidadComercioService;
 
     @GetMapping("/token-verificacion")
     public ResponseEntity<ApiResponse<String>> obtenerTokenVerificacion(@RequestParam String email) {
@@ -63,6 +69,15 @@ public class TestController {
             @RequestParam(required = false) String mpUserId) {
         testSupportService.vincularCuentaMercadoPagoSimulada(id, mpUserId);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Cuenta de Mercado Pago simulada vinculada", null));
+    }
+
+    @PostMapping("/jobs/reapertura-comercios")
+    public ResponseEntity<ApiResponse<Integer>> ejecutarReaperturaComercios(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime ahora) {
+        int reabiertos = ahora == null
+                ? reaperturaComerciosJob.reabrirComerciosVencidos(disponibilidadComercioService.ahora())
+                : reaperturaComerciosJob.reabrirComerciosVencidos(ahora);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Job de reapertura ejecutado", reabiertos));
     }
 
     @PutMapping("/pedidos/{id}/pago-aprobado")
