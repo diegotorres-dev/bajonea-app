@@ -30,4 +30,14 @@ application-local.properties
 .~lock.*#
 
 03. Implementación/datos-prueba/
-03. Implementación/docs/
+
+# docs/ se versiona (texto: md y similares). Quedan fuera solo estos casos:
+# respaldos locales, cuentas de prueba con contraseñas, documentación de terceros (10 MB)
+# y volcados/migraciones de datos con hashes bcrypt o contraseñas de prueba.
+03. Implementación/docs/_backups/
+03. Implementación/docs/CUENTAS-DE-PRUEBA.local.md
+03. Implementación/docs/mercadopago_documentacion_completa.md
+03. Implementación/docs/bajonea_final.sql
+03. Implementación/docs/migracion-comercios-railway.sql
+03. Implementación/docs/migracion-datos-prueba-railway.sql
+03. Implementación/docs/db/prueba-manual-multicomercio-3b.sql
