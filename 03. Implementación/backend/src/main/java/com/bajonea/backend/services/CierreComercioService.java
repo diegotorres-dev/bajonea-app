@@ -11,6 +11,7 @@ import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.HistorialCierreComercioRepository;
 import com.bajonea.backend.repositories.HorarioRepository;
+import com.bajonea.backend.repositories.UsuarioRepository;
 import com.bajonea.backend.services.DisponibilidadComercioService.Disponibilidad;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
@@ -35,6 +36,12 @@ import org.springframework.transaction.annotation.Transactional;
  * bloqueo, para que {@code fecha_hora} siga el orden de commit. No toma la cuenta de Mercado Pago: el
  * orden de bloqueo general ({@code dueno} → {@code cuenta_mercado_pago} → {@code comercio} → pedidos) se
  * respeta porque este servicio solo llega hasta {@code comercio}.
+ * <p>
+ * Cerrar y abrir toman antes, con bloqueo compartido, la fila del usuario que actúa: la fila de historial lleva una
+ * clave foránea a ese usuario, que de otro modo se pediría después de tener el comercio. El bloqueo de cuenta por
+ * intentos fallidos hace al revés (tiene el usuario y pide el comercio), y las dos transacciones quedaban en
+ * deadlock. Con este orden la que llega segunda espera a que la primera termine; si el bloqueo ganó, el comercio
+ * ya no es operativo y el cierre responde {@code 409}. La reapertura automática no actúa un usuario y no lo toma.
  */
 @Service
 @RequiredArgsConstructor
@@ -50,6 +57,7 @@ public class CierreComercioService {
     private final HorarioRepository horarioRepository;
     private final HistorialCierreComercioRepository historialCierreComercioRepository;
     private final DisponibilidadComercioService disponibilidadComercioService;
+    private final UsuarioRepository usuarioRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -64,6 +72,9 @@ public class CierreComercioService {
 
     private CierreComercioResponseDTO cambiarCierre(Integer comercioId, Integer actorUsuarioId, ActorCierre actor,
             boolean cerrar) {
+        if (actor != ActorCierre.SISTEMA && actorUsuarioId != null) {
+            usuarioRepository.leerIdConBloqueoCompartido(actorUsuarioId);
+        }
         Comercio comercio = bloquearComercio(comercioId);
         LocalDateTime ahora = disponibilidadComercioService.ahora().truncatedTo(ChronoUnit.SECONDS);
         if (!ComercioActivoService.esOperativo(comercio.getEstado())) {

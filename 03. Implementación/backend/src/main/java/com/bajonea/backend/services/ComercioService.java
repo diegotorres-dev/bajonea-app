@@ -23,6 +23,9 @@ import com.bajonea.backend.repositories.HistorialEstadoComercioRepository;
 import com.bajonea.backend.repositories.HorarioRepository;
 import com.bajonea.backend.util.ComercioValidaciones;
 import com.bajonea.backend.util.TextoUtils;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -41,12 +44,17 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class ComercioService {
 
+    static final String MENSAJE_COMERCIO_CERRADO = "Este comercio está cerrado en este momento";
+
     private final ComercioRepository comercioRepository;
     private final DireccionRepository direccionRepository;
     private final HorarioRepository horarioRepository;
     private final HistorialEstadoComercioRepository historialEstadoComercioRepository;
     private final CloudinaryService cloudinaryService;
     private final DisponibilidadComercioService disponibilidadComercioService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public ComercioResponseDTO verPerfil(Integer comercioId) {
         Comercio comercio = obtenerComercio(comercioId);
@@ -82,8 +90,11 @@ public class ComercioService {
         return aResponseDTO(comercio);
     }
 
+    private static final List<EstadoComercio> ESTADOS_VISIBLES_EN_CATALOGO = List.of(
+            EstadoComercio.APTO_VENTA, EstadoComercio.CERRADO_TEMPORALMENTE);
+
     public List<ComercioPublicoResponseDTO> listarAprobados() {
-        return comercioRepository.findByEstado(EstadoComercio.APTO_VENTA).stream()
+        return comercioRepository.findByEstadoIn(ESTADOS_VISIBLES_EN_CATALOGO).stream()
                 .map(this::aPublicoResponseDTO)
                 .toList();
     }
@@ -94,15 +105,19 @@ public class ComercioService {
 
     /**
      * Misma validación con el estado y el cierre manual ya leídos por quien llama (por ejemplo bajo bloqueo
-     * compartido, en la creación de un pedido) en vez de los que tenga cargados la entidad. Orden: estado,
-     * cierre manual y horario.
+     * compartido, en la creación de un pedido) en vez de los que tenga cargados la entidad. Orden: cierre por
+     * bloqueo del Dueño ({@code CERRADO_TEMPORALMENTE}, mismo texto que el cierre manual para no revelar el
+     * bloqueo), resto de los estados, cierre manual y horario.
      */
     public void validarAceptaPedidos(Comercio comercio, EstadoComercio estadoActual, boolean cerradoManualmente) {
+        if (estadoActual == EstadoComercio.CERRADO_TEMPORALMENTE) {
+            throw new ConflictoDeNegocioException(MENSAJE_COMERCIO_CERRADO);
+        }
         if (estadoActual != EstadoComercio.APTO_VENTA) {
             throw new ConflictoDeNegocioException("Este comercio no está aceptando pedidos en este momento");
         }
         if (cerradoManualmente) {
-            throw new ConflictoDeNegocioException("Este comercio está cerrado en este momento");
+            throw new ConflictoDeNegocioException(MENSAJE_COMERCIO_CERRADO);
         }
         List<Horario> horarios = horarioRepository.findByComercioId(comercio.getId());
         if (!disponibilidadComercioService.dentroDeFranja(horarios, disponibilidadComercioService.ahora())) {
@@ -113,7 +128,7 @@ public class ComercioService {
 
     public ComercioPublicoResponseDTO buscarAprobadoPorId(Integer comercioId) {
         Comercio comercio = comercioRepository.findById(comercioId)
-                .filter(c -> c.getEstado() == EstadoComercio.APTO_VENTA)
+                .filter(c -> ESTADOS_VISIBLES_EN_CATALOGO.contains(c.getEstado()))
                 .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
         return aPublicoResponseDTO(comercio);
     }
@@ -162,6 +177,22 @@ public class ComercioService {
             registrarTransicionAutomatica(comercio, EstadoComercio.APTO_VENTA, EstadoComercio.APROBADO,
                     "Desvinculación de cuenta de Mercado Pago");
         }
+    }
+
+    /**
+     * Bloqueo de cuenta del Dueño: lleva el comercio de {@code APTO_VENTA} a {@code CERRADO_TEMPORALMENTE}. Toma la
+     * fila con {@code refresh} + {@code PESSIMISTIC_WRITE} (una fila por clave primaria, sin tocar los demás
+     * comercios del Dueño) para decidir sobre el estado real y no sobre la foto de la transacción: si una
+     * desvinculación de Mercado Pago lo pasó a {@code APROBADO} en el medio no se toca, y si una vinculación lo
+     * acaba de pasar a {@code APTO_VENTA} sí. Devuelve {@code true} si hizo la transición.
+     */
+    public boolean cerrarTemporalmentePorBloqueoDeCuenta(Comercio comercio, String motivo) {
+        entityManager.refresh(comercio, LockModeType.PESSIMISTIC_WRITE);
+        if (comercio.getEstado() != EstadoComercio.APTO_VENTA) {
+            return false;
+        }
+        registrarTransicionAutomatica(comercio, EstadoComercio.APTO_VENTA, EstadoComercio.CERRADO_TEMPORALMENTE, motivo);
+        return true;
     }
 
     /**
@@ -258,7 +289,9 @@ public class ComercioService {
                 comercio.getTipoComercio(),
                 comercio.isAceptaDelivery(),
                 comercio.isAceptaRetiro(),
-                comercio.getEstado(),
+                // Siempre APTO_VENTA, también para un CERRADO_TEMPORALMENTE: el público no debe enterarse de que
+                // el Dueño está bloqueado; lo que ve de un cierre es estadoApertura.
+                EstadoComercio.APTO_VENTA,
                 comercio.getDueno().getPersonaJuridica().getRazonSocial(),
                 comercio.getDueno().getPersonaJuridica().getCuit(),
                 direccionDTO,

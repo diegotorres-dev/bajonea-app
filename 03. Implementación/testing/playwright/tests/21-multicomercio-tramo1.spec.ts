@@ -393,10 +393,15 @@ test.describe('Multi-comercio, tramo 1: resolución del comercio activo y aislam
     }
   });
 
-  test('bloqueo y restauración de cuenta con dos comercios: sin 500, sin perder el contador y respetando la cuenta de Mercado Pago', async ({ request }) => {
+  test('bloqueo y restauración de cuenta con dos comercios: sin 500, sin perder el contador, sin tocar los APROBADO sin cobro y respetando la cuenta de Mercado Pago', async ({ request }) => {
     const w = await prepararDueno(request, localidadId, adminToken, 2, false);
     const duenoId = w.sesion.usuario.id;
+    const [primero, clon] = w.comercioIds;
     expect(estadosDelDueno(duenoId)).toEqual(['APROBADO', 'APROBADO']);
+    const historialPrimeroInicial = historialDe(primero);
+    expect(historialPrimeroInicial).toHaveLength(1);
+    expect(historialPrimeroInicial[0]).toMatch(/^PENDIENTE>APROBADO\|\d+\|$/);
+    expect(historialDe(clon)).toEqual([]);
 
     for (let intento = 1; intento <= 3; intento += 1) {
       const fallido = await apiPost(request, '/auth/login', { nombreUsuario: w.nombreUsuario, password: 'ClaveIncorrecta1' });
@@ -404,14 +409,9 @@ test.describe('Multi-comercio, tramo 1: resolución del comercio activo y aislam
     }
     expect(sql(`SELECT estado FROM usuario WHERE id = ${duenoId};`)).toBe('BLOQUEADO');
     expect(sql(`SELECT intentos_fallidos FROM usuario WHERE id = ${duenoId};`)).toBe('3');
-    expect(estadosDelDueno(duenoId)).toEqual(['CERRADO_TEMPORALMENTE', 'CERRADO_TEMPORALMENTE']);
-
-    const [primero, clon] = w.comercioIds;
-    const historialPrimero = historialDe(primero);
-    expect(historialPrimero[0]).toMatch(/^PENDIENTE>APROBADO\|\d+\|$/);
-    expect(historialPrimero.slice(1)).toEqual([`APROBADO>CERRADO_TEMPORALMENTE|sin-admin|${MOTIVO_BLOQUEO}`]);
-    expect(historialDe(clon)).toEqual([`APROBADO>CERRADO_TEMPORALMENTE|sin-admin|${MOTIVO_BLOQUEO}`]);
-    expect(sql(`SELECT COUNT(*) FROM comercio WHERE dueno_id = ${duenoId} AND fecha_modificacion IS NOT NULL;`)).toBe('2');
+    expect(estadosDelDueno(duenoId)).toEqual(['APROBADO', 'APROBADO']);
+    expect(historialDe(primero)).toEqual(historialPrimeroInicial);
+    expect(historialDe(clon)).toEqual([]);
 
     const bloqueado = await apiPost(request, '/auth/login', { nombreUsuario: w.nombreUsuario, password: w.password });
     expect(bloqueado.status).toBe(409);
@@ -426,11 +426,8 @@ test.describe('Multi-comercio, tramo 1: resolución del comercio activo y aislam
     await recuperar('Testing456');
     expect(sql(`SELECT estado FROM usuario WHERE id = ${duenoId};`)).toBe('ACTIVO');
     expect(estadosDelDueno(duenoId)).toEqual(['APROBADO', 'APROBADO']);
-    expect(historialDe(clon)).toEqual([
-      `APROBADO>CERRADO_TEMPORALMENTE|sin-admin|${MOTIVO_BLOQUEO}`,
-      `CERRADO_TEMPORALMENTE>APROBADO|sin-admin|${MOTIVO_RESTAURACION_RECUPERACION}`,
-    ]);
-    expect(historialDe(primero).slice(1)).toEqual(historialDe(clon));
+    expect(historialDe(primero)).toEqual(historialPrimeroInicial);
+    expect(historialDe(clon)).toEqual([]);
 
     await vincularMercadoPagoSimuladoTest(request, duenoId);
     expect(estadosDelDueno(duenoId)).toEqual(['APTO_VENTA', 'APTO_VENTA']);
@@ -440,17 +437,20 @@ test.describe('Multi-comercio, tramo 1: resolución del comercio activo y aislam
       expect(fallido.status, `segundo bloqueo, intento ${intento}`).toBe(401);
     }
     expect(estadosDelDueno(duenoId)).toEqual(['CERRADO_TEMPORALMENTE', 'CERRADO_TEMPORALMENTE']);
+    expect(historialDe(clon)).toEqual([
+      `APROBADO>APTO_VENTA|sin-admin|${MOTIVO_MP}`,
+      `APTO_VENTA>CERRADO_TEMPORALMENTE|sin-admin|${MOTIVO_BLOQUEO}`,
+    ]);
+    expect(historialDe(primero).slice(historialPrimeroInicial.length)).toEqual(historialDe(clon));
 
     await recuperar('Testing789');
     expect(estadosDelDueno(duenoId)).toEqual(['APTO_VENTA', 'APTO_VENTA']);
     expect(historialDe(clon)).toEqual([
-      `APROBADO>CERRADO_TEMPORALMENTE|sin-admin|${MOTIVO_BLOQUEO}`,
-      `CERRADO_TEMPORALMENTE>APROBADO|sin-admin|${MOTIVO_RESTAURACION_RECUPERACION}`,
       `APROBADO>APTO_VENTA|sin-admin|${MOTIVO_MP}`,
       `APTO_VENTA>CERRADO_TEMPORALMENTE|sin-admin|${MOTIVO_BLOQUEO}`,
       `CERRADO_TEMPORALMENTE>APTO_VENTA|sin-admin|${MOTIVO_RESTAURACION_RECUPERACION}`,
     ]);
-    expect(historialDe(primero).slice(1)).toEqual(historialDe(clon));
+    expect(historialDe(primero).slice(historialPrimeroInicial.length)).toEqual(historialDe(clon));
   });
 
   test('reactivación de cuenta con dos comercios inactivos: los restaura y deja el historial con su motivo', async ({ request }) => {

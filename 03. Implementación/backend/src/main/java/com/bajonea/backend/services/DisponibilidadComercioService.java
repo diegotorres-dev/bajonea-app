@@ -109,15 +109,16 @@ public class DisponibilidadComercioService {
     public Disponibilidad calcular(Comercio comercio, List<Horario> horarios, LocalDateTime ahora) {
         boolean dentro = dentroDeFranja(horarios, ahora);
         boolean cerrado = comercio.isCerradoManualmente();
-        boolean abierto = !cerrado && dentro;
+        boolean bloqueadoPorCuenta = comercio.getEstado() == EstadoComercio.CERRADO_TEMPORALMENTE;
+        boolean abierto = !cerrado && !bloqueadoPorCuenta && dentro;
         String texto = null;
-        if (!abierto) {
+        if (!abierto && !bloqueadoPorCuenta) {
             texto = momentoDeReferencia(comercio, ahora)
                     .flatMap(desde -> proximoInicioDeFranja(horarios, desde))
                     .map(inicio -> textoReapertura(inicio, ahora))
                     .orElse(null);
         }
-        EstadoApertura estadoApertura = cerrado
+        EstadoApertura estadoApertura = cerrado || bloqueadoPorCuenta
                 ? EstadoApertura.CERRADO_TEMPORALMENTE
                 : dentro ? EstadoApertura.ABIERTO : EstadoApertura.CERRADO_HORARIO;
         return new Disponibilidad(cerrado, abierto, puedeCambiarCierre(comercio.getEstado(), horarios, ahora), texto,

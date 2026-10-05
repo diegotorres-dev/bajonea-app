@@ -26,6 +26,7 @@ import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.HistorialCierreComercioRepository;
 import com.bajonea.backend.repositories.HorarioRepository;
+import com.bajonea.backend.repositories.UsuarioRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import java.time.LocalDate;
@@ -48,6 +49,7 @@ class CierreComercioServiceTest {
     private ComercioRepository comercioRepository;
     private HorarioRepository horarioRepository;
     private HistorialCierreComercioRepository historialRepository;
+    private UsuarioRepository usuarioRepository;
     private EntityManager entityManager;
     private LocalDateTime ahora;
     private CierreComercioService service;
@@ -58,6 +60,7 @@ class CierreComercioServiceTest {
         comercioRepository = mock(ComercioRepository.class);
         horarioRepository = mock(HorarioRepository.class);
         historialRepository = mock(HistorialCierreComercioRepository.class);
+        usuarioRepository = mock(UsuarioRepository.class);
         entityManager = mock(EntityManager.class);
         ahora = LUNES.atTime(11, 0, 30);
         DisponibilidadComercioService disponibilidad = new DisponibilidadComercioService(horarioRepository, historialRepository) {
@@ -66,7 +69,8 @@ class CierreComercioServiceTest {
                 return ahora;
             }
         };
-        service = new CierreComercioService(comercioRepository, horarioRepository, historialRepository, disponibilidad);
+        service = new CierreComercioService(comercioRepository, horarioRepository, historialRepository, disponibilidad,
+                usuarioRepository);
         ReflectionTestUtils.setField(service, "entityManager", entityManager);
 
         comercio = Comercio.builder().id(COMERCIO_ID).estado(EstadoComercio.APTO_VENTA).build();
@@ -122,6 +126,47 @@ class CierreComercioServiceTest {
         InOrder orden = inOrder(entityManager, comercioRepository);
         orden.verify(entityManager).refresh(comercio, LockModeType.PESSIMISTIC_WRITE);
         orden.verify(comercioRepository).save(comercio);
+    }
+
+    @Test
+    void tomaLaFilaDelUsuarioQueActuaAntesDeBloquearElComercio() {
+        service.cerrar(COMERCIO_ID, DUENO_ID, ActorCierre.DUENO);
+
+        InOrder orden = inOrder(usuarioRepository, entityManager);
+        orden.verify(usuarioRepository).leerIdConBloqueoCompartido(DUENO_ID);
+        orden.verify(entityManager).refresh(comercio, LockModeType.PESSIMISTIC_WRITE);
+    }
+
+    @Test
+    void abrirTomaElUsuarioAntesDelComercioIgualQueCerrar() {
+        cierreVigenteEn(LUNES.atTime(10, 30));
+
+        service.abrir(COMERCIO_ID, DUENO_ID, ActorCierre.EMPLEADO);
+
+        InOrder orden = inOrder(usuarioRepository, entityManager);
+        orden.verify(usuarioRepository).leerIdConBloqueoCompartido(DUENO_ID);
+        orden.verify(entityManager).refresh(comercio, LockModeType.PESSIMISTIC_WRITE);
+    }
+
+    @Test
+    void laReaperturaAutomaticaNoTomaNingunUsuario() {
+        cierreVigenteEn(LUNES.atTime(11, 0));
+
+        service.reabrirSiVencido(COMERCIO_ID, LUNES.plusDays(2).atTime(12, 0));
+
+        verify(usuarioRepository, never()).leerIdConBloqueoCompartido(any());
+    }
+
+    @Test
+    void unComercioBloqueadoPorLaCuentaDelDuenoNoSePuedeCerrarNiAbrir() {
+        comercio.setEstado(EstadoComercio.CERRADO_TEMPORALMENTE);
+
+        ConflictoDeNegocioException ex = assertThrows(ConflictoDeNegocioException.class,
+                () -> service.cerrar(COMERCIO_ID, DUENO_ID, ActorCierre.DUENO));
+
+        assertEquals("Este comercio no está operativo", ex.getMessage());
+        assertThrows(ConflictoDeNegocioException.class, () -> service.abrir(COMERCIO_ID, DUENO_ID, ActorCierre.DUENO));
+        verify(historialRepository, never()).save(any());
     }
 
     @Test

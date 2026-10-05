@@ -1174,6 +1174,7 @@ test.describe('Multi-comercio, tramo 3A: corrección y re-solicitud de comercios
 
     test('el bloqueo y la restauración de cuenta no lo mueven ni le agregan historial', async ({ request }) => {
       const base = await prepararAprobado(request);
+      await marcarAptoVenta(request, base.comercioId);
       const clonId = await clonarConRedes(request, base.comercioId, `Definitivo ${sufijoUnico()}`, 'RECHAZO_DEFINITIVO');
       const rechazadoId = await clonarConRedes(request, base.comercioId, `Rechazado ${sufijoUnico()}`, 'RECHAZADO');
 

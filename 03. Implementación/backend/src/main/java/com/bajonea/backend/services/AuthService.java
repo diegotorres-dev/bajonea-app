@@ -194,7 +194,15 @@ public class AuthService {
         obtenerTokenValidoPorCodigo(request.getEmail(), request.getCodigo(), TipoToken.RECUPERACION_PASSWORD);
     }
 
+    /**
+     * Toma primero la fila del usuario ({@code SELECT ... FOR UPDATE}, mismo patrón y mismo orden que el login):
+     * dos confirmaciones simultáneas del mismo código se serializan y la segunda ya encuentra el código usado. Sin
+     * este bloqueo las dos leían el código pendiente, las dos terminaban en {@code 200} y cada una restauraba los
+     * comercios del Dueño, duplicando las filas de historial (lo encontró {@code stress-locks-tramoC2.mjs}, escenario
+     * 4). Si el email no existe no hay fila que bloquear y sigue el mismo error genérico de siempre.
+     */
     public void confirmarRecuperacionPassword(ConfirmarRecuperacionPasswordRequestDTO request) {
+        usuarioRepository.findByEmailConBloqueo(request.getEmail());
         Token tokenEntity = obtenerTokenValidoPorCodigo(
                 request.getEmail(), request.getCodigo(), TipoToken.RECUPERACION_PASSWORD);
         consumirToken(tokenEntity);
@@ -366,12 +374,18 @@ public class AuthService {
     }
 
     /**
-     * Cada comercio operativo pasa a {@code CERRADO_TEMPORALMENTE} con una fila en
-     * {@code historial_estado_comercio} (sin administrador, motivo fijo). La fila sale del estado que el
-     * comercio tiene en memoria: no hay ninguna consulta nueva que pueda fallar acá, y esto corre dentro
-     * de la transacción con {@code noRollbackFor} del intento fallido — un error del historial deshacería
-     * el contador y el bloqueo. Sin bloqueo de filas: una lectura común, para no cruzarse con la
-     * aprobación de un comercio pendiente del mismo Dueño (ver docs/APRENDIZAJES-TECNICOS.md).
+     * Solo los comercios que venden ({@code APTO_VENTA}) pasan a {@code CERRADO_TEMPORALMENTE}, cada uno con una
+     * fila en {@code historial_estado_comercio} (sin administrador, motivo fijo). Un {@code APROBADO} (sin cuenta
+     * de cobro) no está en el catálogo ni recibe pedidos, así que no hay nada que cerrar; los demás estados
+     * tampoco se tocan. Los candidatos salen de una lectura común (foto de la transacción) y cada uno se vuelve a
+     * leer con bloqueo por clave primaria ({@code ComercioService.cerrarTemporalmentePorBloqueoDeCuenta}), así la
+     * decisión usa el estado real y no el de la foto; un {@code APROBADO} de la foto entra como candidato por si
+     * una vinculación de Mercado Pago lo acaba de pasar a {@code APTO_VENTA}. Nunca se bloquean todos los
+     * comercios del Dueño de una vez: eso esperaría la fila de un comercio pendiente que la aprobación ya tiene
+     * mientras la aprobación espera el {@code usuario} (bloqueado acá) para la notificación (ver
+     * docs/APRENDIZAJES-TECNICOS.md). El bloqueo de cada fila se serializa con la creación de un pedido, que
+     * lee el comercio con bloqueo compartido: o el pedido nace antes del bloqueo, o ve
+     * {@code CERRADO_TEMPORALMENTE} y se rechaza.
      */
     private void propagarBloqueoAComercio(Usuario usuario) {
         if (usuario.getRol() != RolUsuario.DUENO) {
@@ -379,8 +393,7 @@ public class AuthService {
         }
         for (Comercio comercio : comercioRepository.findByDuenoIdOrderByFechaRegistroAscIdAsc(usuario.getId())) {
             if (comercio.getEstado() == EstadoComercio.APROBADO || comercio.getEstado() == EstadoComercio.APTO_VENTA) {
-                comercioService.registrarTransicionAutomatica(comercio, comercio.getEstado(),
-                        EstadoComercio.CERRADO_TEMPORALMENTE, MOTIVO_BLOQUEO_CUENTA);
+                comercioService.cerrarTemporalmentePorBloqueoDeCuenta(comercio, MOTIVO_BLOQUEO_CUENTA);
             }
         }
     }

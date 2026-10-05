@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
 
@@ -40,4 +41,14 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT u FROM Usuario u WHERE u.id = :id")
     Optional<Usuario> findByIdConBloqueo(Integer id);
+
+    /**
+     * Lectura con bloqueo compartido (una consulta nativa: MariaDB 10.4 no entiende el {@code FOR SHARE} que genera
+     * Hibernate, ver docs/APRENDIZAJES-TECNICOS.md) de la fila del usuario. La toma quien va a escribir una fila con
+     * clave foránea a este usuario (por ejemplo {@code historial_cierre_comercio.actor_usuario_id}) <b>antes</b> de
+     * bloquear la fila de otra tabla, para respetar el mismo orden que el login (usuario y después comercio) y no
+     * cruzarse con el bloqueo de cuenta por intentos fallidos.
+     */
+    @Query(value = "SELECT id FROM usuario WHERE id = :id LOCK IN SHARE MODE", nativeQuery = true)
+    Optional<Integer> leerIdConBloqueoCompartido(@Param("id") Integer id);
 }

@@ -24,6 +24,8 @@ import java.time.LocalTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class ComercioServiceValidarAceptaPedidosTest {
 
@@ -78,6 +80,43 @@ class ComercioServiceValidarAceptaPedidosTest {
 
         assertEquals(TEXTO_NO_ACEPTA, ex.getMessage());
         verify(horarioRepository, never()).findByComercioId(5);
+    }
+
+    @Test
+    void unComercioCerradoTemporalmentePorBloqueoDaElMismoTextoQueElCierreManualAntesQueElGenerico() {
+        ConflictoDeNegocioException ex = assertThrows(ConflictoDeNegocioException.class,
+                () -> service.validarAceptaPedidos(comercio, EstadoComercio.CERRADO_TEMPORALMENTE, false));
+
+        assertEquals(TEXTO_CIERRE_MANUAL, ex.getMessage());
+        verify(horarioRepository, never()).findByComercioId(5);
+    }
+
+    @Test
+    void elBloqueoGanaSobreElCierreManualYSobreElHorario() {
+        ahora = LUNES.atTime(20, 0);
+
+        ConflictoDeNegocioException ex = assertThrows(ConflictoDeNegocioException.class,
+                () -> service.validarAceptaPedidos(comercio, EstadoComercio.CERRADO_TEMPORALMENTE, true));
+
+        assertEquals(TEXTO_CIERRE_MANUAL, ex.getMessage());
+    }
+
+    @Test
+    void laVersionDeUnSoloArgumentoUsaElEstadoCerradoTemporalmenteDeLaEntidad() {
+        comercio.setEstado(EstadoComercio.CERRADO_TEMPORALMENTE);
+
+        ConflictoDeNegocioException ex = assertThrows(ConflictoDeNegocioException.class, () -> service.validarAceptaPedidos(comercio));
+
+        assertEquals(TEXTO_CIERRE_MANUAL, ex.getMessage());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = EstadoComercio.class, names = { "PENDIENTE", "APROBADO", "RECHAZADO", "SUSPENDIDO", "INACTIVO", "RECHAZO_DEFINITIVO" })
+    void losDemasEstadosSigueDandoElTextoGenerico(EstadoComercio estado) {
+        ConflictoDeNegocioException ex = assertThrows(ConflictoDeNegocioException.class,
+                () -> service.validarAceptaPedidos(comercio, estado, false));
+
+        assertEquals(TEXTO_NO_ACEPTA, ex.getMessage());
     }
 
     @Test

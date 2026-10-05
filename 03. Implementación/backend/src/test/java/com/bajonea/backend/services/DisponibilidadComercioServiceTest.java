@@ -221,4 +221,31 @@ class DisponibilidadComercioServiceTest {
         assertFalse(disponibilidad.abiertoAhora());
         assertNull(disponibilidad.textoReapertura());
     }
+
+    @Test
+    void unComercioCerradoTemporalmentePorBloqueoDelDuenoInformaCerradoTemporalmenteSinTextoDeReapertura() {
+        List<Horario> horarios = List.of(franja(DiaSemana.LUNES, "10:00", "14:00"), franja(DiaSemana.LUNES, "19:00", "23:00"));
+
+        Disponibilidad dentroDeFranja = service.calcular(comercio(EstadoComercio.CERRADO_TEMPORALMENTE, false), horarios, lunes("11:00"));
+        Disponibilidad fueraDeFranja = service.calcular(comercio(EstadoComercio.CERRADO_TEMPORALMENTE, false), horarios, lunes("16:00"));
+
+        for (Disponibilidad disponibilidad : List.of(dentroDeFranja, fueraDeFranja)) {
+            assertEquals(EstadoApertura.CERRADO_TEMPORALMENTE, disponibilidad.estadoApertura());
+            assertFalse(disponibilidad.abiertoAhora());
+            assertNull(disponibilidad.textoReapertura());
+            assertFalse(disponibilidad.puedeCambiarCierre());
+            assertFalse(disponibilidad.cerradoManualmente());
+        }
+    }
+
+    @Test
+    void elBloqueoNoBorraElCierreManualPrevioYAmbosSeInforman() {
+        List<Horario> horarios = List.of(franja(DiaSemana.LUNES, "10:00", "14:00"));
+
+        Disponibilidad disponibilidad = service.calcular(comercio(EstadoComercio.CERRADO_TEMPORALMENTE, true), horarios, lunes("11:00"));
+
+        assertTrue(disponibilidad.cerradoManualmente());
+        assertEquals(EstadoApertura.CERRADO_TEMPORALMENTE, disponibilidad.estadoApertura());
+        assertNull(disponibilidad.textoReapertura());
+    }
 }

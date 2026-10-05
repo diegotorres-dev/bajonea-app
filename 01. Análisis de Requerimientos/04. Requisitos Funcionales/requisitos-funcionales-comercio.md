@@ -57,11 +57,15 @@ comercios se encuentran en Requisitos Funcionales — Dueño.
   mismo Dueño.
 - **Inactivo:** el Dueño titular lleva 3 meses sin actividad. Se oculta del catálogo.
   Su información histórica, productos y pedidos se conservan en el sistema.
-- **Cerrado Temporalmente:** el Dueño titular del comercio está en estado Bloqueado.
-  Visible en el catálogo con indicador de "temporalmente cerrado" pero no puede recibir
-  pedidos. Se revierte automáticamente al desbloquear la cuenta del Dueño vía
-  recuperación de contraseña, restaurando a Aprobado todos los comercios de ese Dueño
-  que estuvieran en este estado.
+- **Cerrado Temporalmente:** el Dueño titular del comercio está en estado Bloqueado y el
+  comercio estaba en Apto para Venta. Un comercio Aprobado (sin cuenta de MercadoPago
+  vinculada) no cambia de estado: no está en el catálogo ni recibe pedidos, así que no hay
+  nada que cerrar. Visible en el catálogo con indicador de "temporalmente cerrado", sin
+  hora de reapertura, pero no puede recibir pedidos. Se revierte automáticamente al
+  desbloquear la cuenta del Dueño vía recuperación de contraseña, restaurando a Apto para
+  Venta (si el Dueño tiene la cuenta de MercadoPago vinculada) o a Aprobado (si no) todos
+  los comercios de ese Dueño que estuvieran en este estado. Un cierre manual hecho antes
+  del bloqueo sigue vigente al desbloquear.
 - **Cerrado Manualmente:** el comercio activó el cierre temporal desde su panel estando
   en estado Aprobado o Apto para Venta, con el Dueño en estado Activo y dentro de una
   franja de su horario de atención. Se representa mediante el campo
@@ -89,8 +93,15 @@ cumplen simultáneamente:
 
 Un comercio aparece en el catálogo con indicador **"temporalmente cerrado"** — y sin
 posibilidad de recibir pedidos — si se cumple alguna de estas condiciones:
-- Su estado es `CERRADO_TEMPORALMENTE` (Dueño titular bloqueado), o
-- Su estado es `APTO_VENTA` con `cerrado_manualmente = true` (cierre manual voluntario).
+- Su estado es `CERRADO_TEMPORALMENTE` (Dueño titular bloqueado), sin aviso de cuándo
+  reabre, o
+- Su estado es `APTO_VENTA` con `cerrado_manualmente = true` (cierre manual voluntario),
+  con el aviso de cuándo reabre.
+
+Para el público el estado de un comercio bloqueado se informa siempre como Apto para Venta,
+para no revelar que el Dueño está bloqueado. Si alguien intenta agregar un producto de un
+comercio cerrado temporalmente al carrito o confirmar su pedido, el sistema responde con
+el mismo mensaje del cierre manual ("Este comercio está cerrado en este momento").
 
 Un comercio `APTO_VENTA` fuera de todas las franjas de su horario se muestra como cerrado por
 horario, también con el aviso de cuándo reabre.

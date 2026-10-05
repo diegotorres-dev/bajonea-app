@@ -390,21 +390,24 @@ items.push(
   item('[exentos] Estado de Mercado Pago ignora el header de otro Dueño', req('GET', '/oauth/mercadopago/cuenta', { token: 'token_comercio_m', headers: { [HEADER]: '{{comercio_n_id}}' } }), [status(200)]),
 );
 
-const enCatalogo = (nombre, ambos) => item(nombre, req('GET', '/catalogo/comercios'), [
+const enCatalogo = (nombre, bloqueados) => item(nombre, req('GET', '/catalogo/comercios'), [
   status(200),
-  "const ids = pm.response.json().data.map((c) => c.id);",
-  ambos
-    ? "pm.test('Ambos comercios de M estan en el catalogo', () => { pm.expect(ids).to.include(Number(pm.environment.get('comercio_m_a_id'))); pm.expect(ids).to.include(Number(pm.environment.get('comercio_m_b_id'))); });"
-    : "pm.test('Ningun comercio de M esta en el catalogo', () => { pm.expect(ids).to.not.include(Number(pm.environment.get('comercio_m_a_id'))); pm.expect(ids).to.not.include(Number(pm.environment.get('comercio_m_b_id'))); });",
+  "const comercios = pm.response.json().data;",
+  "const delDueno = ['comercio_m_a_id', 'comercio_m_b_id'].map((clave) => comercios.find((c) => c.id === Number(pm.environment.get(clave))));",
+  "pm.test('Ambos comercios de M estan en el catalogo', () => pm.expect(delDueno.every((c) => c !== undefined)).to.eql(true));",
+  "pm.test('El estado publico es siempre APTO_VENTA', () => delDueno.forEach((c) => pm.expect(c.estado).to.eql('APTO_VENTA')));",
+  bloqueados
+    ? "pm.test('Ambos informan CERRADO_TEMPORALMENTE y no prometen reapertura', () => delDueno.forEach((c) => { pm.expect(c.estadoApertura).to.eql('CERRADO_TEMPORALMENTE'); pm.expect(c.textoReapertura).to.eql(null); }));"
+    : "pm.test('Ambos informan ABIERTO', () => delDueno.forEach((c) => pm.expect(c.estadoApertura).to.eql('ABIERTO')));",
 ]);
 
 items.push(
-  enCatalogo('[bloqueo] Antes: ambos comercios de M estan en el catalogo (APTO_VENTA)', true),
+  enCatalogo('[bloqueo] Antes: ambos comercios de M estan en el catalogo, abiertos (APTO_VENTA)', false),
   loginFallido('[bloqueo] Login de M con password incorrecta (intento 1/3)'),
   loginFallido('[bloqueo] Login de M con password incorrecta (intento 2/3)'),
   loginFallido('[bloqueo] Login de M con password incorrecta (intento 3/3): bloquea sin error 500'),
   item('[bloqueo] 4to intento con la password correcta: cuenta bloqueada', req('POST', '/auth/login', { body: { nombreUsuario: '{{comercioM_usuario}}', password: '{{comercioM_password}}' } }), [status(409)]),
-  enCatalogo('[bloqueo] Despues: ninguno de los dos comercios de M esta en el catalogo (CERRADO_TEMPORALMENTE)', false),
+  enCatalogo('[bloqueo] Despues: ambos comercios de M siguen en el catalogo, CERRADO_TEMPORALMENTE con estado publico APTO_VENTA y sin texto de reapertura', true),
   ...cicloRecuperacion('[bloqueo 1] Sin cuenta de MP', 'comercioM_password_nueva'),
   perfilEstado('[bloqueo 1] Comercio A restaurado a APROBADO (sin cuenta de Mercado Pago activa)', '{{comercio_m_a_id}}', 'APROBADO'),
   perfilEstado('[bloqueo 1] Comercio B restaurado a APROBADO (sin cuenta de Mercado Pago activa)', '{{comercio_m_b_id}}', 'APROBADO'),

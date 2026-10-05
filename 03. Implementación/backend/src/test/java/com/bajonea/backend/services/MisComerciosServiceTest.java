@@ -2,6 +2,7 @@ package com.bajonea.backend.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -139,5 +140,19 @@ class MisComerciosServiceTest {
         assertTrue(ComercioActivoService.esOperativo(EstadoComercio.APROBADO));
         assertTrue(ComercioActivoService.esOperativo(EstadoComercio.APTO_VENTA));
         assertFalse(ComercioActivoService.esOperativo(EstadoComercio.PENDIENTE));
+    }
+
+    @Test
+    void unComercioCerradoTemporalmentePorBloqueoNoEsOperativoNiPuedeCambiarElCierreNiPrometeReapertura() {
+        when(comercioRepository.findByDuenoIdOrderByFechaRegistroAscIdAsc(DUENO_ID))
+                .thenReturn(List.of(comercio(1, "Bloqueado", EstadoComercio.CERRADO_TEMPORALMENTE, LocalDateTime.now())));
+        when(notificacionRepository.contarNoLeidasPorComercio(DUENO_ID)).thenReturn(List.of());
+
+        MiComercioResponseDTO fila = service.listar(DUENO_ID).get(0);
+
+        assertFalse(fila.isOperativo());
+        assertFalse(fila.isPuedeCambiarCierre());
+        assertFalse(fila.isAbiertoAhora());
+        assertNull(fila.getTextoReapertura());
     }
 }

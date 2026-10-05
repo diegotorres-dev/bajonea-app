@@ -44,6 +44,9 @@ temporalmente cerrados.
   abiertos.
 - El detalle de un comercio cerrado muestra la misma etiqueta y cuándo reabre (por
   ejemplo, "Reabre hoy a las 19:00"), y no permite agregar productos al carrito.
+- Si el comercio está cerrado temporalmente sin fecha de regreso (por ejemplo, porque su
+  Dueño tiene la cuenta bloqueada), se ve con la misma etiqueta, sin aviso de cuándo
+  reabre, y tampoco permite agregar productos al carrito.
 - Si el comercio se cierra mientras estoy agregando un producto o confirmando mi pedido,
   el sistema me avisa con un mensaje claro y un botón para volver al catálogo.
 
