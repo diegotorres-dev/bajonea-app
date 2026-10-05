@@ -74,7 +74,8 @@ public class TestSupportService {
             throw new ConflictoDeNegocioException(
                     "Solo un comercio APROBADO puede pasar a APTO_VENTA, estado actual: " + comercio.getEstado());
         }
-        comercioService.activarAptoVenta(comercio);
+        boolean duenoBloqueado = comercioService.duenoBloqueadoConBloqueo(comercio.getDueno().getId());
+        comercioService.activarAptoVenta(comercio, duenoBloqueado, ComercioService.MOTIVO_BLOQUEO_VIGENTE_AL_VINCULAR);
     }
 
     /**
@@ -148,8 +149,9 @@ public class TestSupportService {
     @Transactional
     public void vincularCuentaMercadoPagoSimulada(Integer duenoId, String mpUserId) {
         String cuentaMp = mpUserId == null || mpUserId.isBlank() ? "test-mp-" + duenoId : mpUserId;
+        boolean duenoBloqueado = comercioService.duenoBloqueadoConBloqueo(duenoId);
         cuentaMercadoPagoService.vincular(duenoId, cuentaMp, "TEST-access-token-" + duenoId,
                 "TEST-refresh-token-" + duenoId, "TEST-public-key-" + duenoId, true, LocalDateTime.now().plusDays(1));
-        comercioService.activarAptoVenta(duenoId);
+        comercioService.activarAptoVenta(duenoId, duenoBloqueado);
     }
 }

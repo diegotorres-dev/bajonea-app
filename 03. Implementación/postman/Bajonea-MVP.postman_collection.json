@@ -64234,6 +64234,2614 @@
           ]
         }
       ]
+    },
+    {
+      "name": "55 - Cierre manual C3 (bloqueo vigente al aprobar y al vincular Mercado Pago, restauracion al desbloquear)",
+      "item": [
+        {
+          "name": "Login Administrador (sesion propia de esta carpeta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{admin_usuario}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('token_admin', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Dueño a",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "comercio"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razonSocial\": \"Bloqueo Vigente Postman a SRL\",\n  \"cuit\": \"30920800110\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Direccion fiscal C3 a 100\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Local Vigente a\",\n  \"descripcion\": \"Comercio generado por la coleccion de Postman (bloqueo vigente)\",\n  \"telefono\": \"+5492964555444\",\n  \"emailContacto\": \"contacto.c3ua@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": false,\n  \"aceptaRetiro\": true,\n  \"nombreUsuario\": \"{{c3_ua_usuario}}\",\n  \"email\": \"{{c3_ua_email}}\",\n  \"password\": \"{{c3_ua_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"800\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Carlos\",\n  \"apellidoRepresentante\": \"Sanchez\",\n  \"dniRepresentante\": \"30920801\",\n  \"telefonoRepresentante\": \"+5492964701103\",\n  \"fechaNacimientoRepresentante\": \"1988-04-04\",\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/postman-vigente-a.jpg\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/vigentec3a\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Dueño a",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{c3_ua_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{c3_ua_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c3_ua_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Dueño a",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{c3_ua_email}}\",\n  \"codigo\": \"{{c3_ua_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador busca el comercio pendiente del Dueño a",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/pendientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "pendientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.emailCuenta === pm.environment.get('c3_ua_email').toLowerCase());",
+                  "pm.test('El comercio del Dueño a esta pendiente', () => pm.expect(c).to.exist);",
+                  "pm.environment.set('c3_ua_com', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Dueño a",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c3_ua_usuario}}\",\n  \"password\": \"{{c3_ua_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c3_token_ua', pm.response.json().data.token);",
+                  "pm.environment.set('c3_ua_dueno', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dueño a vincula Mercado Pago (simulada)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/duenos/{{c3_ua_dueno}}/mercadopago-simulada?mpUserId=c3-cuenta-a",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "duenos",
+                "{{c3_ua_dueno}}",
+                "mercadopago-simulada"
+              ],
+              "query": [
+                {
+                  "key": "mpUserId",
+                  "value": "c3-cuenta-a"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador aprueba el comercio del Dueño a",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{c3_ua_com}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{c3_ua_com}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clonar el comercio de a como PENDIENTE (fixture de test)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{c3_ua_com}}/clonar?nombre=Pendiente-C3-Postman-a&estado=PENDIENTE",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{c3_ua_com}}",
+                "clonar"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "Pendiente-C3-Postman-a"
+                },
+                {
+                  "key": "estado",
+                  "value": "PENDIENTE"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('c3_ua_pend', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Dueño b",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "comercio"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razonSocial\": \"Bloqueo Vigente Postman b SRL\",\n  \"cuit\": \"30920800218\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Direccion fiscal C3 b 100\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Local Vigente b\",\n  \"descripcion\": \"Comercio generado por la coleccion de Postman (bloqueo vigente)\",\n  \"telefono\": \"+5492964555444\",\n  \"emailContacto\": \"contacto.c3ub@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": false,\n  \"aceptaRetiro\": true,\n  \"nombreUsuario\": \"{{c3_ub_usuario}}\",\n  \"email\": \"{{c3_ub_email}}\",\n  \"password\": \"{{c3_ub_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"800\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Carlos\",\n  \"apellidoRepresentante\": \"Sanchez\",\n  \"dniRepresentante\": \"30920802\",\n  \"telefonoRepresentante\": \"+5492964701103\",\n  \"fechaNacimientoRepresentante\": \"1988-04-04\",\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/postman-vigente-b.jpg\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/vigentec3b\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Dueño b",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{c3_ub_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{c3_ub_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c3_ub_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Dueño b",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{c3_ub_email}}\",\n  \"codigo\": \"{{c3_ub_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador busca el comercio pendiente del Dueño b",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/pendientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "pendientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.emailCuenta === pm.environment.get('c3_ub_email').toLowerCase());",
+                  "pm.test('El comercio del Dueño b esta pendiente', () => pm.expect(c).to.exist);",
+                  "pm.environment.set('c3_ub_com', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Dueño b",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c3_ub_usuario}}\",\n  \"password\": \"{{c3_ub_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c3_token_ub', pm.response.json().data.token);",
+                  "pm.environment.set('c3_ub_dueno', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador aprueba el comercio del Dueño b",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{c3_ub_com}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{c3_ub_com}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clonar el comercio de b como PENDIENTE (fixture de test)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{c3_ub_com}}/clonar?nombre=Pendiente-C3-Postman-b&estado=PENDIENTE",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{c3_ub_com}}",
+                "clonar"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "Pendiente-C3-Postman-b"
+                },
+                {
+                  "key": "estado",
+                  "value": "PENDIENTE"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('c3_ub_pend', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Dueño c",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "comercio"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razonSocial\": \"Bloqueo Vigente Postman c SRL\",\n  \"cuit\": \"30920800315\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Direccion fiscal C3 c 100\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Local Vigente c\",\n  \"descripcion\": \"Comercio generado por la coleccion de Postman (bloqueo vigente)\",\n  \"telefono\": \"+5492964555444\",\n  \"emailContacto\": \"contacto.c3uc@bajonea.test\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": false,\n  \"aceptaRetiro\": true,\n  \"nombreUsuario\": \"{{c3_uc_usuario}}\",\n  \"email\": \"{{c3_uc_email}}\",\n  \"password\": \"{{c3_uc_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"800\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Carlos\",\n  \"apellidoRepresentante\": \"Sanchez\",\n  \"dniRepresentante\": \"30920803\",\n  \"telefonoRepresentante\": \"+5492964701103\",\n  \"fechaNacimientoRepresentante\": \"1988-04-04\",\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/postman-vigente-c.jpg\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/vigentec3c\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Dueño c",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{c3_uc_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{c3_uc_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c3_uc_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Dueño c",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{c3_uc_email}}\",\n  \"codigo\": \"{{c3_uc_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador busca el comercio pendiente del Dueño c",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/pendientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "pendientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.emailCuenta === pm.environment.get('c3_uc_email').toLowerCase());",
+                  "pm.test('El comercio del Dueño c esta pendiente', () => pm.expect(c).to.exist);",
+                  "pm.environment.set('c3_uc_com', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Dueño c",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c3_uc_usuario}}\",\n  \"password\": \"{{c3_uc_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c3_token_uc', pm.response.json().data.token);",
+                  "pm.environment.set('c3_uc_dueno', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador aprueba el comercio del Dueño c",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{c3_uc_com}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{c3_uc_com}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clonar el comercio de c como PENDIENTE (fixture de test)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{c3_uc_com}}/clonar?nombre=Pendiente-C3-Postman-c&estado=PENDIENTE",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{c3_uc_com}}",
+                "clonar"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "Pendiente-C3-Postman-c"
+                },
+                {
+                  "key": "estado",
+                  "value": "PENDIENTE"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('c3_uc_pend', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[antes] El comercio de A esta a la venta (APTO_VENTA, abierto)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/catalogo/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "catalogo",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('c3_ua_com')));",
+                  "pm.test('Esta en el catalogo y abierto', () => { pm.expect(c).to.exist; pm.expect(c.estadoApertura).to.eql('ABIERTO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo a] Login del Dueño a con password incorrecta (intento 1/3)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c3_ua_usuario}}\",\n  \"password\": \"PasswordMalaXX1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Quedan 2 intentos', () => pm.expect(pm.response.json().data.intentosRestantes).to.eql(2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo a] Login del Dueño a con password incorrecta (intento 2/3)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c3_ua_usuario}}\",\n  \"password\": \"PasswordMalaXX1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Quedan 1 intentos', () => pm.expect(pm.response.json().data.intentosRestantes).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo a] Login del Dueño a con password incorrecta (intento 3/3): bloquea",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c3_ua_usuario}}\",\n  \"password\": \"PasswordMalaXX1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Quedan 0 intentos', () => pm.expect(pm.response.json().data.intentosRestantes).to.eql(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo a] 4to intento con la password correcta: cuenta bloqueada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c3_ua_usuario}}\",\n  \"password\": \"{{c3_ua_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo a] El Administrador aprueba un comercio pendiente de A con la cuenta bloqueada y Mercado Pago activo",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{c3_ua_pend}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{c3_ua_pend}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo a] El comercio recien aprobado queda CERRADO_TEMPORALMENTE, no a la venta",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/catalogo/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "catalogo",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('c3_ua_pend')));",
+                  "pm.test('Esta en el catalogo', () => pm.expect(c).to.exist);",
+                  "pm.test('Estado publico APTO_VENTA', () => pm.expect(c.estado).to.eql('APTO_VENTA'));",
+                  "pm.test('Informa CERRADO_TEMPORALMENTE', () => pm.expect(c.estadoApertura).to.eql('CERRADO_TEMPORALMENTE'));",
+                  "pm.test('No promete reapertura', () => pm.expect(c.textoReapertura).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo a] El comercio que ya vendia tambien queda CERRADO_TEMPORALMENTE",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/catalogo/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "catalogo",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('c3_ua_com')));",
+                  "pm.test('Esta en el catalogo', () => pm.expect(c).to.exist);",
+                  "pm.test('Estado publico APTO_VENTA', () => pm.expect(c.estado).to.eql('APTO_VENTA'));",
+                  "pm.test('Informa CERRADO_TEMPORALMENTE', () => pm.expect(c.estadoApertura).to.eql('CERRADO_TEMPORALMENTE'));",
+                  "pm.test('No promete reapertura', () => pm.expect(c.textoReapertura).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[recuperacion a] Solicitar recuperacion de contraseña",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/recuperar-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "recuperar-password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{c3_ua_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[recuperacion a] Bypass test - codigo de recuperacion",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token?email={{c3_ua_email}}&tipo=RECUPERACION_PASSWORD",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{c3_ua_email}}"
+                },
+                {
+                  "key": "tipo",
+                  "value": "RECUPERACION_PASSWORD"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c3_ua_codigo_rec', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[recuperacion a] Confirmar la recuperacion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/recuperar-password/confirmar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "recuperar-password",
+                "confirmar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{c3_ua_email}}\",\n  \"codigo\": \"{{c3_ua_codigo_rec}}\",\n  \"nuevaPassword\": \"Postman456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[recuperacion a] Login del Dueño a con la contraseña nueva",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c3_ua_usuario}}\",\n  \"password\": \"Postman456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c3_token_ua', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[restaurado a] Los dos comercios de A vuelven a APTO_VENTA",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c3_token_ua}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/mis-comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "mis-comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const estados = (variable) => pm.response.json().data.find((x) => x.id === Number(pm.environment.get(variable))).estado;",
+                  "pm.test('c3_ua_com queda APTO_VENTA', () => pm.expect(estados('c3_ua_com')).to.eql('APTO_VENTA'));",
+                  "pm.test('c3_ua_pend queda APTO_VENTA', () => pm.expect(estados('c3_ua_pend')).to.eql('APTO_VENTA'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[restaurado a] El comercio recien aprobado queda abierto en el catalogo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/catalogo/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "catalogo",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('c3_ua_pend')));",
+                  "pm.test('Abierto otra vez', () => { pm.expect(c).to.exist; pm.expect(c.estadoApertura).to.eql('ABIERTO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo b] Login del Dueño b con password incorrecta (intento 1/3)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c3_ub_usuario}}\",\n  \"password\": \"PasswordMalaXX1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Quedan 2 intentos', () => pm.expect(pm.response.json().data.intentosRestantes).to.eql(2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo b] Login del Dueño b con password incorrecta (intento 2/3)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c3_ub_usuario}}\",\n  \"password\": \"PasswordMalaXX1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Quedan 1 intentos', () => pm.expect(pm.response.json().data.intentosRestantes).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo b] Login del Dueño b con password incorrecta (intento 3/3): bloquea",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c3_ub_usuario}}\",\n  \"password\": \"PasswordMalaXX1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Quedan 0 intentos', () => pm.expect(pm.response.json().data.intentosRestantes).to.eql(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo b] 4to intento con la password correcta: cuenta bloqueada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c3_ub_usuario}}\",\n  \"password\": \"{{c3_ub_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo b] Dueño B (bloqueado) vincula Mercado Pago (simulada)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/duenos/{{c3_ub_dueno}}/mercadopago-simulada?mpUserId=c3-cuenta-b",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "duenos",
+                "{{c3_ub_dueno}}",
+                "mercadopago-simulada"
+              ],
+              "query": [
+                {
+                  "key": "mpUserId",
+                  "value": "c3-cuenta-b"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo b] Vincular con la cuenta bloqueada deja al comercio de B CERRADO_TEMPORALMENTE, no a la venta",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/catalogo/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "catalogo",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('c3_ub_com')));",
+                  "pm.test('Esta en el catalogo', () => pm.expect(c).to.exist);",
+                  "pm.test('Estado publico APTO_VENTA', () => pm.expect(c.estado).to.eql('APTO_VENTA'));",
+                  "pm.test('Informa CERRADO_TEMPORALMENTE', () => pm.expect(c.estadoApertura).to.eql('CERRADO_TEMPORALMENTE'));",
+                  "pm.test('No promete reapertura', () => pm.expect(c.textoReapertura).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo b] El Administrador aprueba un comercio pendiente de B con la cuenta bloqueada y la cuenta de cobro vinculada",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{c3_ub_pend}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{c3_ub_pend}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo b] El comercio recien aprobado de B queda CERRADO_TEMPORALMENTE",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/catalogo/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "catalogo",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('c3_ub_pend')));",
+                  "pm.test('Esta en el catalogo', () => pm.expect(c).to.exist);",
+                  "pm.test('Estado publico APTO_VENTA', () => pm.expect(c.estado).to.eql('APTO_VENTA'));",
+                  "pm.test('Informa CERRADO_TEMPORALMENTE', () => pm.expect(c.estadoApertura).to.eql('CERRADO_TEMPORALMENTE'));",
+                  "pm.test('No promete reapertura', () => pm.expect(c.textoReapertura).to.eql(null));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[recuperacion b] Solicitar recuperacion de contraseña",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/recuperar-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "recuperar-password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{c3_ub_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[recuperacion b] Bypass test - codigo de recuperacion",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token?email={{c3_ub_email}}&tipo=RECUPERACION_PASSWORD",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{c3_ub_email}}"
+                },
+                {
+                  "key": "tipo",
+                  "value": "RECUPERACION_PASSWORD"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c3_ub_codigo_rec', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[recuperacion b] Confirmar la recuperacion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/recuperar-password/confirmar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "recuperar-password",
+                "confirmar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{c3_ub_email}}\",\n  \"codigo\": \"{{c3_ub_codigo_rec}}\",\n  \"nuevaPassword\": \"Postman456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[recuperacion b] Login del Dueño b con la contraseña nueva",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c3_ub_usuario}}\",\n  \"password\": \"Postman456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c3_token_ub', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[restaurado b] Los dos comercios de B vuelven a APTO_VENTA por la cuenta de cobro vinculada",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c3_token_ub}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/mis-comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "mis-comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const estados = (variable) => pm.response.json().data.find((x) => x.id === Number(pm.environment.get(variable))).estado;",
+                  "pm.test('c3_ub_com queda APTO_VENTA', () => pm.expect(estados('c3_ub_com')).to.eql('APTO_VENTA'));",
+                  "pm.test('c3_ub_pend queda APTO_VENTA', () => pm.expect(estados('c3_ub_pend')).to.eql('APTO_VENTA'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo c] Login del Dueño c con password incorrecta (intento 1/3)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c3_uc_usuario}}\",\n  \"password\": \"PasswordMalaXX1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Quedan 2 intentos', () => pm.expect(pm.response.json().data.intentosRestantes).to.eql(2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo c] Login del Dueño c con password incorrecta (intento 2/3)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c3_uc_usuario}}\",\n  \"password\": \"PasswordMalaXX1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Quedan 1 intentos', () => pm.expect(pm.response.json().data.intentosRestantes).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo c] Login del Dueño c con password incorrecta (intento 3/3): bloquea",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c3_uc_usuario}}\",\n  \"password\": \"PasswordMalaXX1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Quedan 0 intentos', () => pm.expect(pm.response.json().data.intentosRestantes).to.eql(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo c] 4to intento con la password correcta: cuenta bloqueada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c3_uc_usuario}}\",\n  \"password\": \"{{c3_uc_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo c] El Administrador aprueba un comercio pendiente de C (sin cuenta de cobro) con la cuenta bloqueada",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{c3_uc_pend}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{c3_uc_pend}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[bloqueo c] El comercio recien aprobado de C queda APROBADO: no esta en el catalogo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/catalogo/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "catalogo",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No esta en el catalogo', () => pm.expect(pm.response.json().data.map((x) => x.id)).to.not.include(Number(pm.environment.get('c3_uc_pend'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[recuperacion c] Solicitar recuperacion de contraseña",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/recuperar-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "recuperar-password"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{c3_uc_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[recuperacion c] Bypass test - codigo de recuperacion",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token?email={{c3_uc_email}}&tipo=RECUPERACION_PASSWORD",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{c3_uc_email}}"
+                },
+                {
+                  "key": "tipo",
+                  "value": "RECUPERACION_PASSWORD"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c3_uc_codigo_rec', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[recuperacion c] Confirmar la recuperacion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/recuperar-password/confirmar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "recuperar-password",
+                "confirmar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{c3_uc_email}}\",\n  \"codigo\": \"{{c3_uc_codigo_rec}}\",\n  \"nuevaPassword\": \"Postman456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[recuperacion c] Login del Dueño c con la contraseña nueva",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{c3_uc_usuario}}\",\n  \"password\": \"Postman456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('c3_token_uc', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[restaurado c] Los dos comercios de C siguen APROBADO (sin cuenta de cobro no hay nada que restaurar)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{c3_token_uc}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/mis-comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "mis-comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const estados = (variable) => pm.response.json().data.find((x) => x.id === Number(pm.environment.get(variable))).estado;",
+                  "pm.test('c3_uc_com queda APROBADO', () => pm.expect(estados('c3_uc_com')).to.eql('APROBADO'));",
+                  "pm.test('c3_uc_pend queda APROBADO', () => pm.expect(estados('c3_uc_pend')).to.eql('APROBADO'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "event": [

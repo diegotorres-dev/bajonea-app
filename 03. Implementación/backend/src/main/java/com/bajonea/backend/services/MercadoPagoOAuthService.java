@@ -118,6 +118,7 @@ public class MercadoPagoOAuthService {
         TokenResponse respuesta = intercambiarCodigoPorToken(code, intento.getCodigoVerificacion());
 
         Integer duenoId = intento.getDueno().getId();
+        boolean duenoBloqueado = comercioService.duenoBloqueadoConBloqueo(duenoId);
         cuentaMercadoPagoService.vincular(
                 duenoId,
                 String.valueOf(respuesta.userId()),
@@ -127,7 +128,7 @@ public class MercadoPagoOAuthService {
                 mercadoPagoConfig.isTestToken(),
                 LocalDateTime.now().plusSeconds(respuesta.expiresIn() != null ? respuesta.expiresIn() : 0));
 
-        comercioService.activarAptoVenta(duenoId);
+        comercioService.activarAptoVenta(duenoId, duenoBloqueado);
     }
 
     /**

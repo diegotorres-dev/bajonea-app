@@ -51,4 +51,13 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
      */
     @Query(value = "SELECT id FROM usuario WHERE id = :id LOCK IN SHARE MODE", nativeQuery = true)
     Optional<Integer> leerIdConBloqueoCompartido(@Param("id") Integer id);
+
+    /**
+     * Estado de la cuenta leído con bloqueo compartido (devuelve lo último confirmado, no la foto de la
+     * transacción). Lo toma quien va a dejar un comercio del Dueño a la venta (aprobación, vinculación de Mercado
+     * Pago) <b>antes</b> de bloquear la cuenta de cobro y el comercio, para respetar el orden usuario, cuenta,
+     * comercio y decidir sin carrera contra un bloqueo de cuenta que se confirma en el medio.
+     */
+    @Query(value = "SELECT estado FROM usuario WHERE id = :id LOCK IN SHARE MODE", nativeQuery = true)
+    Optional<String> leerEstadoConBloqueoCompartido(@Param("id") Integer id);
 }

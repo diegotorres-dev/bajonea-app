@@ -18,6 +18,7 @@ import com.bajonea.backend.repositories.DireccionRepository;
 import com.bajonea.backend.repositories.HistorialCierreComercioRepository;
 import com.bajonea.backend.repositories.HistorialEstadoComercioRepository;
 import com.bajonea.backend.repositories.HorarioRepository;
+import com.bajonea.backend.repositories.UsuarioRepository;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -51,7 +52,8 @@ class ComercioServiceValidarAceptaPedidosTest {
             }
         };
         service = new ComercioService(mock(ComercioRepository.class), mock(DireccionRepository.class), horarioRepository,
-                mock(HistorialEstadoComercioRepository.class), mock(CloudinaryService.class), disponibilidad);
+                mock(HistorialEstadoComercioRepository.class), mock(CloudinaryService.class), disponibilidad,
+                mock(UsuarioRepository.class));
         comercio = Comercio.builder().id(5).estado(EstadoComercio.APTO_VENTA).build();
         when(horarioRepository.findByComercioId(5)).thenReturn(List.of(
                 Horario.builder().diaSemana(DiaSemana.LUNES).horaApertura(LocalTime.of(10, 0)).horaCierre(LocalTime.of(14, 0)).build()));

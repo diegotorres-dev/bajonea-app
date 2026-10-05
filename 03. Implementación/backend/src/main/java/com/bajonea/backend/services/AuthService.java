@@ -322,8 +322,14 @@ public class AuthService {
      * {@code INACTIVO} al momento de confirmar — si ya estaba en cualquier otro estado, el
      * código se consume igual (mismo éxito visible) pero sin ningún efecto real, para no
      * revelar el estado real de la cuenta (ver {@link #solicitarReactivacionCuenta}).
+     * <p>
+     * Toma primero la fila del usuario ({@code SELECT ... FOR UPDATE}, mismo patrón y mismo orden que
+     * {@link #confirmarRecuperacionPassword}): dos confirmaciones simultáneas del mismo código se serializan y la
+     * segunda ya encuentra el código usado ({@code 401}), así que la restauración de los comercios ocurre una sola
+     * vez y deja una sola fila de historial por comercio.
      */
     public void confirmarReactivacionCuenta(ConfirmarReactivacionCuentaRequestDTO request) {
+        usuarioRepository.findByEmailConBloqueo(request.getEmail());
         Token tokenEntity = obtenerTokenValidoPorCodigo(
                 request.getEmail(), request.getCodigo(), TipoToken.REACTIVACION_CUENTA);
         consumirToken(tokenEntity);

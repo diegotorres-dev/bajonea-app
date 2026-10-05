@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import type { APIRequestContext, Page, Request } from '@playwright/test';
+import type { APIRequestContext, Locator, Page, Request } from '@playwright/test';
 import {
   agregarItemCarrito,
   apiConHeaders,
@@ -106,6 +106,9 @@ async function retrasar(page: Page, patron: string, milisegundos: number) {
     await ruta.continue();
   });
 }
+
+const topAbsoluto = (locator: Locator): Promise<number> =>
+  locator.evaluate((elemento) => elemento.getBoundingClientRect().top + window.scrollY);
 
 const tarjeta = (page: Page) => page.getByTestId('tarjeta-cierre-comercio');
 const interruptor = (page: Page) => page.getByTestId('switch-cierre-comercio');
@@ -523,6 +526,83 @@ test.describe('Cierre manual del comercio (UI), tramo C1', () => {
 
       await expect(page.getByTestId('banner-cierre-comercio')).toBeVisible();
       await expect(page.getByTestId('btn-continuar-modalidad')).toBeDisabled();
+    });
+
+    test('al abrir el checkout con el comercio cerrado el botón "Volver al catálogo" queda abajo, en el lugar de "Continuar", y "Continuar" no se ve', async ({ page, request }) => {
+      const dueno = await duenoApto(request);
+      const productoId = await productoEn(request, dueno, dueno.comercioId);
+      const sesion = await clienteLogueado(request);
+      await agregarItemCarrito(request, sesion.token, productoId, 1);
+      await cerrarPorApi(request, dueno, dueno.comercioId);
+      await abrirComoUsuario(page, sesion);
+      await page.goto('/checkout.html');
+
+      const banner = page.getByTestId('banner-cierre-comercio');
+      const volver = page.getByTestId('btn-volver-al-catalogo');
+      await expect(banner).toBeVisible();
+      await expect(volver).toBeVisible();
+      await expect(page.getByTestId('btn-continuar-modalidad')).not.toBeVisible();
+      await expect(page.locator('#step-1 h1')).toBeVisible();
+
+      const topBanner = await topAbsoluto(banner);
+      const topTitulo = await topAbsoluto(page.locator('#step-1 h1'));
+      const topVolver = await topAbsoluto(volver);
+      expect(topVolver).toBeGreaterThan(topBanner + (await banner.boundingBox())!.height);
+      expect(topVolver).toBeGreaterThan(topTitulo + (await page.locator('#step-1 h1').boundingBox())!.height);
+      expect(await page.locator('#step-1 > a').count()).toBe(1);
+    });
+
+    test('al confirmar con el comercio cerrado el botón "Volver al catálogo" reemplaza a "Ir a pagar" abajo del resumen', async ({ page, request }) => {
+      const dueno = await duenoApto(request);
+      const productoId = await productoEn(request, dueno, dueno.comercioId);
+      const sesion = await clienteLogueado(request);
+      await agregarItemCarrito(request, sesion.token, productoId, 1);
+      await abrirComoUsuario(page, sesion);
+      await page.goto('/checkout.html');
+      await page.getByTestId('btn-modalidad-retiro').click();
+      await page.getByTestId('btn-continuar-modalidad').click();
+      await page.getByTestId('btn-confirmar-retiro').click();
+      await expect(page.getByTestId('btn-confirmar-pedido')).toBeVisible();
+
+      await cerrarPorApi(request, dueno, dueno.comercioId);
+      await page.getByTestId('btn-confirmar-pedido').click();
+
+      const banner = page.getByTestId('banner-cierre-comercio');
+      const volver = page.getByTestId('btn-volver-al-catalogo');
+      await expect(banner).toBeVisible();
+      await expect(volver).toBeVisible();
+      await expect(page.getByTestId('btn-confirmar-pedido')).not.toBeVisible();
+      await expect(page.getByTestId('total-carrito')).toBeVisible();
+
+      const topBanner = await topAbsoluto(banner);
+      const topTotal = await topAbsoluto(page.getByTestId('total-carrito'));
+      const topVolver = await topAbsoluto(volver);
+      expect(topVolver).toBeGreaterThan(topBanner + (await banner.boundingBox())!.height);
+      expect(topVolver).toBeGreaterThan(topTotal);
+    });
+
+    test('en el modal de producto el aviso y "Volver al catálogo" quedan al pie, después del campo de nota', async ({ page, request }) => {
+      const dueno = await duenoApto(request);
+      const productoId = await productoEn(request, dueno, dueno.comercioId);
+      const sesion = await clienteLogueado(request);
+      await abrirComoUsuario(page, sesion);
+      await page.goto(`/comercio-detalle.html?id=${dueno.comercioId}`);
+      await page.getByTestId(`producto-item-${productoId}`).click();
+      await expect(page.getByTestId('btn-agregar-carrito')).toBeVisible();
+
+      await cerrarPorApi(request, dueno, dueno.comercioId);
+      await page.getByTestId('btn-agregar-carrito').click();
+
+      const banner = page.getByTestId('banner-cierre-comercio');
+      const volver = page.getByTestId('btn-volver-al-catalogo');
+      await expect(banner).toBeVisible();
+      await expect(volver).toBeVisible();
+      const topNota = await topAbsoluto(page.getByTestId('input-nota-producto'));
+      const topBanner = await topAbsoluto(banner);
+      const topVolver = await topAbsoluto(volver);
+      expect(topBanner).toBeGreaterThan(topNota);
+      expect(topVolver).toBeGreaterThan(topBanner + (await banner.boundingBox())!.height);
+      expect(await volver.evaluate((elemento) => elemento.classList.contains('btn-primary'))).toBe(true);
     });
 
     test('al abrir el carrito con el comercio cerrado no hay aviso proactivo', async ({ page, request }) => {

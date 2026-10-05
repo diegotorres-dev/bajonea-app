@@ -65,7 +65,13 @@ comercios se encuentran en Requisitos Funcionales — Dueño.
   desbloquear la cuenta del Dueño vía recuperación de contraseña, restaurando a Apto para
   Venta (si el Dueño tiene la cuenta de MercadoPago vinculada) o a Aprobado (si no) todos
   los comercios de ese Dueño que estuvieran en este estado. Un cierre manual hecho antes
-  del bloqueo sigue vigente al desbloquear.
+  del bloqueo sigue vigente al desbloquear. Con el Dueño en estado Bloqueado ningún
+  comercio queda a la venta: si el Administrador aprueba un comercio pendiente de ese
+  Dueño con la cuenta de MercadoPago vinculada, o si se vincula la cuenta de MercadoPago
+  mientras un comercio aprobado espera, ese comercio queda en Cerrado Temporalmente (con una
+  fila automática de historial que explica el motivo) y pasa a Apto para Venta al desbloquear
+  la cuenta; un comercio que no llegaría a Apto para Venta (por ejemplo un Aprobado sin cuenta
+  de cobro) no cambia.
 - **Cerrado Manualmente:** el comercio activó el cierre temporal desde su panel estando
   en estado Aprobado o Apto para Venta, con el Dueño en estado Activo y dentro de una
   franja de su horario de atención. Se representa mediante el campo

@@ -3,6 +3,7 @@ package com.bajonea.backend.services;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -99,11 +100,12 @@ class AdministradorServiceResolucionTest {
     }
 
     @Test
-    void elOrdenDeBloqueoEsDuenoEscalarLuegoCuentaDeMercadoPagoLuegoComercio() {
+    void elOrdenDeBloqueoEsDuenoEscalarLuegoUsuarioLuegoCuentaDeMercadoPagoLuegoComercio() {
         service.resolverAprobacion(COMERCIO_ID, ADMIN_ID, new AprobacionComercioRequestDTO(true, null));
 
-        InOrder orden = inOrder(comercioRepository, cuentaMercadoPagoService);
+        InOrder orden = inOrder(comercioRepository, comercioService, cuentaMercadoPagoService);
         orden.verify(comercioRepository).findDuenoIdById(COMERCIO_ID);
+        orden.verify(comercioService).duenoBloqueadoConBloqueo(DUENO_ID);
         orden.verify(cuentaMercadoPagoService).existeActivaConBloqueo(DUENO_ID);
         orden.verify(comercioRepository).findByIdConBloqueo(COMERCIO_ID);
         verify(comercioRepository, never()).findById(anyInt());
@@ -192,8 +194,37 @@ class AdministradorServiceResolucionTest {
         service.resolverAprobacion(COMERCIO_ID, ADMIN_ID, new AprobacionComercioRequestDTO(true, null));
 
         assertEquals(EstadoComercio.APROBADO, comercio.getEstado());
-        verify(comercioService).activarAptoVenta(comercio);
+        verify(comercioService).activarAptoVenta(comercio, false, "Bloqueo de cuenta vigente al aprobar");
         verify(notificacionService).crear(eq(DUENO_ID), eq("Tu comercio Cafe fue aprobado y ya podés vender"),
                 eq(TipoNotificacion.COMERCIO_APROBADO), eq(TipoEntidadNotificacion.COMERCIO), eq(COMERCIO_ID));
+    }
+
+    @Test
+    void aprobarConLaCuentaDelDuenoBloqueadaPasaElFlagYNoLoDejaALaVenta() {
+        when(cuentaMercadoPagoService.existeActivaConBloqueo(DUENO_ID)).thenReturn(true);
+        when(comercioService.duenoBloqueadoConBloqueo(DUENO_ID)).thenReturn(true);
+
+        service.resolverAprobacion(COMERCIO_ID, ADMIN_ID, new AprobacionComercioRequestDTO(true, null));
+
+        assertEquals(EstadoComercio.APROBADO, comercio.getEstado());
+        verify(comercioService).activarAptoVenta(comercio, true, "Bloqueo de cuenta vigente al aprobar");
+        verify(comercioService, never()).activarAptoVenta(comercio, false, "Bloqueo de cuenta vigente al aprobar");
+    }
+
+    @Test
+    void rechazarNoLeeElEstadoDeLaCuentaDelDueno() {
+        service.resolverAprobacion(COMERCIO_ID, ADMIN_ID, rechazo("Falta algo", false));
+
+        verify(comercioService, never()).duenoBloqueadoConBloqueo(anyInt());
+    }
+
+    @Test
+    void aprobarSinCuentaDeMercadoPagoNoActivaLaVentaAunqueElDuenoEsteBloqueado() {
+        when(comercioService.duenoBloqueadoConBloqueo(DUENO_ID)).thenReturn(true);
+
+        service.resolverAprobacion(COMERCIO_ID, ADMIN_ID, new AprobacionComercioRequestDTO(true, null));
+
+        assertEquals(EstadoComercio.APROBADO, comercio.getEstado());
+        verify(comercioService, never()).activarAptoVenta(any(Comercio.class), anyBoolean(), anyString());
     }
 }

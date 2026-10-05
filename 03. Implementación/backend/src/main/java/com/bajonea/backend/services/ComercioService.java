@@ -15,12 +15,14 @@ import com.bajonea.backend.entities.Horario;
 import com.bajonea.backend.entities.PersonaFisica;
 import com.bajonea.backend.services.DisponibilidadComercioService.Disponibilidad;
 import com.bajonea.backend.enums.EstadoComercio;
+import com.bajonea.backend.enums.EstadoUsuario;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.DireccionRepository;
 import com.bajonea.backend.repositories.HistorialEstadoComercioRepository;
 import com.bajonea.backend.repositories.HorarioRepository;
+import com.bajonea.backend.repositories.UsuarioRepository;
 import com.bajonea.backend.util.ComercioValidaciones;
 import com.bajonea.backend.util.TextoUtils;
 import jakarta.persistence.EntityManager;
@@ -45,6 +47,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class ComercioService {
 
     static final String MENSAJE_COMERCIO_CERRADO = "Este comercio está cerrado en este momento";
+    static final String MOTIVO_BLOQUEO_VIGENTE_AL_APROBAR = "Bloqueo de cuenta vigente al aprobar";
+    static final String MOTIVO_BLOQUEO_VIGENTE_AL_VINCULAR = "Bloqueo de cuenta vigente al vincular Mercado Pago";
 
     private final ComercioRepository comercioRepository;
     private final DireccionRepository direccionRepository;
@@ -52,6 +56,7 @@ public class ComercioService {
     private final HistorialEstadoComercioRepository historialEstadoComercioRepository;
     private final CloudinaryService cloudinaryService;
     private final DisponibilidadComercioService disponibilidadComercioService;
+    private final UsuarioRepository usuarioRepository;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -134,11 +139,28 @@ public class ComercioService {
     }
 
     /**
+     * Si la cuenta del Dueño está {@code BLOQUEADO}, leída con bloqueo compartido (devuelve lo último confirmado y
+     * deja el estado fijo hasta el final de la transacción, así un bloqueo de cuenta que se confirme en el medio
+     * espera). Tiene que llamarse <b>antes</b> de tocar la cuenta de Mercado Pago y los comercios del Dueño: el
+     * orden de bloqueo es usuario, cuenta, comercio (ver docs/APRENDIZAJES-TECNICOS.md). El resultado es lo que
+     * reciben {@link #activarAptoVenta(Integer, boolean)} y {@link #activarAptoVenta(Comercio, boolean, String)}.
+     */
+    public boolean duenoBloqueadoConBloqueo(Integer duenoId) {
+        return usuarioRepository.leerEstadoConBloqueoCompartido(duenoId)
+                .map(estado -> EstadoUsuario.valueOf(estado) == EstadoUsuario.BLOQUEADO)
+                .orElse(false);
+    }
+
+    /**
      * Transición automática APROBADO -&gt; APTO_VENTA disparada al vincular la cuenta de
      * MercadoPago del Dueño ({@code MercadoPagoOAuthService}). Se aplica a cada comercio del
      * Dueño, y es no-operación (silenciosa) sobre los que no están en APROBADO — por ejemplo,
      * SUSPENDIDO o ya APTO_VENTA por un reintento de vinculación — mismo criterio que
      * {@code AuthService.restaurarComercioSiCorresponde}, que solo actúa "si corresponde".
+     * <p>
+     * Con la cuenta del Dueño bloqueada ({@code duenoBloqueado}, leído antes con
+     * {@link #duenoBloqueadoConBloqueo(Integer)}) ningún comercio queda a la venta: el {@code APROBADO} pasa
+     * directo a {@code CERRADO_TEMPORALMENTE}, y la restauración al desbloquear lo lleva a {@code APTO_VENTA}.
      * <p>
      * Lee los comercios con bloqueo ({@code findByDuenoIdConBloqueo}) y no con una lectura común: la
      * aprobación de un comercio por el Administrador decide {@code APROBADO} vs {@code APTO_VENTA} bajo
@@ -147,16 +169,24 @@ public class ComercioService {
      * (con {@code REPEATABLE READ} una lectura común vería la foto anterior y lo dejaría en
      * {@code APROBADO} con una cuenta ya vinculada).
      */
-    public void activarAptoVenta(Integer duenoId) {
-        comercioRepository.findByDuenoIdConBloqueo(duenoId).forEach(this::activarAptoVenta);
+    public void activarAptoVenta(Integer duenoId, boolean duenoBloqueado) {
+        comercioRepository.findByDuenoIdConBloqueo(duenoId)
+                .forEach(comercio -> activarAptoVenta(comercio, duenoBloqueado, MOTIVO_BLOQUEO_VIGENTE_AL_VINCULAR));
     }
 
     /**
-     * Misma transición que {@link #activarAptoVenta(Integer)} pero sobre un único comercio; usada
-     * también por el atajo de entorno de test, que no debe arrastrar a los demás comercios del Dueño.
+     * Misma transición que {@link #activarAptoVenta(Integer, boolean)} pero sobre un único comercio; usada
+     * también por la aprobación del Administrador y por el atajo de entorno de test, que no deben arrastrar a los
+     * demás comercios del Dueño. {@code motivoBloqueo} es el de la fila automática que deja el cierre cuando la
+     * cuenta está bloqueada.
      */
-    public void activarAptoVenta(Comercio comercio) {
+    public void activarAptoVenta(Comercio comercio, boolean duenoBloqueado, String motivoBloqueo) {
         if (comercio.getEstado() != EstadoComercio.APROBADO) {
+            return;
+        }
+        if (duenoBloqueado) {
+            registrarTransicionAutomatica(comercio, EstadoComercio.APROBADO, EstadoComercio.CERRADO_TEMPORALMENTE,
+                    motivoBloqueo);
             return;
         }
         registrarTransicionAutomatica(comercio, EstadoComercio.APROBADO, EstadoComercio.APTO_VENTA,
@@ -166,7 +196,7 @@ public class ComercioService {
     /**
      * Transición automática APTO_VENTA -&gt; APROBADO disparada al desvincular la cuenta de
      * MercadoPago del Dueño. Se aplica a cada comercio del Dueño; no-operación sobre los que no
-     * están en APTO_VENTA. Misma lectura con bloqueo que {@link #activarAptoVenta(Integer)}, por el
+     * están en APTO_VENTA. Misma lectura con bloqueo que {@link #activarAptoVenta(Integer, boolean)}, por el
      * mismo motivo (un comercio recién aprobado como {@code APTO_VENTA} tiene que verse acá).
      */
     public void desactivarAptoVenta(Integer duenoId) {

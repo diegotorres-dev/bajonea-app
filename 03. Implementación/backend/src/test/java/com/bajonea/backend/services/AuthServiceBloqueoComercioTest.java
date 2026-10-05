@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bajonea.backend.config.security.JwtService;
+import com.bajonea.backend.dto.request.ConfirmarReactivacionCuentaRequestDTO;
 import com.bajonea.backend.dto.request.ConfirmarRecuperacionPasswordRequestDTO;
 import com.bajonea.backend.dto.request.LoginRequestDTO;
 import com.bajonea.backend.entities.Comercio;
@@ -131,6 +132,18 @@ class AuthServiceBloqueoComercioTest {
                 new ConfirmarRecuperacionPasswordRequestDTO("duenotest1@bajonea.test", "123456", "Testing456");
 
         assertThrows(CredencialesInvalidasException.class, () -> authService.confirmarRecuperacionPassword(request));
+
+        InOrder orden = inOrder(usuarioRepository);
+        orden.verify(usuarioRepository).findByEmailConBloqueo("duenotest1@bajonea.test");
+        orden.verify(usuarioRepository).findByEmail("duenotest1@bajonea.test");
+    }
+
+    @Test
+    void laConfirmacionDeLaReactivacionTomaPrimeroLaFilaDelUsuarioYDespuesLeeElCodigo() {
+        ConfirmarReactivacionCuentaRequestDTO request =
+                new ConfirmarReactivacionCuentaRequestDTO("duenotest1@bajonea.test", "123456");
+
+        assertThrows(CredencialesInvalidasException.class, () -> authService.confirmarReactivacionCuenta(request));
 
         InOrder orden = inOrder(usuarioRepository);
         orden.verify(usuarioRepository).findByEmailConBloqueo("duenotest1@bajonea.test");

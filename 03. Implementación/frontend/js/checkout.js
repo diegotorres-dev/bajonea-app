@@ -1,6 +1,6 @@
 import { apiFetch, ApiError, getUsuario } from './api.js';
 import { showToast } from './catalogo.js';
-import { crearAvisoCierre, esConflictoDeCierre, estaAbiertoParaClientes } from './apertura-comercio.js';
+import { crearBannerCierre, crearBotonVolverAlCatalogo, esConflictoDeCierre, estaAbiertoParaClientes } from './apertura-comercio.js';
 import { normalizarCampos } from './validators.js';
 
 const ICONS = {
@@ -48,11 +48,20 @@ function renderBanner(slot, kind, texto) {
   slot.appendChild(banner);
 }
 
-function renderAvisoCierre(slot, texto) {
+function renderAvisoCierre(slot, texto, botonAccion) {
   slot.innerHTML = '';
-  const aviso = crearAvisoCierre(texto);
-  aviso.style.marginBottom = '20px';
-  slot.appendChild(aviso);
+  const banner = crearBannerCierre(texto);
+  banner.style.marginBottom = '20px';
+  slot.appendChild(banner);
+  botonAccion.disabled = true;
+  botonAccion.classList.add('is-hidden');
+  const anterior = botonAccion.parentElement.querySelector('[data-testid="btn-volver-al-catalogo"]');
+  if (anterior) {
+    anterior.remove();
+  }
+  const volver = crearBotonVolverAlCatalogo();
+  volver.style.marginTop = botonAccion.style.marginTop;
+  botonAccion.after(volver);
 }
 
 export async function initCheckout() {
@@ -128,8 +137,7 @@ export async function initCheckout() {
   const continuarBtn = document.getElementById('continuar-modalidad-btn');
 
   if (!estaAbiertoParaClientes(comercio)) {
-    renderAvisoCierre(bannerSlot, 'Este comercio está cerrado en este momento. No podés completar el pedido hasta que vuelva a abrir.');
-    continuarBtn.disabled = true;
+    renderAvisoCierre(bannerSlot, 'Este comercio está cerrado en este momento. No podés completar el pedido hasta que vuelva a abrir.', continuarBtn);
     return;
   }
 
@@ -371,7 +379,7 @@ export async function initCheckout() {
       } catch (error) {
         confirmBtn.textContent = `Ir a pagar - ${formatearPrecio(totalConCargo)}`;
         if (esConflictoDeCierre(error)) {
-          renderAvisoCierre(bannerSlot, error.message);
+          renderAvisoCierre(bannerSlot, error.message, confirmBtn);
         } else {
           confirmBtn.disabled = false;
           renderBanner(bannerSlot, 'error', error instanceof ApiError ? error.message : 'No pudimos confirmar tu pedido. Intentá nuevamente.');

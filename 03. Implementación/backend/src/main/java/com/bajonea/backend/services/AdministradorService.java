@@ -219,9 +219,11 @@ public class AdministradorService {
      * último lo decide el servidor, no la pantalla.
      * <p>
      * Concurrencia: orden de bloqueo {@code dueno} → {@code cuenta_mercado_pago} → {@code comercio}. Primero
-     * se lee solo el id del Dueño con una consulta escalar (sin cargar ni bloquear el comercio), después se
-     * toma la cuenta de Mercado Pago con bloqueo (solo al aprobar: decide {@code APROBADO} vs
-     * {@code APTO_VENTA}) y recién después se bloquea el comercio ({@code FOR UPDATE}) y se revalida su
+     * se lee solo el id del Dueño con una consulta escalar (sin cargar ni bloquear el comercio), después, solo
+     * al aprobar, se lee el estado de la cuenta del Dueño con bloqueo compartido (si está {@code BLOQUEADO} el
+     * comercio no queda a la venta: pasa a {@code CERRADO_TEMPORALMENTE} con una segunda fila automática de
+     * historial) y se toma la cuenta de Mercado Pago con bloqueo (decide {@code APROBADO} vs
+     * {@code APTO_VENTA}); recién después se bloquea el comercio ({@code FOR UPDATE}) y se revalida su
      * estado. Dos resoluciones simultáneas del mismo comercio se ejecutan una detrás de la otra y la segunda
      * ve que ya no está {@code PENDIENTE} ({@code 409}); una vinculación de Mercado Pago que llegue a mitad
      * de una aprobación espera y después ve el comercio aprobado (ver docs/APRENDIZAJES-TECNICOS.md).
@@ -241,6 +243,7 @@ public class AdministradorService {
         Administrador administrador = administradorRepository.findById(administradorId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Administrador no encontrado"));
 
+        boolean duenoBloqueado = aprobar && comercioService.duenoBloqueadoConBloqueo(duenoId);
         boolean nacePorMercadoPago = aprobar && cuentaMercadoPagoService.existeActivaConBloqueo(duenoId);
 
         Comercio comercio = comercioRepository.findByIdConBloqueo(comercioId)
@@ -269,7 +272,7 @@ public class AdministradorService {
         historialEstadoComercioRepository.save(historial);
 
         if (nacePorMercadoPago) {
-            comercioService.activarAptoVenta(comercio);
+            comercioService.activarAptoVenta(comercio, duenoBloqueado, ComercioService.MOTIVO_BLOQUEO_VIGENTE_AL_APROBAR);
         }
 
         String mensaje;

@@ -89,20 +89,28 @@ export async function cerrarVariosComercios(comercios) {
   return fallidos;
 }
 
-export function crearAvisoCierre(mensaje) {
-  const contenedor = document.createElement('div');
-  contenedor.className = 'aviso-cierre';
-  contenedor.setAttribute('data-testid', 'aviso-cierre-comercio');
+export function crearBannerCierre(mensaje) {
   const banner = document.createElement('div');
   banner.className = 'banner banner-error';
   banner.setAttribute('role', 'alert');
   banner.setAttribute('data-testid', 'banner-cierre-comercio');
   banner.textContent = mensaje;
+  return banner;
+}
+
+export function crearBotonVolverAlCatalogo() {
   const volver = document.createElement('a');
-  volver.className = 'btn btn-secondary';
+  volver.className = 'btn btn-primary';
   volver.href = 'index.html';
   volver.setAttribute('data-testid', 'btn-volver-al-catalogo');
   volver.textContent = 'Volver al catálogo';
-  contenedor.append(banner, volver);
+  return volver;
+}
+
+export function crearAvisoCierre(mensaje) {
+  const contenedor = document.createElement('div');
+  contenedor.className = 'aviso-cierre';
+  contenedor.setAttribute('data-testid', 'aviso-cierre-comercio');
+  contenedor.append(crearBannerCierre(mensaje), crearBotonVolverAlCatalogo());
   return contenedor;
 }
