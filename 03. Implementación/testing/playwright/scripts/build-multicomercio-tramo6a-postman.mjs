@@ -183,6 +183,7 @@ const registrarCliente = (n, dni) => [
       nombreUsuario: `{{c1_cliente${n}_usuario}}`,
       email: `{{c1_cliente${n}_email}}`,
       password: `{{c1_cliente${n}_password}}`,
+      aceptaTerminos: true,
       direccion: { calle: 'Calle Siempre Viva', numero: '123', pisoDepto: null, codigoPostal: '9420', localidadId: '{{localidad_id}}', principal: true },
     },
   }), [status(201)]),

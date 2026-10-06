@@ -159,6 +159,7 @@ items.push(
       nombreUsuario: '{{t5_cliente_usuario}}',
       email: '{{t5_cliente_email}}',
       password: '{{t5_cliente_password}}',
+      aceptaTerminos: true,
       direccion: { calle: 'Calle Siempre Viva', numero: '123', pisoDepto: null, codigoPostal: '9420', localidadId: '{{localidad_id}}', principal: true },
     },
   }), [status(201)]),

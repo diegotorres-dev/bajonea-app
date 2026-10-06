@@ -186,6 +186,7 @@ test.describe('Nombre de usuario: login, registro, disponibilidad en vivo y perf
         nombreUsuario,
         email: `nu.${suf}@bajonea.test`,
         password: 'Testing123',
+        aceptaTerminos: true,
         direccion: { calle: 'Belgrano', numero: '450', pisoDepto: null, codigoPostal: '9420', localidadId, principal: true },
       });
     }

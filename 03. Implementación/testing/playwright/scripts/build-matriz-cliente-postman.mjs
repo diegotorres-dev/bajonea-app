@@ -10,8 +10,15 @@ function nombreUsuarioDe(email) {
 
 function adaptarAutenticacion(urlPath, body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return body;
-  if ((urlPath === '/auth/registro/cliente' || urlPath === '/auth/registro/comercio') && !('nombreUsuario' in body) && typeof body.email === 'string') {
-    return { ...body, nombreUsuario: nombreUsuarioDe(body.email) };
+  if (urlPath === '/auth/registro/cliente' || urlPath === '/auth/registro/comercio') {
+    let completo = body;
+    if (!('nombreUsuario' in completo) && typeof completo.email === 'string') {
+      completo = { ...completo, nombreUsuario: nombreUsuarioDe(completo.email) };
+    }
+    if (urlPath === '/auth/registro/cliente' && !('aceptaTerminos' in completo)) {
+      completo = { ...completo, aceptaTerminos: true };
+    }
+    return completo;
   }
   if (urlPath === '/auth/login' && 'email' in body && !('nombreUsuario' in body)) {
     const { email, ...resto } = body;
@@ -252,7 +259,9 @@ const folder22 = {
 
     registroClienteItem('Registro Cliente - direccion.localidadId vacio', { direccion: { localidadId: '' } }, assertFieldMessage(400, 'direccion.localidadId', 'Seleccioná tu localidad')),
 
-    registroClienteItem('Registro Cliente - sin aceptaTerminos (campo solo frontend, backend debe aceptar igual)', {}, assertCreated201()),
+    registroClienteItem('Registro Cliente - sin aceptaTerminos (debe rechazar, el servidor lo exige)', { aceptaTerminos: undefined }, assertFieldMessage(400, 'aceptaTerminos', 'Tenés que aceptar los Términos y Condiciones')),
+    registroClienteItem('Registro Cliente - aceptaTerminos en false (debe rechazar)', { aceptaTerminos: false }, assertFieldMessage(400, 'aceptaTerminos', 'Tenés que aceptar los Términos y Condiciones')),
+    registroClienteItem('Registro Cliente - aceptaTerminos en true (debe aceptar)', { aceptaTerminos: true }, assertCreated201()),
   ],
 };
 
@@ -715,7 +724,7 @@ const folder46 = {
       'const mensajes = [];',
       "const loc = pm.environment.get('localidad_id') || '94008010';",
       'for (let i = 0; i < total; i++) {',
-      "  const cuerpo = { nombre: 'Carrera', apellido: 'Prueba', dni: String(36100000 + Math.floor(Math.random() * 800000) * 10 + i), fechaNacimiento: '1995-05-20', telefono: '+549296470' + String(2000 + i), nombreUsuario: i % 2 ? nombre.toUpperCase() : nombre, email: 'postman.carrera.' + suf + '.' + i + '@bajonea.test', password: 'Aa1Password2026', direccion: { calle: 'Belgrano', numero: '100', pisoDepto: null, codigoPostal: '9420', localidadId: loc, principal: true } };",
+      "  const cuerpo = { nombre: 'Carrera', apellido: 'Prueba', dni: String(36100000 + Math.floor(Math.random() * 800000) * 10 + i), fechaNacimiento: '1995-05-20', telefono: '+549296470' + String(2000 + i), nombreUsuario: i % 2 ? nombre.toUpperCase() : nombre, email: 'postman.carrera.' + suf + '.' + i + '@bajonea.test', password: 'Aa1Password2026', aceptaTerminos: true, direccion: { calle: 'Belgrano', numero: '100', pisoDepto: null, codigoPostal: '9420', localidadId: loc, principal: true } };",
       "  pm.sendRequest({ url: base + '/auth/registro/cliente', method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify(cuerpo) } }, (err, res) => {",
       '    estados.push(err ? -1 : res.code);',
       '    mensajes.push(err ? String(err) : res.json().mensaje);',

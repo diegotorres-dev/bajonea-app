@@ -10,8 +10,15 @@ function nombreUsuarioDe(email) {
 
 function adaptarAutenticacion(urlPath, body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return body;
-  if ((urlPath === '/auth/registro/cliente' || urlPath === '/auth/registro/comercio') && !('nombreUsuario' in body) && typeof body.email === 'string') {
-    return { ...body, nombreUsuario: nombreUsuarioDe(body.email) };
+  if (urlPath === '/auth/registro/cliente' || urlPath === '/auth/registro/comercio') {
+    let completo = body;
+    if (!('nombreUsuario' in completo) && typeof completo.email === 'string') {
+      completo = { ...completo, nombreUsuario: nombreUsuarioDe(completo.email) };
+    }
+    if (urlPath === '/auth/registro/cliente' && !('aceptaTerminos' in completo)) {
+      completo = { ...completo, aceptaTerminos: true };
+    }
+    return completo;
   }
   if (urlPath === '/auth/login' && 'email' in body && !('nombreUsuario' in body)) {
     const { email, ...resto } = body;

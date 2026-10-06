@@ -4,6 +4,24 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
+## Registro de Cliente: `aceptaTerminos` validado en el servidor, y precisiones del tramo E1 (2026-10-06)
+
+Primer bloque de E1 (A0). El registro de Cliente exige `aceptaTerminos` en el servidor; la aceptación se valida y **no se guarda** (decisión de Diego: no hay trazabilidad, versión, fecha ni página de Términos, y no se planea hacerla). Además se anotan los puntos (a) a (g) de las decisiones de E1 en los documentos del Empleado. Las carpetas `01.` y `02.` no se editaron.
+
+| Documento | Qué cambia |
+|---|---|
+| `requisitos-funcionales-cliente.md` | Registro: el servidor rechaza (400) si `aceptaTerminos` falta o es falso; la aceptación se valida y no se guarda. |
+| `Historias de Usuario - Cliente.md` | HU-C01: el cliente tiene que aceptar los Términos y Condiciones para registrarse. |
+| `requisitos-funcionales-empleado.md` | Código incorrecto: 401 idéntico, sin intentos restantes, con el texto fijado; se puede aceptar con el comercio aprobado, apto para venta, cerrado temporalmente o suspendido y no con el comercio pendiente, rechazado, con rechazo definitivo o inactivo; reenviar y aceptar responden 200. |
+| `requisitos-funcionales-dueño.md` | "Ver equipo": la invitación invalidada se muestra como "Código bloqueado" con el botón "Reenviar", y en E1 no hay pestaña Actividad (la tabla `V32` se aplica en E3); el email de regularización nombra solo al comercio. |
+| `requisitos-funcionales-sistema.md` | Invitaciones: los mismos puntos (401 idéntico, estados del comercio al aceptar, 200 en reenviar y aceptar, email de regularización sin el Dueño, `V32` en E3). |
+| `alcance-y-limitaciones.md` | Limitaciones del Empleado: invitación invalidada, aceptar según el estado del comercio, "Ver equipo" sin actividad en E1, email de regularización, IP real detrás del proxy en la lista de despliegue; y una limitación nueva: los Términos y Condiciones se validan sin guardarse (y no se planea guardarlos). |
+| `AUDITORIA-E1.md`, `AUDITORIA-EMPLEADO-FASE1.md` | Notas de actualización del 2026-10-06: Q2 resuelta (no se guarda), Q4 y Q8 decididas, H11 resuelto. |
+
+Fuera de esta carpeta, en `docs/`: `AUDITORIA-EXHAUSTIVA-CLIENTE.md` (nota de actualización sobre `aceptaTerminos`), `DECISIONES.md` (entrada nueva y nota en la entrada del 2026-10-05) y `CLAUDE.md` (§1bis, §5bis, §9 y las filas E1 y E3 de la tabla de fases).
+
+No cambian los PNG ni los DFD. Nada de este cambio requiere actualizar `diccionario-de-datos.md`: no hay columna ni tabla nueva.
+
 ## Rol Empleado — corrección de requisitos no funcionales y DFD, solo documentación (2026-10-05)
 
 Segundo tramo de solo documentación del rol Empleado: alinea con las decisiones 1 a 34 los documentos que el tramo anterior había dejado con el diseño viejo. Todo lo nuevo está marcado como **planificado, tramos E1 a E4**. Las imágenes no se tocan: Diego regenera los PNG de Casos de Uso y de los DFD al final del bloque.

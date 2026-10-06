@@ -17,6 +17,7 @@ import {
   verificarCuenta,
   login,
   apiGet,
+  apiPost,
   esperarImagenCargadaEnRecorte,
 } from './helpers/backend';
 
@@ -379,5 +380,38 @@ test.describe('Registro y verificación de cuenta', () => {
     await expect(page.getByTestId('mensaje-error-cuit')).toBeVisible();
     await expect(page.getByTestId('mensaje-error-cuit')).toContainText('El CUIT debe tener 11 dígitos numéricos');
     await expect(page.getByTestId('lista-horarios')).toBeHidden();
+  });
+
+  test.describe('Términos y Condiciones por API', () => {
+    function cuerpoRegistro(localidad: string, extra: Record<string, unknown>) {
+      const suf = sufijoUnico();
+      return {
+        nombre: 'Prueba',
+        apellido: 'Terminos',
+        dni: generarDni(),
+        fechaNacimiento: '1995-05-20',
+        telefono: `+549${generarTelefono()}`,
+        nombreUsuario: nombreUsuarioUnico('ter'),
+        email: `terminos.${suf}@bajonea.test`,
+        password: 'Testing123',
+        direccion: { calle: 'Belgrano', numero: '450', pisoDepto: null, codigoPostal: '9420', localidadId: localidad, principal: true },
+        ...extra,
+      };
+    }
+
+    test('sin aceptaTerminos o con false el registro da 400 con el mensaje del campo', async ({ request }) => {
+      const ausente = await apiPost(request, '/auth/registro/cliente', cuerpoRegistro(localidadId, {}));
+      expect(ausente.status).toBe(400);
+      expect(ausente.body.data.aceptaTerminos).toBe('Tenés que aceptar los Términos y Condiciones');
+
+      const rechazado = await apiPost(request, '/auth/registro/cliente', cuerpoRegistro(localidadId, { aceptaTerminos: false }));
+      expect(rechazado.status).toBe(400);
+      expect(rechazado.body.data.aceptaTerminos).toBe('Tenés que aceptar los Términos y Condiciones');
+    });
+
+    test('con aceptaTerminos en true el registro da 201', async ({ request }) => {
+      const aceptado = await apiPost(request, '/auth/registro/cliente', cuerpoRegistro(localidadId, { aceptaTerminos: true }));
+      expect(aceptado.status).toBe(201);
+    });
   });
 });

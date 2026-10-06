@@ -253,6 +253,7 @@ export async function registrarCliente(
     nombreUsuario,
     email,
     password,
+    aceptaTerminos: true,
     direccion: {
       calle: 'Calle Siempre Viva',
       numero: '123',

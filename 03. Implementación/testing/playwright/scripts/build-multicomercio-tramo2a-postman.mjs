@@ -136,6 +136,7 @@ items.push(
       nombreUsuario: '{{altaC_usuario}}',
       email: '{{altaC_email}}',
       password: '{{altaC_password}}',
+      aceptaTerminos: true,
       direccion: { calle: 'Calle Siempre Viva', numero: '123', pisoDepto: null, codigoPostal: '9420', localidadId: '{{localidad_id}}', principal: true },
     },
   }), [status(201)]),

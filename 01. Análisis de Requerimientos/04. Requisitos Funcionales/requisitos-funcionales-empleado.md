@@ -64,6 +64,15 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
 - El código de la invitación admite como máximo 5 intentos fallidos; al quinto se
   invalida y el Dueño tiene que reenviar la invitación. Se acepta que quien conozca el
   email de un invitado pueda gastarle los intentos: el Dueño reenvía.
+- Un código incorrecto, vencido o de una invitación ya no vigente recibe siempre la misma
+  respuesta (401), sin decir cuántos intentos quedan, con el texto "El código es
+  incorrecto o la invitación ya no está vigente. Pedí que te reenvíen la invitación."
+- Se puede aceptar una invitación mientras el comercio esté Aprobado, Apto para Venta,
+  Cerrado Temporalmente o Suspendido; no se puede si está Pendiente, Rechazado, con
+  Rechazo Definitivo o Inactivo. (Para invitar, en cambio, el comercio tiene que estar
+  Aprobado o Apto para Venta.)
+- Reenviar y aceptar una invitación responden 200; no hay creación de recurso nuevo para
+  quien las consume.
 - Quien fue Empleado de un comercio, aunque su relación esté inactiva, no puede registrar
   un comercio con esa cuenta (ver Alcance y Limitaciones).
 

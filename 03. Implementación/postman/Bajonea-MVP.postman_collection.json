@@ -167,7 +167,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Postman\",\n  \"apellido\": \"Tester\",\n  \"dni\": \"35678912\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964123456\",\n  \"nombreUsuario\": \"{{cliente_usuario}}\",\n  \"email\": \"{{cliente_email}}\",\n  \"password\": \"{{cliente_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "raw": "{\n  \"nombre\": \"Postman\",\n  \"apellido\": \"Tester\",\n  \"dni\": \"35678912\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964123456\",\n  \"nombreUsuario\": \"{{cliente_usuario}}\",\n  \"email\": \"{{cliente_email}}\",\n  \"password\": \"{{cliente_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -735,7 +735,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Postman\",\n  \"apellido\": \"Invalido\",\n  \"dni\": \"35678999\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964123457\",\n  \"nombreUsuario\": \"pmab9af013a68c\",\n  \"email\": \"postman.invalido@bajonea.test\",\n  \"password\": \"Postman123\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"99999999\",\n    \"principal\": true\n  }\n}",
+              "raw": "{\n  \"nombre\": \"Postman\",\n  \"apellido\": \"Invalido\",\n  \"dni\": \"35678999\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964123457\",\n  \"nombreUsuario\": \"pmab9af013a68c\",\n  \"email\": \"postman.invalido@bajonea.test\",\n  \"password\": \"Postman123\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"99999999\",\n    \"principal\": true\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2384,7 +2384,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"ClienteE\",\n  \"apellido\": \"Postman\",\n  \"dni\": \"{{clienteE_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701010\",\n  \"nombreUsuario\": \"{{clienteE_usuario}}\",\n  \"email\": \"{{clienteE_email}}\",\n  \"password\": \"{{clienteE_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "raw": "{\n  \"nombre\": \"ClienteE\",\n  \"apellido\": \"Postman\",\n  \"dni\": \"{{clienteE_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701010\",\n  \"nombreUsuario\": \"{{clienteE_usuario}}\",\n  \"email\": \"{{clienteE_email}}\",\n  \"password\": \"{{clienteE_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -2610,7 +2610,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"ClienteF\",\n  \"apellido\": \"Postman\",\n  \"dni\": \"{{clienteF_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701011\",\n  \"nombreUsuario\": \"{{clienteF_usuario}}\",\n  \"email\": \"{{clienteF_email}}\",\n  \"password\": \"{{clienteF_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "raw": "{\n  \"nombre\": \"ClienteF\",\n  \"apellido\": \"Postman\",\n  \"dni\": \"{{clienteF_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701011\",\n  \"nombreUsuario\": \"{{clienteF_usuario}}\",\n  \"email\": \"{{clienteF_email}}\",\n  \"password\": \"{{clienteF_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3545,7 +3545,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Otro\",\n  \"apellido\": \"Test\",\n  \"dni\": \"30999999\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701099\",\n  \"nombreUsuario\": \"pmdupemail0001\",\n  \"email\": \"{{clienteE_email}}\",\n  \"password\": \"Postman123\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "raw": "{\n  \"nombre\": \"Otro\",\n  \"apellido\": \"Test\",\n  \"dni\": \"30999999\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701099\",\n  \"nombreUsuario\": \"pmdupemail0001\",\n  \"email\": \"{{clienteE_email}}\",\n  \"password\": \"Postman123\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3590,7 +3590,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Otro\",\n  \"apellido\": \"Test\",\n  \"dni\": \"{{clienteE_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701098\",\n  \"nombreUsuario\": \"pm7d1dc2211593\",\n  \"email\": \"postman.otronuevoclientedni@bajonea.test\",\n  \"password\": \"Postman123\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "raw": "{\n  \"nombre\": \"Otro\",\n  \"apellido\": \"Test\",\n  \"dni\": \"{{clienteE_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701098\",\n  \"nombreUsuario\": \"pm7d1dc2211593\",\n  \"email\": \"postman.otronuevoclientedni@bajonea.test\",\n  \"password\": \"Postman123\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10137,7 +10137,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700101\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701001\",\n  \"email\": \"matriz.c22.1@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm0a8ca081a004\"\n}",
+              "raw": "{\n  \"nombre\": \"\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700101\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701001\",\n  \"email\": \"matriz.c22.1@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm0a8ca081a004\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10183,7 +10183,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"12345\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700102\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701002\",\n  \"email\": \"matriz.c22.2@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmb376e2797e5d\"\n}",
+              "raw": "{\n  \"nombre\": \"12345\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700102\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701002\",\n  \"email\": \"matriz.c22.2@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmb376e2797e5d\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10229,7 +10229,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Juan@#$\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700103\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701003\",\n  \"email\": \"matriz.c22.3@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm208768b03741\"\n}",
+              "raw": "{\n  \"nombre\": \"Juan@#$\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700103\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701003\",\n  \"email\": \"matriz.c22.3@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm208768b03741\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10275,7 +10275,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700104\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701004\",\n  \"email\": \"matriz.c22.4@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm418c5acd6778\"\n}",
+              "raw": "{\n  \"nombre\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700104\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701004\",\n  \"email\": \"matriz.c22.4@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm418c5acd6778\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10319,7 +10319,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700105\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701005\",\n  \"email\": \"matriz.c22.5@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm82c49634966f\"\n}",
+              "raw": "{\n  \"nombre\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700105\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701005\",\n  \"email\": \"matriz.c22.5@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm82c49634966f\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10365,7 +10365,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"\",\n  \"dni\": \"30700106\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701006\",\n  \"email\": \"matriz.c22.6@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm003d012150c9\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"\",\n  \"dni\": \"30700106\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701006\",\n  \"email\": \"matriz.c22.6@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm003d012150c9\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10411,7 +10411,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"12345\",\n  \"dni\": \"30700107\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701007\",\n  \"email\": \"matriz.c22.7@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm37270314c226\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"12345\",\n  \"dni\": \"30700107\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701007\",\n  \"email\": \"matriz.c22.7@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm37270314c226\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10457,7 +10457,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Perez@#$\",\n  \"dni\": \"30700108\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701008\",\n  \"email\": \"matriz.c22.8@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pma6384493212b\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Perez@#$\",\n  \"dni\": \"30700108\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701008\",\n  \"email\": \"matriz.c22.8@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pma6384493212b\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10503,7 +10503,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"dni\": \"30700109\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701009\",\n  \"email\": \"matriz.c22.9@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmf0a3772385e8\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"dni\": \"30700109\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701009\",\n  \"email\": \"matriz.c22.9@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmf0a3772385e8\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10547,7 +10547,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"dni\": \"30700110\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701010\",\n  \"email\": \"matriz.c22.10@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm864eb68a0400\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"dni\": \"30700110\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701010\",\n  \"email\": \"matriz.c22.10@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm864eb68a0400\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10593,7 +10593,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701011\",\n  \"email\": \"matriz.c22.11@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm94f36c34a8c1\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701011\",\n  \"email\": \"matriz.c22.11@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm94f36c34a8c1\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10639,7 +10639,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"abcdefgh\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701012\",\n  \"email\": \"matriz.c22.12@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm8b6e250d6450\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"abcdefgh\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701012\",\n  \"email\": \"matriz.c22.12@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm8b6e250d6450\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10685,7 +10685,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"123456789012\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701013\",\n  \"email\": \"matriz.c22.13@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm8777935fa7fd\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"123456789012\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701013\",\n  \"email\": \"matriz.c22.13@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm8777935fa7fd\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10731,7 +10731,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"123456\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701014\",\n  \"email\": \"matriz.c22.14@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm4d20ccbf52fe\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"123456\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701014\",\n  \"email\": \"matriz.c22.14@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm4d20ccbf52fe\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10777,7 +10777,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"123456789\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701015\",\n  \"email\": \"matriz.c22.15@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm071d69a7d5d9\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"123456789\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701015\",\n  \"email\": \"matriz.c22.15@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm071d69a7d5d9\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10823,7 +10823,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30.700.777\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701016\",\n  \"email\": \"matriz.c22.16@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm6daebc1d0557\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30.700.777\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701016\",\n  \"email\": \"matriz.c22.16@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm6daebc1d0557\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10867,7 +10867,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700117\",\n  \"fechaNacimiento\": null,\n  \"telefono\": \"+5492964701017\",\n  \"email\": \"matriz.c22.17@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm4bb021c707f0\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700117\",\n  \"fechaNacimiento\": null,\n  \"telefono\": \"+5492964701017\",\n  \"email\": \"matriz.c22.17@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm4bb021c707f0\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10913,7 +10913,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700118\",\n  \"fechaNacimiento\": \"2099-01-01\",\n  \"telefono\": \"+5492964701018\",\n  \"email\": \"matriz.c22.18@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmccd49dac945b\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700118\",\n  \"fechaNacimiento\": \"2099-01-01\",\n  \"telefono\": \"+5492964701018\",\n  \"email\": \"matriz.c22.18@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmccd49dac945b\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10959,7 +10959,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700119\",\n  \"fechaNacimiento\": \"1905-09-21\",\n  \"telefono\": \"+5492964701019\",\n  \"email\": \"matriz.c22.19@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm96129f98b4d9\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700119\",\n  \"fechaNacimiento\": \"1905-10-05\",\n  \"telefono\": \"+5492964701019\",\n  \"email\": \"matriz.c22.19@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm96129f98b4d9\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11005,7 +11005,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700120\",\n  \"fechaNacimiento\": \"2026-09-21\",\n  \"telefono\": \"+5492964701020\",\n  \"email\": \"matriz.c22.20@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm20d18d0af2a9\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700120\",\n  \"fechaNacimiento\": \"2026-10-05\",\n  \"telefono\": \"+5492964701020\",\n  \"email\": \"matriz.c22.20@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm20d18d0af2a9\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11049,7 +11049,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700121\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"\",\n  \"email\": \"matriz.c22.21@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm6b3a86665d0c\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700121\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"\",\n  \"email\": \"matriz.c22.21@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm6b3a86665d0c\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11095,7 +11095,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700122\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"2964700300\",\n  \"email\": \"matriz.c22.22@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm55b9af19442e\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700122\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"2964700300\",\n  \"email\": \"matriz.c22.22@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm55b9af19442e\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11141,7 +11141,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700123\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+54929647003\",\n  \"email\": \"matriz.c22.23@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm91dec93b9862\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700123\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+54929647003\",\n  \"email\": \"matriz.c22.23@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm91dec93b9862\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11187,7 +11187,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700124\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+549 2964-700400\",\n  \"email\": \"matriz.c22.24@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm45c6d4ee9a86\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700124\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+549 2964-700400\",\n  \"email\": \"matriz.c22.24@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm45c6d4ee9a86\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11231,7 +11231,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700125\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701025\",\n  \"email\": \"\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmda39a3ee5e6b\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700125\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701025\",\n  \"email\": \"\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmda39a3ee5e6b\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11277,7 +11277,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700126\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701026\",\n  \"email\": \"sinarrobatest.com\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm528658927d91\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700126\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701026\",\n  \"email\": \"sinarrobatest.com\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm528658927d91\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11323,7 +11323,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700127\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701027\",\n  \"email\": \"sindominio@bajonea\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm15668328d10d\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700127\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701027\",\n  \"email\": \"sindominio@bajonea\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm15668328d10d\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11369,7 +11369,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700128\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701028\",\n  \"email\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm49df90ebdc08\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700128\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701028\",\n  \"email\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm49df90ebdc08\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11413,7 +11413,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700129\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701029\",\n  \"email\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm0c80b3f95bb2\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700129\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701029\",\n  \"email\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm0c80b3f95bb2\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11459,7 +11459,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700130\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701030\",\n  \"email\": \"matriz.c22.30@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700130\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701030\",\n  \"email\": \"matriz.c22.30@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11505,7 +11505,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700131\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701031\",\n  \"email\": \"matriz.c22.31@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"abcdefg\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700131\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701031\",\n  \"email\": \"matriz.c22.31@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"abcdefg\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11551,7 +11551,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700132\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701032\",\n  \"email\": \"matriz.c22.32@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"abcd_efgh1\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700132\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701032\",\n  \"email\": \"matriz.c22.32@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"abcd_efgh1\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11597,7 +11597,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700133\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701033\",\n  \"email\": \"matriz.c22.33@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"abcd efgh1\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700133\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701033\",\n  \"email\": \"matriz.c22.33@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"abcd efgh1\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11643,7 +11643,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700134\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701034\",\n  \"email\": \"matriz.c22.34@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pérezpérez\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700134\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701034\",\n  \"email\": \"matriz.c22.34@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pérezpérez\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11689,7 +11689,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700135\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701035\",\n  \"email\": \"matriz.c22.35@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"aaaaaaaaaaaaaaaaaaaaa\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700135\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701035\",\n  \"email\": \"matriz.c22.35@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"aaaaaaaaaaaaaaaaaaaaa\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11735,7 +11735,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700136\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701036\",\n  \"email\": \"matriz.c22.36@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmlim008\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700136\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701036\",\n  \"email\": \"matriz.c22.36@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmlim008\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11779,7 +11779,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700137\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701037\",\n  \"email\": \"matriz.c22.37@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmlimite020xxxxxxxxx\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700137\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701037\",\n  \"email\": \"matriz.c22.37@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmlimite020xxxxxxxxx\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11823,7 +11823,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700138\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701038\",\n  \"email\": \"matriz.c22.38@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"PMMAYUS0001\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700138\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701038\",\n  \"email\": \"matriz.c22.38@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"PMMAYUS0001\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11867,7 +11867,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700139\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701039\",\n  \"email\": \"matriz.c22.39@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"PmMayus0001\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700139\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701039\",\n  \"email\": \"matriz.c22.39@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"PmMayus0001\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11913,7 +11913,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700140\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701040\",\n  \"email\": \"matriz.c22.40@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"administrador\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700140\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701040\",\n  \"email\": \"matriz.c22.40@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"administrador\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11959,7 +11959,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700141\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701041\",\n  \"email\": \"matriz.c22.41@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"SuperAdmin\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700141\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701041\",\n  \"email\": \"matriz.c22.41@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"SuperAdmin\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12005,7 +12005,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700142\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701042\",\n  \"email\": \"matriz.c22.42@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmclientepm\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700142\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701042\",\n  \"email\": \"matriz.c22.42@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmclientepm\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12049,7 +12049,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700143\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701043\",\n  \"email\": \"matriz.c22.43@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm619971133d89\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700143\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701043\",\n  \"email\": \"matriz.c22.43@bajonea.test\",\n  \"password\": \"\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm619971133d89\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12095,7 +12095,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700144\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701044\",\n  \"email\": \"matriz.c22.44@bajonea.test\",\n  \"password\": \"aa1password\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm2f52c356f437\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700144\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701044\",\n  \"email\": \"matriz.c22.44@bajonea.test\",\n  \"password\": \"aa1password\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm2f52c356f437\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12141,7 +12141,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700145\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701045\",\n  \"email\": \"matriz.c22.45@bajonea.test\",\n  \"password\": \"Aapassword\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm07b3d6bf8d56\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700145\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701045\",\n  \"email\": \"matriz.c22.45@bajonea.test\",\n  \"password\": \"Aapassword\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm07b3d6bf8d56\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12187,7 +12187,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700146\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701046\",\n  \"email\": \"matriz.c22.46@bajonea.test\",\n  \"password\": \"Aa1abcd\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm76f79a927eef\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700146\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701046\",\n  \"email\": \"matriz.c22.46@bajonea.test\",\n  \"password\": \"Aa1abcd\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm76f79a927eef\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12233,7 +12233,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700147\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701047\",\n  \"email\": \"matriz.c22.47@bajonea.test\",\n  \"password\": \"Aa1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm1524a8dccd1d\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700147\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701047\",\n  \"email\": \"matriz.c22.47@bajonea.test\",\n  \"password\": \"Aa1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm1524a8dccd1d\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12277,7 +12277,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700148\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701048\",\n  \"email\": \"matriz.c22.48@bajonea.test\",\n  \"password\": \"Aa1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm729056c82e64\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700148\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701048\",\n  \"email\": \"matriz.c22.48@bajonea.test\",\n  \"password\": \"Aa1aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm729056c82e64\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12323,7 +12323,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700149\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701049\",\n  \"email\": \"matriz.c22.49@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmbb01df8d6a44\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700149\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701049\",\n  \"email\": \"matriz.c22.49@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmbb01df8d6a44\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12369,7 +12369,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700150\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701050\",\n  \"email\": \"matriz.c22.50@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"###\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmbc8db18ea4a3\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700150\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701050\",\n  \"email\": \"matriz.c22.50@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"###\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmbc8db18ea4a3\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12415,7 +12415,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700151\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701051\",\n  \"email\": \"matriz.c22.51@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm0974f9f501d1\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700151\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701051\",\n  \"email\": \"matriz.c22.51@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm0974f9f501d1\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12459,7 +12459,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700152\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701052\",\n  \"email\": \"matriz.c22.52@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm8d55afd661a7\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700152\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701052\",\n  \"email\": \"matriz.c22.52@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm8d55afd661a7\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12505,7 +12505,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700153\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701053\",\n  \"email\": \"matriz.c22.53@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmbec1f1af5663\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700153\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701053\",\n  \"email\": \"matriz.c22.53@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmbec1f1af5663\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12551,7 +12551,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700154\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701054\",\n  \"email\": \"matriz.c22.54@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"abc\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm4230ce10eadb\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700154\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701054\",\n  \"email\": \"matriz.c22.54@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"abc\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm4230ce10eadb\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12597,7 +12597,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700155\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701055\",\n  \"email\": \"matriz.c22.55@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"12-34\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmf9b92f07b913\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700155\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701055\",\n  \"email\": \"matriz.c22.55@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"12-34\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmf9b92f07b913\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12643,7 +12643,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700156\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701056\",\n  \"email\": \"matriz.c22.56@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"1234567890\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmd90e1818c7ce\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700156\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701056\",\n  \"email\": \"matriz.c22.56@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"1234567890\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmd90e1818c7ce\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12687,7 +12687,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700157\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701057\",\n  \"email\": \"matriz.c22.57@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"12345678901\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm17ff8979f5aa\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700157\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701057\",\n  \"email\": \"matriz.c22.57@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"12345678901\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm17ff8979f5aa\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12733,7 +12733,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700158\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701058\",\n  \"email\": \"matriz.c22.58@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": \"###\",\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmd9c725837d63\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700158\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701058\",\n  \"email\": \"matriz.c22.58@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": \"###\",\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmd9c725837d63\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12779,7 +12779,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700159\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701059\",\n  \"email\": \"matriz.c22.59@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmcb7f02dee4be\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700159\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701059\",\n  \"email\": \"matriz.c22.59@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmcb7f02dee4be\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12823,7 +12823,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700160\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701060\",\n  \"email\": \"matriz.c22.60@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm023cc94d182e\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700160\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701060\",\n  \"email\": \"matriz.c22.60@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm023cc94d182e\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12869,7 +12869,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700161\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701061\",\n  \"email\": \"matriz.c22.61@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": \"\",\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm1f58d0d924db\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700161\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701061\",\n  \"email\": \"matriz.c22.61@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": \"\",\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm1f58d0d924db\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12913,7 +12913,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700162\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701062\",\n  \"email\": \"matriz.c22.62@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pma18e9ae53c71\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700162\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701062\",\n  \"email\": \"matriz.c22.62@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pma18e9ae53c71\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -12959,7 +12959,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700163\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701063\",\n  \"email\": \"matriz.c22.63@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"942\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm090306c7ec15\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700163\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701063\",\n  \"email\": \"matriz.c22.63@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"942\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm090306c7ec15\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -13005,7 +13005,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700164\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701064\",\n  \"email\": \"matriz.c22.64@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"94200\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm0c20eef43dcf\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700164\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701064\",\n  \"email\": \"matriz.c22.64@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"94200\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm0c20eef43dcf\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -13051,7 +13051,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700165\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701065\",\n  \"email\": \"matriz.c22.65@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"C1425AAB\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmc83ed4abe380\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700165\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701065\",\n  \"email\": \"matriz.c22.65@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"C1425AAB\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmc83ed4abe380\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -13095,7 +13095,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700166\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701066\",\n  \"email\": \"matriz.c22.66@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm91a3220bbd05\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700166\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701066\",\n  \"email\": \"matriz.c22.66@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm91a3220bbd05\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -13119,7 +13119,7 @@
           ]
         },
         {
-          "name": "Registro Cliente - sin aceptaTerminos (campo solo frontend, backend debe aceptar igual)",
+          "name": "Registro Cliente - sin aceptaTerminos (debe rechazar, el servidor lo exige)",
           "request": {
             "method": "POST",
             "header": [
@@ -13142,6 +13142,98 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700167\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701067\",\n  \"email\": \"matriz.c22.67@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm01283d1d1cb5\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "const json = pm.response.json();",
+                  "pm.test('Mensaje exacto de aceptaTerminos', () => pm.expect(json.data['aceptaTerminos']).to.eql(\"Tenés que aceptar los Términos y Condiciones\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Cliente - aceptaTerminos en false (debe rechazar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700168\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701068\",\n  \"email\": \"matriz.c22.68@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"aceptaTerminos\": false,\n  \"nombreUsuario\": \"pm2b5157f14d81\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "const json = pm.response.json();",
+                  "pm.test('Mensaje exacto de aceptaTerminos', () => pm.expect(json.data['aceptaTerminos']).to.eql(\"Tenés que aceptar los Términos y Condiciones\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Cliente - aceptaTerminos en true (debe aceptar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700169\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701069\",\n  \"email\": \"matriz.c22.69@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"aceptaTerminos\": true,\n  \"nombreUsuario\": \"pmc0858186c141\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -13735,7 +13827,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700168\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701068\",\n  \"email\": \"postman.matrizverifreal@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmf78bdf589f8f\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700170\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701070\",\n  \"email\": \"postman.matrizverifreal@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmf78bdf589f8f\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -14469,7 +14561,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700169\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701069\",\n  \"email\": \"postman.matrizrecupreal@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm57daa342cb87\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700171\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701071\",\n  \"email\": \"postman.matrizrecupreal@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm57daa342cb87\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -15020,7 +15112,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700170\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701070\",\n  \"email\": \"postman.matrizperfil@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm10ae94aba853\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700172\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701072\",\n  \"email\": \"postman.matrizperfil@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm10ae94aba853\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -16264,7 +16356,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700171\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701071\",\n  \"email\": \"postman.matrizperfilpw72@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm53b4ca8a2cbe\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700173\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701073\",\n  \"email\": \"postman.matrizperfilpw72@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm53b4ca8a2cbe\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -16840,7 +16932,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700172\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701072\",\n  \"email\": \"postman.matrizperfilajeno@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm2926b5dbfd57\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700174\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701074\",\n  \"email\": \"postman.matrizperfilajeno@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm2926b5dbfd57\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -17073,7 +17165,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700173\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701073\",\n  \"email\": \"postman.matrizcarrito@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm7d1d08d80949\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700175\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701075\",\n  \"email\": \"postman.matrizcarrito@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm7d1d08d80949\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -28975,7 +29067,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz Pedido\",\n  \"dni\": \"30600500\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964100500\",\n  \"email\": \"matriz.cliente.pedido@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm9a50a4a3a936\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz Pedido\",\n  \"dni\": \"30600500\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964100500\",\n  \"email\": \"matriz.cliente.pedido@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm9a50a4a3a936\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -29892,7 +29984,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Postman\",\n  \"apellido\": \"AdminMatriz\",\n  \"dni\": \"30500046\",\n  \"fechaNacimiento\": \"1995-01-01\",\n  \"telefono\": \"+5492964000199\",\n  \"nombreUsuario\": \"pm662a2441f47f\",\n  \"email\": \"postman.adminmatrizcliente@bajonea.test\",\n  \"password\": \"Postman123\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"400\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "raw": "{\n  \"nombre\": \"Postman\",\n  \"apellido\": \"AdminMatriz\",\n  \"dni\": \"30500046\",\n  \"fechaNacimiento\": \"1995-01-01\",\n  \"telefono\": \"+5492964000199\",\n  \"nombreUsuario\": \"pm662a2441f47f\",\n  \"email\": \"postman.adminmatrizcliente@bajonea.test\",\n  \"password\": \"Postman123\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"400\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -34018,7 +34110,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"35700046\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701074\",\n  \"email\": \"postman.nombreusuario.h@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"  PmNombreUsuarioH \"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"35700046\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701076\",\n  \"email\": \"postman.nombreusuario.h@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"  PmNombreUsuarioH \",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -34105,7 +34197,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"35700047\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701075\",\n  \"email\": \"postman.nombreusuario.dup@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmNOMBREusuarioH\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"35700047\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701077\",\n  \"email\": \"postman.nombreusuario.dup@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmNOMBREusuarioH\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -34151,7 +34243,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"35700048\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701076\",\n  \"email\": \"postman.nombreusuario.res@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"Administrador\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"35700048\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701078\",\n  \"email\": \"postman.nombreusuario.res@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"Administrador\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -34197,7 +34289,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"35700049\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701077\",\n  \"email\": \"postman.nombreusuario.sin@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  }\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"35700049\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964701079\",\n  \"email\": \"postman.nombreusuario.sin@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -34791,7 +34883,7 @@
                   "const mensajes = [];",
                   "const loc = pm.environment.get('localidad_id') || '94008010';",
                   "for (let i = 0; i < total; i++) {",
-                  "  const cuerpo = { nombre: 'Carrera', apellido: 'Prueba', dni: String(36100000 + Math.floor(Math.random() * 800000) * 10 + i), fechaNacimiento: '1995-05-20', telefono: '+549296470' + String(2000 + i), nombreUsuario: i % 2 ? nombre.toUpperCase() : nombre, email: 'postman.carrera.' + suf + '.' + i + '@bajonea.test', password: 'Aa1Password2026', direccion: { calle: 'Belgrano', numero: '100', pisoDepto: null, codigoPostal: '9420', localidadId: loc, principal: true } };",
+                  "  const cuerpo = { nombre: 'Carrera', apellido: 'Prueba', dni: String(36100000 + Math.floor(Math.random() * 800000) * 10 + i), fechaNacimiento: '1995-05-20', telefono: '+549296470' + String(2000 + i), nombreUsuario: i % 2 ? nombre.toUpperCase() : nombre, email: 'postman.carrera.' + suf + '.' + i + '@bajonea.test', password: 'Aa1Password2026', aceptaTerminos: true, direccion: { calle: 'Belgrano', numero: '100', pisoDepto: null, codigoPostal: '9420', localidadId: loc, principal: true } };",
                   "  pm.sendRequest({ url: base + '/auth/registro/cliente', method: 'POST', header: { 'Content-Type': 'application/json' }, body: { mode: 'raw', raw: JSON.stringify(cuerpo) } }, (err, res) => {",
                   "    estados.push(err ? -1 : res.code);",
                   "    mensajes.push(err ? String(err) : res.json().mensaje);",
@@ -34836,7 +34928,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Perfil\",\n  \"dni\": \"35701001\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964702001\",\n  \"email\": \"postman.perfilnombreusuario.i@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmperfilcambio1\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Perfil\",\n  \"dni\": \"35701001\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964702001\",\n  \"email\": \"postman.perfilnombreusuario.i@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmperfilcambio1\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -35489,7 +35581,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"PerfilBloqueo\",\n  \"dni\": \"35701002\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964702002\",\n  \"email\": \"postman.perfilnombreusuario.j@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmperfilbloqueo1\"\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"PerfilBloqueo\",\n  \"dni\": \"35701002\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964702002\",\n  \"email\": \"postman.perfilnombreusuario.j@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmperfilbloqueo1\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -42860,7 +42952,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Clienta\",\n  \"apellido\": \"AltaPostman\",\n  \"dni\": \"30600310\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964555000\",\n  \"nombreUsuario\": \"{{altaC_usuario}}\",\n  \"email\": \"{{altaC_email}}\",\n  \"password\": \"{{altaC_password}}\",\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "raw": "{\n  \"nombre\": \"Clienta\",\n  \"apellido\": \"AltaPostman\",\n  \"dni\": \"30600310\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964555000\",\n  \"nombreUsuario\": \"{{altaC_usuario}}\",\n  \"email\": \"{{altaC_email}}\",\n  \"password\": \"{{altaC_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -47970,7 +48062,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Clienta\",\n  \"apellido\": \"CorreccionPostman\",\n  \"dni\": \"30800310\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964555000\",\n  \"nombreUsuario\": \"{{rC_usuario}}\",\n  \"email\": \"{{rC_email}}\",\n  \"password\": \"{{rC_password}}\",\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "raw": "{\n  \"nombre\": \"Clienta\",\n  \"apellido\": \"CorreccionPostman\",\n  \"dni\": \"30800310\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964555000\",\n  \"nombreUsuario\": \"{{rC_usuario}}\",\n  \"email\": \"{{rC_email}}\",\n  \"password\": \"{{rC_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -55580,7 +55672,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Clienta\",\n  \"apellido\": \"CuentaUnicaPostman\",\n  \"dni\": \"30900410\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964555000\",\n  \"nombreUsuario\": \"{{t5_cliente_usuario}}\",\n  \"email\": \"{{t5_cliente_email}}\",\n  \"password\": \"{{t5_cliente_password}}\",\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "raw": "{\n  \"nombre\": \"Clienta\",\n  \"apellido\": \"CuentaUnicaPostman\",\n  \"dni\": \"30900410\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964555000\",\n  \"nombreUsuario\": \"{{t5_cliente_usuario}}\",\n  \"email\": \"{{t5_cliente_email}}\",\n  \"password\": \"{{t5_cliente_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -59377,7 +59469,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"CierreUno\",\n  \"dni\": \"30910410\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964555000\",\n  \"nombreUsuario\": \"{{c1_cliente1_usuario}}\",\n  \"email\": \"{{c1_cliente1_email}}\",\n  \"password\": \"{{c1_cliente1_password}}\",\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"CierreUno\",\n  \"dni\": \"30910410\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964555000\",\n  \"nombreUsuario\": \"{{c1_cliente1_usuario}}\",\n  \"email\": \"{{c1_cliente1_email}}\",\n  \"password\": \"{{c1_cliente1_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -59544,7 +59636,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"CierreDos\",\n  \"dni\": \"30910411\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964555000\",\n  \"nombreUsuario\": \"{{c1_cliente2_usuario}}\",\n  \"email\": \"{{c1_cliente2_email}}\",\n  \"password\": \"{{c1_cliente2_password}}\",\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"CierreDos\",\n  \"dni\": \"30910411\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964555000\",\n  \"nombreUsuario\": \"{{c1_cliente2_usuario}}\",\n  \"email\": \"{{c1_cliente2_email}}\",\n  \"password\": \"{{c1_cliente2_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -62580,7 +62672,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"BloqueoUno\",\n  \"dni\": \"30920410\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964555000\",\n  \"nombreUsuario\": \"{{c2_cliente1_usuario}}\",\n  \"email\": \"{{c2_cliente1_email}}\",\n  \"password\": \"{{c2_cliente1_password}}\",\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"BloqueoUno\",\n  \"dni\": \"30920410\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964555000\",\n  \"nombreUsuario\": \"{{c2_cliente1_usuario}}\",\n  \"email\": \"{{c2_cliente1_email}}\",\n  \"password\": \"{{c2_cliente1_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -62747,7 +62839,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"BloqueoDos\",\n  \"dni\": \"30920411\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964555000\",\n  \"nombreUsuario\": \"{{c2_cliente2_usuario}}\",\n  \"email\": \"{{c2_cliente2_email}}\",\n  \"password\": \"{{c2_cliente2_password}}\",\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"BloqueoDos\",\n  \"dni\": \"30920411\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964555000\",\n  \"nombreUsuario\": \"{{c2_cliente2_usuario}}\",\n  \"email\": \"{{c2_cliente2_email}}\",\n  \"password\": \"{{c2_cliente2_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"

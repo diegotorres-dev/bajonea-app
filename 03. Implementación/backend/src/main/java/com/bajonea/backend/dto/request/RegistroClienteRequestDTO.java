@@ -10,6 +10,7 @@ import com.bajonea.backend.validation.annotations.ValidarPasswordSegura;
 import com.bajonea.backend.validation.annotations.ValidarTelefonoArgentino;
 import com.bajonea.backend.validation.annotations.ValidarUrlCloudinary;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -83,6 +84,10 @@ public class RegistroClienteRequestDTO {
     @Size(max = 500, message = "La foto de perfil no puede superar los 500 caracteres")
     private String fotoPerfilUrl;
 
+    @NotNull(message = "Tenés que aceptar los Términos y Condiciones")
+    @AssertTrue(message = "Tenés que aceptar los Términos y Condiciones")
+    private Boolean aceptaTerminos;
+
     public void setNombre(String nombre) {
         this.nombre = normalizarEspacios(nombre);
     }
@@ -117,6 +122,10 @@ public class RegistroClienteRequestDTO {
 
     public void setFotoPerfilUrl(String fotoPerfilUrl) {
         this.fotoPerfilUrl = fotoPerfilUrl;
+    }
+
+    public void setAceptaTerminos(Boolean aceptaTerminos) {
+        this.aceptaTerminos = aceptaTerminos;
     }
 
     private static String normalizarEspacios(String valor) {

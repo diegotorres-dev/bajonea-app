@@ -121,6 +121,7 @@ items.push(
       nombreUsuario: '{{rC_usuario}}',
       email: '{{rC_email}}',
       password: '{{rC_password}}',
+      aceptaTerminos: true,
       direccion: { calle: 'Calle Siempre Viva', numero: '123', pisoDepto: null, codigoPostal: '9420', localidadId: '{{localidad_id}}', principal: true },
     },
   }), [status(201)]),

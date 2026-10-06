@@ -354,7 +354,7 @@ export function bindNombreUsuario({ inputId = 'nombreUsuario', valorOriginal = n
   };
 }
 
-const CAMPOS_STEP1_BACKEND = ['nombre', 'apellido', 'dni', 'fechaNacimiento', 'telefono', 'nombreUsuario', 'email', 'password'];
+const CAMPOS_STEP1_BACKEND = ['nombre', 'apellido', 'dni', 'fechaNacimiento', 'telefono', 'nombreUsuario', 'email', 'password', 'aceptaTerminos'];
 
 const MAPA_ERRORES_REGISTRO_CLIENTE = {
   nombre: 'error-nombre',
@@ -365,6 +365,7 @@ const MAPA_ERRORES_REGISTRO_CLIENTE = {
   nombreUsuario: 'error-nombreUsuario',
   email: 'error-email',
   password: 'error-password',
+  aceptaTerminos: 'error-terminos',
   'direccion.calle': 'error-calle',
   'direccion.numero': 'error-numero',
   'direccion.pisoDepto': 'error-pisoDepto',
@@ -558,6 +559,7 @@ export function initRegistroCliente() {
       nombreUsuario: document.getElementById('nombreUsuario').value.trim().toLowerCase(),
       email: document.getElementById('email').value.trim().toLowerCase(),
       password: passwordInput.value,
+      aceptaTerminos: document.getElementById('aceptaTerminos').checked,
       direccion: {
         calle: document.getElementById('calle').value.trim(),
         numero: document.getElementById('numero').value.trim(),

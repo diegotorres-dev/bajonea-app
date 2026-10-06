@@ -147,12 +147,15 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   A la persona le llega un email de regularización con el motivo (bloqueada: recuperar la
   contraseña; suspendida: contactar a soporte; inactiva: iniciar sesión para reactivar;
   sin verificar: verificar el email) y se le sugiere pedir que la vuelvan a invitar.
+  El email de regularización nombra solo al comercio que invita, nunca al Dueño.
   Máximo 3 emails de regularización por día por destinatario, contados sobre la tabla de
   notificaciones con canal Email. No se envía a Dueños ni a Administradores.
 - El Dueño debe poder ver el equipo de cada comercio: sus empleados con el estado de la
   relación (Activo, Inactivo) y las invitaciones con su estado (Pendiente, Vencida; una
   invitación que pasó los 7 días se calcula como vencida al consultar, sin un proceso
-  automático).
+  automático). Una invitación invalidada por cinco intentos fallidos se muestra como
+  "Código bloqueado", con el botón "Reenviar". En el tramo E1 esta vista ("Ver equipo")
+  no tiene pestaña Actividad: la tabla de actividad (`V32`) se aplica en el tramo E3.
 - El Dueño debe poder desactivar la relación de un Empleado con un comercio puntual en
   cualquier momento (queda Inactiva con motivo `BAJA_DUENO`), sin afectar las relaciones
   de ese Empleado con otros comercios, propios o de otros Dueños. El Empleado desactivado

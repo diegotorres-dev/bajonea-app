@@ -111,6 +111,7 @@ async function nuevoCliente() {
     nombreUsuario,
     email,
     password: 'Testing123',
+    aceptaTerminos: true,
     direccion: { calle: 'Stress', numero: '1', pisoDepto: null, codigoPostal: '9420', localidadId: LOC, principal: true },
   });
   if (r.status !== 201) throw new Error('registro cliente ' + JSON.stringify(r));

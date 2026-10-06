@@ -215,7 +215,10 @@ El sistema emite notificaciones push (y en algunos casos email) ante los siguien
 - Aceptar con cuenta nueva crea Usuario, PersonaFisica, Cliente y Empleado en una sola transacción, con la aceptación de Términos y Condiciones validada en el servidor; aceptar con cuenta existente alcanza con email y código. Dos aceptaciones simultáneas del mismo código se resuelven en el servidor: gana una y la otra recibe el mismo error genérico de "código incorrecto o vencido". Lo mismo ocurre si se acepta mientras el Dueño cancela o reenvía.
 - Al aceptar, el sistema revalida la regla de combinaciones de roles y, si la persona ya tenía una relación con el comercio, la reactiva (misma fila).
 - Solo se puede invitar con el comercio Aprobado o Apto para Venta.
-- La invitación a una cuenta bloqueada, suspendida, inactiva o sin verificar no se crea; se registra el aviso de regularización (T35), con tope de 3 por día por destinatario, y no se envía a Dueños ni Administradores.
+- La invitación a una cuenta bloqueada, suspendida, inactiva o sin verificar no se crea; se registra el aviso de regularización (T35), con tope de 3 por día por destinatario, y no se envía a Dueños ni Administradores. El email de regularización nombra solo al comercio, nunca al Dueño.
+- Un código de invitación incorrecto o de una invitación ya no vigente recibe siempre la misma respuesta 401, sin intentos restantes: "El código es incorrecto o la invitación ya no está vigente. Pedí que te reenvíen la invitación." Reenviar y aceptar responden 200.
+- Se puede aceptar una invitación con el comercio Aprobado, Apto para Venta, Cerrado Temporalmente o Suspendido, y no con el comercio Pendiente, Rechazado, con Rechazo Definitivo o Inactivo.
+- Las filas de la tabla de actividad (`V32`) se empiezan a escribir en el tramo E3; "Ver equipo" de E1 no muestra actividad.
 
 ---
 

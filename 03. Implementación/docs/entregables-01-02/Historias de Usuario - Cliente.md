@@ -4,7 +4,7 @@
 
 Como cliente, quiero registrarme en la plataforma eligiendo un nombre de usuario y mi
 contraseña, e ingresando mis datos personales y una dirección de entrega inicial, para poder realizar pedidos en los comercios
-disponibles con una dirección principal ya configurada desde el comienzo.
+disponibles con una dirección principal ya configurada desde el comienzo. Para crear la cuenta tengo que aceptar los Términos y Condiciones; el sistema no me deja registrarme sin aceptarlos.
 
 ## HU-C02: Verificar mi Cuenta
 
