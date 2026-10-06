@@ -3,8 +3,8 @@
 **Proyecto:** Bajoneá — Plataforma de pedidos gastronómicos en línea  
 **Motor de base de datos:** MySQL (InnoDB)  
 **ORM / Migraciones:** Spring Data JPA + Hibernate / Flyway  
-**Versión del modelo:** 1.11  
-**Estado de la v1.11:** documenta el modelo del rol Empleado decidido el 2026-10-05 (ver `docs/DECISIONES.md`). Las tablas `InvitacionEmpleado`, `HistorialEmpleadoComercio` y `ActividadComercio` y el cambio de `EmpleadoComercio.estado` están **planificados** (migraciones `V29` a `V32`, tramo E1) y todavía no existen en la base ni en el código; los pasajes que los describen están marcados como planificados.  
+**Versión del modelo:** 1.12  
+**Estado de la v1.12:** el modelo del rol Empleado decidido el 2026-10-05 (ver `docs/DECISIONES.md`) está **implementado en parte** (tramo E1, bloques A1 y A2, 2026-10-06): las migraciones `V29` (estado de la relación `ACTIVO`/`INACTIVO`), `V30` (`InvitacionEmpleado`) y `V31` (`HistorialEmpleadoComercio`) están aplicadas, con sus entidades, repositorios y los servicios de invitar, reenviar, cancelar y listar el equipo, pero todavía sin endpoints ni pantallas (bloques A3 a A5 y entrega B). `ActividadComercio` (`V32`) sigue **planificada**: se aplica en el tramo E3 y no existe todavía en la base. Los pasajes que describen lo que aún no existe están marcados como planificados.  
 
 ## 1. Tipos Enumerados (ENUMs)
 
@@ -186,7 +186,7 @@ Propósito funcional del token de seguridad de un solo uso.
 | `VERIFICACION_EMAIL` | Token enviado al registrarse para verificar la dirección de email. |
 | `RECUPERACION_PASSWORD` | Token enviado para restablecer la contraseña olvidada. También desbloquea usuarios en estado `BLOQUEADO`. |
 | `REACTIVACION_CUENTA` | Token enviado para reactivar una cuenta en estado `INACTIVO`. |
-| `INVITACION_EMPLEADO` | **Sin uso.** El valor existe en el ENUM de la base pero las invitaciones de Empleado no usan la tabla `Token` (`Token.usuario_id` es obligatorio y el invitado puede no tener cuenta): viven en `InvitacionEmpleado` (planificado, `V30`). |
+| `INVITACION_EMPLEADO` | **Sin uso.** El valor existe en el ENUM de la base pero las invitaciones de Empleado no usan la tabla `Token` (`Token.usuario_id` es obligatorio y el invitado puede no tener cuenta): viven en `InvitacionEmpleado` (implementado, `V30`). |
 
 > **Nota de implementación (MVP, Tramo 16.12 de `03. Implementación`, 2026-07-28):** el MVP se apartó de este diseño original para los 3 tipos de token existentes en ese momento (`VERIFICACION_EMAIL`, `RECUPERACION_PASSWORD`, `REACTIVACION_CUENTA`) — se generan como un código numérico de 6 dígitos (no UUID v4), pensado para tipeo manual por el usuario en una pantalla de la app, no como parte de un link. `INVITACION_EMPLEADO` se incorpora con posterioridad a esa nota; salvo indicación en contrario en `docs/DECISIONES.md`, sigue el diseño original (UUID v4 como parte de un link de invitación por email). El resto del párrafo (tabla `Token` discriminada por `tipo`, expiración según duración por tipo, invalidación tras el primer uso) sigue vigente sin cambios. Detalle completo en `03. Implementación/docs/modelo-mvp.md` (tabla `token`) y `03. Implementación/docs/DECISIONES.md`.
 >
@@ -197,7 +197,7 @@ Propósito funcional del token de seguridad de un solo uso.
 
 Estado de la relación entre un Empleado y un Comercio puntual (tabla `EmpleadoComercio`).
 
-> **Planificado (migración `V29`, tramo E1):** pasa de `PENDIENTE`/`ACTIVO`/`DESACTIVADO` a `ACTIVO`/`INACTIVO`. Hoy, en la base, el ENUM todavía tiene los tres valores anteriores y la tabla no tiene filas.
+> **Implementado (migración `V29`, tramo E1):** pasó de `PENDIENTE`/`ACTIVO`/`DESACTIVADO` a `ACTIVO`/`INACTIVO`. La migración hace el cambio en tres pasos (ampliar, convertir y reducir); la tabla no tenía filas.
 
 | Valor | Descripción |
 |-------|-------------|
@@ -210,7 +210,7 @@ Estado de la relación entre un Empleado y un Comercio puntual (tabla `EmpleadoC
 
 ### ENUM: EstadoInvitacionEmpleado
 
-*Planificado (migración `V30`, tramo E1).* Estado de una fila de `InvitacionEmpleado`.
+*Implementado (migración `V30`, tramo E1).* Estado de una fila de `InvitacionEmpleado`. Hoy el código solo produce `PENDIENTE`, `CANCELADA`, `REEMPLAZADA` y `VENCIDA`; `ACEPTADA` e `INVALIDADA` los escribe el bloque A3 (validar y aceptar).
 
 | Valor | Descripción |
 |-------|-------------|
@@ -218,14 +218,14 @@ Estado de la relación entre un Empleado y un Comercio puntual (tabla `EmpleadoC
 | `ACEPTADA` | El invitado la aceptó con su email y el código. |
 | `CANCELADA` | El Dueno la canceló antes de que fuera aceptada. |
 | `REEMPLAZADA` | El Dueno reenvió la invitación: la fila anterior queda reemplazada por una nueva. |
-| `VENCIDA` | Pasaron los 7 días sin aceptarse; se marca de forma perezosa (al volver a invitar), no por un job. |
+| `VENCIDA` | Pasaron los 7 días sin aceptarse; se marca de forma perezosa (al invitar o reenviar al mismo email, para liberar el único pendiente por comercio y email), no por un job. |
 | `INVALIDADA` | El código acumuló 5 intentos fallidos; hay que reenviar la invitación. |
 
 ---
 
 ### ENUM: MotivoHistorialEmpleado
 
-*Planificado (migración `V31`, tramo E1).* Evento del equipo registrado en `HistorialEmpleadoComercio`.
+*Implementado (migración `V31`, tramo E1).* Evento del equipo registrado en `HistorialEmpleadoComercio`. Hoy el código solo escribe `INVITACION` e `INVITACION_CANCELADA`; los demás motivos llegan con los bloques A3 y E4.
 
 | Valor | Descripción |
 |-------|-------------|
@@ -240,7 +240,7 @@ Estado de la relación entre un Empleado y un Comercio puntual (tabla `EmpleadoC
 
 ### ENUM: TipoEntidadActividad
 
-*Planificado (migración `V32`, tramo E1; se usa desde el tramo E3).* Tipo de entidad sobre la que se hizo una acción registrada en `ActividadComercio`.
+*Planificado (migración `V32`, que se aplica en el tramo E3).* Tipo de entidad sobre la que se hizo una acción registrada en `ActividadComercio`.
 
 | Valor | Descripción |
 |-------|-------------|
@@ -257,7 +257,7 @@ Estado de la relación entre un Empleado y un Comercio puntual (tabla `EmpleadoC
 
 ### ENUM: AccionActividad
 
-*Planificado (migración `V32`).* Acción registrada en `ActividadComercio`. Es un conjunto chico y estable: el detalle va en el texto de `detalle`, no en valores nuevos del ENUM.
+*Planificado (migración `V32`, tramo E3).* Acción registrada en `ActividadComercio`. Es un conjunto chico y estable: el detalle va en el texto de `detalle`, no en valores nuevos del ENUM.
 
 | Valor | Descripción |
 |-------|-------------|
@@ -560,10 +560,10 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 | `CLIENTE_SUSPENDIDO` | T28 | Cliente | Push + Email | Cliente suspendido por el Administrador con motivo. |
 | `SUSPENSION_LEVANTADA` | T29 | Cliente o Dueno | Push + Email | Suspensión levantada por el Administrador. |
 | `PEDIDO_AUTOCONFIRMADO_COMERCIO` | T30 | Dueno y Empleados activos del comercio | Push | El sistema autoconfirmó la entrega del pedido (timer 90 min). Hoy no se emite a nadie; planificado como último ítem del tramo E3. |
-| `INVITACION_EMPLEADO` | T31 | Persona invitada | Email | Invitación para operar un comercio como Empleado. El email lleva el código en el texto; no genera una fila de notificación in-app. |
+| `INVITACION_EMPLEADO` | T31 | Persona invitada | Email | Invitación para operar un comercio como Empleado. El email lleva el código en el texto y un enlace genérico a `{app.frontend-base-url}/invitacion-empleado.html` (sin código, sin email y sin `#` en la URL); no genera una fila de notificación in-app. |
 | `EMPLEADO_DESACTIVADO` | T32 | Empleado | Push | El Dueno desactivó al empleado de un comercio puntual. |
 
-> **Reutilización de tipos para el Empleado (planificado, tramos E1 a E4; sin valores nuevos de ENUM):** T33 (invitación aceptada) usa `INVITACION_EMPLEADO` dirigido al Dueno, con `entidad_tipo = COMERCIO`; T34 (el empleado renunció) usa `EMPLEADO_DESACTIVADO` dirigido al Dueno con otro texto; T35 (aviso de regularización a una cuenta que no se pudo invitar) usa `INVITACION_EMPLEADO` con `canal = EMAIL` y `estado = ENVIADO`, dirigido al `usuario_id` de la persona, y sirve para contar el tope de 3 por día por destinatario. Las operativas (T1, T9, T13 y T30) se emiten una vez por cada Empleado `ACTIVO` además del Dueno.
+> **Reutilización de tipos para el Empleado (sin valores nuevos de ENUM; T35 implementado en el bloque A2 de E1, el resto planificado en E1 a E4):** T33 (invitación aceptada) usa `INVITACION_EMPLEADO` dirigido al Dueno, con `entidad_tipo = COMERCIO`; T34 (el empleado renunció) usa `EMPLEADO_DESACTIVADO` dirigido al Dueno con otro texto; T35 (aviso de regularización a una cuenta que no se pudo invitar) usa `INVITACION_EMPLEADO` con `canal = EMAIL` y `estado = ENVIADO`, dirigido al `usuario_id` de la persona, y sirve para contar el tope de 3 por día por destinatario (24 horas corridas; la fila se escribe aunque falle el envío, porque significa "se intentó"). Los listados y el contador de la campana del Cliente filtran `canal = PUSH` para no mostrar estas filas. Las operativas (T1, T9, T13 y T30) se emiten una vez por cada Empleado `ACTIVO` además del Dueno.
 
 ---
 
@@ -791,7 +791,7 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 
 ### Tabla: Empleado
 
-**Descripción:** Subtipo de `PersonaFisica` para quien opera comercios en nombre de un Dueno. Tabla de identidad que actúa como nodo de unión entre el usuario y los comercios donde opera (relación M:N vía `EmpleadoComercio`). **Planificado (tramo E1):** la fila se crea al aceptar la primera invitación (o ya existe si la persona fue Empleado antes) y el `Usuario` conserva `rol = CLIENTE`; hoy no se crea ninguna fila. No tiene columnas propias más allá de la PK y el timestamp de creación.
+**Descripción:** Subtipo de `PersonaFisica` para quien opera comercios en nombre de un Dueno. Tabla de identidad que actúa como nodo de unión entre el usuario y los comercios donde opera (relación M:N vía `EmpleadoComercio`). **Entidad y repositorio implementados (tramo E1, bloque A1); la creación de la fila queda para el bloque A3:** la fila se crea al aceptar la primera invitación (o ya existe si la persona fue Empleado antes) y el `Usuario` conserva `rol = CLIENTE`; hoy ningún código crea filas. No tiene columnas propias más allá de la PK y el timestamp de creación.
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
@@ -977,14 +977,14 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | `id` | INT | NO | AI | PK, AI | Identificador único de la relación. |
 | `empleado_id` | INT | NO | — | FK → Empleado.id, NN | Empleado vinculado al comercio. |
 | `comercio_id` | INT | NO | — | FK → Comercio.id, NN | Comercio donde opera el empleado. |
-| `estado` | ENUM EstadoEmpleadoComercio | NO | `'ACTIVO'` (planificado, `V29`; hoy `'PENDIENTE'`) | NN | Estado de la relación empleado-comercio: `ACTIVO` o `INACTIVO`. |
+| `estado` | ENUM EstadoEmpleadoComercio | NO | `'ACTIVO'` (desde `V29`) | NN | Estado de la relación empleado-comercio: `ACTIVO` o `INACTIVO`. |
 | `fecha_alta` | DATETIME | NO | `NOW()` | NN | Fecha y hora de la creación de la fila, que desde `V29` coincide con la primera aceptación de la invitación. Una reactivación no la cambia (queda en el historial). |
 | `fecha_baja` | DATETIME | SÍ | NULL | — | Fecha y hora en que la relación pasó a `INACTIVO` (baja del Dueno o renuncia). Se vuelve a `NULL` al reactivar. El motivo y el actor quedan en `HistorialEmpleadoComercio`. |
 
 **Índices:** `PRIMARY KEY (id)` | `UNIQUE (empleado_id, comercio_id)` | `INDEX (comercio_id)` | `INDEX (empleado_id)`
 
 **Reglas de negocio:**
-- **Planificado (migración `V29`, tramo E1):** el ENUM `estado` pasa de `PENDIENTE`/`ACTIVO`/`DESACTIVADO` a `ACTIVO`/`INACTIVO`, con default `ACTIVO`. La migración convierte los `DESACTIVADO` en `INACTIVO` y elimina los `PENDIENTE` (en tres pasos, mismo patrón que `V9`); hoy la tabla no tiene filas.
+- **Implementado (migración `V29`, tramo E1):** el ENUM `estado` pasó de `PENDIENTE`/`ACTIVO`/`DESACTIVADO` a `ACTIVO`/`INACTIVO`, con default `ACTIVO`. La migración convierte los `DESACTIVADO` en `INACTIVO` y elimina los `PENDIENTE` (en tres pasos, mismo patrón que `V9`); la tabla no tenía filas. La entidad `EmpleadoComercio` y su repositorio existen; todavía no hay código que cree filas (lo hace la aceptación, bloque A3).
 - La relación se crea únicamente al aceptar la invitación. Aceptar con un email sin `Usuario` crea `Usuario`/`PersonaFisica`/`Cliente`/`Empleado` en la misma transacción (con los datos del registro de Cliente y la aceptación de Términos y Condiciones validada en el servidor); con un `Usuario` existente alcanza con email y código y solo se agrega la fila de `Empleado` (si falta) y esta relación.
 - El `Dueno` puede pasar la relación a `INACTIVO` en cualquier momento (motivo `BAJA_DUENO`) y reactivarla directamente, sin código, solo si él mismo la dio de baja. Si el empleado renunció (motivo `RENUNCIA`) o la invitación se canceló, hace falta una invitación nueva, que reutiliza la misma fila. Ninguna de estas acciones afecta los otros comercios donde el empleado esté `ACTIVO`.
 - La autorización del Empleado se comprueba contra esta tabla en cada request (relación `ACTIVO` del usuario autenticado con el comercio del encabezado `X-Comercio-Id`); si no corresponde, la respuesta es la misma que para un comercio inexistente.
@@ -995,7 +995,7 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 
 ### Tabla: InvitacionEmpleado
 
-> **Planificada — migración `V30`, tramo E1.** No existe todavía en la base ni en el código.
+> **Implementada — migración `V30`, tramo E1 (bloques A1 y A2, 2026-10-06).** Entidad `InvitacionEmpleado`, repositorios `InvitacionEmpleadoRepository` e `InvitacionInsercionRepository` (inserción por JDBC con reintento ante colisión de código, mismo patrón que `TokenInsercionRepository`) y servicio `InvitacionEmpleadoService`. Sin endpoints todavía.
 
 **Descripción:** Una fila por cada **envío** de una invitación para operar un comercio como Empleado. Vive en una estructura propia y no en `Token` porque el invitado puede no tener cuenta (`Token.usuario_id` es obligatorio) y porque cada envío necesita su propio ciclo de vida. Reenviar crea una fila nueva y deja la anterior en `REEMPLAZADA`. El invitado se identifica con su email y el código de 6 dígitos que llegó en el texto del email.
 
@@ -1021,14 +1021,16 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 - Tope de 5 envíos por hora por comercio: se cuenta `COUNT(*)` de las filas con `comercio_id = ?` y `fecha_creacion` dentro de la última hora, cada envío o reenvío es una fila. Para que el tope sea exacto se serializa por el Dueno que invita.
 - Solo se crea con el comercio `APROBADO` o `APTO_VENTA`. Si el email pertenece a un Dueno o a un Administrador, o a una cuenta bloqueada, suspendida, inactiva o sin verificar, no se crea la invitación (ver T35 y la regla de combinaciones, sección 12).
 - Aceptar identifica por email y código leyendo las invitaciones `PENDIENTE` del email con bloqueo; una aceptación simultánea con una cancelación o un reenvío deja un solo ganador y las demás reciben el mismo error genérico. La matriz de roles se revalida al aceptar.
-- "Vencida" se calcula al consultar (`PENDIENTE` con `fecha_vencimiento` pasada); la fila se marca `VENCIDA` de forma perezosa al volver a invitar, sin job. Cada cambio de estado se registra en `HistorialEmpleadoComercio`.
+- "Vencida" se calcula al consultar (`PENDIENTE` con `fecha_vencimiento` pasada); la fila se marca `VENCIDA` de forma perezosa al invitar o reenviar al mismo email, sin job. El historial registra hoy el envío (`INVITACION`) y la cancelación (`INVITACION_CANCELADA`).
+- Hoy, al invitar o reenviar, el servicio toma primero la fila de `usuario` del Dueno en modo exclusivo (serializa el tope de 5 por hora y toda la secuencia comprobar-y-escribir), después las invitaciones del par comercio y email y, al final, lee el estado del comercio con bloqueo compartido; al cancelar toma la fila del Dueno en modo compartido y después la invitación. Reenviar acepta invitaciones `PENDIENTE` (vigentes o vencidas), `VENCIDA` e `INVALIDADA` y las deja `REEMPLAZADA`; cancelar acepta solo las guardadas como `PENDIENTE`.
+- La invitación solo se crea si el email no pertenece a un Dueno o Administrador, no es ya miembro `ACTIVO` del comercio y la cuenta (si existe) está `ACTIVO`. En los casos de rechazo por rol o por cuenta no activa el Dueno recibe siempre el mismo `409` genérico, y las filas de regularización se escriben aunque haya `409` (`noRollbackFor` de la excepción específica, no de clase).
 - Orden de bloqueo del tramo: `usuario` (en `id` ascendente si son dos) → `invitacion_empleado` → `empleado_comercio` → `comercio` (compartido).
 
 ---
 
 ### Tabla: HistorialEmpleadoComercio
 
-> **Planificada — migración `V31`, tramo E1** (pantallas en el tramo E4). Tabla física `historial_empleado_comercio`.
+> **Implementada — migración `V31`, tramo E1 (bloque A1, 2026-10-06)**; las pantallas llegan en el tramo E4. Tabla física `historial_empleado_comercio`; entidad `HistorialEmpleadoComercio` y repositorio con consulta por comercio.
 
 **Descripción:** Registro append-only de los eventos del equipo de un comercio: invitación, aceptación, invitación cancelada, baja del Dueno, renuncia y reactivación, con quién lo hizo y cuándo. Los eventos de invitación ocurren cuando la fila de `EmpleadoComercio` todavía no existe (cuenta nueva) o sin transición de estado, por eso cuelga de la relación **o** de la invitación (ambas FK nulables).
 
@@ -1055,7 +1057,7 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 
 ### Tabla: ActividadComercio
 
-> **Planificada — migración `V32`, tramo E1** (se escribe desde el tramo E3). Tabla física `actividad_comercio`.
+> **Planificada — migración `V32`, que se aplica en el tramo E3** (no en E1: no existe todavía en la base ni en el código). Tabla física `actividad_comercio`.
 
 **Descripción:** Bitácora de escrituras sobre el comercio: quién hizo qué y cuándo. No guarda valores anteriores. Repite a propósito datos que ya guardan `HistorialEstadoPedido` y `HistorialCierreComercio` para que "Ver equipo" lea una sola tabla.
 
@@ -1254,7 +1256,8 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 
 **Reglas de negocio:**
 - `entidad_tipo` + `entidad_id` es una referencia genérica opcional hacia cualquier entidad del sistema (hoy `PEDIDO` o `COMERCIO`, ver `ENUM: TipoEntidadNotificacion`), en vez de una columna `*_id` nullable dedicada por cada tipo de entidad referenciable — diseño abierto a sumar más valores de `entidad_tipo` a futuro sin alterar la estructura de la tabla.
-- **Planificado (rol Empleado):** los listados y contadores in-app deben filtrar `canal = PUSH` (las filas `EMAIL`, como el aviso de regularización T35, no se muestran en la campana), y el listado y contador del contexto Cliente dejan de traer las notificaciones asociadas a un comercio (`entidad_tipo = COMERCIO`), salvo `EMPLEADO_DESACTIVADO` dirigido a quien fue desactivado.
+- **Implementado (rol Empleado, bloque A2 de E1):** el listado y el contador in-app del Cliente (y de quien no es Dueno) filtran `canal = PUSH`: las filas `EMAIL`, como el aviso de regularización T35, no se muestran en la campana. Las consultas por comercio del Dueno no cambian (las filas de regularización no llevan entidad).
+- **Planificado (rol Empleado, tramo E3):** el listado y contador del contexto Cliente dejan de traer las notificaciones asociadas a un comercio (`entidad_tipo = COMERCIO`), salvo `EMPLEADO_DESACTIVADO` dirigido a quien fue desactivado.
 - **Sin FK física:** MySQL no soporta una FK condicional/polimórfica que apunte a distintas tablas según el valor de otra columna. La integridad de `entidad_id` respecto a la tabla indicada por `entidad_tipo` se garantiza a nivel de aplicación, no de base de datos. Si la entidad referenciada se elimina físicamente en el futuro, corresponde limpiar o anular las notificaciones asociadas a nivel de servicio.
 
 ---
@@ -1759,15 +1762,15 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | 56 | `AlertaWebhookMp` | `pedido_id` | `Pedido` | N:1 | N alertas → 1 pedido | Rastro de casos no resueltos del webhook de MercadoPago (`ON DELETE SET NULL`). |
 | 57 | `CodigoVinculacionMp` | `dueno_id` | `Dueno` | N:1 | N intentos → 1 Dueno | Intentos de vinculación OAuth de MercadoPago. |
 | 58 | `HistorialCambioNombreUsuario` | `usuario_id` | `Usuario` | N:1 | N cambios → 1 usuario | Auditoría de los cambios de nombre de usuario (`ON DELETE CASCADE`). |
-| 59 | `InvitacionEmpleado` | `comercio_id` | `Comercio` | N:1 | N invitaciones → 1 comercio | *Planificada (`V30`).* Invitaciones enviadas para operar el comercio. |
-| 60 | `InvitacionEmpleado` | `invitado_por_usuario_id` | `Usuario` | N:1 | N invitaciones → 1 usuario | *Planificada (`V30`).* Dueno que envió la invitación. |
-| 61 | `InvitacionEmpleado` | `usuario_aceptante_id` | `Usuario` | N:1 | N invitaciones → 1 usuario | *Planificada (`V30`).* Usuario que la aceptó (`NULL` hasta entonces). |
-| 62 | `HistorialEmpleadoComercio` | `comercio_id` | `Comercio` | N:1 | N eventos → 1 comercio | *Planificada (`V31`).* Historial del equipo del comercio. |
-| 63 | `HistorialEmpleadoComercio` | `empleado_comercio_id` | `EmpleadoComercio` | N:1 | N eventos → 1 relación | *Planificada (`V31`).* Relación afectada (nulable: eventos de invitación). |
-| 64 | `HistorialEmpleadoComercio` | `invitacion_id` | `InvitacionEmpleado` | N:1 | N eventos → 1 invitación | *Planificada (`V31`).* Invitación afectada (nulable: eventos de la relación). |
-| 65 | `HistorialEmpleadoComercio` | `actor_usuario_id` | `Usuario` | N:1 | N eventos → 1 usuario | *Planificada (`V31`).* Quien ejecutó el evento. |
-| 66 | `ActividadComercio` | `comercio_id` | `Comercio` | N:1 | N registros → 1 comercio | *Planificada (`V32`).* Bitácora de escrituras del comercio. |
-| 67 | `ActividadComercio` | `usuario_id` | `Usuario` | N:1 | N registros → 1 usuario | *Planificada (`V32`).* Quien hizo la acción. |
+| 59 | `InvitacionEmpleado` | `comercio_id` | `Comercio` | N:1 | N invitaciones → 1 comercio | *Implementada (`V30`).* Invitaciones enviadas para operar el comercio. |
+| 60 | `InvitacionEmpleado` | `invitado_por_usuario_id` | `Usuario` | N:1 | N invitaciones → 1 usuario | *Implementada (`V30`).* Dueno que envió la invitación. |
+| 61 | `InvitacionEmpleado` | `usuario_aceptante_id` | `Usuario` | N:1 | N invitaciones → 1 usuario | *Implementada (`V30`).* Usuario que la aceptó (`NULL` hasta entonces). |
+| 62 | `HistorialEmpleadoComercio` | `comercio_id` | `Comercio` | N:1 | N eventos → 1 comercio | *Implementada (`V31`).* Historial del equipo del comercio. |
+| 63 | `HistorialEmpleadoComercio` | `empleado_comercio_id` | `EmpleadoComercio` | N:1 | N eventos → 1 relación | *Implementada (`V31`).* Relación afectada (nulable: eventos de invitación). |
+| 64 | `HistorialEmpleadoComercio` | `invitacion_id` | `InvitacionEmpleado` | N:1 | N eventos → 1 invitación | *Implementada (`V31`).* Invitación afectada (nulable: eventos de la relación). |
+| 65 | `HistorialEmpleadoComercio` | `actor_usuario_id` | `Usuario` | N:1 | N eventos → 1 usuario | *Implementada (`V31`).* Quien ejecutó el evento. |
+| 66 | `ActividadComercio` | `comercio_id` | `Comercio` | N:1 | N registros → 1 comercio | *Planificada (`V32`, tramo E3).* Bitácora de escrituras del comercio. |
+| 67 | `ActividadComercio` | `usuario_id` | `Usuario` | N:1 | N registros → 1 usuario | *Planificada (`V32`, tramo E3).* Quien hizo la acción. |
 
 ---
 
@@ -1785,8 +1788,8 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | `CuentaMercadoPago` | `mp_user_id_activo` | Una cuenta de MercadoPago activa pertenece a un solo Dueno (índice único sobre la columna generada, migración `V27`). |
 | `RedSocial` | `(comercio_id, tipo)` | Un comercio no puede tener dos links activos del mismo tipo (validado a nivel aplicación, solo filas activas). |
 | `EmpleadoComercio` | `(empleado_id, comercio_id)` | Un empleado no puede tener más de una relación con el mismo comercio. |
-| `InvitacionEmpleado` | `(comercio_id, email, pendiente_clave)` | *Planificada (`V30`).* Una sola invitación pendiente por comercio y email (la columna generada es `NULL` fuera de `PENDIENTE`). |
-| `InvitacionEmpleado` | `(email, codigo, pendiente_clave)` | *Planificada (`V30`).* Un código no se repite entre las invitaciones pendientes de un mismo email. |
+| `InvitacionEmpleado` | `(comercio_id, email, pendiente_clave)` | *Implementada (`V30`).* Una sola invitación pendiente por comercio y email (la columna generada es `NULL` fuera de `PENDIENTE`). |
+| `InvitacionEmpleado` | `(email, codigo, pendiente_clave)` | *Implementada (`V30`).* Un código no se repite entre las invitaciones pendientes de un mismo email. |
 | `Categoria` | `nombre` | Nombre de categoría único. |
 | `Tag` | `nombre` | Nombre de tag único. |
 | `Carrito` | `cliente_id` | Un cliente tiene exactamente un carrito. |
@@ -1803,7 +1806,7 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 
 ### Combinaciones de roles y contexto del Empleado
 
-> Decidido el 2026-10-05 (ver `docs/DECISIONES.md`). Lo que depende de `InvitacionEmpleado`, `HistorialEmpleadoComercio`, `ActividadComercio` y del nuevo `EstadoEmpleadoComercio` está **planificado** (tramos E1 a E4); hoy el código no tiene nada del rol Empleado.
+> Decidido el 2026-10-05 (ver `docs/DECISIONES.md`). Implementado en parte en el tramo E1 (bloques A1 y A2, 2026-10-06): `InvitacionEmpleado`, `HistorialEmpleadoComercio`, el nuevo `EstadoEmpleadoComercio` y el servicio de matriz de roles (`MatrizRolesService`, que lee las capacidades de una cuenta con un `existsById` por tabla de subtipo y rechaza invitar a un Dueno o Administrador). Sigue **planificado** (A3 a A5, E2 a E4): aceptar invitaciones, endpoints, pantallas, el contexto del Empleado en cada request y `ActividadComercio`.
 
 - **Regla de combinaciones (regla de negocio):** un Administrador es Administrador o Cliente; un Dueno es Dueno o Cliente; un Empleado es Empleado o Cliente. Un Cliente puede sumar el rol Empleado por invitación. Un Dueno no puede ser Empleado de otro local y un Administrador no puede ser Empleado ni Dueno.
 - **Alcance:** solo se construye y se hace cumplir "Empleado + Cliente" y que un Empleado nunca sea Dueno ni Administrador. "Dueno + Cliente" y "Administrador + Cliente" quedan como regla escrita sin mecanismo: hoy ni el Dueno ni el Administrador tienen fila `Cliente` y las rutas de Cliente exigen `ROLE_CLIENTE`. Un Cliente existente tampoco puede pasar a Dueno (registrar un comercio con un email o DNI existentes responde `409`) y no se construye en este bloque.
@@ -1891,4 +1894,4 @@ LISTO_PARA_RETIRAR ──[90 min durante suspensión]───────→ EN
 
 ---
 
-*Diccionario de Datos — Proyecto Bajoneá — Versión 1.11*
+*Diccionario de Datos — Proyecto Bajoneá — Versión 1.12*
