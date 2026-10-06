@@ -33,19 +33,26 @@ El sistema gestiona cuatro roles: Cliente, Dueño, Empleado y Administrador.
   comercio que administra queda habilitado de forma individual tras la aprobación del
   Administrador. La cuenta de MercadoPago se vincula una única vez a nivel Dueño y
   habilita el cobro en todos los comercios aprobados de ese Dueño.
-- **Empleado:** cuenta con login propio, invitada por un Dueño para operar el día a día
-  de uno o varios comercios (gestión de productos y pedidos), sin acceso a los datos
-  fiscales, a la cuenta de MercadoPago ni a la gestión de otros empleados. Un mismo
-  Empleado puede operar comercios de Dueños distintos sin restricción.
-- **Roles combinados:** una misma persona puede tener simultáneamente rol Cliente y
-  rol Empleado bajo el mismo Usuario/login (por ejemplo, alguien que pide comida como
-  Cliente y también trabaja operando el panel de un comercio como Empleado). El modelo
-  de datos lo soporta sin cambios de estructura: Cliente y Empleado son subtipos
-  independientes de PersonaFisica. Si el sistema detecta más de un rol activo para el
-  mismo Usuario, el login presenta un selector de contexto ("¿Cómo querés entrar: como
-  Cliente, o como Empleado de [comercio]?"), reutilizando el mismo mecanismo del
-  selector de comercio activo del Dueño. No implica cerrar sesión para cambiar de
-  contexto.
+- **Empleado:** persona invitada por un Dueño para operar el día a día de uno o varios
+  comercios (productos, pedidos, apertura y cierre, datos y foto del comercio), sin acceso
+  a los datos fiscales, a MercadoPago, a las redes sociales ni a la gestión del equipo. Un
+  mismo Empleado puede operar comercios de Dueños distintos sin restricción. Entra solo por
+  invitación (no existe un registro propio de Empleado) y la invitación es por comercio.
+  *Planificado: se implementa en los tramos E1 a E4 (ver `docs/DECISIONES.md`, 2026-10-05).*
+- **Combinaciones de roles (regla de negocio):** un Administrador es Administrador o
+  Cliente; un Dueño es Dueño o Cliente; un Empleado es Empleado o Cliente. Un Cliente
+  puede sumar el rol Empleado por invitación (por ejemplo, alguien que pide comida como
+  Cliente y también trabaja operando el panel de un comercio). Un Dueño no puede ser
+  Empleado de otro local y un Administrador no puede ser Empleado ni Dueño. **Alcance:**
+  solo se construye y se hace cumplir "Empleado + Cliente" y que un Empleado nunca sea
+  Dueño ni Administrador; "Dueño + Cliente" y "Administrador + Cliente" quedan como regla
+  escrita sin mecanismo (ver Limitaciones Conocidas de Implementación).
+- **Contexto de operación:** no existe multirol físico. Una sola columna de rol por usuario
+  y un solo rol en el token de sesión; quien es Cliente y Empleado entra con su login y, si
+  tiene más de un contexto (Cliente y uno o más comercios), el sistema recuerda el último
+  que eligió y entra directo, o presenta un selector la primera vez o cuando el último ya
+  no es válido. Se puede cambiar de contexto desde el perfil sin cerrar sesión, y el
+  selector reutiliza la franja de selección de comercio del Dueño.
 
 ### Acceso público
 La visualización de comercios y menús es pública y no requiere registro. El catálogo
@@ -122,7 +129,7 @@ El email se utiliza en los siguientes flujos:
 - Aviso de suspensión levantada (cuando el administrador reactiva una cuenta suspendida)
 - Aviso de sesión cerrada en otro dispositivo (seguridad)
 - Cancelación de pedido por suspensión del comercio (notificación a clientes afectados)
-- Invitación a operar un comercio como Empleado (al email de la persona invitada)
+- Invitación a operar un comercio como Empleado (al email de la persona invitada, con un código de 6 dígitos que vence a los 7 días) y aviso de regularización cuando se intenta invitar a una cuenta bloqueada, suspendida, inactiva o sin verificar
 
 ### Gestión de pedidos
 El sistema contempla retiro en el local y envío a domicilio, con la posibilidad de
@@ -161,7 +168,8 @@ Los pedidos atraviesan los siguientes estados a lo largo de su ciclo de vida:
 - **Sin niveles de permiso entre Empleados:** todo Empleado en estado Activo dentro de
   un comercio (relación EmpleadoComercio) cuenta con el mismo conjunto de permisos
   operativos (gestión de productos y pedidos). No existen sub-roles ni permisos
-  diferenciados entre empleados de un mismo comercio.
+  diferenciados entre empleados de un mismo comercio. No hay tope de empleados por
+  comercio.
 
 - **Sin cálculo de costo de envío:** La plataforma no gestiona ni calcula tarifas de
   envío en esta versión.
@@ -222,11 +230,23 @@ Diferencias entre lo especificado en este documento y en los Requisitos Funciona
 - **Historial de estados del comercio (`HistorialEstadoComercio`):** se escribe al aprobar, rechazar (incluido el rechazo definitivo) y suspender un comercio (Administrador), en las transiciones automáticas `APROBADO ↔ APTO_VENTA` al vincular o desvincular MercadoPago, en la propagación de bloqueo (solo los `APTO_VENTA`, a `CERRADO_TEMPORALMENTE`) y su restauración (recuperación de contraseña y reactivación de cuenta) y en la re-solicitud del Dueño (`RECHAZADO → PENDIENTE`). No registra la inactivación automática por inactividad (no implementada).
 - **Corrección y re-solicitud de comercios rechazados (backend y pantallas implementados):** el Dueño puede corregir el mismo comercio y volver a solicitarlo (hasta 3 veces; la tercera rechazada o un rechazo pedido como definitivo lo deja en `RECHAZO_DEFINITIVO`). Limitaciones conocidas: (a) la pantalla de corrección se abre sola desde la pantalla de rechazo cuando el comercio rechazado es el único del Dueño; para un comercio rechazado que no es el que muestra el panel (un adicional) solo se abre por dirección directa (`comercio-corregir.html?id=…`) hasta el selector de comercios del tramo 4; (b) no hay una pantalla del Administrador que liste los comercios rechazados ni los de rechazo definitivo; (c) el backend no bloquea por estado las operaciones de un comercio rechazado o en rechazo definitivo (productos, pedidos y perfil siguen sin guarda de estado); (d) no se envían emails por estos cambios; (e) la notificación de rechazo no enlaza a la corrección (depende del selector de comercio del tramo 4); (f) el botón de contacto con soporte queda oculto hasta que exista el módulo de soporte; (g) reabrir un rechazo definitivo es una operación manual sobre la base (ver `docs/DECISIONES.md`).
 - **Levantar la suspensión de un comercio:** no está implementado (no existe el endpoint ni el método de servicio), por lo que tampoco se registra esa transición.
-- **Empleado:** no existe código que le permita ver ni operar pedidos.
+- **Empleado (planificado, tramos E1 a E4):** hoy no existe ningún código del rol: ni invitaciones, ni selector de contexto, ni permisos delegados. Las tablas `Empleado` y `EmpleadoComercio` existen sin uso y las estructuras nuevas (`InvitacionEmpleado`, `HistorialEmpleadoComercio`, `ActividadComercio`, migraciones `V29` a `V32`) todavía no se crearon. Limitaciones conocidas del diseño decidido:
+  - **Sin multirol físico:** `Usuario.rol` es una sola columna y el token lleva un solo rol. Solo se hace cumplir "Empleado + Cliente" y que un Empleado nunca sea Dueño ni Administrador. "Dueño + Cliente" y "Administrador + Cliente" son regla escrita sin mecanismo: ni el Dueño ni el Administrador tienen fila de Cliente y las rutas de Cliente exigen el rol Cliente.
+  - **Un Cliente existente no puede pasar a Dueño:** registrar un comercio con un email o un DNI ya existentes responde conflicto (409) y no se construye en este bloque.
+  - **Quien fue Empleado no puede registrar un comercio** con esa cuenta, aunque su relación esté inactiva. Los casos raros los resuelve el equipo del proyecto por soporte.
+  - **Los intentos del código de invitación pueden ser gastados por terceros:** quien conozca el email de un invitado puede agotar los 5 intentos de una invitación; el Dueño la reenvía. No hay control por IP.
+  - **Sesión única en ambos contextos:** iniciar sesión en otro dispositivo cierra la sesión del Cliente y del Empleado a la vez (es una sola sesión).
+  - **Alta por invitación con dirección:** una cuenta nueva creada por invitación pide la dirección porque el Cliente no puede pedir con entrega a domicilio sin ella y todavía no existe una pantalla para gestionar direcciones.
+  - **Pedido autoconfirmado (T30):** el aviso al Dueño y a los Empleados por un pedido autoconfirmado hoy no se emite a nadie; se programa como último ítem del tramo E3 y puede quedar fuera sin afectar el resto.
+  - **Horarios y extras sin endpoint:** la edición de horarios de un comercio ya cargado y la gestión de extras y grupos de extras todavía no tienen endpoint, por lo que la delegación al Empleado se habilitará cuando existan.
+  - **Guard de comercio no operativo solo para el Empleado:** el servidor responde conflicto (409) a las escrituras del Empleado sobre un comercio suspendido o cerrado temporalmente (salvo terminar entregas en marcha); aplicar el mismo guard al Dueño queda para el tramo de suspensión.
+  - **Suspensión de comercio rediseñada en un tramo aparte** (fuera de este bloque): levantar la suspensión, qué pasa con los pedidos En Camino, el guard de estado para el Dueño y los reembolsos pendientes del ticket de MercadoPago WCS-52639.
+  - **Invitaciones vencidas sin job:** la invitación pendiente con más de 7 días se muestra como Vencida al consultarla; no hay un proceso automático.
+  - **Aviso de regularización:** un invitado cuya cuenta no es apta no ve la invitación y debe pedir que se la reenvíen cuando regularice su cuenta.
 - **Login y registro por nombre de usuario:** implementados para Cliente y Dueño (el login es exclusivamente por nombre de usuario; el email queda para verificación, recuperación y reactivación de cuenta). Limitaciones conocidas:
   - El login revela si una cuenta existe pero está en un estado distinto de activo (pendiente, bloqueada, inactiva o suspendida) antes de pedir la contraseña. Es comportamiento heredado y una decisión consciente de no cambiarlo.
   - El aviso de "intentos restantes" ante una contraseña incorrecta también revela que el usuario existe, por el mismo criterio.
   - El endpoint público de disponibilidad de nombre de usuario no tiene límite de consultas (rate limit).
   - Dueño y Administrador no ven su nombre de usuario en ninguna pantalla (no tienen pantalla de datos personales) y no pueden cambiarlo; solo el Cliente puede cambiarlo, desde su perfil.
-  - Empleado no está modelado: su nombre de usuario se definirá con su alta, en un tramo futuro de multirol.
+  - El Empleado no tiene un alta propia: al aceptar una invitación con una cuenta nueva define su nombre de usuario con los mismos datos del registro de Cliente (planificado, tramo E1); con una cuenta existente conserva el suyo.
 - **Zona horaria:** las fechas y el "hoy" del panel del comercio dependen de la zona horaria de la JVM del servidor (en local, -03:00). La verificación de horario de atención usa -03:00 fijo.

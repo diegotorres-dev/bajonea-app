@@ -20,8 +20,13 @@ comercios se encuentran en Requisitos Funcionales — Dueño.
   alta inicial.
 - El comercio debe definir al menos una franja horaria de atención al momento del alta,
   pudiendo agregar múltiples franjas que contemplen diferentes horarios por día.
-- El Dueño o un Empleado autorizado debe poder editar los datos, la foto de perfil y
-  los horarios del comercio desde el panel en cualquier momento posterior al alta.
+- El Dueño debe poder editar los datos, la foto de perfil y los horarios del comercio
+  desde el panel en cualquier momento posterior al alta. Un Empleado autorizado puede
+  editar los datos reducidos del comercio (nombre, descripción, teléfono, email de contacto
+  y modalidades de entrega) y su foto de perfil, sin acceso a los datos fiscales ni a los del
+  representante; la edición de horarios por parte del Empleado se habilitará cuando exista
+  esa función (hoy los horarios solo se cargan en el alta y en la corrección de un comercio
+  rechazado). Ver Requisitos Funcionales — Empleado.
 - La foto de perfil del comercio es un dato propio de cada comercio, independiente de
   la foto de perfil personal de su Dueño (ver Requisitos Funcionales — Dueño). Si un
   Dueño administra varios comercios, cada uno mantiene su propia foto de negocio.
@@ -32,6 +37,8 @@ comercios se encuentran en Requisitos Funcionales — Dueño.
 
 ## Gestión de Redes Sociales
 
+- Solo el Dueño gestiona los enlaces a redes sociales: no es una acción delegable a un
+  Empleado.
 - El comercio debe poder cargar, editar y dar de baja enlaces a sus redes sociales y
   canales de contacto: Instagram, Facebook, TikTok, WhatsApp, X, sitio web
   u otro. Puede cargar como máximo un enlace activo por tipo de red social; si da de
@@ -189,7 +196,8 @@ horario, también con el aviso de cuándo reabre.
 
 ## Gestión de Extras
 
-- El Dueño o un Empleado autorizado debe poder crear, editar y dar de baja grupos de
+- El Dueño, y un Empleado autorizado una vez que exista la función, debe poder crear,
+  editar y dar de baja grupos de
   extras propios del comercio (por ejemplo, "Agregados" o "Elegí tu salsa"), definiendo
   nombre, cantidad máxima de opciones seleccionables y si el grupo es obligatorio para
   confirmar el pedido.

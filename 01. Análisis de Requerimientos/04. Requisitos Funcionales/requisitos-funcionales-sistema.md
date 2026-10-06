@@ -29,13 +29,14 @@ Acciones ejecutadas automáticamente por el sistema, sin intervención de ningú
 - Al revertirse el estado Inactivo del usuario vía token de reactivación de cuenta, el sistema debe restaurar automáticamente a Aprobado el estado de todos los comercios de ese Dueño que estuvieran en Inactivo en ese momento. Confirmar dos veces seguidas (o a la vez) el mismo código de reactivación no debe restaurar dos veces: la segunda confirmación se rechaza y cada comercio deja una sola fila de historial.
 - La suspensión de un comercio puntual por el Administrador (ver Requisitos Funcionales — Administrador) es una acción a nivel Comercio: cambia el estado de ese comercio a Suspendido sin alterar el estado de la cuenta del Dueño ni el de sus demás comercios.
 - Los cambios de estado sobre la cuenta de un Empleado no propagan ningún efecto sobre los comercios donde opera: bloquear, suspender o inactivar a un Empleado solo afecta su propio acceso, dejando intactos el comercio y su Dueño.
+- Los cambios de estado de un comercio (Suspendido, Cerrado Temporalmente, Inactivo, etc.) no modifican las relaciones `EmpleadoComercio` de sus Empleados: la relación sigue Activa y lo que cambia es lo que el Empleado puede hacer (ver Requisitos Funcionales — Empleado, sección Acceso a Comercios).
 
 ---
 
 ## Gestión de Tokens
 
-- El sistema debe expirar todos los tokens al vencer, invalidarlos tras su primer uso y registrar la fecha de expiración o uso: verificación de email, recuperación de contraseña, reactivación de cuenta e invitación de empleado.
-- El sistema gestiona los cuatro tipos de token en una única tabla discriminada por tipo (VERIFICACION_EMAIL, RECUPERACION_PASSWORD, REACTIVACION_CUENTA, INVITACION_EMPLEADO), con campos: id, usuario_id, tipo, token, fecha_creacion, fecha_vencimiento, fecha_uso, estado (PENDIENTE, UTILIZADO, EXPIRADO).
+- El sistema debe expirar todos los tokens al vencer, invalidarlos tras su primer uso y registrar la fecha de expiración o uso: verificación de email, recuperación de contraseña y reactivación de cuenta. Las invitaciones de Empleado no usan la tabla de tokens (ver la sección Invitaciones de Empleado).
+- El sistema gestiona los tres tipos de token en una única tabla discriminada por tipo (VERIFICACION_EMAIL, RECUPERACION_PASSWORD, REACTIVACION_CUENTA), con campos: id, usuario_id, tipo, token, fecha_creacion, fecha_vencimiento, fecha_uso, estado (PENDIENTE, UTILIZADO, EXPIRADO).
 - Un job periódico procesa los tokens con fecha_vencimiento <= NOW() y estado = PENDIENTE, actualizando su estado a EXPIRADO.
 
 ---
@@ -150,7 +151,7 @@ El sistema emite notificaciones push (y en algunos casos email) ante los siguien
 | T13 | Pedido expirado — sin respuesta | Dueño y Empleados activos del comercio | Push + Panel |
 | T14 | Comercio aprobado | Dueño | Push + Panel + Email |
 | T15 | Comercio rechazado (con motivo) | Dueño | Push + Panel + Email |
-| T16 | Comercio suspendido (con motivo) | Dueño y Empleados activos del comercio | Push + Panel + Email |
+| T16 | Comercio suspendido (con motivo) | Dueño (el Empleado ve el estado del comercio en su selector, con aviso) | Push + Panel + Email |
 | T17 | Nuevo comercio pendiente de revisión | Administrador | Push + Panel |
 | T18 | Nueva re-solicitud de comercio rechazado | — (no se notifica al Administrador: la re-solicitud aparece en su bandeja de re-solicitudes) | — |
 | T19 | Nuevo reclamo iniciado por cliente | Administrador | Push + Panel |
@@ -164,13 +165,19 @@ El sistema emite notificaciones push (y en algunos casos email) ante los siguien
 | T27 | Reembolso fallido definitivamente tras 5 intentos — requiere intervención manual | Administrador | Push + Panel + Email |
 | T28 | Cliente suspendido (con motivo) | Cliente | Push + Panel + Email |
 | T29 | Suspensión levantada (comercio o cliente) | Cliente o Dueño | Push + Panel + Email |
-| T30 | Pedido auto-confirmado como entregado por el sistema | Dueño y Empleados activos del comercio | Push + Panel |
-| T31 | Invitación para operar un comercio como Empleado | Persona invitada | Email (+ Push/Panel si ya tiene cuenta) |
-| T32 | Empleado desactivado de un comercio | Empleado | Push + Panel |
+| T30 | Pedido auto-confirmado como entregado por el sistema (planificado: se suma al final del tramo E3, hoy no se emite a nadie) | Dueño y Empleados activos del comercio | Push + Panel |
+| T31 | Invitación para operar un comercio como Empleado | Persona invitada | Email (código en el texto; no genera notificación in-app) |
+| T32 | Empleado desactivado de un comercio por el Dueño | Empleado | Push + Panel |
+| T33 | Invitación de Empleado aceptada | Dueño | Push + Panel |
+| T34 | Empleado renunció a un comercio | Dueño | Push + Panel |
+| T35 | Aviso de regularización: se intentó invitar a una cuenta bloqueada, suspendida, inactiva o sin verificar | Persona con esa cuenta | Email |
 
 - Al auto-confirmar la entrega (T8), la notificación incluye botones para iniciar reclamo o contactar al comercio directamente.
 - T2 y T4 corresponden al mismo evento: cuando el comercio acepta un pedido, este pasa directamente a EN_PREPARACION. La notificación al cliente unifica ambos conceptos en un único mensaje ("Tu pedido fue aceptado y ya está en preparación").
 - La notificación de sesión cerrada en otro dispositivo se envía como email transaccional directo, no a través del sistema de notificaciones push.
+- **Notificaciones del Empleado (planificado, tramos E1 a E4):** las operativas (T1, T9, T13 y, al final del tramo E3, T30) se emiten una vez por cada Empleado Activo del comercio, además del Dueño, de modo que cada uno tiene su propia copia que marca como leída por separado. Las administrativas (T14 a T16) y las de cobro (T27 y todo lo de MercadoPago) van solo al Dueño. T33 y T34 se emiten al Dueño con el comercio asociado; T32 usa el mismo tipo `EMPLEADO_DESACTIVADO` que T34, con otro texto. T33 usa el tipo `INVITACION_EMPLEADO` dirigido al Dueño.
+- El listado y el contador de notificaciones del contexto Cliente se separan de los del comercio: el Cliente ve solo las notificaciones sin entidad o de sus propios pedidos, y no las asociadas a un comercio (se deja pasar T32, que le concierne a la persona).
+- El aviso de regularización (T35) se registra en la tabla de notificaciones con canal Email para poder contar el tope de 3 por día por destinatario; los listados y contadores in-app filtran por canal Push y no muestran esas filas.
 
 ---
 
@@ -194,6 +201,40 @@ El sistema emite notificaciones push (y en algunos casos email) ante los siguien
 - El sistema debe pasar el carrito a estado inactivo al detectar que la sesión del cliente ha expirado o cerrado manualmente.
 - El sistema debe pasar el carrito a estado inactivo cuando el usuario sea inactivado automáticamente.
 - El sistema no limpia el carrito al crear un pedido en PENDIENTE_PAGO. Solo lo limpia al confirmar el pago (transición a PENDIENTE_CONFIRMACION_COMERCIO).
+
+---
+
+## Invitaciones de Empleado
+
+> **Estado de implementación:** planificado, tramo E1. Estructura en las migraciones `V30` (`InvitacionEmpleado`), `V31` (`HistorialEmpleadoComercio`) y `V32` (`ActividadComercio`).
+
+- Cada envío de una invitación es una fila de `InvitacionEmpleado`: email normalizado, comercio, código de 6 dígitos, estado (Pendiente, Aceptada, Cancelada, Reemplazada, Vencida, Invalidada), intentos fallidos, quién invitó, quién aceptó y vencimiento a 7 días. Reenviar crea una fila nueva y deja la anterior Reemplazada.
+- A lo sumo una invitación Pendiente por comercio y email, y un código no puede repetirse entre invitaciones Pendientes del mismo email.
+- Límites: máximo 5 envíos por hora por comercio (se cuenta sobre las filas creadas en la última hora) y 5 intentos fallidos por código, tras los cuales la invitación pasa a Invalidada. El sistema no cuenta los intentos por IP ni por persona: quien conozca un email puede gastar los intentos de una invitación, y el Dueño la reenvía.
+- No hay un job de vencimiento: una invitación Pendiente con más de 7 días se considera Vencida al consultarla (y al invitar de nuevo se actualiza el estado de la anterior vencida en la misma operación).
+- Aceptar con cuenta nueva crea Usuario, PersonaFisica, Cliente y Empleado en una sola transacción, con la aceptación de Términos y Condiciones validada en el servidor; aceptar con cuenta existente alcanza con email y código. Dos aceptaciones simultáneas del mismo código se resuelven en el servidor: gana una y la otra recibe el mismo error genérico de "código incorrecto o vencido". Lo mismo ocurre si se acepta mientras el Dueño cancela o reenvía.
+- Al aceptar, el sistema revalida la regla de combinaciones de roles y, si la persona ya tenía una relación con el comercio, la reactiva (misma fila).
+- Solo se puede invitar con el comercio Aprobado o Apto para Venta.
+- La invitación a una cuenta bloqueada, suspendida, inactiva o sin verificar no se crea; se registra el aviso de regularización (T35), con tope de 3 por día por destinatario, y no se envía a Dueños ni Administradores.
+
+---
+
+## Historial del Equipo de un Comercio
+
+> **Estado de implementación:** planificado, tramo E1 (estructura) y E4 (pantallas).
+
+- El sistema debe registrar en `HistorialEmpleadoComercio` cada evento del equipo: invitación, aceptación, invitación cancelada, baja del Dueño, renuncia y reactivación, con quién lo hizo y cuándo. Los eventos de invitación cuelgan de la invitación; los demás, de la relación (con estado de origen y destino).
+- Es una tabla de solo inserción. La ven el Dueño del comercio y, en solo lectura, el Administrador.
+
+---
+
+## Actividad del Comercio
+
+> **Estado de implementación:** planificado, tramo E3 (la tabla se crea en E1).
+
+- El sistema debe registrar en `ActividadComercio` quién hizo qué sobre el comercio: crear, editar, eliminar, cambiar estado, abrir y cerrar, sobre productos, imágenes, pedidos, datos del comercio, redes sociales y, cuando existan, horarios y extras. Guarda el usuario, su rol (Dueño o Empleado), el tipo y nombre de la entidad y un detalle breve, sin guardar valores anteriores.
+- Se escribe desde los servicios, en la misma transacción que la escritura, y solo cuando hubo un cambio efectivo. Repite a propósito datos que ya guardan otras tablas (historial de estados del pedido, historial de cierre) para que la vista de equipo lea una sola tabla.
+- La ve el Dueño completa y el Administrador en solo lectura; el Empleado no la ve.
 
 ---
 

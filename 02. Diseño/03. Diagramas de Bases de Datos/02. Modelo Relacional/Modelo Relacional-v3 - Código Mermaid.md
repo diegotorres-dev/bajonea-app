@@ -1,6 +1,6 @@
 # Modelo Relacional — Bajoneá (v3)
 
-Actualizado a `diccionario-de-datos.md` v1.10: 46 tablas (el bloque suma `HistorialCierreComercio`, tabla del cierre manual del comercio, y `HistorialCambioComercio`, que el encabezado anterior no contaba; antes se agregaron `CodigoVinculacionMp`, `AlertaWebhookMp` y `HistorialCambioNombreUsuario`; `Usuario` suma `nombre_usuario` y `AlertaWebhookMp` suma `monto_esperado`/`monto_capturado`; los conteos de campos y relaciones no se recalcularon). Pegar el bloque en [mermaid.live](https://mermaid.live) para exportar el PNG.
+Actualizado a `diccionario-de-datos.md` v1.11: 49 tablas. La v1.11 suma tres tablas **planificadas** del rol Empleado (`InvitacionEmpleado`, `HistorialEmpleadoComercio` y `ActividadComercio`, migraciones `V30` a `V32`, tramo E1), todavía inexistentes en la base, y cambia el ENUM de `EmpleadoComercio.estado` (`V29`, de `PENDIENTE`/`ACTIVO`/`DESACTIVADO` a `ACTIVO`/`INACTIVO`). Antes, en la v1.10: 46 tablas (el bloque suma `HistorialCierreComercio`, tabla del cierre manual del comercio, y `HistorialCambioComercio`, que el encabezado anterior no contaba; antes se agregaron `CodigoVinculacionMp`, `AlertaWebhookMp` y `HistorialCambioNombreUsuario`; `Usuario` suma `nombre_usuario` y `AlertaWebhookMp` suma `monto_esperado`/`monto_capturado`; los conteos de campos y relaciones no se recalcularon). Pegar el bloque en [mermaid.live](https://mermaid.live) para exportar el PNG.
 
 ```mermaid
 erDiagram
@@ -156,6 +156,46 @@ erDiagram
         ENUM_EstadoEmpleadoComercio estado
         DATETIME fecha_alta
         DATETIME fecha_baja
+    }
+    %% PLANIFICADO (V30, tramo E1): todavía no existe en la base
+    InvitacionEmpleado {
+        INT id PK
+        INT comercio_id FK
+        VARCHAR254 email
+        CHAR6 codigo
+        ENUM_EstadoInvitacionEmpleado estado
+        INT intentos_fallidos
+        INT invitado_por_usuario_id FK
+        INT usuario_aceptante_id FK
+        DATETIME fecha_creacion
+        DATETIME fecha_vencimiento
+        DATETIME fecha_resolucion
+        TINYINT1 pendiente_clave
+    }
+    %% PLANIFICADO (V31, tramo E1): todavía no existe en la base
+    HistorialEmpleadoComercio {
+        INT id PK
+        INT comercio_id FK
+        INT empleado_comercio_id FK
+        INT invitacion_id FK
+        ENUM_EstadoEmpleadoComercio estado_origen
+        ENUM_EstadoEmpleadoComercio estado_destino
+        ENUM_MotivoHistorialEmpleado motivo
+        INT actor_usuario_id FK
+        DATETIME fecha_hora
+    }
+    %% PLANIFICADO (V32, tramo E1): todavía no existe en la base
+    ActividadComercio {
+        INT id PK
+        INT comercio_id FK
+        INT usuario_id FK
+        ENUM_ActorActividad actor_rol
+        ENUM_TipoEntidadActividad entidad_tipo
+        INT entidad_id
+        VARCHAR150 entidad_nombre
+        ENUM_AccionActividad accion
+        VARCHAR255 detalle
+        DATETIME fecha_hora
     }
     HistorialEstadoComercio {
         INT id PK
@@ -438,6 +478,16 @@ erDiagram
     Dueno ||--|| CuentaMercadoPago : "dueño_id"
     Empleado }o--|| EmpleadoComercio : "empleado_id"
     Comercio }o--|| EmpleadoComercio : "comercio_id"
+    %% PLANIFICADO (V30 a V32): relaciones de las tablas nuevas del rol Empleado
+    Comercio }o--|| InvitacionEmpleado : "comercio_id"
+    Usuario }o--|| InvitacionEmpleado : "invitado_por_usuario_id"
+    Usuario }o--|| InvitacionEmpleado : "usuario_aceptante_id"
+    Comercio }o--|| HistorialEmpleadoComercio : "comercio_id"
+    EmpleadoComercio }o--|| HistorialEmpleadoComercio : "empleado_comercio_id"
+    InvitacionEmpleado }o--|| HistorialEmpleadoComercio : "invitacion_id"
+    Usuario }o--|| HistorialEmpleadoComercio : "actor_usuario_id"
+    Comercio }o--|| ActividadComercio : "comercio_id"
+    Usuario }o--|| ActividadComercio : "usuario_id"
     Comercio }o--|| Producto : "comercio_id"
     Categoria }o--|| Producto : "categoria_id"
     Producto }o--|| ImagenProducto : "producto_id"

@@ -69,14 +69,35 @@ discontinuar un local puntual cuando lo necesite.
 
 Como Dueño, quiero invitar a una persona por email a operar uno de mis comercios como
 Empleado, para delegar la gestión diaria de productos y pedidos sin compartir mi
-contraseña.
+contraseña. Sé que la invitación es por comercio, que solo puedo invitar mientras el
+comercio esté operativo, que vence a los 7 días y que puedo enviar hasta 5 invitaciones
+por hora por comercio.
+
+Criterios de aceptación adicionales:
+- Si el email pertenece a un Dueño o a un Administrador, o a una cuenta bloqueada,
+  suspendida, inactiva o sin verificar, veo el mensaje "No se puede invitar a este email"
+  (no se revela el motivo ni el tipo de cuenta). A una cuenta bloqueada, suspendida,
+  inactiva o sin verificar le llega un email que le explica cómo regularizarla.
+- Puedo reenviar la invitación (la anterior queda reemplazada) y cancelar una invitación
+  pendiente.
+- Recibo una notificación cuando el invitado acepta.
 
 ## HU-D08: Gestionar mi Equipo de Empleados
 
-Como Dueño, quiero ver el listado de empleados de cada uno de mis comercios con su
-estado (pendiente, activo, desactivado), y poder desactivar a un empleado en un
-comercio puntual en cualquier momento, para mantener el control de quién opera cada uno
-de mis negocios.
+Como Dueño, quiero ver el equipo de cada uno de mis comercios con el estado de cada
+empleado (activo o inactivo) y de cada invitación (pendiente o vencida), y poder
+desactivar a un empleado en un comercio puntual en cualquier momento y reactivarlo sin
+una invitación nueva si fui yo quien lo dio de baja, para mantener el control de quién
+opera cada uno de mis negocios.
+
+Criterios de aceptación adicionales:
+- Si un empleado renunció, o una invitación se canceló, solo puedo volver a sumarlo con una
+  invitación nueva.
+- Veo el historial del equipo (invitación, aceptación, cancelación, baja, renuncia,
+  reactivación, con quién lo hizo y cuándo) y la actividad del comercio (quién hizo qué).
+- Veo el nombre de quien hizo cada cambio de estado de un pedido y cada cierre o
+  reapertura, incluso si el empleado ya está inactivo.
+- Recibo una notificación cuando un empleado renuncia.
 
 ## HU-D09: Solicitar Revisión de Solicitud Rechazada
 

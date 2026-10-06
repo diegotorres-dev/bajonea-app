@@ -3,8 +3,9 @@
 Requisitos de identidad de cuenta, datos fiscales, medio de cobro y administración de
 la relación con Empleados y con los distintos comercios que un mismo Dueño puede
 operar. Los requisitos operativos del negocio en sí (productos, extras, pedidos,
-horarios, redes sociales) están en Requisitos Funcionales — Comercio, ejecutables tanto
-por el Dueño como por un Empleado autorizado.
+horarios) están en Requisitos Funcionales — Comercio, ejecutables tanto por el Dueño como
+por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos del Dueño
+(entre ellas, los enlaces a redes sociales).
 
 ---
 
@@ -120,24 +121,53 @@ por el Dueño como por un Empleado autorizado.
 
 ## Gestión de Empleados
 
+> **Estado de implementación (2026-10-05):** planificado, se implementa en los tramos E1
+> (invitar, reenviar, cancelar, vista básica del equipo) y E4 (desactivar, reactivar,
+> historial). Hoy el Dueño no tiene ninguna sección de equipo.
+
 - El Dueño, desde el panel de un comercio puntual, debe poder acceder a una sección
   "Mi equipo" para invitar personas a operar ese comercio como Empleado, ingresando su
-  email.
-- El sistema debe generar una invitación mediante un token de tipo
-  `INVITACION_EMPLEADO`. Si el email ya corresponde a un Usuario existente en la
-  plataforma (sea porque ya es Empleado en otro comercio, porque ya es Cliente, o
-  cualquier otro rol), la invitación reutiliza ese Usuario: si aún no tiene registro de
-  Empleado se lo crea, sin duplicar su identidad ni pedirle de nuevo datos que ya tiene
-  cargados (nombre, apellido, DNI, contraseña); en cualquier caso se crea la relación
-  con este comercio. Solo si el email no corresponde a ningún Usuario existente el
-  sistema crea Usuario, PersonaFisica y Empleado desde cero.
-- La relación queda en estado PENDIENTE hasta que el Empleado confirme su email (o el
-  Dueño la active manualmente).
-- El Dueño debe poder ver el listado de empleados de cada comercio con su estado
-  (PENDIENTE, ACTIVO, DESACTIVADO).
-- El Dueño debe poder pasar a DESACTIVADO la relación de un Empleado con un comercio
-  puntual en cualquier momento, sin afectar las relaciones de ese Empleado con otros
-  comercios, propios o de otros Dueños.
+  email. La invitación es por comercio. Solo se puede invitar mientras el comercio sea
+  operativo (Aprobado o Apto para Venta).
+- El sistema genera una invitación propia (`InvitacionEmpleado`, no un token): código de
+  6 dígitos, vencimiento a 7 días, y se envía por email con el código en el texto y un
+  enlace genérico a la pantalla de invitación. El invitado se identifica con email y
+  código (ver Requisitos Funcionales — Empleado, sección Invitación y Alta).
+- Cada envío es una fila: reenviar crea una invitación nueva y la anterior queda
+  Reemplazada. El Dueño puede reenviar, y cancelar una invitación pendiente (queda
+  Cancelada, sin borrar nada). Límites: 5 envíos por hora por comercio (sirve también
+  como tope de reenvíos) y 5 intentos fallidos por código (después se invalida y hay que
+  reenviar); no hay tope de empleados por comercio.
+- **Matriz de combinaciones de roles al invitar:** si el email pertenece a un Dueño o a
+  un Administrador, no se crea la invitación y el Dueño ve el mensaje genérico "No se
+  puede invitar a este email" (no revela el tipo de cuenta). La matriz se vuelve a
+  validar al aceptar.
+- **Cuentas no aptas:** si el email pertenece a una cuenta bloqueada, suspendida, inactiva
+  o sin verificar, tampoco se crea la invitación y el Dueño ve el mismo mensaje genérico.
+  A la persona le llega un email de regularización con el motivo (bloqueada: recuperar la
+  contraseña; suspendida: contactar a soporte; inactiva: iniciar sesión para reactivar;
+  sin verificar: verificar el email) y se le sugiere pedir que la vuelvan a invitar.
+  Máximo 3 emails de regularización por día por destinatario, contados sobre la tabla de
+  notificaciones con canal Email. No se envía a Dueños ni a Administradores.
+- El Dueño debe poder ver el equipo de cada comercio: sus empleados con el estado de la
+  relación (Activo, Inactivo) y las invitaciones con su estado (Pendiente, Vencida; una
+  invitación que pasó los 7 días se calcula como vencida al consultar, sin un proceso
+  automático).
+- El Dueño debe poder desactivar la relación de un Empleado con un comercio puntual en
+  cualquier momento (queda Inactiva con motivo `BAJA_DUENO`), sin afectar las relaciones
+  de ese Empleado con otros comercios, propios o de otros Dueños. El Empleado desactivado
+  recibe una notificación. Puede reactivarlo directamente, sin código, solo si lo dio de
+  baja el propio Dueño; si el Empleado renunció, o si la invitación se canceló, hace falta
+  una invitación nueva.
+- El Dueño debe poder ver el historial del equipo de cada comercio (invitación,
+  aceptación, invitación cancelada, baja, renuncia y reactivación, con quién lo hizo y
+  cuándo) y la actividad del comercio (quién hizo qué: crear, editar, eliminar, cambiar
+  estado, abrir y cerrar). La actividad la ve el Dueño completa; el Empleado no la ve y el
+  Administrador la ve en solo lectura.
+- El Dueño recibe una notificación cuando el invitado acepta la invitación (T33) y cuando
+  un Empleado renuncia (T34).
+- El Dueño ve el nombre de quien hizo cada cambio de estado de un pedido y cada cierre o
+  reapertura del comercio, incluso si el Empleado ya está inactivo.
 
 ---
 
@@ -158,6 +188,14 @@ Activo al comercio:
 
 - Editar los datos fiscales y de persona jurídica.
 - Vincular o desvincular la cuenta de MercadoPago.
-- Invitar, activar o desactivar Empleados.
+- Invitar, reenviar y cancelar invitaciones, desactivar y reactivar Empleados, y ver el
+  historial del equipo y la actividad del comercio.
+- Gestionar los enlaces a redes sociales del comercio.
+- Todo lo relacionado con MercadoPago, incluido ver el enlace de pago de un pedido.
+- Corregir y volver a solicitar un comercio rechazado, y dar de alta comercios adicionales.
+- La futura documentación de habilitación del comercio.
 - Dar de baja o cerrar definitivamente un comercio puntual.
 - Crear comercios nuevos bajo su propio perfil de Dueño.
+
+Todo lo que no esté explícitamente clasificado como delegable (ver Requisitos Funcionales
+— Empleado, sección Permisos Delegados) queda reservado al Dueño por defecto.

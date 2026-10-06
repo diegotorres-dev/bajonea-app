@@ -10,15 +10,18 @@ Usuario — Dueño; las de invitación y permisos del rol Empleado, en Historias
 
 Como Dueño o Empleado autorizado, quiero editar los datos del negocio (nombre,
 descripción, foto de perfil del comercio, tipo de comercio, teléfono, email de
-contacto, modalidades de entrega) y sus horarios de atención, para mantener la
-información visible y actualizada. Sé que la foto de perfil del comercio es propia de
-ese negocio y obligatoria, distinta de la foto de perfil personal del Dueño.
+contacto, modalidades de entrega) y, como Dueño, sus horarios de atención, para mantener
+la información visible y actualizada. Sé que la foto de perfil del comercio es propia de
+ese negocio y obligatoria, distinta de la foto de perfil personal del Dueño. Como
+Empleado no veo la razón social, el CUIT ni los demás datos fiscales o del representante,
+y la edición de horarios se habilitará para mí cuando exista esa función.
 
 ## HU-CO02: Gestionar mis Redes Sociales
 
-Como Dueño o Empleado autorizado, quiero cargar, editar y dar de baja los enlaces a mis
-redes sociales y canales de contacto (Instagram, WhatsApp, sitio web, entre otros),
-para que los clientes puedan encontrarme y contactarme fuera de la plataforma.
+Como Dueño, quiero cargar, editar y dar de baja los enlaces a mis redes sociales y
+canales de contacto (Instagram, WhatsApp, sitio web, entre otros), para que los clientes
+puedan encontrarme y contactarme fuera de la plataforma. Esta acción es exclusiva del
+Dueño: un Empleado no gestiona los enlaces a redes sociales.
 
 ## HU-CO03: Crear un Producto
 
@@ -42,7 +45,7 @@ actualizado sin perder el historial de ventas.
 
 ## HU-CO06: Gestionar Grupos de Extras y Extras de un Producto
 
-Como Dueño o Empleado autorizado, quiero crear grupos de extras (por ejemplo,
+Como Dueño o Empleado autorizado (el Empleado, una vez que exista la función), quiero crear grupos de extras (por ejemplo,
 "Agregados" o "Elegí tu salsa") con sus opciones y precios, y asociarlos a mis
 productos, para ofrecer variantes y agregados personalizables en cada pedido.
 

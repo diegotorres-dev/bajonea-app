@@ -39,6 +39,16 @@ erDiagram
     Dueno ||--o{ CodigoVinculacionMp : "inicia"
     Empleado ||--o{ EmpleadoComercio : "extiende"
     Comercio ||--o{ EmpleadoComercio : "activo_en"
+    %% PLANIFICADO (migraciones V30 a V32, tramo E1): tablas del rol Empleado, todavía no existen en la base
+    Comercio ||--o{ InvitacionEmpleado : "(planificada) invita_a"
+    Usuario ||--o{ InvitacionEmpleado : "(planificada) envia"
+    Usuario ||--o{ InvitacionEmpleado : "(planificada) acepta"
+    Comercio ||--o{ HistorialEmpleadoComercio : "(planificada) registra_equipo"
+    EmpleadoComercio ||--o{ HistorialEmpleadoComercio : "(planificada) tiene"
+    InvitacionEmpleado ||--o{ HistorialEmpleadoComercio : "(planificada) origina"
+    Usuario ||--o{ HistorialEmpleadoComercio : "(planificada) ejecuta"
+    Comercio ||--o{ ActividadComercio : "(planificada) bitacora"
+    Usuario ||--o{ ActividadComercio : "(planificada) realiza"
 
     Comercio ||--o{ Producto : "ofrece"
     Categoria ||--o{ Producto : "clasifica"

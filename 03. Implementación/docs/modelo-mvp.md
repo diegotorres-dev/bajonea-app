@@ -495,8 +495,8 @@ Si alguno de estos 13 puntos no es el criterio que querés, avisame antes de pas
 | 2 | `persona` | `id` | `usuario` | 1:1 | PK compartida | Nodo intermedio de herencia (reincorporado en la segunda revisión — ver nota 1). |
 | 3 | `persona_fisica` | `id` | `persona` | 1:1 | PK compartida | Subtipo concreto de `Persona`. |
 | 4 | `persona_juridica` | `id` | `persona` | 1:1 | PK compartida | Subtipo concreto de `Persona`. Mutuamente excluyente con `persona_fisica`. |
-| 5 | `cliente` | `id` | `persona_fisica` | 1:1 | PK compartida | Rol de negocio. Mutuamente excluyente con `administrador`. |
-| 6 | `administrador` | `id` | `persona_fisica` | 1:1 | PK compartida | Rol de negocio. Mutuamente excluyente con `cliente`. |
+| 5 | `cliente` | `id` | `persona_fisica` | 1:1 | PK compartida | Rol de negocio. Mutuamente excluyente con `administrador` en el modelo del MVP (la regla vigente del proyecto completo, "Administrador = Administrador o Cliente", está en `docs/diccionario-de-datos.md` v1.11). |
+| 6 | `administrador` | `id` | `persona_fisica` | 1:1 | PK compartida | Rol de negocio. Mutuamente excluyente con `cliente` en el modelo del MVP (ver la nota de la fila anterior). |
 | 7 | `comercio` | `persona_juridica_id` | `persona_juridica` | N:1 | 1:1 por regla de negocio | Titular legal del comercio. |
 | 8 | `direccion` | `localidad_id` | `localidad` | N:1 | N direcciones → 1 localidad | Ubicación de la dirección. |
 | 9 | `direccion` | `cliente_id` | `cliente` | N:1 | N direcciones → 1 cliente, nullable | Mutuamente excluyente con `comercio_id`. |
