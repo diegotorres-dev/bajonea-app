@@ -26,9 +26,11 @@ import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.ComercioRepository.EstadoYCierreComercio;
 import com.bajonea.backend.repositories.DuenoRepository;
 import com.bajonea.backend.repositories.EmpleadoComercioRepository;
+import com.bajonea.backend.repositories.EmpleadoInsercionRepository;
 import com.bajonea.backend.repositories.HistorialEmpleadoComercioRepository;
 import com.bajonea.backend.repositories.InvitacionEmpleadoRepository;
 import com.bajonea.backend.repositories.InvitacionInsercionRepository;
+import com.bajonea.backend.repositories.PersonaFisicaRepository;
 import com.bajonea.backend.repositories.UsuarioRepository;
 import java.time.Clock;
 import java.time.LocalDateTime;
@@ -85,7 +87,8 @@ class InvitacionEmpleadoServiceCodigoTest {
         Clock reloj = Clock.fixed(AHORA.atZone(ZONA).toInstant(), ZONA);
         service = new InvitacionEmpleadoService(invitacionRepository, insercionRepository, mock(HistorialEmpleadoComercioRepository.class),
                 mock(EmpleadoComercioRepository.class), usuarioRepository, comercioRepository, duenoRepository,
-                mock(MatrizRolesService.class), mock(InvitacionRegularizacionService.class), generador, mock(EmailService.class), reloj, 3);
+                mock(PersonaFisicaRepository.class), mock(EmpleadoInsercionRepository.class), mock(RegistroService.class),
+                mock(NotificacionService.class), mock(MatrizRolesService.class), mock(InvitacionRegularizacionService.class), generador, mock(EmailService.class), reloj, 3);
     }
 
     private InvitacionEmpleadoResponseDTO invitar() {

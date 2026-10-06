@@ -29,7 +29,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final RateLimitFotoRegistroFilter rateLimitFotoRegistroFilter;
+    private final RateLimitPublicoFilter rateLimitPublicoFilter;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
 
@@ -70,6 +70,11 @@ public class SecurityConfig {
      * MercadoPago directamente, nunca el frontend de Bajoneá, así que no hay JWT que validar.
      * La autenticidad de cada notificación se valida vía el header {@code x-signature}
      * ({@code MercadoPagoPagoService.validarFirma}), no vía Spring Security.
+     * <p>
+     * {@code /api/v1/auth/invitaciones-empleado/validar} y {@code /aceptar} (rol Empleado, tramo E1) son
+     * públicos porque quien recibe una invitación todavía no tiene sesión ni, a veces, cuenta. Son rutas
+     * exactas, nunca un comodín, y la protección es el código de la invitación más el límite por IP de
+     * {@link RateLimitPublicoFilter}.
      */
     private static final String[] RUTAS_PUBLICAS = {
             "/api/v1/auth/registro/**",
@@ -83,6 +88,8 @@ public class SecurityConfig {
             "/api/v1/auth/recuperar-password/confirmar",
             "/api/v1/auth/reactivar-cuenta",
             "/api/v1/auth/reactivar-cuenta/confirmar",
+            "/api/v1/auth/invitaciones-empleado/validar",
+            "/api/v1/auth/invitaciones-empleado/aceptar",
             "/api/v1/catalogo/**",
             "/api/v1/geografia/**",
             "/api/v1/health",
@@ -118,7 +125,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/notificaciones/comercio/**").hasRole("DUENO")
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(rateLimitFotoRegistroFilter, JwtAuthenticationFilter.class);
+                .addFilterBefore(rateLimitPublicoFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }

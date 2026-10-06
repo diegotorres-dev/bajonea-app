@@ -103,6 +103,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse<>(ex.getMessage(), null));
     }
 
+    @ExceptionHandler(ValidacionCamposException.class)
+    public ResponseEntity<ApiResponse<?>> handleValidacionCampos(ValidacionCamposException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse<>(ex.getMessage(), ex.getErrores()));
+    }
+
     private static final List<String> CODIGOS_CAMPO_OBLIGATORIO = List.of("NotBlank", "NotNull", "NotEmpty");
 
     /**

@@ -1,9 +1,14 @@
 package com.bajonea.backend.services;
 
 import com.bajonea.backend.config.security.ComercioActivo;
+import com.bajonea.backend.dto.request.AceptarInvitacionEmpleadoRequestDTO;
+import com.bajonea.backend.dto.request.ValidarInvitacionEmpleadoRequestDTO;
 import com.bajonea.backend.dto.response.EquipoComercioResponseDTO;
+import com.bajonea.backend.dto.response.InvitacionEmpleadoAceptadaResponseDTO;
 import com.bajonea.backend.dto.response.InvitacionEmpleadoResponseDTO;
+import com.bajonea.backend.dto.response.InvitacionEmpleadoValidadaResponseDTO;
 import com.bajonea.backend.dto.response.MiembroEquipoResponseDTO;
+import com.bajonea.backend.entities.Cliente;
 import com.bajonea.backend.entities.Comercio;
 import com.bajonea.backend.entities.Dueno;
 import com.bajonea.backend.entities.EmpleadoComercio;
@@ -17,23 +22,33 @@ import com.bajonea.backend.enums.EstadoInvitacionEmpleado;
 import com.bajonea.backend.enums.EstadoUsuario;
 import com.bajonea.backend.enums.MotivoHistorialEmpleado;
 import com.bajonea.backend.enums.MotivoRegularizacionInvitacion;
+import com.bajonea.backend.enums.TipoEntidadNotificacion;
+import com.bajonea.backend.enums.TipoNotificacion;
+import com.bajonea.backend.exceptions.CodigoInvitacionInvalidoException;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.GeneracionTokenException;
 import com.bajonea.backend.exceptions.InvitacionNoAptaException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
+import com.bajonea.backend.exceptions.ValidacionCamposException;
 import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.DuenoRepository;
 import com.bajonea.backend.repositories.EmpleadoComercioRepository;
+import com.bajonea.backend.repositories.EmpleadoInsercionRepository;
 import com.bajonea.backend.repositories.HistorialEmpleadoComercioRepository;
 import com.bajonea.backend.repositories.InvitacionEmpleadoRepository;
+import com.bajonea.backend.repositories.InvitacionEmpleadoRepository.InvitacionPendienteVista;
 import com.bajonea.backend.repositories.InvitacionInsercionRepository;
+import com.bajonea.backend.repositories.PersonaFisicaRepository;
 import com.bajonea.backend.repositories.UsuarioRepository;
 import com.bajonea.backend.util.EjecucionPostCommit;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +59,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Invitaciones de empleado de un comercio: invitar, reenviar, cancelar y listar el equipo (el Dueño opera
- * siempre sobre el comercio activo de la request). Una fila de {@code invitacion_empleado} por envío:
+ * siempre sobre el comercio activo de la request) y, del lado público, validar el código y aceptar la
+ * invitación (quien la recibe todavía no tiene sesión). Una fila de {@code invitacion_empleado} por envío:
  * reenviar crea una fila nueva y deja la anterior {@code REEMPLAZADA}; cancelar la deja {@code CANCELADA};
  * nada se borra. El estado visible "vencida" se calcula al listar y además se materializa de forma perezosa
  * (las pendientes vencidas del par pasan a {@code VENCIDA} al invitar o reenviar, para liberar el único
@@ -56,13 +72,16 @@ import org.springframework.transaction.annotation.Transactional;
  * del estado). Todas las validaciones corren antes de la primera escritura: lo único que se escribe y tiene
  * que sobrevivir a un {@code 409} es la fila de regularización de {@link InvitacionRegularizacionService},
  * por eso {@link InvitacionNoAptaException} (y solo ella) va en {@code noRollbackFor}. Los emails salen recién
- * al confirmar la transacción.
+ * al confirmar la transacción. En validar y aceptar lo que tiene que sobrevivir a un error es el contador de
+ * intentos del código, por eso solo {@link CodigoInvitacionInvalidoException} va en {@code noRollbackFor}
+ * (ver {@link #aceptar} para el orden de bloqueo).
  */
 @Service
 public class InvitacionEmpleadoService {
 
     public static final int TOPE_POR_HORA = 5;
     public static final int VIGENCIA_DIAS = 7;
+    public static final int MAX_INTENTOS_CODIGO = 5;
 
     private static final Logger log = LoggerFactory.getLogger(InvitacionEmpleadoService.class);
 
@@ -79,6 +98,13 @@ public class InvitacionEmpleadoService {
     static final String MENSAJE_NO_REENVIABLE = "Esta invitación ya no se puede reenviar";
     static final String MENSAJE_NO_CANCELABLE = "Solo se puede cancelar una invitación pendiente";
     static final String MENSAJE_NO_ENCONTRADA = "Invitación no encontrada";
+    static final String MENSAJE_NO_SE_PUEDE_ACEPTAR = "No se puede aceptar esta invitación con esta cuenta";
+    static final String MENSAJE_INVITACION_NO_DISPONIBLE = "Esta invitación ya no está disponible";
+    static final String MENSAJE_FALTAN_DATOS_DE_CUENTA = "Completá tus datos para crear tu cuenta";
+    static final String MENSAJE_TERMINOS = "Tenés que aceptar los Términos y Condiciones";
+
+    private static final Set<EstadoComercio> ESTADOS_ACEPTABLES = Set.of(
+            EstadoComercio.APROBADO, EstadoComercio.APTO_VENTA, EstadoComercio.CERRADO_TEMPORALMENTE, EstadoComercio.SUSPENDIDO);
 
     private final InvitacionEmpleadoRepository invitacionRepository;
     private final InvitacionInsercionRepository insercionRepository;
@@ -87,6 +113,10 @@ public class InvitacionEmpleadoService {
     private final UsuarioRepository usuarioRepository;
     private final ComercioRepository comercioRepository;
     private final DuenoRepository duenoRepository;
+    private final PersonaFisicaRepository personaFisicaRepository;
+    private final EmpleadoInsercionRepository empleadoInsercionRepository;
+    private final RegistroService registroService;
+    private final NotificacionService notificacionService;
     private final MatrizRolesService matrizRolesService;
     private final InvitacionRegularizacionService regularizacionService;
     private final CodigoTokenGenerador codigoGenerador;
@@ -97,7 +127,9 @@ public class InvitacionEmpleadoService {
     public InvitacionEmpleadoService(InvitacionEmpleadoRepository invitacionRepository,
             InvitacionInsercionRepository insercionRepository, HistorialEmpleadoComercioRepository historialRepository,
             EmpleadoComercioRepository empleadoComercioRepository, UsuarioRepository usuarioRepository,
-            ComercioRepository comercioRepository, DuenoRepository duenoRepository, MatrizRolesService matrizRolesService,
+            ComercioRepository comercioRepository, DuenoRepository duenoRepository, PersonaFisicaRepository personaFisicaRepository,
+            EmpleadoInsercionRepository empleadoInsercionRepository, RegistroService registroService,
+            NotificacionService notificacionService, MatrizRolesService matrizRolesService,
             InvitacionRegularizacionService regularizacionService, CodigoTokenGenerador codigoGenerador,
             EmailService emailService, Clock clock, @Value("${token.generacion.max-intentos:20}") int maxIntentosCodigo) {
         this.invitacionRepository = invitacionRepository;
@@ -107,6 +139,10 @@ public class InvitacionEmpleadoService {
         this.usuarioRepository = usuarioRepository;
         this.comercioRepository = comercioRepository;
         this.duenoRepository = duenoRepository;
+        this.personaFisicaRepository = personaFisicaRepository;
+        this.empleadoInsercionRepository = empleadoInsercionRepository;
+        this.registroService = registroService;
+        this.notificacionService = notificacionService;
         this.matrizRolesService = matrizRolesService;
         this.regularizacionService = regularizacionService;
         this.codigoGenerador = codigoGenerador;
@@ -179,6 +215,243 @@ public class InvitacionEmpleadoService {
                 .map(invitacion -> aDto(invitacion, ahora))
                 .toList();
         return new EquipoComercioResponseDTO(miembros, invitaciones);
+    }
+
+    /**
+     * Prueba el código de una invitación sin aceptarla, para que la pantalla pública sepa a qué comercio lo
+     * invitaron y si hay que pedirle datos de cuenta. Usa la misma resolución que {@link #aceptar} (un código
+     * incorrecto suma un intento acá igual que allá) y no escribe nada más. Cualquier falla de resolución es el
+     * mismo {@code 401}, sin intentos restantes y sin distinguir la causa.
+     */
+    @Transactional(noRollbackFor = CodigoInvitacionInvalidoException.class)
+    public InvitacionEmpleadoValidadaResponseDTO validar(ValidarInvitacionEmpleadoRequestDTO request) {
+        String email = normalizarEmail(request.getEmail());
+        LocalDateTime ahora = LocalDateTime.now(clock);
+        InvitacionEmpleado invitacion = resolver(email, request.getCodigo(), ahora, false).invitacion();
+        Comercio comercio = invitacion.getComercio();
+        boolean cuentaExistente = usuarioRepository.findIdByEmail(email).isPresent();
+        return new InvitacionEmpleadoValidadaResponseDTO(comercio.getNombre(), comercio.getFotoPerfilUrl(), cuentaExistente,
+                invitacion.getFechaVencimiento());
+    }
+
+    /**
+     * Acepta una invitación de empleado. Con una cuenta existente la usa y no la modifica (ignora cualquier
+     * {@code cuentaNueva}); sin cuenta exige {@code cuentaNueva} y la aceptación de los Términos, y la crea
+     * activa en la misma transacción (el código de la invitación ya probó el email, no hay segundo código).
+     * No inicia sesión.
+     * <p>
+     * Orden de bloqueo: lectura sin bloqueo de las invitaciones pendientes del email (para conocer al Dueño),
+     * {@code usuario} del invitado (si existe) y del Dueño en id ascendente, invitaciones pendientes del email
+     * con {@code FOR UPDATE}, relación con el comercio, estado del comercio (lectura compartida) y las
+     * escrituras. Las altas de {@code empleado} y de {@code empleado_comercio} son "insertar, y si existe, no
+     * hacer nada" (ver {@link EmpleadoInsercionRepository}) y la relación existente se bloquea recién cuando el
+     * insert chocó. El estado del comercio se comprueba después de tocar la relación, para respetar ese orden;
+     * si no es aceptable, el {@code 409} revierte toda la transacción. El único cambio que sobrevive a un error
+     * es el de intentos de {@link #resolver}, y solo para {@link CodigoInvitacionInvalidoException}.
+     */
+    @Transactional(noRollbackFor = CodigoInvitacionInvalidoException.class)
+    public InvitacionEmpleadoAceptadaResponseDTO aceptar(AceptarInvitacionEmpleadoRequestDTO request) {
+        String email = normalizarEmail(request.getEmail());
+        LocalDateTime ahora = LocalDateTime.now(clock);
+        Resolucion resolucion = resolver(email, request.getCodigo(), ahora, true);
+        InvitacionEmpleado invitacion = resolucion.invitacion();
+        Comercio comercio = invitacion.getComercio();
+        Usuario existente = resolucion.invitado();
+
+        if (existente != null) {
+            validarCuentaExistente(existente);
+        } else {
+            validarDatosDeCuentaNueva(request);
+        }
+
+        boolean cuentaCreada = existente == null;
+        Usuario invitado;
+        PersonaFisica personaFisica;
+        if (cuentaCreada) {
+            Cliente cliente = registroService.crearCliente(request.getCuentaNueva(), email, EstadoUsuario.ACTIVO);
+            personaFisica = cliente.getPersonaFisica();
+            invitado = personaFisica.getPersona().getUsuario();
+        } else {
+            invitado = existente;
+            personaFisica = personaFisicaRepository.findById(existente.getId())
+                    .orElseThrow(() -> new IllegalStateException("La cuenta usuarioId=" + existente.getId() + " no tiene persona física"));
+        }
+
+        invitacionRepository.flush();
+        empleadoInsercionRepository.insertarEmpleadoSiNoExiste(invitado.getId(), ahora);
+        Optional<Integer> relacionNueva = empleadoInsercionRepository
+                .insertarRelacionActivaSiNoExiste(invitado.getId(), comercio.getId(), ahora);
+        EmpleadoComercio relacion;
+        boolean reactivada = false;
+        if (relacionNueva.isPresent()) {
+            relacion = empleadoComercioRepository.getReferenceById(relacionNueva.get());
+        } else {
+            relacion = empleadoComercioRepository.findByEmpleadoIdAndComercioIdConBloqueo(invitado.getId(), comercio.getId())
+                    .orElseThrow(() -> new IllegalStateException("La relación del empleado " + invitado.getId()
+                            + " con el comercio " + comercio.getId() + " existe y no se pudo leer"));
+            if (relacion.getEstado() == EstadoEmpleadoComercio.INACTIVO) {
+                relacion.setEstado(EstadoEmpleadoComercio.ACTIVO);
+                relacion.setFechaBaja(null);
+                reactivada = true;
+            }
+        }
+
+        validarComercioAceptable(comercio.getId());
+
+        invitacion.setEstado(EstadoInvitacionEmpleado.ACEPTADA);
+        invitacion.setUsuarioAceptanteId(invitado.getId());
+        invitacion.setFechaResolucion(ahora);
+        guardarHistorial(comercio, invitacion, relacion, MotivoHistorialEmpleado.ACEPTACION, null,
+                EstadoEmpleadoComercio.ACTIVO, invitado.getId(), ahora);
+        if (reactivada) {
+            guardarHistorial(comercio, invitacion, relacion, MotivoHistorialEmpleado.REACTIVACION,
+                    EstadoEmpleadoComercio.INACTIVO, EstadoEmpleadoComercio.ACTIVO, invitado.getId(), ahora);
+        }
+
+        notificacionService.crear(resolucion.duenoId(),
+                personaFisica.getNombre() + " " + personaFisica.getApellido() + " aceptó tu invitación y ya es parte del equipo de "
+                        + comercio.getNombre(),
+                TipoNotificacion.INVITACION_EMPLEADO, TipoEntidadNotificacion.COMERCIO, comercio.getId());
+        return new InvitacionEmpleadoAceptadaResponseDTO(comercio.getNombre(), cuentaCreada, reactivada);
+    }
+
+    private record Resolucion(InvitacionEmpleado invitacion, Usuario invitado, Integer duenoId) {
+    }
+
+    /**
+     * Rutina única de resolución de {@link #validar} y {@link #aceptar}: encuentra la invitación pendiente y
+     * vigente del email cuyo código coincide. Si no hay ninguna, o el código no coincide con ninguna, suma un
+     * intento fallido a todas las pendientes vigentes del email (a los {@link #MAX_INTENTOS_CODIGO} pasa a
+     * {@code INVALIDADA}) y lanza {@link CodigoInvitacionInvalidoException}, que no revierte la transacción
+     * para que el contador quede guardado. Las invitaciones vencidas no se tocan: "vencida" se calcula al
+     * listar el equipo.
+     * <p>
+     * Para aceptar, antes de bloquear las invitaciones se bloquean las filas de {@code usuario} del invitado
+     * (si ya tiene cuenta) y del Dueño del comercio, en id ascendente: el aviso al Dueño al final toma esa
+     * última fila y, si la invitación se bloqueara primero, se cruzaría con una invitación o un reenvío del
+     * Dueño, que bloquea su propia fila y después la invitación. El Dueño se conoce por una lectura previa sin
+     * bloqueo; si la invitación que coincide ya no es la que se leyó (otra transacción la reemplazó o creó una
+     * nueva en el medio), se trata como código incorrecto en vez de bloquear filas fuera de orden.
+     */
+    private Resolucion resolver(String email, String codigo, LocalDateTime ahora, boolean paraAceptar) {
+        List<InvitacionPendienteVista> vistas = invitacionRepository
+                .findVistasVigentesByEmailAndEstado(email, EstadoInvitacionEmpleado.PENDIENTE, ahora);
+        if (vistas.isEmpty()) {
+            throw new CodigoInvitacionInvalidoException();
+        }
+        InvitacionPendienteVista prevista = vistas.stream()
+                .filter(vista -> vista.getCodigo().equals(codigo))
+                .findFirst()
+                .orElse(null);
+
+        Usuario invitado = null;
+        if (paraAceptar && prevista != null) {
+            invitado = bloquearUsuariosEnOrden(usuarioRepository.findIdByEmail(email).orElse(null), prevista.getDuenoId());
+        }
+
+        List<InvitacionEmpleado> vigentes = invitacionRepository
+                .findByEmailAndEstadoConBloqueo(email, EstadoInvitacionEmpleado.PENDIENTE).stream()
+                .filter(invitacion -> invitacion.getFechaVencimiento().isAfter(ahora))
+                .toList();
+        InvitacionEmpleado coincidente = prevista == null ? null : vigentes.stream()
+                .filter(invitacion -> invitacion.getId().equals(prevista.getId()) && invitacion.getCodigo().equals(codigo))
+                .findFirst()
+                .orElse(null);
+        if (coincidente == null) {
+            registrarIntentoFallido(vigentes, ahora);
+            throw new CodigoInvitacionInvalidoException();
+        }
+        return new Resolucion(coincidente, invitado, prevista.getDuenoId());
+    }
+
+    private void registrarIntentoFallido(List<InvitacionEmpleado> vigentes, LocalDateTime ahora) {
+        for (InvitacionEmpleado invitacion : vigentes) {
+            int intentos = invitacion.getIntentosFallidos() + 1;
+            invitacion.setIntentosFallidos(intentos);
+            if (intentos >= MAX_INTENTOS_CODIGO) {
+                invitacion.setEstado(EstadoInvitacionEmpleado.INVALIDADA);
+                invitacion.setFechaResolucion(ahora);
+            }
+        }
+    }
+
+    private Usuario bloquearUsuariosEnOrden(Integer invitadoId, Integer duenoId) {
+        if (invitadoId == null) {
+            bloquearDuenoCompartido(duenoId);
+            return null;
+        }
+        if (invitadoId < duenoId) {
+            Usuario invitado = bloquearInvitado(invitadoId);
+            bloquearDuenoCompartido(duenoId);
+            return invitado;
+        }
+        if (invitadoId > duenoId) {
+            bloquearDuenoCompartido(duenoId);
+            return bloquearInvitado(invitadoId);
+        }
+        return bloquearInvitado(invitadoId);
+    }
+
+    private Usuario bloquearInvitado(Integer usuarioId) {
+        return usuarioRepository.findByIdConBloqueo(usuarioId)
+                .orElseThrow(() -> new IllegalStateException("La cuenta usuarioId=" + usuarioId + " desapareció durante la aceptación"));
+    }
+
+    private void bloquearDuenoCompartido(Integer duenoId) {
+        usuarioRepository.leerIdConBloqueoCompartido(duenoId)
+                .orElseThrow(() -> new IllegalStateException("El Dueño usuarioId=" + duenoId + " no existe"));
+    }
+
+    /**
+     * Revalida la cuenta existente con su estado de este momento (la invitación pudo crearse cuando todavía
+     * estaba en condiciones): primero la matriz de roles, después el estado de la cuenta con el texto de
+     * conflicto del login. Quien llegó hasta acá ya probó el código, así que se le puede decir el motivo.
+     */
+    private void validarCuentaExistente(Usuario existente) {
+        if (!matrizRolesService.puedeSerEmpleado(existente.getId())) {
+            throw new InvitacionNoAptaException(MENSAJE_NO_SE_PUEDE_ACEPTAR);
+        }
+        String conflicto = MensajesEstadoCuenta.conflictoDeLogin(existente.getEstado());
+        if (conflicto != null) {
+            throw new InvitacionNoAptaException(conflicto);
+        }
+    }
+
+    private void validarDatosDeCuentaNueva(AceptarInvitacionEmpleadoRequestDTO request) {
+        Map<String, String> errores = new LinkedHashMap<>();
+        if (request.getCuentaNueva() == null) {
+            errores.put("cuentaNueva", MENSAJE_FALTAN_DATOS_DE_CUENTA);
+        }
+        if (!Boolean.TRUE.equals(request.getAceptaTerminos())) {
+            errores.put("aceptaTerminos", MENSAJE_TERMINOS);
+        }
+        if (!errores.isEmpty()) {
+            throw new ValidacionCamposException(errores);
+        }
+    }
+
+    private void validarComercioAceptable(Integer comercioId) {
+        String estado = comercioRepository.leerEstadoConBloqueoCompartido(comercioId)
+                .orElseThrow(() -> new InvitacionNoAptaException(MENSAJE_INVITACION_NO_DISPONIBLE))
+                .getEstado();
+        if (!ESTADOS_ACEPTABLES.contains(EstadoComercio.valueOf(estado))) {
+            throw new InvitacionNoAptaException(MENSAJE_INVITACION_NO_DISPONIBLE);
+        }
+    }
+
+    private void guardarHistorial(Comercio comercio, InvitacionEmpleado invitacion, EmpleadoComercio relacion,
+            MotivoHistorialEmpleado motivo, EstadoEmpleadoComercio origen, EstadoEmpleadoComercio destino,
+            Integer actorUsuarioId, LocalDateTime fechaHora) {
+        historialRepository.save(HistorialEmpleadoComercio.builder()
+                .comercio(comercio)
+                .empleadoComercio(relacion)
+                .invitacion(invitacion)
+                .estadoOrigen(origen)
+                .estadoDestino(destino)
+                .motivo(motivo)
+                .actorUsuarioId(actorUsuarioId)
+                .fechaHora(fechaHora)
+                .build());
     }
 
     private void bloquearDueno(Integer duenoId) {

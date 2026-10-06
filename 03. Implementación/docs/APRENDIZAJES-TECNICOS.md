@@ -188,3 +188,35 @@ Medido el 2026-09-30 (`CASO=primera-vinculacion` en `testing/playwright/scripts/
 - **Cruce con el login:** el bloqueo por intentos fallidos toma el `usuario` con `FOR UPDATE`, y su lectura común posterior (la sesión activa) establece la foto de la transacción **después** de esa espera, así que ve lo que la aprobación o la vinculación ya confirmaron y lo cierra; si gana el bloqueo de cuenta, la aprobación lo ve `BLOQUEADO`. En los dos órdenes el comercio termina en `CERRADO_TEMPORALMENTE`.
 - **Medido con `stress-locks-tramoC3.mjs`** (12 rondas por escenario): aprobaciones contra el bloqueo, vinculación contra el bloqueo, las tres cosas a la vez sobre el mismo Dueño, y un control con el Dueño activo (tres aprobaciones simultáneas siempre terminan `APTO_VENTA` con las dos filas de siempre). Invariante revisada en cada ronda con una consulta sobre toda la base: ningún comercio `APTO_VENTA` con el Dueño `BLOQUEADO`. Sin ningún `5xx` ni deadlock.
 
+
+### Aceptar una invitación: insertar y capturar el choque, no leer con `FOR UPDATE` una fila que puede no existir (tramo E1, bloque A3)
+
+- **Riesgo:** un `SELECT ... FOR UPDATE` por una clave que todavía no existe toma, bajo `REPEATABLE READ`, un bloqueo de intervalo (gap lock) y no uno de registro. Dos aceptaciones simultáneas de personas distintas toman el mismo intervalo de `empleado` o de `empleado_comercio` (el índice único `uq_empleado_comercio`) y después las dos insertan en él: cada una espera el intervalo de la otra y la base responde interbloqueo (`1213`). Con la tabla vacía, todas las altas caen en el mismo intervalo.
+- **Arreglo:** `EmpleadoInsercionRepository` inserta por JDBC y captura `DuplicateKeyException` ("insertar y, si ya existe, no hacer nada"). Solo cuando el `INSERT` chocó se lee la fila existente con `FOR UPDATE`, ya por clave exacta (bloqueo de registro, sin intervalo) para reactivarla. Un `INSERT` duplicado por JDBC revierte únicamente su sentencia; un `save` de JPA marcaría la transacción como rollback-only (mismo motivo que `TokenInsercionRepository` e `InvitacionInsercionRepository`).
+- **Detalle:** antes de insertar por JDBC hay que vaciar el contexto de persistencia (`flush`): `persona_fisica` y `cliente` tienen id asignado y Hibernate los escribe recién al vaciar, y `empleado` tiene una clave foránea hacia ellos.
+- **Dos aceptaciones del mismo invitado en comercios distintos** se serializan por la fila de `usuario` del invitado (`FOR UPDATE`, tomada antes que las invitaciones), de modo que la segunda ve la fila de `empleado` que creó la primera sin necesitar ninguna lectura con bloqueo de una fila ausente.
+
+### Leer antes de bloquear con proyecciones, no con entidades (tramo E1, bloque A3)
+
+- Aceptar necesita conocer al Dueño antes de bloquear las invitaciones (el orden es `usuario` primero), así que lee las pendientes del email sin bloqueo. Esa lectura previa devuelve una proyección (`InvitacionPendienteVista`) y el id del invitado (`UsuarioRepository.findIdByEmail`), nunca entidades: una entidad ya cargada haría que la lectura posterior con `FOR UPDATE` devuelva la copia vieja del contexto de persistencia y no el estado confirmado (ver "Un `FOR UPDATE` por consulta no refresca una entidad que ya está cargada").
+- Si entre la lectura previa y el bloqueo la invitación cambió (la reemplazó otra transacción), la rutina la trata como un código incorrecto en vez de bloquear filas fuera de orden.
+
+### Un `409` de aceptar revierte todo, y por eso el estado del comercio se comprueba con la relación ya tocada (tramo E1, bloque A3)
+
+- Solo `CodigoInvitacionInvalidoException` está en `noRollbackFor` de `validar` y `aceptar`: el contador de intentos tiene que sobrevivir al `401`. Cualquier otro error (`InvitacionNoAptaException`, `ConflictoDeNegocioException`, `ValidacionCamposException`) revierte la transacción completa, incluida la cuenta nueva ya escrita. Para respetar el orden de bloqueo `usuario` → invitaciones → `empleado_comercio` → `comercio`, el estado del comercio se lee con `LOCK IN SHARE MODE` después de tocar la relación, y un comercio no aceptable deshace las altas por rollback (la prueba `conElComercioEnUnEstadoNoPermitidoDa409YElRollbackNoDejaNadaConfirmado` lo verifica con datos confirmados de verdad; una prueba dentro de una transacción de test no puede, porque ve sus propias escrituras).
+
+### El MariaDB local de test no tiene `STRICT_TRANS_TABLES` (tramo E1, bloque A3)
+
+- **Síntoma:** un valor de `ENUM` inválido (por ejemplo un estado mal escrito en un `INSERT` por JDBC) se guarda como cadena vacía en vez de fallar.
+- **Qué hacer:** no confiar en esa conducta ni en que "pasa en test". Verificar `SELECT @@sql_mode` en el servidor de producción (y en `bajonea_practicas3`) antes de desplegar: con el modo estricto un `INSERT` así falla. Los valores de `ENUM` de las altas por JDBC (`EmpleadoInsercionRepository`, `InvitacionInsercionRepository`) están escritos como literales o con `Enum.name()`, y los tests leen el estado de vuelta para detectarlo.
+
+---
+
+## Lista de despliegue
+
+Pendientes que no son código y hay que revisar en cada entorno antes de contar con la función:
+
+- **IP real detrás del proxy.** Sin `server.forward-headers-strategy` en `application-production.properties` (Railway), `request.getRemoteAddr()` es la IP del proxy: todos los clientes comparten el contador de `RateLimitPublicoFilter` (firma de fotos del registro y validar o aceptar invitaciones) y `Sesion.ip_origen` guarda la IP del proxy. Verificarlo en el entorno real antes de contar con el límite por IP. Decidido el 2026-10-06: queda acá, no se resuelve en el tramo E1.
+- **`sql_mode` del servidor.** Ver la entrada de arriba: confirmar que el servidor de producción tiene el modo estricto.
+- **Migraciones del rol Empleado.** `V29` (estado `ACTIVO`/`INACTIVO` de `empleado_comercio`) tiene que salir en el mismo release que el enum Java `EstadoEmpleadoComercio`; antes de aplicarla en un entorno con datos, confirmar con las consultas de la sección 13 de `docs/entregables-01-02/AUDITORIA-EMPLEADO-FASE1.md` que `empleado_comercio` no tiene filas con estados viejos.
+- **Tope de 3 emails de regularización por destinatario.** El conteo y la escritura no están serializados entre Dueños distintos que inviten a la misma cuenta a la vez: el tope puede excederse en uno o dos envíos. Se acepta y no justifica un bloqueo (escenario S10 del estrés de E1).

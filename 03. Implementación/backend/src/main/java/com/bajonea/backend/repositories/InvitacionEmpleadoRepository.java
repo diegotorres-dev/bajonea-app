@@ -14,6 +14,31 @@ import org.springframework.data.repository.query.Param;
 
 public interface InvitacionEmpleadoRepository extends JpaRepository<InvitacionEmpleado, Integer> {
 
+    /**
+     * Vista de solo lectura de una invitación pendiente, sin cargar la entidad: la lectura previa de aceptar y
+     * validar no tiene que dejar entidades en el contexto de persistencia, porque la lectura posterior con
+     * bloqueo ({@link #findByEmailAndEstadoConBloqueo}) devolvería esa foto en vez del estado confirmado.
+     */
+    interface InvitacionPendienteVista {
+
+        Integer getId();
+
+        String getCodigo();
+
+        Integer getComercioId();
+
+        Integer getDuenoId();
+    }
+
+    @Query("""
+            SELECT i.id AS id, i.codigo AS codigo, i.comercio.id AS comercioId, i.comercio.dueno.id AS duenoId
+            FROM InvitacionEmpleado i
+            WHERE i.email = :email AND i.estado = :estado AND i.fechaVencimiento > :ahora
+            ORDER BY i.id ASC
+            """)
+    List<InvitacionPendienteVista> findVistasVigentesByEmailAndEstado(@Param("email") String email,
+            @Param("estado") EstadoInvitacionEmpleado estado, @Param("ahora") LocalDateTime ahora);
+
     List<InvitacionEmpleado> findByComercioIdAndEmailAndEstado(Integer comercioId, String email, EstadoInvitacionEmpleado estado);
 
     List<InvitacionEmpleado> findByComercioIdAndEstadoInOrderByFechaCreacionDescIdDesc(Integer comercioId,

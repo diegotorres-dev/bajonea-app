@@ -1,5 +1,6 @@
 package com.bajonea.backend.services;
 
+import com.bajonea.backend.dto.request.DatosClienteRequestDTO;
 import com.bajonea.backend.dto.request.DatosNegocioComercioRequestDTO;
 import com.bajonea.backend.dto.request.DireccionRequestDTO;
 import com.bajonea.backend.dto.request.HorarioRequestDTO;
@@ -78,37 +79,52 @@ public class RegistroService {
     private final ValidadorDatosNegocioComercio validadorDatosNegocio;
 
     public UsuarioResponseDTO registrarCliente(RegistroClienteRequestDTO request) {
-        validarEmailUnico(request.getEmail());
-        validarNombreUsuarioDisponible(request.getNombreUsuario());
-        if (personaFisicaRepository.existsByDni(request.getDni())) {
+        Cliente cliente = crearCliente(request, request.getEmail(), EstadoUsuario.PENDIENTE);
+        Usuario usuario = cliente.getPersonaFisica().getPersona().getUsuario();
+
+        enviarVerificacion(usuario);
+
+        return aResponseDTO(usuario);
+    }
+
+    /**
+     * Alta de un Cliente con su cuenta: valida primero email, nombre de usuario, DNI y localidad (todo antes
+     * de la primera escritura, con los mismos mensajes del registro) y después crea {@code Usuario}
+     * ({@code CLIENTE}) → {@code Persona} → {@code PersonaFisica} → {@code Cliente} → {@code Direccion}
+     * principal. No envía ningún email: lo decide quien llama (el registro manda el código de verificación y
+     * deja la cuenta {@code PENDIENTE}; el alta por invitación de empleado la deja {@code ACTIVO} porque el
+     * código de la invitación ya probó el email). Corre dentro de la transacción del llamador.
+     */
+    public Cliente crearCliente(DatosClienteRequestDTO datos, String email, EstadoUsuario estadoInicial) {
+        validarEmailUnico(email);
+        validarNombreUsuarioDisponible(datos.getNombreUsuario());
+        if (personaFisicaRepository.existsByDni(datos.getDni())) {
             throw new ConflictoDeNegocioException("Ya existe una cuenta registrada con ese DNI");
         }
-        Localidad localidad = obtenerLocalidad(request.getDireccion().getLocalidadId());
+        Localidad localidad = obtenerLocalidad(datos.getDireccion().getLocalidadId());
 
-        Usuario usuario = crearUsuario(request.getNombreUsuario(), request.getEmail(), request.getPassword(), RolUsuario.CLIENTE, request.getFotoPerfilUrl());
+        Usuario usuario = crearUsuario(datos.getNombreUsuario(), email, datos.getPassword(), RolUsuario.CLIENTE, estadoInicial, datos.getFotoPerfilUrl());
         Persona persona = crearPersona(usuario);
 
         PersonaFisica personaFisica = PersonaFisica.builder()
                 .persona(persona)
-                .nombre(TextoUtils.aTitleCase(request.getNombre()))
-                .apellido(TextoUtils.aTitleCase(request.getApellido()))
-                .dni(request.getDni())
-                .fechaNacimiento(request.getFechaNacimiento())
-                .telefono(request.getTelefono())
+                .nombre(TextoUtils.aTitleCase(datos.getNombre()))
+                .apellido(TextoUtils.aTitleCase(datos.getApellido()))
+                .dni(datos.getDni())
+                .fechaNacimiento(datos.getFechaNacimiento())
+                .telefono(datos.getTelefono())
                 .build();
         personaFisicaRepository.save(personaFisica);
 
         Cliente cliente = Cliente.builder().personaFisica(personaFisica).build();
         clienteRepository.save(cliente);
 
-        Direccion direccion = construirDireccion(request.getDireccion(), localidad);
+        Direccion direccion = construirDireccion(datos.getDireccion(), localidad);
         direccion.setCliente(cliente);
         direccion.setPrincipal(true);
         direccionRepository.save(direccion);
 
-        enviarVerificacion(usuario);
-
-        return aResponseDTO(usuario);
+        return cliente;
     }
 
     public UsuarioResponseDTO registrarComercio(RegistroComercioRequestDTO request) {
@@ -122,7 +138,7 @@ public class RegistroService {
         }
         Localidad localidad = validarDatosNegocio(request);
 
-        Usuario usuario = crearUsuario(request.getNombreUsuario(), request.getEmail(), request.getPassword(), RolUsuario.DUENO, null);
+        Usuario usuario = crearUsuario(request.getNombreUsuario(), request.getEmail(), request.getPassword(), RolUsuario.DUENO, EstadoUsuario.PENDIENTE, null);
         Persona persona = crearPersona(usuario);
 
         PersonaFisica personaFisica = PersonaFisica.builder()
@@ -252,13 +268,13 @@ public class RegistroService {
         }
     }
 
-    private Usuario crearUsuario(String nombreUsuario, String email, String password, RolUsuario rol, String fotoPerfilUrl) {
+    private Usuario crearUsuario(String nombreUsuario, String email, String password, RolUsuario rol, EstadoUsuario estado, String fotoPerfilUrl) {
         Usuario usuario = Usuario.builder()
                 .nombreUsuario(nombreUsuario)
                 .email(email)
                 .passwordHash(passwordEncoder.encode(password))
                 .rol(rol)
-                .estado(EstadoUsuario.PENDIENTE)
+                .estado(estado)
                 .intentosFallidos(0)
                 .fotoPerfilUrl(fotoPerfilUrl)
                 .fechaRegistro(LocalDateTime.now())

@@ -14,6 +14,13 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
 
     boolean existsByEmail(String email);
 
+    /**
+     * Id de la cuenta de un email sin cargar la entidad (ver {@code InvitacionEmpleadoRepository.InvitacionPendienteVista}):
+     * quien lo usa va a bloquear la fila después y necesita leer su estado confirmado, no una copia ya cargada.
+     */
+    @Query("SELECT u.id FROM Usuario u WHERE u.email = :email")
+    Optional<Integer> findIdByEmail(@Param("email") String email);
+
     boolean existsByNombreUsuario(String nombreUsuario);
 
     /**

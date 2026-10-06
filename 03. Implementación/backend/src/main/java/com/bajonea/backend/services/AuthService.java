@@ -353,15 +353,9 @@ public class AuthService {
     }
 
     private void validarEstadoParaLogin(Usuario usuario) {
-        switch (usuario.getEstado()) {
-            case ACTIVO -> {
-            }
-            case PENDIENTE -> throw new ConflictoDeNegocioException("Verificá tu email antes de iniciar sesión");
-            case BLOQUEADO ->
-                    throw new ConflictoDeNegocioException("Cuenta bloqueada. Recuperá tu contraseña para desbloquearla");
-            case INACTIVO ->
-                    throw new ConflictoDeNegocioException("Cuenta inactiva. Solicitá la reactivación de tu cuenta");
-            case SUSPENDIDO -> throw new ConflictoDeNegocioException("Cuenta suspendida");
+        String conflicto = MensajesEstadoCuenta.conflictoDeLogin(usuario.getEstado());
+        if (conflicto != null) {
+            throw new ConflictoDeNegocioException(conflicto);
         }
     }
 

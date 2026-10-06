@@ -1,5 +1,6 @@
 package com.bajonea.backend.services;
 
+import com.bajonea.backend.dto.request.DatosClienteRequestDTO;
 import com.bajonea.backend.dto.request.RegistroClienteRequestDTO;
 import com.bajonea.backend.dto.request.RegistroComercioRequestDTO;
 import com.bajonea.backend.dto.response.UsuarioResponseDTO;
@@ -77,6 +78,16 @@ class DatosPruebaEmpleado {
         return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Integer.class);
     }
 
+    DatosClienteRequestDTO datosClienteNuevo(String nombreUsuario, String dni, String clave) {
+        return leer("""
+                {"nombre":"nuevo   empleado","apellido":"prueba","dni":"%s","fechaNacimiento":"1996-04-12",
+                 "telefono":"+5492964765432","nombreUsuario":"%s","password":"%s",
+                 "fotoPerfilUrl":"https://res.cloudinary.com/demo/image/upload/foto.png",
+                 "direccion":{"calle":"calle falsa","numero":"742","pisoDepto":null,"codigoPostal":"9420",
+                              "localidadId":"%s","principal":true}}
+                """.formatted(dni, nombreUsuario, clave, LOCALIDAD_RIO_GRANDE), DatosClienteRequestDTO.class);
+    }
+
     private RegistroClienteRequestDTO clienteJson(String sufijo) {
         return leer("""
                 {"nombre":"Equipo","apellido":"Prueba","dni":"%s","fechaNacimiento":"1995-05-20",
@@ -119,11 +130,11 @@ class DatosPruebaEmpleado {
         return String.valueOf(ThreadLocalRandom.current().nextLong(1_000_000_000L, 9_999_999_999L));
     }
 
-    private static String claveAleatoria() {
+    static String claveAleatoria() {
         return "Pw" + ThreadLocalRandom.current().nextLong(1_000_000_000L, 9_999_999_999L);
     }
 
-    private static String dniAleatorio() {
+    static String dniAleatorio() {
         return String.valueOf(ThreadLocalRandom.current().nextInt(30_000_000, 99_999_999));
     }
 
