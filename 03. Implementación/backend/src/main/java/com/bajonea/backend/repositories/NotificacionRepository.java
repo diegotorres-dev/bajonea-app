@@ -1,6 +1,9 @@
 package com.bajonea.backend.repositories;
 
 import com.bajonea.backend.entities.Notificacion;
+import com.bajonea.backend.enums.CanalNotificacion;
+import com.bajonea.backend.enums.TipoNotificacion;
+import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -9,11 +12,27 @@ import org.springframework.data.repository.query.Param;
 
 public interface NotificacionRepository extends JpaRepository<Notificacion, Integer> {
 
-    List<Notificacion> findByUsuarioIdOrderByFechaCreacionDesc(Integer usuarioId);
+    /**
+     * Notificaciones in-app del usuario (campana). Solo canal {@code PUSH}: las filas {@code EMAIL} son el
+     * rastro de un correo enviado (por ejemplo los avisos de regularización de invitaciones, que cuentan el
+     * tope diario) y no se muestran.
+     */
+    @Query("""
+            SELECT n FROM Notificacion n
+            WHERE n.usuario.id = :usuarioId AND n.canal = com.bajonea.backend.enums.CanalNotificacion.PUSH
+            ORDER BY n.fechaCreacion DESC
+            """)
+    List<Notificacion> findPushByUsuarioIdOrderByFechaCreacionDesc(@Param("usuarioId") Integer usuarioId);
 
-    List<Notificacion> findByUsuarioIdAndLeidaFalse(Integer usuarioId);
+    @Query("""
+            SELECT COUNT(n) FROM Notificacion n
+            WHERE n.usuario.id = :usuarioId AND n.leida = false
+              AND n.canal = com.bajonea.backend.enums.CanalNotificacion.PUSH
+            """)
+    long countPushNoLeidasByUsuarioId(@Param("usuarioId") Integer usuarioId);
 
-    long countByUsuarioIdAndLeidaFalse(Integer usuarioId);
+    long countByUsuarioIdAndTipoAndCanalAndFechaCreacionAfter(Integer usuarioId, TipoNotificacion tipo, CanalNotificacion canal,
+            LocalDateTime desde);
 
     /**
      * Notificaciones del usuario que pertenecen al comercio: las del comercio mismo

@@ -1,0 +1,21 @@
+CREATE TABLE `historial_empleado_comercio` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `comercio_id` int(11) NOT NULL,
+  `empleado_comercio_id` int(11) DEFAULT NULL,
+  `invitacion_id` int(11) DEFAULT NULL,
+  `estado_origen` enum('ACTIVO','INACTIVO') DEFAULT NULL,
+  `estado_destino` enum('ACTIVO','INACTIVO') DEFAULT NULL,
+  `motivo` enum('INVITACION','ACEPTACION','INVITACION_CANCELADA','BAJA_DUENO','RENUNCIA','REACTIVACION') NOT NULL,
+  `actor_usuario_id` int(11) DEFAULT NULL,
+  `fecha_hora` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_hec2_comercio_fecha` (`comercio_id`,`fecha_hora`),
+  KEY `idx_hec2_relacion` (`empleado_comercio_id`),
+  KEY `idx_hec2_invitacion` (`invitacion_id`),
+  KEY `idx_hec2_actor` (`actor_usuario_id`),
+  CONSTRAINT `fk_hec2_comercio` FOREIGN KEY (`comercio_id`) REFERENCES `comercio` (`id`),
+  CONSTRAINT `fk_hec2_relacion` FOREIGN KEY (`empleado_comercio_id`) REFERENCES `empleado_comercio` (`id`),
+  CONSTRAINT `fk_hec2_invitacion` FOREIGN KEY (`invitacion_id`) REFERENCES `invitacion_empleado` (`id`),
+  CONSTRAINT `fk_hec2_actor` FOREIGN KEY (`actor_usuario_id`) REFERENCES `usuario` (`id`),
+  CONSTRAINT `ck_hec2_referencia` CHECK (`empleado_comercio_id` IS NOT NULL OR `invitacion_id` IS NOT NULL)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

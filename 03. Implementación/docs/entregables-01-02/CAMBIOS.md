@@ -4,6 +4,18 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
+## Tramo E1, bloques A1 y A2: esquema y servicios de invitación de empleado (2026-10-06)
+
+Primer código del rol Empleado: migraciones `V29` a `V31`, entidades, repositorios y los servicios de invitar, reenviar, cancelar y listar el equipo, con los emails de invitación y de regularización. Todavía no hay endpoints ni pantallas (bloques A3 a A5 y entrega B). Las carpetas `01.` y `02.` no se editaron.
+
+| Documento | Qué cambia |
+|---|---|
+| `diccionario-de-datos.md` (v1.12, y copia idéntica en `docs/diccionario-de-datos.md`) | `InvitacionEmpleado` (`V30`), `HistorialEmpleadoComercio` (`V31`) y el nuevo `EstadoEmpleadoComercio` (`V29`) pasan de "planificados" a "implementados"; `ActividadComercio` (`V32`) sigue planificada y se aplica en el tramo E3, no en E1. Se anotan el orden de bloqueo real al invitar, reenviar y cancelar, qué estados de invitación y motivos de historial escribe hoy el código (los demás llegan con A3 y E4), que la campana del Cliente filtra `canal = PUSH` y que los emails de invitación llevan un enlace genérico. Los cuatro estados de `EstadoInvitacionEmpleado` y los seis motivos no cambian. |
+
+**Regla de emails que cambia (a revisar por Diego en los requisitos):** hasta ahora los emails de código (verificación, recuperación y reactivación de cuenta) no llevan enlaces al frontend y piden ingresar el código en la pantalla de la app. El email de **invitación** de empleado es la excepción decidida: lleva el código y un **enlace genérico** a `{app.frontend-base-url}/invitacion-empleado.html`, sin código, sin email y sin `#` en la URL. Los requisitos y las historias del Empleado ya describen la entrada por esa pantalla; no hace falta reescribirlos, pero si algún documento afirma que ningún email del sistema lleva enlaces, esa frase ya no vale para la invitación.
+
+Nada cambia en los requisitos, las historias ni los DFD en estos bloques. Fuera de esta carpeta, en `docs/`: `DECISIONES.md` (entrada nueva) y `CLAUDE.md` (§1bis, §3, §5 y las filas E1 de la tabla de fases).
+
 ## Registro de Cliente: `aceptaTerminos` validado en el servidor, y precisiones del tramo E1 (2026-10-06)
 
 Primer bloque de E1 (A0). El registro de Cliente exige `aceptaTerminos` en el servidor; la aceptación se valida y **no se guarda** (decisión de Diego: no hay trazabilidad, versión, fecha ni página de Términos, y no se planea hacerla). Además se anotan los puntos (a) a (g) de las decisiones de E1 en los documentos del Empleado. Las carpetas `01.` y `02.` no se editaron.

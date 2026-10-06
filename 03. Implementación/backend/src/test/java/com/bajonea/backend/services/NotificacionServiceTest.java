@@ -74,12 +74,12 @@ class NotificacionServiceTest {
         List<NotificacionResponseDTO> resultado = service.listar(dueno, String.valueOf(COMERCIO_ID));
 
         assertEquals(List.of(1, 2), resultado.stream().map(NotificacionResponseDTO::getId).toList());
-        verify(notificacionRepository, never()).findByUsuarioIdOrderByFechaCreacionDesc(anyInt());
+        verify(notificacionRepository, never()).findPushByUsuarioIdOrderByFechaCreacionDesc(anyInt());
     }
 
     @Test
     void elClienteListaTodasEIgnoraElHeaderAunqueSeaInvalido() {
-        when(notificacionRepository.findByUsuarioIdOrderByFechaCreacionDesc(USUARIO_ID)).thenReturn(List.of(notificacion(1)));
+        when(notificacionRepository.findPushByUsuarioIdOrderByFechaCreacionDesc(USUARIO_ID)).thenReturn(List.of(notificacion(1)));
 
         List<NotificacionResponseDTO> resultado = service.listar(cliente, "abc");
 
@@ -90,8 +90,8 @@ class NotificacionServiceTest {
 
     @Test
     void otrosRolesTampocoUsanElHeader() {
-        when(notificacionRepository.findByUsuarioIdOrderByFechaCreacionDesc(USUARIO_ID)).thenReturn(List.of());
-        when(notificacionRepository.countByUsuarioIdAndLeidaFalse(USUARIO_ID)).thenReturn(3L);
+        when(notificacionRepository.findPushByUsuarioIdOrderByFechaCreacionDesc(USUARIO_ID)).thenReturn(List.of());
+        when(notificacionRepository.countPushNoLeidasByUsuarioId(USUARIO_ID)).thenReturn(3L);
 
         assertTrue(service.listar(admin, "99999").isEmpty());
         assertEquals(3, service.contarNoLeidas(admin, "abc"));
@@ -116,7 +116,7 @@ class NotificacionServiceTest {
     void elContadorDelDuenoEsElDelComercioYElDelClienteEsElTotal() {
         comercioDelDueno();
         when(notificacionRepository.countNoLeidasByUsuarioIdAndComercioId(USUARIO_ID, COMERCIO_ID)).thenReturn(2L);
-        when(notificacionRepository.countByUsuarioIdAndLeidaFalse(USUARIO_ID)).thenReturn(9L);
+        when(notificacionRepository.countPushNoLeidasByUsuarioId(USUARIO_ID)).thenReturn(9L);
 
         assertEquals(2, service.contarNoLeidas(dueno, String.valueOf(COMERCIO_ID)));
         assertEquals(9, service.contarNoLeidas(cliente, String.valueOf(COMERCIO_ID)));

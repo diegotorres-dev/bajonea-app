@@ -56,6 +56,26 @@ public class NotificacionService {
     }
 
     /**
+     * Rastro de un email enviado al usuario: fila de canal {@code EMAIL} ya en {@code ENVIADO} (significa "se
+     * intentó": quien envía no recibe un resultado). No aparece en la campana, que lista solo {@code PUSH}.
+     * La fecha la pone quien llama, para que el tope diario se cuente con el mismo reloj con que se escribe.
+     */
+    public void registrarEmailEnviado(Integer usuarioId, String mensaje, TipoNotificacion tipo, LocalDateTime fecha) {
+        String mensajeTruncado = mensaje.length() > 500 ? mensaje.substring(0, 500) : mensaje;
+        Notificacion notificacion = Notificacion.builder()
+                .usuario(usuarioRepository.getReferenceById(usuarioId))
+                .tipo(tipo)
+                .mensaje(mensajeTruncado)
+                .leida(false)
+                .fechaCreacion(fecha)
+                .canal(CanalNotificacion.EMAIL)
+                .estado(EstadoEnvioNotificacion.ENVIADO)
+                .fechaEnvio(fecha)
+                .build();
+        notificacionRepository.save(notificacion);
+    }
+
+    /**
      * Para el Dueño lista solo las notificaciones del comercio activo (header {@code X-Comercio-Id}, obligatorio
      * para el Dueño); para el Cliente y el resto de los roles lista todas, ignorando el header.
      */
@@ -63,7 +83,7 @@ public class NotificacionService {
         Optional<ComercioActivo> comercio = comercioActivoService.resolverSiCorresponde(usuario, headerComercioId);
         List<Notificacion> notificaciones = comercio.isPresent()
                 ? notificacionRepository.findByUsuarioIdAndComercioId(usuario.userId(), comercio.get().comercioId())
-                : notificacionRepository.findByUsuarioIdOrderByFechaCreacionDesc(usuario.userId());
+                : notificacionRepository.findPushByUsuarioIdOrderByFechaCreacionDesc(usuario.userId());
         return notificaciones.stream().map(this::aResponseDTO).toList();
     }
 
@@ -78,7 +98,7 @@ public class NotificacionService {
         Optional<ComercioActivo> comercio = comercioActivoService.resolverSiCorresponde(usuario, headerComercioId);
         return comercio.isPresent()
                 ? notificacionRepository.countNoLeidasByUsuarioIdAndComercioId(usuario.userId(), comercio.get().comercioId())
-                : notificacionRepository.countByUsuarioIdAndLeidaFalse(usuario.userId());
+                : notificacionRepository.countPushNoLeidasByUsuarioId(usuario.userId());
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.bajonea.backend.services;
 
+import com.bajonea.backend.enums.MotivoRegularizacionInvitacion;
 import com.resend.Resend;
 import com.resend.core.exception.ResendException;
 import com.resend.services.emails.model.CreateEmailOptions;
@@ -37,6 +38,9 @@ public class EmailService {
     @Value("${email.envio-habilitado:true}")
     private boolean envioHabilitado;
 
+    @Value("${app.frontend-base-url:http://localhost:5501}")
+    private String frontendBaseUrl;
+
     public void enviarVerificacion(String destinatario, String token) {
         enviarTextoPlano(destinatario, "Tu código de verificación — Bajoneá",
                 "¡Gracias por registrarte en Bajoneá!\n\n"
@@ -68,6 +72,39 @@ public class EmailService {
                         + "activarla. El código vence en 24 horas.\n\n"
                         + "Si vos no solicitaste esta reactivación, podés ignorar este email.\n\n"
                         + "Equipo de Bajoneá");
+    }
+
+    /**
+     * Invitación a trabajar en un comercio. Lleva el código y un enlace genérico a la pantalla de aceptación
+     * (sin el código ni el email en la URL). El asunto incluye el nombre del Dueño y el del comercio, así que
+     * con el envío deshabilitado esos dos datos quedan en el log, pero nunca el código (que va solo en el cuerpo).
+     */
+    public void enviarInvitacionEmpleado(String destinatario, String nombreDueno, String nombreComercio, String codigo) {
+        enviarTextoPlano(destinatario, nombreDueno + " te invitó a trabajar en " + nombreComercio,
+                "Hola,\n\n"
+                        + nombreDueno + " te invitó a sumarte al equipo de " + nombreComercio + " en Bajoneá. "
+                        + "Con tu cuenta vas a poder gestionar sus productos y pedidos.\n\n"
+                        + "Tu código: " + codigo + "\n"
+                        + "Vence en 7 días.\n\n"
+                        + "Cómo aceptarla:\n"
+                        + "1. Entrá a " + frontendBaseUrl + "/invitacion-empleado.html\n"
+                        + "2. Ingresá este email y el código.\n"
+                        + "3. Si todavía no tenés cuenta, completá tus datos.\n\n"
+                        + "También podés abrir Bajoneá y tocar «Tengo una invitación» en la pantalla de inicio de sesión.\n\n"
+                        + "Si no esperabas este mensaje, ignoralo.");
+    }
+
+    /**
+     * Aviso a una cuenta existente que no se pudo invitar porque no está en condiciones de aceptar. Nombra solo
+     * al comercio, nunca a quien lo invitó.
+     */
+    public void enviarRegularizacionInvitacion(String destinatario, MotivoRegularizacionInvitacion motivo, String nombreComercio) {
+        enviarTextoPlano(destinatario, "Un comercio quiso invitarte a trabajar en Bajoneá",
+                nombreComercio + " quiso invitarte a su equipo en Bajoneá, pero no pudimos enviarte la invitación "
+                        + "porque " + motivo.getMotivo() + ".\n\n"
+                        + motivo.getAccion() + "\n\n"
+                        + "Después, pedile al comercio que te invite de nuevo.\n\n"
+                        + "Si no esperabas este mensaje, ignoralo.");
     }
 
     private void enviarTextoPlano(String destinatario, String asunto, String cuerpo) {

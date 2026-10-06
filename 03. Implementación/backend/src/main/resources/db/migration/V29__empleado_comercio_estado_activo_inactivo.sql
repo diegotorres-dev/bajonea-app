@@ -1,0 +1,6 @@
+ALTER TABLE `empleado_comercio`
+  MODIFY COLUMN `estado` ENUM('PENDIENTE','ACTIVO','DESACTIVADO','INACTIVO') NOT NULL DEFAULT 'ACTIVO';
+UPDATE `empleado_comercio` SET `estado` = 'INACTIVO' WHERE `estado` = 'DESACTIVADO';
+DELETE FROM `empleado_comercio` WHERE `estado` = 'PENDIENTE';
+ALTER TABLE `empleado_comercio`
+  MODIFY COLUMN `estado` ENUM('ACTIVO','INACTIVO') NOT NULL DEFAULT 'ACTIVO';
