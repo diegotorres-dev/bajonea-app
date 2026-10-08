@@ -53,7 +53,7 @@ Las 4 pantallas se construyeron replicando el sistema de diseño ya establecido 
 
 ## Verificación cruzada Comercio → Cliente (lo más importante del tramo)
 
-Probado con el backend Spring Boot real (perfil `test`) y el frontend servido localmente. Se usó `cliente.demo@bajonea.test` / `comercio1.demo@bajonea.test` (contraseña `‹CP-4›` para ambos, ver entrada de `docs/DECISIONES.md`).
+Probado con el backend Spring Boot real (perfil `test`) y el frontend servido localmente. Se usó `cliente.demo@bajonea.test` / `comercio1.demo@bajonea.test` (contraseña `‹CP-4›` para ambos, ver `docs/CUENTAS-DE-PRUEBA.local.md`, archivo local ignorado por git).
 
 1. Se crearon 2 pedidos nuevos reales contra `comercio1.demo` (Sabores Fueguinos) desde `cliente.demo`: pedido `#17` (Empanada de Pollo, RETIRO) y `#18` (Milanesa Napolitana, RETIRO), vía el flujo real de carrito + checkout (API, no simulado).
 2. Con `notificaciones.html` de `cliente.demo` ya abierto (polling de 15s activo, construido en el Tramo 4) y **sin recargar la pestaña**, se aceptó el pedido `#17` desde una sesión de `comercio1.demo` independiente (`PUT /pedidos/comercio/17/aceptar`). Tras ~18 segundos de espera real, la notificación "Tu pedido fue aceptado y está en preparación." apareció sola en la lista del Cliente — confirmado por `read_network_requests` mostrando múltiples `GET /api/v1/notificaciones` disparados por el `setInterval` durante la espera, no una recarga manual.

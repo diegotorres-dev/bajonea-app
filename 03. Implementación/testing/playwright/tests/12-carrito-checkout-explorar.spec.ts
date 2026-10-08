@@ -267,8 +267,8 @@ test.describe('Explorar: búsqueda con debounce y filtros combinados', () => {
     await page.goto('/explorar.html');
     await cargaInicial;
     await expect(page.getByTestId('lista-productos-explorar')).toBeVisible();
-    await page.clock.pauseAt(Date.now());
-    await page.waitForTimeout(50);
+    const ahoraEnLaPagina = await page.evaluate(() => Date.now());
+    await page.clock.pauseAt(ahoraEnLaPagina + 1000);
     const antesDeEscribir = requestsAProductos.length;
 
     await page.getByTestId('input-buscar-producto-explorar').pressSequentially('Explorar Etiquetado');
