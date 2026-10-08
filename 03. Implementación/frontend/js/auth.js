@@ -1,9 +1,7 @@
 import { apiFetch, ApiError, setSesion, clearSesion } from './api.js';
-import { initGeografiaSelects } from './geografia.js';
 import { resolverComercioActivo, destinoDeNavegacion } from './comercio-activo.js';
 import { crearInputOtp } from './otp.js';
-import { validarArchivoImagen, subirFotoPerfilRegistroComercio, subirFotoPerfilRegistroCliente, CloudinaryUploadError } from './cloudinary.js';
-import { abrirEditorRecorte } from './crop.js';
+import { subirFotoPerfilRegistroComercio, CloudinaryUploadError } from './cloudinary.js';
 import {
   MAPA_ERRORES_NEGOCIO,
   MAPA_ERRORES_LEGALES,
@@ -12,7 +10,6 @@ import {
   esCampoBackendDeHorarios,
   esCampoBackendDeRedesSociales,
   validarCampoRequeridoYValido,
-  validarCampoOpcionalYValido,
   bindValidacionCampo,
   initFotoComercio,
   initCamposNegocio,
@@ -24,59 +21,17 @@ import {
   esPasswordSegura,
   aplicarFortalezaPassword,
   esEmailValido,
-  mensajeNombreUsuarioInvalido,
-  esTelefonoValido,
-  esCalleValida,
-  esNumeroDireccionValido,
-  esCodigoPostalValido,
-  normalizarCodigoPostal,
-  esTextoConContenidoValido,
   mostrarErrorCampo,
   limpiarErrorCampo,
   mapearErroresBackend,
   validarCamposSilencioso,
   scrollAlPrimerError,
-  esNombreClienteValido,
-  esDniClienteValido,
-  esFechaNacimientoClientePlausible,
-  colapsarEspacios,
-  sanitizarDni,
 } from './validators.js';
+import { montarFormularioCliente } from './cliente-form.js';
+import { renderBanner, bindPasswordToggle, setLoading, construirTelefono, bindNombreUsuario, MENSAJE_NOMBRE_USUARIO_EN_USO } from './form-utils.js';
 
 export { LABELS_TIPO_SOCIEDAD, LABELS_CONDICION_IVA, LABELS_TIPO_COMERCIO, LABELS_TIPO_RED_SOCIAL } from './comercio-form.js';
-
-const ICONS = {
-  error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
-  warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
-};
-
-function renderBanner(slot, kind, html) {
-  if (!html) {
-    slot.innerHTML = '';
-    return;
-  }
-  slot.innerHTML = `<div class="banner banner-${kind}" style="margin-bottom:20px;">${ICONS[kind] || ICONS.info}<div>${html}</div></div>`;
-}
-
-function bindPasswordToggle(toggleBtn, input) {
-  toggleBtn.addEventListener('click', () => {
-    const isHidden = input.type === 'password';
-    input.type = isHidden ? 'text' : 'password';
-    toggleBtn.setAttribute('aria-label', isHidden ? 'Ocultar contraseña' : 'Mostrar contraseña');
-  });
-}
-
-function setLoading(button, loadingText, isLoading, originalHtml) {
-  if (isLoading) {
-    button.dataset.originalHtml = button.innerHTML;
-    button.innerHTML = loadingText;
-    button.disabled = true;
-  } else {
-    button.innerHTML = button.dataset.originalHtml || originalHtml;
-    button.disabled = false;
-  }
-}
+export { construirTelefono, bindNombreUsuario } from './form-utils.js';
 
 const MENSAJES_LOGIN_CONFLICTO = {
   'Cuenta bloqueada. Recuperá tu contraseña para desbloquearla': {
@@ -217,383 +172,23 @@ export function initLogin() {
   });
 }
 
-export function construirTelefono(digitos) {
-  return `+549${String(digitos || '').replace(/[ ()\-]/g, '')}`;
-}
-
-const MENSAJE_NOMBRE_USUARIO_EN_USO = 'Ese nombre de usuario ya está en uso';
-
-const ICONOS_ESTADO_NOMBRE_USUARIO = {
-  verificando: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>',
-  disponible: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>',
-  ocupado: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
-};
-
-export function bindNombreUsuario({ inputId = 'nombreUsuario', valorOriginal = null } = {}) {
-  const input = document.getElementById(inputId);
-  const estadoEl = document.getElementById(`estado-${inputId}`);
-  const errorId = `error-${inputId}`;
-  const iconoEl = document.getElementById(`icono-${inputId}`);
-  function obtenerOriginal() {
-    const valor = typeof valorOriginal === 'function' ? valorOriginal() : valorOriginal;
-    return valor ? valor.trim().toLowerCase() : null;
-  }
-  let estado = 'inactivo';
-  let secuencia = 0;
-  let pendiente = null;
-
-  function ocultarIcono() {
-    if (!iconoEl) return;
-    iconoEl.className = 'input-shell__status-icon';
-    iconoEl.innerHTML = '';
-    iconoEl.style.display = 'none';
-  }
-
-  function mostrarIcono(variante) {
-    if (!iconoEl) return;
-    iconoEl.className = `input-shell__status-icon input-shell__status-icon--${variante}`;
-    iconoEl.innerHTML = ICONOS_ESTADO_NOMBRE_USUARIO[variante] || '';
-    iconoEl.style.display = 'flex';
-  }
-
-  function ocultarEstado() {
-    estadoEl.textContent = '';
-    estadoEl.classList.remove('field__status--ok');
-    estadoEl.style.display = 'none';
-    ocultarIcono();
-  }
-
-  function mostrarEstado(texto, ok) {
-    estadoEl.textContent = texto;
-    estadoEl.classList.toggle('field__status--ok', ok);
-    estadoEl.style.display = 'block';
-  }
-
-  function reiniciar() {
-    secuencia += 1;
-    pendiente = null;
-    estado = 'inactivo';
-    limpiarErrorCampo(errorId);
-    ocultarEstado();
-  }
-
-  function marcarEnUso() {
-    estado = 'ocupado';
-    estadoEl.textContent = '';
-    estadoEl.classList.remove('field__status--ok');
-    estadoEl.style.display = 'none';
-    mostrarIcono('ocupado');
-    mostrarErrorCampo(errorId, MENSAJE_NOMBRE_USUARIO_EN_USO);
-  }
-
-  async function consultarDisponibilidad(valor, miSecuencia) {
-    try {
-      const data = await apiFetch(`/auth/nombre-usuario/disponibilidad?nombreUsuario=${encodeURIComponent(valor)}`, { auth: false });
-      if (miSecuencia !== secuencia) return;
-      if (data.disponible) {
-        estado = 'disponible';
-        mostrarEstado('Nombre de usuario disponible', true);
-        mostrarIcono('disponible');
-      } else {
-        marcarEnUso();
-      }
-    } catch {
-      if (miSecuencia !== secuencia) return;
-      estado = 'inactivo';
-      ocultarEstado();
-    }
-  }
-
-  input.addEventListener('input', reiniciar);
-  input.addEventListener('blur', () => {
-    input.value = input.value.trim().toLowerCase();
-    const valor = input.value;
-    if (!valor) return;
-    const original = obtenerOriginal();
-    if (original !== null && valor === original) {
-      reiniciar();
-      return;
-    }
-    const mensaje = mensajeNombreUsuarioInvalido(valor);
-    if (mensaje) {
-      reiniciar();
-      mostrarErrorCampo(errorId, mensaje);
-      return;
-    }
-    secuencia += 1;
-    estado = 'verificando';
-    limpiarErrorCampo(errorId);
-    mostrarEstado('Verificando…', false);
-    mostrarIcono('verificando');
-    pendiente = consultarDisponibilidad(valor, secuencia);
-  });
-
-  return {
-    async validarParaContinuar() {
-      const valor = input.value.trim().toLowerCase();
-      const original = obtenerOriginal();
-      if (original !== null && valor === original) {
-        return true;
-      }
-      const mensaje = mensajeNombreUsuarioInvalido(valor);
-      if (mensaje) {
-        mostrarErrorCampo(errorId, mensaje);
-        return false;
-      }
-      if (estado === 'verificando' && pendiente) {
-        await pendiente;
-      }
-      return estado !== 'ocupado';
-    },
-    haCambiado() {
-      const original = obtenerOriginal();
-      return original === null || input.value.trim().toLowerCase() !== original;
-    },
-    reiniciar,
-    marcarEnUso,
-  };
-}
-
-const CAMPOS_STEP1_BACKEND = ['nombre', 'apellido', 'dni', 'fechaNacimiento', 'telefono', 'nombreUsuario', 'email', 'password', 'aceptaTerminos'];
-
-const MAPA_ERRORES_REGISTRO_CLIENTE = {
-  nombre: 'error-nombre',
-  apellido: 'error-apellido',
-  dni: 'error-dni',
-  fechaNacimiento: 'error-fechaNacimiento',
-  telefono: 'error-telefono',
-  nombreUsuario: 'error-nombreUsuario',
-  email: 'error-email',
-  password: 'error-password',
-  aceptaTerminos: 'error-terminos',
-  'direccion.calle': 'error-calle',
-  'direccion.numero': 'error-numero',
-  'direccion.pisoDepto': 'error-pisoDepto',
-  'direccion.codigoPostal': 'error-codigoPostal',
-  'direccion.localidadId': 'error-localidad',
-};
-
 export function initRegistroCliente() {
-  const steps = [document.getElementById('step-1'), document.getElementById('step-2')];
-  const bars = document.querySelectorAll('.step-progress__bar');
-  const labels = document.querySelectorAll('.step-progress__labels span');
-  const bannerSlot = document.getElementById('banner-slot');
-  let currentStep = 0;
-
-  function mostrarPaso(index) {
-    steps.forEach((step, i) => step.classList.toggle('is-hidden', i !== index));
-    bars.forEach((bar, i) => bar.classList.toggle('step-progress__bar--done', i < index));
-    bars.forEach((bar, i) => bar.classList.toggle('step-progress__bar--active', i <= index));
-    labels.forEach((label, i) => label.classList.toggle('is-active', i === index));
-    currentStep = index;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  document.getElementById('back-btn').addEventListener('click', () => {
-    if (currentStep === 1) {
-      mostrarPaso(0);
-    } else {
-      history.back();
-    }
-  });
-
-  let fotoClienteStaged = null;
-  const fotoClienteAvatar = document.getElementById('foto-cliente-avatar');
-  const inputFotoCliente = document.getElementById('input-foto-cliente');
-  fotoClienteAvatar.addEventListener('click', () => inputFotoCliente.click());
-  inputFotoCliente.addEventListener('change', () => {
-    const file = inputFotoCliente.files[0];
-    inputFotoCliente.value = '';
-    if (!file) {
-      return;
-    }
-    const errorValidacion = validarArchivoImagen(file);
-    if (errorValidacion) {
-      mostrarErrorCampo('error-foto-cliente', errorValidacion);
-      return;
-    }
-    limpiarErrorCampo('error-foto-cliente');
-    abrirEditorRecorte({
-      origen: { file },
-      aspectRatio: 1,
-      onConfirmar: (blob) => {
-        const archivoRecortado = new File([blob], file.name, { type: 'image/jpeg' });
-        if (fotoClienteStaged) {
-          URL.revokeObjectURL(fotoClienteStaged.previewUrl);
-        }
-        fotoClienteStaged = { file: archivoRecortado, previewUrl: URL.createObjectURL(archivoRecortado) };
-        fotoClienteAvatar.innerHTML = '';
-        const img = document.createElement('img');
-        img.src = fotoClienteStaged.previewUrl;
-        img.alt = '';
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.style.objectFit = 'cover';
-        fotoClienteAvatar.appendChild(img);
-      },
-    });
-  });
-
-  const passwordInput = document.getElementById('password');
-  const confirmarInput = document.getElementById('confirmarPassword');
-  bindPasswordToggle(document.getElementById('toggle-password'), passwordInput);
-  bindPasswordToggle(document.getElementById('toggle-confirmar'), confirmarInput);
-  passwordInput.addEventListener('input', () => {
-    aplicarFortalezaPassword(passwordInput.value, document.getElementById('strength-bars'), document.getElementById('strength-label'));
-    limpiarErrorCampo('error-password');
-  });
-  confirmarInput.addEventListener('input', () => limpiarErrorCampo('error-confirmarPassword'));
-  document.getElementById('aceptaTerminos').addEventListener('change', () => limpiarErrorCampo('error-terminos'));
-
-  const nombreUsuarioCtl = bindNombreUsuario();
-  ['nombre', 'apellido', 'dni', 'fechaNacimiento', 'email', 'telefono'].forEach((inputId) => {
-    document.getElementById(inputId).addEventListener('input', () => limpiarErrorCampo(`error-${inputId}`));
-  });
-  const dniInput = document.getElementById('dni');
-  dniInput.addEventListener('input', () => {
-    dniInput.value = dniInput.value.replace(/\D/g, '').slice(0, 8);
-  });
-  const telefonoInput = document.getElementById('telefono');
-  telefonoInput.addEventListener('input', () => {
-    telefonoInput.value = telefonoInput.value.replace(/\D/g, '').slice(0, 10);
-  });
-  bindValidacionCampo('calle', 'error-calle', esCalleValida, 'La calle no puede contener solo caracteres especiales.');
-  bindValidacionCampo('numero', 'error-numero', esNumeroDireccionValido, 'Solo se permiten números.');
-  const numeroInput = document.getElementById('numero');
-  numeroInput.addEventListener('input', () => {
-    numeroInput.value = numeroInput.value.replace(/\D/g, '').slice(0, 10);
-  });
-  bindValidacionCampo('pisoDepto', 'error-pisoDepto', esTextoConContenidoValido, 'El piso/departamento no puede contener solo caracteres especiales');
-  bindValidacionCampo('codigoPostal', 'error-codigoPostal', esCodigoPostalValido, 'Ingresá un código postal válido (4 dígitos o formato CPA).');
-  document.getElementById('provincia').addEventListener('change', () => limpiarErrorCampo('error-provincia'));
-  document.getElementById('localidad').addEventListener('change', () => limpiarErrorCampo('error-localidad'));
-
-  document.getElementById('continuar-btn').addEventListener('click', async () => {
-    renderBanner(bannerSlot, 'info', '');
-    const nombreUsuarioValido = await nombreUsuarioCtl.validarParaContinuar();
-    const camposValidos = [
-      nombreUsuarioValido,
-      validarCampoRequeridoYValido('nombre', 'error-nombre', 'El nombre es obligatorio', esNombreClienteValido, 'El nombre solo puede contener letras'),
-      validarCampoRequeridoYValido('apellido', 'error-apellido', 'El apellido es obligatorio', esNombreClienteValido, 'El apellido solo puede contener letras'),
-      validarCampoRequeridoYValido('dni', 'error-dni', 'El DNI es obligatorio', esDniClienteValido, 'El DNI debe tener un formato válido'),
-      validarCampoRequeridoYValido('fechaNacimiento', 'error-fechaNacimiento', 'La fecha de nacimiento es obligatoria', esFechaNacimientoClientePlausible, 'La fecha ingresada no es válida'),
-      validarCampoRequeridoYValido('email', 'error-email', 'El email es obligatorio', esEmailValido, 'Ingresá un email válido'),
-      validarCampoRequeridoYValido('telefono', 'error-telefono', 'El teléfono es obligatorio', esTelefonoValido, 'Ingresá un número de teléfono válido (cod. área + número)'),
-    ].every(Boolean);
-    if (!camposValidos) {
-      scrollAlPrimerError();
-      return;
-    }
-    if (!passwordInput.value) {
-      mostrarErrorCampo('error-password', 'La contraseña es obligatoria');
-      scrollAlPrimerError();
-      return;
-    }
-    if (!esPasswordSegura(passwordInput.value)) {
-      mostrarErrorCampo('error-password', 'Debe tener mínimo 8 caracteres, una mayúscula, una minúscula y un número');
-      scrollAlPrimerError();
-      return;
-    }
-    limpiarErrorCampo('error-password');
-    if (!confirmarInput.value) {
-      mostrarErrorCampo('error-confirmarPassword', 'Debes confirmar la contraseña');
-      scrollAlPrimerError();
-      return;
-    }
-    if (passwordInput.value !== confirmarInput.value) {
-      mostrarErrorCampo('error-confirmarPassword', 'Las contraseñas no coinciden');
-      scrollAlPrimerError();
-      return;
-    }
-    limpiarErrorCampo('error-confirmarPassword');
-    if (!document.getElementById('aceptaTerminos').checked) {
-      mostrarErrorCampo('error-terminos', 'Tenés que aceptar los Términos y Condiciones para continuar.');
-      scrollAlPrimerError();
-      return;
-    }
-    limpiarErrorCampo('error-terminos');
-    mostrarPaso(1);
-  });
-
-  initGeografiaSelects(document.getElementById('provincia'), document.getElementById('localidad'), 'Tierra del Fuego');
-
-  const submitBtn = document.getElementById('submit-btn');
-  document.getElementById('form-step-2').addEventListener('submit', async (event) => {
-    event.preventDefault();
-    renderBanner(bannerSlot, 'info', '');
-    const codigoPostalInput = document.getElementById('codigoPostal');
-    codigoPostalInput.value = normalizarCodigoPostal(codigoPostalInput.value);
-    const camposValidos = [
-      validarCampoRequeridoYValido('calle', 'error-calle', 'La calle es obligatoria', esCalleValida, 'La calle no puede contener solo caracteres especiales.'),
-      validarCampoRequeridoYValido('numero', 'error-numero', 'El número es obligatorio', esNumeroDireccionValido, 'Solo se permiten números.'),
-      validarCampoOpcionalYValido('pisoDepto', 'error-pisoDepto', esTextoConContenidoValido, 'El piso/departamento no puede contener solo caracteres especiales'),
-      validarCampoRequeridoYValido('codigoPostal', 'error-codigoPostal', 'El código postal es obligatorio', esCodigoPostalValido, 'Ingresá un código postal válido (4 dígitos o formato CPA).'),
-      validarCamposSilencioso([
-        { inputId: 'provincia', errorId: 'error-provincia', mensaje: 'Seleccioná una provincia.' },
-        { inputId: 'localidad', errorId: 'error-localidad', mensaje: 'Seleccioná tu localidad.' },
-      ]),
-    ].every(Boolean);
-    if (!camposValidos) {
-      scrollAlPrimerError();
-      return;
-    }
-    setLoading(submitBtn, 'Creando cuenta...', true);
-    let fotoPerfilUrl = null;
-    if (fotoClienteStaged) {
-      try {
-        fotoPerfilUrl = await subirFotoPerfilRegistroCliente(fotoClienteStaged.file);
-      } catch (error) {
-        setLoading(submitBtn, '', false, 'Crear mi cuenta');
-        renderBanner(bannerSlot, 'error', error instanceof CloudinaryUploadError ? error.message : 'No pudimos subir la foto. Intentá nuevamente.');
-        scrollAlPrimerError();
-        return;
-      }
-    }
-    const payload = {
-      fotoPerfilUrl,
-      nombre: colapsarEspacios(document.getElementById('nombre').value),
-      apellido: colapsarEspacios(document.getElementById('apellido').value),
-      dni: sanitizarDni(document.getElementById('dni').value),
-      fechaNacimiento: document.getElementById('fechaNacimiento').value,
-      telefono: construirTelefono(document.getElementById('telefono').value.trim()),
-      nombreUsuario: document.getElementById('nombreUsuario').value.trim().toLowerCase(),
-      email: document.getElementById('email').value.trim().toLowerCase(),
-      password: passwordInput.value,
-      aceptaTerminos: document.getElementById('aceptaTerminos').checked,
-      direccion: {
-        calle: document.getElementById('calle').value.trim(),
-        numero: document.getElementById('numero').value.trim(),
-        pisoDepto: document.getElementById('pisoDepto').value.trim() || null,
-        codigoPostal: document.getElementById('codigoPostal').value.trim(),
-        localidadId: document.getElementById('localidad').value,
-        principal: true,
-      },
-    };
-    try {
+  const formulario = montarFormularioCliente(document.getElementById('registro-cliente-main'), {
+    antesDe: document.getElementById('exito-container'),
+    onEnviar: async (payload) => {
       await apiFetch('/auth/registro/cliente', { method: 'POST', auth: false, body: payload });
       document.getElementById('ir-a-verificar-link').href = `verificar-email.html?email=${encodeURIComponent(payload.email)}`;
-      document.getElementById('wizard-container').classList.add('is-hidden');
+      formulario.ocultar();
       document.getElementById('exito-container').classList.remove('is-hidden');
-      document.getElementById('step-progress-container').classList.add('is-hidden');
       window.scrollTo({ top: 0, behavior: 'smooth' });
-    } catch (error) {
-      if (error instanceof ApiError && error.status === 409 && error.message === MENSAJE_NOMBRE_USUARIO_EN_USO) {
-        nombreUsuarioCtl.marcarEnUso();
-        mostrarPaso(0);
-        renderBanner(bannerSlot, 'error', 'Revisá los campos marcados.');
-        scrollAlPrimerError();
-      } else if (error instanceof ApiError && error.data && mapearErroresBackend(error.data, MAPA_ERRORES_REGISTRO_CLIENTE)) {
-        const tieneErrorStep1 = Object.keys(error.data).some((campo) => CAMPOS_STEP1_BACKEND.includes(campo));
-        mostrarPaso(tieneErrorStep1 ? 0 : 1);
-        renderBanner(bannerSlot, 'error', 'Revisá los campos marcados.');
-        scrollAlPrimerError();
-      } else {
-        mostrarPaso(1);
-        renderBanner(bannerSlot, 'error', error instanceof ApiError ? error.message : 'No pudimos crear tu cuenta. Intentá nuevamente.');
-        scrollAlPrimerError();
-      }
-    } finally {
-      setLoading(submitBtn, '', false, 'Crear mi cuenta');
+    },
+  });
+
+  document.getElementById('back-btn').addEventListener('click', () => {
+    if (formulario.pasoActual() === 1) {
+      formulario.mostrarPaso(0);
+    } else {
+      history.back();
     }
   });
 }

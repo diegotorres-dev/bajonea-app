@@ -4,6 +4,16 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
+## Tramo E1, bloque B1: asistente de registro de Cliente extraído a un módulo compartido (2026-10-08)
+
+Refactor del frontend sin cambios de comportamiento ni de aspecto: `js/cliente-form.js` (`montarFormularioCliente`) y `js/form-utils.js` nuevos, `js/auth.js` y `registro-cliente.html` adelgazados. Lo van a usar el registro de Cliente y, en B2, la pantalla pública de invitación.
+
+**No cambia ningún documento de esta carpeta** (requisitos, historias, diccionario y DFD quedan igual: el comportamiento del registro es el mismo). Las carpetas `01.` y `02.` no se editaron.
+
+**Pruebas:** Playwright completo 485/485 desde base reseteada (sin tests nuevos); capturas del registro en móvil y escritorio, 7 estados cada una, idénticas antes y después (13 de 14 byte a byte; la restante varía entre 22 y 117 píxeles entre corridas del mismo código) y DOM idéntico salvo el `id` agregado a `<main>`. No se corrieron `mvnw test`, Newman ni estreses porque el backend no cambió.
+
+Fuera de esta carpeta: `CLAUDE.md` (fila E1 y §3), `docs/DECISIONES.md` (entrada nueva) y `testing/playwright/README.md` (inestables conocidos).
+
 ## Tramo E1, bloque A5b: pruebas de las invitaciones y arreglo de interbloqueos (2026-10-08)
 
 Último bloque de la entrega A de E1: spec de Playwright a nivel API (`35-empleado-invitacion-api`, 37 tests), carpeta `56` de Newman (125 requests y 201 assertions definidas, constructor `build-empleado-tramoE1-postman.mjs`) y el estrés `stress-locks-empleado-e1.mjs` (S1 a S11 y un S12 extra). El estrés encontró dos interbloqueos reales en `validar`/`aceptar` y en invitar/reenviar; se arreglaron bloqueando las invitaciones por clave primaria (`InvitacionEmpleadoRepository.findByIdInConBloqueo`) con dos tests de regresión en Java. Sin frontend ni migraciones.

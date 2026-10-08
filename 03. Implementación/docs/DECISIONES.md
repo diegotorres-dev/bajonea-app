@@ -9070,3 +9070,46 @@ El log del backend de la corrida de Newman y de los estreses no tiene `Deadlock 
 **Qué no se hizo.** Spec 36 de UI, el frontend (entrega B), `V32`, los inestables `01:100` y `14:124`, la carrera del perfil del Cliente, la IP real detrás del proxy y el modo estricto de MariaDB.
 
 **Documentación tocada:** `CLAUDE.md` (fila E1 y orden de bloqueo), `testing/playwright/README.md`, `docs/APRENDIZAJES-TECNICOS.md` (entrada nueva sobre el bloqueo por rango) y `docs/entregables-01-02/CAMBIOS.md`. Backend: `InvitacionEmpleadoRepository`, `InvitacionEmpleadoService` y `InvitacionEmpleadoAceptacionIntegrationTest`. Proceso del backend de test detenido al terminar.
+
+## 2026-10-08 — Rol Empleado, tramo E1, bloque B1: asistente de registro de Cliente extraído a un módulo compartido (frontend, sin cambios de comportamiento)
+
+**Contexto.** Primer bloque de la entrega B de E1. Es un refactor del frontend: el asistente de dos pasos del registro de Cliente salió de `initRegistroCliente` (`js/auth.js`) a `js/cliente-form.js`, para que lo compartan `registro-cliente.html` y, en el bloque B2, la pantalla pública de invitación. **No se tocó backend, migraciones, Newman ni textos o aspecto del registro.** Línea base de partida: `mvnw test` 451/451, Playwright 485/485, Newman 1697 requests y 2716 assertions.
+
+**Qué se hizo**
+1. **`js/form-utils.js` (nuevo, módulo hoja sin ciclos).** Recibe, sin cambios de lógica, lo que `auth.js` tenía y el módulo nuevo necesita: `renderBanner`, `bindPasswordToggle`, `setLoading`, `construirTelefono`, `bindNombreUsuario` y `MENSAJE_NOMBRE_USUARIO_EN_USO`. Suma `crearPasos` (el avance de pasos y la barra de progreso que estaba copiado en cada `init*`), `h` y `crearSvg` (constructor de DOM) y `renderBannerTexto` (banner con `textContent`). `auth.js` los importa y sigue exportando `construirTelefono` y `bindNombreUsuario` (los importan `cliente.js`, `comercio.js`, `agregar-comercio.js` y `comercio-corregir.js`). Se movieron a un archivo aparte, y no a `cliente-form.js`, para que `auth.js` y `cliente-form.js` no se importen entre sí.
+2. **`js/cliente-form.js` (nuevo).** `montarFormularioCliente(contenedor, opciones)` arma el mismo markup (mismos `id`, `data-testid`, clases y orden de pasos), enlaza todas las validaciones en vivo, la foto con recorte (`abrirEditorRecorte` + `subirFotoPerfilRegistroCliente` recién al enviar), la dirección con `initGeografiaSelects` y la casilla de Términos, y arma el payload actual, incluido `aceptaTerminos` con el valor real de la casilla. El markup se construye con `createElement`/`createElementNS`, no con `innerHTML`.
+3. **`js/auth.js`.** `initRegistroCliente` quedó en unas 20 líneas: monta el módulo en `#registro-cliente-main` (antes de `#exito-container`), cablea el botón Volver y, en `onEnviar`, hace el `POST /auth/registro/cliente` y muestra la pantalla de éxito. La lógica de `initLogin` y de los demás registros no cambió (el helper de pasos se aplicó solo al registro de Cliente). Se quitaron los imports que quedaron sin uso.
+4. **`registro-cliente.html`.** Perdió las dos secciones y la barra de progreso (las pinta el módulo); `<main>` ganó `id="registro-cliente-main"` y conserva `#exito-container`.
+
+**API del módulo (mínima, pensada para B2)**
+- `montarFormularioCliente(contenedor, { onEnviar, incluirEmail = true, antesDe = null, prefijoErrores = '', mostrarEnlaceLogin = true, textos: { botonFinal = 'Crear mi cuenta', botonFinalCargando = 'Creando cuenta...' } })`. Devuelve `{ mostrarPaso(i), pasoActual(), ocultar() }`.
+- `onEnviar(payload)` (async, obligatoria): recibe el payload ya con la foto subida (`fotoPerfilUrl`) y `aceptaTerminos`; si lanza, el módulo hace el manejo de errores del registro (409 de nombre de usuario en uso, errores por campo con salto al paso correcto, mensaje general). Si resuelve, no hace nada más: la pantalla de éxito es del llamador.
+- `incluirEmail`: sin email no se pinta el campo, no se valida y no viaja en el payload (la invitación pide el email en su primer paso y el backend lo recibe fuera de `cuentaNueva`).
+- `prefijoErrores`: el backend devuelve los errores de la invitación como `cuentaNueva.dni`, `cuentaNueva.direccion.calle`, etc.; con `'cuentaNueva.'` el módulo los reconoce además de los nombres sin prefijo (`email` y `aceptaTerminos` nunca llevan prefijo).
+- `antesDe`: nodo hermano delante del cual se inserta (el registro conserva `#exito-container` después del asistente); sin él se agrega al final.
+- `mostrarEnlaceLogin`: oculta "¿Ya tenés cuenta? Iniciá sesión", que no tiene sentido en la invitación.
+- `textos`: texto del botón final y su texto de carga.
+- `ocultar()`: esconde la barra de progreso y el asistente (el éxito del registro).
+- El módulo usa ids globales del documento (como `validators.js` y `bindNombreUsuario`), así que se monta una sola vez por página. Los banners del módulo escriben el mensaje con `textContent` (antes `renderBanner` lo insertaba como HTML, incluido el `error.message` del servidor).
+
+**Verificación**
+- **Capturas y DOM, antes y después** (Chromium, viewport móvil 390×844 y escritorio 1280×800, 7 estados: paso 1 inicial, con errores, completo con nombre de usuario disponible y contraseña visible, paso 2 inicial, con errores, completo y vuelta al paso 1; `testing/playwright/tmp-capturas/b1/`, no versionado): 13 de 14 PNG idénticos byte a byte; el `movil-06-paso2-completo` varía entre 22 y 117 píxeles (de 329.160) entre corridas del mismo código (también entre dos corridas del baseline), ruido de anti-aliasing. El volcado normalizado del DOM (atributos ordenados) es idéntico en los 14 estados salvo el `id="registro-cliente-main"` del `<main>`. Sin errores de consola.
+- **Modos que ningún spec cubre** (página temporal, borrada): `incluirEmail: false`, `prefijoErrores: 'cuentaNueva.'`, `mostrarEnlaceLogin: false`, textos propios y `antesDe`. Sin campo email ni enlace, payload sin `email`, errores con prefijo en los campos correctos (de paso 1 y de paso 2) con el salto al paso 1 o al 2, banner de error genérico y de `ApiError`, botón con su texto restaurado, `ocultar()`.
+- **Playwright completo desde base reseteada** (`preparar-entorno-test.sh`, `workers: 1`): **485/485** en 14,3 min, igual que la línea base. No hay tests nuevos.
+- No se corrieron `mvnw test`, Newman ni estreses (backend sin cambios).
+
+**Hallazgo (no del módulo).** En corridas parciales apareció dos veces `19-nombre-usuario:635` ("flujo completo por UI" del perfil): hace `page.goto('/perfil.html')` y clic inmediato en `btn-editar-datos`, antes de que `cliente.js` enlace los manejadores (lo hace después de `await apiFetch('/clientes/perfil')`). Es la misma carrera que se estabilizó en el spec 11 en A5a; no depende del registro. Medido: 130/130 sobre el frontend original (HEAD servido aparte) y 129/130 sobre el nuevo, y el archivo 19 completo pasó 38/38 en dos de cuatro corridas; no se tocó el test (instrucción del bloque). Queda anotado entre los inestables conocidos.
+
+**Decisiones no previstas**
+- Se creó `form-utils.js` además del módulo pedido (para evitar el ciclo `auth.js` ↔ `cliente-form.js`).
+- El markup se genera en JS en vez de quedar en cada HTML: es la única forma de que `incluirEmail`, el texto del botón final y el enlace de login sean opciones sin duplicar unas 190 líneas de HTML en B2.
+- `renderBannerTexto` reemplaza a `renderBanner` solo dentro del módulo; `renderBanner` (con HTML) sigue en login, recuperación y registro de Comercio.
+
+**Preguntas abiertas (con recomendación)**
+1. El resto de los banners (`renderBanner` con HTML) siguen insertando `error.message` del servidor como HTML en login y registro de Comercio. Recomendación: pasarlos a `renderBannerTexto` cuando se pueda (los que llevan enlaces necesitan otra solución); fuera de este bloque.
+2. La barra de progreso del módulo tiene dos pasos. Si B2 quiere una barra de tres pasos (código, datos, dirección) habrá que sumar una opción para no pintarla o para el total. Recomendación: decidirlo al armar B2, no antes.
+3. `19:635` (carrera del perfil): estabilizarlo esperando la carga del perfil, igual que en el spec 11. Recomendación: sí, en el próximo mantenimiento de pruebas.
+
+**Qué no se hizo.** La pantalla de invitación, el botón del login, la línea del registro y "Ver equipo" (B2 y B3).
+
+**Documentación tocada:** `CLAUDE.md` (fila E1 y §3), `testing/playwright/README.md` (inestables) y `docs/entregables-01-02/CAMBIOS.md`. Frontend: `js/form-utils.js` y `js/cliente-form.js` (nuevos), `js/auth.js` y `registro-cliente.html`. Backend, `postman/` y los documentos de `docs/entregables-01-02/` distintos de `CAMBIOS.md` sin cambios. El backend de test y los servidores locales se detienen al terminar.
