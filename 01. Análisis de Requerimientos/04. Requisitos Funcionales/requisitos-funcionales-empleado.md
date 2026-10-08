@@ -67,6 +67,14 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
 - Un código incorrecto, vencido o de una invitación ya no vigente recibe siempre la misma
   respuesta (401), sin decir cuántos intentos quedan, con el texto "El código es
   incorrecto o la invitación ya no está vigente. Pedí que te reenvíen la invitación."
+- La pantalla de invitación prueba el código antes de pedir datos (paso "validar"). Recién
+  después de verificar el código (quien llega hasta ahí ya lo probó, así que se le puede
+  decir el motivo), el sistema aplica las mismas reglas que al aceptar y responde 409 sin
+  consumir la invitación si: la cuenta existente está bloqueada, suspendida, inactiva o
+  sin verificar (con el texto de regularización que corresponde), la cuenta es de un
+  Dueño o un Administrador ("No se puede aceptar esta invitación con esta cuenta"), o el
+  comercio no se puede aceptar ("Esta invitación ya no está disponible"). Con un código
+  incorrecto sigue valiendo la respuesta 401 única, sin revelar nada de la cuenta.
 - Se puede aceptar una invitación mientras el comercio esté Aprobado, Apto para Venta,
   Cerrado Temporalmente o Suspendido; no se puede si está Pendiente, Rechazado, con
   Rechazo Definitivo o Inactivo. (Para invitar, en cambio, el comercio tiene que estar

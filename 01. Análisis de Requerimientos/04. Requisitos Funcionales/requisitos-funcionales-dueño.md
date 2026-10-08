@@ -134,8 +134,10 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   enlace genérico a la pantalla de invitación. El invitado se identifica con email y
   código (ver Requisitos Funcionales — Empleado, sección Invitación y Alta).
 - Cada envío es una fila: reenviar crea una invitación nueva y la anterior queda
-  Reemplazada. El Dueño puede reenviar, y cancelar una invitación pendiente (queda
-  Cancelada, sin borrar nada). Límites: 5 envíos por hora por comercio (sirve también
+  Reemplazada. El Dueño puede reenviar una invitación Pendiente, Vencida o con el código
+  bloqueado (una Aceptada, Cancelada o Reemplazada ya no se puede reenviar), y cancelar
+  una invitación pendiente (queda Cancelada, sin borrar nada; una ya resuelta no se puede
+  cancelar). Límites: 5 envíos por hora por comercio (sirve también
   como tope de reenvíos) y 5 intentos fallidos por código (después se invalida y hay que
   reenviar); no hay tope de empleados por comercio.
 - **Matriz de combinaciones de roles al invitar:** si el email pertenece a un Dueño o a

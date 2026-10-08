@@ -85,4 +85,23 @@ public class TestController {
         testSupportService.confirmarPagoAprobado(id);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pago del pedido confirmado", null));
     }
+
+    @GetMapping("/invitaciones-empleado/codigo")
+    public ResponseEntity<ApiResponse<String>> obtenerCodigoInvitacionEmpleado(@RequestParam String email,
+            @RequestParam Integer comercioId) {
+        String codigo = testSupportService.obtenerCodigoInvitacionEmpleado(email, comercioId);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Código de invitación obtenido", codigo));
+    }
+
+    @PutMapping("/invitaciones-empleado/{id}/vencer")
+    public ResponseEntity<ApiResponse<Void>> vencerInvitacionEmpleado(@PathVariable Integer id) {
+        testSupportService.vencerInvitacionEmpleado(id);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Invitación vencida", null));
+    }
+
+    @GetMapping("/emails-regularizacion/cantidad")
+    public ResponseEntity<ApiResponse<Long>> contarEmailsRegularizacion(@RequestParam String email) {
+        long cantidad = testSupportService.contarEmailsRegularizacion(email);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Cantidad de emails de regularización", cantidad));
+    }
 }

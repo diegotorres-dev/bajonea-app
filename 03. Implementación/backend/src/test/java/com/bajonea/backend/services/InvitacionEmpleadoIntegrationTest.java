@@ -602,7 +602,7 @@ class InvitacionEmpleadoIntegrationTest {
 
             ConflictoDeNegocioException error = assertThrows(ConflictoDeNegocioException.class,
                     () -> invitacionService.cancelar(activo(dueno), invitacion.getId()));
-            assertEquals("Solo se puede cancelar una invitación pendiente", error.getMessage());
+            assertEquals("Esta invitación ya no se puede cancelar", error.getMessage());
 
             assertEquals(EstadoInvitacionEmpleado.PENDIENTE, invitacionService.invitar(activo(dueno), email).getEstado(),
                     "cancelada libera el único pendiente del par");

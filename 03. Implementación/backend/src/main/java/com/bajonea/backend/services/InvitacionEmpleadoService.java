@@ -96,7 +96,7 @@ public class InvitacionEmpleadoService {
     static final String MENSAJE_PENDIENTE_EXISTENTE = "Ya hay una invitación pendiente para ese email. Podés reenviarla.";
     static final String MENSAJE_NO_SE_PUEDE_INVITAR = "No se puede invitar a este email";
     static final String MENSAJE_NO_REENVIABLE = "Esta invitación ya no se puede reenviar";
-    static final String MENSAJE_NO_CANCELABLE = "Solo se puede cancelar una invitación pendiente";
+    static final String MENSAJE_NO_CANCELABLE = "Esta invitación ya no se puede cancelar";
     static final String MENSAJE_NO_ENCONTRADA = "Invitación no encontrada";
     static final String MENSAJE_NO_SE_PUEDE_ACEPTAR = "No se puede aceptar esta invitación con esta cuenta";
     static final String MENSAJE_INVITACION_NO_DISPONIBLE = "Esta invitación ya no está disponible";
@@ -221,7 +221,11 @@ public class InvitacionEmpleadoService {
      * Prueba el código de una invitación sin aceptarla, para que la pantalla pública sepa a qué comercio lo
      * invitaron y si hay que pedirle datos de cuenta. Usa la misma resolución que {@link #aceptar} (un código
      * incorrecto suma un intento acá igual que allá) y no escribe nada más. Cualquier falla de resolución es el
-     * mismo {@code 401}, sin intentos restantes y sin distinguir la causa.
+     * mismo {@code 401}, sin intentos restantes y sin distinguir la causa. Recién después de verificar el código
+     * (quien llega hasta ahí ya lo probó, así que se le puede decir el motivo) comprueba con las mismas reglas
+     * que {@link #aceptar} que la invitación se pueda aceptar: una cuenta existente no apta o de rol
+     * incompatible, o un comercio no aceptable, dan {@code 409} para no mostrarle el formulario a quien después
+     * no podría terminar. Ese {@code 409} no deja nada sin revertir: validar no escribe.
      */
     @Transactional(noRollbackFor = CodigoInvitacionInvalidoException.class)
     public InvitacionEmpleadoValidadaResponseDTO validar(ValidarInvitacionEmpleadoRequestDTO request) {
@@ -229,7 +233,9 @@ public class InvitacionEmpleadoService {
         LocalDateTime ahora = LocalDateTime.now(clock);
         InvitacionEmpleado invitacion = resolver(email, request.getCodigo(), ahora, false).invitacion();
         Comercio comercio = invitacion.getComercio();
-        boolean cuentaExistente = usuarioRepository.findIdByEmail(email).isPresent();
+        Usuario existente = usuarioRepository.findByEmail(email).orElse(null);
+        validarSePuedeAceptar(existente, comercio.getId());
+        boolean cuentaExistente = existente != null;
         return new InvitacionEmpleadoValidadaResponseDTO(comercio.getNombre(), comercio.getFotoPerfilUrl(), cuentaExistente,
                 invitacion.getFechaVencimiento());
     }
@@ -400,6 +406,19 @@ public class InvitacionEmpleadoService {
     private void bloquearDuenoCompartido(Integer duenoId) {
         usuarioRepository.leerIdConBloqueoCompartido(duenoId)
                 .orElseThrow(() -> new IllegalStateException("El Dueño usuarioId=" + duenoId + " no existe"));
+    }
+
+    /**
+     * Las reglas de aptitud de {@link #aceptar} agrupadas para {@link #validar}: la cuenta existente (si la hay)
+     * y después el comercio, con las mismas dos rutinas que usa aceptar. Aceptar no puede llamarla de una vez
+     * porque el estado del comercio se lee con bloqueo compartido recién después de tocar la relación con el
+     * empleado (orden de bloqueo), así que invoca las dos por separado; ninguna regla está duplicada.
+     */
+    private void validarSePuedeAceptar(Usuario existente, Integer comercioId) {
+        if (existente != null) {
+            validarCuentaExistente(existente);
+        }
+        validarComercioAceptable(comercioId);
     }
 
     /**

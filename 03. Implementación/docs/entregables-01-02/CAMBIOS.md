@@ -4,6 +4,21 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
+## Tramo E1, bloque A4: endpoints del equipo del Dueño, validar con 409 y atajos de test (2026-10-06)
+
+Quinto bloque del tramo E1: la capa web del equipo del Dueño (`GET /comercios/equipo`, `POST /comercios/equipo/invitaciones`, `POST .../{id}/reenviar`, `PUT .../{id}/cancelar`), el ajuste de `validar` y los atajos de test del perfil `test`. Es solo backend y pruebas Java; no hay migraciones, specs, requests de Newman ni estreses nuevos (A5) ni pantallas (entrega B). Las carpetas `01.` y `02.` no se editaron.
+
+| Documento | Qué cambia |
+|---|---|
+| `requisitos-funcionales-empleado.md` | Sección Invitación y Alta: la pantalla de invitación prueba el código antes de pedir datos y, después de verificarlo, responde 409 (sin consumir la invitación) si la cuenta existente no es apta o es de Dueño o Administrador, o si el comercio no se puede aceptar; con un código incorrecto sigue la respuesta 401 única. |
+| `requisitos-funcionales-dueño.md` | Gestión de Empleados: se precisa qué invitaciones se pueden reenviar (Pendiente, Vencida o con el código bloqueado) y cancelar (solo Pendiente; una ya resuelta no). |
+
+Nada cambia en las historias, el diccionario, los requisitos del sistema ni los DFD.
+
+**Pruebas:** `mvnw test` 449/449 (20 tests Java nuevos), Playwright 448/448, Newman 1571 requests y 2515 assertions con 0 fallos y los cinco estreses existentes sin problemas; sin deadlocks ni esperas de bloqueo en el log del backend.
+
+Fuera de esta carpeta, en `docs/`: `DECISIONES.md` (entrada nueva, con el cambio de `validar` a 409 y por qué) y `CLAUDE.md` (§1bis, §3, §6 y §7bis).
+
 ## Tramo E1, bloque A3: validar y aceptar invitaciones de empleado (2026-10-06)
 
 Cuarto bloque del tramo E1: del lado del invitado, probar el código de una invitación y aceptarla (con una cuenta existente o creando una cuenta nueva), con el aviso al Dueño y los dos endpoints públicos con su límite por IP. Es solo backend y pruebas Java; no hay migraciones, endpoints del Dueño (A4), specs, requests de Newman ni estreses nuevos (A5) ni pantallas (entrega B). Las carpetas `01.` y `02.` no se editan.

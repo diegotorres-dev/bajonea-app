@@ -3,9 +3,13 @@ package com.bajonea.backend.services;
 import com.bajonea.backend.entities.Comercio;
 import com.bajonea.backend.entities.Direccion;
 import com.bajonea.backend.entities.Horario;
+import com.bajonea.backend.entities.InvitacionEmpleado;
 import com.bajonea.backend.entities.Token;
 import com.bajonea.backend.entities.Usuario;
+import com.bajonea.backend.enums.CanalNotificacion;
+import com.bajonea.backend.enums.EstadoInvitacionEmpleado;
 import com.bajonea.backend.enums.EstadoToken;
+import com.bajonea.backend.enums.TipoNotificacion;
 import com.bajonea.backend.enums.TipoToken;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.enums.EstadoComercio;
@@ -13,10 +17,15 @@ import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.DireccionRepository;
 import com.bajonea.backend.repositories.HorarioRepository;
+import com.bajonea.backend.repositories.InvitacionEmpleadoRepository;
+import com.bajonea.backend.repositories.NotificacionRepository;
 import com.bajonea.backend.repositories.TokenRepository;
 import com.bajonea.backend.repositories.UsuarioRepository;
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
@@ -45,6 +54,9 @@ public class TestSupportService {
     private final HorarioRepository horarioRepository;
     private final CuentaMercadoPagoService cuentaMercadoPagoService;
     private final PedidoService pedidoService;
+    private final InvitacionEmpleadoRepository invitacionEmpleadoRepository;
+    private final NotificacionRepository notificacionRepository;
+    private final Clock clock;
 
     public String obtenerTokenVerificacionPendiente(String email) {
         return obtenerTokenPendiente(email, TipoToken.VERIFICACION_EMAIL);
@@ -153,5 +165,42 @@ public class TestSupportService {
         cuentaMercadoPagoService.vincular(duenoId, cuentaMp, "TEST-access-token-" + duenoId,
                 "TEST-refresh-token-" + duenoId, "TEST-public-key-" + duenoId, true, LocalDateTime.now().plusDays(1));
         comercioService.activarAptoVenta(duenoId, duenoBloqueado);
+    }
+
+    /**
+     * Atajo de entorno de test: el código de la invitación {@code PENDIENTE} más reciente del par email y
+     * comercio (el código viaja solo por email y no figura en ninguna respuesta de la API). No filtra por
+     * vigencia: una invitación vencida con el atajo {@link #vencerInvitacionEmpleado} sigue siendo la pendiente.
+     */
+    public String obtenerCodigoInvitacionEmpleado(String email, Integer comercioId) {
+        return invitacionEmpleadoRepository
+                .findByComercioIdAndEmailAndEstado(comercioId, email.trim().toLowerCase(Locale.ROOT), EstadoInvitacionEmpleado.PENDIENTE)
+                .stream()
+                .max(Comparator.comparing(InvitacionEmpleado::getId))
+                .map(InvitacionEmpleado::getCodigo)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No hay invitación pendiente para ese email en ese comercio"));
+    }
+
+    /**
+     * Atajo de entorno de test: deja la fecha de vencimiento de la invitación en el pasado (sigue guardada como
+     * {@code PENDIENTE}; "vencida" se calcula al listar), para probar el vencimiento sin esperar siete días.
+     */
+    @Transactional
+    public void vencerInvitacionEmpleado(Integer invitacionId) {
+        InvitacionEmpleado invitacion = invitacionEmpleadoRepository.findById(invitacionId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Invitación no encontrada"));
+        invitacion.setFechaVencimiento(LocalDateTime.now(clock).minusMinutes(1));
+    }
+
+    /**
+     * Atajo de entorno de test: cantidad de avisos de regularización por email (filas {@code EMAIL} de tipo
+     * {@code INVITACION_EMPLEADO}) que recibió la cuenta en las últimas 24 horas, la única forma de observar que
+     * se mandaron y cuántos cuenta el tope. Un email sin cuenta no tiene filas: devuelve 0.
+     */
+    public long contarEmailsRegularizacion(String email) {
+        return usuarioRepository.findByEmail(email.trim().toLowerCase(Locale.ROOT))
+                .map(usuario -> notificacionRepository.countByUsuarioIdAndTipoAndCanalAndFechaCreacionAfter(usuario.getId(),
+                        TipoNotificacion.INVITACION_EMPLEADO, CanalNotificacion.EMAIL, LocalDateTime.now(clock).minusHours(24)))
+                .orElse(0L);
     }
 }

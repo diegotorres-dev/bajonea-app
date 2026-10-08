@@ -1,6 +1,7 @@
 package com.bajonea.backend.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -370,5 +371,88 @@ class InvitacionEmpleadoPublicaControllerIntegrationTest {
         mockMvc.perform(get("/api/v1/comercios/equipo")).andExpect(status().isUnauthorized());
         mockMvc.perform(post("/api/v1/comercios/equipo/invitaciones").contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void validarDa409ConElTextoDeSuEstadoSoloTrasUnCodigoValidoYNoTocaNada() throws Exception {
+        Dueno dueno = datos.registrarDuenoAprobado();
+        try {
+            for (String[] caso : new String[][] {
+                    {"BLOQUEADO", "Cuenta bloqueada. Recuperá tu contraseña para desbloquearla"},
+                    {"SUSPENDIDO", "Cuenta suspendida"},
+                    {"INACTIVO", "Cuenta inactiva. Solicitá la reactivación de tu cuenta"},
+                    {"PENDIENTE", "Verificá tu email antes de iniciar sesión"}}) {
+                int cuenta = datos.registrarCliente();
+                String email = datos.emailDe(cuenta);
+                int invitacion = invitar(dueno, email);
+                String codigo = codigoDe(invitacion);
+                datos.cambiarEstadoUsuario(cuenta, caso[0]);
+
+                postJson(VALIDAR, cuerpo(email, codigo)).andExpect(status().isConflict())
+                        .andExpect(jsonPath("$.mensaje").value(caso[1]));
+                assertEquals("PENDIENTE", estadoDe(invitacion), "validar no consume la invitación");
+                assertEquals(0, intentosDe(invitacion));
+
+                String cuerpoDelCodigoIncorrecto = cuerpoDe(postJson(VALIDAR, cuerpo(email, otroCodigo(codigo)))
+                        .andExpect(status().isUnauthorized()));
+                assertTrue(cuerpoDelCodigoIncorrecto.contains("El código es incorrecto o la invitación ya no está vigente"),
+                        "con el código incorrecto sigue el 401 único, sin revelar el estado de la cuenta");
+                assertFalse(cuerpoDelCodigoIncorrecto.contains(caso[1]));
+                assertEquals(1, intentosDe(invitacion), "el código incorrecto sí suma un intento");
+            }
+        } finally {
+            borrarRastros(dueno);
+        }
+    }
+
+    @Test
+    void validarDa409DeRolIncompatibleConUnaCuentaDeAdministradorODeDueno() throws Exception {
+        Dueno dueno = datos.registrarDuenoAprobado();
+        Dueno otroDueno = datos.registrarDuenoAprobado();
+        try {
+            int cuentaAdministrador = datos.registrarCliente();
+            String emailAdministrador = datos.emailDe(cuentaAdministrador);
+            int aAdministrador = invitar(dueno, emailAdministrador);
+            String codigoAdministrador = codigoDe(aAdministrador);
+            datos.hacerAdministrador(cuentaAdministrador);
+
+            jdbcTemplate.update("INSERT INTO invitacion_empleado (comercio_id, email, codigo, estado, invitado_por_usuario_id, fecha_creacion, "
+                    + "fecha_vencimiento) VALUES (?, ?, ?, ?, ?, ?, ?)", dueno.comercioId(), otroDueno.email(), "123456", "PENDIENTE",
+                    dueno.id(), LocalDateTime.now(), LocalDateTime.now().plusDays(7));
+
+            postJson(VALIDAR, cuerpo(emailAdministrador, codigoAdministrador)).andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.mensaje").value("No se puede aceptar esta invitación con esta cuenta"));
+            postJson(VALIDAR, cuerpo(otroDueno.email(), "123456")).andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.mensaje").value("No se puede aceptar esta invitación con esta cuenta"));
+            assertEquals(0, intentosDe(aAdministrador));
+        } finally {
+            borrarRastros(dueno);
+        }
+    }
+
+    @Test
+    void validarDa409ConElComercioNoAceptableYSigueRespondiendo200ConElComercioSuspendido() throws Exception {
+        Dueno dueno = datos.registrarDuenoAprobado();
+        try {
+            String email = emailNuevo();
+            int invitacion = invitar(dueno, email);
+            String codigo = codigoDe(invitacion);
+
+            for (String estado : new String[] {"PENDIENTE", "RECHAZADO", "RECHAZO_DEFINITIVO", "INACTIVO"}) {
+                datos.cambiarEstadoComercio(dueno.comercioId(), estado);
+                postJson(VALIDAR, cuerpo(email, codigo)).andExpect(status().isConflict())
+                        .andExpect(jsonPath("$.mensaje").value("Esta invitación ya no está disponible"));
+            }
+            assertEquals("PENDIENTE", estadoDe(invitacion));
+            assertEquals(0, intentosDe(invitacion));
+
+            for (String estado : new String[] {"APROBADO", "APTO_VENTA", "CERRADO_TEMPORALMENTE", "SUSPENDIDO"}) {
+                datos.cambiarEstadoComercio(dueno.comercioId(), estado);
+                postJson(VALIDAR, cuerpo(email, codigo)).andExpect(status().isOk())
+                        .andExpect(jsonPath("$.data.comercioNombre").value(dueno.nombreComercio()));
+            }
+        } finally {
+            borrarRastros(dueno);
+        }
     }
 }

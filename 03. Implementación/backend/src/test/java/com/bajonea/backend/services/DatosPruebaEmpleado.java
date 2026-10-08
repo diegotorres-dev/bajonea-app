@@ -19,7 +19,10 @@ class DatosPruebaEmpleado {
 
     private static final String LOCALIDAD_RIO_GRANDE = "94008010";
 
-    record Dueno(int id, String email, int comercioId, String nombreComercio) {
+    record Dueno(int id, String email, int comercioId, String nombreComercio, String nombreUsuario, String clave) {
+    }
+
+    record Cuenta(int id, String email, String nombreUsuario, String clave) {
     }
 
     private final RegistroService registroService;
@@ -36,16 +39,26 @@ class DatosPruebaEmpleado {
         String sufijo = sufijo();
         String email = "dueno." + sufijo + "@bajonea.test";
         String nombreComercio = "Comercio Equipo " + sufijo;
-        UsuarioResponseDTO usuario = registroService.registrarComercio(comercioJson(sufijo, email, nombreComercio));
+        String nombreUsuario = "dnu" + sufijo;
+        String clave = claveAleatoria();
+        UsuarioResponseDTO usuario = registroService.registrarComercio(comercioJson(sufijo, email, nombreComercio, nombreUsuario, clave));
         int comercioId = jdbcTemplate.queryForObject("SELECT id FROM comercio WHERE dueno_id = ?", Integer.class, usuario.getId());
         jdbcTemplate.update("UPDATE comercio SET estado = 'APROBADO' WHERE id = ?", comercioId);
-        return new Dueno(usuario.getId(), email, comercioId, nombreComercio);
+        return new Dueno(usuario.getId(), email, comercioId, nombreComercio, nombreUsuario, clave);
     }
 
     int registrarCliente() {
-        int id = registroService.registrarCliente(clienteJson(sufijo())).getId();
+        return registrarClienteConCredenciales().id();
+    }
+
+    Cuenta registrarClienteConCredenciales() {
+        String sufijo = sufijo();
+        String email = "emp." + sufijo + "@bajonea.test";
+        String nombreUsuario = "emp" + sufijo;
+        String clave = claveAleatoria();
+        int id = registroService.registrarCliente(clienteJson(sufijo, email, nombreUsuario, clave)).getId();
         cambiarEstadoUsuario(id, "ACTIVO");
-        return id;
+        return new Cuenta(id, email, nombreUsuario, clave);
     }
 
     String emailDe(int usuarioId) {
@@ -88,7 +101,7 @@ class DatosPruebaEmpleado {
                 """.formatted(dni, nombreUsuario, clave, LOCALIDAD_RIO_GRANDE), DatosClienteRequestDTO.class);
     }
 
-    private RegistroClienteRequestDTO clienteJson(String sufijo) {
+    private RegistroClienteRequestDTO clienteJson(String sufijo, String email, String nombreUsuario, String clave) {
         return leer("""
                 {"nombre":"Equipo","apellido":"Prueba","dni":"%s","fechaNacimiento":"1995-05-20",
                  "telefono":"+5492964123456","nombreUsuario":"%s","email":"%s","password":"%s",
@@ -96,11 +109,11 @@ class DatosPruebaEmpleado {
                  "fotoPerfilUrl":"https://res.cloudinary.com/demo/image/upload/foto.png",
                  "direccion":{"calle":"Calle Siempre Viva","numero":"123","pisoDepto":null,"codigoPostal":"9420",
                               "localidadId":"%s","principal":true}}
-                """.formatted(dniAleatorio(), "emp" + sufijo, "emp." + sufijo + "@bajonea.test", claveAleatoria(), LOCALIDAD_RIO_GRANDE),
+                """.formatted(dniAleatorio(), nombreUsuario, email, clave, LOCALIDAD_RIO_GRANDE),
                 RegistroClienteRequestDTO.class);
     }
 
-    private RegistroComercioRequestDTO comercioJson(String sufijo, String email, String nombreComercio) {
+    private RegistroComercioRequestDTO comercioJson(String sufijo, String email, String nombreComercio, String nombreUsuario, String clave) {
         return leer("""
                 {"fotoPerfilUrl":"https://res.cloudinary.com/demo/image/upload/foto.png",
                  "razonSocial":"Equipo SRL","cuit":"%s","condicionIva":"RESPONSABLE_INSCRIPTO","tipoSociedad":"SRL",
@@ -114,7 +127,7 @@ class DatosPruebaEmpleado {
                  "redesSociales":[{"tipo":"INSTAGRAM","url":"https://instagram.com/equipo.%s"}],
                  "nombreRepresentante":"Representante","apellidoRepresentante":"Prueba","dniRepresentante":"%s",
                  "telefonoRepresentante":"+5492964123457","fechaNacimientoRepresentante":"1985-03-15"}
-                """.formatted(cuitAleatorio(), nombreComercio, email, "dnu" + sufijo, email, claveAleatoria(), LOCALIDAD_RIO_GRANDE, sufijo,
+                """.formatted(cuitAleatorio(), nombreComercio, email, nombreUsuario, email, clave, LOCALIDAD_RIO_GRANDE, sufijo,
                 dniAleatorio()), RegistroComercioRequestDTO.class);
     }
 
