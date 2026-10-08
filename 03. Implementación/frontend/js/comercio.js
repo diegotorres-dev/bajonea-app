@@ -147,11 +147,17 @@ function formatearDireccion(direccion) {
 }
 
 function renderBanner(slot, kind, texto) {
+  slot.replaceChildren();
   if (!texto) {
-    slot.innerHTML = '';
     return;
   }
-  slot.innerHTML = `<div class="banner banner-${kind}">${ICONS.clock}<div>${texto}</div></div>`;
+  const banner = crear('div', `banner banner-${kind}`);
+  const icono = document.createElement('span');
+  icono.innerHTML = ICONS.clock;
+  const contenido = document.createElement('div');
+  contenido.textContent = texto;
+  banner.append(icono.firstElementChild, contenido);
+  slot.appendChild(banner);
 }
 
 function renderEstadoBanner(slot, abierto, texto) {

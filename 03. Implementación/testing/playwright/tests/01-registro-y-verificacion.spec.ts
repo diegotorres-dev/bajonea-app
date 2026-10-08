@@ -414,4 +414,72 @@ test.describe('Registro y verificación de cuenta', () => {
       expect(aceptado.status).toBe(201);
     });
   });
+
+  test('registro de comercio: un error del servidor con etiquetas HTML se muestra como texto en el banner', async ({ page }) => {
+    const suf = sufijoUnico();
+    const mensajeConHtml = 'No pudimos registrar el comercio <img src="x" onerror="window.__bannerInyectado=true"><b>importante</b>';
+    const json = (cuerpo: unknown, status = 200) => ({
+      status,
+      contentType: 'application/json',
+      headers: { 'access-control-allow-origin': '*' },
+      body: JSON.stringify(cuerpo),
+    });
+
+    await page.route('**/auth/registro/comercio/foto-firma', (route) =>
+      route.fulfill(json({ mensaje: 'ok', data: { apiKey: 'k', timestamp: 1, signature: 's', folder: 'f', uploadPreset: 'p', cloudName: 'demo' } })),
+    );
+    await page.route('https://api.cloudinary.com/**', (route) =>
+      route.fulfill(json({ secure_url: 'https://res.cloudinary.com/demo/image/upload/e2e.png' })),
+    );
+    await page.route('**/auth/registro/comercio', (route) =>
+      route.request().method() === 'POST' ? route.fulfill(json({ mensaje: mensajeConHtml, data: null }, 409)) : route.continue(),
+    );
+
+    await page.goto('/registro-comercio.html');
+    await page.getByTestId('input-nombre').fill(`Comercio Banner E2E ${suf}`);
+    await page.getByTestId('input-telefono').fill(generarTelefono());
+    await page.getByTestId('input-email-contacto').fill(`comercio.banner.contacto.${suf}@bajonea.test`);
+    await page.getByTestId('select-tipo-comercio').selectOption('RESTAURANTE');
+    await page.getByTestId('input-calle').fill('Av. San Martín');
+    await page.getByTestId('input-numero').fill('100');
+    await page.getByTestId('input-codigo-postal').fill('9420');
+    await elegirLocalidad(page);
+    await subirFotoComercioUi(page);
+    await page.getByTestId('btn-continuar').click();
+
+    await page.getByTestId('input-razon-social').fill(`Razón Social Banner ${suf}`);
+    await page.getByTestId('input-cuit').fill(generarCuit());
+    await page.getByTestId('input-fecha-inicio-actividades').fill('2020-01-01');
+    await page.getByTestId('select-tipo-sociedad').selectOption('SRL');
+    await page.getByTestId('select-condicion-iva').selectOption('RESPONSABLE_INSCRIPTO');
+    await page.getByTestId('input-domicilio-fiscal').fill('Av. San Martín 100');
+    await page.getByTestId('input-nombre-representante').fill('Rodrigo');
+    await page.getByTestId('input-apellido-representante').fill('Fernández');
+    await page.getByTestId('input-dni-representante').fill(generarDni());
+    await page.getByTestId('input-fecha-nacimiento-representante').fill('1985-03-15');
+    await page.getByTestId('input-telefono-representante').fill(generarTelefono());
+    await page.getByTestId('input-nombre-usuario').fill(nombreUsuarioUnico('com'));
+    await page.getByTestId('input-email').fill(`comercio.banner.${suf}@bajonea.test`);
+    await page.getByTestId('input-password').fill('Testing123');
+    await page.getByTestId('input-confirmar-password').fill('Testing123');
+    await page.getByTestId('btn-continuar-2').click();
+
+    await page.getByTestId('tab-horario-personalizado').click();
+    await page.getByTestId('btn-agregar-horario').click();
+    const fila = page.getByTestId('fila-horario').nth(0);
+    await fila.getByTestId('select-dia-horario').selectOption(diaDeHoy());
+    await fila.getByTestId('input-apertura-horario').fill('09:00');
+    await fila.getByTestId('input-cierre-horario').fill('18:00');
+    await page.getByTestId('btn-continuar-3').click();
+
+    await expect(page.getByTestId('lista-redes-sociales')).toBeVisible();
+    await completarRedSocialUi(page, suf);
+    await page.getByTestId('btn-registrar-comercio').click();
+
+    const banner = page.getByTestId('mensaje-banner');
+    await expect(banner).toContainText(mensajeConHtml);
+    await expect(banner.locator('img, b')).toHaveCount(0);
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => (window as unknown as { __bannerInyectado?: boolean }).__bannerInyectado)).toBeUndefined();
+  });
 });

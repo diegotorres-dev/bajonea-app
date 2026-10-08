@@ -196,3 +196,7 @@ No cambian el modelo relacional ni el diagrama entidad-relación (sin migracione
 | `Historias de Usuario - Cliente.md` | Registro con nombre de usuario y nueva HU-C17 "Cambiar mi Nombre de Usuario". |
 | `Historias de Usuario - Comercio.md` | El comercio dispone de 30 minutos para responder un pedido. |
 | `Historias de Usuario - Dueño.md` | Registro con nombre de usuario, criterios de aceptación adicionales de la cuenta de MercadoPago única, la pantalla de la cuenta de cobro, el aviso de vinculación y la desvinculación, y corrección y re-solicitud de un comercio rechazado con hasta 3 intentos. |
+
+## Mantenimiento previo a B2 — carrera del perfil del Cliente y banners sin HTML (2026-10-08)
+
+Solo frontend y pruebas; backend, migraciones, Newman y estreses sin cambios. `perfil.html`: los botones de editar datos, cambiar contraseña y foto nacen deshabilitados y `js/cliente.js` los habilita al terminar de enlazar los manejadores (causa raíz de la inestabilidad de `11:74`, `11:134` y `19:635`); "Cerrar sesión" se enlaza antes de cargar el perfil. `renderBanner` (`js/form-utils.js`, `js/cliente.js`, `js/comercio.js`) deja de interpretar el mensaje como HTML; los avisos del login con enlace se arman con `renderBannerConEnlace` (`js/auth.js`). Playwright: 489/489 (4 tests nuevos: specs 01, 02 y 11); spec 11 ×10 = 120/120 y spec 19 ×10 = 380/380. Documentación: `docs/DECISIONES.md`, `CLAUDE.md` y `testing/playwright/README.md`. Los demás documentos de esta carpeta no cambian.

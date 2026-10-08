@@ -27,11 +27,19 @@ const ICONS = {
 };
 
 function renderBanner(slot, kind, texto) {
+  slot.replaceChildren();
   if (!texto) {
-    slot.innerHTML = '';
     return;
   }
-  slot.innerHTML = `<div class="banner banner-${kind}" style="margin-bottom:20px;">${ICONS[kind] || ICONS.warning}<div>${texto}</div></div>`;
+  const banner = document.createElement('div');
+  banner.className = `banner banner-${kind}`;
+  banner.style.marginBottom = '20px';
+  const icono = document.createElement('span');
+  icono.innerHTML = ICONS[kind] || ICONS.warning;
+  const contenido = document.createElement('div');
+  contenido.textContent = texto;
+  banner.append(icono.firstElementChild, contenido);
+  slot.appendChild(banner);
 }
 
 function setLoading(button, loadingText, isLoading, originalHtml) {
@@ -212,6 +220,8 @@ export async function initPerfil() {
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarPerfil: false, mostrarCampana: false, centrarLogo: true });
   renderBottomNav(document.getElementById('bottom-nav-slot'), 'perfil');
 
+  document.getElementById('cerrar-sesion-link').addEventListener('click', mostrarModalConfirmarLogout);
+
   const cliente = await apiFetch('/clientes/perfil');
   normalizarCampos(cliente, ['nombre', 'apellido']);
   normalizarCampos(cliente.direccion, ['calle']);
@@ -304,8 +314,6 @@ export async function initPerfil() {
     renderBanner(document.getElementById('password-banner-slot'), 'warning', '');
     mostrarVista('view-cambiar-password');
   });
-
-  document.getElementById('cerrar-sesion-link').addEventListener('click', mostrarModalConfirmarLogout);
 
   document.querySelectorAll('[data-volver-perfil]').forEach((btn) => {
     btn.addEventListener('click', () => mostrarVista('view-principal'));
@@ -464,4 +472,8 @@ export async function initPerfil() {
       setLoading(submitPasswordBtn, '', false, 'Guardar nueva contraseña');
     }
   });
+
+  document.getElementById('editar-datos-link').disabled = false;
+  document.getElementById('cambiar-password-link').disabled = false;
+  avatarPerfil.disabled = false;
 }

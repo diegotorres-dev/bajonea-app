@@ -121,3 +121,24 @@ test.describe('Login', () => {
     await expect(page.getByTestId('mensaje-error-codigo')).toBeVisible();
   });
 });
+
+test.describe('Banners: el mensaje del servidor se muestra como texto', () => {
+  const MENSAJE_CON_HTML = 'Servicio no disponible <img src="x" onerror="window.__bannerInyectado=true"><b>importante</b>';
+
+  test('login: un error 409 del servidor con etiquetas HTML se muestra tal cual, sin crear elementos ni ejecutar nada', async ({ page }) => {
+    await page.route('**/auth/login', (route) =>
+      route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ mensaje: MENSAJE_CON_HTML, data: null }) }),
+    );
+
+    await page.goto('/login.html');
+    await page.getByTestId('input-nombre-usuario').fill('usuarioinexistente1');
+    await page.getByTestId('input-password').fill('Testing123');
+    await page.getByTestId('btn-ingresar').click();
+
+    const banner = page.getByTestId('mensaje-banner');
+    await expect(banner).toContainText(MENSAJE_CON_HTML);
+    await expect(banner.locator('img, b')).toHaveCount(0);
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => (window as unknown as { __bannerInyectado?: boolean }).__bannerInyectado)).toBeUndefined();
+  });
+});

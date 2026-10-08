@@ -304,3 +304,60 @@ test.describe('Perfil de Cliente: foto de perfil', () => {
     expect(respuesta.status()).toBe(404);
   });
 });
+
+test.describe('Perfil de Cliente: carga lenta del perfil', () => {
+  let localidadId: string;
+
+  test.beforeAll(async ({ request }) => {
+    localidadId = await obtenerLocalidadRioGrande(request);
+  });
+
+  const BOTONES_DEL_PERFIL = ['btn-editar-datos', 'btn-cambiar-password', 'btn-foto-perfil'];
+
+  test('mientras el perfil carga los botones están deshabilitados y un clic anticipado espera y abre el formulario', async ({ page, request }) => {
+    const cliente = await registrarYVerificarCliente(request, localidadId);
+    await loginUi(page, cliente.nombreUsuario, cliente.password);
+
+    let liberarPerfil!: () => void;
+    const perfilLiberado = new Promise<void>((resolve) => {
+      liberarPerfil = resolve;
+    });
+    await page.route('**/clientes/perfil', async (route) => {
+      if (route.request().method() === 'GET') {
+        await perfilLiberado;
+      }
+      await route.continue();
+    });
+
+    await page.goto('/perfil.html');
+    for (const testid of BOTONES_DEL_PERFIL) {
+      await expect(page.getByTestId(testid)).toBeDisabled();
+    }
+    await expect(page.getByTestId('nombre-cliente-perfil')).toHaveText('');
+
+    const clic = page.getByTestId('btn-editar-datos').click();
+    liberarPerfil();
+    await clic;
+
+    await expect(page.getByTestId('input-nombre')).toBeVisible();
+    await expect(page.getByTestId('input-nombre')).toHaveValue(cliente.nombre);
+    for (const testid of BOTONES_DEL_PERFIL) {
+      await expect(page.getByTestId(testid)).toBeEnabled();
+    }
+  });
+
+  test('si la carga del perfil falla los botones quedan deshabilitados', async ({ page, request }) => {
+    const cliente = await registrarYVerificarCliente(request, localidadId);
+    await loginUi(page, cliente.nombreUsuario, cliente.password);
+
+    await page.route('**/clientes/perfil', (route) =>
+      route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ mensaje: 'Error simulado', data: null }) }),
+    );
+    await page.goto('/perfil.html');
+    await expect(page.getByTestId('btn-cerrar-sesion')).toBeEnabled();
+    await page.waitForTimeout(500);
+    for (const testid of BOTONES_DEL_PERFIL) {
+      await expect(page.getByTestId(testid)).toBeDisabled();
+    }
+  });
+});

@@ -28,7 +28,7 @@ import {
   scrollAlPrimerError,
 } from './validators.js';
 import { montarFormularioCliente } from './cliente-form.js';
-import { renderBanner, bindPasswordToggle, setLoading, construirTelefono, bindNombreUsuario, MENSAJE_NOMBRE_USUARIO_EN_USO } from './form-utils.js';
+import { renderBanner, renderBannerTexto, bindPasswordToggle, setLoading, construirTelefono, bindNombreUsuario, MENSAJE_NOMBRE_USUARIO_EN_USO } from './form-utils.js';
 
 export { LABELS_TIPO_SOCIEDAD, LABELS_CONDICION_IVA, LABELS_TIPO_COMERCIO, LABELS_TIPO_RED_SOCIAL } from './comercio-form.js';
 export { construirTelefono, bindNombreUsuario } from './form-utils.js';
@@ -36,17 +36,32 @@ export { construirTelefono, bindNombreUsuario } from './form-utils.js';
 const MENSAJES_LOGIN_CONFLICTO = {
   'Cuenta bloqueada. Recuperá tu contraseña para desbloquearla': {
     kind: 'error',
-    html: 'Tu cuenta está bloqueada por intentos fallidos. <a class="link" href="recuperar-password.html">Recuperá tu contraseña</a> para desbloquearla.',
+    antes: 'Tu cuenta está bloqueada por intentos fallidos. ',
+    enlace: { texto: 'Recuperá tu contraseña', href: 'recuperar-password.html' },
+    despues: ' para desbloquearla.',
   },
   'Cuenta inactiva. Solicitá la reactivación de tu cuenta': {
     kind: 'warning',
-    html: 'Tu cuenta está inactiva. <a class="link" href="reactivar-cuenta.html">Solicitá la reactivación</a> para volver a ingresar.',
+    antes: 'Tu cuenta está inactiva. ',
+    enlace: { texto: 'Solicitá la reactivación', href: 'reactivar-cuenta.html' },
+    despues: ' para volver a ingresar.',
   },
   'Cuenta suspendida': {
     kind: 'error',
-    html: 'Tu cuenta fue suspendida. Contactá a soporte para más información.',
+    antes: 'Tu cuenta fue suspendida. Contactá a soporte para más información.',
   },
 };
+
+function renderBannerConEnlace(slot, kind, { antes, enlace = null, despues = '' }) {
+  renderBannerTexto(slot, kind, antes);
+  if (!enlace) return;
+  const contenido = slot.querySelector('.banner > div');
+  const ancla = document.createElement('a');
+  ancla.className = 'link';
+  ancla.href = enlace.href;
+  ancla.textContent = enlace.texto;
+  contenido.append(ancla, despues);
+}
 
 export async function resolverHomePorRol(usuario) {
   if (usuario.rol === 'CLIENTE') {
@@ -150,10 +165,18 @@ export function initLogin() {
         scrollAlPrimerError();
       } else if (error instanceof ApiError && error.status === 409) {
         if (error.message === 'Verificá tu email antes de iniciar sesión') {
-          renderBanner(bannerSlot, 'warning', 'Todavía no verificaste tu email. Ingresá el código de 6 dígitos que te enviamos al registrarte en la <a class="link" href="verificar-email.html">pantalla de verificación</a>.');
+          renderBannerConEnlace(bannerSlot, 'warning', {
+            antes: 'Todavía no verificaste tu email. Ingresá el código de 6 dígitos que te enviamos al registrarte en la ',
+            enlace: { texto: 'pantalla de verificación', href: 'verificar-email.html' },
+            despues: '.',
+          });
         } else {
           const mapeo = MENSAJES_LOGIN_CONFLICTO[error.message];
-          renderBanner(bannerSlot, mapeo ? mapeo.kind : 'error', mapeo ? mapeo.html : error.message);
+          if (mapeo) {
+            renderBannerConEnlace(bannerSlot, mapeo.kind, mapeo);
+          } else {
+            renderBanner(bannerSlot, 'error', error.message);
+          }
         }
         scrollAlPrimerError();
       } else if (error instanceof ApiError && error.data) {

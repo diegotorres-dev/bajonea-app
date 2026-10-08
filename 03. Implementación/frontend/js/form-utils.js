@@ -39,12 +39,8 @@ export function crearSvg(figuras, atributos = {}) {
   return svg;
 }
 
-export function renderBanner(slot, kind, html) {
-  if (!html) {
-    slot.innerHTML = '';
-    return;
-  }
-  slot.innerHTML = `<div class="banner banner-${kind}" style="margin-bottom:20px;">${ICONS[kind] || ICONS.info}<div>${html}</div></div>`;
+export function renderBanner(slot, kind, texto) {
+  renderBannerTexto(slot, kind, texto);
 }
 
 export function renderBannerTexto(slot, kind, texto) {
