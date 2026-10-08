@@ -17,7 +17,7 @@ public interface InvitacionEmpleadoRepository extends JpaRepository<InvitacionEm
     /**
      * Vista de solo lectura de una invitación pendiente, sin cargar la entidad: la lectura previa de aceptar y
      * validar no tiene que dejar entidades en el contexto de persistencia, porque la lectura posterior con
-     * bloqueo ({@link #findByEmailAndEstadoConBloqueo}) devolvería esa foto en vez del estado confirmado.
+     * bloqueo ({@link #findByIdInConBloqueo}) devolvería esa foto en vez del estado confirmado.
      */
     interface InvitacionPendienteVista {
 
@@ -61,16 +61,39 @@ public interface InvitacionEmpleadoRepository extends JpaRepository<InvitacionEm
     @Query("SELECT i FROM InvitacionEmpleado i WHERE i.id = :id AND i.comercio.id = :comercioId")
     Optional<InvitacionEmpleado> findByIdAndComercioIdConBloqueo(@Param("id") Integer id, @Param("comercioId") Integer comercioId);
 
+    @Query("SELECT i.id FROM InvitacionEmpleado i WHERE i.comercio.id = :comercioId AND i.email = :email AND i.estado = :estado ORDER BY i.id ASC")
+    List<Integer> findIdsByComercioIdAndEmailAndEstado(@Param("comercioId") Integer comercioId, @Param("email") String email,
+            @Param("estado") EstadoInvitacionEmpleado estado);
+
     /**
      * Invitaciones del par comercio y email en el estado indicado, con bloqueo de escritura: sirven para
      * materializar las vencidas y detectar una vigente sin carrera contra otra invitación o reenvío del par.
+     * Se leen primero los ids sin bloqueo y se bloquea por clave primaria ({@link #findByIdInConBloqueo}), igual
+     * que {@code validar} y {@code aceptar}: un {@code SELECT ... FOR UPDATE} por el rango del índice único
+     * toma el índice antes que la clave primaria y se interbloquea con el {@code UPDATE} de un código erróneo
+     * que invalida la invitación (clave primaria primero, índice después). El estado se vuelve a comprobar con la
+     * fila ya bloqueada. No hay riesgo de fila nueva en el medio: solo invitar y reenviar crean invitaciones del
+     * par y ambos arrancan bloqueando la fila del Dueño.
+     */
+    default List<InvitacionEmpleado> findByComercioIdAndEmailAndEstadoConBloqueo(Integer comercioId, String email,
+            EstadoInvitacionEmpleado estado) {
+        List<Integer> ids = findIdsByComercioIdAndEmailAndEstado(comercioId, email, estado);
+        if (ids.isEmpty()) {
+            return List.of();
+        }
+        return findByIdInConBloqueo(ids).stream().filter(invitacion -> invitacion.getEstado() == estado).toList();
+    }
+
+    /**
+     * Bloquea por clave primaria, en id ascendente, las invitaciones indicadas. Es la lectura con bloqueo de
+     * {@code validar} y {@code aceptar}: se bloquea por clave y no por el rango (email, estado) porque ese
+     * {@code SELECT ... FOR UPDATE} toma bloqueos de siguiente clave y de hueco sobre los índices únicos
+     * parciales de {@code V30}, y el {@code UPDATE} que pasa una invitación a {@code INVALIDADA} o
+     * {@code ACEPTADA} mueve su entrada en esos mismos índices (la columna generada {@code pendiente_clave}
+     * pasa a {@code NULL}): dos transacciones sobre el mismo email se interbloqueaban. Con bloqueos de
+     * registro por clave primaria la segunda transacción solo espera, sin retener ningún hueco.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT i FROM InvitacionEmpleado i WHERE i.comercio.id = :comercioId AND i.email = :email AND i.estado = :estado")
-    List<InvitacionEmpleado> findByComercioIdAndEmailAndEstadoConBloqueo(@Param("comercioId") Integer comercioId,
-            @Param("email") String email, @Param("estado") EstadoInvitacionEmpleado estado);
-
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT i FROM InvitacionEmpleado i WHERE i.email = :email AND i.estado = :estado ORDER BY i.id ASC")
-    List<InvitacionEmpleado> findByEmailAndEstadoConBloqueo(@Param("email") String email, @Param("estado") EstadoInvitacionEmpleado estado);
+    @Query("SELECT i FROM InvitacionEmpleado i WHERE i.id IN :ids ORDER BY i.id ASC")
+    List<InvitacionEmpleado> findByIdInConBloqueo(@Param("ids") Collection<Integer> ids);
 }

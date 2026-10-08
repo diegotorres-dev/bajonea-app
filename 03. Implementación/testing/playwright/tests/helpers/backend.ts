@@ -744,3 +744,77 @@ export async function suspenderComercio(request: APIRequestContext, adminToken: 
     throw new Error(`No se pudo suspender el comercio ${comercioId}: ${status} ${JSON.stringify(body)}`);
   }
 }
+
+const cabeceraComercio = (comercioId: number): Record<string, string> => ({ [HEADER_COMERCIO_ID]: String(comercioId) });
+
+export const MENSAJE_CODIGO_INVALIDO = 'El código es incorrecto o la invitación ya no está vigente. Pedí que te reenvíen la invitación.';
+
+export function invitarEmpleado(request: APIRequestContext, token: string, comercioId: number, email: string) {
+  return apiConHeaders(request, 'POST', '/comercios/equipo/invitaciones', token, cabeceraComercio(comercioId), { email });
+}
+
+export function reenviarInvitacion(request: APIRequestContext, token: string, comercioId: number, invitacionId: number) {
+  return apiConHeaders(request, 'POST', `/comercios/equipo/invitaciones/${invitacionId}/reenviar`, token, cabeceraComercio(comercioId));
+}
+
+export function cancelarInvitacion(request: APIRequestContext, token: string, comercioId: number, invitacionId: number) {
+  return apiConHeaders(request, 'PUT', `/comercios/equipo/invitaciones/${invitacionId}/cancelar`, token, cabeceraComercio(comercioId));
+}
+
+export function equipoComercio(request: APIRequestContext, token: string, comercioId: number) {
+  return apiConHeaders(request, 'GET', '/comercios/equipo', token, cabeceraComercio(comercioId));
+}
+
+export function validarInvitacion(request: APIRequestContext, email: string, codigo: string) {
+  return apiPost(request, '/auth/invitaciones-empleado/validar', { email, codigo });
+}
+
+export function aceptarInvitacion(request: APIRequestContext, cuerpo: Record<string, unknown>) {
+  return apiPost(request, '/auth/invitaciones-empleado/aceptar', cuerpo);
+}
+
+export async function obtenerCodigoInvitacionTest(request: APIRequestContext, email: string, comercioId: number): Promise<string> {
+  const { status, body } = await apiGet(request, `/test/invitaciones-empleado/codigo?email=${encodeURIComponent(email)}&comercioId=${comercioId}`);
+  if (status !== 200) {
+    throw new Error(`No se pudo obtener el código de la invitación de ${email} al comercio ${comercioId}: ${status} ${JSON.stringify(body)}`);
+  }
+  return body.data as string;
+}
+
+export async function vencerInvitacionTest(request: APIRequestContext, invitacionId: number): Promise<void> {
+  const { status, body } = await apiPut(request, `/test/invitaciones-empleado/${invitacionId}/vencer`, {});
+  if (status !== 200) {
+    throw new Error(`No se pudo vencer la invitación ${invitacionId}: ${status} ${JSON.stringify(body)}`);
+  }
+}
+
+export async function cantidadEmailsRegularizacionTest(request: APIRequestContext, email: string): Promise<number> {
+  const { status, body } = await apiGet(request, `/test/emails-regularizacion/cantidad?email=${encodeURIComponent(email)}`);
+  if (status !== 200) {
+    throw new Error(`No se pudo contar los emails de regularización de ${email}: ${status} ${JSON.stringify(body)}`);
+  }
+  return Number(body.data);
+}
+
+export function cuentaNuevaInvitacion(
+  localidadId: string,
+  overrides: Partial<{ dni: string; nombreUsuario: string; password: string }> = {},
+) {
+  return {
+    nombre: 'Empleada',
+    apellido: 'Invitada',
+    dni: overrides.dni ?? generarDni(),
+    fechaNacimiento: '1996-08-14',
+    telefono: generarTelefonoCompleto(),
+    nombreUsuario: overrides.nombreUsuario ?? nombreUsuarioUnico('emp'),
+    password: overrides.password ?? `Pw${sufijoUnico()}Aa1`,
+    direccion: {
+      calle: 'Calle Siempre Viva',
+      numero: '742',
+      pisoDepto: null,
+      codigoPostal: '9420',
+      localidadId,
+      principal: true,
+    },
+  };
+}

@@ -332,6 +332,11 @@ public class InvitacionEmpleadoService {
      * para que el contador quede guardado. Las invitaciones vencidas no se tocan: "vencida" se calcula al
      * listar el equipo.
      * <p>
+     * Las invitaciones se bloquean por clave primaria sobre los ids de la lectura previa y no por el rango
+     * (email, estado): ese rango toma bloqueos de hueco sobre los índices únicos parciales y se interbloquea
+     * con el {@code UPDATE} que pasa una invitación a {@code INVALIDADA} o {@code ACEPTADA} (ver
+     * {@link InvitacionEmpleadoRepository#findByIdInConBloqueo}).
+     * <p>
      * Para aceptar, antes de bloquear las invitaciones se bloquean las filas de {@code usuario} del invitado
      * (si ya tiene cuenta) y del Dueño del comercio, en id ascendente: el aviso al Dueño al final toma esa
      * última fila y, si la invitación se bloqueara primero, se cruzaría con una invitación o un reenvío del
@@ -356,8 +361,9 @@ public class InvitacionEmpleadoService {
         }
 
         List<InvitacionEmpleado> vigentes = invitacionRepository
-                .findByEmailAndEstadoConBloqueo(email, EstadoInvitacionEmpleado.PENDIENTE).stream()
-                .filter(invitacion -> invitacion.getFechaVencimiento().isAfter(ahora))
+                .findByIdInConBloqueo(vistas.stream().map(InvitacionPendienteVista::getId).toList()).stream()
+                .filter(invitacion -> invitacion.getEstado() == EstadoInvitacionEmpleado.PENDIENTE
+                        && invitacion.getFechaVencimiento().isAfter(ahora))
                 .toList();
         InvitacionEmpleado coincidente = prevista == null ? null : vigentes.stream()
                 .filter(invitacion -> invitacion.getId().equals(prevista.getId()) && invitacion.getCodigo().equals(codigo))

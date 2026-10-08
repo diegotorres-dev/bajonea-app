@@ -4,6 +4,16 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
+## Tramo E1, bloque A5b: pruebas de las invitaciones y arreglo de interbloqueos (2026-10-08)
+
+Último bloque de la entrega A de E1: spec de Playwright a nivel API (`35-empleado-invitacion-api`, 37 tests), carpeta `56` de Newman (125 requests y 201 assertions definidas, constructor `build-empleado-tramoE1-postman.mjs`) y el estrés `stress-locks-empleado-e1.mjs` (S1 a S11 y un S12 extra). El estrés encontró dos interbloqueos reales en `validar`/`aceptar` y en invitar/reenviar; se arreglaron bloqueando las invitaciones por clave primaria (`InvitacionEmpleadoRepository.findByIdInConBloqueo`) con dos tests de regresión en Java. Sin frontend ni migraciones.
+
+**No cambia ningún documento de esta carpeta** (requisitos, historias, diccionario y DFD quedan igual: el comportamiento ya estaba decidido y documentado; el arreglo solo cambia cómo se toman los bloqueos). Las carpetas `01.` y `02.` no se editaron.
+
+**Pruebas:** `mvnw test` 451/451; Playwright 485/485; Newman 1697 requests y 2716 assertions con 0 fallos (colección con la carpeta nueva); los seis estreses sin problemas y sin `Deadlock found` en el log del backend.
+
+Fuera de esta carpeta: `CLAUDE.md` (fila E1 y orden de bloqueo), `docs/DECISIONES.md` (entrada nueva), `docs/APRENDIZAJES-TECNICOS.md` (entrada nueva sobre el bloqueo por rango), `testing/playwright/README.md`, `postman/Bajonea-MVP.postman_collection.json` y `postman/Bajonea-Local.postman_environment.json` (solo se agregan la carpeta `56` y 103 variables `e1_*` vacías).
+
 ## Tramo E0: mantenimiento previo a E1 (2026-10-08)
 
 Mantenimiento sin código de producción: referencias a las contraseñas de prueba, eliminación del puntero `docs/CAMBIOS.md` y estabilización del test 12:251 de Playwright.

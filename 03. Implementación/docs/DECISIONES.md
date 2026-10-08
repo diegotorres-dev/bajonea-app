@@ -9010,3 +9010,63 @@ El estrés nuevo (`stress-locks-tramoC2.mjs`) encontró dos defectos reales, amb
 **Límite de la verificación.** El fallo original aparecía solo en la corrida completa y pasaba al repetirlo aislado, de modo que 10/10 en el spec solo es consistente con el arreglo pero no lo prueba; la causa (hora de Node contra el reloj de la página) se dedujo del comportamiento documentado de `pauseAt`, no se reprodujo el fallo antes del cambio. La confirmación definitiva es la próxima corrida completa de la suite.
 
 **Documentación tocada:** `CLAUDE.md` (fila E1 y lista de despliegue), `docs/APRENDIZAJES-TECNICOS.md` (lista de despliegue), `docs/MAPEO-ARCHIVOS-TRAMO7.md`, `docs/DECISIONES.md` (tres notas al pie y esta entrada), `testing/playwright/README.md` y `docs/entregables-01-02/CAMBIOS.md`. Eliminado: `docs/CAMBIOS.md`.
+
+## 2026-10-08 — Rol Empleado, tramo E1, bloque A5b: pruebas de punta a punta de las invitaciones y un arreglo de interbloqueos (cierra la entrega A)
+
+**Contexto.** Último bloque de la entrega A de E1: spec de Playwright a nivel API, carpeta 56 de Newman y estrés de las invitaciones de empleado. **No se tocó el frontend ni se creó ninguna migración.** El estrés encontró dos defectos reales de bloqueo en el código de A2 y A3 (interbloqueos que salían como `500`); se arreglaron porque el cambio es chico y está acotado al código de E1, con tests de regresión que fallan sin el arreglo. Línea base de partida: `mvnw test` 449/449, Playwright 448, Newman 1571 requests y 2515 assertions, estreses `2a`, `5a`, `C1`, `C2` y `C3` limpios. Las carpetas `01.` y `02.` no se editaron.
+
+**Qué se hizo**
+1. **Helpers** nuevos en `tests/helpers/backend.ts` (`invitarEmpleado`, `reenviarInvitacion`, `cancelarInvitacion`, `equipoComercio`, `validarInvitacion`, `aceptarInvitacion`, `obtenerCodigoInvitacionTest`, `vencerInvitacionTest`, `cantidadEmailsRegularizacionTest`, más `cuentaNuevaInvitacion` y la constante `MENSAJE_CODIGO_INVALIDO`). Mandan `X-Comercio-Id` de forma explícita (así el spec puede probar la falta del header y un comercio ajeno); no se tocó `RUTAS_DEL_DUENO` del helper ni `selector.ts` ni `multicomercio.ts`.
+2. **`tests/35-empleado-invitacion-api.spec.ts`** (37 tests, cada uno crea sus datos por API; el comercio de cada test es un clon nuevo para no compartir el tope de 5 por hora): invitar (normalización, `400`, header ausente o no numérico, `404` idéntico para comercio ajeno o inexistente, `401`, `403` de Cliente, `409` genérico para Dueño y Administrador sin email, cuenta bloqueada, inactiva, suspendida y sin verificar con su fila de regularización y el tope de 3, vigente existente, ya miembro, comercio no operativo en tres estados y tope de 5 por hora por comercio), reenviar y cancelar, listado del equipo (`PENDIENTE`, `VENCIDA` con el atajo, `INVALIDADA`, sin el código, aislamiento entre comercios y entre Dueños), validar (datos, el mismo `401` para cinco fallos, `400` de formato, cinco intentos que invalidan y reenvío que rehabilita), aceptar con cuenta nueva (todas las filas, login posterior, segunda aceptación, términos, datos, DNI y nombre de usuario duplicados con la invitación intacta, aviso al Dueño solo bajo ese comercio), con cuenta existente (no se modifica, revalidación por cuenta bloqueada o inactiva, reactivación conservando `fecha_alta`), comercio `SUSPENDIDO`, `CERRADO_TEMPORALMENTE` e `INACTIVO`, y que quien fue Empleado no puede registrar un comercio (email ni DNI). Contraseñas generadas por test.
+3. **`scripts/build-empleado-tramoE1-postman.mjs`**: agrega la carpeta 56 (siempre última) con **125 requests y 201 assertions definidas** (ejecutadas: 126 requests, porque el script global de la colección dispara un `GET /comercios/mis-comercios` tras el login del Dueño). Pasa de la estimación de unas 65 y 120 porque cubre los mismos casos del spec 35 más los negativos (header, Cliente, ajeno) y el aislamiento. Las cuentas (Dueños y Clientes) se generan por request en un script de pre-request (email, usuario, contraseña, DNI y CUIT), así que la carpeta se puede repetir sin resetear y el environment suma 103 variables `e1_*` **vacías**, sin ninguna contraseña. La colección regenerada cambia solo con la carpeta nueva y el environment solo con variables nuevas (`git diff`: 0 líneas borradas; correr el constructor otra vez da el mismo archivo byte a byte). Newman no cubre (necesitan SQL): cuentas inactiva y suspendida, comercio `INACTIVO` y reactivación de una relación; están en el spec 35.
+4. **`scripts/stress-locks-empleado-e1.mjs`**: los once escenarios pedidos (S1 a S11) más un S12 extra (ver el defecto 2). Resuelve solo la localidad, no usa Cloudinary, crea Dueños y Clientes con contraseñas generadas y exige `ADMIN_PASSWORD` por variable de entorno (sin valor por defecto).
+5. **Tests de Java de regresión** (2) en `InvitacionEmpleadoAceptacionIntegrationTest`: veinte códigos erróneos en paralelo con el correcto mezclado, y códigos erróneos que invalidan contra reenviar e invitar del Dueño. Verificado: con el bloqueo por rango restaurado a mano los dos fallan (14 `Deadlock found` en el log) y con el arreglo pasan.
+
+**Defectos encontrados y arreglados (los dos en código de A2 y A3, no en las pruebas)**
+1. **`validar` y `aceptar` se interbloqueaban cuando varias transacciones resolvían el mismo email** (`500`, `CannotAcquireLockException`). Evidencia: el escenario S2 daba un `200` y un `500` en las 3 rondas (esperado `200` y `401`) y el S7 daba `500` en 14 de 60 intentos erróneos; no aparecía en Java (dos hilos) ni en Newman. `SHOW ENGINE INNODB STATUS`: una transacción mantenía el registro de `uq_inv_pendiente_email_codigo` y esperaba el hueco para mover la entrada al pasar a `INVALIDADA` (la columna generada `pendiente_clave` pasa a `NULL`), y la otra mantenía ese hueco por su `SELECT ... FOR UPDATE` por rango y esperaba el registro. **Arreglo:** `InvitacionEmpleadoRepository.findByIdInConBloqueo` (`WHERE id IN :ids ORDER BY id`, bloqueo de registro por clave primaria); `resolver` bloquea los ids de las pendientes vigentes que ya leyó sin bloqueo, en vez de bloquear el rango por email.
+2. **Invitar y reenviar del Dueño tenían el mismo cruce contra el `UPDATE` de un código erróneo** (índice y después clave primaria, al revés que el `UPDATE`). Evidencia: el escenario S12 que se agregó (códigos erróneos que invalidan contra reenviar e invitar) dio `500` en 1 de 15 rondas con el primer arreglo solamente; el estado de InnoDB mostró el cruce entre `uq_inv_pendiente_comercio_email` y la clave primaria. **Arreglo:** `findByComercioIdAndEmailAndEstadoConBloqueo` pasó a ser un método `default` que lee los ids sin bloqueo y bloquea por clave primaria (mismo nombre y firma, para no tocar `InvitacionEmpleadoServiceCodigoTest`). No hay riesgo de una fila nueva entre las dos lecturas: solo invitar y reenviar crean invitaciones del par y las dos empiezan bloqueando la fila del Dueño. Con ambos arreglos: S12 con 40 rondas sin ningún `500`.
+3. Cambio de comportamiento menor: un código erróneo que llega justo mientras el Dueño reenvía ya no suma un intento a la invitación nueva (solo se bloquean y cuentan las pendientes que se leyeron antes). Es consistente con el resto: la nueva cuenta a partir del siguiente intento.
+
+**Resultados contra la línea base**
+
+| Suite | Línea base | Ahora |
+|---|---|---|
+| `mvnw test` | 449/449 | **451/451** (+2 de regresión) |
+| Playwright (base reseteada, `workers: 1`) | 448 | **485/485** en 15,4 min (+37 del spec 35). Después se cambiaron solo contraseñas literales por generadas en el spec 35 y su helper, y el spec 35 repetido dio 37/37 |
+| Newman (base reseteada) | 1571 requests, 2515 assertions | **1697 requests, 2716 assertions, 0 fallos** (+126 y +201) |
+| Estreses | `2a`, `5a`, `C1`, `C2`, `C3` limpios | los seis, incluido `stress-locks-empleado-e1.mjs`, **"SIN PROBLEMAS"** |
+
+El log del backend de la corrida de Newman y de los estreses no tiene `Deadlock found` ni `Lock wait timeout`; los `ERROR` son los choques `uq_*` esperados, ya traducidos a `409`. El primer intento del estrés `2a` falló por preparación (`CLOUDINARY_CLOUD_NAME` inventado: el alta adicional valida la carpeta real) y pasó con el nombre real.
+
+**Los escenarios de estrés (10 rondas cada uno, última corrida)**
+
+| # | Escenario | Resultado |
+|---|---|---|
+| S1 | Aceptar × cancelar la misma invitación | Un solo ganador: aceptar 7 veces (cancelar `409`), cancelar 3 (aceptar `401`); nunca ambos, sin relación ni cuenta si ganó cancelar |
+| S2 | Dos aceptaciones del mismo código con cuenta nueva | 10 × `200` y 10 × `401`; 1 usuario, 1 empleado, 1 relación y 1 aviso por ronda (antes del arreglo: `200` y `500`) |
+| S3 | Aceptar × reenviar × dos invitar (órdenes alternados) | Cero `5xx`; aceptar ganó 6 y reenviar 4; nunca dos `PENDIENTE`; con reenvío ganador, el código nuevo valida y el viejo da `401`; invitar siempre `409` |
+| S4 | Seis invitaciones simultáneas del mismo Dueño | 50 × `201` y 10 × `409` (cinco y uno por ronda), con el mensaje del tope y 5 filas |
+| S5 | Dos invitaciones simultáneas al mismo email | 10 × `201` y 10 × `409`; un solo `PENDIENTE` |
+| S6 | Empleado nuevo acepta dos comercios a la vez | 20 × `200`; 1 fila `empleado` y 2 relaciones por ronda |
+| S7 | Veinte códigos erróneos con el correcto mezclado (validar y aceptar) | 200 erróneos todos `401`; el correcto ganó 7 veces y perdió 3; intentos nunca por encima de 5, estado final coherente (`INVALIDADA/5` o `ACEPTADA`) (antes del arreglo: `500`) |
+| S8 | Aceptar × tres logins fallidos del invitado | aceptar 10 × `200`, logins 30 × `401`; la cuenta termina `BLOQUEADO` con 3 intentos |
+| S9 | Aceptar × bloqueo de la cuenta del Dueño (Mercado Pago vinculado) | aceptar 10 × `200`, logins `401`/`409`; comercio `CERRADO_TEMPORALMENTE`; sin interbloqueos |
+| S10 | Cuatro invitaciones simultáneas a la misma cuenta bloqueada | Todas `409`; desde un solo Dueño siempre exactamente 3 filas de regularización (la fila del Dueño las serializa); desde cuatro Dueños distintos 3 (7 rondas) o 4 (3 rondas): el exceso de 1 que ya se aceptó |
+| S11 | Cancelar × reenviar × aceptar | Exactamente un ganador por ronda (aceptar 7, cancelar 1, reenviar 2); ningún `PENDIENTE` huérfano |
+| S12 (extra) | Códigos erróneos que invalidan × reenviar × invitar | 60 × `401`, cero `5xx`; como máximo un `PENDIENTE` |
+
+**Decisiones no previstas**
+- El escenario S12 no estaba en la lista: se agregó al ver, en la revisión del primer arreglo, que invitar y reenviar tenían el mismo orden de bloqueo invertido.
+- S3 y S7 alternan los retardos para ejercitar las dos órdenes (en la primera versión aceptar ganaba siempre en S3 y el código correcto perdía siempre en S7 cuando se mandaba por aceptar).
+- S10 mide dos grupos por ronda (un solo Dueño y cuatro Dueños) porque el "exceso de 1 o 2" de la auditoría solo puede darse entre Dueños distintos.
+- El spec 35 tiene 37 tests (se pedían unos 30) y la carpeta 56 125 requests (se pedían unas 65): se prefirió cubrir cada caso del spec en las dos herramientas.
+- No se cambió `RUTAS_DEL_DUENO` de los helpers ni de `api.js`: los helpers de invitaciones mandan el header de forma explícita.
+
+**Preguntas abiertas (con recomendación)**
+1. Un interbloqueo hoy sale como `500`. ¿Conviene un manejador general que traduzca `CannotAcquireLockException` a `503` con "Reintentá" (o reintentar una vez dentro del servicio)? Recomendación: sí, como tramo transversal aparte; no se aplicó porque cambia el contrato de todos los endpoints.
+2. El tope de 3 emails de regularización entre Dueños distintos puede excederse en uno (medido: 3 de 10 rondas con 4). Recomendación: dejarlo (ya figura en la lista de despliegue).
+3. Newman no cubre por sí solo cuentas inactivas o suspendidas, comercio `INACTIVO` ni la reactivación de una relación (necesitan SQL). Recomendación: dejarlos en el spec 35; si se quiere cubrirlos en Newman, sumar atajos de test de estado.
+
+**Qué no se hizo.** Spec 36 de UI, el frontend (entrega B), `V32`, los inestables `01:100` y `14:124`, la carrera del perfil del Cliente, la IP real detrás del proxy y el modo estricto de MariaDB.
+
+**Documentación tocada:** `CLAUDE.md` (fila E1 y orden de bloqueo), `testing/playwright/README.md`, `docs/APRENDIZAJES-TECNICOS.md` (entrada nueva sobre el bloqueo por rango) y `docs/entregables-01-02/CAMBIOS.md`. Backend: `InvitacionEmpleadoRepository`, `InvitacionEmpleadoService` y `InvitacionEmpleadoAceptacionIntegrationTest`. Proceso del backend de test detenido al terminar.

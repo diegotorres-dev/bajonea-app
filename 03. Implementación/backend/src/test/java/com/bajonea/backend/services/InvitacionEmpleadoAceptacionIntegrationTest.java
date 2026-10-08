@@ -735,6 +735,84 @@ class InvitacionEmpleadoAceptacionIntegrationTest {
         }
     }
 
+    @Test
+    void veinteCodigosErroneosEnParaleloConElCorrectoMezcladoInvalidanSinInterbloqueos() throws Exception {
+        reloj.volverAlReloj();
+        for (int ronda = 1; ronda <= 6; ronda++) {
+            Dueno dueno = datos.registrarDuenoAprobado();
+            String email = emailNuevo();
+            try {
+                int invitacionId = invitar(dueno, email);
+                String codigo = codigoDe(invitacionId);
+                String incorrecto = otroCodigo(codigo);
+                int posicionDelCorrecto = ronda * 3;
+                List<Callable<Object>> tareas = new ArrayList<>();
+                for (int i = 0; i < 21; i++) {
+                    if (i == posicionDelCorrecto) {
+                        tareas.add(() -> invitacionService.validar(validarRequest(email, codigo)));
+                    } else if (i % 2 == 0) {
+                        tareas.add(() -> invitacionService.validar(validarRequest(email, incorrecto)));
+                    } else {
+                        tareas.add(() -> invitacionService.aceptar(aceptarRequest(email, incorrecto, null, null)));
+                    }
+                }
+
+                List<Object> resultados = enParalelo(tareas);
+
+                long inesperados = resultados.stream()
+                        .filter(r -> !(r instanceof CodigoInvitacionInvalidoException) && !(r instanceof InvitacionEmpleadoValidadaResponseDTO))
+                        .count();
+                assertEquals(0, inesperados, "ronda " + ronda + ": " + resultados);
+                assertTrue(resultados.stream().filter(r -> r instanceof InvitacionEmpleadoValidadaResponseDTO).count() <= 1, "ronda " + ronda);
+                assertEquals("INVALIDADA", estadoDe(invitacionId), "ronda " + ronda);
+                assertEquals(5, intentosDe(invitacionId), "ronda " + ronda);
+            } finally {
+                borrarRastros(dueno);
+            }
+        }
+    }
+
+    @Test
+    void codigosErroneosQueInvalidanContraReenviarEInvitarDelDuenoNoSeInterbloquean() throws Exception {
+        reloj.volverAlReloj();
+        for (int ronda = 1; ronda <= 6; ronda++) {
+            Dueno dueno = datos.registrarDuenoAprobado();
+            String email = emailNuevo();
+            try {
+                int invitacionId = invitar(dueno, email);
+                String incorrecto = otroCodigo(codigoDe(invitacionId));
+                List<Callable<Object>> tareas = new ArrayList<>();
+                for (int i = 0; i < 6; i++) {
+                    tareas.add(i % 2 == 0
+                            ? () -> invitacionService.validar(validarRequest(email, incorrecto))
+                            : () -> invitacionService.aceptar(aceptarRequest(email, incorrecto, null, null)));
+                }
+                tareas.add(() -> invitacionService.reenviar(activo(dueno), invitacionId));
+                tareas.add(() -> invitacionService.invitar(activo(dueno), email));
+
+                List<Object> resultados = enParalelo(tareas);
+
+                long inesperados = resultados.subList(0, 6).stream().filter(r -> !(r instanceof CodigoInvitacionInvalidoException)).count();
+                assertEquals(0, inesperados, "ronda " + ronda + ": " + resultados);
+                Object reenvio = resultados.get(6);
+                Object invitacionNueva = resultados.get(7);
+                boolean reenvioExitoso = !(reenvio instanceof Exception);
+                boolean invitacionExitosa = !(invitacionNueva instanceof Exception);
+                assertTrue(reenvioExitoso || invitacionExitosa, "ronda " + ronda + ": " + reenvio + " / " + invitacionNueva);
+                if (!reenvioExitoso) {
+                    assertTrue(reenvio instanceof ConflictoDeNegocioException, "ronda " + ronda + ": " + reenvio);
+                }
+                if (!invitacionExitosa) {
+                    assertTrue(invitacionNueva instanceof ConflictoDeNegocioException, "ronda " + ronda + ": " + invitacionNueva);
+                }
+                assertTrue(filas("SELECT COUNT(*) FROM invitacion_empleado WHERE comercio_id = ? AND email = ? AND estado = 'PENDIENTE'",
+                        dueno.comercioId(), email) <= 1, "ronda " + ronda);
+            } finally {
+                borrarRastros(dueno);
+            }
+        }
+    }
+
     private List<Object> enParalelo(List<Callable<Object>> tareas) throws Exception {
         ExecutorService pool = Executors.newFixedThreadPool(tareas.size());
         CountDownLatch salida = new CountDownLatch(1);
