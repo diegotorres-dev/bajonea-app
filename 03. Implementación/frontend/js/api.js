@@ -3,6 +3,7 @@ export const API_BASE_URL = 'http://localhost:8080/api/v1';
 const TOKEN_KEY = 'bajonea_token';
 const USUARIO_KEY = 'bajonea_usuario';
 const COMERCIO_ACTIVO_KEY = 'bajonea_comercio_activo';
+const AVISO_INVITACION_KEY = 'bajonea_aviso_invitacion';
 const ULTIMO_COMERCIO_PREFIX = 'bajonea_ultimo_comercio_';
 const HEADER_COMERCIO_ID = 'X-Comercio-Id';
 const RUTAS_DEL_DUENO = /^\/(comercios\/(perfil|redes-sociales|cerrar|abrir)|productos|pedidos\/comercio|notificaciones)(?=[/?]|$)/;
@@ -35,6 +36,24 @@ export function clearSesion() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USUARIO_KEY);
   clearComercioActivoId();
+}
+
+export function marcarAvisoInvitacion() {
+  try {
+    sessionStorage.setItem(AVISO_INVITACION_KEY, '1');
+  } catch {
+    return;
+  }
+}
+
+export function consumirAvisoInvitacion() {
+  try {
+    const hayAviso = sessionStorage.getItem(AVISO_INVITACION_KEY) === '1';
+    sessionStorage.removeItem(AVISO_INVITACION_KEY);
+    return hayAviso;
+  } catch {
+    return false;
+  }
 }
 
 export function getComercioActivoId() {

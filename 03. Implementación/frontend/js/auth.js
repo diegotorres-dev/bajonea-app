@@ -1,4 +1,4 @@
-import { apiFetch, ApiError, setSesion, clearSesion } from './api.js';
+import { apiFetch, ApiError, setSesion, clearSesion, consumirAvisoInvitacion } from './api.js';
 import { resolverComercioActivo, destinoDeNavegacion } from './comercio-activo.js';
 import { crearInputOtp } from './otp.js';
 import { subirFotoPerfilRegistroComercio, CloudinaryUploadError } from './cloudinary.js';
@@ -95,6 +95,10 @@ export function initLogin() {
 
   if (new URLSearchParams(window.location.search).get('passwordActualizada') === '1') {
     renderBanner(bannerSlot, 'info', 'Tu contraseña se actualizó. Iniciá sesión con tu nueva contraseña.');
+  }
+
+  if (consumirAvisoInvitacion()) {
+    import('./catalogo.js').then((modulo) => modulo.showToast('Listo, ya podés ingresar')).catch(() => {});
   }
 
   function limpiarErrores() {

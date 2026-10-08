@@ -4,6 +4,14 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
+## Tramo E1, bloque B2: pantalla pública de invitación, enlaces y aviso en el login (2026-10-08)
+
+Solo frontend y pruebas; backend, migraciones, Newman y estreses sin cambios. Pantalla nueva `invitacion-empleado.html` (`js/invitacion-empleado.js`): paso del código (email y OTP de 6 dígitos, `validar`), confirmación para cuenta existente, creación de cuenta con el asistente de dos pasos del registro de Cliente (sin un tercer paso) y pantalla de éxito con "Iniciar sesión" (aceptar no inicia sesión); enlace "Tengo una invitación" en el pie del login y línea "¿Te invitaron a trabajar en un comercio? Tengo una invitación" en la elección del tipo de cuenta; aviso verde de un solo uso en el login tras aceptar. Spec 36 (18 tests, primera parte); Playwright 507/507 desde base reseteada.
+
+**Ningún documento de esta carpeta necesitó cambios:** `Historias de Usuario - Empleado.md` (HU-E01) y `requisitos-funcionales-empleado.md` (sección Invitación y Alta) ya describen el recorrido implementado: llegada desde el enlace del email, el botón del login o la línea del registro; los mismos datos del registro de Cliente (incluida la dirección) con Términos validados en el servidor; solo email y código para una cuenta existente; y el paso al login sin sesión automática. Las carpetas `01.` y `02.` no se editaron.
+
+Fuera de esta carpeta: `CLAUDE.md` (fila E1 y §3), `docs/DECISIONES.md` (entrada nueva) y `testing/playwright/README.md` (spec 36 y estado).
+
 ## Tramo E1, bloque B1: asistente de registro de Cliente extraído a un módulo compartido (2026-10-08)
 
 Refactor del frontend sin cambios de comportamiento ni de aspecto: `js/cliente-form.js` (`montarFormularioCliente`) y `js/form-utils.js` nuevos, `js/auth.js` y `registro-cliente.html` adelgazados. Lo van a usar el registro de Cliente y, en B2, la pantalla pública de invitación.

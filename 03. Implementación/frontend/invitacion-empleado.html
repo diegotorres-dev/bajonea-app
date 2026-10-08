@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tengo una invitación — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header" id="invitacion-header">
+    <button class="app-header__back" type="button" id="back-btn" aria-label="Volver" data-testid="btn-volver">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span class="app-header__title" id="titulo-pagina" data-testid="titulo-invitacion">Tengo una invitación</span>
+  </header>
+  <main class="app-main" id="invitacion-main">
+    <section id="vista-codigo" class="screen-body" data-testid="vista-codigo">
+      <form class="form" id="form-codigo" novalidate>
+        <div id="banner-slot-codigo" data-testid="mensaje-banner-invitacion"></div>
+        <div class="field">
+          <label class="field__label" for="email-invitacion">Email</label>
+          <div class="input-shell">
+            <span class="input-shell__icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
+            </span>
+            <input type="email" id="email-invitacion" placeholder="tu@email.com" autocomplete="email" maxlength="254" data-testid="input-email-invitacion" />
+          </div>
+          <div class="field__error" id="error-email-invitacion" style="display:none;" data-testid="mensaje-error-email-invitacion"></div>
+        </div>
+        <div class="field">
+          <label class="field__label">Código</label>
+          <div id="otp-container" data-testid="input-codigo-invitacion"></div>
+          <div class="field__error" id="error-codigo-invitacion" style="display:none;" data-testid="mensaje-error-codigo-invitacion"></div>
+          <p class="field__hint">Pedile al comercio que te reenvíe el código si venció.</p>
+        </div>
+        <button class="btn btn-primary" type="submit" id="continuar-codigo-btn" data-testid="btn-continuar-invitacion">Continuar</button>
+      </form>
+    </section>
+
+    <section id="vista-existente" class="state-page state-page--inline is-hidden" data-testid="vista-invitacion-existente">
+      <div id="avatar-comercio" class="profile-header__avatar" data-testid="avatar-comercio-invitacion"></div>
+      <h1 class="state-page__title" id="existente-comercio" data-testid="nombre-comercio-invitacion"></h1>
+      <p class="state-page__text" style="margin-bottom:6px;">Te invitaron a sumarte a su equipo.</p>
+      <p class="state-page__text" data-testid="cuenta-invitacion">Cuenta: <strong id="existente-email"></strong></p>
+      <div id="banner-slot-existente" style="width:100%;max-width:320px;" data-testid="mensaje-banner-aceptar"></div>
+      <div class="state-page__actions">
+        <button class="btn btn-primary" type="button" id="aceptar-btn" data-testid="btn-aceptar-invitacion">Aceptar invitación</button>
+        <a class="btn btn-tertiary" href="login.html" data-testid="btn-ahora-no">Ahora no</a>
+      </div>
+    </section>
+
+    <section id="vista-nueva" class="is-hidden" data-testid="vista-invitacion-cuenta-nueva">
+      <div class="screen-body screen-body--tight" style="padding-bottom:0;">
+        <p class="subtitle" id="nueva-subtitulo" data-testid="subtitulo-cuenta-nueva"></p>
+      </div>
+    </section>
+
+    <section id="vista-exito" class="state-page is-hidden" data-testid="estado-invitacion-exito">
+      <div class="state-page__icon state-page__icon--success">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      </div>
+      <h1 class="state-page__title" id="exito-mensaje" data-testid="mensaje-invitacion-exito"></h1>
+      <div class="state-page__actions">
+        <button class="btn btn-primary" type="button" id="exito-login-btn" data-testid="btn-iniciar-sesion-invitacion">Iniciar sesión</button>
+      </div>
+    </section>
+  </main>
+</div>
+<script type="module">
+import { initInvitacionEmpleado } from './js/invitacion-empleado.js';
+initInvitacionEmpleado();
+</script>
+</body>
+</html>
