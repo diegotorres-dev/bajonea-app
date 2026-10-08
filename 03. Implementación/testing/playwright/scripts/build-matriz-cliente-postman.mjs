@@ -177,6 +177,34 @@ function registroClienteItem(name, overrides, execLines) {
   return item(name, req('POST', '/auth/registro/cliente', baseClientePayload(overrides)), execLines);
 }
 
+function registroClienteConEdadRelativa(name, sufijo, anios, dias, execLines) {
+  const previo = contadorCliente;
+  const payload = baseClientePayload({
+    dni: String(30700900 + sufijo),
+    telefono: '+549296470' + String(9000 + sufijo),
+    email: `matriz.c22.edad${sufijo}@bajonea.test`,
+    fechaNacimiento: '{{fechaNacimientoEdad}}',
+  });
+  contadorCliente = previo;
+  const elemento = item(name, req('POST', '/auth/registro/cliente', payload), execLines);
+  elemento.event.unshift({
+    listen: 'prerequest',
+    script: {
+      type: 'text/javascript',
+      exec: [
+        'const d = new Date();',
+        `d.setFullYear(d.getFullYear() - ${anios});`,
+        `d.setDate(d.getDate() + ${dias});`,
+        'const dos = (n) => String(n).padStart(2, "0");',
+        "pm.variables.set('fechaNacimientoEdad', `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`);",
+      ],
+    },
+  });
+  return elemento;
+}
+
+const MSG_EDAD_MINIMA_CLIENTE = 'Tenés que tener al menos 14 años para registrarte';
+
 const folder22 = {
   name: '22 - Matriz Cliente - Registro (campo por campo)',
   item: [
@@ -202,7 +230,11 @@ const folder22 = {
     registroClienteItem('Registro Cliente - fechaNacimiento vacia (null)', { fechaNacimiento: null }, assertFieldMessage(400, 'fechaNacimiento', 'La fecha de nacimiento es obligatoria')),
     registroClienteItem('Registro Cliente - fechaNacimiento futura (debe rechazar)', { fechaNacimiento: '2099-01-01' }, assertFieldMessage(400, 'fechaNacimiento', 'La fecha ingresada no es válida')),
     item('Registro Cliente - fechaNacimiento hace 121 anios (debe rechazar)', req('POST', '/auth/registro/cliente', baseClientePayload({ fechaNacimiento: fechaHaceAnios(121) })), assertFieldMessage(400, 'fechaNacimiento', 'La fecha ingresada no es válida')),
-    item('Registro Cliente - fechaNacimiento hoy mismo (limite exacto, debe aceptar)', req('POST', '/auth/registro/cliente', baseClientePayload({ fechaNacimiento: hoy() })), assertCreated201()),
+    item('Registro Cliente - fechaNacimiento hoy mismo (recien nacido, debe rechazar por edad minima)', req('POST', '/auth/registro/cliente', baseClientePayload({ fechaNacimiento: hoy() })), assertFieldMessage(400, 'fechaNacimiento', MSG_EDAD_MINIMA_CLIENTE)),
+    registroClienteConEdadRelativa('Registro Cliente - fechaNacimiento hace 13 anios (debe rechazar por edad minima)', 1, 13, 0, assertFieldMessage(400, 'fechaNacimiento', MSG_EDAD_MINIMA_CLIENTE)),
+    registroClienteConEdadRelativa('Registro Cliente - fechaNacimiento un dia antes de cumplir 14 (limite menos uno, debe rechazar)', 2, 14, 1, assertFieldMessage(400, 'fechaNacimiento', MSG_EDAD_MINIMA_CLIENTE)),
+    registroClienteConEdadRelativa('Registro Cliente - fechaNacimiento 14 anios cumplidos hoy (limite exacto, debe aceptar)', 3, 14, 0, assertCreated201()),
+    registroClienteConEdadRelativa('Registro Cliente - fechaNacimiento 14 anios y un dia (limite mas uno, debe aceptar)', 4, 14, -1, assertCreated201()),
 
     registroClienteItem('Registro Cliente - telefono vacio', { telefono: '' }, assertFieldMessage(400, 'telefono', 'El teléfono es obligatorio')),
     registroClienteItem('Registro Cliente - telefono formato invalido (sin prefijo +549)', { telefono: '2964700300' }, assertFieldMessage(400, 'telefono', 'Ingresá un número de teléfono válido (cod. área + número)')),

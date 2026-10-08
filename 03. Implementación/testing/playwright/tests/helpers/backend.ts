@@ -28,6 +28,14 @@ export function nombreUsuarioUnico(prefijo: string): string {
   return `${prefijo}${marca}${azar}${contadorSufijo.toString(36)}`.slice(0, 20);
 }
 
+export function fechaNacimientoRelativa(anios: number, dias = 0): string {
+  const fecha = new Date();
+  fecha.setFullYear(fecha.getFullYear() - anios);
+  fecha.setDate(fecha.getDate() + dias);
+  const dos = (n: number): string => String(n).padStart(2, '0');
+  return `${fecha.getFullYear()}-${dos(fecha.getMonth() + 1)}-${dos(fecha.getDate())}`;
+}
+
 export function diaDeHoy(): string {
   return DIA_POR_INDICE[new Date().getDay()];
 }
@@ -798,13 +806,13 @@ export async function cantidadEmailsRegularizacionTest(request: APIRequestContex
 
 export function cuentaNuevaInvitacion(
   localidadId: string,
-  overrides: Partial<{ dni: string; nombreUsuario: string; password: string }> = {},
+  overrides: Partial<{ dni: string; nombreUsuario: string; password: string; fechaNacimiento: string }> = {},
 ) {
   return {
     nombre: 'Empleada',
     apellido: 'Invitada',
     dni: overrides.dni ?? generarDni(),
-    fechaNacimiento: '1996-08-14',
+    fechaNacimiento: overrides.fechaNacimiento ?? '1996-08-14',
     telefono: generarTelefonoCompleto(),
     nombreUsuario: overrides.nombreUsuario ?? nombreUsuarioUnico('emp'),
     password: overrides.password ?? `Pw${sufijoUnico()}Aa1`,

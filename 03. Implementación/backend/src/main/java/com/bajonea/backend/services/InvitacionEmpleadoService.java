@@ -40,8 +40,10 @@ import com.bajonea.backend.repositories.InvitacionEmpleadoRepository.InvitacionP
 import com.bajonea.backend.repositories.InvitacionInsercionRepository;
 import com.bajonea.backend.repositories.PersonaFisicaRepository;
 import com.bajonea.backend.repositories.UsuarioRepository;
+import com.bajonea.backend.util.EdadUtils;
 import com.bajonea.backend.util.EjecucionPostCommit;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
@@ -82,6 +84,7 @@ public class InvitacionEmpleadoService {
     public static final int TOPE_POR_HORA = 5;
     public static final int VIGENCIA_DIAS = 7;
     public static final int MAX_INTENTOS_CODIGO = 5;
+    public static final int EDAD_MINIMA_EMPLEADO = 18;
 
     private static final Logger log = LoggerFactory.getLogger(InvitacionEmpleadoService.class);
 
@@ -102,6 +105,9 @@ public class InvitacionEmpleadoService {
     static final String MENSAJE_INVITACION_NO_DISPONIBLE = "Esta invitación ya no está disponible";
     static final String MENSAJE_FALTAN_DATOS_DE_CUENTA = "Completá tus datos para crear tu cuenta";
     static final String MENSAJE_TERMINOS = "Tenés que aceptar los Términos y Condiciones";
+    static final String CAMPO_FECHA_NACIMIENTO_CUENTA_NUEVA = "cuentaNueva.fechaNacimiento";
+    static final String MENSAJE_EDAD_CUENTA_NUEVA = "Tenés que tener 18 años o más para trabajar en un comercio";
+    static final String MENSAJE_EDAD_CUENTA_EXISTENTE = "Tenés que tener 18 años o más para sumarte a un equipo";
 
     private static final Set<EstadoComercio> ESTADOS_ACEPTABLES = Set.of(
             EstadoComercio.APROBADO, EstadoComercio.APTO_VENTA, EstadoComercio.CERRADO_TEMPORALMENTE, EstadoComercio.SUSPENDIDO);
@@ -440,6 +446,20 @@ public class InvitacionEmpleadoService {
         if (conflicto != null) {
             throw new InvitacionNoAptaException(conflicto);
         }
+        if (!tieneEdadParaEquipo(existente.getId())) {
+            throw new InvitacionNoAptaException(MENSAJE_EDAD_CUENTA_EXISTENTE);
+        }
+    }
+
+    /**
+     * Aptitud por edad de una cuenta existente para ser empleado: la comparten invitar, reenviar, validar y
+     * aceptar, para que no diverjan. La edad es la declarada en la persona física, calculada con el reloj del
+     * sistema.
+     */
+    private boolean tieneEdadParaEquipo(Integer usuarioId) {
+        PersonaFisica persona = personaFisicaRepository.findById(usuarioId)
+                .orElseThrow(() -> new IllegalStateException("La cuenta usuarioId=" + usuarioId + " no tiene persona física"));
+        return EdadUtils.cumpleEdadMinima(persona.getFechaNacimiento(), LocalDate.now(clock), EDAD_MINIMA_EMPLEADO);
     }
 
     private void validarDatosDeCuentaNueva(AceptarInvitacionEmpleadoRequestDTO request) {
@@ -449,6 +469,11 @@ public class InvitacionEmpleadoService {
         }
         if (!Boolean.TRUE.equals(request.getAceptaTerminos())) {
             errores.put("aceptaTerminos", MENSAJE_TERMINOS);
+        }
+        if (request.getCuentaNueva() != null && request.getCuentaNueva().getFechaNacimiento() != null
+                && !EdadUtils.cumpleEdadMinima(request.getCuentaNueva().getFechaNacimiento(), LocalDate.now(clock),
+                        EDAD_MINIMA_EMPLEADO)) {
+            errores.put(CAMPO_FECHA_NACIMIENTO_CUENTA_NUEVA, MENSAJE_EDAD_CUENTA_NUEVA);
         }
         if (!errores.isEmpty()) {
             throw new ValidacionCamposException(errores);
@@ -499,7 +524,8 @@ public class InvitacionEmpleadoService {
      * Reglas sobre la cuenta del email, en este orden: si pertenece a un Dueño o un Administrador, no se invita
      * y no se manda nada; si ya es parte activa del equipo, es un conflicto con motivo (es dato del propio
      * Dueño); si la cuenta no está activa, no se invita y se le manda el aviso de regularización dentro del
-     * tope. En los dos primeros casos de rechazo el Dueño ve el mismo mensaje genérico, sin saber por qué.
+     * tope; por último, si la cuenta activa declara menos de 18 años no se invita y no se manda nada. En los
+     * casos de rechazo que no son el de equipo el Dueño ve el mismo mensaje genérico, sin saber por qué.
      */
     private void validarDestinatario(Comercio comercio, String email) {
         Usuario existente = usuarioRepository.findByEmail(email).orElse(null);
@@ -516,6 +542,9 @@ public class InvitacionEmpleadoService {
         if (existente.getEstado() != EstadoUsuario.ACTIVO) {
             regularizacionService.registrarYEnviar(existente, comercio.getNombre(),
                     MotivoRegularizacionInvitacion.de(existente.getEstado()));
+            throw new InvitacionNoAptaException(MENSAJE_NO_SE_PUEDE_INVITAR);
+        }
+        if (!tieneEdadParaEquipo(existente.getId())) {
             throw new InvitacionNoAptaException(MENSAJE_NO_SE_PUEDE_INVITAR);
         }
     }

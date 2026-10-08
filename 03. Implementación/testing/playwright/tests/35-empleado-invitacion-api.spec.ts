@@ -12,6 +12,7 @@ import {
   cuentaNuevaInvitacion,
   diaDeHoy,
   equipoComercio,
+  fechaNacimientoRelativa,
   fijarPasswordAdminYLoguear,
   generarCuit,
   generarDni,
@@ -44,6 +45,9 @@ const MSG_DNI = 'Ya existe una cuenta registrada con ese DNI';
 const MSG_USUARIO = 'Ese nombre de usuario ya está en uso';
 const MSG_BLOQUEADA = 'Cuenta bloqueada. Recuperá tu contraseña para desbloquearla';
 const MSG_INACTIVA = 'Cuenta inactiva. Solicitá la reactivación de tu cuenta';
+const MSG_EDAD_REGISTRO = 'Tenés que tener al menos 14 años para registrarte';
+const MSG_EDAD_CUENTA_NUEVA = 'Tenés que tener 18 años o más para trabajar en un comercio';
+const MSG_EDAD_CUENTA_EXISTENTE = 'Tenés que tener 18 años o más para sumarte a un equipo';
 
 const emailNuevo = (): string => `inv.${sufijoUnico()}@bajonea.test`;
 
@@ -735,6 +739,124 @@ test.describe('Invitaciones de empleado (API), tramo E1', () => {
       expect(estadoInvitacion(id)).toBe('PENDIENTE');
       expect(cantidadFilas(`SELECT COUNT(*) FROM usuario WHERE email = '${email}';`)).toBe(0);
       expect(cantidadFilas(`SELECT COUNT(*) FROM empleado_comercio WHERE comercio_id = ${comercioId};`)).toBe(0);
+    });
+  });
+
+  test.describe('Edad mínima', () => {
+    const cambiarFechaNacimiento = (usuarioId: number, fecha: string): void => {
+      sql(`UPDATE persona_fisica SET fecha_nacimiento = '${fecha}' WHERE id = ${usuarioId};`);
+    };
+
+    test('el registro de Cliente exige 14 años cumplidos: con 13 da 400 en el campo y con 14 exactos da 201', async ({ request }) => {
+      const datos = (fechaNacimiento: string) => ({
+        ...cuentaNuevaInvitacion(localidadId, { fechaNacimiento }),
+        email: emailNuevo(),
+        aceptaTerminos: true,
+      });
+      const deTrece = datos(fechaNacimientoRelativa(13));
+      const unDiaAntes = datos(fechaNacimientoRelativa(14, 1));
+      const deCatorce = datos(fechaNacimientoRelativa(14));
+
+      const rechazadaTrece = await apiPost(request, '/auth/registro/cliente', deTrece);
+      const rechazadaUnDiaAntes = await apiPost(request, '/auth/registro/cliente', unDiaAntes);
+      const aceptada = await apiPost(request, '/auth/registro/cliente', deCatorce);
+
+      expect(rechazadaTrece.status).toBe(400);
+      expect(rechazadaTrece.body.data.fechaNacimiento).toBe(MSG_EDAD_REGISTRO);
+      expect(rechazadaUnDiaAntes.status).toBe(400);
+      expect(rechazadaUnDiaAntes.body.data.fechaNacimiento).toBe(MSG_EDAD_REGISTRO);
+      expect(aceptada.status, JSON.stringify(aceptada.body)).toBe(201);
+      expect(cantidadFilas(`SELECT COUNT(*) FROM usuario WHERE email = '${deTrece.email}';`)).toBe(0);
+      expect(cantidadFilas(`SELECT COUNT(*) FROM usuario WHERE email = '${deCatorce.email}';`)).toBe(1);
+    });
+
+    test('cuenta nueva por invitación: con 13 años 400 con el mensaje de 14, con 15 el de 18, y con 18 cumplidos hoy 200', async ({ request }) => {
+      const comercioId = await comercioNuevo(request);
+      const { email, id } = await invitar(request, comercioId);
+      const codigo = await obtenerCodigoInvitacionTest(request, email, comercioId);
+      const intentar = (fechaNacimiento: string) =>
+        aceptarInvitacion(request, { email, codigo, aceptaTerminos: true, cuentaNueva: cuentaNuevaInvitacion(localidadId, { fechaNacimiento }) });
+
+      const deTrece = await intentar(fechaNacimientoRelativa(13));
+      const deQuince = await intentar(fechaNacimientoRelativa(15));
+      const unDiaAntes = await intentar(fechaNacimientoRelativa(18, 1));
+
+      expect(deTrece.status).toBe(400);
+      expect(deTrece.body.data['cuentaNueva.fechaNacimiento']).toBe(MSG_EDAD_REGISTRO);
+      expect(deQuince.status).toBe(400);
+      expect(deQuince.body.data['cuentaNueva.fechaNacimiento']).toBe(MSG_EDAD_CUENTA_NUEVA);
+      expect(unDiaAntes.status).toBe(400);
+      expect(unDiaAntes.body.data['cuentaNueva.fechaNacimiento']).toBe(MSG_EDAD_CUENTA_NUEVA);
+      expect(intentosInvitacion(id), 'un dato inválido no gasta intentos del código').toBe(0);
+      expect(estadoInvitacion(id)).toBe('PENDIENTE');
+      expect(cantidadFilas(`SELECT COUNT(*) FROM usuario WHERE email = '${email}';`)).toBe(0);
+
+      const deDieciocho = await intentar(fechaNacimientoRelativa(18));
+      expect(deDieciocho.status, JSON.stringify(deDieciocho.body)).toBe(200);
+      expect(deDieciocho.body.data.cuentaCreada).toBe(true);
+      expect(estadoInvitacion(id)).toBe('ACEPTADA');
+    });
+
+    test('cuenta existente de 16 años: validar y aceptar dan 409 con el mismo mensaje y no se crea la relación; con 18 cumplidos hoy acepta', async ({ request }) => {
+      const comercioId = await comercioNuevo(request);
+      const existente = await cuentaVerificada(request);
+      const { id } = await invitar(request, comercioId, existente.email);
+      const codigo = await obtenerCodigoInvitacionTest(request, existente.email, comercioId);
+      const usuarioId = usuarioIdPorEmail(existente.email);
+      cambiarFechaNacimiento(usuarioId, fechaNacimientoRelativa(16));
+
+      const alValidar = await validarInvitacion(request, existente.email, codigo);
+      const alAceptar = await aceptarInvitacion(request, { email: existente.email, codigo });
+
+      expect(alValidar.status).toBe(409);
+      expect(alValidar.body.mensaje).toBe(MSG_EDAD_CUENTA_EXISTENTE);
+      expect(alAceptar.status).toBe(409);
+      expect(alAceptar.body.mensaje).toBe(MSG_EDAD_CUENTA_EXISTENTE);
+      expect(estadoInvitacion(id)).toBe('PENDIENTE');
+      expect(intentosInvitacion(id)).toBe(0);
+      expect(cantidadFilas(`SELECT COUNT(*) FROM empleado WHERE id = ${usuarioId};`)).toBe(0);
+
+      cambiarFechaNacimiento(usuarioId, fechaNacimientoRelativa(18, 1));
+      expect((await aceptarInvitacion(request, { email: existente.email, codigo })).status).toBe(409);
+      cambiarFechaNacimiento(usuarioId, fechaNacimientoRelativa(18));
+      const aceptada = await aceptarInvitacion(request, { email: existente.email, codigo });
+      expect(aceptada.status, JSON.stringify(aceptada.body)).toBe(200);
+      expect(sql(`SELECT estado FROM empleado_comercio WHERE empleado_id = ${usuarioId} AND comercio_id = ${comercioId};`)).toBe('ACTIVO');
+    });
+
+    test('invitar y reenviar a una cuenta existente de 16 años dan el mismo 409 genérico, sin invitación nueva ni email de regularización', async ({ request }) => {
+      const comercioId = await comercioNuevo(request);
+      const existente = await cuentaVerificada(request);
+      const usuarioId = usuarioIdPorEmail(existente.email);
+      cambiarFechaNacimiento(usuarioId, fechaNacimientoRelativa(16));
+
+      const aInvitar = await invitarEmpleado(request, dueno.token, comercioId, existente.email);
+
+      expect(aInvitar.status).toBe(409);
+      expect(aInvitar.body.mensaje).toBe(MSG_GENERICO);
+      expect(cantidadFilas(`SELECT COUNT(*) FROM invitacion_empleado WHERE comercio_id = ${comercioId};`)).toBe(0);
+      expect(await cantidadEmailsRegularizacionTest(request, existente.email)).toBe(0);
+
+      cambiarFechaNacimiento(usuarioId, fechaNacimientoRelativa(30));
+      const { id } = await invitar(request, comercioId, existente.email);
+      cambiarFechaNacimiento(usuarioId, fechaNacimientoRelativa(17));
+      const aReenviar = await reenviarInvitacion(request, dueno.token, comercioId, id);
+
+      expect(aReenviar.status).toBe(409);
+      expect(aReenviar.body).toEqual(aInvitar.body);
+      expect(estadoInvitacion(id)).toBe('PENDIENTE');
+      expect(cantidadFilas(`SELECT COUNT(*) FROM invitacion_empleado WHERE comercio_id = ${comercioId};`)).toBe(1);
+      expect(await cantidadEmailsRegularizacionTest(request, existente.email)).toBe(0);
+    });
+
+    test('una cuenta existente de 18 años cumplidos hoy se puede invitar', async ({ request }) => {
+      const comercioId = await comercioNuevo(request);
+      const existente = await cuentaVerificada(request);
+      cambiarFechaNacimiento(usuarioIdPorEmail(existente.email), fechaNacimientoRelativa(18));
+
+      const respuesta = await invitarEmpleado(request, dueno.token, comercioId, existente.email);
+
+      expect(respuesta.status, JSON.stringify(respuesta.body)).toBe(201);
     });
   });
 

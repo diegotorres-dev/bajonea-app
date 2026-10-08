@@ -10959,7 +10959,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700119\",\n  \"fechaNacimiento\": \"1905-10-05\",\n  \"telefono\": \"+5492964701019\",\n  \"email\": \"matriz.c22.19@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm96129f98b4d9\",\n  \"aceptaTerminos\": true\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700119\",\n  \"fechaNacimiento\": \"1905-10-08\",\n  \"telefono\": \"+5492964701019\",\n  \"email\": \"matriz.c22.19@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm96129f98b4d9\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -10983,7 +10983,7 @@
           ]
         },
         {
-          "name": "Registro Cliente - fechaNacimiento hoy mismo (limite exacto, debe aceptar)",
+          "name": "Registro Cliente - fechaNacimiento hoy mismo (recien nacido, debe rechazar por edad minima)",
           "request": {
             "method": "POST",
             "header": [
@@ -11005,7 +11005,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700120\",\n  \"fechaNacimiento\": \"2026-10-05\",\n  \"telefono\": \"+5492964701020\",\n  \"email\": \"matriz.c22.20@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm20d18d0af2a9\",\n  \"aceptaTerminos\": true\n}",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700120\",\n  \"fechaNacimiento\": \"2026-10-08\",\n  \"telefono\": \"+5492964701020\",\n  \"email\": \"matriz.c22.20@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm20d18d0af2a9\",\n  \"aceptaTerminos\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -11015,6 +11015,240 @@
           },
           "response": [],
           "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "const json = pm.response.json();",
+                  "pm.test('Mensaje exacto de fechaNacimiento', () => pm.expect(json.data['fechaNacimiento']).to.eql(\"Tenés que tener al menos 14 años para registrarte\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Cliente - fechaNacimiento hace 13 anios (debe rechazar por edad minima)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700901\",\n  \"fechaNacimiento\": \"{{fechaNacimientoEdad}}\",\n  \"telefono\": \"+5492964709001\",\n  \"email\": \"matriz.c22.edad1@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmd6f057c2d85d\",\n  \"aceptaTerminos\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = new Date();",
+                  "d.setFullYear(d.getFullYear() - 13);",
+                  "d.setDate(d.getDate() + 0);",
+                  "const dos = (n) => String(n).padStart(2, \"0\");",
+                  "pm.variables.set('fechaNacimientoEdad', `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "const json = pm.response.json();",
+                  "pm.test('Mensaje exacto de fechaNacimiento', () => pm.expect(json.data['fechaNacimiento']).to.eql(\"Tenés que tener al menos 14 años para registrarte\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Cliente - fechaNacimiento un dia antes de cumplir 14 (limite menos uno, debe rechazar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700902\",\n  \"fechaNacimiento\": \"{{fechaNacimientoEdad}}\",\n  \"telefono\": \"+5492964709002\",\n  \"email\": \"matriz.c22.edad2@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pmb9767f9b4bb7\",\n  \"aceptaTerminos\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = new Date();",
+                  "d.setFullYear(d.getFullYear() - 14);",
+                  "d.setDate(d.getDate() + 1);",
+                  "const dos = (n) => String(n).padStart(2, \"0\");",
+                  "pm.variables.set('fechaNacimientoEdad', `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "const json = pm.response.json();",
+                  "pm.test('Mensaje exacto de fechaNacimiento', () => pm.expect(json.data['fechaNacimiento']).to.eql(\"Tenés que tener al menos 14 años para registrarte\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Cliente - fechaNacimiento 14 anios cumplidos hoy (limite exacto, debe aceptar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700903\",\n  \"fechaNacimiento\": \"{{fechaNacimientoEdad}}\",\n  \"telefono\": \"+5492964709003\",\n  \"email\": \"matriz.c22.edad3@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm5a5a806abcd9\",\n  \"aceptaTerminos\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = new Date();",
+                  "d.setFullYear(d.getFullYear() - 14);",
+                  "d.setDate(d.getDate() + 0);",
+                  "const dos = (n) => String(n).padStart(2, \"0\");",
+                  "pm.variables.set('fechaNacimientoEdad', `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Cliente - fechaNacimiento 14 anios y un dia (limite mas uno, debe aceptar)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente\",\n  \"apellido\": \"Matriz\",\n  \"dni\": \"30700904\",\n  \"fechaNacimiento\": \"{{fechaNacimientoEdad}}\",\n  \"telefono\": \"+5492964709004\",\n  \"email\": \"matriz.c22.edad4@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"100\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": true\n  },\n  \"nombreUsuario\": \"pm5a3bcc17c850\",\n  \"aceptaTerminos\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const d = new Date();",
+                  "d.setFullYear(d.getFullYear() - 14);",
+                  "d.setDate(d.getDate() + -1);",
+                  "const dos = (n) => String(n).padStart(2, \"0\");",
+                  "pm.variables.set('fechaNacimientoEdad', `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`);"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
@@ -72774,6 +73008,1655 @@
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
                   "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"Este comercio no puede invitar empleados en este momento\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: registro de Cliente con 13 años da 400 en fechaNacimiento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Clienta\",\n  \"apellido\": \"Edad\",\n  \"dni\": \"{{e1_r13_dni}}\",\n  \"fechaNacimiento\": \"{{e1_fecha_r13}}\",\n  \"telefono\": \"+5492964551236\",\n  \"nombreUsuario\": \"{{e1_r13_usuario}}\",\n  \"email\": \"{{e1_r13_email}}\",\n  \"password\": \"{{e1_r13_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('e1_r13_email', 'e1.r13.' + s + '@bajonea.test');",
+                  "pm.environment.set('e1_r13_usuario', ('e1r13' + s).slice(0, 20));",
+                  "pm.environment.set('e1_r13_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('e1_r13_dni', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "const f = new Date();",
+                  "f.setFullYear(f.getFullYear() - 13);",
+                  "f.setDate(f.getDate() + 0);",
+                  "const dos = (n) => String(n).padStart(2, \"0\");",
+                  "pm.environment.set('e1_fecha_r13', f.getFullYear() + '-' + dos(f.getMonth() + 1) + '-' + dos(f.getDate()));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error en fechaNacimiento', () => pm.expect(pm.response.json().data[\"fechaNacimiento\"]).to.eql(\"Tenés que tener al menos 14 años para registrarte\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: registro de Cliente un día antes de cumplir 14 da 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Clienta\",\n  \"apellido\": \"Edad\",\n  \"dni\": \"{{e1_r14m_dni}}\",\n  \"fechaNacimiento\": \"{{e1_fecha_r14m}}\",\n  \"telefono\": \"+5492964551236\",\n  \"nombreUsuario\": \"{{e1_r14m_usuario}}\",\n  \"email\": \"{{e1_r14m_email}}\",\n  \"password\": \"{{e1_r14m_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('e1_r14m_email', 'e1.r14m.' + s + '@bajonea.test');",
+                  "pm.environment.set('e1_r14m_usuario', ('e1r14m' + s).slice(0, 20));",
+                  "pm.environment.set('e1_r14m_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('e1_r14m_dni', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "const f = new Date();",
+                  "f.setFullYear(f.getFullYear() - 14);",
+                  "f.setDate(f.getDate() + 1);",
+                  "const dos = (n) => String(n).padStart(2, \"0\");",
+                  "pm.environment.set('e1_fecha_r14m', f.getFullYear() + '-' + dos(f.getMonth() + 1) + '-' + dos(f.getDate()));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error en fechaNacimiento', () => pm.expect(pm.response.json().data[\"fechaNacimiento\"]).to.eql(\"Tenés que tener al menos 14 años para registrarte\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: registro de Cliente con 14 años cumplidos hoy da 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Clienta\",\n  \"apellido\": \"Edad\",\n  \"dni\": \"{{e1_r14_dni}}\",\n  \"fechaNacimiento\": \"{{e1_fecha_r14}}\",\n  \"telefono\": \"+5492964551236\",\n  \"nombreUsuario\": \"{{e1_r14_usuario}}\",\n  \"email\": \"{{e1_r14_email}}\",\n  \"password\": \"{{e1_r14_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('e1_r14_email', 'e1.r14.' + s + '@bajonea.test');",
+                  "pm.environment.set('e1_r14_usuario', ('e1r14' + s).slice(0, 20));",
+                  "pm.environment.set('e1_r14_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('e1_r14_dni', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "const f = new Date();",
+                  "f.setFullYear(f.getFullYear() - 14);",
+                  "f.setDate(f.getDate() + 0);",
+                  "const dos = (n) => String(n).padStart(2, \"0\");",
+                  "pm.environment.set('e1_fecha_r14', f.getFullYear() + '-' + dos(f.getMonth() + 1) + '-' + dos(f.getDate()));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clonar el comercio de d1 como APROBADO (ED)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{e1_com_d1}}/clonar?nombre=Equipo-E1-Postman-ED&estado=APROBADO",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{e1_com_d1}}",
+                "clonar"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "Equipo-E1-Postman-ED"
+                },
+                {
+                  "key": "estado",
+                  "value": "APROBADO"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('e1_com_ed', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: invitar a cn (email sin cuenta) en ED",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_ed}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_cn_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('e1_cn_email', 'e1.cn.' + s + '@bajonea.test');",
+                  "pm.environment.set('e1_cn_usuario', ('e1cn' + s).slice(0, 20));",
+                  "pm.environment.set('e1_cn_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('e1_cn_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('e1_inv_cn', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: código de cn en ED",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/invitaciones-empleado/codigo?email={{e1_cn_email}}&comercioId={{e1_com_ed}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "invitaciones-empleado",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{e1_cn_email}}"
+                },
+                {
+                  "key": "comercioId",
+                  "value": "{{e1_com_ed}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('El código tiene 6 dígitos', () => pm.expect(pm.response.json().data).to.match(/^\\d{6}$/));",
+                  "pm.environment.set('e1_cn_codigo_2', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: cuenta nueva por invitación con 13 años da 400 con el mensaje de 14 y prefijo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_cn_email}}\",\n  \"codigo\": \"{{e1_cn_codigo_2}}\",\n  \"aceptaTerminos\": true,\n  \"cuentaNueva\": {\n    \"nombre\": \"Empleada\",\n    \"apellido\": \"Invitada\",\n    \"dni\": \"{{e1_cn_dni}}\",\n    \"fechaNacimiento\": \"{{e1_fecha_cn13}}\",\n    \"telefono\": \"+5492964551234\",\n    \"nombreUsuario\": \"{{e1_cn_usuario}}\",\n    \"password\": \"{{e1_cn_password}}\",\n    \"direccion\": {\n      \"calle\": \"Belgrano\",\n      \"numero\": \"742\",\n      \"pisoDepto\": null,\n      \"codigoPostal\": \"9420\",\n      \"localidadId\": \"{{localidad_id}}\",\n      \"principal\": true\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const f = new Date();",
+                  "f.setFullYear(f.getFullYear() - 13);",
+                  "f.setDate(f.getDate() + 0);",
+                  "const dos = (n) => String(n).padStart(2, \"0\");",
+                  "pm.environment.set('e1_fecha_cn13', f.getFullYear() + '-' + dos(f.getMonth() + 1) + '-' + dos(f.getDate()));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error en cuentaNueva.fechaNacimiento', () => pm.expect(pm.response.json().data[\"cuentaNueva.fechaNacimiento\"]).to.eql(\"Tenés que tener al menos 14 años para registrarte\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: cuenta nueva por invitación con 15 años da 400 con el mensaje de 18",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_cn_email}}\",\n  \"codigo\": \"{{e1_cn_codigo_2}}\",\n  \"aceptaTerminos\": true,\n  \"cuentaNueva\": {\n    \"nombre\": \"Empleada\",\n    \"apellido\": \"Invitada\",\n    \"dni\": \"{{e1_cn_dni}}\",\n    \"fechaNacimiento\": \"{{e1_fecha_cn15}}\",\n    \"telefono\": \"+5492964551234\",\n    \"nombreUsuario\": \"{{e1_cn_usuario}}\",\n    \"password\": \"{{e1_cn_password}}\",\n    \"direccion\": {\n      \"calle\": \"Belgrano\",\n      \"numero\": \"742\",\n      \"pisoDepto\": null,\n      \"codigoPostal\": \"9420\",\n      \"localidadId\": \"{{localidad_id}}\",\n      \"principal\": true\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const f = new Date();",
+                  "f.setFullYear(f.getFullYear() - 15);",
+                  "f.setDate(f.getDate() + 0);",
+                  "const dos = (n) => String(n).padStart(2, \"0\");",
+                  "pm.environment.set('e1_fecha_cn15', f.getFullYear() + '-' + dos(f.getMonth() + 1) + '-' + dos(f.getDate()));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error en cuentaNueva.fechaNacimiento', () => pm.expect(pm.response.json().data[\"cuentaNueva.fechaNacimiento\"]).to.eql(\"Tenés que tener 18 años o más para trabajar en un comercio\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: cuenta nueva por invitación un día antes de cumplir 18 da 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_cn_email}}\",\n  \"codigo\": \"{{e1_cn_codigo_2}}\",\n  \"aceptaTerminos\": true,\n  \"cuentaNueva\": {\n    \"nombre\": \"Empleada\",\n    \"apellido\": \"Invitada\",\n    \"dni\": \"{{e1_cn_dni}}\",\n    \"fechaNacimiento\": \"{{e1_fecha_cn18m}}\",\n    \"telefono\": \"+5492964551234\",\n    \"nombreUsuario\": \"{{e1_cn_usuario}}\",\n    \"password\": \"{{e1_cn_password}}\",\n    \"direccion\": {\n      \"calle\": \"Belgrano\",\n      \"numero\": \"742\",\n      \"pisoDepto\": null,\n      \"codigoPostal\": \"9420\",\n      \"localidadId\": \"{{localidad_id}}\",\n      \"principal\": true\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const f = new Date();",
+                  "f.setFullYear(f.getFullYear() - 18);",
+                  "f.setDate(f.getDate() + 1);",
+                  "const dos = (n) => String(n).padStart(2, \"0\");",
+                  "pm.environment.set('e1_fecha_cn18m', f.getFullYear() + '-' + dos(f.getMonth() + 1) + '-' + dos(f.getDate()));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error en cuentaNueva.fechaNacimiento', () => pm.expect(pm.response.json().data[\"cuentaNueva.fechaNacimiento\"]).to.eql(\"Tenés que tener 18 años o más para trabajar en un comercio\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: la invitación de cn sigue PENDIENTE y no se creó ningún miembro",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_ed}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cn sigue PENDIENTE', () => pm.expect((pm.response.json().data.invitaciones.find((i) => i.id === Number(pm.environment.get('e1_inv_cn'))) || {}).estado).to.eql('PENDIENTE'));",
+                  "pm.test('No hay miembros', () => pm.expect(pm.response.json().data.miembros).to.eql([]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: cuenta nueva por invitación con 18 años cumplidos hoy da 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_cn_email}}\",\n  \"codigo\": \"{{e1_cn_codigo_2}}\",\n  \"aceptaTerminos\": true,\n  \"cuentaNueva\": {\n    \"nombre\": \"Empleada\",\n    \"apellido\": \"Invitada\",\n    \"dni\": \"{{e1_cn_dni}}\",\n    \"fechaNacimiento\": \"{{e1_fecha_cn18}}\",\n    \"telefono\": \"+5492964551234\",\n    \"nombreUsuario\": \"{{e1_cn_usuario}}\",\n    \"password\": \"{{e1_cn_password}}\",\n    \"direccion\": {\n      \"calle\": \"Belgrano\",\n      \"numero\": \"742\",\n      \"pisoDepto\": null,\n      \"codigoPostal\": \"9420\",\n      \"localidadId\": \"{{localidad_id}}\",\n      \"principal\": true\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const f = new Date();",
+                  "f.setFullYear(f.getFullYear() - 18);",
+                  "f.setDate(f.getDate() + 0);",
+                  "const dos = (n) => String(n).padStart(2, \"0\");",
+                  "pm.environment.set('e1_fecha_cn18', f.getFullYear() + '-' + dos(f.getMonth() + 1) + '-' + dos(f.getDate()));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Cuenta creada', () => pm.expect(pm.response.json().data.cuentaCreada).to.eql(true));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: invitar a mn (email sin cuenta todavía) en ED",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_ed}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_mn_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('e1_mn_email', 'e1.mn.' + s + '@bajonea.test');",
+                  "pm.environment.set('e1_mn_usuario', ('e1mn' + s).slice(0, 20));",
+                  "pm.environment.set('e1_mn_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('e1_mn_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('e1_inv_mn', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: código de mn en ED",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/invitaciones-empleado/codigo?email={{e1_mn_email}}&comercioId={{e1_com_ed}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "invitaciones-empleado",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{e1_mn_email}}"
+                },
+                {
+                  "key": "comercioId",
+                  "value": "{{e1_com_ed}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('El código tiene 6 dígitos', () => pm.expect(pm.response.json().data).to.match(/^\\d{6}$/));",
+                  "pm.environment.set('e1_mn_codigo_2', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: mn se registra como Cliente con 16 años (válido para Cliente)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Clienta\",\n  \"apellido\": \"Edad\",\n  \"dni\": \"{{e1_mn_dni}}\",\n  \"fechaNacimiento\": \"{{e1_fecha_mn16}}\",\n  \"telefono\": \"+5492964551236\",\n  \"nombreUsuario\": \"{{e1_mn_usuario}}\",\n  \"email\": \"{{e1_mn_email}}\",\n  \"password\": \"{{e1_mn_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const f = new Date();",
+                  "f.setFullYear(f.getFullYear() - 16);",
+                  "f.setDate(f.getDate() + 0);",
+                  "const dos = (n) => String(n).padStart(2, \"0\");",
+                  "pm.environment.set('e1_fecha_mn16', f.getFullYear() + '-' + dos(f.getMonth() + 1) + '-' + dos(f.getDate()));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Cliente mn",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{e1_mn_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{e1_mn_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e1_mn_codigo_verif', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Cliente mn",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_mn_email}}\",\n  \"codigo\": \"{{e1_mn_codigo_verif}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: validar con una cuenta existente de 16 años da 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/validar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "validar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_mn_email}}\",\n  \"codigo\": \"{{e1_mn_codigo_2}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"Tenés que tener 18 años o más para sumarte a un equipo\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: aceptar con una cuenta existente de 16 años da el mismo 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_mn_email}}\",\n  \"codigo\": \"{{e1_mn_codigo_2}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"Tenés que tener 18 años o más para sumarte a un equipo\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: reenviar a una cuenta existente de 16 años da el 409 genérico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_ed}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones/{{e1_inv_mn}}/reenviar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones",
+                "{{e1_inv_mn}}",
+                "reenviar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"No se puede invitar a este email\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: invitar a una cuenta existente de 16 años da el mismo 409 genérico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_ed}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_mn_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"No se puede invitar a este email\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: a la cuenta de 16 años no se le mandó email de regularización",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/emails-regularizacion/cantidad?email={{e1_mn_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "emails-regularizacion",
+                "cantidad"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{e1_mn_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Filas de regularización: 0', () => pm.expect(pm.response.json().data).to.eql(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: la invitación de mn sigue PENDIENTE, no se creó otra y no hay relación",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_ed}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('mn sigue PENDIENTE', () => pm.expect((pm.response.json().data.invitaciones.find((i) => i.id === Number(pm.environment.get('e1_inv_mn'))) || {}).estado).to.eql('PENDIENTE'));",
+                  "pm.test('Una sola invitación pendiente de mn', () => pm.expect(pm.response.json().data.invitaciones.filter((i) => i.estado === 'PENDIENTE' && i.email === pm.environment.get('e1_mn_email'))).to.have.length(1));",
+                  "pm.test('mn no figura entre los miembros', () => pm.expect(pm.response.json().data.miembros.some((m) => m.email === pm.environment.get('e1_mn_email'))).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: u17 se registra como Cliente un día antes de cumplir 18",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Clienta\",\n  \"apellido\": \"Edad\",\n  \"dni\": \"{{e1_u17_dni}}\",\n  \"fechaNacimiento\": \"{{e1_fecha_u17}}\",\n  \"telefono\": \"+5492964551236\",\n  \"nombreUsuario\": \"{{e1_u17_usuario}}\",\n  \"email\": \"{{e1_u17_email}}\",\n  \"password\": \"{{e1_u17_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('e1_u17_email', 'e1.u17.' + s + '@bajonea.test');",
+                  "pm.environment.set('e1_u17_usuario', ('e1u17' + s).slice(0, 20));",
+                  "pm.environment.set('e1_u17_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('e1_u17_dni', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "const f = new Date();",
+                  "f.setFullYear(f.getFullYear() - 18);",
+                  "f.setDate(f.getDate() + 1);",
+                  "const dos = (n) => String(n).padStart(2, \"0\");",
+                  "pm.environment.set('e1_fecha_u17', f.getFullYear() + '-' + dos(f.getMonth() + 1) + '-' + dos(f.getDate()));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Cliente u17",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{e1_u17_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{e1_u17_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e1_u17_codigo_verif', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Cliente u17",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_u17_email}}\",\n  \"codigo\": \"{{e1_u17_codigo_verif}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: invitar a una cuenta existente un día antes de cumplir 18 da el 409 genérico",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_ed}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_u17_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"No se puede invitar a este email\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: u18 se registra como Cliente con 18 años cumplidos hoy",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Clienta\",\n  \"apellido\": \"Edad\",\n  \"dni\": \"{{e1_u18_dni}}\",\n  \"fechaNacimiento\": \"{{e1_fecha_u18}}\",\n  \"telefono\": \"+5492964551236\",\n  \"nombreUsuario\": \"{{e1_u18_usuario}}\",\n  \"email\": \"{{e1_u18_email}}\",\n  \"password\": \"{{e1_u18_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('e1_u18_email', 'e1.u18.' + s + '@bajonea.test');",
+                  "pm.environment.set('e1_u18_usuario', ('e1u18' + s).slice(0, 20));",
+                  "pm.environment.set('e1_u18_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('e1_u18_dni', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "const f = new Date();",
+                  "f.setFullYear(f.getFullYear() - 18);",
+                  "f.setDate(f.getDate() + 0);",
+                  "const dos = (n) => String(n).padStart(2, \"0\");",
+                  "pm.environment.set('e1_fecha_u18', f.getFullYear() + '-' + dos(f.getMonth() + 1) + '-' + dos(f.getDate()));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Cliente u18",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{e1_u18_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{e1_u18_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e1_u18_codigo_verif', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Cliente u18",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_u18_email}}\",\n  \"codigo\": \"{{e1_u18_codigo_verif}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: invitar a una cuenta existente con 18 años cumplidos hoy da 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_ed}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_u18_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: código de u18 en ED",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/invitaciones-empleado/codigo?email={{e1_u18_email}}&comercioId={{e1_com_ed}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "invitaciones-empleado",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{e1_u18_email}}"
+                },
+                {
+                  "key": "comercioId",
+                  "value": "{{e1_com_ed}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('El código tiene 6 dígitos', () => pm.expect(pm.response.json().data).to.match(/^\\d{6}$/));",
+                  "pm.environment.set('e1_u18_codigo_2', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: validar con una cuenta existente de 18 años cumplidos hoy da 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/validar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "validar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_u18_email}}\",\n  \"codigo\": \"{{e1_u18_codigo_2}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edad mínima: aceptar con una cuenta existente de 18 años cumplidos hoy da 200",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_u18_email}}\",\n  \"codigo\": \"{{e1_u18_codigo_2}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('No se creó una cuenta', () => pm.expect(pm.response.json().data.cuentaCreada).to.eql(false));"
                 ]
               }
             }

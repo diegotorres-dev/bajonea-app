@@ -13,6 +13,7 @@ import com.bajonea.backend.dto.request.DatosClienteRequestDTO;
 import com.bajonea.backend.exceptions.CodigoInvitacionInvalidoException;
 import com.bajonea.backend.services.DatosPruebaEmpleado.Dueno;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -46,6 +47,7 @@ class InvitacionEmpleadoPublicaControllerIntegrationTest {
 
     private static final String VALIDAR = "/api/v1/auth/invitaciones-empleado/validar";
     private static final String ACEPTAR = "/api/v1/auth/invitaciones-empleado/aceptar";
+    private static final String REGISTRO_CLIENTE = "/api/v1/auth/registro/cliente";
 
     @Autowired
     private MockMvc mockMvc;
@@ -360,6 +362,89 @@ class InvitacionEmpleadoPublicaControllerIntegrationTest {
         } finally {
             borrarRastros(dueno);
         }
+    }
+
+    @Test
+    void elRegistroDeClienteExigeCatorceAniosCumplidosHoy() throws Exception {
+        LocalDate hoy = LocalDate.now();
+        Map<String, Object> trece = cuentaComoRegistro(hoy.minusYears(14).plusDays(1));
+        postJson(REGISTRO_CLIENTE, trece)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.data.fechaNacimiento").value("Tenés que tener al menos 14 años para registrarte"));
+        assertEquals(0, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM usuario WHERE email = ?", Integer.class, trece.get("email")));
+
+        Map<String, Object> catorce = cuentaComoRegistro(hoy.minusYears(14));
+        postJson(REGISTRO_CLIENTE, catorce).andExpect(status().isCreated());
+        assertEquals(1, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM usuario WHERE email = ?", Integer.class, catorce.get("email")));
+    }
+
+    @Test
+    void laCuentaNuevaPorInvitacionExigeCatorceEnElDtoYDieciochoEnElServicioConElMapaPrefijado() throws Exception {
+        Dueno dueno = datos.registrarDuenoAprobado();
+        String email = emailNuevo();
+        try {
+            int invitacionId = invitar(dueno, email);
+            String codigo = codigoDe(invitacionId);
+            LocalDate hoy = LocalDate.now();
+
+            DatosClienteRequestDTO deTrece = datos.datosClienteNuevo("nu" + DatosPruebaEmpleado.sufijo(), DatosPruebaEmpleado.dniAleatorio(),
+                    "Pw1234567890", hoy.minusYears(14).plusDays(1));
+            postJson(ACEPTAR, cuerpo(email, codigo, "aceptaTerminos", true, "cuentaNueva", deTrece))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.data['cuentaNueva.fechaNacimiento']").value("Tenés que tener al menos 14 años para registrarte"));
+
+            DatosClienteRequestDTO deQuince = datos.datosClienteNuevo("nu" + DatosPruebaEmpleado.sufijo(), DatosPruebaEmpleado.dniAleatorio(),
+                    "Pw1234567890", hoy.minusYears(15));
+            postJson(ACEPTAR, cuerpo(email, codigo, "aceptaTerminos", true, "cuentaNueva", deQuince))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.data['cuentaNueva.fechaNacimiento']").value("Tenés que tener 18 años o más para trabajar en un comercio"));
+
+            assertEquals("PENDIENTE", estadoDe(invitacionId));
+            assertEquals(0, intentosDe(invitacionId), "un dato inválido no es un código incorrecto");
+            assertEquals(0, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM usuario WHERE email = ?", Integer.class, email));
+
+            DatosClienteRequestDTO deDieciocho = datos.datosClienteNuevo("nu" + DatosPruebaEmpleado.sufijo(), DatosPruebaEmpleado.dniAleatorio(),
+                    "Pw1234567890", hoy.minusYears(18));
+            postJson(ACEPTAR, cuerpo(email, codigo, "aceptaTerminos", true, "cuentaNueva", deDieciocho))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.cuentaCreada").value(true));
+            assertEquals("ACEPTADA", estadoDe(invitacionId));
+        } finally {
+            borrarRastros(dueno);
+        }
+    }
+
+    @Test
+    void unaCuentaExistenteMenorDeDieciochoDa409EnValidarYAceptarConElTextoDeEquipo() throws Exception {
+        Dueno dueno = datos.registrarDuenoAprobado();
+        int cuenta = datos.registrarCliente();
+        String email = datos.emailDe(cuenta);
+        try {
+            int invitacionId = invitar(dueno, email);
+            String codigo = codigoDe(invitacionId);
+            datos.cambiarFechaNacimiento(cuenta, LocalDate.now().minusYears(16));
+
+            postJson(VALIDAR, cuerpo(email, codigo)).andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.mensaje").value("Tenés que tener 18 años o más para sumarte a un equipo"));
+            postJson(ACEPTAR, cuerpo(email, codigo)).andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.mensaje").value("Tenés que tener 18 años o más para sumarte a un equipo"));
+
+            assertEquals("PENDIENTE", estadoDe(invitacionId));
+            assertEquals(0, intentosDe(invitacionId));
+            assertEquals(0, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM empleado_comercio WHERE empleado_id = ?", Integer.class, cuenta));
+        } finally {
+            borrarRastros(dueno);
+        }
+    }
+
+    private Map<String, Object> cuentaComoRegistro(LocalDate fechaNacimiento) {
+        Map<String, Object> cuerpo = objectMapper.convertValue(
+                datos.datosClienteNuevo("nu" + DatosPruebaEmpleado.sufijo(), DatosPruebaEmpleado.dniAleatorio(), "Pw1234567890", fechaNacimiento),
+                new com.fasterxml.jackson.core.type.TypeReference<LinkedHashMap<String, Object>>() {
+                });
+        cuerpo.put("email", emailNuevo());
+        cuerpo.put("aceptaTerminos", true);
+        return cuerpo;
     }
 
     @Test

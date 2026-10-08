@@ -5,6 +5,7 @@ import com.bajonea.backend.dto.request.RegistroClienteRequestDTO;
 import com.bajonea.backend.dto.request.RegistroComercioRequestDTO;
 import com.bajonea.backend.dto.response.UsuarioResponseDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -69,6 +70,10 @@ class DatosPruebaEmpleado {
         jdbcTemplate.update("UPDATE usuario SET estado = ? WHERE id = ?", estado, usuarioId);
     }
 
+    void cambiarFechaNacimiento(int usuarioId, LocalDate fechaNacimiento) {
+        jdbcTemplate.update("UPDATE persona_fisica SET fecha_nacimiento = ? WHERE id = ?", fechaNacimiento, usuarioId);
+    }
+
     void cambiarEstadoComercio(int comercioId, String estado) {
         jdbcTemplate.update("UPDATE comercio SET estado = ? WHERE id = ?", estado, comercioId);
     }
@@ -99,6 +104,12 @@ class DatosPruebaEmpleado {
                  "direccion":{"calle":"calle falsa","numero":"742","pisoDepto":null,"codigoPostal":"9420",
                               "localidadId":"%s","principal":true}}
                 """.formatted(dni, nombreUsuario, clave, LOCALIDAD_RIO_GRANDE), DatosClienteRequestDTO.class);
+    }
+
+    DatosClienteRequestDTO datosClienteNuevo(String nombreUsuario, String dni, String clave, LocalDate fechaNacimiento) {
+        DatosClienteRequestDTO datos = datosClienteNuevo(nombreUsuario, dni, clave);
+        datos.setFechaNacimiento(fechaNacimiento);
+        return datos;
     }
 
     private RegistroClienteRequestDTO clienteJson(String sufijo, String email, String nombreUsuario, String clave) {

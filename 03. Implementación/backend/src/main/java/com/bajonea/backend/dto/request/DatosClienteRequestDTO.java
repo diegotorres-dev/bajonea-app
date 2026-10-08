@@ -1,6 +1,7 @@
 package com.bajonea.backend.dto.request;
 
 import com.bajonea.backend.validation.NombreUsuarioPolicy;
+import com.bajonea.backend.validation.annotations.EdadMinima;
 import com.bajonea.backend.validation.annotations.ValidarFechaNacimientoPlausible;
 import com.bajonea.backend.validation.annotations.ValidarFormatoDni;
 import com.bajonea.backend.validation.annotations.ValidarFormatoNombre;
@@ -22,7 +23,8 @@ import lombok.NoArgsConstructor;
  * campos) y el alta de una cuenta nueva al aceptar una invitación de empleado, donde el email lo da la
  * propia invitación. Las validaciones y los setters de normalización (trim, colapso de espacios, limpieza de
  * separadores de DNI y teléfono, minúsculas del nombre de usuario) son las mismas que tenía el registro, de
- * modo que el JSON y los mensajes del registro de Cliente no cambian.
+ * modo que el JSON del registro de Cliente no cambia. La fecha de nacimiento exige además 14 años cumplidos
+ * ({@link EdadMinima}); la edad mínima de 18 para ser empleado es una regla del servicio de invitaciones.
  */
 @Getter
 @NoArgsConstructor
@@ -44,6 +46,7 @@ public class DatosClienteRequestDTO {
 
     @NotNull(message = "La fecha de nacimiento es obligatoria")
     @ValidarFechaNacimientoPlausible
+    @EdadMinima(anios = 14)
     private LocalDate fechaNacimiento;
 
     @NotBlank(message = "El teléfono es obligatorio")

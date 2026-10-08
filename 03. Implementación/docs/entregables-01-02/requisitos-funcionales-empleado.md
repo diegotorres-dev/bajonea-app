@@ -53,6 +53,15 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
   Condiciones; la aceptación se valida en el servidor (campo `aceptaTerminos`). El sistema
   crea Usuario, PersonaFisica, Cliente y Empleado en una sola transacción. El código
   verifica el email: no hay un segundo código de verificación y la cuenta queda Activa.
+- **Edad mínima:** un Empleado debe tener 18 años o más, contados con la fecha del día
+  del servidor (cumplirlos ese mismo día alcanza). Con una cuenta nueva, los datos son los
+  del registro de Cliente, así que primero rige el mínimo de 14 años del registro
+  ("Tenés que tener al menos 14 años para registrarte"); con 14 a 17 años el servidor
+  responde 400 en el campo `cuentaNueva.fechaNacimiento` con "Tenés que tener 18 años o más
+  para trabajar en un comercio", antes de crear ninguna fila y sin gastar intentos del
+  código. Con una cuenta existente cuya fecha de nacimiento da menos de 18 años, validar y
+  aceptar responden 409 con "Tenés que tener 18 años o más para sumarte a un equipo". La
+  edad es la declarada: el sistema no verifica identidad ni DNI.
 - **Aceptar con una cuenta existente**: alcanzan el email y el código. Se agrega el
   registro `Empleado` si todavía no lo tiene y la relación con el comercio, sin pedir de
   nuevo datos ya cargados.

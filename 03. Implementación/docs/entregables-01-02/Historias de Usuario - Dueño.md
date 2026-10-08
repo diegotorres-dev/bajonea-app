@@ -74,8 +74,8 @@ comercio esté operativo, que vence a los 7 días y que puedo enviar hasta 5 inv
 por hora por comercio.
 
 Criterios de aceptación adicionales:
-- Si el email pertenece a un Dueño o a un Administrador, o a una cuenta bloqueada,
-  suspendida, inactiva o sin verificar, veo el mensaje "No se puede invitar a este email"
+- Si el email pertenece a un Dueño o a un Administrador, a una cuenta bloqueada,
+  suspendida, inactiva o sin verificar, o a una cuenta activa con menos de 18 años declarados, veo el mensaje "No se puede invitar a este email"
   (no se revela el motivo ni el tipo de cuenta). A una cuenta bloqueada, suspendida,
   inactiva o sin verificar le llega un email que le explica cómo regularizarla.
 - Puedo reenviar la invitación (la anterior queda reemplazada) y cancelar una invitación

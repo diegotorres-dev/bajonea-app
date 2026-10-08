@@ -106,11 +106,11 @@ const registroComercio = (cuit, dniRep, usuario, email, password, nombre) => ({
   redesSociales: [{ tipo: 'INSTAGRAM', url: 'instagram.com/empleadoe1' }],
 });
 
-const cuentaNueva = (clave) => ({
+const cuentaNueva = (clave, fechaNacimiento = '1996-08-14') => ({
   nombre: 'Empleada',
   apellido: 'Invitada',
   dni: `{{${v(`${clave}_dni`)}}}`,
-  fechaNacimiento: '1996-08-14',
+  fechaNacimiento,
   telefono: '+5492964551234',
   nombreUsuario: `{{${v(`${clave}_usuario`)}}}`,
   password: `{{${v(`${clave}_password`)}}}`,
@@ -576,6 +576,156 @@ agregar(
     "pm.test('Cuenta creada', () => pm.expect(pm.response.json().data.cuentaCreada).to.eql(true));",
   ]),
   invitar('Comercio suspendido: invitar en S ya no se puede', COM_S, 'otra.persona@bajonea.test', [status(409), mensajeEs('Este comercio no puede invitar empleados en este momento')]),
+);
+
+const MSG_EDAD_REGISTRO = 'Tenés que tener al menos 14 años para registrarte';
+const MSG_EDAD_CUENTA_NUEVA = 'Tenés que tener 18 años o más para trabajar en un comercio';
+const MSG_EDAD_CUENTA_EXISTENTE = 'Tenés que tener 18 años o más para sumarte a un equipo';
+
+const fechaRelativa = (clave, anios, dias = 0) => [
+  'const f = new Date();',
+  `f.setFullYear(f.getFullYear() - ${anios});`,
+  `f.setDate(f.getDate() + ${dias});`,
+  'const dos = (n) => String(n).padStart(2, "0");',
+  guardar(v(`fecha_${clave}`), "f.getFullYear() + '-' + dos(f.getMonth() + 1) + '-' + dos(f.getDate())"),
+];
+
+const fechaVar = (clave) => `{{${v(`fecha_${clave}`)}}}`;
+
+const registroClienteConFecha = (nombre, clave, fechaClave, anios, dias, testLines, { generarIdentidad = true } = {}) =>
+  item(
+    nombre,
+    req('POST', '/auth/registro/cliente', {
+      body: {
+        nombre: 'Clienta',
+        apellido: 'Edad',
+        dni: `{{${v(`${clave}_dni`)}}}`,
+        fechaNacimiento: fechaVar(fechaClave),
+        telefono: '+5492964551236',
+        nombreUsuario: `{{${v(`${clave}_usuario`)}}}`,
+        email: `{{${v(`${clave}_email`)}}}`,
+        password: `{{${v(`${clave}_password`)}}}`,
+        aceptaTerminos: true,
+        direccion: { calle: 'Calle Siempre Viva', numero: '123', pisoDepto: null, codigoPostal: '9420', localidadId: '{{localidad_id}}', principal: true },
+      },
+    }),
+    testLines,
+    [...(generarIdentidad ? identidad(clave) : []), ...fechaRelativa(fechaClave, anios, dias)],
+  );
+
+const verificarCliente = (clave) => [
+  item(`Bypass test - codigo de verificacion Cliente ${clave}`, req('GET', '/test/token-verificacion', { query: `email={{${v(`${clave}_email`)}}}` }), [
+    status(200),
+    guardar(v(`${clave}_codigo_verif`), 'pm.response.json().data'),
+  ]),
+  item(`Verificar cuenta Cliente ${clave}`, req('POST', '/auth/verificar', { body: { email: `{{${v(`${clave}_email`)}}}`, codigo: `{{${v(`${clave}_codigo_verif`)}}}` } }), [status(200)]),
+];
+
+const errorEnCampo = (campo, mensaje) =>
+  `pm.test('Error en ${campo}', () => pm.expect(pm.response.json().data[${JSON.stringify(campo)}]).to.eql(${JSON.stringify(mensaje)}));`;
+
+const aceptarConFecha = (nombre, clave, fechaClave, anios, dias, testLines) =>
+  item(
+    nombre,
+    req('POST', '/auth/invitaciones-empleado/aceptar', {
+      body: {
+        email: `{{${v(`${clave}_email`)}}}`,
+        codigo: `{{${v(`${clave}_codigo_2`)}}}`,
+        aceptaTerminos: true,
+        cuentaNueva: cuentaNueva(clave, fechaVar(fechaClave)),
+      },
+    }),
+    testLines,
+    fechaRelativa(fechaClave, anios, dias),
+  );
+
+agregar(
+  registroClienteConFecha('Edad mínima: registro de Cliente con 13 años da 400 en fechaNacimiento', 'r13', 'r13', 13, 0, [
+    status(400),
+    errorEnCampo('fechaNacimiento', MSG_EDAD_REGISTRO),
+  ]),
+  registroClienteConFecha('Edad mínima: registro de Cliente un día antes de cumplir 14 da 400', 'r14m', 'r14m', 14, 1, [
+    status(400),
+    errorEnCampo('fechaNacimiento', MSG_EDAD_REGISTRO),
+  ]),
+  registroClienteConFecha('Edad mínima: registro de Cliente con 14 años cumplidos hoy da 201', 'r14', 'r14', 14, 0, [status(201)]),
+);
+
+agregar(clonar('ED', 'ed', 'APROBADO'));
+const COM_ED = `{{${v('com_ed')}}}`;
+
+agregar(
+  invitar('Edad mínima: invitar a cn (email sin cuenta) en ED', COM_ED, `{{${v('cn_email')}}}`, [status(201), guardar(v('inv_cn'), 'pm.response.json().data.id')], { preLines: identidad('cn') }),
+  codigoTest('Atajo de test: código de cn en ED', 'cn', COM_ED, v('cn_codigo_2')),
+  aceptarConFecha('Edad mínima: cuenta nueva por invitación con 13 años da 400 con el mensaje de 14 y prefijo', 'cn', 'cn13', 13, 0, [
+    status(400),
+    errorEnCampo('cuentaNueva.fechaNacimiento', MSG_EDAD_REGISTRO),
+  ]),
+  aceptarConFecha('Edad mínima: cuenta nueva por invitación con 15 años da 400 con el mensaje de 18', 'cn', 'cn15', 15, 0, [
+    status(400),
+    errorEnCampo('cuentaNueva.fechaNacimiento', MSG_EDAD_CUENTA_NUEVA),
+  ]),
+  aceptarConFecha('Edad mínima: cuenta nueva por invitación un día antes de cumplir 18 da 400', 'cn', 'cn18m', 18, 1, [
+    status(400),
+    errorEnCampo('cuentaNueva.fechaNacimiento', MSG_EDAD_CUENTA_NUEVA),
+  ]),
+  equipo('Edad mínima: la invitación de cn sigue PENDIENTE y no se creó ningún miembro', COM_ED, [
+    status(200),
+    `pm.test('cn sigue PENDIENTE', () => pm.expect(${estadoDeInvitacion(v('inv_cn'))}).to.eql('PENDIENTE'));`,
+    "pm.test('No hay miembros', () => pm.expect(pm.response.json().data.miembros).to.eql([]));",
+  ]),
+  aceptarConFecha('Edad mínima: cuenta nueva por invitación con 18 años cumplidos hoy da 200', 'cn', 'cn18', 18, 0, [
+    status(200),
+    "pm.test('Cuenta creada', () => pm.expect(pm.response.json().data.cuentaCreada).to.eql(true));",
+  ]),
+);
+
+agregar(
+  invitar('Edad mínima: invitar a mn (email sin cuenta todavía) en ED', COM_ED, `{{${v('mn_email')}}}`, [status(201), guardar(v('inv_mn'), 'pm.response.json().data.id')], { preLines: identidad('mn') }),
+  codigoTest('Atajo de test: código de mn en ED', 'mn', COM_ED, v('mn_codigo_2')),
+  registroClienteConFecha('Edad mínima: mn se registra como Cliente con 16 años (válido para Cliente)', 'mn', 'mn16', 16, 0, [status(201)], { generarIdentidad: false }),
+  ...verificarCliente('mn'),
+  validar('Edad mínima: validar con una cuenta existente de 16 años da 409', `{{${v('mn_email')}}}`, `{{${v('mn_codigo_2')}}}`, [
+    status(409),
+    mensajeEs(MSG_EDAD_CUENTA_EXISTENTE),
+  ]),
+  aceptar('Edad mínima: aceptar con una cuenta existente de 16 años da el mismo 409', { email: `{{${v('mn_email')}}}`, codigo: `{{${v('mn_codigo_2')}}}` }, [
+    status(409),
+    mensajeEs(MSG_EDAD_CUENTA_EXISTENTE),
+  ]),
+  item('Edad mínima: reenviar a una cuenta existente de 16 años da el 409 genérico', req('POST', `/comercios/equipo/invitaciones/{{${v('inv_mn')}}}/reenviar`, { token: TOKEN_D1, comercio: COM_ED }), [
+    status(409),
+    mensajeEs('No se puede invitar a este email'),
+  ]),
+  invitar('Edad mínima: invitar a una cuenta existente de 16 años da el mismo 409 genérico', COM_ED, `{{${v('mn_email')}}}`, [
+    status(409),
+    mensajeEs('No se puede invitar a este email'),
+  ]),
+  cantidadRegularizacion('Edad mínima: a la cuenta de 16 años no se le mandó email de regularización', `{{${v('mn_email')}}}`, 0),
+  equipo('Edad mínima: la invitación de mn sigue PENDIENTE, no se creó otra y no hay relación', COM_ED, [
+    status(200),
+    `pm.test('mn sigue PENDIENTE', () => pm.expect(${estadoDeInvitacion(v('inv_mn'))}).to.eql('PENDIENTE'));`,
+    "pm.test('Una sola invitación pendiente de mn', () => pm.expect(pm.response.json().data.invitaciones.filter((i) => i.estado === 'PENDIENTE' && i.email === pm.environment.get('e1_mn_email'))).to.have.length(1));",
+    "pm.test('mn no figura entre los miembros', () => pm.expect(pm.response.json().data.miembros.some((m) => m.email === pm.environment.get('e1_mn_email'))).to.eql(false));",
+  ]),
+);
+
+agregar(
+  registroClienteConFecha('Edad mínima: u17 se registra como Cliente un día antes de cumplir 18', 'u17', 'u17', 18, 1, [status(201)]),
+  ...verificarCliente('u17'),
+  invitar('Edad mínima: invitar a una cuenta existente un día antes de cumplir 18 da el 409 genérico', COM_ED, `{{${v('u17_email')}}}`, [
+    status(409),
+    mensajeEs('No se puede invitar a este email'),
+  ]),
+  registroClienteConFecha('Edad mínima: u18 se registra como Cliente con 18 años cumplidos hoy', 'u18', 'u18', 18, 0, [status(201)]),
+  ...verificarCliente('u18'),
+  invitar('Edad mínima: invitar a una cuenta existente con 18 años cumplidos hoy da 201', COM_ED, `{{${v('u18_email')}}}`, [status(201)]),
+  codigoTest('Atajo de test: código de u18 en ED', 'u18', COM_ED, v('u18_codigo_2')),
+  validar('Edad mínima: validar con una cuenta existente de 18 años cumplidos hoy da 200', `{{${v('u18_email')}}}`, `{{${v('u18_codigo_2')}}}`, [status(200)]),
+  aceptar('Edad mínima: aceptar con una cuenta existente de 18 años cumplidos hoy da 200', { email: `{{${v('u18_email')}}}`, codigo: `{{${v('u18_codigo_2')}}}` }, [
+    status(200),
+    "pm.test('No se creó una cuenta', () => pm.expect(pm.response.json().data.cuentaCreada).to.eql(false));",
+  ]),
 );
 
 const registroDeEmpleado = (emailExpr, dniExpr) =>

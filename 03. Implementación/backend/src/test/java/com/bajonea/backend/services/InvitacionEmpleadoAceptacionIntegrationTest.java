@@ -25,6 +25,7 @@ import com.bajonea.backend.repositories.InvitacionInsercionRepository;
 import com.bajonea.backend.services.DatosPruebaEmpleado.Dueno;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,6 +66,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 class InvitacionEmpleadoAceptacionIntegrationTest {
 
     private static final LocalDateTime INICIO = LocalDateTime.of(2026, 10, 6, 12, 0, 0);
+    private static final LocalDate HOY = INICIO.toLocalDate();
 
     @Autowired
     private InvitacionEmpleadoService invitacionService;
@@ -523,6 +525,143 @@ class InvitacionEmpleadoAceptacionIntegrationTest {
             assertEquals(0, filas("SELECT COUNT(*) FROM empleado WHERE id = ?", cuenta));
             assertEquals(0, filas("SELECT COUNT(*) FROM empleado_comercio WHERE comercio_id = ?", dueno.comercioId()));
             assertEquals(0, avisosAlDueno(dueno));
+        });
+    }
+
+    @Test
+    void unaCuentaExistenteConMenosDeDieciochoAniosDa409EnValidarYEnAceptarYNoSeTocaNada() {
+        enTransaccion(status -> {
+            Dueno dueno = datos.registrarDuenoAprobado();
+            int cuenta = datos.registrarCliente();
+            sincronizar();
+            int invitacionId = invitar(dueno, datos.emailDe(cuenta));
+            String codigo = codigoDe(invitacionId);
+            datos.cambiarFechaNacimiento(cuenta, HOY.minusYears(18).plusDays(1));
+            sincronizar();
+
+            InvitacionNoAptaException alValidar = assertThrows(InvitacionNoAptaException.class,
+                    () -> invitacionService.validar(validarRequest(datos.emailDe(cuenta), codigo)));
+            InvitacionNoAptaException alAceptar = assertThrows(InvitacionNoAptaException.class,
+                    () -> invitacionService.aceptar(aceptarRequest(datos.emailDe(cuenta), codigo, null, null)));
+
+            assertEquals("Tenés que tener 18 años o más para sumarte a un equipo", alValidar.getMessage());
+            assertEquals(alValidar.getMessage(), alAceptar.getMessage());
+            assertEquals("PENDIENTE", estadoDe(invitacionId));
+            assertEquals(0, intentosDe(invitacionId));
+            assertEquals(0, filas("SELECT COUNT(*) FROM empleado WHERE id = ?", cuenta));
+            assertEquals(0, filas("SELECT COUNT(*) FROM empleado_comercio WHERE comercio_id = ?", dueno.comercioId()));
+            assertEquals(0, avisosAlDueno(dueno));
+        });
+    }
+
+    @Test
+    void unaCuentaExistenteQueCumpleDieciochoHoyPuedeValidarYAceptar() {
+        enTransaccion(status -> {
+            Dueno dueno = datos.registrarDuenoAprobado();
+            int cuenta = datos.registrarCliente();
+            sincronizar();
+            int invitacionId = invitar(dueno, datos.emailDe(cuenta));
+            String codigo = codigoDe(invitacionId);
+            datos.cambiarFechaNacimiento(cuenta, HOY.minusYears(18));
+            sincronizar();
+
+            invitacionService.validar(validarRequest(datos.emailDe(cuenta), codigo));
+            InvitacionEmpleadoAceptadaResponseDTO aceptada = invitacionService
+                    .aceptar(aceptarRequest(datos.emailDe(cuenta), codigo, null, null));
+
+            assertFalse(aceptada.isCuentaCreada());
+            assertEquals("ACEPTADA", estadoDe(invitacionId));
+            assertEquals(1, relaciones(dueno.comercioId(), "ACTIVO"));
+        });
+    }
+
+    @Test
+    void laEdadSeEvaluaDespuesDelEstadoDeLaCuentaYDelRolIncompatible() {
+        enTransaccion(status -> {
+            Dueno dueno = datos.registrarDuenoAprobado();
+            int bloqueada = datos.registrarCliente();
+            int administrador = datos.registrarCliente();
+            sincronizar();
+            int invitacionBloqueada = invitar(dueno, datos.emailDe(bloqueada));
+            int invitacionAdministrador = invitar(dueno, datos.emailDe(administrador));
+            String codigoBloqueada = codigoDe(invitacionBloqueada);
+            String codigoAdministrador = codigoDe(invitacionAdministrador);
+            LocalDate menor = HOY.minusYears(16);
+            datos.cambiarFechaNacimiento(bloqueada, menor);
+            datos.cambiarFechaNacimiento(administrador, menor);
+            datos.cambiarEstadoUsuario(bloqueada, "BLOQUEADO");
+            datos.hacerAdministrador(administrador);
+            sincronizar();
+
+            InvitacionNoAptaException porEstado = assertThrows(InvitacionNoAptaException.class,
+                    () -> invitacionService.aceptar(aceptarRequest(datos.emailDe(bloqueada), codigoBloqueada, null, null)));
+            InvitacionNoAptaException porRol = assertThrows(InvitacionNoAptaException.class,
+                    () -> invitacionService.aceptar(aceptarRequest(datos.emailDe(administrador), codigoAdministrador, null, null)));
+
+            assertEquals("Cuenta bloqueada. Recuperá tu contraseña para desbloquearla", porEstado.getMessage());
+            assertEquals("No se puede aceptar esta invitación con esta cuenta", porRol.getMessage());
+        });
+    }
+
+    @ParameterizedTest(name = "cuenta nueva de 17 años menos {0} dias")
+    @CsvSource({"0", "1", "200"})
+    void unaCuentaNuevaDeMenosDeDieciochoAniosDa400EnElCampoConPrefijoYNoCreaNada(int diasAntesDeLosDieciocho) {
+        enTransaccion(status -> {
+            Dueno dueno = datos.registrarDuenoAprobado();
+            sincronizar();
+            String email = emailNuevo();
+            int invitacionId = invitar(dueno, email);
+            String codigo = codigoDe(invitacionId);
+            LocalDate nacimiento = HOY.minusYears(18).plusDays(1 + diasAntesDeLosDieciocho);
+            DatosClienteRequestDTO cuenta = datos.datosClienteNuevo("nu" + DatosPruebaEmpleado.sufijo(), DatosPruebaEmpleado.dniAleatorio(),
+                    DatosPruebaEmpleado.claveAleatoria(), nacimiento);
+
+            ValidacionCamposException error = assertThrows(ValidacionCamposException.class,
+                    () -> invitacionService.aceptar(aceptarRequest(email, codigo, true, cuenta)));
+
+            assertEquals(Map.of("cuentaNueva.fechaNacimiento", "Tenés que tener 18 años o más para trabajar en un comercio"), error.getErrores());
+            assertEquals("PENDIENTE", estadoDe(invitacionId));
+            assertEquals(0, intentosDe(invitacionId));
+            assertEquals(0, filas("SELECT COUNT(*) FROM usuario WHERE email = ?", email));
+            assertEquals(0, filas("SELECT COUNT(*) FROM persona_fisica WHERE dni = ?", cuenta.getDni()));
+            assertEquals(0, relaciones(dueno.comercioId(), "ACTIVO"));
+        });
+    }
+
+    @Test
+    void unaCuentaNuevaDeDieciochoAniosCumplidosHoyPuedeAceptar() {
+        enTransaccion(status -> {
+            Dueno dueno = datos.registrarDuenoAprobado();
+            sincronizar();
+            String email = emailNuevo();
+            int invitacionId = invitar(dueno, email);
+            String codigo = codigoDe(invitacionId);
+            DatosClienteRequestDTO cuenta = datos.datosClienteNuevo("nu" + DatosPruebaEmpleado.sufijo(), DatosPruebaEmpleado.dniAleatorio(),
+                    DatosPruebaEmpleado.claveAleatoria(), HOY.minusYears(18));
+
+            InvitacionEmpleadoAceptadaResponseDTO aceptada = invitacionService.aceptar(aceptarRequest(email, codigo, true, cuenta));
+
+            assertTrue(aceptada.isCuentaCreada());
+            assertEquals("ACEPTADA", estadoDe(invitacionId));
+            assertEquals(1, filas("SELECT COUNT(*) FROM usuario WHERE email = ?", email));
+        });
+    }
+
+    @Test
+    void laEdadYLosTerminosFaltantesSeInformanJuntosEnElMismoMapa() {
+        enTransaccion(status -> {
+            Dueno dueno = datos.registrarDuenoAprobado();
+            sincronizar();
+            String email = emailNuevo();
+            String codigo = codigoDe(invitar(dueno, email));
+            DatosClienteRequestDTO cuenta = datos.datosClienteNuevo("nu" + DatosPruebaEmpleado.sufijo(), DatosPruebaEmpleado.dniAleatorio(),
+                    DatosPruebaEmpleado.claveAleatoria(), HOY.minusYears(16));
+
+            ValidacionCamposException error = assertThrows(ValidacionCamposException.class,
+                    () -> invitacionService.aceptar(aceptarRequest(email, codigo, null, cuenta)));
+
+            assertEquals(Map.of("aceptaTerminos", "Tenés que aceptar los Términos y Condiciones",
+                    "cuentaNueva.fechaNacimiento", "Tenés que tener 18 años o más para trabajar en un comercio"), error.getErrores());
         });
     }
 

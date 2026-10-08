@@ -4,6 +4,25 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
+## Tramo E1, bloque A6: edad mínima, 14 años para Cliente y 18 para Empleado (2026-10-08)
+
+Reglas nuevas: el registro de Cliente y la cuenta nueva por invitación exigen 14 años cumplidos (anotación `@EdadMinima`, validada en el DTO) y el Empleado, 18 (regla del servicio de invitaciones: cuenta nueva de 14 a 17 años = 400 en `cuentaNueva.fechaNacimiento`; cuenta existente menor de 18 = 409 al validar y aceptar; invitar o reenviar a una cuenta activa menor de 18 = el 409 genérico "No se puede invitar a este email", sin email de regularización). La edad se calcula con la fecha del día del servidor (cumplir los años ese mismo día alcanza) y es la declarada: no se verifica identidad ni DNI. Sin migraciones; las cuentas existentes no se revisan. Backend, Newman (carpeta 56 de 125 a 158 requests y 4 requests de borde en la 22), Playwright (spec 35 +5 tests, spec 36 +2) y estreses; sin cambios de frontend de producción.
+
+**Documentos de esta carpeta que cambiaron** (las carpetas `01.` y `02.` no se editaron):
+- `requisitos-funcionales-cliente.md` (sección Registro y Perfil): viñeta nueva con el mínimo de 14 años, el mensaje, que la edad es declarada y que solo se evalúa al registrarse.
+- `Historias de Usuario - Cliente.md` (HU-C01): el cliente tiene que tener 14 años o más; si no, el aviso va bajo la fecha de nacimiento y no se crea la cuenta.
+- `requisitos-funcionales-empleado.md` (Invitación y Alta): viñeta "Edad mínima" con los 18 años, los dos 400 y 409 y los tres mensajes.
+- `Historias de Usuario - Empleado.md` (HU-E01): criterio nuevo de 18 años, con la regla de 14 del registro y la edad declarada.
+- `requisitos-funcionales-dueño.md` (Gestión de Empleados): viñeta "Edad mínima" al invitar (409 genérico, sin email de regularización, orden después del rol y del estado).
+- `Historias de Usuario - Dueño.md` (HU-D07): el mensaje "No se puede invitar a este email" suma a la cuenta activa con menos de 18 años declarados.
+- `alcance-y-limitaciones.md`: limitación "Edad mínima declarada" (sin verificación de identidad; la regla de 14 no se aplica a cuentas existentes; Dueño y Comercio no cambian).
+
+**No cambiaron** `requisitos-no-funcionales.md`, `diccionario-de-datos.md` ni los DFD y diagramas (no hay datos ni flujos nuevos: la fecha de nacimiento ya existía).
+
+**Pruebas:** `mvnw test` 478/478; Playwright 534 tests (533 en la corrida completa más un inestable conocido que falló una vez y pasó 20/20 tras ajustar su espera); Newman 1734 requests y 2777 assertions con 0 fallos; los seis estreses sin problemas y sin `Deadlock found` ni `Lock wait timeout`.
+
+Fuera de esta carpeta: `CLAUDE.md` (fila E1, §1bis, §3 y §5bis), `docs/DECISIONES.md` (entrada nueva), `testing/playwright/README.md`, `.claude/skills/skill-validaciones/SKILL.md` (fila de `@EdadMinima`), `postman/Bajonea-MVP.postman_collection.json` y `postman/Bajonea-Local.postman_environment.json` (carpetas 22 y 56 y 47 variables `e1_*` vacías nuevas).
+
 ## Tramo E1, bloque B3: "Ver equipo" del Dueño y carrera del perfil del Comercio (2026-10-08)
 
 Solo frontend y pruebas; backend, migraciones, Newman y estreses sin cambios. Vista "Ver equipo" dentro de `comercio-perfil.html` (`js/equipo-comercio.js`, nuevo): lista de miembros e invitaciones del comercio activo con su estado (Activo, Inactivo, Pendiente con "vence en N días", Vencida, Código bloqueado), hoja "Invitar al equipo" con los errores del servidor bajo el campo, menú de las invitaciones (Reenviar código; Cancelar invitación con confirmación), estado vacío, skeletons, error con "Reintentar" y actualización cada 15 s. Además, corrección de la carrera del perfil del Comercio (los botones del perfil nacen deshabilitados hasta terminar de enlazar y cargar). Playwright: spec 36 ampliado con 20 tests (38 en total), 526/527 desde base reseteada (el fallo es una intermitencia de un test de B2, aislado 15/15).

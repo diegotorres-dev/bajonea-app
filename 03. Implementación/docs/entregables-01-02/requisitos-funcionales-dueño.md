@@ -144,6 +144,10 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   un Administrador, no se crea la invitación y el Dueño ve el mensaje genérico "No se
   puede invitar a este email" (no revela el tipo de cuenta). La matriz se vuelve a
   validar al aceptar.
+- **Edad mínima:** si el email pertenece a una cuenta activa cuya fecha de nacimiento declarada da
+  menos de 18 años, tampoco se crea la invitación y el Dueño ve el mismo mensaje genérico, sin
+  enviar email de regularización. La regla se evalúa después de la matriz de roles y del estado
+  de la cuenta; un email sin cuenta no tiene edad conocida y se controla al aceptar.
 - **Cuentas no aptas:** si el email pertenece a una cuenta bloqueada, suspendida, inactiva
   o sin verificar, tampoco se crea la invitación y el Dueño ve el mismo mensaje genérico.
   A la persona le llega un email de regularización con el motivo (bloqueada: recuperar la

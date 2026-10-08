@@ -7,6 +7,7 @@ import {
   clonarComercioTest,
   cuentaNuevaInvitacion,
   diaDeHoy,
+  fechaNacimientoRelativa,
   fijarPasswordAdminYLoguear,
   generarDni,
   generarTelefono,
@@ -35,6 +36,8 @@ const MSG_USUARIO = 'Ese nombre de usuario ya está en uso';
 const MSG_REVISAR = 'Revisá los campos marcados.';
 const MSG_TERMINOS = 'Tenés que aceptar los Términos y Condiciones para continuar.';
 const AVISO_LOGIN = 'Listo, ya podés ingresar';
+const MSG_EDAD_REGISTRO = 'Tenés que tener al menos 14 años para registrarte';
+const MSG_EDAD_EMPLEADO = 'Tenés que tener 18 años o más para trabajar en un comercio';
 
 const emailNuevo = (): string => `inv.ui.${sufijoUnico()}@bajonea.test`;
 const estadoInvitacion = (id: number): string => sql(`SELECT estado FROM invitacion_empleado WHERE id = ${id};`);
@@ -63,8 +66,9 @@ async function continuarConCodigo(page: Page, email: string, codigo: string) {
 }
 
 async function sinScrollHorizontal(page: Page) {
-  const medidas = await page.evaluate(() => ({ ancho: document.documentElement.scrollWidth, ventana: window.innerWidth }));
-  expect(medidas.ancho).toBeLessThanOrEqual(medidas.ventana);
+  await page.waitForLoadState('networkidle');
+  await page.evaluate(() => document.fonts.ready);
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
 }
 
 test.describe('Invitación de empleado (UI), tramo E1 B2', () => {
@@ -434,6 +438,57 @@ test.describe('Invitación de empleado (UI), tramo E1 B2', () => {
     expect(estadoInvitacion(id)).toBe('PENDIENTE');
   });
 
+  test('registro de Cliente: con 13 años el asistente vuelve al paso 1 con el error de edad bajo la fecha y no crea la cuenta', async ({ page }) => {
+    const email = emailNuevo();
+    await page.goto('/registro-cliente.html');
+    await page.getByTestId('input-nombre').fill('Menor');
+    await page.getByTestId('input-apellido').fill('De Edad');
+    await page.getByTestId('input-dni').fill(generarDni());
+    await page.getByTestId('input-fecha-nacimiento').fill(fechaNacimientoRelativa(13));
+    await page.getByTestId('input-telefono').fill(generarTelefono());
+    await page.getByTestId('input-nombre-usuario').fill(nombreUsuarioUnico('cli'));
+    await page.getByTestId('input-email').fill(email);
+    const password = passwordNueva();
+    await page.getByTestId('input-password').fill(password);
+    await page.getByTestId('input-confirmar-password').fill(password);
+    await page.getByTestId('input-acepta-terminos').check();
+    await page.getByTestId('btn-continuar').click();
+    await completarPaso2Asistente(page);
+
+    const respuesta = page.waitForResponse((res) => res.url().endsWith('/auth/registro/cliente') && res.request().method() === 'POST');
+    await page.getByTestId('btn-crear-cuenta').click();
+    expect((await respuesta).status()).toBe(400);
+
+    await expect(page.getByTestId('input-nombre')).toBeVisible();
+    await expect(page.getByTestId('mensaje-error-fecha-nacimiento')).toHaveText(MSG_EDAD_REGISTRO);
+    expect(Number(sql(`SELECT COUNT(*) FROM usuario WHERE email = '${email}';`))).toBe(0);
+  });
+
+  test('cuenta nueva: con 15 años el asistente vuelve al paso 1 con el mensaje de 18 años bajo la fecha y la invitación sigue pendiente', async ({ page, request }) => {
+    const { email, id, codigo } = await invitarConCodigo(request);
+    await page.goto('/invitacion-empleado.html');
+    await continuarConCodigo(page, email, codigo);
+    await completarPaso1Asistente(page, {
+      dni: generarDni(),
+      nombreUsuario: nombreUsuarioUnico('emp'),
+      password: passwordNueva(),
+      fecha: fechaNacimientoRelativa(15),
+    });
+    await page.getByTestId('btn-continuar').click();
+    await completarPaso2Asistente(page);
+
+    const respuesta = page.waitForResponse((res) => res.url().endsWith('/auth/invitaciones-empleado/aceptar') && res.request().method() === 'POST');
+    await page.getByTestId('btn-crear-cuenta').click();
+    expect((await respuesta).status()).toBe(400);
+
+    await expect(page.getByTestId('input-nombre')).toBeVisible();
+    await expect(page.getByTestId('mensaje-error-fecha-nacimiento')).toHaveText(MSG_EDAD_EMPLEADO);
+    await expect(page.getByTestId('mensaje-banner')).toContainText(MSG_REVISAR);
+    await expect(page.getByTestId('mensaje-invitacion-exito')).toBeHidden();
+    expect(estadoInvitacion(id)).toBe('PENDIENTE');
+    expect(Number(sql(`SELECT COUNT(*) FROM usuario WHERE email = '${email}';`))).toBe(0);
+  });
+
   test('con una sesión previa abierta, el botón final la cierra antes de ir al login', async ({ page, request }) => {
     const previo = await registrarYVerificarCliente(request, localidadId);
     const sesionPrevia: SesionApi = await login(request, previo.nombreUsuario, previo.password);
@@ -488,6 +543,7 @@ test.describe('Invitación de empleado (UI), tramo E1 B2', () => {
     const sinCuenta = await invitarConCodigo(request);
 
     await page.goto('/invitacion-empleado.html');
+    await expect(page.getByTestId('btn-continuar-invitacion')).toBeVisible();
     await sinScrollHorizontal(page);
     await continuarConCodigo(page, existente.email, conCuenta.codigo);
     await expect(page.getByTestId('vista-invitacion-existente')).toBeVisible();

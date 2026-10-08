@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -78,6 +79,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 class InvitacionEmpleadoIntegrationTest {
 
     private static final LocalDateTime INICIO = LocalDateTime.of(2026, 10, 6, 12, 0, 0);
+    private static final LocalDate HOY = INICIO.toLocalDate();
     private static final String MENSAJE_NO_SE_PUEDE_INVITAR = "No se puede invitar a este email";
 
     static class RelojDePrueba extends Clock {
@@ -424,6 +426,84 @@ class InvitacionEmpleadoIntegrationTest {
             assertEquals(0, emailsDeRegularizacion(administrador));
             confirmarEmails();
             sinEmailsDeInvitacion();
+        });
+    }
+
+    @Test
+    void unaCuentaExistenteActivaConMenosDeDieciochoAniosNoSeInvitaNiRecibeAvisoYElDuenoVeElMismoMensaje() {
+        enTransaccion(status -> {
+            Dueno dueno = datos.registrarDuenoAprobado();
+            int menor = datos.registrarCliente();
+            datos.cambiarFechaNacimiento(menor, HOY.minusYears(16));
+            int casiMayor = datos.registrarCliente();
+            datos.cambiarFechaNacimiento(casiMayor, HOY.minusYears(18).plusDays(1));
+            sincronizar();
+
+            for (int cuenta : List.of(menor, casiMayor)) {
+                InvitacionNoAptaException error = assertThrows(InvitacionNoAptaException.class,
+                        () -> invitacionService.invitar(activo(dueno), datos.emailDe(cuenta)));
+                assertEquals(MENSAJE_NO_SE_PUEDE_INVITAR, error.getMessage());
+                assertEquals(0, emailsDeRegularizacion(cuenta));
+            }
+
+            assertEquals(0, invitaciones(dueno.comercioId()));
+            assertEquals(0, historial(dueno.comercioId(), "INVITACION"));
+            confirmarEmails();
+            sinEmailsDeInvitacion();
+        });
+    }
+
+    @Test
+    void unaCuentaExistenteQueCumpleDieciochoHoySePuedeInvitar() {
+        enTransaccion(status -> {
+            Dueno dueno = datos.registrarDuenoAprobado();
+            int cuenta = datos.registrarCliente();
+            datos.cambiarFechaNacimiento(cuenta, HOY.minusYears(18));
+            sincronizar();
+
+            InvitacionEmpleadoResponseDTO invitacion = invitacionService.invitar(activo(dueno), datos.emailDe(cuenta));
+
+            assertEquals("PENDIENTE", estadoDe(invitacion.getId()));
+            assertEquals(1, invitaciones(dueno.comercioId()));
+        });
+    }
+
+    @Test
+    void laEdadSeEvaluaDespuesDelEstadoUnMenorBloqueadoRecibeElAvisoDeRegularizacion() {
+        enTransaccion(status -> {
+            Dueno dueno = datos.registrarDuenoAprobado();
+            int cuenta = datos.registrarCliente();
+            datos.cambiarFechaNacimiento(cuenta, HOY.minusYears(16));
+            datos.cambiarEstadoUsuario(cuenta, "BLOQUEADO");
+            sincronizar();
+
+            InvitacionNoAptaException error = assertThrows(InvitacionNoAptaException.class,
+                    () -> invitacionService.invitar(activo(dueno), datos.emailDe(cuenta)));
+
+            assertEquals(MENSAJE_NO_SE_PUEDE_INVITAR, error.getMessage());
+            assertEquals(1, emailsDeRegularizacion(cuenta));
+            assertEquals(0, invitaciones(dueno.comercioId()));
+        });
+    }
+
+    @Test
+    void reenviarRevalidaLaEdadYSiLaCuentaDeclaraMenosDeDieciochoNoCreaNadaNiAvisa() {
+        enTransaccion(status -> {
+            Dueno dueno = datos.registrarDuenoAprobado();
+            int cuenta = datos.registrarCliente();
+            sincronizar();
+            String email = datos.emailDe(cuenta);
+            InvitacionEmpleadoResponseDTO primera = invitacionService.invitar(activo(dueno), email);
+            datos.cambiarFechaNacimiento(cuenta, HOY.minusYears(17));
+            sincronizar();
+
+            InvitacionNoAptaException error = assertThrows(InvitacionNoAptaException.class,
+                    () -> invitacionService.reenviar(activo(dueno), primera.getId()));
+
+            assertEquals(MENSAJE_NO_SE_PUEDE_INVITAR, error.getMessage());
+            assertEquals("PENDIENTE", estadoDe(primera.getId()), "la invitación vigente queda como estaba");
+            assertEquals(1, invitaciones(dueno.comercioId()));
+            assertEquals(0, emailsDeRegularizacion(cuenta));
         });
     }
 

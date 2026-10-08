@@ -21,6 +21,12 @@ Criterios de aceptación adicionales:
 - Si no tengo cuenta, completo los mismos datos que el registro de Cliente (incluida la
   dirección) y acepto los Términos y Condiciones; mi cuenta queda activa sin otro código de
   verificación.
+- Para trabajar en un comercio tengo que tener 18 años o más. Si me registro con una cuenta
+  nueva y declaro entre 14 y 17 años, el sistema me avisa debajo de la fecha de nacimiento
+  ("Tenés que tener 18 años o más para trabajar en un comercio") y no crea nada; con menos de
+  14 rige además el mínimo del registro de Cliente. Si ya tengo cuenta y declaré menos de 18
+  años, el sistema me lo dice ("Tenés que tener 18 años o más para sumarte a un equipo"). La
+  edad es la que declaro: el sistema no la verifica.
 - Si ya tengo cuenta, alcanzan mi email y el código.
 - La invitación vence a los 7 días y el código admite hasta 5 intentos fallidos; si falla,
   le pido al Dueño que la reenvíe.
