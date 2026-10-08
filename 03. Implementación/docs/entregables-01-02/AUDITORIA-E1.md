@@ -251,7 +251,7 @@ Línea de estado: bloque 7 (endpoints) completo.
 |---|---|
 | `js/cliente-form.js` | **Nuevo.** Extracción del asistente de `initRegistroCliente`: campos, validaciones en vivo, foto con recorte, dirección con `initGeografiaSelects`, términos. Mismos ids y `data-testid`. |
 | `js/auth.js` | Quedar con el cableado de `initRegistroCliente` sobre el módulo nuevo; sumar `aceptaTerminos` al payload; `initLogin` sin cambios de lógica. |
-| `invitacion-empleado.html` + `js/invitacion-empleado.js` | **Nuevos.** Asistente de tres pasos (ver abajo). |
+| `invitacion-empleado.html` + `js/invitacion-empleado.js` | **Nuevos.** Pantalla pública con cuatro vistas (código, cuenta existente, cuenta nueva y éxito); la cuenta nueva usa el asistente de dos pasos del registro de Cliente (ver abajo). |
 | `login.html` | Botón "Tengo una invitación" en el pie, junto a "Registrate" y "Reactivar mi cuenta" (`login.html:51-52`). |
 | `registro-tipo-cuenta.html` | La línea "¿Te invitaron a un comercio? Tengo una invitación" (es la pantalla de elección de tipo de cuenta; Q10). |
 | `comercio-perfil.html` + `js/comercio.js` | Enlace "Equipo" en la lista "Mi comercio" y vista `view-equipo` (el mismo patrón de `perfil-view` + `mostrarVista` + `data-volver-perfil` que usan "Editar datos" y "Ver datos legales"). `comercio.js` ya tiene ~2200 líneas: la lógica va en un `js/equipo-comercio.js` nuevo, importado desde ahí. |

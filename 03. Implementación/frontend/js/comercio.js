@@ -17,6 +17,7 @@ import {
 } from './comercio-activo.js';
 import { abrirPanelComercios, enlazarMantenerApretado, prepararPaginaDueno } from './selector-comercio.js';
 import { montarSwitchCierre } from './cierre-comercio.js';
+import { abrirEquipoComercio, enlazarEquipoComercio } from './equipo-comercio.js';
 import { cerrarVariosComercios, comerciosCerrables } from './apertura-comercio.js';
 import {
   subirImagenProducto,
@@ -1545,6 +1546,7 @@ export async function initComercioPerfil() {
 
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarPerfil: false, mostrarCampana: false, centrarLogo: true });
   renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'perfil');
+  document.getElementById('cerrar-sesion-link').addEventListener('click', mostrarModalConfirmarLogout);
   if (!(await prepararPaginaDueno({ slotFranja: document.getElementById('franja-comercio-slot') }))) {
     return;
   }
@@ -1603,7 +1605,11 @@ export async function initComercioPerfil() {
     btn.addEventListener('click', () => mostrarVista('view-principal'));
   });
 
-  document.getElementById('cerrar-sesion-link').addEventListener('click', mostrarModalConfirmarLogout);
+  enlazarEquipoComercio();
+  document.getElementById('ver-equipo-link').addEventListener('click', () => {
+    mostrarVista('view-equipo');
+    abrirEquipoComercio();
+  });
 
   document.getElementById('mercadopago-link').addEventListener('click', () => {
     mostrarVista('view-mercadopago');
@@ -1828,6 +1834,19 @@ export async function initComercioPerfil() {
     } finally {
       setLoading(submitPasswordBtn, '', false, 'Guardar nueva contraseña');
     }
+  });
+
+  [
+    avatarPerfil,
+    document.getElementById('editar-perfil-link'),
+    document.getElementById('ver-legales-link'),
+    document.getElementById('ver-equipo-link'),
+    document.getElementById('mercadopago-link'),
+    document.getElementById('cambiar-password-link'),
+    submitBtn,
+    submitPasswordBtn,
+  ].forEach((boton) => {
+    boton.disabled = false;
   });
 }
 

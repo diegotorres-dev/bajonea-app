@@ -6,7 +6,7 @@ const COMERCIO_ACTIVO_KEY = 'bajonea_comercio_activo';
 const AVISO_INVITACION_KEY = 'bajonea_aviso_invitacion';
 const ULTIMO_COMERCIO_PREFIX = 'bajonea_ultimo_comercio_';
 const HEADER_COMERCIO_ID = 'X-Comercio-Id';
-const RUTAS_DEL_DUENO = /^\/(comercios\/(perfil|redes-sociales|cerrar|abrir)|productos|pedidos\/comercio|notificaciones)(?=[/?]|$)/;
+const RUTAS_DEL_DUENO = /^\/(comercios\/(perfil|redes-sociales|cerrar|abrir|equipo)|productos|pedidos\/comercio|notificaciones)(?=[/?]|$)/;
 const RUTAS_DEL_DUENO_SIN_HEADER = /^\/notificaciones\/comercio\//;
 const REQUEST_TIMEOUT_MS = 15000;
 
