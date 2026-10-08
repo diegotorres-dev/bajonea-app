@@ -23,6 +23,11 @@ async function loginUi(page: Page, usuario: string, password: string) {
   await page.waitForURL('**/index.html');
 }
 
+async function abrirPerfil(page: Page) {
+  await page.goto('/perfil.html');
+  await expect(page.getByTestId('nombre-cliente-perfil')).not.toHaveText('');
+}
+
 async function tokenDeSesionUi(page: Page): Promise<string> {
   const token = await page.evaluate(() => localStorage.getItem('bajonea_token'));
   if (!token) {
@@ -58,7 +63,7 @@ test.describe('Perfil de Cliente: editar datos personales', () => {
   test('nombre/apellido vacío y con formato inválido muestran el error cerca del campo, sin guardar', async ({ page, request }) => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
     await loginUi(page, cliente.nombreUsuario, cliente.password);
-    await page.goto('/perfil.html');
+    await abrirPerfil(page);
     await page.getByTestId('btn-editar-datos').click();
 
     await page.getByTestId('input-nombre').fill('');
@@ -74,7 +79,7 @@ test.describe('Perfil de Cliente: editar datos personales', () => {
   test('el input de nombre no deja escribir más de 100 caracteres (boundary visual del maxlength)', async ({ page, request }) => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
     await loginUi(page, cliente.nombreUsuario, cliente.password);
-    await page.goto('/perfil.html');
+    await abrirPerfil(page);
     await page.getByTestId('btn-editar-datos').click();
 
     const nombreInput = page.getByTestId('input-nombre');
@@ -86,7 +91,7 @@ test.describe('Perfil de Cliente: editar datos personales', () => {
   test('el input de teléfono filtra letras y símbolos en tiempo real, no solo al enviar', async ({ page, request }) => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
     await loginUi(page, cliente.nombreUsuario, cliente.password);
-    await page.goto('/perfil.html');
+    await abrirPerfil(page);
     await page.getByTestId('btn-editar-datos').click();
 
     const telefonoInput = page.getByTestId('input-telefono');
@@ -98,7 +103,7 @@ test.describe('Perfil de Cliente: editar datos personales', () => {
   test('guardar datos válidos actualiza el encabezado del perfil y persiste contra el backend real', async ({ page, request }) => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
     await loginUi(page, cliente.nombreUsuario, cliente.password);
-    await page.goto('/perfil.html');
+    await abrirPerfil(page);
     await page.getByTestId('btn-editar-datos').click();
 
     await page.getByTestId('input-nombre').fill('Renombrada');
@@ -134,7 +139,7 @@ test.describe('Perfil de Cliente: cambiar contraseña', () => {
   test('campos vacíos y contraseña nueva insegura muestran el error cerca del campo correspondiente', async ({ page, request }) => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
     await loginUi(page, cliente.nombreUsuario, cliente.password);
-    await page.goto('/perfil.html');
+    await abrirPerfil(page);
     await page.getByTestId('btn-cambiar-password').click();
 
     await page.getByTestId('btn-guardar-password').click();
@@ -152,7 +157,7 @@ test.describe('Perfil de Cliente: cambiar contraseña', () => {
   test('la fortaleza visual reacciona en vivo y la confirmación que no coincide bloquea el submit', async ({ page, request }) => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
     await loginUi(page, cliente.nombreUsuario, cliente.password);
-    await page.goto('/perfil.html');
+    await abrirPerfil(page);
     await page.getByTestId('btn-cambiar-password').click();
 
     const barrasLlenas = page.locator('[data-testid="indicador-fortaleza-password"] .strength-meter__bar--filled');
@@ -174,7 +179,7 @@ test.describe('Perfil de Cliente: cambiar contraseña', () => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
     const passwordNueva = 'CambiadaOk123';
     await loginUi(page, cliente.nombreUsuario, cliente.password);
-    await page.goto('/perfil.html');
+    await abrirPerfil(page);
     await page.getByTestId('btn-cambiar-password').click();
 
     await page.getByTestId('input-password-actual').fill('ContraseñaEquivocada1');
@@ -224,7 +229,7 @@ test.describe('Perfil de Cliente: foto de perfil', () => {
   }) => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
     await loginUi(page, cliente.nombreUsuario, cliente.password);
-    await page.goto('/perfil.html');
+    await abrirPerfil(page);
 
     let firmaPedida = false;
     page.on('request', (req) => {
@@ -256,8 +261,7 @@ test.describe('Perfil de Cliente: foto de perfil', () => {
   test('subir, editar y eliminar la foto de perfil funcionan de punta a punta contra Cloudinary real', async ({ page, request }) => {
     const cliente = await registrarYVerificarCliente(request, localidadId);
     await loginUi(page, cliente.nombreUsuario, cliente.password);
-    await page.goto('/perfil.html');
-    await expect(page.getByTestId('nombre-cliente-perfil')).not.toHaveText('');
+    await abrirPerfil(page);
 
     await expect(page.getByTestId('modal-foto-perfil')).toHaveCount(0);
 

@@ -4,6 +4,16 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
+## Tramo E1, bloque A5a: mantenimiento de pruebas (2026-10-08)
+
+Alineación del constructor de Newman de comercio con la colección commiteada y estabilización del spec 11 de Playwright. Solo cambian scripts y pruebas; no hay cambios de backend ni de frontend.
+
+**No cambia ningún documento de esta carpeta** (requisitos, historias, diccionario y DFD quedan igual).
+
+**Pruebas:** Newman 1571 requests y 2515 assertions con 0 fallos; spec 11 con 20 repeticiones 200/200; Playwright completo 448/448.
+
+Fuera de esta carpeta, en `docs/`: `DECISIONES.md` (entrada nueva) y `CLAUDE.md` (fila E1). En `testing/playwright/README.md` se actualizan los tests inestables conocidos (salen `11:74` y `11:134`) y se anota el estado de los constructores.
+
 ## Tramo E1, bloque A4: endpoints del equipo del Dueño, validar con 409 y atajos de test (2026-10-06)
 
 Quinto bloque del tramo E1: la capa web del equipo del Dueño (`GET /comercios/equipo`, `POST /comercios/equipo/invitaciones`, `POST .../{id}/reenviar`, `PUT .../{id}/cancelar`), el ajuste de `validar` y los atajos de test del perfil `test`. Es solo backend y pruebas Java; no hay migraciones, specs, requests de Newman ni estreses nuevos (A5) ni pantallas (entrega B). Las carpetas `01.` y `02.` no se editaron.

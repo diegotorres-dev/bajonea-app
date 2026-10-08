@@ -8966,3 +8966,31 @@ El estrés nuevo (`stress-locks-tramoC2.mjs`) encontró dos defectos reales, amb
 3. `validar` ahora toma una lectura compartida del comercio (`LOCK IN SHARE MODE`) igual que `aceptar`, después del bloqueo de la invitación: respeta el orden de bloqueo y no se cruza con nada, pero es un bloqueo de lectura nuevo en un endpoint público limitado a 10 por minuto por IP. Recomendación: dejarlo y medirlo en el estrés de A5.
 
 **Documentación tocada:** `CLAUDE.md` (§1bis, §3, §5bis, §7, §7bis, §9 y la fila E1), `docs/APRENDIZAJES-TECNICOS.md` (cuatro entradas y la sección nueva "Lista de despliegue"), `docs/entregables-01-02/CAMBIOS.md` y `testing/playwright/README.md` (los tests inestables conocidos, con 11:134 y 11:74). Nada cambia en los requisitos, las historias, el diccionario ni los DFD (el comportamiento ya estaba decidido y documentado).
+
+
+## 2026-10-08 — Rol Empleado, tramo E1, bloque A5a: constructor de Newman de comercio alineado y spec 11 de Playwright estabilizado (solo mantenimiento de pruebas)
+
+**Contexto.** Primer paso de A5, antes de escribir las pruebas de E1. Dos tareas de mantenimiento: (1) que `build-matriz-comercio-postman.mjs` reproduzca la colección commiteada, y (2) estabilizar el spec 11 (`11-perfil-cliente`), que había fallado en `11:74` y `11:134`. **No se tocó el backend (código, migraciones, DDL) ni el frontend de producción**, y no hay pruebas nuevas de E1 (A5b).
+
+**1. Constructor de comercio.**
+- Auditoría (solo lectura): se corrió el constructor sobre una copia temporal de la colección y se comparó contra la commiteada. De las 56 carpetas, solo difería la `41` (Rechazo de pedido): el constructor no generaba los dos "Setup - Confirmar pago pedido 1/2" (`PUT /test/pedidos/{id}/pago-aprobado`, ids `matriz-pedido-confirmar-pago-1/2`, sin campo `response`, `header: []`) y marcaba cinco requests de rechazo con el prefijo `[BLOQUEADO: …]` y `pm.test.skip`, algo que la commiteada ya no tiene. Las carpetas `33` a `40` y las otras 47 eran idénticas.
+- Cambio: se eliminó `bloqueadoMp`/`PREFIJO_BLOQUEADO_MP` y se agregó `confirmarPagoItem(n)`, insertado tras cada "Crear pedido". La colección commiteada no se modificó.
+- Verificación: regenerar sobre una copia de la commiteada da un archivo **idéntico byte a byte** (`cmp`); regenerar en la ruta real deja `git diff` vacío; temporales borrados. Newman completo desde base reseteada: **1571 requests, 2515 assertions, 0 fallos**.
+- Con todos los constructores en orden (cliente, comercio, `1`, `2a` … `8a`) sobre una copia temporal, lo único que difiere de la commiteada es la carpeta `22` (ver decisión no prevista 1). Las requests que no salen de ningún constructor son los registros de Cliente editados a mano para agregar `aceptaTerminos` en A0: 2 en la carpeta `02`, 4 en la `09`, 1 en la `42` y 2 en la `47` (documentado en `CLAUDE.md`, sin código nuevo para ellas).
+
+**2. Spec 11.**
+- Causa raíz: en `perfil.html` los botones "Editar datos personales" y "Cambiar contraseña" y el selector de foto están en el HTML estático (visibles y habilitados desde el primer instante), pero `initPerfil()` (`js/cliente.js`) les enlaza los manejadores recién después de `await apiFetch('/clientes/perfil')`. Un clic hecho en esa ventana se pierde sin error: el formulario nunca se abre, y por eso `11:134` no encontraba el formulario de contraseña y `11:74` no veía `input-nombre`. Reproducido de forma determinista con un spec temporal (ya borrado) que demora 2 s la respuesta del perfil: el clic previo no abre ninguno de los dos formularios, y esperando a que `nombre-cliente-perfil` tenga texto sí abre.
+- Corrección (solo test): helper `abrirPerfil(page)` = `goto('/perfil.html')` + esperar `nombre-cliente-perfil` con texto, usado en los 9 sitios del spec. Esa condición es exacta: el texto se escribe en el mismo bloque síncrono que enlaza los manejadores (sin `await` en el medio), así que cuando aparece ya están enlazados. Sin esperas fijas. De paso, el test de "archivo de más de 5 MB o formato no permitido" tenía la misma carrera y su aserción `firmaPedida === false` podía pasar en vacío; ahora es significativa.
+- Resultados: spec 11 con `--repeat-each=20` (200 tests) desde base reseteada: **200/200 en 6,1 min, sin fallos**. Playwright completo desde base reseteada: **448/448 en 13,6 min**. Nota: como el fallo original era raro, 200/200 apoya pero no prueba la estabilidad; la prueba es la reproducción determinista de la causa.
+
+**Decisiones no previstas**
+1. `build-matriz-cliente-postman.mjs` genera las fechas de la carpeta `22` con el día de hoy ("hace 121 años", "hoy mismo"); regenerarlo hoy cambia dos requests respecto de la commiteada (que es del 2026-10-05). No se tocó (fuera de alcance); se documentó en `CLAUDE.md` y en el README de Playwright.
+2. La instrucción pedía frenar si la causa estaba en el frontend. Es una carrera real del frontend (botón activo antes de enlazar el manejador), pero con efecto mínimo (un clic perdido en pocos milisegundos), así que se corrigió solo el test, que es lo que pide el paso 7, y se reporta la carrera aparte.
+
+**Preguntas abiertas (con recomendación)**
+1. ¿Corregir la carrera en `perfil.html`/`js/cliente.js`? Recomendación: sí, en un tramo de pulido de frontend, enlazando los manejadores antes del `fetch` (o dejando los botones `disabled` hasta que cargue); es un cambio de pocas líneas y vuelve innecesaria la espera del test.
+2. El spec `19-nombre-usuario` (líneas 503 y 639) abre `perfil.html` con el mismo patrón. Recomendación: aplicar la misma espera si alguna vez se vuelve inestable; hoy no hay fallos registrados.
+
+**Qué no se hizo.** Pruebas de E1 (A5b), `01:100` y `14:124` (se dejan como inestables), estreses y `mvnw test` (el backend no cambió; `application.properties` figura modificado en el árbol desde antes de este bloque y no se tocó). Proceso del backend de test detenido al terminar: nada escucha en el 8080.
+
+**Documentación tocada:** `CLAUDE.md` (fila E1), `testing/playwright/README.md` y `docs/entregables-01-02/CAMBIOS.md`.

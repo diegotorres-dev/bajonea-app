@@ -134,18 +134,17 @@ function assertCreated201() {
   ];
 }
 
-const PREFIJO_BLOQUEADO_MP = '[BLOQUEADO: requiere un pedido en PENDIENTE_CONFIRMACION_COMERCIO, que solo se alcanza con un pago real aprobado de Mercado Pago] ';
-
-function bloqueadoMp(it) {
-  it.name = PREFIJO_BLOQUEADO_MP + it.name;
-  for (const ev of it.event || []) {
-    ev.script.exec = ev.script.exec.map((linea) => linea.split('pm.test(').join('pm.test.skip('));
-  }
-  return it;
-}
-
 function item(name, request, execLines) {
   return { name, request, response: [], event: [{ listen: 'test', script: { type: 'text/javascript', exec: execLines } }] };
+}
+
+function confirmarPagoItem(n) {
+  return {
+    name: `Setup - Confirmar pago pedido ${n} (atajo de test, perfil test: no ejercita Mercado Pago) (matriz pedido)`,
+    id: `matriz-pedido-confirmar-pago-${n}`,
+    request: { ...req('PUT', `/test/pedidos/{{matriz_pedido_${n}_id}}/pago-aprobado`, undefined), header: [] },
+    event: [{ listen: 'test', script: { type: 'text/javascript', exec: assertStatusOnly(200) } }],
+  };
 }
 
 function registroItem(name, overrides, execLines) {
@@ -538,21 +537,22 @@ const folder41 = {
       'const json = pm.response.json();',
       "pm.environment.set('matriz_pedido_1_id', json.data.id);",
     ]),
+    confirmarPagoItem(1),
 
     item(
       '[mensaje generico de Hibernate Validator, no personalizado como el resto de la app - @NotNull sin message propio] Rechazo pedido - motivo faltante (null)',
       req('PUT', '/pedidos/comercio/{{matriz_pedido_1_id}}/rechazar', { motivo: null, comentario: null }, 'matriz_comercio_pedido_token'),
       assertFieldMessage(400, 'motivo', 'no debe ser nulo'),
     ),
-    bloqueadoMp(item('Rechazo pedido - motivo=OTRO sin comentario (obligatoriedad condicional, debe rechazar)', req('PUT', '/pedidos/comercio/{{matriz_pedido_1_id}}/rechazar', { motivo: 'OTRO', comentario: null }, 'matriz_comercio_pedido_token'), assertTopLevelMessage(400, 'Ingresá un comentario para especificar el motivo del rechazo.'))),
-    bloqueadoMp(item('Rechazo pedido - motivo=OTRO con comentario string vacio (debe rechazar)', req('PUT', '/pedidos/comercio/{{matriz_pedido_1_id}}/rechazar', { motivo: 'OTRO', comentario: '' }, 'matriz_comercio_pedido_token'), assertTopLevelMessage(400, 'Ingresá un comentario para especificar el motivo del rechazo.'))),
-    bloqueadoMp(item(
+    item('Rechazo pedido - motivo=OTRO sin comentario (obligatoriedad condicional, debe rechazar)', req('PUT', '/pedidos/comercio/{{matriz_pedido_1_id}}/rechazar', { motivo: 'OTRO', comentario: null }, 'matriz_comercio_pedido_token'), assertTopLevelMessage(400, 'Ingresá un comentario para especificar el motivo del rechazo.')),
+    item('Rechazo pedido - motivo=OTRO con comentario string vacio (debe rechazar)', req('PUT', '/pedidos/comercio/{{matriz_pedido_1_id}}/rechazar', { motivo: 'OTRO', comentario: '' }, 'matriz_comercio_pedido_token'), assertTopLevelMessage(400, 'Ingresá un comentario para especificar el motivo del rechazo.')),
+    item(
       '[confirma que el backend tambien hace trim, no solo el frontend] Rechazo pedido - motivo=OTRO con comentario solo espacios (debe rechazar)',
       req('PUT', '/pedidos/comercio/{{matriz_pedido_1_id}}/rechazar', { motivo: 'OTRO', comentario: '   ' }, 'matriz_comercio_pedido_token'),
       assertTopLevelMessage(400, 'Ingresá un comentario para especificar el motivo del rechazo.'),
-    )),
+    ),
     item('Rechazo pedido - motivo fuera del enum', req('PUT', '/pedidos/comercio/{{matriz_pedido_1_id}}/rechazar', { motivo: 'INVALIDO', comentario: null }, 'matriz_comercio_pedido_token'), assertTopLevelMessage(400, 'El cuerpo de la solicitud contiene datos con formato inválido')),
-    bloqueadoMp(item('Rechazo pedido - motivo=OTRO con comentario valido (debe aceptar, consume pedido 1)', req('PUT', '/pedidos/comercio/{{matriz_pedido_1_id}}/rechazar', { motivo: 'OTRO', comentario: 'Motivo especifico del rechazo' }, 'matriz_comercio_pedido_token'), assertStatusOnly(200))),
+    item('Rechazo pedido - motivo=OTRO con comentario valido (debe aceptar, consume pedido 1)', req('PUT', '/pedidos/comercio/{{matriz_pedido_1_id}}/rechazar', { motivo: 'OTRO', comentario: 'Motivo especifico del rechazo' }, 'matriz_comercio_pedido_token'), assertStatusOnly(200)),
 
     item('Setup - Agregar item al carrito, pedido 2 (matriz pedido)', req('POST', '/carrito/items', { productoId: '{{matriz_pedido_producto_id}}', cantidad: 1 }, 'matriz_pedido_cliente_token'), assertStatusOnly(201)),
     item('Setup - Crear pedido 2 (matriz pedido)', req('POST', '/pedidos/cliente', { tipoEntrega: 'DOMICILIO', direccionId: '{{matriz_pedido_direccion_id}}' }, 'matriz_pedido_cliente_token'), [
@@ -560,12 +560,13 @@ const folder41 = {
       'const json = pm.response.json();',
       "pm.environment.set('matriz_pedido_2_id', json.data.id);",
     ]),
+    confirmarPagoItem(2),
     item(
       '[mensaje generico de Hibernate Validator, no personalizado como el resto de la app - @Size sin message propio] Rechazo pedido - comentario por encima del limite 501 (debe rechazar)',
       req('PUT', '/pedidos/comercio/{{matriz_pedido_2_id}}/rechazar', { motivo: 'SIN_STOCK', comentario: 'c'.repeat(501) }, 'matriz_comercio_pedido_token'),
       assertFieldMessage(400, 'comentario', 'el tamaño debe estar entre 0 y 500'),
     ),
-    bloqueadoMp(item('Rechazo pedido - motivo != OTRO sin comentario (opcional, debe aceptar, consume pedido 2)', req('PUT', '/pedidos/comercio/{{matriz_pedido_2_id}}/rechazar', { motivo: 'SIN_STOCK', comentario: null }, 'matriz_comercio_pedido_token'), assertStatusOnly(200))),
+    item('Rechazo pedido - motivo != OTRO sin comentario (opcional, debe aceptar, consume pedido 2)', req('PUT', '/pedidos/comercio/{{matriz_pedido_2_id}}/rechazar', { motivo: 'SIN_STOCK', comentario: null }, 'matriz_comercio_pedido_token'), assertStatusOnly(200)),
   ],
 };
 
