@@ -352,6 +352,61 @@ test.describe('Invitaciones de empleado (API), tramo E1', () => {
       }
     });
 
+    test('una invitación superada por otra más nueva del mismo email no se puede reenviar ni cancelar (vencida, con el código bloqueado o pendiente pasada de fecha), y la más reciente sí', async ({ request }) => {
+      async function verificarSuperada(comercioId: number, vieja: number, nueva: number) {
+        const historialAntes = motivosHistorial(comercioId);
+        const estadoViejaAntes = estadoInvitacion(vieja);
+        const estadoNuevaAntes = estadoInvitacion(nueva);
+        const alReenviar = await reenviarInvitacion(request, dueno.token, comercioId, vieja);
+        const alCancelar = await cancelarInvitacion(request, dueno.token, comercioId, vieja);
+
+        expect(alReenviar.status, `reenviar ${vieja}`).toBe(409);
+        expect(alReenviar.body.mensaje).toBe(estadoNuevaAntes === 'PENDIENTE' ? MSG_PENDIENTE : MSG_NO_REENVIABLE);
+        expect(alCancelar.status, `cancelar ${vieja}`).toBe(409);
+        expect(alCancelar.body.mensaje).toBe(MSG_NO_CANCELABLE);
+        expect(estadoInvitacion(vieja)).toBe(estadoViejaAntes);
+        expect(estadoInvitacion(nueva)).toBe(estadoNuevaAntes);
+        expect(motivosHistorial(comercioId)).toEqual(historialAntes);
+      }
+
+      const comercioVencida = await comercioNuevo(request);
+      const vencida = await invitar(request, comercioVencida);
+      await vencerInvitacionTest(request, vencida.id);
+      await ejecutarVencimientoInvitacionesTest(request);
+      const reenviadaVencida = await reenviarInvitacion(request, dueno.token, comercioVencida, vencida.id);
+      expect(reenviadaVencida.status).toBe(200);
+      const masReciente = reenviadaVencida.body.data.id as number;
+      await verificarSuperada(comercioVencida, vencida.id, masReciente);
+
+      const comercioBloqueada = await comercioNuevo(request);
+      const bloqueada = await invitar(request, comercioBloqueada);
+      sql(`UPDATE invitacion_empleado SET estado = 'INVALIDADA', intentos_fallidos = 5 WHERE id = ${bloqueada.id};`);
+      const reenviadaBloqueada = await reenviarInvitacion(request, dueno.token, comercioBloqueada, bloqueada.id);
+      expect(reenviadaBloqueada.status).toBe(200);
+      await verificarSuperada(comercioBloqueada, bloqueada.id, reenviadaBloqueada.body.data.id as number);
+
+      const comercioPasada = await comercioNuevo(request);
+      const pasadaDeFecha = await invitar(request, comercioPasada);
+      sql(`UPDATE invitacion_empleado SET fecha_vencimiento = NOW() - INTERVAL 1 MINUTE WHERE id = ${pasadaDeFecha.id};`);
+      const nuevaDePasada = await invitar(request, comercioPasada, pasadaDeFecha.email);
+      expect(estadoInvitacion(pasadaDeFecha.id)).toBe('VENCIDA');
+      sql(`UPDATE invitacion_empleado SET estado = 'CANCELADA' WHERE id = ${nuevaDePasada.id};`);
+      sql(`UPDATE invitacion_empleado SET estado = 'PENDIENTE' WHERE id = ${pasadaDeFecha.id};`);
+      await verificarSuperada(comercioPasada, pasadaDeFecha.id, nuevaDePasada.id);
+
+      const otraVez = await reenviarInvitacion(request, dueno.token, comercioVencida, masReciente);
+      expect(otraVez.status).toBe(200);
+      expect(estadoInvitacion(masReciente)).toBe('REEMPLAZADA');
+      const ultima = otraVez.body.data.id as number;
+      const cancelada = await cancelarInvitacion(request, dueno.token, comercioVencida, ultima);
+      expect(cancelada.status).toBe(200);
+      expect(estadoInvitacion(ultima)).toBe('CANCELADA');
+      for (const viejaDelPar of [vencida.id, masReciente]) {
+        expect((await reenviarInvitacion(request, dueno.token, comercioVencida, viejaDelPar)).status).toBe(409);
+        expect((await cancelarInvitacion(request, dueno.token, comercioVencida, viejaDelPar)).status).toBe(409);
+      }
+    });
+
     test('reenviar una aceptada, cancelada o reemplazada da 409; una invitación de otro comercio da 404', async ({ request }) => {
       const comercioId = await comercioNuevo(request);
       const cancelada = await invitar(request, comercioId);

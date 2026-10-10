@@ -72260,7 +72260,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test('La nueva está PENDIENTE', () => pm.expect(pm.response.json().data.estado).to.eql('PENDIENTE'));"
+                  "pm.test('La nueva está PENDIENTE', () => pm.expect(pm.response.json().data.estado).to.eql('PENDIENTE'));",
+                  "pm.environment.set('e1_inv_v1_nueva', pm.response.json().data.id);"
                 ]
               }
             }
@@ -72302,6 +72303,258 @@
                   "const lineas = pm.response.json().data.invitaciones.filter((i) => i.email === pm.environment.get('e1_v1_email'));",
                   "pm.test('Una sola línea para v1', () => pm.expect(lineas.length).to.eql(1));",
                   "pm.test('La línea de v1 está PENDIENTE', () => pm.expect(lineas[0].estado).to.eql('PENDIENTE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Superada: reenviar la vencida original con otra pendiente vigente más nueva da 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_b}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones/{{e1_inv_v1}}/reenviar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones",
+                "{{e1_inv_v1}}",
+                "reenviar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"Ya hay una invitación pendiente para ese email. Podés reenviarla.\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Superada: cancelar la vencida original con otra más nueva da 409",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_b}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones/{{e1_inv_v1}}/cancelar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones",
+                "{{e1_inv_v1}}",
+                "cancelar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"Esta invitación ya no se puede cancelar\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Superada: la vencida original no se canceló ni se creó nada, v1 sigue con una sola línea Pendiente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_b}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const lineas = pm.response.json().data.invitaciones.filter((i) => i.email === pm.environment.get('e1_v1_email'));",
+                  "pm.test('Una sola línea para v1', () => pm.expect(lineas.length).to.eql(1));",
+                  "pm.test('Es la más nueva y está PENDIENTE', () => pm.expect(lineas[0].id).to.eql(Number(pm.environment.get('e1_inv_v1_nueva'))));",
+                  "pm.test('Está PENDIENTE', () => pm.expect(lineas[0].estado).to.eql('PENDIENTE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Superada: el Dueño cancela la más nueva de v1",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_b}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones/{{e1_inv_v1_nueva}}/cancelar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones",
+                "{{e1_inv_v1_nueva}}",
+                "cancelar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Figura CANCELADA', () => pm.expect(pm.response.json().data.estado).to.eql('CANCELADA'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Superada: reenviar la vencida original con la más nueva cancelada da 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_b}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones/{{e1_inv_v1}}/reenviar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones",
+                "{{e1_inv_v1}}",
+                "reenviar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"Esta invitación ya no se puede reenviar\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Superada: cancelar la vencida original con la más nueva cancelada da 409",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_b}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones/{{e1_inv_v1}}/cancelar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones",
+                "{{e1_inv_v1}}",
+                "cancelar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"Esta invitación ya no se puede cancelar\"));"
                 ]
               }
             }

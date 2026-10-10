@@ -138,8 +138,11 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   se marca Vencida) y una con el código bloqueado conservan su estado, para no pisar la causa
   original. El Dueño puede reenviar una invitación Pendiente, Vencida o con el código
   bloqueado (una Aceptada, Cancelada o Reemplazada ya no se puede reenviar), y cancelar
-  una invitación pendiente (queda Cancelada, sin borrar nada; una ya resuelta no se puede
-  cancelar). Límites: 5 envíos por hora por comercio (sirve también
+  una invitación pendiente, vencida o con el código bloqueado (queda Cancelada, sin borrar
+  nada; una ya resuelta no se puede cancelar). Solo se puede reenviar o cancelar la invitación
+  más reciente de cada email en el comercio: si ya hay una más nueva (por ejemplo, la que nació
+  al reenviar una vencida), la anterior ya no se reenvía ni se cancela y el sistema responde
+  que no se puede. Límites: 5 envíos por hora por comercio (sirve también
   como tope de reenvíos) y 5 intentos fallidos por código (después se invalida y hay que
   reenviar); no hay tope de empleados por comercio.
 - **Matriz de combinaciones de roles al invitar:** si el email pertenece a un Dueño o a

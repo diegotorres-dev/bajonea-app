@@ -86,7 +86,9 @@ Criterios de aceptación adicionales:
 - Puedo reenviar y cancelar una invitación pendiente, vencida o con el código bloqueado. Al reenviar, solo una
   invitación pendiente todavía vigente queda reemplazada: una invitación vencida o con el código bloqueado
   conserva su estado y sigue explicando por qué la persona no pudo aceptar. Una invitación cancelada, aceptada
-  o reemplazada ya no se puede cancelar.
+  o reemplazada ya no se puede cancelar. Tampoco puedo reenviar ni cancelar una invitación vieja si ya existe
+  una más nueva para el mismo email en ese comercio: la lista solo muestra la más reciente y esa es la única
+  sobre la que se puede actuar.
 - Si invito de nuevo a un email que ya tenía una invitación vencida, la lista muestra una sola línea para ese
   email, con la invitación nueva.
 - Recibo una notificación cuando el invitado acepta.

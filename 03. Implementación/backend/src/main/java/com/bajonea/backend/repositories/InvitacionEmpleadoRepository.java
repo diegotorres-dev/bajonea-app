@@ -44,6 +44,26 @@ public interface InvitacionEmpleadoRepository extends JpaRepository<InvitacionEm
     List<InvitacionEmpleado> findByComercioIdAndEmailAndEstado(Integer comercioId, String email, EstadoInvitacionEmpleado estado);
 
     /**
+     * Vista de solo lectura de la última invitación de un par (comercio, email): alcanza para saber si la que se
+     * quiere reenviar o cancelar sigue siendo la más reciente y, si no, si la más nueva está pendiente y vigente.
+     */
+    interface UltimaInvitacionVista {
+
+        Integer getId();
+
+        EstadoInvitacionEmpleado getEstado();
+
+        LocalDateTime getFechaVencimiento();
+    }
+
+    /**
+     * La invitación de mayor id del par comercio y email, en cualquier estado. Lectura sin bloqueo: se llama con
+     * la fila del Dueño ya bloqueada, y solo invitar y reenviar crean invitaciones del par y ambos arrancan
+     * bloqueando esa fila, así que mientras dura la transacción nadie puede crear una más nueva.
+     */
+    Optional<UltimaInvitacionVista> findFirstByComercioIdAndEmailOrderByIdDesc(Integer comercioId, String email);
+
+    /**
      * La invitación más reciente de cada email del comercio, si está en alguno de los estados indicados: es lo
      * que lista la pestaña Solicitudes de "Ver equipo", una línea por email. Si la última de un email es
      * {@code CANCELADA}, {@code REEMPLAZADA} o {@code ACEPTADA} ese email no aparece en la lista.

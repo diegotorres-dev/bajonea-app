@@ -5,6 +5,22 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
 
+## Tramo E1, bloque A9: reenviar y cancelar solo la invitación más reciente de cada email (2026-10-10)
+
+Ajuste chico de integridad. Hasta A8 la API dejaba reenviar o cancelar por id una invitación vieja aunque ya existiera otra más nueva del mismo email en el mismo comercio (por ejemplo, la 10 quedó vencida, se reenvió y nació la 11; cancelar la 10 la pasaba a Cancelada y escribía un evento de cancelación en el historial con la 11 todavía vigente). La pantalla no lo permitía porque solo lista la más reciente, pero la API sí. Ahora una invitación solo se reenvía o se cancela si es la más reciente (mayor id) de su comercio y email, sea cual sea su estado; si hay una más nueva, el sistema responde 409 y no escribe nada. Mensajes: al reenviar, si la más nueva es una pendiente vigente se conserva "Ya hay una invitación pendiente para ese email. Podés reenviarla."; en cualquier otro caso, "Esta invitación ya no se puede reenviar"; al cancelar, siempre "Esta invitación ya no se puede cancelar". Sin cambios de pantalla ni de base de datos.
+
+**Documentos de esta carpeta que cambiaron** (Diego los copia a mano a `01.` y `02.`):
+- `diccionario-de-datos.md` (`EstadoInvitacionEmpleado.CANCELADA` e `InvitacionEmpleado`): regla de la invitación más reciente y su forma de resolverla sin bloqueos nuevos; se corrigió además una frase vieja que decía que cancelar acepta solo las pendientes. También se actualizó la copia de `docs/diccionario-de-datos.md` (idéntica).
+- `requisitos-funcionales-dueño.md` (Gestión de Empleados): reenviar y cancelar solo sobre la invitación más reciente de cada email.
+- `Historias de Usuario - Dueño.md` (HU-D07 y HU-D08): mismo criterio, desde el punto de vista del Dueño.
+- `alcance-y-limitaciones.md`: la limitación de las invitaciones vencidas suma la misma regla.
+
+**No cambiaron** `requisitos-no-funcionales.md`, los requisitos e historias de Cliente, Empleado y Administrador, los DFD ni los diagramas ER y relacional (sin tablas, columnas ni flujos nuevos).
+
+**Pruebas:** `mvnw test` 495/495; Playwright (specs 35 y 36) 97/97; Newman 1761 requests y 2829 assertions con 0 fallos; estrés de E1 (S1–S13) sin problemas y sin `Deadlock found` ni `Lock wait timeout` (una primera corrida marcó un faltante en S2 que no se repitió en 90 rondas aisladas ni en una corrida completa posterior; en una corrida de los specs 35 y 36 falló una vez el test del proceso de vencimiento, que no toca esta regla, y no se reprodujo en las tres corridas siguientes).
+
+Fuera de esta carpeta: `CLAUDE.md`, `docs/DECISIONES.md`, `postman/Bajonea-MVP.postman_collection.json` y `postman/Bajonea-Local.postman_environment.json` (carpeta 56 regenerada).
+
 ## Tramo E1, bloque A8: vencimiento automático de invitaciones, cancelar ampliado y menú en todas las filas (2026-10-10)
 
 Cuatro cambios tras la prueba manual de A7. **"Vencida" es un estado guardado:** un proceso automático (cada minuto) pasa a `VENCIDA` toda invitación `PENDIENTE` cuyo plazo de 7 días terminó; "Pendiente" pasa a significar "dentro del plazo en que se puede aceptar, reenviar o cancelar". Reemplaza la decisión de A7 (estado calculado al consultar, materialización perezosa). **Cancelar** acepta invitaciones pendientes, vencidas y con el código bloqueado. En **Solicitudes** todas las filas llevan el menú de tres puntos con "Reenviar" y "Cancelar" (se quitó el botón directo "Reenviar" de A7). Y en la hoja de invitar, el texto de promesa del código se oculta mientras se muestra el aviso de rechazo.

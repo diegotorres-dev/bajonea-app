@@ -537,12 +537,40 @@ agregar(
   item('Vencida: el Dueño reenvía la vencida', req('POST', `/comercios/equipo/invitaciones/{{${v('inv_v1')}}}/reenviar`, { token: TOKEN_D1, comercio: COM_B }), [
     status(200),
     "pm.test('La nueva está PENDIENTE', () => pm.expect(pm.response.json().data.estado).to.eql('PENDIENTE'));",
+    guardar(v('inv_v1_nueva'), 'pm.response.json().data.id'),
   ]),
   equipo('Vencida: tras reenviar, la lista tiene una sola línea de v1 y está Pendiente (la vencida conserva su causa y no se lista)', COM_B, [
     status(200),
     `const lineas = pm.response.json().data.invitaciones.filter((i) => i.email === ${entorno(v('v1_email'))});`,
     "pm.test('Una sola línea para v1', () => pm.expect(lineas.length).to.eql(1));",
     "pm.test('La línea de v1 está PENDIENTE', () => pm.expect(lineas[0].estado).to.eql('PENDIENTE'));",
+  ]),
+  item('Superada: reenviar la vencida original con otra pendiente vigente más nueva da 409', req('POST', `/comercios/equipo/invitaciones/{{${v('inv_v1')}}}/reenviar`, { token: TOKEN_D1, comercio: COM_B }), [
+    status(409),
+    mensajeEs('Ya hay una invitación pendiente para ese email. Podés reenviarla.'),
+  ]),
+  item('Superada: cancelar la vencida original con otra más nueva da 409', req('PUT', `/comercios/equipo/invitaciones/{{${v('inv_v1')}}}/cancelar`, { token: TOKEN_D1, comercio: COM_B }), [
+    status(409),
+    mensajeEs('Esta invitación ya no se puede cancelar'),
+  ]),
+  equipo('Superada: la vencida original no se canceló ni se creó nada, v1 sigue con una sola línea Pendiente', COM_B, [
+    status(200),
+    `const lineas = pm.response.json().data.invitaciones.filter((i) => i.email === ${entorno(v('v1_email'))});`,
+    "pm.test('Una sola línea para v1', () => pm.expect(lineas.length).to.eql(1));",
+    `pm.test('Es la más nueva y está PENDIENTE', () => pm.expect(lineas[0].id).to.eql(Number(${entorno(v('inv_v1_nueva'))})));`,
+    "pm.test('Está PENDIENTE', () => pm.expect(lineas[0].estado).to.eql('PENDIENTE'));",
+  ]),
+  item('Superada: el Dueño cancela la más nueva de v1', req('PUT', `/comercios/equipo/invitaciones/{{${v('inv_v1_nueva')}}}/cancelar`, { token: TOKEN_D1, comercio: COM_B }), [
+    status(200),
+    "pm.test('Figura CANCELADA', () => pm.expect(pm.response.json().data.estado).to.eql('CANCELADA'));",
+  ]),
+  item('Superada: reenviar la vencida original con la más nueva cancelada da 409', req('POST', `/comercios/equipo/invitaciones/{{${v('inv_v1')}}}/reenviar`, { token: TOKEN_D1, comercio: COM_B }), [
+    status(409),
+    mensajeEs('Esta invitación ya no se puede reenviar'),
+  ]),
+  item('Superada: cancelar la vencida original con la más nueva cancelada da 409', req('PUT', `/comercios/equipo/invitaciones/{{${v('inv_v1')}}}/cancelar`, { token: TOKEN_D1, comercio: COM_B }), [
+    status(409),
+    mensajeEs('Esta invitación ya no se puede cancelar'),
   ]),
 );
 

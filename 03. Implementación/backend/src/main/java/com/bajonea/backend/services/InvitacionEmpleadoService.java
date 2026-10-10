@@ -37,6 +37,7 @@ import com.bajonea.backend.repositories.EmpleadoInsercionRepository;
 import com.bajonea.backend.repositories.HistorialEmpleadoComercioRepository;
 import com.bajonea.backend.repositories.InvitacionEmpleadoRepository;
 import com.bajonea.backend.repositories.InvitacionEmpleadoRepository.InvitacionPendienteVista;
+import com.bajonea.backend.repositories.InvitacionEmpleadoRepository.UltimaInvitacionVista;
 import com.bajonea.backend.repositories.InvitacionInsercionRepository;
 import com.bajonea.backend.repositories.PersonaFisicaRepository;
 import com.bajonea.backend.repositories.UsuarioRepository;
@@ -190,6 +191,12 @@ public class InvitacionEmpleadoService {
         if (!ESTADOS_REENVIABLES.contains(anterior.getEstado())) {
             throw new ConflictoDeNegocioException(MENSAJE_NO_REENVIABLE);
         }
+        UltimaInvitacionVista masNueva = masNuevaDelPar(anterior, comercio.getId());
+        if (masNueva != null) {
+            boolean pendienteVigente = masNueva.getEstado() == EstadoInvitacionEmpleado.PENDIENTE
+                    && masNueva.getFechaVencimiento().isAfter(ahora);
+            throw new ConflictoDeNegocioException(pendienteVigente ? MENSAJE_PENDIENTE_EXISTENTE : MENSAJE_NO_REENVIABLE);
+        }
         String email = anterior.getEmail();
         validarDestinatario(comercio, email);
         List<InvitacionEmpleado> pendientes = invitacionRepository.findByComercioIdAndEmailAndEstadoConBloqueo(
@@ -207,6 +214,9 @@ public class InvitacionEmpleadoService {
         InvitacionEmpleado invitacion = invitacionRepository.findByIdAndComercioIdConBloqueo(invitacionId, activo.comercioId())
                 .orElseThrow(() -> new RecursoNoEncontradoException(MENSAJE_NO_ENCONTRADA));
         if (!ESTADOS_CANCELABLES.contains(invitacion.getEstado())) {
+            throw new ConflictoDeNegocioException(MENSAJE_NO_CANCELABLE);
+        }
+        if (masNuevaDelPar(invitacion, activo.comercioId()) != null) {
             throw new ConflictoDeNegocioException(MENSAJE_NO_CANCELABLE);
         }
         LocalDateTime ahora = LocalDateTime.now(clock);
@@ -553,6 +563,19 @@ public class InvitacionEmpleadoService {
         if (!tieneEdadParaEquipo(existente.getId())) {
             throw new InvitacionNoAptaException(MENSAJE_NO_SE_PUEDE_INVITAR);
         }
+    }
+
+    /**
+     * Solo la invitación más reciente (mayor id) del par comercio y email se puede reenviar o cancelar, sea cual
+     * sea su estado: una más vieja ya quedó superada por otra y tocarla dejaría el historial inconsistente.
+     * Devuelve la más nueva si existe, o {@code null}. Se llama con la fila del Dueño ya bloqueada y la
+     * invitación bloqueada por clave primaria, sin tomar ningún bloqueo nuevo (ver
+     * {@link InvitacionEmpleadoRepository#findFirstByComercioIdAndEmailOrderByIdDesc}).
+     */
+    private UltimaInvitacionVista masNuevaDelPar(InvitacionEmpleado invitacion, Integer comercioId) {
+        return invitacionRepository.findFirstByComercioIdAndEmailOrderByIdDesc(comercioId, invitacion.getEmail())
+                .filter(ultima -> ultima.getId() > invitacion.getId())
+                .orElse(null);
     }
 
     private void validarSinPendienteVigente(List<InvitacionEmpleado> pendientes, Integer excluirId, LocalDateTime ahora) {
