@@ -5123,9 +5123,45 @@ button.panel-comercios__fila:focus-visible {
   padding-top: 8px;
 }
 
+.equipo-tabs {
+  margin: 4px 0 8px;
+}
+
+.equipo-tabs .segmented-control__btn {
+  min-width: 0;
+  padding: 0 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .equipo-filas {
   display: flex;
   flex-direction: column;
+}
+
+.equipo-rechazo {
+  margin-top: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-text);
+}
+
+.equipo-rechazo__titulo {
+  font-weight: 700;
+  color: var(--color-error);
+}
+
+.equipo-rechazo__cuerpo {
+  margin-top: 2px;
+  color: var(--color-text-muted);
+}
+
+.equipo-aviso__cuerpo {
+  margin-bottom: 20px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1.45;
 }
 
 .equipo-fila {

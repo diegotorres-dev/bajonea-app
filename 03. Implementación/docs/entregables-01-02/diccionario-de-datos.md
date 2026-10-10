@@ -204,21 +204,21 @@ Estado de la relación entre un Empleado y un Comercio puntual (tabla `EmpleadoC
 | `ACTIVO` | El empleado opera este comercio. La fila nace en este estado cuando se acepta la invitación, o vuelve a él cuando se reactiva. |
 | `INACTIVO` | La relación terminó: el Dueno lo dio de baja (`BAJA_DUENO`) o el empleado renunció (`RENUNCIA`); el motivo vive en `HistorialEmpleadoComercio`. No afecta las relaciones del empleado con otros comercios. |
 
-> Los estados "Pendiente" (invitación vigente) y "Vencida" (invitación pendiente con más de 7 días) que ve el Dueno en pantalla no son estados de esta tabla: salen de `InvitacionEmpleado`, y "Vencida" se calcula al consultar, sin job.
+> Los estados "Pendiente" (invitación vigente) y "Vencida" (invitación cuyo plazo de 7 días terminó) que ve el Dueno en pantalla no son estados de esta tabla: salen de `InvitacionEmpleado`, y "Vencida" es un estado guardado en la base que un proceso automático asigna cada minuto.
 
 ---
 
 ### ENUM: EstadoInvitacionEmpleado
 
-*Implementado (migración `V30`, tramo E1).* Estado de una fila de `InvitacionEmpleado`. Hoy el código solo produce `PENDIENTE`, `CANCELADA`, `REEMPLAZADA` y `VENCIDA`; `ACEPTADA` e `INVALIDADA` los escribe el bloque A3 (validar y aceptar).
+*Implementado (migración `V30`, tramo E1).* Estado de una fila de `InvitacionEmpleado`. El código produce los seis valores: `PENDIENTE`, `CANCELADA` y `REEMPLAZADA` (invitar, reenviar y cancelar), `VENCIDA` (el proceso automático de vencimiento y, como red de seguridad, invitar y reenviar) y `ACEPTADA` e `INVALIDADA` (validar y aceptar).
 
 | Valor | Descripción |
 |-------|-------------|
-| `PENDIENTE` | Invitación vigente, a la espera de ser aceptada. Pasados los 7 días se muestra como "Vencida" aunque la fila no haya cambiado todavía. |
+| `PENDIENTE` | Invitación dentro del plazo en que se puede aceptar, reenviar o cancelar. Al cumplirse la `fecha_vencimiento` (7 días) un proceso automático la pasa a `VENCIDA` (corre cada minuto); en el intervalo entre el vencimiento y esa corrida el listado ya la informa como "Vencida". |
 | `ACEPTADA` | El invitado la aceptó con su email y el código. |
-| `CANCELADA` | El Dueno la canceló antes de que fuera aceptada. |
-| `REEMPLAZADA` | El Dueno reenvió la invitación: la fila anterior queda reemplazada por una nueva. |
-| `VENCIDA` | Pasaron los 7 días sin aceptarse; se marca de forma perezosa (al invitar o reenviar al mismo email, para liberar el único pendiente por comercio y email), no por un job. |
+| `CANCELADA` | El Dueno la canceló. Se puede cancelar una invitación `PENDIENTE`, `VENCIDA` o `INVALIDADA`; una `ACEPTADA`, `CANCELADA` o `REEMPLAZADA` ya no se puede cancelar. |
+| `REEMPLAZADA` | El Dueno reenvió una invitación `PENDIENTE` todavía vigente: la fila anterior queda reemplazada por una nueva. No pisa otras causas: una invitación `INVALIDADA` o `VENCIDA` que se reenvía conserva su estado. |
+| `VENCIDA` | Pasaron los 7 días sin aceptarse. Es un estado guardado: un proceso automático (cada minuto) pasa a `VENCIDA` toda invitación `PENDIENTE` cuya `fecha_vencimiento` ya pasó, con una sola actualización por lote, `fecha_resolucion` igual a la `fecha_vencimiento` y sin escribir historial ni avisar. Como red de seguridad, si el proceso se atrasa, el listado informa como "Vencida" a una `PENDIENTE` con la fecha cumplida y invitar o reenviar al mismo email la pasan a `VENCIDA` para liberar el único pendiente por comercio y email. |
 | `INVALIDADA` | El código acumuló 5 intentos fallidos; hay que reenviar la invitación. |
 
 ---
@@ -997,7 +997,7 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 
 > **Implementada — migración `V30`, tramo E1 (bloques A1 y A2, 2026-10-06).** Entidad `InvitacionEmpleado`, repositorios `InvitacionEmpleadoRepository` e `InvitacionInsercionRepository` (inserción por JDBC con reintento ante colisión de código, mismo patrón que `TokenInsercionRepository`) y servicio `InvitacionEmpleadoService`. Sin endpoints todavía.
 
-**Descripción:** Una fila por cada **envío** de una invitación para operar un comercio como Empleado. Vive en una estructura propia y no en `Token` porque el invitado puede no tener cuenta (`Token.usuario_id` es obligatorio) y porque cada envío necesita su propio ciclo de vida. Reenviar crea una fila nueva y deja la anterior en `REEMPLAZADA`. El invitado se identifica con su email y el código de 6 dígitos que llegó en el texto del email.
+**Descripción:** Una fila por cada **envío** de una invitación para operar un comercio como Empleado. Vive en una estructura propia y no en `Token` porque el invitado puede no tener cuenta (`Token.usuario_id` es obligatorio) y porque cada envío necesita su propio ciclo de vida. Reenviar crea una fila nueva y deja la anterior en `REEMPLAZADA` solo si era una `PENDIENTE` vigente. El invitado se identifica con su email y el código de 6 dígitos que llegó en el texto del email.
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
@@ -1021,8 +1021,8 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 - Tope de 5 envíos por hora por comercio: se cuenta `COUNT(*)` de las filas con `comercio_id = ?` y `fecha_creacion` dentro de la última hora, cada envío o reenvío es una fila. Para que el tope sea exacto se serializa por el Dueno que invita.
 - Solo se crea con el comercio `APROBADO` o `APTO_VENTA`. Si el email pertenece a un Dueno o a un Administrador, o a una cuenta bloqueada, suspendida, inactiva o sin verificar, no se crea la invitación (ver T35 y la regla de combinaciones, sección 12).
 - Aceptar identifica por email y código leyendo las invitaciones `PENDIENTE` del email con bloqueo; una aceptación simultánea con una cancelación o un reenvío deja un solo ganador y las demás reciben el mismo error genérico. La matriz de roles se revalida al aceptar.
-- "Vencida" se calcula al consultar (`PENDIENTE` con `fecha_vencimiento` pasada); la fila se marca `VENCIDA` de forma perezosa al invitar o reenviar al mismo email, sin job. El historial registra hoy el envío (`INVITACION`) y la cancelación (`INVITACION_CANCELADA`).
-- Hoy, al invitar o reenviar, el servicio toma primero la fila de `usuario` del Dueno en modo exclusivo (serializa el tope de 5 por hora y toda la secuencia comprobar-y-escribir), después las invitaciones del par comercio y email y, al final, lee el estado del comercio con bloqueo compartido; al cancelar toma la fila del Dueno en modo compartido y después la invitación. Reenviar acepta invitaciones `PENDIENTE` (vigentes o vencidas), `VENCIDA` e `INVALIDADA` y las deja `REEMPLAZADA`; cancelar acepta solo las guardadas como `PENDIENTE`.
+- "Vencida" es un estado guardado: un proceso automático (cada minuto) pasa a `VENCIDA` las `PENDIENTE` con `fecha_vencimiento` pasada (red de seguridad si se atrasa: el listado la informa como vencida e invitar o reenviar al mismo email la pasan a `VENCIDA`). Cancelar acepta `PENDIENTE`, `VENCIDA` e `INVALIDADA`. El listado de solicitudes de "Ver equipo" devuelve una línea por email, la de su invitación más reciente, si está `PENDIENTE`, `VENCIDA` o `INVALIDADA`; una `ACEPTADA` pasa a "Mi equipo" y las `CANCELADA` y `REEMPLAZADA` no se muestran. El historial registra hoy el envío (`INVITACION`) y la cancelación (`INVITACION_CANCELADA`).
+- Hoy, al invitar o reenviar, el servicio toma primero la fila de `usuario` del Dueno en modo exclusivo (serializa el tope de 5 por hora y toda la secuencia comprobar-y-escribir), después las invitaciones del par comercio y email y, al final, lee el estado del comercio con bloqueo compartido; al cancelar toma la fila del Dueno en modo compartido y después la invitación. Reenviar acepta invitaciones `PENDIENTE` (vigentes o vencidas), `VENCIDA` e `INVALIDADA`: deja `REEMPLAZADA` solo a la `PENDIENTE` todavía vigente, marca `VENCIDA` a una `PENDIENTE` pasada de fecha y no toca a las `VENCIDA` ni a las `INVALIDADA`; cancelar acepta solo las guardadas como `PENDIENTE`.
 - La invitación solo se crea si el email no pertenece a un Dueno o Administrador, no es ya miembro `ACTIVO` del comercio y la cuenta (si existe) está `ACTIVO`. En los casos de rechazo por rol o por cuenta no activa el Dueno recibe siempre el mismo `409` genérico, y las filas de regularización se escriben aunque haya `409` (`noRollbackFor` de la excepción específica, no de clase).
 - Orden de bloqueo del tramo: `usuario` (en `id` ascendente si son dos) → `invitacion_empleado` → `empleado_comercio` → `comercio` (compartido).
 

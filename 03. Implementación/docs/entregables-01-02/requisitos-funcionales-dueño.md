@@ -133,17 +133,26 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   6 dígitos, vencimiento a 7 días, y se envía por email con el código en el texto y un
   enlace genérico a la pantalla de invitación. El invitado se identifica con email y
   código (ver Requisitos Funcionales — Empleado, sección Invitación y Alta).
-- Cada envío es una fila: reenviar crea una invitación nueva y la anterior queda
-  Reemplazada. El Dueño puede reenviar una invitación Pendiente, Vencida o con el código
+- Cada envío es una fila: reenviar crea una invitación nueva. La anterior queda Reemplazada
+  solo si era una Pendiente todavía vigente; una Vencida (o una Pendiente pasada de fecha, que
+  se marca Vencida) y una con el código bloqueado conservan su estado, para no pisar la causa
+  original. El Dueño puede reenviar una invitación Pendiente, Vencida o con el código
   bloqueado (una Aceptada, Cancelada o Reemplazada ya no se puede reenviar), y cancelar
   una invitación pendiente (queda Cancelada, sin borrar nada; una ya resuelta no se puede
   cancelar). Límites: 5 envíos por hora por comercio (sirve también
   como tope de reenvíos) y 5 intentos fallidos por código (después se invalida y hay que
   reenviar); no hay tope de empleados por comercio.
 - **Matriz de combinaciones de roles al invitar:** si el email pertenece a un Dueño o a
-  un Administrador, no se crea la invitación y el Dueño ve el mensaje genérico "No se
-  puede invitar a este email" (no revela el tipo de cuenta). La matriz se vuelve a
+  un Administrador, no se crea la invitación y el servidor responde 409 con el mensaje genérico
+  "No se puede invitar a este email" (no revela el tipo de cuenta). La matriz se vuelve a
   validar al aceptar.
+- **Aviso único de rechazo:** en pantalla, todas las causas de rechazo (Dueño, Administrador, cuenta
+  no apta, menor de 18) muestran el mismo aviso fijo debajo del campo del email, que no se cierra solo:
+  "No pudimos invitar a este email. Por privacidad no podemos contarte el motivo. Podés pedirle a esta
+  persona que revise su correo y volver a intentar más tarde." El aviso no afirma que se haya enviado un
+  email. El botón de invitar queda deshabilitado para ese email mientras la hoja siga abierta y se
+  habilita si el email cambia o se reabre la hoja. Al reenviar se muestra el mismo aviso en una hoja
+  con el botón "Entendido". El servidor mantiene el 409 genérico, sin discriminar la causa.
 - **Edad mínima:** si el email pertenece a una cuenta activa cuya fecha de nacimiento declarada da
   menos de 18 años, tampoco se crea la invitación y el Dueño ve el mismo mensaje genérico, sin
   enviar email de regularización. La regla se evalúa después de la matriz de roles y del estado
@@ -156,12 +165,20 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   El email de regularización nombra solo al comercio que invita, nunca al Dueño.
   Máximo 3 emails de regularización por día por destinatario, contados sobre la tabla de
   notificaciones con canal Email. No se envía a Dueños ni a Administradores.
-- El Dueño debe poder ver el equipo de cada comercio: sus empleados con el estado de la
-  relación (Activo, Inactivo) y las invitaciones con su estado (Pendiente, Vencida; una
-  invitación que pasó los 7 días se calcula como vencida al consultar, sin un proceso
-  automático). Una invitación invalidada por cinco intentos fallidos se muestra como
-  "Código bloqueado", con el botón "Reenviar". En el tramo E1 esta vista ("Ver equipo")
-  no tiene pestaña Actividad: la tabla de actividad (`V32`) se aplica en el tramo E3.
+- El Dueño debe poder ver el equipo de cada comercio en dos pestañas con su contador:
+  "Mi equipo · N" (los integrantes con la relación Activa; los inactivos quedan para el
+  tramo E4) y "Solicitudes · N" (las invitaciones, una línea por email con la más reciente:
+  Pendiente con "vence en N días", Vencida con "Vencida hace N días" y "Código bloqueado";
+  todas las líneas llevan un menú de tres puntos con "Reenviar" y "Cancelar"; las aceptadas
+  pasan a "Mi equipo" y las canceladas y reemplazadas no se muestran). Una invitación
+  Pendiente es la que está dentro del plazo en que se puede aceptar, reenviar o cancelar: al
+  cumplirse los 7 días el sistema la pasa a Vencida con un proceso automático que corre cada
+  minuto (Vencida es un estado guardado en la base). Se puede reenviar y cancelar una
+  invitación Pendiente, Vencida o con el código bloqueado; una aceptada, cancelada o
+  reemplazada ya no. Una invitación invalidada por cinco intentos fallidos se muestra como
+  "Código bloqueado". En el tramo E1 esta vista
+  ("Ver equipo") no tiene pestaña Actividad (la barra de pestañas está pensada para sumarla):
+  la tabla de actividad (`V32`) se aplica en el tramo E3.
 - El Dueño debe poder desactivar la relación de un Empleado con un comercio puntual en
   cualquier momento (queda Inactiva con motivo `BAJA_DUENO`), sin afectar las relaciones
   de ese Empleado con otros comercios, propios o de otros Dueños. El Empleado desactivado

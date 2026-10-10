@@ -67955,6 +67955,62 @@
           ]
         },
         {
+          "name": "Clonar el comercio de d1 como APROBADO (V)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{e1_com_d1}}/clonar?nombre=Equipo-E1-Postman-V&estado=APROBADO",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{e1_com_d1}}",
+                "clonar"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "Equipo-E1-Postman-V"
+                },
+                {
+                  "key": "estado",
+                  "value": "APROBADO"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('e1_com_v', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Registro Cliente x",
           "request": {
             "method": "POST",
@@ -71760,6 +71816,47 @@
           ]
         },
         {
+          "name": "Código bloqueado: tras reenviar, la lista tiene una sola línea de m1 y está Pendiente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_b}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const lineas = pm.response.json().data.invitaciones.filter((i) => i.email === pm.environment.get('e1_m1_email'));",
+                  "pm.test('Una sola línea para m1', () => pm.expect(lineas.length).to.eql(1));",
+                  "pm.test('La línea de m1 está PENDIENTE', () => pm.expect(lineas[0].estado).to.eql('PENDIENTE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Atajo de test: código nuevo de m1 en B",
           "request": {
             "method": "GET",
@@ -71999,6 +72096,51 @@
           ]
         },
         {
+          "name": "Atajo de test: ejecutar el proceso de vencimiento (pasa v1 a VENCIDA en la base)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/jobs/vencimiento-invitaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "jobs",
+                "vencimiento-invitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('El proceso venció al menos una', () => pm.expect(pm.response.json().data).to.be.at.least(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Vencida: la invitación de v1 figura VENCIDA",
           "request": {
             "method": "GET",
@@ -72077,6 +72219,827 @@
                 "exec": [
                   "pm.test('Status code es 401', () => pm.response.to.have.status(401));",
                   "pm.test('El mensaje es idéntico al de cualquier otro fallo de resolución', () => pm.expect(pm.response.json().mensaje).to.eql(pm.environment.get('e1_msg_401')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vencida: el Dueño reenvía la vencida",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_b}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones/{{e1_inv_v1}}/reenviar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones",
+                "{{e1_inv_v1}}",
+                "reenviar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('La nueva está PENDIENTE', () => pm.expect(pm.response.json().data.estado).to.eql('PENDIENTE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vencida: tras reenviar, la lista tiene una sola línea de v1 y está Pendiente (la vencida conserva su causa y no se lista)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_b}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const lineas = pm.response.json().data.invitaciones.filter((i) => i.email === pm.environment.get('e1_v1_email'));",
+                  "pm.test('Una sola línea para v1', () => pm.expect(lineas.length).to.eql(1));",
+                  "pm.test('La línea de v1 está PENDIENTE', () => pm.expect(lineas[0].estado).to.eql('PENDIENTE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar vencida: invitar a w1 en V",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_v}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_w1_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('e1_w1_email', 'e1.w1.' + s + '@bajonea.test');",
+                  "pm.environment.set('e1_w1_usuario', ('e1w1' + s).slice(0, 20));",
+                  "pm.environment.set('e1_w1_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('e1_w1_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('e1_inv_w1', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: vencer la invitación de w1",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/invitaciones-empleado/{{e1_inv_w1}}/vencer",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "invitaciones-empleado",
+                "{{e1_inv_w1}}",
+                "vencer"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: ejecutar el proceso de vencimiento (pasa w1 a VENCIDA en la base)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/jobs/vencimiento-invitaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "jobs",
+                "vencimiento-invitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('El proceso venció al menos una', () => pm.expect(pm.response.json().data).to.be.at.least(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar vencida: la invitación de w1 figura VENCIDA",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_v}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('w1 figura VENCIDA', () => pm.expect((pm.response.json().data.invitaciones.find((i) => i.id === Number(pm.environment.get('e1_inv_w1'))) || {}).estado).to.eql('VENCIDA'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar vencida: el Dueño cancela la vencida",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_v}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones/{{e1_inv_w1}}/cancelar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones",
+                "{{e1_inv_w1}}",
+                "cancelar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"Invitación cancelada\"));",
+                  "pm.test('Figura CANCELADA', () => pm.expect(pm.response.json().data.estado).to.eql('CANCELADA'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar vencida: repetirlo da 409",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_v}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones/{{e1_inv_w1}}/cancelar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones",
+                "{{e1_inv_w1}}",
+                "cancelar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"Esta invitación ya no se puede cancelar\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar vencida: la cancelada ya no figura en el equipo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_v}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('w1 no figura', () => pm.expect((pm.response.json().data.invitaciones.find((i) => i.id === Number(pm.environment.get('e1_inv_w1'))) || {}).estado).to.eql(undefined));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar bloqueada: invitar a w2 en V",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_v}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_w2_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('e1_w2_email', 'e1.w2.' + s + '@bajonea.test');",
+                  "pm.environment.set('e1_w2_usuario', ('e1w2' + s).slice(0, 20));",
+                  "pm.environment.set('e1_w2_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('e1_w2_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('e1_inv_w2', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: código de w2 en V",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/invitaciones-empleado/codigo?email={{e1_w2_email}}&comercioId={{e1_com_v}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "invitaciones-empleado",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{e1_w2_email}}"
+                },
+                {
+                  "key": "comercioId",
+                  "value": "{{e1_com_v}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('El código tiene 6 dígitos', () => pm.expect(pm.response.json().data).to.match(/^\\d{6}$/));",
+                  "pm.environment.set('e1_w2_codigo_1', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar bloqueada: código incorrecto 1/5 da 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/validar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "validar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_w2_email}}\",\n  \"codigo\": \"{{e1_w2_codigo_malo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('e1_w2_codigo_malo', pm.environment.get('e1_w2_codigo_1') === '000000' ? '111111' : '000000');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar bloqueada: código incorrecto 2/5 da 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/validar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "validar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_w2_email}}\",\n  \"codigo\": \"{{e1_w2_codigo_malo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar bloqueada: código incorrecto 3/5 da 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/validar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "validar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_w2_email}}\",\n  \"codigo\": \"{{e1_w2_codigo_malo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar bloqueada: código incorrecto 4/5 da 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/validar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "validar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_w2_email}}\",\n  \"codigo\": \"{{e1_w2_codigo_malo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar bloqueada: código incorrecto 5/5 da 401",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/validar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "validar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e1_w2_email}}\",\n  \"codigo\": \"{{e1_w2_codigo_malo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar bloqueada: la invitación de w2 figura INVALIDADA",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_v}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('w2 figura INVALIDADA', () => pm.expect((pm.response.json().data.invitaciones.find((i) => i.id === Number(pm.environment.get('e1_inv_w2'))) || {}).estado).to.eql('INVALIDADA'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar bloqueada: el Dueño cancela la de código bloqueado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e1_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e1_com_v}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones/{{e1_inv_w2}}/cancelar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones",
+                "{{e1_inv_w2}}",
+                "cancelar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"Invitación cancelada\"));",
+                  "pm.test('Figura CANCELADA', () => pm.expect(pm.response.json().data.estado).to.eql('CANCELADA'));"
                 ]
               }
             }
@@ -73366,7 +74329,7 @@
           ]
         },
         {
-          "name": "Edad mínima: cuenta nueva por invitación con 13 años da 400 con el mensaje de 14 y prefijo",
+          "name": "Edad mínima: cuenta nueva por invitación con 13 años da 400 con el mensaje de 18 (nunca el de 14) y prefijo",
           "request": {
             "method": "POST",
             "header": [
@@ -73417,7 +74380,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
-                  "pm.test('Error en cuentaNueva.fechaNacimiento', () => pm.expect(pm.response.json().data[\"cuentaNueva.fechaNacimiento\"]).to.eql(\"Tenés que tener al menos 14 años para registrarte\"));"
+                  "pm.test('Error en cuentaNueva.fechaNacimiento', () => pm.expect(pm.response.json().data[\"cuentaNueva.fechaNacimiento\"]).to.eql(\"Tenés que tener 18 años o más para trabajar en un comercio\"));",
+                  "pm.test('El mensaje de 14 años no aparece', () => pm.expect(pm.response.text()).to.not.include('al menos 14 años'));"
                 ]
               }
             }

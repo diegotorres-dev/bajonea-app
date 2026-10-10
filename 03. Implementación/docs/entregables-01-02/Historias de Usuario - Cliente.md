@@ -4,7 +4,7 @@
 
 Como cliente, quiero registrarme en la plataforma eligiendo un nombre de usuario y mi
 contraseña, e ingresando mis datos personales y una dirección de entrega inicial, para poder realizar pedidos en los comercios
-disponibles con una dirección principal ya configurada desde el comienzo. Para crear la cuenta tengo que aceptar los Términos y Condiciones; el sistema no me deja registrarme sin aceptarlos. También tengo que tener 14 años o más (los cumplo ese mismo día y ya alcanza); si no, el sistema me avisa debajo de la fecha de nacimiento y no crea la cuenta. La edad es la que declaro: el sistema no la verifica.
+disponibles con una dirección principal ya configurada desde el comienzo. Para crear la cuenta tengo que aceptar los Términos y Condiciones; el sistema no me deja registrarme sin aceptarlos. También tengo que tener 14 años o más (los cumplo ese mismo día y ya alcanza); si no, el sistema me avisa debajo de la fecha de nacimiento apenas la completo ("Tenés que tener al menos 14 años para poder registrarme.") y no me deja seguir ni crea la cuenta. La edad es la que declaro: el sistema no la verifica.
 
 ## HU-C02: Verificar mi Cuenta
 

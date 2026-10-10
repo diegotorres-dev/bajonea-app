@@ -11,6 +11,7 @@ import {
   clonarComercioTest,
   cuentaNuevaInvitacion,
   diaDeHoy,
+  ejecutarVencimientoInvitacionesTest,
   equipoComercio,
   fechaNacimientoRelativa,
   fijarPasswordAdminYLoguear,
@@ -302,6 +303,55 @@ test.describe('Invitaciones de empleado (API), tramo E1', () => {
       expect(nuevo.status).toBe(200);
     });
 
+    test('reenviar solo deja REEMPLAZADA a una pendiente vigente: una vencida (atajo o ya materializada) queda VENCIDA y una con el código bloqueado queda INVALIDADA', async ({ request }) => {
+      const casos: Array<{ nombre: string; preparar: (id: number) => Promise<void> | void; esperado: string }> = [
+        { nombre: 'pendiente vigente', preparar: () => undefined, esperado: 'REEMPLAZADA' },
+        { nombre: 'vencida por el atajo de test', preparar: (id) => vencerInvitacionTest(request, id), esperado: 'VENCIDA' },
+        {
+          nombre: 'vencida ya materializada',
+          preparar: (id) => {
+            sql(`UPDATE invitacion_empleado SET estado = 'VENCIDA', fecha_vencimiento = NOW() - INTERVAL 1 MINUTE WHERE id = ${id};`);
+          },
+          esperado: 'VENCIDA',
+        },
+        {
+          nombre: 'código bloqueado',
+          preparar: (id) => {
+            sql(`UPDATE invitacion_empleado SET estado = 'INVALIDADA', intentos_fallidos = 5 WHERE id = ${id};`);
+          },
+          esperado: 'INVALIDADA',
+        },
+      ];
+
+      for (const caso of casos) {
+        const comercioId = await comercioNuevo(request);
+        const { email, id } = await invitar(request, comercioId);
+        await caso.preparar(id);
+
+        const respuesta = await reenviarInvitacion(request, dueno.token, comercioId, id);
+
+        expect(respuesta.status, caso.nombre).toBe(200);
+        expect(respuesta.body.data.estado, caso.nombre).toBe('PENDIENTE');
+        expect(estadoInvitacion(id), caso.nombre).toBe(caso.esperado);
+        expect(cantidadFilas(`SELECT COUNT(*) FROM invitacion_empleado WHERE comercio_id = ${comercioId} AND email = '${email}' AND estado = 'PENDIENTE';`), caso.nombre).toBe(1);
+      }
+    });
+
+    test('reenviar dos veces la misma invitación vencida o con el código bloqueado: la segunda da 409 porque ya hay una pendiente vigente', async ({ request }) => {
+      const comercioId = await comercioNuevo(request);
+      const vencida = await invitar(request, comercioId);
+      const bloqueada = await invitar(request, comercioId);
+      await vencerInvitacionTest(request, vencida.id);
+      sql(`UPDATE invitacion_empleado SET estado = 'INVALIDADA', intentos_fallidos = 5 WHERE id = ${bloqueada.id};`);
+
+      for (const invitacion of [vencida, bloqueada]) {
+        expect((await reenviarInvitacion(request, dueno.token, comercioId, invitacion.id)).status).toBe(200);
+        const repetida = await reenviarInvitacion(request, dueno.token, comercioId, invitacion.id);
+        expect(repetida.status, `invitación ${invitacion.id}`).toBe(409);
+        expect(repetida.body.mensaje).toBe(MSG_PENDIENTE);
+      }
+    });
+
     test('reenviar una aceptada, cancelada o reemplazada da 409; una invitación de otro comercio da 404', async ({ request }) => {
       const comercioId = await comercioNuevo(request);
       const cancelada = await invitar(request, comercioId);
@@ -339,6 +389,83 @@ test.describe('Invitaciones de empleado (API), tramo E1', () => {
       expect((await invitarEmpleado(request, dueno.token, comercioId, email)).status).toBe(201);
     });
 
+    test('el proceso de vencimiento pasa a VENCIDA solo a las pendientes cumplidas (fecha_resolucion = fecha_vencimiento), no escribe historial y es idempotente', async ({ request }) => {
+      const comercioId = await comercioNuevo(request);
+      const vencible = await invitar(request, comercioId);
+      const vigente = await invitar(request, comercioId);
+      const bloqueada = await invitar(request, comercioId);
+      await vencerInvitacionTest(request, vencible.id);
+      sql(`UPDATE invitacion_empleado SET estado = 'INVALIDADA', intentos_fallidos = 5, fecha_vencimiento = NOW() - INTERVAL 1 MINUTE WHERE id = ${bloqueada.id};`);
+      const historialAntes = motivosHistorial(comercioId);
+      expect(estadoInvitacion(vencible.id)).toBe('PENDIENTE');
+
+      expect(await ejecutarVencimientoInvitacionesTest(request)).toBeGreaterThanOrEqual(1);
+
+      expect(estadoInvitacion(vencible.id)).toBe('VENCIDA');
+      expect(sql(`SELECT fecha_resolucion = fecha_vencimiento FROM invitacion_empleado WHERE id = ${vencible.id};`)).toBe('1');
+      expect(estadoInvitacion(vigente.id)).toBe('PENDIENTE');
+      expect(estadoInvitacion(bloqueada.id)).toBe('INVALIDADA');
+      expect(motivosHistorial(comercioId)).toEqual(historialAntes);
+
+      expect(await ejecutarVencimientoInvitacionesTest(request)).toBe(0);
+      expect(estadoInvitacion(vencible.id)).toBe('VENCIDA');
+    });
+
+    test('el proceso de vencimiento evalúa contra el instante recibido: vence en el instante exacto y no un segundo antes', async ({ request }) => {
+      const comercioId = await comercioNuevo(request);
+      const exacta = await invitar(request, comercioId);
+      const despues = await invitar(request, comercioId);
+      sql(`UPDATE invitacion_empleado SET fecha_vencimiento = '2020-01-01 12:00:00' WHERE id = ${exacta.id};`);
+      sql(`UPDATE invitacion_empleado SET fecha_vencimiento = '2020-01-01 12:00:01' WHERE id = ${despues.id};`);
+
+      await ejecutarVencimientoInvitacionesTest(request, '2020-01-01T12:00:00');
+
+      expect(estadoInvitacion(exacta.id)).toBe('VENCIDA');
+      expect(estadoInvitacion(despues.id)).toBe('PENDIENTE');
+    });
+
+    test('un código de una invitación que el proceso ya venció da el mismo 401 y se puede reenviar', async ({ request }) => {
+      const comercioId = await comercioNuevo(request);
+      const { email, id } = await invitar(request, comercioId);
+      const codigo = await obtenerCodigoInvitacionTest(request, email, comercioId);
+      await vencerInvitacionTest(request, id);
+      await ejecutarVencimientoInvitacionesTest(request);
+      expect(estadoInvitacion(id)).toBe('VENCIDA');
+
+      const intento = await validarInvitacion(request, email, codigo);
+      const reenvio = await reenviarInvitacion(request, dueno.token, comercioId, id);
+
+      expect(intento.status).toBe(401);
+      expect(intento.body.mensaje).toBe(MENSAJE_CODIGO_INVALIDO);
+      expect(reenvio.status).toBe(200);
+      expect(estadoInvitacion(id)).toBe('VENCIDA');
+    });
+
+    test('cancelar también acepta una invitación vencida, con el código bloqueado o pendiente pero ya pasada de fecha: queda CANCELADA con su historial', async ({ request }) => {
+      const comercioId = await comercioNuevo(request);
+      const vencida = await invitar(request, comercioId);
+      const bloqueada = await invitar(request, comercioId);
+      const pasadaDeFecha = await invitar(request, comercioId);
+      await vencerInvitacionTest(request, vencida.id);
+      await ejecutarVencimientoInvitacionesTest(request);
+      sql(`UPDATE invitacion_empleado SET estado = 'INVALIDADA', intentos_fallidos = 5 WHERE id = ${bloqueada.id};`);
+      sql(`UPDATE invitacion_empleado SET fecha_vencimiento = NOW() - INTERVAL 1 MINUTE WHERE id = ${pasadaDeFecha.id};`);
+      expect(estadoInvitacion(vencida.id)).toBe('VENCIDA');
+      expect(estadoInvitacion(pasadaDeFecha.id)).toBe('PENDIENTE');
+
+      for (const invitacion of [vencida, bloqueada, pasadaDeFecha]) {
+        const cancelada = await cancelarInvitacion(request, dueno.token, comercioId, invitacion.id);
+        expect(cancelada.status, `invitación ${invitacion.id}`).toBe(200);
+        expect(cancelada.body.mensaje).toBe('Invitación cancelada');
+        expect(cancelada.body.data.estado).toBe('CANCELADA');
+        expect(estadoInvitacion(invitacion.id)).toBe('CANCELADA');
+        const repetida = await cancelarInvitacion(request, dueno.token, comercioId, invitacion.id);
+        expect(repetida.status).toBe(409);
+        expect(repetida.body.mensaje).toBe(MSG_NO_CANCELABLE);
+      }
+      expect(motivosHistorial(comercioId).filter((m) => m === 'INVITACION_CANCELADA')).toHaveLength(3);
+    });
+
     test('cancelar la invitación de otro comercio o inexistente da el mismo 404', async ({ request }) => {
       const comercioId = await comercioNuevo(request);
       const { id } = await invitar(request, comercioId);
@@ -354,6 +481,28 @@ test.describe('Invitaciones de empleado (API), tramo E1', () => {
   });
 
   test.describe('Equipo del comercio', () => {
+    test('el listado muestra una sola línea por email (la invitación más reciente) y una vencida por UPDATE de fecha se ve como VENCIDA sin materializarse', async ({ request }) => {
+      const comercioId = await comercioNuevo(request);
+      const porUpdate = await invitar(request, comercioId);
+      const reinvitada = await invitar(request, comercioId);
+      const cancelada = await invitar(request, comercioId);
+      await cancelarInvitacion(request, dueno.token, comercioId, cancelada.id);
+      sql(`UPDATE invitacion_empleado SET fecha_vencimiento = NOW() - INTERVAL 1 MINUTE WHERE id IN (${porUpdate.id}, ${reinvitada.id});`);
+      const nuevaReinvitada = await invitarEmpleado(request, dueno.token, comercioId, reinvitada.email);
+      expect(nuevaReinvitada.status, JSON.stringify(nuevaReinvitada.body)).toBe(201);
+
+      const equipo = await equipoComercio(request, dueno.token, comercioId);
+
+      expect(equipo.status).toBe(200);
+      const porId = new Map<number, string>(equipo.body.data.invitaciones.map((i: any) => [i.id, i.estado]));
+      expect([...porId.keys()].sort((a, b) => a - b)).toEqual([porUpdate.id, nuevaReinvitada.body.data.id].sort((a, b) => a - b));
+      expect(porId.get(porUpdate.id)).toBe('VENCIDA');
+      expect(porId.get(nuevaReinvitada.body.data.id)).toBe('PENDIENTE');
+      expect(estadoInvitacion(porUpdate.id), 'listar no materializa nada').toBe('PENDIENTE');
+      expect(estadoInvitacion(reinvitada.id)).toBe('VENCIDA');
+      expect(estadoInvitacion(cancelada.id)).toBe('CANCELADA');
+    });
+
     test('el listado muestra Pendiente, Vencida (atajo de vencer) y Código bloqueado, sin el código ni las canceladas', async ({ request }) => {
       const comercioId = await comercioNuevo(request);
       const pendiente = await invitar(request, comercioId);
@@ -495,6 +644,7 @@ test.describe('Invitaciones de empleado (API), tramo E1', () => {
       expect(conElCorrecto.body.mensaje).toBe(MENSAJE_CODIGO_INVALIDO);
       const reenvio = await reenviarInvitacion(request, dueno.token, comercioId, id);
       expect(reenvio.status).toBe(200);
+      expect(estadoInvitacion(id), 'REEMPLAZADA no pisa la causa original').toBe('INVALIDADA');
       const nuevo = await obtenerCodigoInvitacionTest(request, email, comercioId);
       expect((await validarInvitacion(request, email, nuevo)).status).toBe(200);
     });
@@ -770,7 +920,7 @@ test.describe('Invitaciones de empleado (API), tramo E1', () => {
       expect(cantidadFilas(`SELECT COUNT(*) FROM usuario WHERE email = '${deCatorce.email}';`)).toBe(1);
     });
 
-    test('cuenta nueva por invitación: con 13 años 400 con el mensaje de 14, con 15 el de 18, y con 18 cumplidos hoy 200', async ({ request }) => {
+    test('cuenta nueva por invitación: con 13 y con 15 años 400 con el mensaje de 18 (nunca el de 14), y con 18 cumplidos hoy 200', async ({ request }) => {
       const comercioId = await comercioNuevo(request);
       const { email, id } = await invitar(request, comercioId);
       const codigo = await obtenerCodigoInvitacionTest(request, email, comercioId);
@@ -782,7 +932,8 @@ test.describe('Invitaciones de empleado (API), tramo E1', () => {
       const unDiaAntes = await intentar(fechaNacimientoRelativa(18, 1));
 
       expect(deTrece.status).toBe(400);
-      expect(deTrece.body.data['cuentaNueva.fechaNacimiento']).toBe(MSG_EDAD_REGISTRO);
+      expect(deTrece.body.data['cuentaNueva.fechaNacimiento']).toBe(MSG_EDAD_CUENTA_NUEVA);
+      expect(JSON.stringify(deTrece.body)).not.toContain(MSG_EDAD_REGISTRO);
       expect(deQuince.status).toBe(400);
       expect(deQuince.body.data['cuentaNueva.fechaNacimiento']).toBe(MSG_EDAD_CUENTA_NUEVA);
       expect(unDiaAntes.status).toBe(400);

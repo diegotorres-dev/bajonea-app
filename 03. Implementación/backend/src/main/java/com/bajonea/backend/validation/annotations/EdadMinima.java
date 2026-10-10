@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
  * texto de {@link ValidarFechaNacimientoPlausible}, para que el campo muestre un único mensaje. Ver
  * {@link EdadMinimaValidator}.
  */
-@Target(ElementType.FIELD)
+@Target({ElementType.FIELD, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = EdadMinimaValidator.class)
 @Documented

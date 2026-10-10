@@ -796,6 +796,15 @@ export async function vencerInvitacionTest(request: APIRequestContext, invitacio
   }
 }
 
+export async function ejecutarVencimientoInvitacionesTest(request: APIRequestContext, ahora?: string): Promise<number> {
+  const query = ahora ? `?ahora=${encodeURIComponent(ahora)}` : '';
+  const { status, body } = await apiPost(request, `/test/jobs/vencimiento-invitaciones${query}`, {});
+  if (status !== 200) {
+    throw new Error(`No se pudo ejecutar el vencimiento de invitaciones: ${status} ${JSON.stringify(body)}`);
+  }
+  return body.data as number;
+}
+
 export async function cantidadEmailsRegularizacionTest(request: APIRequestContext, email: string): Promise<number> {
   const { status, body } = await apiGet(request, `/test/emails-regularizacion/cantidad?email=${encodeURIComponent(email)}`);
   if (status !== 200) {

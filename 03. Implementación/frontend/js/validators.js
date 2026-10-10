@@ -113,6 +113,22 @@ export function esFechaNacimientoClientePlausible(fechaTexto) {
   return fecha >= haceCientoVeinteAnios;
 }
 
+export function cumpleEdadMinima(fechaTexto, anios) {
+  const fecha = new Date(fechaTexto + 'T00:00:00');
+  if (Number.isNaN(fecha.getTime())) return false;
+  const limite = new Date();
+  limite.setHours(0, 0, 0, 0);
+  limite.setFullYear(limite.getFullYear() - anios);
+  return fecha <= limite;
+}
+
+const ANIO_MINIMO_FECHA_COMPLETA = 1900;
+
+export function fechaNacimientoCompleta(fechaTexto) {
+  const anio = Number(String(fechaTexto || '').slice(0, 4));
+  return Boolean(fechaTexto) && anio >= ANIO_MINIMO_FECHA_COMPLETA;
+}
+
 const PREFIJO_TELEFONO_FIJO = '+549';
 
 export function esTelefonoValido(telefono) {

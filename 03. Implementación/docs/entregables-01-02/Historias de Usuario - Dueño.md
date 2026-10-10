@@ -75,22 +75,38 @@ por hora por comercio.
 
 Criterios de aceptación adicionales:
 - Si el email pertenece a un Dueño o a un Administrador, a una cuenta bloqueada,
-  suspendida, inactiva o sin verificar, o a una cuenta activa con menos de 18 años declarados, veo el mensaje "No se puede invitar a este email"
-  (no se revela el motivo ni el tipo de cuenta). A una cuenta bloqueada, suspendida,
-  inactiva o sin verificar le llega un email que le explica cómo regularizarla.
-- Puedo reenviar la invitación (la anterior queda reemplazada) y cancelar una invitación
-  pendiente.
+  suspendida, inactiva o sin verificar, o a una cuenta activa con menos de 18 años declarados, veo siempre el mismo
+  aviso fijo debajo del campo del email: "No pudimos invitar a este email. Por privacidad no podemos contarte el
+  motivo. Podés pedirle a esta persona que revise su correo y volver a intentar más tarde." (no se revela el
+  motivo ni el tipo de cuenta, y el aviso no afirma que se haya enviado un email). El botón de invitar queda
+  deshabilitado para ese mismo email mientras la hoja siga abierta y se habilita de nuevo si cambio el email o
+  vuelvo a abrir la hoja. Al reenviar una invitación el aviso es el mismo, en una hoja con el botón "Entendido".
+  A una cuenta bloqueada, suspendida, inactiva o sin verificar le llega un email que le explica cómo
+  regularizarla.
+- Puedo reenviar y cancelar una invitación pendiente, vencida o con el código bloqueado. Al reenviar, solo una
+  invitación pendiente todavía vigente queda reemplazada: una invitación vencida o con el código bloqueado
+  conserva su estado y sigue explicando por qué la persona no pudo aceptar. Una invitación cancelada, aceptada
+  o reemplazada ya no se puede cancelar.
+- Si invito de nuevo a un email que ya tenía una invitación vencida, la lista muestra una sola línea para ese
+  email, con la invitación nueva.
 - Recibo una notificación cuando el invitado acepta.
 
 ## HU-D08: Gestionar mi Equipo de Empleados
 
 Como Dueño, quiero ver el equipo de cada uno de mis comercios con el estado de cada
-empleado (activo o inactivo) y de cada invitación (pendiente o vencida), y poder
+empleado (activo o inactivo) y de cada invitación (pendiente, vencida o con el código bloqueado), y poder
 desactivar a un empleado en un comercio puntual en cualquier momento y reactivarlo sin
 una invitación nueva si fui yo quien lo dio de baja, para mantener el control de quién
 opera cada uno de mis negocios.
 
 Criterios de aceptación adicionales:
+- "Ver equipo" tiene dos pestañas con su contador: "Mi equipo · N" (los integrantes activos) y
+  "Solicitudes · N" (las invitaciones). Más adelante se suma una tercera pestaña "Actividad".
+- "Solicitudes" tiene una línea por email, la de su invitación más reciente: Pendiente ("vence en N días"),
+  Vencida ("Vencida hace N días") o con el código bloqueado ("Código bloqueado"). Todas las líneas llevan un
+  menú de tres puntos con "Reenviar" y "Cancelar". Una invitación aceptada pasa a "Mi equipo"; las canceladas y
+  las reemplazadas no se muestran. Una invitación pasa a Vencida cuando termina su plazo de 7 días: el sistema
+  la marca solo, en un proceso automático que corre cada minuto.
 - Si un empleado renunció, o una invitación se canceló, solo puedo volver a sumarlo con una
   invitación nueva.
 - Veo el historial del equipo (invitación, aceptación, cancelación, baja, renuncia,

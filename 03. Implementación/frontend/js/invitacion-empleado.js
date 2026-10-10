@@ -12,6 +12,7 @@ const OPCIONES_PUBLICAS = { auth: false, handle5xxGlobally: false, handleRedGlob
 const MENSAJE_SIN_CONEXION = 'No pudimos conectar. Probá de nuevo.';
 const MENSAJE_LIMITE = 'Demasiados intentos. Probá de nuevo en un minuto.';
 const MENSAJE_CODIGO_INVALIDO = 'El código es incorrecto o la invitación ya no está vigente. Pedí que te reenvíen la invitación.';
+const EDAD_MINIMA_EMPLEADO = 18;
 const MENSAJE_DNI_DUPLICADO = 'Ya existe una cuenta registrada con ese DNI';
 
 const TITULOS = {
@@ -174,7 +175,12 @@ export function initInvitacionEmpleado() {
         incluirEmail: false,
         prefijoErrores: 'cuentaNueva.',
         mostrarEnlaceLogin: false,
-        textos: { botonFinal: 'Crear cuenta y aceptar', botonFinalCargando: 'Creando cuenta...' },
+        edadMinima: EDAD_MINIMA_EMPLEADO,
+        textos: {
+          botonFinal: 'Crear cuenta y aceptar',
+          botonFinalCargando: 'Creando cuenta...',
+          edadInsuficiente: 'Tenés que tener 18 años o más para trabajar en este comercio.',
+        },
         onEnviar: enviarCuentaNueva,
       });
     }

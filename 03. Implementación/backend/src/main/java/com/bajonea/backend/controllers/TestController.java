@@ -4,8 +4,10 @@ import com.bajonea.backend.dto.response.ApiResponse;
 import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.TipoToken;
 import com.bajonea.backend.services.DisponibilidadComercioService;
+import com.bajonea.backend.services.InvitacionVencimientoJob;
 import com.bajonea.backend.services.ReaperturaComerciosJob;
 import com.bajonea.backend.services.TestSupportService;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
@@ -37,6 +39,8 @@ public class TestController {
     private final TestSupportService testSupportService;
     private final ReaperturaComerciosJob reaperturaComerciosJob;
     private final DisponibilidadComercioService disponibilidadComercioService;
+    private final InvitacionVencimientoJob invitacionVencimientoJob;
+    private final Clock clock;
 
     @GetMapping("/token-verificacion")
     public ResponseEntity<ApiResponse<String>> obtenerTokenVerificacion(@RequestParam String email) {
@@ -78,6 +82,15 @@ public class TestController {
                 ? reaperturaComerciosJob.reabrirComerciosVencidos(disponibilidadComercioService.ahora())
                 : reaperturaComerciosJob.reabrirComerciosVencidos(ahora);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Job de reapertura ejecutado", reabiertos));
+    }
+
+    @PostMapping("/jobs/vencimiento-invitaciones")
+    public ResponseEntity<ApiResponse<Integer>> ejecutarVencimientoInvitaciones(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime ahora) {
+        int vencidas = ahora == null
+                ? invitacionVencimientoJob.vencerInvitaciones(LocalDateTime.now(clock))
+                : invitacionVencimientoJob.vencerInvitaciones(ahora);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Job de vencimiento de invitaciones ejecutado", vencidas));
     }
 
     @PutMapping("/pedidos/{id}/pago-aprobado")

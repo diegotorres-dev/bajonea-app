@@ -1,10 +1,12 @@
 package com.bajonea.backend.dto.request;
 
+import com.bajonea.backend.validation.annotations.EdadMinima;
 import com.bajonea.backend.validation.annotations.ValidarFormatoEmail;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import java.time.LocalDate;
 import java.util.Locale;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,7 +21,8 @@ import lombok.NoArgsConstructor;
  * de una cuenta nueva por invitación de empleado); acá quedan el {@code email}, con su setter de
  * normalización (trim y minúsculas) para que el mensaje de "obligatorio" y el de "formato inválido"
  * queden siempre separados y el valor persistido sea el ya normalizado, y la aceptación de los Términos y
- * Condiciones, que se valida y no se guarda (ver {@code docs/DECISIONES.md}, 2026-10-06).</p>
+ * Condiciones, que se valida y no se guarda (ver {@code docs/DECISIONES.md}, 2026-10-06). La fecha de nacimiento
+ * suma acá la edad mínima de 14 años, que no rige para la cuenta nueva por invitación de empleado.</p>
  */
 @Getter
 @NoArgsConstructor
@@ -40,5 +43,11 @@ public class RegistroClienteRequestDTO extends DatosClienteRequestDTO {
 
     public void setAceptaTerminos(Boolean aceptaTerminos) {
         this.aceptaTerminos = aceptaTerminos;
+    }
+
+    @Override
+    @EdadMinima(anios = 14)
+    public LocalDate getFechaNacimiento() {
+        return super.getFechaNacimiento();
     }
 }

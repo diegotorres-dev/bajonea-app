@@ -174,11 +174,12 @@ const clonar = (nombre, clave, estado) =>
     guardar(v(`com_${clave}`), 'pm.response.json().data'),
   ]);
 
-agregar(clonar('B', 'b', 'APROBADO'), clonar('N', 'n', 'PENDIENTE'), clonar('S', 's', 'APROBADO'), clonar('T', 't', 'APROBADO'));
+agregar(clonar('B', 'b', 'APROBADO'), clonar('N', 'n', 'PENDIENTE'), clonar('S', 's', 'APROBADO'), clonar('T', 't', 'APROBADO'), clonar('V', 'v', 'APROBADO'));
 const COM_B = `{{${v('com_b')}}}`;
 const COM_N = `{{${v('com_n')}}}`;
 const COM_S = `{{${v('com_s')}}}`;
 const COM_T = `{{${v('com_t')}}}`;
+const COM_V = `{{${v('com_v')}}}`;
 
 function altaCliente(clave, { verificar = true, login = false } = {}) {
   const email = `{{${v(`${clave}_email`)}}}`;
@@ -510,11 +511,21 @@ agregar(
     mensajeEs(MENSAJE_INVALIDO),
   ]),
   item('Código bloqueado: el Dueño reenvía y rehabilita', req('POST', `/comercios/equipo/invitaciones/{{${v('inv_m1')}}}/reenviar`, { token: TOKEN_D1, comercio: COM_B }), [status(200)]),
+  equipo('Código bloqueado: tras reenviar, la lista tiene una sola línea de m1 y está Pendiente', COM_B, [
+    status(200),
+    `const lineas = pm.response.json().data.invitaciones.filter((i) => i.email === ${entorno(v('m1_email'))});`,
+    "pm.test('Una sola línea para m1', () => pm.expect(lineas.length).to.eql(1));",
+    "pm.test('La línea de m1 está PENDIENTE', () => pm.expect(lineas[0].estado).to.eql('PENDIENTE'));",
+  ]),
   codigoTest('Atajo de test: código nuevo de m1 en B', 'm1', COM_B, v('m1_codigo_2')),
   validar('Código bloqueado: el código nuevo valida', `{{${v('m1_email')}}}`, `{{${v('m1_codigo_2')}}}`, [status(200)]),
   invitar('Vencida: invitar a v1 en B', COM_B, `{{${v('v1_email')}}}`, [status(201), guardar(v('inv_v1'), 'pm.response.json().data.id')], { preLines: identidad('v1') }),
   codigoTest('Atajo de test: código de v1 en B', 'v1', COM_B, v('v1_codigo_1')),
   item('Atajo de test: vencer la invitación de v1', req('PUT', `/test/invitaciones-empleado/{{${v('inv_v1')}}}/vencer`, { body: {} }), [status(200)]),
+  item('Atajo de test: ejecutar el proceso de vencimiento (pasa v1 a VENCIDA en la base)', req('POST', '/test/jobs/vencimiento-invitaciones', { body: {} }), [
+    status(200),
+    "pm.test('El proceso venció al menos una', () => pm.expect(pm.response.json().data).to.be.at.least(1));",
+  ]),
   equipo('Vencida: la invitación de v1 figura VENCIDA', COM_B, [
     status(200),
     `pm.test('v1 figura VENCIDA', () => pm.expect(${estadoDeInvitacion(v('inv_v1'))}).to.eql('VENCIDA'));`,
@@ -522,6 +533,66 @@ agregar(
   validar('Vencida: el código de una invitación vencida da el mismo 401', `{{${v('v1_email')}}}`, `{{${v('v1_codigo_1')}}}`, [
     status(401),
     mensajeIgualA(v('msg_401'), 'El mensaje es idéntico al de cualquier otro fallo de resolución'),
+  ]),
+  item('Vencida: el Dueño reenvía la vencida', req('POST', `/comercios/equipo/invitaciones/{{${v('inv_v1')}}}/reenviar`, { token: TOKEN_D1, comercio: COM_B }), [
+    status(200),
+    "pm.test('La nueva está PENDIENTE', () => pm.expect(pm.response.json().data.estado).to.eql('PENDIENTE'));",
+  ]),
+  equipo('Vencida: tras reenviar, la lista tiene una sola línea de v1 y está Pendiente (la vencida conserva su causa y no se lista)', COM_B, [
+    status(200),
+    `const lineas = pm.response.json().data.invitaciones.filter((i) => i.email === ${entorno(v('v1_email'))});`,
+    "pm.test('Una sola línea para v1', () => pm.expect(lineas.length).to.eql(1));",
+    "pm.test('La línea de v1 está PENDIENTE', () => pm.expect(lineas[0].estado).to.eql('PENDIENTE'));",
+  ]),
+);
+
+agregar(
+  invitar('Cancelar vencida: invitar a w1 en V', COM_V, `{{${v('w1_email')}}}`, [status(201), guardar(v('inv_w1'), 'pm.response.json().data.id')], { preLines: identidad('w1') }),
+  item('Atajo de test: vencer la invitación de w1', req('PUT', `/test/invitaciones-empleado/{{${v('inv_w1')}}}/vencer`, { body: {} }), [status(200)]),
+  item('Atajo de test: ejecutar el proceso de vencimiento (pasa w1 a VENCIDA en la base)', req('POST', '/test/jobs/vencimiento-invitaciones', { body: {} }), [
+    status(200),
+    "pm.test('El proceso venció al menos una', () => pm.expect(pm.response.json().data).to.be.at.least(1));",
+  ]),
+  equipo('Cancelar vencida: la invitación de w1 figura VENCIDA', COM_V, [
+    status(200),
+    `pm.test('w1 figura VENCIDA', () => pm.expect(${estadoDeInvitacion(v('inv_w1'))}).to.eql('VENCIDA'));`,
+  ]),
+  item('Cancelar vencida: el Dueño cancela la vencida', req('PUT', `/comercios/equipo/invitaciones/{{${v('inv_w1')}}}/cancelar`, { token: TOKEN_D1, comercio: COM_V }), [
+    status(200),
+    mensajeEs('Invitación cancelada'),
+    "pm.test('Figura CANCELADA', () => pm.expect(pm.response.json().data.estado).to.eql('CANCELADA'));",
+  ]),
+  item('Cancelar vencida: repetirlo da 409', req('PUT', `/comercios/equipo/invitaciones/{{${v('inv_w1')}}}/cancelar`, { token: TOKEN_D1, comercio: COM_V }), [
+    status(409),
+    mensajeEs('Esta invitación ya no se puede cancelar'),
+  ]),
+  equipo('Cancelar vencida: la cancelada ya no figura en el equipo', COM_V, [
+    status(200),
+    `pm.test('w1 no figura', () => pm.expect(${estadoDeInvitacion(v('inv_w1'))}).to.eql(undefined));`,
+  ]),
+  invitar('Cancelar bloqueada: invitar a w2 en V', COM_V, `{{${v('w2_email')}}}`, [status(201), guardar(v('inv_w2'), 'pm.response.json().data.id')], { preLines: identidad('w2') }),
+  codigoTest('Atajo de test: código de w2 en V', 'w2', COM_V, v('w2_codigo_1')),
+);
+for (let n = 1; n <= 5; n += 1) {
+  agregar(
+    validar(
+      `Cancelar bloqueada: código incorrecto ${n}/5 da 401`,
+      `{{${v('w2_email')}}}`,
+      `{{${v('w2_codigo_malo')}}}`,
+      [status(401)],
+      n === 1 ? [guardar(v('w2_codigo_malo'), `${entorno(v('w2_codigo_1'))} === '000000' ? '111111' : '000000'`)] : [],
+    ),
+  );
+}
+agregar(
+  equipo('Cancelar bloqueada: la invitación de w2 figura INVALIDADA', COM_V, [
+    status(200),
+    `pm.test('w2 figura INVALIDADA', () => pm.expect(${estadoDeInvitacion(v('inv_w2'))}).to.eql('INVALIDADA'));`,
+  ]),
+  item('Cancelar bloqueada: el Dueño cancela la de código bloqueado', req('PUT', `/comercios/equipo/invitaciones/{{${v('inv_w2')}}}/cancelar`, { token: TOKEN_D1, comercio: COM_V }), [
+    status(200),
+    mensajeEs('Invitación cancelada'),
+    "pm.test('Figura CANCELADA', () => pm.expect(pm.response.json().data.estado).to.eql('CANCELADA'));",
   ]),
 );
 
@@ -657,9 +728,10 @@ const COM_ED = `{{${v('com_ed')}}}`;
 agregar(
   invitar('Edad mínima: invitar a cn (email sin cuenta) en ED', COM_ED, `{{${v('cn_email')}}}`, [status(201), guardar(v('inv_cn'), 'pm.response.json().data.id')], { preLines: identidad('cn') }),
   codigoTest('Atajo de test: código de cn en ED', 'cn', COM_ED, v('cn_codigo_2')),
-  aceptarConFecha('Edad mínima: cuenta nueva por invitación con 13 años da 400 con el mensaje de 14 y prefijo', 'cn', 'cn13', 13, 0, [
+  aceptarConFecha('Edad mínima: cuenta nueva por invitación con 13 años da 400 con el mensaje de 18 (nunca el de 14) y prefijo', 'cn', 'cn13', 13, 0, [
     status(400),
-    errorEnCampo('cuentaNueva.fechaNacimiento', MSG_EDAD_REGISTRO),
+    errorEnCampo('cuentaNueva.fechaNacimiento', MSG_EDAD_CUENTA_NUEVA),
+    "pm.test('El mensaje de 14 años no aparece', () => pm.expect(pm.response.text()).to.not.include('al menos 14 años'));",
   ]),
   aceptarConFecha('Edad mínima: cuenta nueva por invitación con 15 años da 400 con el mensaje de 18', 'cn', 'cn15', 15, 0, [
     status(400),

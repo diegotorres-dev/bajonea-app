@@ -7,8 +7,10 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -41,8 +43,19 @@ public interface InvitacionEmpleadoRepository extends JpaRepository<InvitacionEm
 
     List<InvitacionEmpleado> findByComercioIdAndEmailAndEstado(Integer comercioId, String email, EstadoInvitacionEmpleado estado);
 
-    List<InvitacionEmpleado> findByComercioIdAndEstadoInOrderByFechaCreacionDescIdDesc(Integer comercioId,
-            Collection<EstadoInvitacionEmpleado> estados);
+    /**
+     * La invitación más reciente de cada email del comercio, si está en alguno de los estados indicados: es lo
+     * que lista la pestaña Solicitudes de "Ver equipo", una línea por email. Si la última de un email es
+     * {@code CANCELADA}, {@code REEMPLAZADA} o {@code ACEPTADA} ese email no aparece en la lista.
+     */
+    @Query("""
+            SELECT i FROM InvitacionEmpleado i
+            WHERE i.comercio.id = :comercioId AND i.estado IN :estados
+              AND i.id = (SELECT MAX(j.id) FROM InvitacionEmpleado j WHERE j.comercio.id = :comercioId AND j.email = i.email)
+            ORDER BY i.fechaCreacion DESC, i.id DESC
+            """)
+    List<InvitacionEmpleado> findUltimaPorEmailEnEstados(@Param("comercioId") Integer comercioId,
+            @Param("estados") Collection<EstadoInvitacionEmpleado> estados);
 
     /**
      * Cantidad de envíos del comercio posteriores a {@code desde}, en cualquier estado: cada envío es una fila,
@@ -96,4 +109,34 @@ public interface InvitacionEmpleadoRepository extends JpaRepository<InvitacionEm
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT i FROM InvitacionEmpleado i WHERE i.id IN :ids ORDER BY i.id ASC")
     List<InvitacionEmpleado> findByIdInConBloqueo(@Param("ids") Collection<Integer> ids);
+
+    /**
+     * Ids, en orden ascendente, de las invitaciones en el estado indicado cuya fecha de vencimiento ya pasó
+     * ({@code fecha_vencimiento <= ahora}, el complemento exacto de "vigente" en el servicio). Lectura sin
+     * bloqueo: el proceso de vencimiento no toma el índice por rango, solo después fija las filas por clave
+     * primaria en {@link #marcarVencidas}.
+     */
+    @Query("""
+            SELECT i.id FROM InvitacionEmpleado i
+            WHERE i.estado = :estado AND i.fechaVencimiento <= :ahora
+            ORDER BY i.id ASC
+            """)
+    List<Integer> findIdsVencidasByEstado(@Param("estado") EstadoInvitacionEmpleado estado,
+            @Param("ahora") LocalDateTime ahora, Pageable pageable);
+
+    /**
+     * Un único {@code UPDATE} por lote: pasa a {@code destino} las invitaciones de {@code ids} que siguen en
+     * {@code origen} y siguen vencidas, con {@code fecha_resolucion = fecha_vencimiento}. Los filtros de estado y
+     * de fecha se repiten en el {@code UPDATE} (que es una lectura actual): si otra transacción aceptó, canceló,
+     * reemplazó o invalidó una fila en el medio, el {@code UPDATE} la salta. Es idempotente: una segunda
+     * corrida, o la de otra instancia, no encuentra nada que cambiar.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE InvitacionEmpleado i
+            SET i.estado = :destino, i.fechaResolucion = i.fechaVencimiento
+            WHERE i.id IN :ids AND i.estado = :origen AND i.fechaVencimiento <= :ahora
+            """)
+    int marcarVencidas(@Param("ids") Collection<Integer> ids, @Param("origen") EstadoInvitacionEmpleado origen,
+            @Param("destino") EstadoInvitacionEmpleado destino, @Param("ahora") LocalDateTime ahora);
 }

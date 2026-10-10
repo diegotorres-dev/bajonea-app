@@ -122,18 +122,18 @@ class EdadMinimaTest {
     }
 
     @Test
-    void elDtoDeDatosDeClienteExigeCatorceAniosEnFechaNacimiento() {
+    void elDtoDeDatosDeClienteNoValidaLaEdadMinimaPorqueLaFijaCadaFlujo() {
         DatosClienteRequestDTO trece = new DatosClienteRequestDTO();
         trece.setFechaNacimiento(HOY.minusYears(13));
         DatosClienteRequestDTO catorce = new DatosClienteRequestDTO();
         catorce.setFechaNacimiento(HOY.minusYears(14));
 
-        assertEquals(List.of(MENSAJE_14), mensajes(trece, "fechaNacimiento"));
+        assertTrue(mensajes(trece, "fechaNacimiento").isEmpty(), "el mensaje de 14 años nunca debe salir del alta por invitación");
         assertTrue(mensajes(catorce, "fechaNacimiento").isEmpty());
     }
 
     @Test
-    void elRegistroDeClienteHeredaLaMismaReglaDeEdad() {
+    void elRegistroDeClienteExigeCatorceAnios() {
         RegistroClienteRequestDTO trece = new RegistroClienteRequestDTO();
         trece.setFechaNacimiento(HOY.minusYears(13));
         RegistroClienteRequestDTO catorce = new RegistroClienteRequestDTO();

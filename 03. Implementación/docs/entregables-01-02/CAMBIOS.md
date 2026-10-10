@@ -4,6 +4,45 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
+
+## Tramo E1, bloque A8: vencimiento automático de invitaciones, cancelar ampliado y menú en todas las filas (2026-10-10)
+
+Cuatro cambios tras la prueba manual de A7. **"Vencida" es un estado guardado:** un proceso automático (cada minuto) pasa a `VENCIDA` toda invitación `PENDIENTE` cuyo plazo de 7 días terminó; "Pendiente" pasa a significar "dentro del plazo en que se puede aceptar, reenviar o cancelar". Reemplaza la decisión de A7 (estado calculado al consultar, materialización perezosa). **Cancelar** acepta invitaciones pendientes, vencidas y con el código bloqueado. En **Solicitudes** todas las filas llevan el menú de tres puntos con "Reenviar" y "Cancelar" (se quitó el botón directo "Reenviar" de A7). Y en la hoja de invitar, el texto de promesa del código se oculta mientras se muestra el aviso de rechazo.
+
+**Documentos de esta carpeta que cambiaron** (Diego los copia a mano a `01.` y `02.`):
+- `diccionario-de-datos.md` (`EstadoInvitacionEmpleado` e `InvitacionEmpleado`): `PENDIENTE` y `VENCIDA` redefinidos (estado guardado, proceso automático cada minuto, red de seguridad si se atrasa), `CANCELADA` con los estados cancelables. También se actualizó la copia de `docs/diccionario-de-datos.md` (idéntica).
+- `requisitos-funcionales-dueño.md` (Gestión de Empleados): vista del equipo con menú en todas las filas, proceso automático de vencimiento y estados cancelables y reenviables.
+- `Historias de Usuario - Dueño.md` (HU-D07 y HU-D08): reenviar y cancelar pendiente, vencida o con código bloqueado; menú en todas las líneas; Vencida marcada por el sistema.
+- `alcance-y-limitaciones.md`: la limitación "Invitaciones vencidas sin job" se reescribe (hay proceso automático; qué pasa si estuviera detenido).
+
+**No cambiaron** `requisitos-no-funcionales.md`, los requisitos e historias de Cliente y Empleado, los DFD ni los diagramas ER y relacional (sin tablas, columnas ni flujos nuevos hacia afuera: el proceso es interno).
+
+**Nota para el checklist manual:** desde A8, "Vencida" es un estado guardado en la base; una invitación pasa a `VENCIDA` sola, hasta un minuto después de cumplirse su fecha de vencimiento.
+
+**Pruebas:** `mvnw test` 490/490; Playwright 548/548; Newman 1755 requests y 2815 assertions con 0 fallos; estrés de E1 (S1–S13) sin problemas y sin `Deadlock found` ni `Lock wait timeout`.
+
+Fuera de esta carpeta: `CLAUDE.md`, `docs/DECISIONES.md`, `docs/APRENDIZAJES-TECNICOS.md`, `testing/playwright/README.md`, `postman/Bajonea-MVP.postman_collection.json` y `postman/Bajonea-Local.postman_environment.json` (carpeta 56 regenerada). `.claude/skills/skill-validaciones/SKILL.md` no cambió: no hay validaciones nuevas.
+
+## Tramo E1, bloque A7: ajustes tras la prueba manual (2026-10-09)
+
+Cuatro cambios de producto y un bug. **Bug "Vencida desaparece":** el listado de "Ver equipo" solo traía las invitaciones `PENDIENTE` e `INVALIDADA`, así que una invitación vencida dejaba de verse en cuanto se materializaba (al invitar de nuevo o reenviar al mismo email); ahora se muestra una línea por email con su invitación más reciente. **`REEMPLAZADA`** ya no pisa la causa original: al reenviar, solo una pendiente todavía vigente queda reemplazada; una vencida o con el código bloqueado conserva su estado. **Edad:** el alta de Empleado por invitación exige 18 años y nunca muestra el mensaje de 14 (el de 14 queda solo en el registro de Cliente); la pantalla avisa en tiempo real apenas se completa la fecha. **"Ver equipo"** pasa a dos pestañas con contador ("Mi equipo · N" y "Solicitudes · N"). **Rechazo al invitar:** un único aviso fijo, sin revelar el motivo, con el botón deshabilitado para ese email.
+
+**Documentos de esta carpeta que cambiaron** (Diego los copia a mano a `01.` y `02.`):
+- `diccionario-de-datos.md` (`EstadoInvitacionEmpleado` e `InvitacionEmpleado`): reglas de `REEMPLAZADA` (solo la pendiente vigente), `VENCIDA` calculada contra materializada, listado de una línea por email y reglas de reenvío. También se actualizó la copia de `docs/diccionario-de-datos.md` (idéntica).
+- `Historias de Usuario - Dueño.md` (HU-D07 y HU-D08): aviso único de rechazo, reenvío sin pisar el estado, una sola línea por email, pestañas "Mi equipo" y "Solicitudes".
+- `requisitos-funcionales-dueño.md` (Gestión de Empleados): reenvío, aviso único de rechazo y vista del equipo con pestañas.
+- `Historias de Usuario - Empleado.md` (HU-E01) y `requisitos-funcionales-empleado.md` (Edad mínima): 18 años con cualquier edad menor, aviso en tiempo real, nunca el mensaje de 14.
+- `Historias de Usuario - Cliente.md` (HU-C01): el aviso de 14 años aparece al completar la fecha.
+- `alcance-y-limitaciones.md`: la limitación de las invitaciones vencidas suma que en la base la fila sigue Pendiente hasta materializarse.
+
+**No cambiaron** `requisitos-no-funcionales.md`, `requisitos-funcionales-cliente.md` (el servidor conserva su texto de 14 años), los DFD ni los diagramas ER y relacional (sin tablas, columnas ni flujos nuevos).
+
+**Nota para el checklist manual:** "Vencida" es un estado calculado al listar; en la base la fila sigue `PENDIENTE` hasta que se materializa (al invitar o reenviar al mismo email).
+
+**Pruebas:** `mvnw test` 480/480; Playwright 543/543; Newman 1737 requests y 2786 assertions con 0 fallos; estrés de E1 sin problemas y sin `Deadlock found` ni `Lock wait timeout`.
+
+Fuera de esta carpeta: `CLAUDE.md`, `docs/DECISIONES.md`, `docs/APRENDIZAJES-TECNICOS.md`, `testing/playwright/README.md`, `.claude/skills/skill-validaciones/SKILL.md`, `postman/Bajonea-MVP.postman_collection.json` y `postman/Bajonea-Local.postman_environment.json` (carpeta 56 regenerada).
+
 ## Tramo E1, bloque A6: edad mínima, 14 años para Cliente y 18 para Empleado (2026-10-08)
 
 Reglas nuevas: el registro de Cliente y la cuenta nueva por invitación exigen 14 años cumplidos (anotación `@EdadMinima`, validada en el DTO) y el Empleado, 18 (regla del servicio de invitaciones: cuenta nueva de 14 a 17 años = 400 en `cuentaNueva.fechaNacimiento`; cuenta existente menor de 18 = 409 al validar y aceptar; invitar o reenviar a una cuenta activa menor de 18 = el 409 genérico "No se puede invitar a este email", sin email de regularización). La edad se calcula con la fecha del día del servidor (cumplir los años ese mismo día alcanza) y es la declarada: no se verifica identidad ni DNI. Sin migraciones; las cuentas existentes no se revisan. Backend, Newman (carpeta 56 de 125 a 158 requests y 4 requests de borde en la 22), Playwright (spec 35 +5 tests, spec 36 +2) y estreses; sin cambios de frontend de producción.

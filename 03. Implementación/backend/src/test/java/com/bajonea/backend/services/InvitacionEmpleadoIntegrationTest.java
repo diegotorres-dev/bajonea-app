@@ -590,7 +590,7 @@ class InvitacionEmpleadoIntegrationTest {
     }
 
     @Test
-    void reenviarFuncionaConUnaVencidaYConUnaConCodigoBloqueadoPeroNoConLasCerradas() {
+    void reenviarFuncionaConUnaVencidaYConUnaConCodigoBloqueadoSinPisarSuEstadoPeroNoConLasCerradas() {
         enTransaccion(status -> {
             Dueno dueno = datos.registrarDuenoAprobado();
             sincronizar();
@@ -607,15 +607,18 @@ class InvitacionEmpleadoIntegrationTest {
             InvitacionEmpleadoResponseDTO reenviadaVencida = invitacionService.reenviar(activo(dueno), vencida.getId());
             InvitacionEmpleadoResponseDTO reenviadaBloqueada = invitacionService.reenviar(activo(dueno), bloqueada.getId());
 
-            assertEquals("REEMPLAZADA", estadoDe(vencida.getId()));
-            assertEquals("REEMPLAZADA", estadoDe(bloqueada.getId()));
+            assertEquals("VENCIDA", estadoDe(vencida.getId()), "una pendiente pasada de fecha se materializa a VENCIDA, no a REEMPLAZADA");
+            assertEquals("INVALIDADA", estadoDe(bloqueada.getId()), "REEMPLAZADA no pisa la causa original del código bloqueado");
             assertEquals(EstadoInvitacionEmpleado.PENDIENTE, reenviadaVencida.getEstado());
             assertEquals(EstadoInvitacionEmpleado.PENDIENTE, reenviadaBloqueada.getEstado());
 
-            for (Integer id : List.of(aCancelar.getId(), vencida.getId())) {
-                ConflictoDeNegocioException error = assertThrows(ConflictoDeNegocioException.class,
+            ConflictoDeNegocioException cerrada = assertThrows(ConflictoDeNegocioException.class,
+                    () -> invitacionService.reenviar(activo(dueno), aCancelar.getId()));
+            assertEquals("Esta invitación ya no se puede reenviar", cerrada.getMessage());
+            for (Integer id : List.of(vencida.getId(), bloqueada.getId())) {
+                ConflictoDeNegocioException yaReenviada = assertThrows(ConflictoDeNegocioException.class,
                         () -> invitacionService.reenviar(activo(dueno), id));
-                assertEquals("Esta invitación ya no se puede reenviar", error.getMessage());
+                assertEquals("Ya hay una invitación pendiente para ese email. Podés reenviarla.", yaReenviada.getMessage());
             }
         });
     }
@@ -743,6 +746,67 @@ class InvitacionEmpleadoIntegrationTest {
             assertEquals(EstadoInvitacionEmpleado.INVALIDADA, visible(invitaciones, bloqueada.getId()));
             assertEquals(invitaciones.stream().map(InvitacionEmpleadoResponseDTO::getFechaCreacion).sorted(java.util.Comparator.reverseOrder()).toList(),
                     invitaciones.stream().map(InvitacionEmpleadoResponseDTO::getFechaCreacion).toList(), "las más nuevas primero");
+        });
+    }
+
+    @Test
+    void listarEquipoMuestraUnaSolaLineaPorEmailConSuInvitacionMasReciente() {
+        enTransaccion(status -> {
+            Dueno dueno = datos.registrarDuenoAprobado();
+            sincronizar();
+            String emailReinvitado = emailNuevo();
+            String emailVencidaPorFecha = emailNuevo();
+            String emailVencidaMaterializada = emailNuevo();
+            String emailReenviado = emailNuevo();
+            String emailCancelado = emailNuevo();
+            InvitacionEmpleadoResponseDTO viejaReinvitada = invitacionService.invitar(activo(dueno), emailReinvitado);
+            InvitacionEmpleadoResponseDTO vencidaPorFecha = invitacionService.invitar(activo(dueno), emailVencidaPorFecha);
+            InvitacionEmpleadoResponseDTO vencidaMaterializada = invitacionService.invitar(activo(dueno), emailVencidaMaterializada);
+            InvitacionEmpleadoResponseDTO bloqueadaOriginal = invitacionService.invitar(activo(dueno), emailReenviado);
+            InvitacionEmpleadoResponseDTO cancelada = invitacionService.invitar(activo(dueno), emailCancelado);
+            invitacionService.cancelar(activo(dueno), cancelada.getId());
+            jdbcTemplate.update("UPDATE invitacion_empleado SET estado = 'INVALIDADA', intentos_fallidos = 5 WHERE id = ?", bloqueadaOriginal.getId());
+            jdbcTemplate.update("UPDATE invitacion_empleado SET estado = 'VENCIDA', fecha_vencimiento = ? WHERE id = ?",
+                    INICIO.minusMinutes(1), vencidaMaterializada.getId());
+            jdbcTemplate.update("UPDATE invitacion_empleado SET fecha_vencimiento = ? WHERE id IN (?, ?)",
+                    INICIO.minusMinutes(1), viejaReinvitada.getId(), vencidaPorFecha.getId());
+            sincronizar();
+            reloj.fijar(INICIO.plusMinutes(61));
+            InvitacionEmpleadoResponseDTO nuevaReinvitada = invitacionService.invitar(activo(dueno), emailReinvitado);
+            InvitacionEmpleadoResponseDTO nuevaReenviada = invitacionService.reenviar(activo(dueno), bloqueadaOriginal.getId());
+            sincronizar();
+
+            List<InvitacionEmpleadoResponseDTO> invitaciones = invitacionService.listarEquipo(activo(dueno)).getInvitaciones();
+
+            assertEquals("VENCIDA", estadoDe(viejaReinvitada.getId()), "invitar de nuevo materializa la vencida");
+            assertEquals("INVALIDADA", estadoDe(bloqueadaOriginal.getId()), "reenviar no pisa el código bloqueado");
+            assertEquals(List.of(nuevaReenviada.getId(), nuevaReinvitada.getId(), vencidaMaterializada.getId(), vencidaPorFecha.getId()).stream().sorted().toList(),
+                    invitaciones.stream().map(InvitacionEmpleadoResponseDTO::getId).sorted().toList(),
+                    "una línea por email, y ninguna del email cancelado");
+            assertEquals(EstadoInvitacionEmpleado.PENDIENTE, visible(invitaciones, nuevaReinvitada.getId()));
+            assertEquals(EstadoInvitacionEmpleado.PENDIENTE, visible(invitaciones, nuevaReenviada.getId()));
+            assertEquals(EstadoInvitacionEmpleado.VENCIDA, visible(invitaciones, vencidaMaterializada.getId()));
+            assertEquals(EstadoInvitacionEmpleado.VENCIDA, visible(invitaciones, vencidaPorFecha.getId()),
+                    "pendiente en la base con la fecha pasada: se ve como vencida");
+            assertEquals("PENDIENTE", estadoDe(vencidaPorFecha.getId()), "listar no materializa nada");
+        });
+    }
+
+    @Test
+    void reenviarUnaVencidaYaMaterializadaNoCambiaSuEstado() {
+        enTransaccion(status -> {
+            Dueno dueno = datos.registrarDuenoAprobado();
+            sincronizar();
+            InvitacionEmpleadoResponseDTO vencida = invitacionService.invitar(activo(dueno), emailNuevo());
+            jdbcTemplate.update("UPDATE invitacion_empleado SET estado = 'VENCIDA', fecha_vencimiento = ? WHERE id = ?",
+                    INICIO.minusMinutes(1), vencida.getId());
+            sincronizar();
+
+            InvitacionEmpleadoResponseDTO nueva = invitacionService.reenviar(activo(dueno), vencida.getId());
+
+            assertEquals("VENCIDA", estadoDe(vencida.getId()));
+            assertEquals("PENDIENTE", estadoDe(nueva.getId()));
+            assertEquals(1, pendientes(dueno.comercioId(), vencida.getEmail()));
         });
     }
 

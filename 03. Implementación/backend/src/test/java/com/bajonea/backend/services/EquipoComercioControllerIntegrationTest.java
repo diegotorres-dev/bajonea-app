@@ -429,7 +429,7 @@ class EquipoComercioControllerIntegrationTest {
     }
 
     @Test
-    void sePuedeReenviarUnaInvitacionVencidaOConElCodigoBloqueado() throws Exception {
+    void sePuedeReenviarUnaInvitacionVencidaOConElCodigoBloqueadoSinCambiarSuEstado() throws Exception {
         Dueno dueno = datos.registrarDuenoAprobado();
         try {
             String token = tokenDe(dueno);
@@ -441,8 +441,8 @@ class EquipoComercioControllerIntegrationTest {
             int deVencida = idDe(reenviar(token, dueno.comercioId(), vencida).andExpect(status().isOk()));
             int deBloqueada = idDe(reenviar(token, dueno.comercioId(), bloqueada).andExpect(status().isOk()));
 
-            assertEquals("REEMPLAZADA", estadoDe(vencida));
-            assertEquals("REEMPLAZADA", estadoDe(bloqueada));
+            assertEquals("VENCIDA", estadoDe(vencida), "la pendiente pasada de fecha se materializa a VENCIDA");
+            assertEquals("INVALIDADA", estadoDe(bloqueada), "REEMPLAZADA no pisa la causa original");
             assertEquals("PENDIENTE", estadoDe(deVencida));
             assertEquals("PENDIENTE", estadoDe(deBloqueada));
         } finally {
@@ -464,6 +464,25 @@ class EquipoComercioControllerIntegrationTest {
                 cancelar(token, dueno.comercioId(), invitacion).andExpect(status().isConflict())
                         .andExpect(jsonPath("$.mensaje").value("Esta invitación ya no se puede cancelar"));
                 assertEquals(estado, estadoDe(invitacion), "el 409 no toca la fila");
+            }
+        } finally {
+            borrarRastros(dueno);
+        }
+    }
+
+    @Test
+    void seCancelaUnaInvitacionVencidaOConElCodigoBloqueado() throws Exception {
+        Dueno dueno = datos.registrarDuenoAprobado();
+        try {
+            String token = tokenDe(dueno);
+            for (String estado : List.of("VENCIDA", "INVALIDADA")) {
+                int invitacion = invitarOk(token, dueno.comercioId(), emailNuevo());
+                ponerEstado(invitacion, estado);
+
+                cancelar(token, dueno.comercioId(), invitacion).andExpect(status().isOk())
+                        .andExpect(jsonPath("$.mensaje").value("Invitación cancelada"))
+                        .andExpect(jsonPath("$.data.estado").value("CANCELADA"));
+                assertEquals("CANCELADA", estadoDe(invitacion));
             }
         } finally {
             borrarRastros(dueno);

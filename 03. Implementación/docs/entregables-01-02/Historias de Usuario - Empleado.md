@@ -22,9 +22,11 @@ Criterios de aceptación adicionales:
   dirección) y acepto los Términos y Condiciones; mi cuenta queda activa sin otro código de
   verificación.
 - Para trabajar en un comercio tengo que tener 18 años o más. Si me registro con una cuenta
-  nueva y declaro entre 14 y 17 años, el sistema me avisa debajo de la fecha de nacimiento
-  ("Tenés que tener 18 años o más para trabajar en un comercio") y no crea nada; con menos de
-  14 rige además el mínimo del registro de Cliente. Si ya tengo cuenta y declaré menos de 18
+  nueva y declaro menos de 18 años (con cualquier edad, incluso con menos de 14), el sistema me
+  avisa debajo de la fecha de nacimiento apenas la completo ("Tenés que tener 18 años o más para
+  trabajar en este comercio.") y no me deja seguir; si igual llegara al servidor, responde con el
+  mismo mínimo de 18 y no crea nada. En este recorrido nunca aparece el mensaje de 14 años del
+  registro de Cliente. Si ya tengo cuenta y declaré menos de 18
   años, el sistema me lo dice ("Tenés que tener 18 años o más para sumarte a un equipo"). La
   edad es la que declaro: el sistema no la verifica.
 - Si ya tengo cuenta, alcanzan mi email y el código.

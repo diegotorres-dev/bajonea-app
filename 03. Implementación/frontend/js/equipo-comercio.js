@@ -11,6 +11,15 @@ const OPCIONES_RED = { handle5xxGlobally: false, handleRedGlobally: false, conMe
 const MENSAJE_SIN_CONEXION = 'No pudimos conectar. Probá de nuevo.';
 const MENSAJE_ERROR_CARGA = 'No pudimos cargar el equipo.';
 
+const MENSAJE_SERVIDOR_NO_SE_PUEDE_INVITAR = 'No se puede invitar a este email';
+const TITULO_NO_SE_PUEDE_INVITAR = 'No pudimos invitar a este email.';
+const CUERPO_NO_SE_PUEDE_INVITAR = 'Por privacidad no podemos contarte el motivo. Podés pedirle a esta persona que revise su correo y volver a intentar más tarde.';
+
+const PESTANAS = [
+  { id: 'equipo', texto: 'Mi equipo' },
+  { id: 'solicitudes', texto: 'Solicitudes' },
+];
+
 const ESTADO_MIEMBRO = {
   ACTIVO: { texto: 'Activo', punto: 'positivo' },
   INACTIVO: { texto: 'Inactivo', punto: 'inactivo' },
@@ -47,6 +56,8 @@ let secuencia = 0;
 let comercioPintado = null;
 let firmaPintada = null;
 let intervalo = null;
+let pestanaActiva = PESTANAS[0].id;
+let equipoActual = null;
 
 function elemento(id) {
   return document.getElementById(id);
@@ -71,10 +82,22 @@ function textoVencimiento(fechaVencimiento) {
   return dias === 1 ? 'vence en 1 día' : `vence en ${dias} días`;
 }
 
-function crearEstado(info, detalle) {
+function textoVencida(fechaVencimiento) {
+  const marca = Date.parse(String(fechaVencimiento).replace(/(\.\d{3})\d+/, '$1'));
+  if (Number.isNaN(marca)) {
+    return 'Vencida';
+  }
+  const dias = Math.floor((Date.now() - marca) / MS_POR_DIA);
+  if (dias < 1) {
+    return 'Vencida hoy';
+  }
+  return dias === 1 ? 'Vencida hace 1 día' : `Vencida hace ${dias} días`;
+}
+
+function crearEstado(info, detalle, textoEtiqueta = info.texto) {
   const estado = h('span', { class: 'equipo-fila__estado' });
   const etiqueta = h('span', { class: 'pedido-estado', 'data-testid': 'equipo-estado' });
-  etiqueta.append(h('span', { class: `pedido-estado__dot pedido-estado__dot--${info.punto}` }), info.texto);
+  etiqueta.append(h('span', { class: `pedido-estado__dot pedido-estado__dot--${info.punto}` }), textoEtiqueta);
   estado.append(etiqueta);
   if (detalle) {
     const complemento = h('span', { class: 'equipo-fila__detalle', 'data-testid': 'equipo-detalle' });
@@ -117,14 +140,7 @@ function crearFilaMiembro(miembro) {
   return fila;
 }
 
-function crearFilaInvitacion(invitacion, alAbrirMenu) {
-  const info = ESTADO_INVITACION[invitacion.estado] || { texto: invitacion.estado, punto: 'pendiente' };
-  const detalle = invitacion.estado === 'PENDIENTE' ? textoVencimiento(invitacion.fechaVencimiento) : '';
-  const fila = h('div', { class: 'equipo-fila', 'data-testid': `equipo-invitacion-${invitacion.id}`, 'data-estado': invitacion.estado });
-  const datos = h('div', { class: 'equipo-fila__datos' });
-  const email = crearLinea('equipo-fila__nombre', invitacion.email);
-  email.setAttribute('data-testid', 'equipo-email');
-  datos.append(email, crearEstado(info, detalle));
+function crearAccionMenuFila(invitacion, alAbrirMenu) {
   const menu = h('button', {
     class: 'product-row__kebab',
     type: 'button',
@@ -133,11 +149,25 @@ function crearFilaInvitacion(invitacion, alAbrirMenu) {
   });
   menu.append(crearSvg(FIGURAS_PUNTITOS));
   menu.addEventListener('click', () => alAbrirMenu(invitacion));
-  fila.append(crearAvatarSobre(), datos, menu);
+  return menu;
+}
+
+function crearFilaInvitacion(invitacion, alAbrirMenu) {
+  const info = ESTADO_INVITACION[invitacion.estado] || { texto: invitacion.estado, punto: 'pendiente' };
+  const detalle = invitacion.estado === 'PENDIENTE' ? textoVencimiento(invitacion.fechaVencimiento) : '';
+  const etiqueta = invitacion.estado === 'VENCIDA' ? textoVencida(invitacion.fechaVencimiento) : info.texto;
+  const fila = h('div', { class: 'equipo-fila', 'data-testid': `equipo-invitacion-${invitacion.id}`, 'data-estado': invitacion.estado });
+  const datos = h('div', { class: 'equipo-fila__datos' });
+  const email = crearLinea('equipo-fila__nombre', invitacion.email);
+  email.setAttribute('data-testid', 'equipo-email');
+  datos.append(email, crearEstado(info, detalle, etiqueta));
+  fila.append(crearAvatarSobre(), datos, crearAccionMenuFila(invitacion, alAbrirMenu));
   return fila;
 }
 
 function pintarEsqueleto() {
+  equipoActual = null;
+  pintarPestanas();
   const lista = elemento('equipo-lista');
   lista.replaceChildren();
   lista.setAttribute('aria-busy', 'true');
@@ -154,6 +184,7 @@ function pintarEsqueleto() {
 }
 
 function pintarError(mensaje, alReintentar) {
+  ocultarPestanas();
   const lista = elemento('equipo-lista');
   lista.replaceChildren();
   lista.removeAttribute('aria-busy');
@@ -168,25 +199,102 @@ function pintarError(mensaje, alReintentar) {
   firmaPintada = null;
 }
 
-function pintarEquipo(equipo) {
-  const miembros = equipo.miembros || [];
-  const invitaciones = equipo.invitaciones || [];
-  const lista = elemento('equipo-lista');
-  lista.removeAttribute('aria-busy');
-  if (miembros.length === 0 && invitaciones.length === 0) {
-    renderEmptyState(lista, 'Todavía no tenés equipo', null, { inline: true });
+function miembrosActivos(equipo) {
+  return (equipo.miembros || []).filter((miembro) => miembro.estado === 'ACTIVO');
+}
+
+function contadorDe(equipo, pestana) {
+  if (!equipo) {
+    return null;
+  }
+  return pestana === 'equipo' ? miembrosActivos(equipo).length : (equipo.invitaciones || []).length;
+}
+
+function pintarPestanas() {
+  const barra = elemento('equipo-tabs');
+  barra.classList.remove('is-hidden');
+  barra.replaceChildren();
+  PESTANAS.forEach((pestana) => {
+    const cantidad = contadorDe(equipoActual, pestana.id);
+    const boton = h('button', {
+      type: 'button',
+      class: 'segmented-control__btn',
+      role: 'tab',
+      'aria-selected': String(pestana.id === pestanaActiva),
+      'data-testid': `tab-equipo-${pestana.id}`,
+    });
+    boton.textContent = cantidad === null ? pestana.texto : `${pestana.texto} · ${cantidad}`;
+    boton.addEventListener('click', () => seleccionarPestana(pestana.id));
+    barra.append(boton);
+  });
+}
+
+function ocultarPestanas() {
+  elemento('equipo-tabs').classList.add('is-hidden');
+}
+
+function seleccionarPestana(id) {
+  if (id === pestanaActiva) {
     return;
   }
-  const filas = h('div', { class: 'equipo-filas', 'data-testid': 'equipo-filas' });
+  pestanaActiva = id;
+  pintarPestanas();
+  if (equipoActual !== null) {
+    pintarLista(equipoActual);
+  }
+}
+
+function pintarMiembros(equipo, filas, lista) {
+  const miembros = miembrosActivos(equipo);
+  if (miembros.length === 0) {
+    renderEmptyState(lista, 'Todavía no tenés equipo', null, { inline: true });
+    return false;
+  }
   miembros.forEach((miembro) => filas.append(crearFilaMiembro(miembro)));
+  return true;
+}
+
+function pintarSolicitudes(equipo, filas, lista) {
+  const invitaciones = equipo.invitaciones || [];
+  if (invitaciones.length === 0) {
+    renderEmptyState(lista, 'No hay solicitudes', null, { inline: true });
+    return false;
+  }
   invitaciones.forEach((invitacion) => filas.append(crearFilaInvitacion(invitacion, abrirMenuInvitacion)));
-  lista.replaceChildren(filas);
+  return true;
+}
+
+const PINTORES_DE_PESTANA = {
+  equipo: pintarMiembros,
+  solicitudes: pintarSolicitudes,
+};
+
+function pintarLista(equipo) {
+  const lista = elemento('equipo-lista');
+  lista.removeAttribute('aria-busy');
+  const filas = h('div', { class: 'equipo-filas', 'data-testid': 'equipo-filas' });
+  if (PINTORES_DE_PESTANA[pestanaActiva](equipo, filas, lista)) {
+    lista.replaceChildren(filas);
+  }
+}
+
+function pintarEquipo(equipo) {
+  equipoActual = equipo;
+  pintarPestanas();
+  pintarLista(equipo);
+}
+
+function detalleDeFirma(invitacion) {
+  if (invitacion.estado === 'PENDIENTE') {
+    return textoVencimiento(invitacion.fechaVencimiento);
+  }
+  return invitacion.estado === 'VENCIDA' ? textoVencida(invitacion.fechaVencimiento) : '';
 }
 
 function firmaDe(equipo) {
   const invitaciones = (equipo.invitaciones || []).map((invitacion) => ({
     ...invitacion,
-    detalle: invitacion.estado === 'PENDIENTE' ? textoVencimiento(invitacion.fechaVencimiento) : '',
+    detalle: detalleDeFirma(invitacion),
   }));
   return JSON.stringify({ miembros: equipo.miembros || [], invitaciones });
 }
@@ -277,6 +385,25 @@ function mensajeDeError(error, porDefecto) {
   return error.status >= 500 || !error.message ? porDefecto : error.message;
 }
 
+function esRechazoGenerico(error) {
+  return error instanceof ApiError && error.status === 409 && error.message === MENSAJE_SERVIDOR_NO_SE_PUEDE_INVITAR;
+}
+
+function abrirAvisoNoSePudoInvitar() {
+  if (document.querySelector('[data-testid="aviso-no-se-pudo-invitar"]')) {
+    return;
+  }
+  const { backdrop, hoja } = crearHoja('aviso-no-se-pudo-invitar');
+  const titulo = h('h2', { class: 'modal-sheet__title equipo-confirmar__titulo', 'data-testid': 'aviso-no-se-pudo-invitar-titulo' });
+  titulo.textContent = TITULO_NO_SE_PUEDE_INVITAR;
+  const cuerpo = h('p', { class: 'equipo-aviso__cuerpo', 'data-testid': 'aviso-no-se-pudo-invitar-cuerpo' });
+  cuerpo.textContent = CUERPO_NO_SE_PUEDE_INVITAR;
+  const cerrar = h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'btn-cerrar-aviso-no-se-pudo-invitar' });
+  cerrar.textContent = 'Entendido';
+  cerrar.addEventListener('click', () => backdrop.remove());
+  hoja.append(titulo, cuerpo, cerrar);
+}
+
 function abrirHojaInvitar() {
   if (document.querySelector('[data-testid="hoja-invitar-equipo"]')) {
     return;
@@ -300,16 +427,32 @@ function abrirHojaInvitar() {
   });
   caja.append(entrada);
   const error = h('div', { class: 'field__error', id: 'error-invitar-email', style: 'display:none;', 'data-testid': 'error-email-invitar' });
+  const rechazo = h('div', { class: 'equipo-rechazo is-hidden', role: 'alert', 'data-testid': 'rechazo-invitar-equipo' });
+  const rechazoTitulo = h('p', { class: 'equipo-rechazo__titulo', 'data-testid': 'rechazo-invitar-titulo' });
+  rechazoTitulo.textContent = TITULO_NO_SE_PUEDE_INVITAR;
+  const rechazoCuerpo = h('p', { class: 'equipo-rechazo__cuerpo', 'data-testid': 'rechazo-invitar-cuerpo' });
+  rechazoCuerpo.textContent = CUERPO_NO_SE_PUEDE_INVITAR;
+  rechazo.append(rechazoTitulo, rechazoCuerpo);
   const ayuda = h('p', { class: 'field__hint', 'data-testid': 'ayuda-invitar-equipo' });
   ayuda.textContent = 'Le llega un código que vale 7 días.';
-  campo.append(etiqueta, caja, error, ayuda);
+  campo.append(etiqueta, caja, error, rechazo, ayuda);
   const enviar = h('button', { class: 'btn btn-primary', type: 'submit', 'data-testid': 'btn-enviar-invitacion' });
   enviar.textContent = 'Enviar invitación';
   formulario.append(campo, enviar);
   hoja.append(titulo, formulario);
   entrada.focus();
 
-  entrada.addEventListener('input', () => limpiarErrorCampo('error-invitar-email'));
+  let emailRechazado = null;
+  const emailActual = () => entrada.value.trim().toLowerCase();
+  entrada.addEventListener('input', () => {
+    limpiarErrorCampo('error-invitar-email');
+    if (emailRechazado !== null && emailActual() !== emailRechazado) {
+      emailRechazado = null;
+      rechazo.classList.add('is-hidden');
+      ayuda.classList.remove('is-hidden');
+      enviar.disabled = false;
+    }
+  });
   formulario.addEventListener('submit', async (evento) => {
     evento.preventDefault();
     if (enviar.disabled) {
@@ -321,9 +464,17 @@ function abrirHojaInvitar() {
       const { mensaje } = await apiFetch(`${RUTA_EQUIPO}/invitaciones`, { ...OPCIONES_RED, method: 'POST', body: { email: entrada.value } });
       backdrop.remove();
       showToast(mensaje);
+      seleccionarPestana('solicitudes');
       cargar({ conEsqueleto: false });
     } catch (fallo) {
       ocupar(backdrop, enviar, '', false, 'Enviar invitación');
+      if (esRechazoGenerico(fallo)) {
+        emailRechazado = emailActual();
+        rechazo.classList.remove('is-hidden');
+        ayuda.classList.add('is-hidden');
+        enviar.disabled = true;
+        return;
+      }
       const mostrado = fallo instanceof ApiError && fallo.status === 400 && fallo.data && mapearErroresBackend(fallo.data, { email: 'error-invitar-email' });
       if (!mostrado) {
         mostrarErrorCampo('error-invitar-email', mensajeDeError(fallo, 'No pudimos enviar la invitación. Probá de nuevo.'));
@@ -337,7 +488,11 @@ async function reenviar(invitacion) {
     const { mensaje } = await apiFetch(`${RUTA_EQUIPO}/invitaciones/${invitacion.id}/reenviar`, { ...OPCIONES_RED, method: 'POST' });
     showToast(mensaje);
   } catch (error) {
-    showToast(mensajeDeError(error, 'No pudimos reenviar la invitación. Probá de nuevo.'), 'error');
+    if (esRechazoGenerico(error)) {
+      abrirAvisoNoSePudoInvitar();
+    } else {
+      showToast(mensajeDeError(error, 'No pudimos reenviar la invitación. Probá de nuevo.'), 'error');
+    }
   }
   cargar({ conEsqueleto: false });
 }
@@ -393,15 +548,12 @@ function abrirMenuInvitacion(invitacion) {
     backdrop.remove();
     reenviar(invitacion);
   });
-  acciones.append(reenviarBoton);
-  if (invitacion.estado === 'PENDIENTE') {
-    const cancelarBoton = crearAccionMenu('btn-cancelar-invitacion', FIGURAS_CANCELAR, 'Cancelar invitación', true);
-    cancelarBoton.addEventListener('click', () => {
-      backdrop.remove();
-      abrirConfirmacionCancelar(invitacion);
-    });
-    acciones.append(cancelarBoton);
-  }
+  const cancelarBoton = crearAccionMenu('btn-cancelar-invitacion', FIGURAS_CANCELAR, 'Cancelar invitación', true);
+  cancelarBoton.addEventListener('click', () => {
+    backdrop.remove();
+    abrirConfirmacionCancelar(invitacion);
+  });
+  acciones.append(reenviarBoton, cancelarBoton);
   const cerrar = h('button', { class: 'btn btn-tertiary equipo-menu__cerrar', type: 'button', 'data-testid': 'btn-cerrar-menu-invitacion' });
   cerrar.textContent = 'Cerrar';
   cerrar.addEventListener('click', () => backdrop.remove());
@@ -421,6 +573,7 @@ export function enlazarEquipoComercio() {
 export function abrirEquipoComercio() {
   firmaPintada = null;
   comercioPintado = null;
+  pestanaActiva = PESTANAS[0].id;
   cargar({ conEsqueleto: true });
   iniciarActualizacion();
 }

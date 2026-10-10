@@ -667,11 +667,78 @@ async function escenario12(admin) {
   return problemas;
 }
 
+const isoLocal = (ms) => {
+  const f = new Date(ms);
+  const dos = (n) => String(n).padStart(2, '0');
+  return `${f.getFullYear()}-${dos(f.getMonth() + 1)}-${dos(f.getDate())}T${dos(f.getHours())}:${dos(f.getMinutes())}:${dos(f.getSeconds())}`;
+};
+const vencimientoJob = (ahoraMs) => call('POST', `/test/jobs/vencimiento-invitaciones?ahora=${encodeURIComponent(isoLocal(ahoraMs))}`);
+
+async function escenario13(admin) {
+  console.log('--- (S13, extra) proceso de vencimiento corriendo a la vez que aceptar, invitar, reenviar y cancelar ---');
+  const { problemas, registrar5xx, exigir } = nuevoRegistro();
+  const resumen = new Map();
+  const dueno = await duenoAprobado(admin);
+  for (let ronda = 1; ronda <= ROUNDS; ronda++) {
+    const comercioId = await clonar(dueno.comercioId);
+    const emailA = emailInvitado();
+    const emailB = emailInvitado();
+    const emailC = emailInvitado();
+    const emailD = emailInvitado();
+    const a = await invitar(dueno, comercioId, emailA);
+    const b = await invitar(dueno, comercioId, emailB);
+    const c = await invitar(dueno, comercioId, emailC);
+    if (a.status !== 201 || b.status !== 201 || c.status !== 201) throw new Error('invitar ' + JSON.stringify([a, b, c]));
+    const idA = a.json.data.id;
+    const idB = b.json.data.id;
+    const idC = c.json.data.id;
+    const codigoA = await codigoDe(emailA, comercioId);
+    sql(`UPDATE invitacion_empleado SET fecha_vencimiento = NOW() + INTERVAL 1 HOUR WHERE id IN (${idA}, ${idB}, ${idC});`);
+    const ahoraDelProceso = Date.now() + 2 * 60 * 60 * 1000;
+
+    const tareas = [
+      esperar(aleatorio(30)).then(() => vencimientoJob(ahoraDelProceso)).then((r) => ({ tipo: 'job1', r })),
+      esperar(aleatorio(30)).then(() => vencimientoJob(ahoraDelProceso)).then((r) => ({ tipo: 'job2', r })),
+      esperar(aleatorio(30)).then(() => aceptarNueva(emailA, codigoA)).then((r) => ({ tipo: 'aceptar', r })),
+      esperar(aleatorio(30)).then(() => reenviar(dueno, comercioId, idB)).then((r) => ({ tipo: 'reenviar', r })),
+      esperar(aleatorio(30)).then(() => cancelar(dueno, comercioId, idC)).then((r) => ({ tipo: 'cancelar', r })),
+      esperar(aleatorio(30)).then(() => invitar(dueno, comercioId, emailD)).then((r) => ({ tipo: 'invitar', r })),
+    ];
+    const resultados = await Promise.all(tareas);
+    resultados.forEach(({ tipo, r }) => {
+      registrar5xx(`ronda ${ronda} ${tipo}`, r);
+      contar(resumen, `${tipo}:${r.status}`);
+    });
+    const estado = (tipo) => resultados.find((x) => x.tipo === tipo).r.status;
+    const filasA = invitaciones(comercioId, emailA);
+    exigir(estado('job1') === 200 && estado('job2') === 200, `ronda ${ronda}: jobs ${estado('job1')}/${estado('job2')}`);
+    if (estado('aceptar') === 200) {
+      exigir(filasA.length === 1 && filasA[0].estado === 'ACEPTADA', `ronda ${ronda}: aceptar 200 y estado ${filasA.map((f) => f.estado)}`);
+      exigir(relacionesActivas(comercioId) === 1 && cantidadUsuarios(emailA) === 1, `ronda ${ronda}: relacion o usuario inconsistentes tras aceptar`);
+    } else {
+      exigir(estado('aceptar') === 401, `ronda ${ronda}: aceptar ${estado('aceptar')}`);
+      exigir(filasA.length === 1 && filasA[0].estado === 'VENCIDA', `ronda ${ronda}: aceptar 401 y estado ${filasA.map((f) => f.estado)}`);
+      exigir(relacionesActivas(comercioId) === 0 && cantidadUsuarios(emailA) === 0, `ronda ${ronda}: relacion o usuario creados pese a vencida`);
+    }
+    exigir(estado('cancelar') === 200, `ronda ${ronda}: cancelar ${estado('cancelar')} (pendiente o vencida son cancelables)`);
+    exigir(invitaciones(comercioId, emailC).every((i) => i.estado === 'CANCELADA'), `ronda ${ronda}: C ${invitaciones(comercioId, emailC).map((i) => i.estado)}`);
+    exigir(estado('reenviar') === 200, `ronda ${ronda}: reenviar ${estado('reenviar')}`);
+    const filasB = invitaciones(comercioId, emailB);
+    exigir(filasB.length === 2 && ['REEMPLAZADA', 'VENCIDA'].includes(filasB[0].estado) && filasB[1].estado === 'PENDIENTE', `ronda ${ronda}: B ${filasB.map((f) => f.estado)}`);
+    exigir(estado('invitar') === 201, `ronda ${ronda}: invitar ${estado('invitar')}`);
+    exigir(pendientes(comercioId, emailD).length === 1, `ronda ${ronda}: D pendientes ${pendientes(comercioId, emailD).length}`);
+    exigir(Number(sql(`SELECT COUNT(*) FROM invitacion_empleado WHERE comercio_id = ${comercioId} AND estado = 'VENCIDA' AND fecha_resolucion <> fecha_vencimiento;`)) === 0, `ronda ${ronda}: VENCIDA con fecha_resolucion distinta del vencimiento`);
+    console.log(`ronda ${ronda}: aceptar=${estado('aceptar')} A=${filasA.map((f) => f.estado)} B=${filasB.map((f) => f.estado)}`);
+  }
+  console.log('Resumen (S13):', resumir(resumen));
+  return problemas;
+}
+
 async function main() {
   LOC = await resolverLocalidad();
   const admin = (await call('POST', '/auth/login', null, ADMIN)).json.data.token;
   const solo = process.env.ESCENARIO;
-  const escenarios = [escenario1, escenario2, escenario3, escenario4, escenario5, escenario6, escenario7, escenario8, escenario9, escenario10, escenario11, escenario12];
+  const escenarios = [escenario1, escenario2, escenario3, escenario4, escenario5, escenario6, escenario7, escenario8, escenario9, escenario10, escenario11, escenario12, escenario13];
   const todos = [];
   for (let i = 0; i < escenarios.length; i++) {
     if (!solo || solo === String(i + 1)) todos.push(...(await escenarios[i](admin)));

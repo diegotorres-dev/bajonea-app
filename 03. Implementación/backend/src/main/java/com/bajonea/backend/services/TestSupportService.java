@@ -183,7 +183,8 @@ public class TestSupportService {
 
     /**
      * Atajo de entorno de test: deja la fecha de vencimiento de la invitación en el pasado (sigue guardada como
-     * {@code PENDIENTE}; "vencida" se calcula al listar), para probar el vencimiento sin esperar siete días.
+     * {@code PENDIENTE} hasta que corre el proceso de vencimiento, que en test se dispara a pedido con
+     * {@code POST /api/v1/test/jobs/vencimiento-invitaciones}), para probar el vencimiento sin esperar siete días.
      */
     @Transactional
     public void vencerInvitacionEmpleado(Integer invitacionId) {

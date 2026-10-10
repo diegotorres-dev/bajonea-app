@@ -22,6 +22,7 @@ import {
   sufijoUnico,
   validarInvitacion,
   vencerInvitacionTest,
+  ejecutarVencimientoInvitacionesTest,
 } from './helpers/backend';
 import type { SesionApi } from './helpers/backend';
 import type { Dueno } from './helpers/multicomercio';
@@ -36,8 +37,10 @@ const MSG_USUARIO = 'Ese nombre de usuario ya está en uso';
 const MSG_REVISAR = 'Revisá los campos marcados.';
 const MSG_TERMINOS = 'Tenés que aceptar los Términos y Condiciones para continuar.';
 const AVISO_LOGIN = 'Listo, ya podés ingresar';
-const MSG_EDAD_REGISTRO = 'Tenés que tener al menos 14 años para registrarte';
-const MSG_EDAD_EMPLEADO = 'Tenés que tener 18 años o más para trabajar en un comercio';
+const MSG_EDAD_REGISTRO = 'Tenés que tener al menos 14 años para poder registrarte.';
+const MSG_EDAD_EMPLEADO = 'Tenés que tener 18 años o más para trabajar en este comercio.';
+const MSG_RECHAZO_CUERPO = 'Por privacidad no podemos contarte el motivo. Podés pedirle a esta persona que revise su correo y volver a intentar más tarde.';
+const MSG_EDAD_SERVIDOR_14 = 'Tenés que tener al menos 14 años para registrarte';
 
 const emailNuevo = (): string => `inv.ui.${sufijoUnico()}@bajonea.test`;
 const estadoInvitacion = (id: number): string => sql(`SELECT estado FROM invitacion_empleado WHERE id = ${id};`);
@@ -438,13 +441,20 @@ test.describe('Invitación de empleado (UI), tramo E1 B2', () => {
     expect(estadoInvitacion(id)).toBe('PENDIENTE');
   });
 
-  test('registro de Cliente: con 13 años el asistente vuelve al paso 1 con el error de edad bajo la fecha y no crea la cuenta', async ({ page }) => {
+  test('registro de Cliente: con 13 años el error de edad aparece bajo la fecha apenas se completa, bloquea Continuar y no crea la cuenta', async ({ page }) => {
     const email = emailNuevo();
+    let pedidos = 0;
+    page.on('request', (req) => {
+      if (req.url().endsWith('/auth/registro/cliente') && req.method() === 'POST') {
+        pedidos += 1;
+      }
+    });
     await page.goto('/registro-cliente.html');
     await page.getByTestId('input-nombre').fill('Menor');
     await page.getByTestId('input-apellido').fill('De Edad');
     await page.getByTestId('input-dni').fill(generarDni());
     await page.getByTestId('input-fecha-nacimiento').fill(fechaNacimientoRelativa(13));
+    await expect(page.getByTestId('mensaje-error-fecha-nacimiento')).toHaveText(MSG_EDAD_REGISTRO);
     await page.getByTestId('input-telefono').fill(generarTelefono());
     await page.getByTestId('input-nombre-usuario').fill(nombreUsuarioUnico('cli'));
     await page.getByTestId('input-email').fill(email);
@@ -453,18 +463,31 @@ test.describe('Invitación de empleado (UI), tramo E1 B2', () => {
     await page.getByTestId('input-confirmar-password').fill(password);
     await page.getByTestId('input-acepta-terminos').check();
     await page.getByTestId('btn-continuar').click();
-    await completarPaso2Asistente(page);
 
-    const respuesta = page.waitForResponse((res) => res.url().endsWith('/auth/registro/cliente') && res.request().method() === 'POST');
-    await page.getByTestId('btn-crear-cuenta').click();
-    expect((await respuesta).status()).toBe(400);
-
-    await expect(page.getByTestId('input-nombre')).toBeVisible();
     await expect(page.getByTestId('mensaje-error-fecha-nacimiento')).toHaveText(MSG_EDAD_REGISTRO);
+    await expect(page.getByTestId('input-calle')).toBeHidden();
+    expect(pedidos).toBe(0);
     expect(Number(sql(`SELECT COUNT(*) FROM usuario WHERE email = '${email}';`))).toBe(0);
+
+    await page.getByTestId('input-fecha-nacimiento').fill(fechaNacimientoRelativa(14, 1));
+    await expect(page.getByTestId('mensaje-error-fecha-nacimiento')).toHaveText(MSG_EDAD_REGISTRO);
+    await page.getByTestId('input-fecha-nacimiento').fill(fechaNacimientoRelativa(14));
+    await expect(page.getByTestId('mensaje-error-fecha-nacimiento')).toBeHidden();
+    await page.getByTestId('btn-continuar').click();
+    await expect(page.getByTestId('input-calle')).toBeVisible();
   });
 
-  test('cuenta nueva: con 15 años el asistente vuelve al paso 1 con el mensaje de 18 años bajo la fecha y la invitación sigue pendiente', async ({ page, request }) => {
+  test('registro de Cliente: una fecha todavía incompleta (año de uno o dos dígitos) no muestra el error de edad', async ({ page }) => {
+    await page.goto('/registro-cliente.html');
+    await page.getByTestId('input-fecha-nacimiento').fill('0002-05-10');
+    await expect(page.getByTestId('mensaje-error-fecha-nacimiento')).toBeHidden();
+    await page.getByTestId('input-fecha-nacimiento').fill(fechaNacimientoRelativa(30));
+    await expect(page.getByTestId('mensaje-error-fecha-nacimiento')).toBeHidden();
+    await page.getByTestId('input-fecha-nacimiento').fill(fechaNacimientoRelativa(5));
+    await expect(page.getByTestId('mensaje-error-fecha-nacimiento')).toHaveText(MSG_EDAD_REGISTRO);
+  });
+
+  test('cuenta nueva por invitación: el mínimo es 18, el error sale en tiempo real y el mensaje de 14 años nunca aparece', async ({ page, request }) => {
     const { email, id, codigo } = await invitarConCodigo(request);
     await page.goto('/invitacion-empleado.html');
     await continuarConCodigo(page, email, codigo);
@@ -474,19 +497,28 @@ test.describe('Invitación de empleado (UI), tramo E1 B2', () => {
       password: passwordNueva(),
       fecha: fechaNacimientoRelativa(15),
     });
-    await page.getByTestId('btn-continuar').click();
-    await completarPaso2Asistente(page);
-
-    const respuesta = page.waitForResponse((res) => res.url().endsWith('/auth/invitaciones-empleado/aceptar') && res.request().method() === 'POST');
-    await page.getByTestId('btn-crear-cuenta').click();
-    expect((await respuesta).status()).toBe(400);
-
-    await expect(page.getByTestId('input-nombre')).toBeVisible();
     await expect(page.getByTestId('mensaje-error-fecha-nacimiento')).toHaveText(MSG_EDAD_EMPLEADO);
-    await expect(page.getByTestId('mensaje-banner')).toContainText(MSG_REVISAR);
-    await expect(page.getByTestId('mensaje-invitacion-exito')).toBeHidden();
+
+    for (const anios of [13, 14, 17]) {
+      await page.getByTestId('input-fecha-nacimiento').fill(fechaNacimientoRelativa(anios));
+      await expect(page.getByTestId('mensaje-error-fecha-nacimiento')).toHaveText(MSG_EDAD_EMPLEADO);
+    }
+    await page.getByTestId('input-fecha-nacimiento').fill(fechaNacimientoRelativa(18, -1));
+    await expect(page.getByTestId('mensaje-error-fecha-nacimiento')).toBeHidden();
+    await page.getByTestId('input-fecha-nacimiento').fill(fechaNacimientoRelativa(18, 1));
+    await expect(page.getByTestId('mensaje-error-fecha-nacimiento')).toHaveText(MSG_EDAD_EMPLEADO);
+    await page.getByTestId('btn-continuar').click();
+
+    await expect(page.getByTestId('mensaje-error-fecha-nacimiento')).toHaveText(MSG_EDAD_EMPLEADO);
+    await expect(page.getByTestId('input-calle')).toBeHidden();
+    await expect(page.getByText(MSG_EDAD_SERVIDOR_14)).toHaveCount(0);
     expect(estadoInvitacion(id)).toBe('PENDIENTE');
     expect(Number(sql(`SELECT COUNT(*) FROM usuario WHERE email = '${email}';`))).toBe(0);
+
+    await page.getByTestId('input-fecha-nacimiento').fill(fechaNacimientoRelativa(18));
+    await expect(page.getByTestId('mensaje-error-fecha-nacimiento')).toBeHidden();
+    await page.getByTestId('btn-continuar').click();
+    await expect(page.getByTestId('input-calle')).toBeVisible();
   });
 
   test('con una sesión previa abierta, el botón final la cierra antes de ir al login', async ({ page, request }) => {
@@ -574,7 +606,6 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
   test.use({ viewport: { width: 375, height: 812 } });
 
   const MSG_YA_MIEMBRO = 'Esa persona ya es parte de tu equipo';
-  const MSG_NO_SE_PUEDE = 'No se puede invitar a este email';
   const MSG_PENDIENTE = 'Ya hay una invitación pendiente para ese email. Podés reenviarla.';
   const IDS_ACCIONES_PERFIL = [
     'btn-foto-perfil-comercio',
@@ -669,19 +700,59 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
     await expect(page.getByTestId('titulo-equipo')).toBeHidden();
   });
 
-  test('sin equipo se ve "Todavía no tenés equipo" y el botón Invitar sigue disponible', async ({ page, request }) => {
+  async function irAPestana(page: Page, id: 'equipo' | 'solicitudes') {
+    const pestana = page.getByTestId(`tab-equipo-${id}`);
+    await pestana.click();
+    await expect(pestana).toHaveAttribute('aria-selected', 'true');
+  }
+
+  async function abrirSolicitudes(page: Page, comercioId: number) {
+    await abrirEquipo(page, comercioId);
+    await irAPestana(page, 'solicitudes');
+  }
+
+  const textoDeRechazo = (page: Page) => page.getByTestId('rechazo-invitar-equipo');
+
+  test('sin equipo se ve "Todavía no tenés equipo", las dos pestañas con su contador en cero y el botón Invitar sigue disponible', async ({ page, request }) => {
     const comercio = await comercioNuevo(request);
     await abrirEquipo(page, comercio.id);
 
     const vacio = page.getByTestId('estado-vacio');
     await expect(vacio).toBeVisible();
     await expect(vacio).toContainText('Todavía no tenés equipo');
+    await expect(page.getByTestId('tab-equipo-equipo')).toHaveText('Mi equipo · 0');
+    await expect(page.getByTestId('tab-equipo-solicitudes')).toHaveText('Solicitudes · 0');
+    await expect(page.getByTestId('tab-equipo-equipo')).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByTestId('btn-invitar-equipo')).toBeEnabled();
     await expect(page.getByTestId('equipo-cargando')).toHaveCount(0);
     await capturarEquipo(page, 'vacia');
+
+    await irAPestana(page, 'solicitudes');
+    await expect(page.getByTestId('estado-vacio')).toContainText('No hay solicitudes');
   });
 
-  test('invitar desde la hoja: se cierra, avisa con el mensaje del servidor y la fila queda Pendiente "vence en 7 días"', async ({ page, request }) => {
+  test('las pestañas separan a los integrantes de las solicitudes, cada una con su contador', async ({ page, request }) => {
+    const comercio = await comercioNuevo(request);
+    const miembro = await aceptarPorApi(request, comercio.id);
+    const pendiente = (await invitar(request, comercio.id)).email;
+    await abrirEquipo(page, comercio.id);
+
+    await expect(page.getByTestId('tab-equipo-equipo')).toHaveText('Mi equipo · 1');
+    await expect(page.getByTestId('tab-equipo-solicitudes')).toHaveText('Solicitudes · 1');
+    await expect(page.getByTestId('tab-equipo-equipo')).toHaveAttribute('aria-selected', 'true');
+    await expect(filaMiembro(page, miembro)).toBeVisible();
+    await expect(filaInvitacion(page, pendiente)).toHaveCount(0);
+
+    await irAPestana(page, 'solicitudes');
+    await expect(filaInvitacion(page, pendiente)).toBeVisible();
+    await expect(filaMiembro(page, miembro)).toHaveCount(0);
+    await capturarEquipo(page, 'pestanas');
+
+    await irAPestana(page, 'equipo');
+    await expect(filaMiembro(page, miembro)).toBeVisible();
+  });
+
+  test('invitar desde la hoja: se cierra, avisa con el mensaje del servidor y pasa a Solicitudes con la fila Pendiente "vence en 7 días"', async ({ page, request }) => {
     const comercio = await comercioNuevo(request);
     await abrirEquipo(page, comercio.id);
     await expect(page.getByTestId('estado-vacio')).toBeVisible();
@@ -692,16 +763,19 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
     await expect(page.getByTestId('titulo-invitar-equipo')).toHaveText('Invitar al equipo');
     await expect(page.getByText('Email', { exact: true })).toBeVisible();
     await expect(page.getByTestId('ayuda-invitar-equipo')).toHaveText('Le llega un código que vale 7 días.');
+    await expect(textoDeRechazo(page)).toBeHidden();
     await page.getByTestId('input-email-invitar').fill(email);
     await page.getByTestId('btn-enviar-invitacion').click();
 
     await expect(page.getByTestId('hoja-invitar-equipo')).toBeHidden();
     await expect(page.locator('.toast')).toHaveText(`Invitación enviada a ${email}`);
+    await expect(page.getByTestId('tab-equipo-solicitudes')).toHaveAttribute('aria-selected', 'true');
     const fila = filaInvitacion(page, email);
     await expect(fila).toBeVisible();
     await expect(fila.getByTestId('equipo-estado')).toHaveText('Pendiente');
     await expect(fila.getByTestId('equipo-detalle')).toHaveText('vence en 7 días');
     await expect(page.getByTestId('estado-vacio')).toHaveCount(0);
+    await expect(page.getByTestId('tab-equipo-solicitudes')).toHaveText('Solicitudes · 1');
   });
 
   test('un email con formato inválido muestra el error del servidor bajo el campo y deja la hoja abierta', async ({ page, request }) => {
@@ -721,15 +795,74 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
     await expect(page.getByTestId('error-email-invitar')).toBeHidden();
   });
 
-  test('invitar a un email que no se puede invitar muestra "No se puede invitar a este email" sin cerrar la hoja', async ({ page, request }) => {
+  test('un email que no se puede invitar muestra un mensaje fijo bajo el campo, deshabilita Invitar para ese email y se rehabilita al cambiarlo o reabrir la hoja', async ({ page, request }) => {
     const comercio = await comercioNuevo(request);
     await abrirEquipo(page, comercio.id);
 
     await invitarDesdeLaHoja(page, dueno.email);
 
-    await expect(page.getByTestId('error-email-invitar')).toHaveText(MSG_NO_SE_PUEDE);
+    await expect(textoDeRechazo(page)).toBeVisible();
+    await expect(page.getByTestId('ayuda-invitar-equipo')).toBeHidden();
+    await expect(page.getByTestId('rechazo-invitar-titulo')).toHaveText('No pudimos invitar a este email.');
+    await expect(page.getByTestId('rechazo-invitar-cuerpo')).toHaveText(MSG_RECHAZO_CUERPO);
+    await expect(page.getByTestId('error-email-invitar')).toBeHidden();
     await expect(page.getByTestId('hoja-invitar-equipo')).toBeVisible();
+    await expect(page.getByTestId('btn-enviar-invitacion')).toBeDisabled();
+    await expect(page.locator('.toast')).toHaveCount(0);
+    await expect(textoDeRechazo(page)).not.toContainText('correo electrónico enviado');
+    await capturarEquipo(page, 'hoja-invitar-rechazo');
+
+    await page.getByTestId('input-email-invitar').fill(`  ${dueno.email.toUpperCase()}  `);
+    await expect(page.getByTestId('btn-enviar-invitacion')).toBeDisabled();
+    await expect(textoDeRechazo(page)).toBeVisible();
+
+    await expect(page.getByTestId('ayuda-invitar-equipo')).toBeHidden();
+
+    await page.getByTestId('input-email-invitar').fill(emailNuevo());
     await expect(page.getByTestId('btn-enviar-invitacion')).toBeEnabled();
+    await expect(textoDeRechazo(page)).toBeHidden();
+    await expect(page.getByTestId('ayuda-invitar-equipo')).toBeVisible();
+    await expect(page.getByTestId('ayuda-invitar-equipo')).toHaveText('Le llega un código que vale 7 días.');
+
+    await page.getByTestId('input-email-invitar').fill(dueno.email);
+    await page.getByTestId('btn-enviar-invitacion').click();
+    await expect(textoDeRechazo(page)).toBeVisible();
+    await expect(page.getByTestId('ayuda-invitar-equipo')).toBeHidden();
+    await expect(page.getByTestId('btn-enviar-invitacion')).toBeDisabled();
+
+    await page.mouse.click(5, 5);
+    await expect(page.getByTestId('hoja-invitar-equipo')).toBeHidden();
+    await page.getByTestId('btn-invitar-equipo').click();
+    await expect(page.getByTestId('hoja-invitar-equipo')).toBeVisible();
+    await expect(textoDeRechazo(page)).toBeHidden();
+    await expect(page.getByTestId('ayuda-invitar-equipo')).toBeVisible();
+    await expect(page.getByTestId('btn-enviar-invitacion')).toBeEnabled();
+  });
+
+  test('todas las causas de rechazo (Dueño, cuenta bloqueada, menor de 18) muestran exactamente el mismo mensaje', async ({ page, request }) => {
+    const comercio = await comercioNuevo(request);
+    const bloqueada = await registrarYVerificarCliente(request, localidadId);
+    sql(`UPDATE usuario SET estado = 'BLOQUEADO' WHERE email = '${bloqueada.email}';`);
+    const menor = await registrarYVerificarCliente(request, localidadId);
+    sql(`UPDATE persona_fisica SET fecha_nacimiento = '${fechaNacimientoRelativa(16)}' WHERE id = ${usuarioIdPorEmail(menor.email)};`);
+    await abrirEquipo(page, comercio.id);
+
+    const visto: string[] = [];
+    for (const email of [dueno.email, bloqueada.email, menor.email]) {
+      await page.getByTestId('btn-invitar-equipo').click();
+      await expect(page.getByTestId('hoja-invitar-equipo')).toBeVisible();
+      await page.getByTestId('input-email-invitar').fill(email);
+      await page.getByTestId('btn-enviar-invitacion').click();
+      await expect(textoDeRechazo(page)).toBeVisible();
+      visto.push((await textoDeRechazo(page).innerText()).trim());
+      await page.mouse.click(5, 5);
+      await expect(page.getByTestId('hoja-invitar-equipo')).toBeHidden();
+    }
+
+    expect(new Set(visto).size).toBe(1);
+    expect(visto[0]).toContain('No pudimos invitar a este email.');
+    expect(visto[0]).toContain(MSG_RECHAZO_CUERPO);
+    expect(sql(`SELECT COUNT(*) FROM invitacion_empleado WHERE comercio_id = ${comercio.id};`)).toBe('0');
   });
 
   test('invitar a quien ya es del equipo muestra el error bajo el campo', async ({ page, request }) => {
@@ -741,13 +874,14 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
     await invitarDesdeLaHoja(page, miembro);
 
     await expect(page.getByTestId('error-email-invitar')).toHaveText(MSG_YA_MIEMBRO);
+    await expect(textoDeRechazo(page)).toBeHidden();
     await expect(page.getByTestId('hoja-invitar-equipo')).toBeVisible();
   });
 
   test('invitar a un email con invitación pendiente muestra el error bajo el campo', async ({ page, request }) => {
     const comercio = await comercioNuevo(request);
     const { email } = await invitar(request, comercio.id);
-    await abrirEquipo(page, comercio.id);
+    await abrirSolicitudes(page, comercio.id);
     await expect(filaInvitacion(page, email)).toBeVisible();
 
     await invitarDesdeLaHoja(page, email);
@@ -761,7 +895,7 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
     for (let n = 0; n < 5; n += 1) {
       await invitar(request, comercio.id);
     }
-    await abrirEquipo(page, comercio.id);
+    await abrirSolicitudes(page, comercio.id);
     await expect(page.locator('[data-testid^="equipo-invitacion-"]')).toHaveCount(5);
 
     await invitarDesdeLaHoja(page, emailNuevo());
@@ -771,23 +905,75 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
     await expect(page.locator('[data-testid^="equipo-invitacion-"]')).toHaveCount(5);
   });
 
-  test('una invitación vencida se ve "Vencida" y su menú solo permite reenviar', async ({ page, request }) => {
+  test('una invitación que el proceso de vencimiento pasó a VENCIDA se ve "Vencida" con el menú de tres puntos y reenviarla desde el menú no la marca como reemplazada', async ({ page, request }) => {
     const comercio = await comercioNuevo(request);
     const { email, id } = await invitar(request, comercio.id);
     await vencerInvitacionTest(request, id);
+    expect(estadoInvitacion(id)).toBe('PENDIENTE');
+    expect(await ejecutarVencimientoInvitacionesTest(request)).toBeGreaterThanOrEqual(1);
+    expect(estadoInvitacion(id)).toBe('VENCIDA');
     await abrirEquipo(page, comercio.id);
 
+    await expect(page.getByTestId('tab-equipo-solicitudes')).toHaveText('Solicitudes · 1');
+    await irAPestana(page, 'solicitudes');
     const fila = filaInvitacion(page, email);
     await expect(fila).toBeVisible();
     await expect(fila).toHaveAttribute('data-estado', 'VENCIDA');
-    await expect(fila.getByTestId('equipo-estado')).toHaveText('Vencida');
+    await expect(fila.getByTestId('equipo-estado')).toHaveText('Vencida hoy');
+    await expect(fila.locator('.pedido-estado__dot')).toHaveClass(/pedido-estado__dot--vencido/);
     await expect(fila.getByTestId('equipo-detalle')).toHaveCount(0);
+    await expect(fila.locator('[data-testid^="btn-menu-invitacion-"]')).toHaveCount(1);
+    await expect(page.locator('[data-testid^="btn-reenviar-fila-"]')).toHaveCount(0);
+    await capturarEquipo(page, 'vencida');
+
     await abrirMenu(page, email);
     await expect(page.getByTestId('btn-reenviar-invitacion')).toHaveText('Reenviar código');
-    await expect(page.getByTestId('btn-cancelar-invitacion')).toHaveCount(0);
+    await expect(page.getByTestId('btn-cancelar-invitacion')).toHaveText('Cancelar invitación');
+    await page.getByTestId('btn-reenviar-invitacion').click();
+
+    await expect(page.locator('.toast')).toHaveText(`Invitación reenviada a ${email}`);
+    await expect(filaInvitacion(page, email)).toHaveCount(1);
+    await expect(filaInvitacion(page, email).getByTestId('equipo-estado')).toHaveText('Pendiente');
+    expect(estadoInvitacion(id)).toBe('VENCIDA');
+    expect(sql(`SELECT COUNT(*) FROM invitacion_empleado WHERE comercio_id = ${comercio.id} AND email = '${email}' AND estado = 'PENDIENTE';`)).toBe('1');
   });
 
-  test('una invitación con el código bloqueado se ve "Código bloqueado" y reenviarla la deja Pendiente', async ({ page, request }) => {
+  test('una invitación vencida con un UPDATE directo de la fecha (sin tocar el estado) también se ve "Vencida hace N días" y no desaparece con el sondeo', async ({ page, request }) => {
+    const comercio = await comercioNuevo(request);
+    const reciente = await invitar(request, comercio.id);
+    const antigua = await invitar(request, comercio.id);
+    sql(`UPDATE invitacion_empleado SET fecha_vencimiento = NOW() - INTERVAL 1 MINUTE WHERE id = ${reciente.id};`);
+    sql(`UPDATE invitacion_empleado SET fecha_vencimiento = NOW() - INTERVAL 3 DAY WHERE id = ${antigua.id};`);
+    expect(estadoInvitacion(reciente.id)).toBe('PENDIENTE');
+    await abrirSolicitudes(page, comercio.id);
+
+    await expect(filaInvitacion(page, reciente.email).getByTestId('equipo-estado')).toHaveText('Vencida hoy');
+    await expect(filaInvitacion(page, antigua.email).getByTestId('equipo-estado')).toHaveText('Vencida hace 3 días');
+    await expect(page.getByTestId('tab-equipo-solicitudes')).toHaveText('Solicitudes · 2');
+
+    await page.waitForTimeout(16_000);
+    await expect(filaInvitacion(page, reciente.email)).toBeVisible();
+    await expect(filaInvitacion(page, antigua.email)).toBeVisible();
+    await expect(page.getByTestId('tab-equipo-solicitudes')).toHaveText('Solicitudes · 2');
+  });
+
+  test('invitar de nuevo a un email con la invitación vencida deja una sola línea Pendiente en Solicitudes', async ({ page, request }) => {
+    const comercio = await comercioNuevo(request);
+    const { email, id } = await invitar(request, comercio.id);
+    sql(`UPDATE invitacion_empleado SET fecha_vencimiento = NOW() - INTERVAL 1 MINUTE WHERE id = ${id};`);
+    await abrirSolicitudes(page, comercio.id);
+    await expect(filaInvitacion(page, email).getByTestId('equipo-estado')).toHaveText('Vencida hoy');
+
+    await invitarDesdeLaHoja(page, email);
+
+    await expect(page.getByTestId('hoja-invitar-equipo')).toBeHidden();
+    await expect(filaInvitacion(page, email)).toHaveCount(1);
+    await expect(filaInvitacion(page, email).getByTestId('equipo-estado')).toHaveText('Pendiente');
+    await expect(page.getByTestId('tab-equipo-solicitudes')).toHaveText('Solicitudes · 1');
+    expect(estadoInvitacion(id)).toBe('VENCIDA');
+  });
+
+  test('una invitación con el código bloqueado se ve "Código bloqueado" con el menú de tres puntos y reenviarla desde el menú conserva la causa original', async ({ page, request }) => {
     const comercio = await comercioNuevo(request);
     const { email, id } = await invitar(request, comercio.id);
     const codigo = await obtenerCodigoInvitacionTest(request, email, comercio.id);
@@ -795,24 +981,56 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
       expect((await validarInvitacion(request, email, codigoErroneo(codigo))).status).toBe(401);
     }
     expect(estadoInvitacion(id)).toBe('INVALIDADA');
-    await abrirEquipo(page, comercio.id);
+    await abrirSolicitudes(page, comercio.id);
 
     const fila = filaInvitacion(page, email);
     await expect(fila.getByTestId('equipo-estado')).toHaveText('Código bloqueado');
+    await expect(fila.locator('[data-testid^="btn-menu-invitacion-"]')).toHaveCount(1);
+    await expect(page.locator('[data-testid^="btn-reenviar-fila-"]')).toHaveCount(0);
     await abrirMenu(page, email);
-    await expect(page.getByTestId('btn-cancelar-invitacion')).toHaveCount(0);
     await page.getByTestId('btn-reenviar-invitacion').click();
 
     await expect(page.locator('.toast')).toHaveText(`Invitación reenviada a ${email}`);
     await expect(filaInvitacion(page, email)).toHaveCount(1);
     await expect(filaInvitacion(page, email).getByTestId('equipo-estado')).toHaveText('Pendiente');
-    expect(estadoInvitacion(id)).toBe('REEMPLAZADA');
+    expect(estadoInvitacion(id)).toBe('INVALIDADA');
   });
 
-  test('reenviar actúa directo: toast del servidor, la anterior queda reemplazada y hay un código nuevo', async ({ page, request }) => {
+  test('cancelar una invitación vencida o con el código bloqueado desde el menú: misma hoja de confirmación, queda CANCELADA y sale de la lista', async ({ page, request }) => {
+    const comercio = await comercioNuevo(request);
+    const vencida = await invitar(request, comercio.id);
+    await vencerInvitacionTest(request, vencida.id);
+    await ejecutarVencimientoInvitacionesTest(request);
+    const bloqueada = await invitar(request, comercio.id);
+    const codigo = await obtenerCodigoInvitacionTest(request, bloqueada.email, comercio.id);
+    for (let n = 0; n < 5; n += 1) {
+      expect((await validarInvitacion(request, bloqueada.email, codigoErroneo(codigo))).status).toBe(401);
+    }
+    expect(estadoInvitacion(vencida.id)).toBe('VENCIDA');
+    expect(estadoInvitacion(bloqueada.id)).toBe('INVALIDADA');
+    await abrirSolicitudes(page, comercio.id);
+    await expect(page.getByTestId('tab-equipo-solicitudes')).toHaveText('Solicitudes · 2');
+
+    for (const invitacion of [vencida, bloqueada]) {
+      await abrirMenu(page, invitacion.email);
+      await expect(page.getByTestId('btn-cancelar-invitacion')).toHaveText('Cancelar invitación');
+      await page.getByTestId('btn-cancelar-invitacion').click();
+      await expect(page.getByTestId('titulo-cancelar-invitacion')).toHaveText(`¿Cancelar la invitación a ${invitacion.email}?`);
+      await page.getByTestId('btn-confirmar-cancelar-invitacion').click();
+      await expect(page.getByTestId('hoja-cancelar-invitacion')).toBeHidden();
+      await expect(page.locator('.toast')).toHaveText('Invitación cancelada');
+      await expect(filaInvitacion(page, invitacion.email)).toHaveCount(0);
+      expect(estadoInvitacion(invitacion.id)).toBe('CANCELADA');
+    }
+    await expect(page.getByTestId('tab-equipo-solicitudes')).toHaveText('Solicitudes · 0');
+    await expect(page.getByTestId('estado-vacio')).toBeVisible();
+    expect(sql(`SELECT COUNT(*) FROM historial_empleado_comercio WHERE comercio_id = ${comercio.id} AND motivo = 'INVITACION_CANCELADA';`)).toBe('2');
+  });
+
+  test('reenviar una pendiente vigente actúa directo: toast del servidor, la anterior queda reemplazada y hay un código nuevo', async ({ page, request }) => {
     const comercio = await comercioNuevo(request);
     const { email, id } = await invitar(request, comercio.id);
-    await abrirEquipo(page, comercio.id);
+    await abrirSolicitudes(page, comercio.id);
 
     await abrirMenu(page, email);
     await expect(page.getByTestId('btn-reenviar-invitacion')).toHaveText('Reenviar código');
@@ -829,10 +1047,30 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
     expect(await obtenerCodigoInvitacionTest(request, email, comercio.id)).toMatch(/^\d{6}$/);
   });
 
+  test('reenviar a un email que ya no se puede invitar muestra el aviso fijo (no un toast) y deja la fila como estaba', async ({ page, request }) => {
+    const comercio = await comercioNuevo(request);
+    const cuenta = await registrarYVerificarCliente(request, localidadId);
+    const { id } = await invitar(request, comercio.id, cuenta.email);
+    sql(`UPDATE usuario SET estado = 'BLOQUEADO' WHERE email = '${cuenta.email}';`);
+    await abrirSolicitudes(page, comercio.id);
+
+    await abrirMenu(page, cuenta.email);
+    await page.getByTestId('btn-reenviar-invitacion').click();
+
+    await expect(page.getByTestId('aviso-no-se-pudo-invitar')).toBeVisible();
+    await expect(page.getByTestId('aviso-no-se-pudo-invitar-titulo')).toHaveText('No pudimos invitar a este email.');
+    await expect(page.getByTestId('aviso-no-se-pudo-invitar-cuerpo')).toHaveText(MSG_RECHAZO_CUERPO);
+    await expect(page.locator('.toast')).toHaveCount(0);
+    await page.getByTestId('btn-cerrar-aviso-no-se-pudo-invitar').click();
+    await expect(page.getByTestId('aviso-no-se-pudo-invitar')).toBeHidden();
+    await expect(filaInvitacion(page, cuenta.email)).toHaveCount(1);
+    expect(estadoInvitacion(id)).toBe('PENDIENTE');
+  });
+
   test('cancelar pide confirmación: "Volver" no cancela y confirmar quita la invitación de la lista', async ({ page, request }) => {
     const comercio = await comercioNuevo(request);
     const { email, id } = await invitar(request, comercio.id);
-    await abrirEquipo(page, comercio.id);
+    await abrirSolicitudes(page, comercio.id);
 
     await abrirMenu(page, email);
     await page.getByTestId('btn-cancelar-invitacion').click();
@@ -853,28 +1091,33 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
     await expect(page.locator('.toast')).toHaveText('Invitación cancelada');
     await expect(filaInvitacion(page, email)).toHaveCount(0);
     await expect(page.getByTestId('estado-vacio')).toBeVisible();
+    await expect(page.getByTestId('tab-equipo-solicitudes')).toHaveText('Solicitudes · 0');
     expect(estadoInvitacion(id)).toBe('CANCELADA');
   });
 
-  test('cuando la persona acepta, la lista pasa a Activo sin recargar a mano y los miembros no tienen menú', async ({ page, request }) => {
+  test('cuando la persona acepta, la solicitud sale de Solicitudes y pasa a Mi equipo como Activo sin recargar a mano; los miembros no tienen menú', async ({ page, request }) => {
     const comercio = await comercioNuevo(request);
     const { email } = await invitar(request, comercio.id);
-    await abrirEquipo(page, comercio.id);
+    await abrirSolicitudes(page, comercio.id);
     await expect(filaInvitacion(page, email).getByTestId('equipo-estado')).toHaveText('Pendiente');
+    await expect(page.getByTestId('tab-equipo-equipo')).toHaveText('Mi equipo · 0');
 
     const codigo = await obtenerCodigoInvitacionTest(request, email, comercio.id);
     const aceptada = await aceptarInvitacion(request, { email, codigo, aceptaTerminos: true, cuentaNueva: cuentaNuevaInvitacion(localidadId) });
     expect(aceptada.status, JSON.stringify(aceptada.body)).toBe(200);
 
+    await expect(page.getByTestId('tab-equipo-equipo')).toHaveText('Mi equipo · 1', { timeout: 40_000 });
+    await expect(page.getByTestId('tab-equipo-solicitudes')).toHaveText('Solicitudes · 0');
+    await expect(filaInvitacion(page, email)).toHaveCount(0);
+    await irAPestana(page, 'equipo');
     const miembro = filaMiembro(page, email);
-    await expect(miembro).toBeVisible({ timeout: 40_000 });
+    await expect(miembro).toBeVisible();
     await expect(miembro.getByTestId('equipo-estado')).toHaveText('Activo');
     await expect(miembro.getByTestId('equipo-nombre')).toHaveText('Empleada Invitada');
     await expect(miembro.getByRole('button')).toHaveCount(0);
-    await expect(filaInvitacion(page, email)).toHaveCount(0);
   });
 
-  test('la lista muestra cada estado con su puntito y su texto, y solo las invitaciones tienen menú', async ({ page, request }) => {
+  test('Mi equipo muestra solo a los integrantes activos y Solicitudes cada estado con su puntito, su texto y su acción', async ({ page, request }) => {
     const comercio = await comercioNuevo(request);
     const activo = await aceptarPorApi(request, comercio.id);
     const inactivo = await aceptarPorApi(request, comercio.id);
@@ -893,23 +1136,32 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
     await abrirEquipo(page, comercio.id);
 
     const punto = (fila: ReturnType<typeof filaMiembro>) => fila.locator('.pedido-estado__dot');
+    await expect(page.getByTestId('tab-equipo-equipo')).toHaveText('Mi equipo · 1');
+    await expect(page.getByTestId('tab-equipo-solicitudes')).toHaveText('Solicitudes · 3');
     await expect(filaMiembro(page, activo).getByTestId('equipo-estado')).toHaveText('Activo');
     await expect(punto(filaMiembro(page, activo))).toHaveClass(/pedido-estado__dot--positivo/);
-    await expect(filaMiembro(page, inactivo).getByTestId('equipo-estado')).toHaveText('Inactivo');
-    await expect(punto(filaMiembro(page, inactivo))).toHaveClass(/pedido-estado__dot--inactivo/);
+    await expect(page.locator('[data-testid^="equipo-miembro-"]')).toHaveCount(1);
+    await expect(filaMiembro(page, inactivo)).toHaveCount(0);
+    await expect(page.locator('[data-testid^="equipo-miembro-"] button')).toHaveCount(0);
+    await sinScrollHorizontal(page);
+    await capturarEquipo(page, 'mi-equipo');
+
+    await irAPestana(page, 'solicitudes');
     await expect(filaInvitacion(page, pendiente).getByTestId('equipo-estado')).toHaveText('Pendiente');
     await expect(punto(filaInvitacion(page, pendiente))).toHaveClass(/pedido-estado__dot--pendiente/);
-    await expect(filaInvitacion(page, vencida.email).getByTestId('equipo-estado')).toHaveText('Vencida');
+    await expect(filaInvitacion(page, vencida.email).getByTestId('equipo-estado')).toHaveText('Vencida hoy');
     await expect(punto(filaInvitacion(page, vencida.email))).toHaveClass(/pedido-estado__dot--vencido/);
     await expect(filaInvitacion(page, bloqueada.email).getByTestId('equipo-estado')).toHaveText('Código bloqueado');
     await expect(punto(filaInvitacion(page, bloqueada.email))).toHaveClass(/pedido-estado__dot--rechazado/);
 
-    await expect(page.locator('[data-testid^="equipo-miembro-"]')).toHaveCount(2);
     await expect(page.locator('[data-testid^="equipo-invitacion-"]')).toHaveCount(3);
     await expect(page.locator('[data-testid^="btn-menu-invitacion-"]')).toHaveCount(3);
-    await expect(page.locator('[data-testid^="equipo-miembro-"] button')).toHaveCount(0);
+    for (const email of [pendiente, vencida.email, bloqueada.email]) {
+      await expect(filaInvitacion(page, email).locator('[data-testid^="btn-menu-invitacion-"]')).toHaveCount(1);
+    }
+    await expect(page.locator('[data-testid^="btn-reenviar-fila-"]')).toHaveCount(0);
     await sinScrollHorizontal(page);
-    await capturarEquipo(page, 'con-equipo');
+    await capturarEquipo(page, 'solicitudes');
   });
 
   test('con dos comercios del mismo Dueño, cada uno muestra su propio equipo', async ({ page, request }) => {
@@ -917,7 +1169,7 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
     const b = await comercioNuevo(request);
     const emailA = (await invitar(request, a.id)).email;
     const emailB = (await invitar(request, b.id)).email;
-    await abrirEquipo(page, a.id);
+    await abrirSolicitudes(page, a.id);
 
     await expect(page.getByTestId('equipo-comercio-nombre')).toHaveText(a.nombre);
     await expect(filaInvitacion(page, emailA)).toBeVisible();
@@ -928,13 +1180,14 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
     await page.waitForURL('**/comercio-dashboard.html');
     await page.goto('/comercio-perfil.html');
     await irAEquipo(page);
+    await irAPestana(page, 'solicitudes');
 
     await expect(page.getByTestId('equipo-comercio-nombre')).toHaveText(b.nombre);
     await expect(filaInvitacion(page, emailB)).toBeVisible();
     await expect(filaInvitacion(page, emailA)).toHaveCount(0);
   });
 
-  test('mientras carga el equipo se ven los skeletons y después la lista', async ({ page, request }) => {
+  test('mientras carga el equipo se ven los skeletons (con las pestañas sin contador) y después la lista', async ({ page, request }) => {
     const comercio = await comercioNuevo(request);
     const { email } = await invitar(request, comercio.id);
     let liberar!: () => void;
@@ -950,8 +1203,12 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
     await expect(page.getByTestId('equipo-cargando')).toBeVisible();
     await expect(page.locator('.equipo-esqueleto__fila')).toHaveCount(3);
     await expect(page.getByTestId('equipo-lista')).toHaveAttribute('aria-busy', 'true');
+    await expect(page.getByTestId('tab-equipo-equipo')).toHaveText('Mi equipo');
+    await expect(page.getByTestId('tab-equipo-solicitudes')).toHaveText('Solicitudes');
     liberar();
 
+    await expect(page.getByTestId('tab-equipo-solicitudes')).toHaveText('Solicitudes · 1');
+    await irAPestana(page, 'solicitudes');
     await expect(filaInvitacion(page, email)).toBeVisible();
     await expect(page.getByTestId('equipo-cargando')).toHaveCount(0);
   });
@@ -971,9 +1228,12 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
     await abrirEquipo(page, comercio.id);
 
     await expect(page.getByTestId('equipo-error')).toContainText('No pudimos cargar el equipo.');
+    await expect(page.getByTestId('equipo-tabs')).toBeHidden();
     await expect(page).toHaveURL(/comercio-perfil\.html$/);
     await page.getByTestId('btn-reintentar-equipo').click();
 
+    await expect(page.getByTestId('equipo-tabs')).toBeVisible();
+    await irAPestana(page, 'solicitudes');
     await expect(filaInvitacion(page, email)).toBeVisible();
     await expect(page.getByTestId('equipo-error')).toHaveCount(0);
   });
@@ -1025,11 +1285,16 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
   test('en 375 px la vista del equipo no tiene scroll horizontal, ni con emails largos', async ({ page, request }) => {
     const comercio = await comercioNuevo(request);
     const largo = `inv.ui.${sufijoUnico()}.${'x'.repeat(40)}@bajonea.test`;
+    const largoVencido = await invitar(request, comercio.id, `inv.ui.${sufijoUnico()}.${'z'.repeat(40)}@bajonea.test`);
+    await vencerInvitacionTest(request, largoVencido.id);
     await invitar(request, comercio.id, largo);
     const miembro = await aceptarPorApi(request, comercio.id, `inv.ui.${sufijoUnico()}.${'y'.repeat(40)}@bajonea.test`);
     await abrirEquipo(page, comercio.id);
-    await expect(filaInvitacion(page, largo)).toBeVisible();
     await expect(filaMiembro(page, miembro)).toBeVisible();
+    await sinScrollHorizontal(page);
+    await irAPestana(page, 'solicitudes');
+    await expect(filaInvitacion(page, largo)).toBeVisible();
+    await expect(filaInvitacion(page, largoVencido.email)).toBeVisible();
     await sinScrollHorizontal(page);
 
     const dentroDeLaPantalla = async (testid: string) => {
@@ -1038,6 +1303,7 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
       expect(caja!.x).toBeGreaterThanOrEqual(0);
       expect(caja!.x + caja!.width).toBeLessThanOrEqual(375);
     };
+    await dentroDeLaPantalla(`btn-menu-invitacion-${largoVencido.id}`);
     await abrirMenu(page, largo);
     await dentroDeLaPantalla('menu-invitacion-equipo');
     await page.getByTestId('btn-cancelar-invitacion').click();

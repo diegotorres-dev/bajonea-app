@@ -379,7 +379,7 @@ class InvitacionEmpleadoPublicaControllerIntegrationTest {
     }
 
     @Test
-    void laCuentaNuevaPorInvitacionExigeCatorceEnElDtoYDieciochoEnElServicioConElMapaPrefijado() throws Exception {
+    void laCuentaNuevaPorInvitacionExigeSoloDieciochoYNuncaMuestraElMensajeDeCatorce() throws Exception {
         Dueno dueno = datos.registrarDuenoAprobado();
         String email = emailNuevo();
         try {
@@ -391,7 +391,7 @@ class InvitacionEmpleadoPublicaControllerIntegrationTest {
                     "Pw1234567890", hoy.minusYears(14).plusDays(1));
             postJson(ACEPTAR, cuerpo(email, codigo, "aceptaTerminos", true, "cuentaNueva", deTrece))
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.data['cuentaNueva.fechaNacimiento']").value("Tenés que tener al menos 14 años para registrarte"));
+                    .andExpect(jsonPath("$.data['cuentaNueva.fechaNacimiento']").value("Tenés que tener 18 años o más para trabajar en un comercio"));
 
             DatosClienteRequestDTO deQuince = datos.datosClienteNuevo("nu" + DatosPruebaEmpleado.sufijo(), DatosPruebaEmpleado.dniAleatorio(),
                     "Pw1234567890", hoy.minusYears(15));

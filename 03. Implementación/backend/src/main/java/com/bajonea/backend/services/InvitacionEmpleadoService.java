@@ -63,10 +63,15 @@ import org.springframework.transaction.annotation.Transactional;
  * Invitaciones de empleado de un comercio: invitar, reenviar, cancelar y listar el equipo (el Dueño opera
  * siempre sobre el comercio activo de la request) y, del lado público, validar el código y aceptar la
  * invitación (quien la recibe todavía no tiene sesión). Una fila de {@code invitacion_empleado} por envío:
- * reenviar crea una fila nueva y deja la anterior {@code REEMPLAZADA}; cancelar la deja {@code CANCELADA};
- * nada se borra. El estado visible "vencida" se calcula al listar y además se materializa de forma perezosa
- * (las pendientes vencidas del par pasan a {@code VENCIDA} al invitar o reenviar, para liberar el único
- * pendiente por comercio y email).
+ * reenviar crea una fila nueva y solo deja {@code REEMPLAZADA} a la anterior si era una pendiente todavía
+ * vigente (una invitada con el código bloqueado o ya vencida conserva su estado: {@code REEMPLAZADA} no pisa la
+ * causa original); cancelar la deja {@code CANCELADA} (se puede cancelar una pendiente, una vencida o una con el
+ * código bloqueado, y nada más); nada se borra. "Vencida" es un estado guardado: {@link InvitacionVencimientoJob}
+ * pasa a {@code VENCIDA} cada minuto las pendientes cuya fecha ya pasó. Como red de seguridad, por si el proceso
+ * se atrasa, el listado informa como vencida a una pendiente con la fecha cumplida e invitar o reenviar pasan a
+ * {@code VENCIDA} las pendientes vencidas del par, para liberar el único pendiente por comercio y email. El
+ * listado de solicitudes muestra una línea por email: su invitación más reciente, si está pendiente, vencida o
+ * con el código bloqueado.
  * <p>
  * Orden de bloqueo: la fila de {@code usuario} del Dueño primero, en modo exclusivo al invitar y reenviar (esa
  * fila serializa el tope de envíos por hora del comercio y toda la secuencia comprobar-y-escribir) y en modo
@@ -91,8 +96,9 @@ public class InvitacionEmpleadoService {
     private static final DateTimeFormatter FORMATO_HORA = DateTimeFormatter.ofPattern("HH:mm");
     private static final Set<EstadoInvitacionEmpleado> ESTADOS_REENVIABLES = Set.of(
             EstadoInvitacionEmpleado.PENDIENTE, EstadoInvitacionEmpleado.VENCIDA, EstadoInvitacionEmpleado.INVALIDADA);
+    private static final Set<EstadoInvitacionEmpleado> ESTADOS_CANCELABLES = ESTADOS_REENVIABLES;
     private static final List<EstadoInvitacionEmpleado> ESTADOS_LISTADOS = List.of(
-            EstadoInvitacionEmpleado.PENDIENTE, EstadoInvitacionEmpleado.INVALIDADA);
+            EstadoInvitacionEmpleado.PENDIENTE, EstadoInvitacionEmpleado.VENCIDA, EstadoInvitacionEmpleado.INVALIDADA);
 
     static final String MENSAJE_COMERCIO_NO_OPERATIVO = "Este comercio no puede invitar empleados en este momento";
     static final String MENSAJE_YA_ES_DEL_EQUIPO = "Esa persona ya es parte de tu equipo";
@@ -170,7 +176,7 @@ public class InvitacionEmpleadoService {
         validarSinPendienteVigente(pendientes, null, ahora);
         validarTope(comercio.getId(), ahora);
 
-        return enviar(comercio, activo.duenoId(), email, pendientes, null, ahora);
+        return enviar(comercio, activo.duenoId(), email, pendientes, ahora);
     }
 
     @Transactional(noRollbackFor = InvitacionNoAptaException.class)
@@ -191,7 +197,7 @@ public class InvitacionEmpleadoService {
         validarSinPendienteVigente(pendientes, anterior.getId(), ahora);
         validarTope(comercio.getId(), ahora);
 
-        return enviar(comercio, activo.duenoId(), email, pendientes, anterior, ahora);
+        return enviar(comercio, activo.duenoId(), email, pendientes, ahora);
     }
 
     @Transactional
@@ -200,7 +206,7 @@ public class InvitacionEmpleadoService {
                 .orElseThrow(() -> new RecursoNoEncontradoException(MENSAJE_NO_ENCONTRADA));
         InvitacionEmpleado invitacion = invitacionRepository.findByIdAndComercioIdConBloqueo(invitacionId, activo.comercioId())
                 .orElseThrow(() -> new RecursoNoEncontradoException(MENSAJE_NO_ENCONTRADA));
-        if (invitacion.getEstado() != EstadoInvitacionEmpleado.PENDIENTE) {
+        if (!ESTADOS_CANCELABLES.contains(invitacion.getEstado())) {
             throw new ConflictoDeNegocioException(MENSAJE_NO_CANCELABLE);
         }
         LocalDateTime ahora = LocalDateTime.now(clock);
@@ -217,7 +223,7 @@ public class InvitacionEmpleadoService {
                 .map(this::aMiembroDto)
                 .toList();
         List<InvitacionEmpleadoResponseDTO> invitaciones = invitacionRepository
-                .findByComercioIdAndEstadoInOrderByFechaCreacionDescIdDesc(activo.comercioId(), ESTADOS_LISTADOS).stream()
+                .findUltimaPorEmailEnEstados(activo.comercioId(), ESTADOS_LISTADOS).stream()
                 .map(invitacion -> aDto(invitacion, ahora))
                 .toList();
         return new EquipoComercioResponseDTO(miembros, invitaciones);
@@ -335,8 +341,8 @@ public class InvitacionEmpleadoService {
      * vigente del email cuyo código coincide. Si no hay ninguna, o el código no coincide con ninguna, suma un
      * intento fallido a todas las pendientes vigentes del email (a los {@link #MAX_INTENTOS_CODIGO} pasa a
      * {@code INVALIDADA}) y lanza {@link CodigoInvitacionInvalidoException}, que no revierte la transacción
-     * para que el contador quede guardado. Las invitaciones vencidas no se tocan: "vencida" se calcula al
-     * listar el equipo.
+     * para que el contador quede guardado. Las invitaciones vencidas no se tocan: pasarlas a
+     * {@code VENCIDA} es tarea de {@link InvitacionVencimientoJob}.
      * <p>
      * Las invitaciones se bloquean por clave primaria sobre los ids de la lectura previa y no por el rango
      * (email, estado): ese rango toma bloqueos de hueco sobre los índices únicos parciales y se interbloquea
@@ -571,17 +577,19 @@ public class InvitacionEmpleadoService {
                 + " invitaciones por hora. Probá de nuevo a las " + reintento.format(FORMATO_HORA));
     }
 
+    /**
+     * Cierra las pendientes del par y crea la fila nueva. Las pendientes que llegan acá son todas las del par
+     * (a lo sumo una, por el índice único) y {@link #validarSinPendienteVigente} ya garantizó que la única
+     * vigente posible es la que se está reenviando: esa pasa a {@code REEMPLAZADA}; una pendiente cuya fecha
+     * ya pasó pasa a {@code VENCIDA} (red de seguridad si el proceso de vencimiento se atrasó). Una invitación reenviada que estaba {@code INVALIDADA} o
+     * {@code VENCIDA} no está entre las pendientes y no se toca.
+     */
     private InvitacionEmpleadoResponseDTO enviar(Comercio comercio, Integer duenoUsuarioId, String email,
-            List<InvitacionEmpleado> pendientes, InvitacionEmpleado reemplazada, LocalDateTime ahora) {
+            List<InvitacionEmpleado> pendientes, LocalDateTime ahora) {
         for (InvitacionEmpleado pendiente : pendientes) {
-            if (reemplazada == null || !pendiente.getId().equals(reemplazada.getId())) {
-                pendiente.setEstado(EstadoInvitacionEmpleado.VENCIDA);
-                pendiente.setFechaResolucion(ahora);
-            }
-        }
-        if (reemplazada != null) {
-            reemplazada.setEstado(EstadoInvitacionEmpleado.REEMPLAZADA);
-            reemplazada.setFechaResolucion(ahora);
+            boolean vigente = pendiente.getFechaVencimiento().isAfter(ahora);
+            pendiente.setEstado(vigente ? EstadoInvitacionEmpleado.REEMPLAZADA : EstadoInvitacionEmpleado.VENCIDA);
+            pendiente.setFechaResolucion(ahora);
         }
         invitacionRepository.flush();
 

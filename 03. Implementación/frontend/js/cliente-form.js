@@ -22,9 +22,14 @@ import {
   esNombreClienteValido,
   esDniClienteValido,
   esFechaNacimientoClientePlausible,
+  cumpleEdadMinima,
+  fechaNacimientoCompleta,
   colapsarEspacios,
   sanitizarDni,
 } from './validators.js';
+
+const EDAD_MINIMA_POR_DEFECTO = 14;
+const MENSAJE_FECHA_NO_VALIDA = 'La fecha ingresada no es válida';
 
 const CAMPOS_STEP1_BACKEND = ['nombre', 'apellido', 'dni', 'fechaNacimiento', 'telefono', 'nombreUsuario', 'email', 'password', 'aceptaTerminos'];
 
@@ -247,8 +252,10 @@ export function montarFormularioCliente(contenedor, opciones) {
     antesDe = null,
     prefijoErrores = '',
     mostrarEnlaceLogin = true,
+    edadMinima = EDAD_MINIMA_POR_DEFECTO,
     textos = {},
   } = opciones;
+  const mensajeEdadInsuficiente = textos.edadInsuficiente || `Tenés que tener al menos ${edadMinima} años para poder registrarte.`;
   const textoBotonFinal = textos.botonFinal || 'Crear mi cuenta';
   const textoBotonFinalCargando = textos.botonFinalCargando || 'Creando cuenta...';
   const mapaErrores = construirMapaErrores(prefijoErrores);
@@ -322,9 +329,27 @@ export function montarFormularioCliente(contenedor, opciones) {
   if (incluirEmail) {
     camposConErrorEnVivo.push('email');
   }
-  camposConErrorEnVivo.forEach((inputId) => {
+  camposConErrorEnVivo.filter((inputId) => inputId !== 'fechaNacimiento').forEach((inputId) => {
     document.getElementById(inputId).addEventListener('input', () => limpiarErrorCampo(`error-${inputId}`));
   });
+  const fechaNacimientoInput = document.getElementById('fechaNacimiento');
+  function validarEdadDeLaFecha() {
+    limpiarErrorCampo('error-fechaNacimiento');
+    if (!fechaNacimientoCompleta(fechaNacimientoInput.value)) {
+      return true;
+    }
+    if (!esFechaNacimientoClientePlausible(fechaNacimientoInput.value)) {
+      mostrarErrorCampo('error-fechaNacimiento', MENSAJE_FECHA_NO_VALIDA);
+      return false;
+    }
+    if (!cumpleEdadMinima(fechaNacimientoInput.value, edadMinima)) {
+      mostrarErrorCampo('error-fechaNacimiento', mensajeEdadInsuficiente);
+      return false;
+    }
+    return true;
+  }
+  fechaNacimientoInput.addEventListener('input', validarEdadDeLaFecha);
+  fechaNacimientoInput.addEventListener('change', validarEdadDeLaFecha);
   const dniInput = document.getElementById('dni');
   dniInput.addEventListener('input', () => {
     dniInput.value = dniInput.value.replace(/\D/g, '').slice(0, 8);
@@ -352,7 +377,8 @@ export function montarFormularioCliente(contenedor, opciones) {
       validarCampoRequeridoYValido('nombre', 'error-nombre', 'El nombre es obligatorio', esNombreClienteValido, 'El nombre solo puede contener letras'),
       validarCampoRequeridoYValido('apellido', 'error-apellido', 'El apellido es obligatorio', esNombreClienteValido, 'El apellido solo puede contener letras'),
       validarCampoRequeridoYValido('dni', 'error-dni', 'El DNI es obligatorio', esDniClienteValido, 'El DNI debe tener un formato válido'),
-      validarCampoRequeridoYValido('fechaNacimiento', 'error-fechaNacimiento', 'La fecha de nacimiento es obligatoria', esFechaNacimientoClientePlausible, 'La fecha ingresada no es válida'),
+      validarCampoRequeridoYValido('fechaNacimiento', 'error-fechaNacimiento', 'La fecha de nacimiento es obligatoria', esFechaNacimientoClientePlausible, MENSAJE_FECHA_NO_VALIDA),
+      fechaNacimientoInput.value && esFechaNacimientoClientePlausible(fechaNacimientoInput.value) ? validarEdadDeLaFecha() : true,
     ];
     if (incluirEmail) {
       validaciones.push(validarCampoRequeridoYValido('email', 'error-email', 'El email es obligatorio', esEmailValido, 'Ingresá un email válido'));

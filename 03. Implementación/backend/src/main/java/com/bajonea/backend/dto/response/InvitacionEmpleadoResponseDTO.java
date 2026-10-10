@@ -5,9 +5,10 @@ import java.time.LocalDateTime;
 import lombok.Getter;
 
 /**
- * Una invitación de empleado tal como la ve el Dueño. {@code estado} es el estado visible: una invitación
- * guardada como {@code PENDIENTE} cuya fecha de vencimiento ya pasó se informa como {@code VENCIDA}
- * (calculado al armar la respuesta, sin job). No incluye el código.
+ * Una invitación de empleado tal como la ve el Dueño. {@code estado} es el estado guardado, salvo en el
+ * intervalo en que el proceso de vencimiento todavía no corrió: una invitación {@code PENDIENTE} cuya fecha de
+ * vencimiento ya pasó se informa como {@code VENCIDA} (red de seguridad al armar la respuesta). No incluye el
+ * código.
  */
 @Getter
 public class InvitacionEmpleadoResponseDTO {
