@@ -15,7 +15,10 @@ import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.repositories.ComercioRepository;
+import com.bajonea.backend.entities.EmpleadoComercio;
+import com.bajonea.backend.enums.EstadoEmpleadoComercio;
 import com.bajonea.backend.repositories.DireccionRepository;
+import com.bajonea.backend.repositories.EmpleadoComercioRepository;
 import com.bajonea.backend.repositories.HorarioRepository;
 import com.bajonea.backend.repositories.InvitacionEmpleadoRepository;
 import com.bajonea.backend.repositories.NotificacionRepository;
@@ -55,6 +58,7 @@ public class TestSupportService {
     private final CuentaMercadoPagoService cuentaMercadoPagoService;
     private final PedidoService pedidoService;
     private final InvitacionEmpleadoRepository invitacionEmpleadoRepository;
+    private final EmpleadoComercioRepository empleadoComercioRepository;
     private final NotificacionRepository notificacionRepository;
     private final Clock clock;
 
@@ -203,5 +207,18 @@ public class TestSupportService {
                 .map(usuario -> notificacionRepository.countByUsuarioIdAndTipoAndCanalAndFechaCreacionAfter(usuario.getId(),
                         TipoNotificacion.INVITACION_EMPLEADO, CanalNotificacion.EMAIL, LocalDateTime.now(clock).minusHours(24)))
                 .orElse(0L);
+    }
+
+    /**
+     * Atajo de entorno de test: cambia el estado de la relación de un empleado con un comercio (el endpoint real
+     * para desactivar y reactivar llega en el tramo E4). Al pasar a {@code INACTIVO} fija {@code fecha_baja}; al
+     * volver a {@code ACTIVO} la limpia. No toca historial ni avisos.
+     */
+    @Transactional
+    public void cambiarEstadoRelacionEmpleado(Integer comercioId, Integer empleadoId, EstadoEmpleadoComercio estado) {
+        EmpleadoComercio relacion = empleadoComercioRepository.findByEmpleadoIdAndComercioId(empleadoId, comercioId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Relación de empleado no encontrada"));
+        relacion.setEstado(estado);
+        relacion.setFechaBaja(estado == EstadoEmpleadoComercio.INACTIVO ? LocalDateTime.now(clock) : null);
     }
 }

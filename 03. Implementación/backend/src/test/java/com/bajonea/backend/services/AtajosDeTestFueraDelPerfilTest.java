@@ -52,6 +52,7 @@ class AtajosDeTestFueraDelPerfilTest {
                 .andExpect(status().isNotFound());
         mockMvc.perform(put("/api/v1/test/invitaciones-empleado/1/vencer")).andExpect(status().isNotFound());
         mockMvc.perform(get("/api/v1/test/emails-regularizacion/cantidad").param("email", "a@b.com")).andExpect(status().isNotFound());
+        mockMvc.perform(put("/api/v1/test/comercios/1/empleados/2/estado").param("estado", "INACTIVO")).andExpect(status().isNotFound());
         mockMvc.perform(get("/api/v1/test/token").param("email", "a@b.com").param("tipo", "VERIFICACION_EMAIL"))
                 .andExpect(status().isNotFound());
     }

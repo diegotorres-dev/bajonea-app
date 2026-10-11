@@ -1,8 +1,11 @@
 package com.bajonea.backend.repositories;
 
+import com.bajonea.backend.entities.Comercio;
 import com.bajonea.backend.entities.EmpleadoComercio;
+import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.EstadoEmpleadoComercio;
 import jakarta.persistence.LockModeType;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -39,4 +42,36 @@ public interface EmpleadoComercioRepository extends JpaRepository<EmpleadoComerc
             ORDER BY ec.fechaAlta ASC, ec.id ASC
             """)
     List<EmpleadoComercio> findEquipoByComercioId(@Param("comercioId") Integer comercioId);
+
+    /**
+     * El comercio, solo si el empleado tiene con él una relación en el estado indicado y el comercio está en
+     * alguno de los estados dados. Una sola lectura, sin bloqueo: la usa el resolver de comercio activo.
+     */
+    @Query("""
+            SELECT c FROM EmpleadoComercio ec
+            JOIN ec.comercio c
+            WHERE ec.empleado.id = :empleadoId
+              AND c.id = :comercioId
+              AND ec.estado = :estadoRelacion
+              AND c.estado IN :estadosComercio
+            """)
+    Optional<Comercio> findComercioAccesible(@Param("empleadoId") Integer empleadoId, @Param("comercioId") Integer comercioId,
+            @Param("estadoRelacion") EstadoEmpleadoComercio estadoRelacion,
+            @Param("estadosComercio") Collection<EstadoComercio> estadosComercio);
+
+    /**
+     * Relaciones activas del empleado con el comercio ya cargado (un solo JOIN, sin N+1), solo con comercios en
+     * alguno de los estados dados, por fecha de alta e id.
+     */
+    @Query("""
+            SELECT ec FROM EmpleadoComercio ec
+            JOIN FETCH ec.comercio c
+            WHERE ec.empleado.id = :empleadoId
+              AND ec.estado = :estadoRelacion
+              AND c.estado IN :estadosComercio
+            ORDER BY ec.fechaAlta ASC, ec.id ASC
+            """)
+    List<EmpleadoComercio> findAccesiblesDelEmpleado(@Param("empleadoId") Integer empleadoId,
+            @Param("estadoRelacion") EstadoEmpleadoComercio estadoRelacion,
+            @Param("estadosComercio") Collection<EstadoComercio> estadosComercio);
 }

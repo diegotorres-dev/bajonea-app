@@ -5987,13 +5987,17 @@
           ]
         },
         {
-          "name": "[negativo] Cliente intenta ver comercios/perfil (rol insuficiente)",
+          "name": "[negativo] Cliente sin relación intenta ver comercios/perfil (404: no es Empleado de ese comercio)",
           "request": {
             "method": "GET",
             "header": [
               {
                 "key": "Authorization",
                 "value": "Bearer {{token_cliente}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{comercio_a_id}}"
               },
               {
                 "key": "Content-Type",
@@ -6018,8 +6022,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));",
-                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql(\"No tiene permisos para acceder a este recurso\"); });"
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Mensaje y código del 404 único', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql(\"Comercio no encontrado\"); pm.expect(json.data).to.eql({ codigo: 'COMERCIO_NO_DISPONIBLE' }); });"
                 ]
               }
             }
@@ -75993,6 +75997,4996 @@
               }
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "57 - Rol Empleado E2 (acceso: resolver de actor, lista blanca de lecturas, perfil reducido, 404 idéntico y mis-comercios del Empleado)",
+      "item": [
+        {
+          "name": "Login Administrador (sesion propia de esta carpeta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{admin_usuario}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('token_admin', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Dueño d1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "comercio"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razonSocial\": \"Local Acceso Uno SRL\",\n  \"cuit\": \"{{e2_cuit_tmp}}\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Direccion fiscal E2 100\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Local Acceso Uno\",\n  \"descripcion\": \"Comercio generado por la coleccion de Postman (rol Empleado, E2)\",\n  \"telefono\": \"+5492964555444\",\n  \"emailContacto\": \"{{e2_d1_email}}\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": false,\n  \"aceptaRetiro\": true,\n  \"nombreUsuario\": \"{{e2_d1_usuario}}\",\n  \"email\": \"{{e2_d1_email}}\",\n  \"password\": \"{{e2_d1_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"800\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Carlos\",\n  \"apellidoRepresentante\": \"Sanchez\",\n  \"dniRepresentante\": \"{{e2_dni_rep_tmp}}\",\n  \"telefonoRepresentante\": \"+5492964701103\",\n  \"fechaNacimientoRepresentante\": \"1988-04-04\",\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/postman-empleado-e2.jpg\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/empleadoe2\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('e2_d1_email', 'e2.d1.' + s + '@bajonea.test');",
+                  "pm.environment.set('e2_d1_usuario', ('e2d1' + s).slice(0, 20));",
+                  "pm.environment.set('e2_d1_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('e2_d1_dni', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "const mult = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];",
+                  "let cuit = null;",
+                  "while (cuit === null) {",
+                  "  const base = '30' + String(Math.floor(10000000 + Math.random() * 89999999));",
+                  "  let suma = 0;",
+                  "  for (let i = 0; i < 10; i += 1) suma += Number(base[i]) * mult[i];",
+                  "  let dv = 11 - (suma % 11);",
+                  "  if (dv === 11) dv = 0;",
+                  "  if (dv !== 10) cuit = base + dv;",
+                  "}",
+                  "pm.environment.set('e2_cuit_tmp', cuit);",
+                  "pm.environment.set('e2_dni_rep_tmp', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Dueño d1",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{e2_d1_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{e2_d1_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e2_d1_codigo_verif', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Dueño d1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e2_d1_email}}\",\n  \"codigo\": \"{{e2_d1_codigo_verif}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador busca el comercio pendiente del Dueño d1",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/pendientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "pendientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.emailCuenta === pm.environment.get('e2_d1_email').toLowerCase());",
+                  "pm.test('El comercio del Dueño d1 esta pendiente', () => pm.expect(c).to.exist);",
+                  "pm.environment.set('e2_com_d1', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Dueño d1",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{e2_d1_usuario}}\",\n  \"password\": \"{{e2_d1_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e2_d1_token', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador aprueba el comercio del Dueño d1",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{e2_com_d1}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{e2_com_d1}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Dueño d2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "comercio"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razonSocial\": \"Local Acceso Dos SRL\",\n  \"cuit\": \"{{e2_cuit_tmp}}\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Direccion fiscal E2 100\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Local Acceso Dos\",\n  \"descripcion\": \"Comercio generado por la coleccion de Postman (rol Empleado, E2)\",\n  \"telefono\": \"+5492964555444\",\n  \"emailContacto\": \"{{e2_d2_email}}\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": false,\n  \"aceptaRetiro\": true,\n  \"nombreUsuario\": \"{{e2_d2_usuario}}\",\n  \"email\": \"{{e2_d2_email}}\",\n  \"password\": \"{{e2_d2_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"800\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Carlos\",\n  \"apellidoRepresentante\": \"Sanchez\",\n  \"dniRepresentante\": \"{{e2_dni_rep_tmp}}\",\n  \"telefonoRepresentante\": \"+5492964701103\",\n  \"fechaNacimientoRepresentante\": \"1988-04-04\",\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/postman-empleado-e2.jpg\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/empleadoe2\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('e2_d2_email', 'e2.d2.' + s + '@bajonea.test');",
+                  "pm.environment.set('e2_d2_usuario', ('e2d2' + s).slice(0, 20));",
+                  "pm.environment.set('e2_d2_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('e2_d2_dni', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "const mult = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];",
+                  "let cuit = null;",
+                  "while (cuit === null) {",
+                  "  const base = '30' + String(Math.floor(10000000 + Math.random() * 89999999));",
+                  "  let suma = 0;",
+                  "  for (let i = 0; i < 10; i += 1) suma += Number(base[i]) * mult[i];",
+                  "  let dv = 11 - (suma % 11);",
+                  "  if (dv === 11) dv = 0;",
+                  "  if (dv !== 10) cuit = base + dv;",
+                  "}",
+                  "pm.environment.set('e2_cuit_tmp', cuit);",
+                  "pm.environment.set('e2_dni_rep_tmp', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Dueño d2",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{e2_d2_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{e2_d2_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e2_d2_codigo_verif', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Dueño d2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e2_d2_email}}\",\n  \"codigo\": \"{{e2_d2_codigo_verif}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador busca el comercio pendiente del Dueño d2",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/pendientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "pendientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.emailCuenta === pm.environment.get('e2_d2_email').toLowerCase());",
+                  "pm.test('El comercio del Dueño d2 esta pendiente', () => pm.expect(c).to.exist);",
+                  "pm.environment.set('e2_com_d2', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Dueño d2",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{e2_d2_usuario}}\",\n  \"password\": \"{{e2_d2_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e2_d2_token', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador aprueba el comercio del Dueño d2",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{e2_com_d2}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{e2_com_d2}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear la categoria de los productos de esta carpeta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categorias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Categoria Acceso E2 {{$timestamp}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('e2_categoria_id', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueño d1 crea un producto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Producto Acceso E2\",\n  \"precio\": 1500,\n  \"categoriaId\": \"{{e2_categoria_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clonar el comercio de d1 como APROBADO (b)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{e2_com_d1}}/clonar?nombre=Acceso-E2-Postman-b&estado=APROBADO",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{e2_com_d1}}",
+                "clonar"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "Acceso-E2-Postman-b"
+                },
+                {
+                  "key": "estado",
+                  "value": "APROBADO"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('e2_com_b', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clonar el comercio de d1 como APROBADO (s)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{e2_com_d1}}/clonar?nombre=Acceso-E2-Postman-s&estado=APROBADO",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{e2_com_d1}}",
+                "clonar"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "Acceso-E2-Postman-s"
+                },
+                {
+                  "key": "estado",
+                  "value": "APROBADO"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('e2_com_s', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clonar el comercio de d1 como APROBADO (i)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{e2_com_d1}}/clonar?nombre=Acceso-E2-Postman-i&estado=APROBADO",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{e2_com_d1}}",
+                "clonar"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "Acceso-E2-Postman-i"
+                },
+                {
+                  "key": "estado",
+                  "value": "APROBADO"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('e2_com_i', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clonar el comercio de d1 como APROBADO (sr)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{e2_com_d1}}/clonar?nombre=Acceso-E2-Postman-sr&estado=APROBADO",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{e2_com_d1}}",
+                "clonar"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "Acceso-E2-Postman-sr"
+                },
+                {
+                  "key": "estado",
+                  "value": "APROBADO"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('e2_com_sr', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Cliente emp",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Clienta\",\n  \"apellido\": \"Acceso\",\n  \"dni\": \"{{e2_emp_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551235\",\n  \"nombreUsuario\": \"{{e2_emp_usuario}}\",\n  \"email\": \"{{e2_emp_email}}\",\n  \"password\": \"{{e2_emp_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('e2_emp_email', 'e2.emp.' + s + '@bajonea.test');",
+                  "pm.environment.set('e2_emp_usuario', ('e2emp' + s).slice(0, 20));",
+                  "pm.environment.set('e2_emp_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('e2_emp_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Cliente emp",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{e2_emp_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{e2_emp_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e2_emp_codigo_verif', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Cliente emp",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e2_emp_email}}\",\n  \"codigo\": \"{{e2_emp_codigo_verif}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Cliente sr",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Clienta\",\n  \"apellido\": \"Acceso\",\n  \"dni\": \"{{e2_sr_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551235\",\n  \"nombreUsuario\": \"{{e2_sr_usuario}}\",\n  \"email\": \"{{e2_sr_email}}\",\n  \"password\": \"{{e2_sr_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('e2_sr_email', 'e2.sr.' + s + '@bajonea.test');",
+                  "pm.environment.set('e2_sr_usuario', ('e2sr' + s).slice(0, 20));",
+                  "pm.environment.set('e2_sr_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('e2_sr_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Cliente sr",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{e2_sr_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{e2_sr_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e2_sr_codigo_verif', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Cliente sr",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e2_sr_email}}\",\n  \"codigo\": \"{{e2_sr_codigo_verif}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Cliente sr",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{e2_sr_usuario}}\",\n  \"password\": \"{{e2_sr_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e2_sr_token', pm.response.json().data.token);",
+                  "pm.environment.set('e2_sr_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invitar al Empleado a A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e2_emp_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: código de la invitación a A",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/invitaciones-empleado/codigo?email={{e2_emp_email}}&comercioId={{e2_com_d1}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "invitaciones-empleado",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{e2_emp_email}}"
+                },
+                {
+                  "key": "comercioId",
+                  "value": "{{e2_com_d1}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e2_codigo_actual', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Empleado acepta la invitación a A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e2_emp_email}}\",\n  \"codigo\": \"{{e2_codigo_actual}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del Empleado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{e2_emp_usuario}}\",\n  \"password\": \"{{e2_emp_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e2_emp_token', pm.response.json().data.token);",
+                  "pm.environment.set('e2_emp_id', pm.response.json().data.usuario.id);",
+                  "pm.test('El Empleado sigue siendo un Cliente', () => pm.expect(pm.response.json().data.usuario.rol).to.eql('CLIENTE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invitar al Empleado a B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_b}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e2_emp_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: código de la invitación a B",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/invitaciones-empleado/codigo?email={{e2_emp_email}}&comercioId={{e2_com_b}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "invitaciones-empleado",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{e2_emp_email}}"
+                },
+                {
+                  "key": "comercioId",
+                  "value": "{{e2_com_b}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e2_codigo_actual', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Empleado acepta la invitación a B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e2_emp_email}}\",\n  \"codigo\": \"{{e2_codigo_actual}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invitar al Empleado a S",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_s}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e2_emp_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: código de la invitación a S",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/invitaciones-empleado/codigo?email={{e2_emp_email}}&comercioId={{e2_com_s}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "invitaciones-empleado",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{e2_emp_email}}"
+                },
+                {
+                  "key": "comercioId",
+                  "value": "{{e2_com_s}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e2_codigo_actual', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Empleado acepta la invitación a S",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e2_emp_email}}\",\n  \"codigo\": \"{{e2_codigo_actual}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Invitar al Empleado a I",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_i}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e2_emp_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: código de la invitación a I",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/invitaciones-empleado/codigo?email={{e2_emp_email}}&comercioId={{e2_com_i}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "invitaciones-empleado",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{e2_emp_email}}"
+                },
+                {
+                  "key": "comercioId",
+                  "value": "{{e2_com_i}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e2_codigo_actual', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Empleado acepta la invitación a I",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e2_emp_email}}\",\n  \"codigo\": \"{{e2_codigo_actual}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dueño: perfil completo de A (referencia de los datos fiscales)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('El Dueño recibe el DTO completo', () => [\"cuit\",\"razonSocial\",\"condicionIva\",\"tipoSociedad\",\"domicilioFiscal\",\"fechaInicioActividades\",\"representante\",\"emailContacto\",\"puedeCambiarCierre\"].forEach((c) => pm.expect(pm.response.json().data).to.have.property(c)));",
+                  "pm.environment.set('e2_cuit_a', pm.response.json().data.cuit);",
+                  "pm.environment.set('e2_razon_a', pm.response.json().data.razonSocial);",
+                  "pm.environment.set('e2_nombre_a', pm.response.json().data.nombre);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado: perfil de A con el DTO reducido",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"Perfil obtenido correctamente\"));",
+                  "pm.test('Solo los campos de la lista blanca', () => pm.expect(Object.keys(pm.response.json().data).sort()).to.eql([\"abiertoAhora\",\"cerradoManualmente\",\"descripcion\",\"direccion\",\"estado\",\"fotoPerfilUrl\",\"horarios\",\"id\",\"nombre\",\"telefono\"]));",
+                  "pm.test('Ninguno de los campos excluidos', () => [\"cuit\",\"razonSocial\",\"condicionIva\",\"tipoSociedad\",\"domicilioFiscal\",\"fechaInicioActividades\",\"representante\",\"emailContacto\",\"motivoRechazo\",\"tipoComercio\",\"aceptaDelivery\",\"aceptaRetiro\",\"puedeCambiarCierre\",\"textoReapertura\"].forEach((c) => pm.expect(pm.response.json().data).to.not.have.property(c)));",
+                  "pm.test('Sin el CUIT, la razón social ni el email del Dueño', () => { const t = pm.response.text(); pm.expect(t).to.not.include(pm.environment.get('e2_cuit_a')); pm.expect(t).to.not.include(pm.environment.get('e2_razon_a')); pm.expect(t).to.not.include(pm.environment.get('e2_d1_email')); });",
+                  "pm.test('Sin nada de Mercado Pago', () => pm.expect(pm.response.text().toLowerCase()).to.not.include('mercadopago'));",
+                  "pm.test('El nombre es el del comercio', () => pm.expect(pm.response.json().data.nombre).to.eql(pm.environment.get('e2_nombre_a')));",
+                  "pm.test('Estado APROBADO y comercio abierto sin cierre manual', () => { const d = pm.response.json().data; pm.expect(d.estado).to.eql('APROBADO'); pm.expect(d.cerradoManualmente).to.eql(false); pm.expect(d.horarios.length).to.be.above(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dueño: lista de productos de A (referencia)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e2_productos_dueno', JSON.stringify(pm.response.json().data));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado: lista de productos de A, igual a la del Dueño",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Hay productos', () => pm.expect(pm.response.json().data.length).to.be.above(0));",
+                  "pm.test('Misma lista que ve el Dueño', () => pm.expect(JSON.stringify(pm.response.json().data)).to.eql(pm.environment.get('e2_productos_dueno')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado: pedidos de A",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Es una lista', () => pm.expect(pm.response.json().data).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dueño: resumen de hoy de A (referencia)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-hoy"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e2_resumen_dueno', JSON.stringify(pm.response.json().data));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado: resumen de hoy de A, igual al del Dueño",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-hoy"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Mismo resumen que ve el Dueño', () => pm.expect(JSON.stringify(pm.response.json().data)).to.eql(pm.environment.get('e2_resumen_dueno')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado: con dos comercios, el header B devuelve los datos de B",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_b}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Es el comercio B, no el A', () => { const d = pm.response.json().data; pm.expect(d.id).to.eql(Number(pm.environment.get('e2_com_b'))); pm.expect(d.nombre).to.not.eql(pm.environment.get('e2_nombre_a')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado: los productos de B son los de B (ninguno)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_b}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('B no tiene productos', () => pm.expect(pm.response.json().data).to.eql([]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin token: perfil da 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador: perfil da 403 con header",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador: perfil da 403 sin header",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin token: productos da 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador: productos da 403 con header",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador: productos da 403 sin header",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin token: pedidos da 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador: pedidos da 403 con header",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador: pedidos da 403 sin header",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin token: resumen de hoy da 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-hoy"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador: resumen de hoy da 403 con header",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-hoy"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador: resumen de hoy da 403 sin header",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-hoy"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado activo: PUT /comercios/perfil sigue cerrado: 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Hackeado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado activo: PUT /comercios/perfil/foto sigue cerrado: 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/foto",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "foto"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://res.cloudinary.com/demo/image/upload/x.png\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado activo: POST /comercios/perfil/foto/firma sigue cerrado: 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/foto/firma",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "foto",
+                "firma"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado activo: PUT /comercios/cerrar sigue cerrado: 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/cerrar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "cerrar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado activo: PUT /comercios/abrir sigue cerrado: 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/abrir",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "abrir"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado activo: POST /productos sigue cerrado: 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Intruso\",\n  \"precio\": 1,\n  \"categoriaId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado activo: PUT /productos/1 sigue cerrado: 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos",
+                "1"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Intruso\",\n  \"precio\": 1,\n  \"categoriaId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado activo: PATCH /productos/1/estado sigue cerrado: 403",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos/1/estado",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos",
+                "1",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"AGOTADO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado activo: PUT /pedidos/comercio/1/aceptar sigue cerrado: 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/1/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "1",
+                "aceptar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado activo: PUT /pedidos/comercio/1/despachar sigue cerrado: 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/1/despachar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "1",
+                "despachar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado activo: PUT /pedidos/comercio/1/entregar sigue cerrado: 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/1/entregar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "1",
+                "entregar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado activo: GET /comercios/equipo sigue cerrado: 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado activo: POST /comercios/equipo/invitaciones sigue cerrado: 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"intruso.e2@bajonea.test\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado activo: GET /comercios/redes-sociales sigue cerrado: 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/redes-sociales",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "redes-sociales"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado activo: GET /comercios/mis-comercios sigue cerrado: 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/mis-comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "mis-comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado activo: GET /comercios/alta-adicional/elegibilidad sigue cerrado: 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/alta-adicional/elegibilidad",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "alta-adicional",
+                "elegibilidad"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado activo: GET /oauth/mercadopago/cuenta sigue cerrado: 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/oauth/mercadopago/cuenta",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "oauth",
+                "mercadopago",
+                "cuenta"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado activo: GET /oauth/mercadopago/iniciar sigue cerrado: 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/oauth/mercadopago/iniciar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "oauth",
+                "mercadopago",
+                "iniciar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleado activo: GET /pedidos/comercio/1/pago sigue cerrado: 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/1/pago",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "1",
+                "pago"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reiniciar la comparación de 404",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('e2_cuerpo_404', '');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404: el Empleado con un comercio inexistente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "2000000000"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Mismo mensaje y mismo código estable en data', () => pm.expect(pm.response.json()).to.eql({ mensaje: 'Comercio no encontrado', data: { codigo: 'COMERCIO_NO_DISPONIBLE' } }));",
+                  "pm.test('Cuerpo idéntico al primer 404', () => { const actual = JSON.stringify(pm.response.json()); const base = pm.environment.get('e2_cuerpo_404'); if (!base) { pm.environment.set('e2_cuerpo_404', actual); } else { pm.expect(actual).to.eql(base); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404: el Empleado con el comercio de otro Dueño",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d2}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Mismo mensaje y mismo código estable en data', () => pm.expect(pm.response.json()).to.eql({ mensaje: 'Comercio no encontrado', data: { codigo: 'COMERCIO_NO_DISPONIBLE' } }));",
+                  "pm.test('Cuerpo idéntico al primer 404', () => { const actual = JSON.stringify(pm.response.json()); const base = pm.environment.get('e2_cuerpo_404'); if (!base) { pm.environment.set('e2_cuerpo_404', actual); } else { pm.expect(actual).to.eql(base); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404: el Empleado con un comercio sin relación",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_sr}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Mismo mensaje y mismo código estable en data', () => pm.expect(pm.response.json()).to.eql({ mensaje: 'Comercio no encontrado', data: { codigo: 'COMERCIO_NO_DISPONIBLE' } }));",
+                  "pm.test('Cuerpo idéntico al primer 404', () => { const actual = JSON.stringify(pm.response.json()); const base = pm.environment.get('e2_cuerpo_404'); if (!base) { pm.environment.set('e2_cuerpo_404', actual); } else { pm.expect(actual).to.eql(base); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404: un Cliente sin relación alguna",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_sr_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d1}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Mismo mensaje y mismo código estable en data', () => pm.expect(pm.response.json()).to.eql({ mensaje: 'Comercio no encontrado', data: { codigo: 'COMERCIO_NO_DISPONIBLE' } }));",
+                  "pm.test('Cuerpo idéntico al primer 404', () => { const actual = JSON.stringify(pm.response.json()); const base = pm.environment.get('e2_cuerpo_404'); if (!base) { pm.environment.set('e2_cuerpo_404', actual); } else { pm.expect(actual).to.eql(base); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404: el Dueño con el comercio de otro Dueño",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d2}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Mismo mensaje y mismo código estable en data', () => pm.expect(pm.response.json()).to.eql({ mensaje: 'Comercio no encontrado', data: { codigo: 'COMERCIO_NO_DISPONIBLE' } }));",
+                  "pm.test('Cuerpo idéntico al primer 404', () => { const actual = JSON.stringify(pm.response.json()); const base = pm.environment.get('e2_cuerpo_404'); if (!base) { pm.environment.set('e2_cuerpo_404', actual); } else { pm.expect(actual).to.eql(base); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404: el Dueño con un comercio inexistente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "2000000000"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Mismo mensaje y mismo código estable en data', () => pm.expect(pm.response.json()).to.eql({ mensaje: 'Comercio no encontrado', data: { codigo: 'COMERCIO_NO_DISPONIBLE' } }));",
+                  "pm.test('Cuerpo idéntico al primer 404', () => { const actual = JSON.stringify(pm.response.json()); const base = pm.environment.get('e2_cuerpo_404'); if (!base) { pm.environment.set('e2_cuerpo_404', actual); } else { pm.expect(actual).to.eql(base); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: la relación del Empleado con I pasa a INACTIVO",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{e2_com_i}}/empleados/{{e2_emp_id}}/estado?estado=INACTIVO",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{e2_com_i}}",
+                "empleados",
+                "{{e2_emp_id}}",
+                "estado"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "INACTIVO"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404: el Empleado con relación INACTIVA, con el mismo token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_i}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Mismo mensaje y mismo código estable en data', () => pm.expect(pm.response.json()).to.eql({ mensaje: 'Comercio no encontrado', data: { codigo: 'COMERCIO_NO_DISPONIBLE' } }));",
+                  "pm.test('Cuerpo idéntico al primer 404', () => { const actual = JSON.stringify(pm.response.json()); const base = pm.environment.get('e2_cuerpo_404'); if (!base) { pm.environment.set('e2_cuerpo_404', actual); } else { pm.expect(actual).to.eql(base); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404: productos con relación INACTIVA",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_i}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Mismo mensaje y mismo código estable en data', () => pm.expect(pm.response.json()).to.eql({ mensaje: 'Comercio no encontrado', data: { codigo: 'COMERCIO_NO_DISPONIBLE' } }));",
+                  "pm.test('Cuerpo idéntico al primer 404', () => { const actual = JSON.stringify(pm.response.json()); const base = pm.environment.get('e2_cuerpo_404'); if (!base) { pm.environment.set('e2_cuerpo_404', actual); } else { pm.expect(actual).to.eql(base); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404: pedidos con relación INACTIVA",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_i}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Mismo mensaje y mismo código estable en data', () => pm.expect(pm.response.json()).to.eql({ mensaje: 'Comercio no encontrado', data: { codigo: 'COMERCIO_NO_DISPONIBLE' } }));",
+                  "pm.test('Cuerpo idéntico al primer 404', () => { const actual = JSON.stringify(pm.response.json()); const base = pm.environment.get('e2_cuerpo_404'); if (!base) { pm.environment.set('e2_cuerpo_404', actual); } else { pm.expect(actual).to.eql(base); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "404: resumen de hoy con relación INACTIVA",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_i}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-hoy"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Mismo mensaje y mismo código estable en data', () => pm.expect(pm.response.json()).to.eql({ mensaje: 'Comercio no encontrado', data: { codigo: 'COMERCIO_NO_DISPONIBLE' } }));",
+                  "pm.test('Cuerpo idéntico al primer 404', () => { const actual = JSON.stringify(pm.response.json()); const base = pm.environment.get('e2_cuerpo_404'); if (!base) { pm.environment.set('e2_cuerpo_404', actual); } else { pm.expect(actual).to.eql(base); } });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: la relación del Empleado con I vuelve a ACTIVO",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{e2_com_i}}/empleados/{{e2_emp_id}}/estado?estado=ACTIVO",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{e2_com_i}}",
+                "empleados",
+                "{{e2_emp_id}}",
+                "estado"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "ACTIVO"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reactivada: el Empleado vuelve a leer I con el mismo token",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_i}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: el estado de una relación inexistente da 404",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{e2_com_d2}}/empleados/{{e2_emp_id}}/estado?estado=INACTIVO",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{e2_com_d2}}",
+                "empleados",
+                "{{e2_emp_id}}",
+                "estado"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "INACTIVO"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Header ausente: el Empleado da 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test('El texto es neutro', () => { const m = pm.response.json().mensaje; pm.expect(m).to.include('X-Comercio-Id'); pm.expect(m).to.not.include('Dueño'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Header no numérico: el Empleado da 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "abc"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test('El texto es neutro', () => pm.expect(pm.response.json().mensaje).to.not.include('Dueño'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Header ausente: el Dueño da 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_d1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test('El texto es neutro', () => { const m = pm.response.json().mensaje; pm.expect(m).to.include('X-Comercio-Id'); pm.expect(m).to.not.include('Dueño'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Header no numérico: el Dueño da 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "abc"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test('El texto es neutro', () => pm.expect(pm.response.json().mensaje).to.not.include('Dueño'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Header ausente: un Cliente sin relación da 400, no 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_sr_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Estados: el comercio B pasa a APTO_VENTA",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{e2_com_b}}/apto-venta",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{e2_com_b}}",
+                "apto-venta"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Estados: el Empleado lee B en APTO_VENTA",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_b}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Estado APTO_VENTA', () => pm.expect(pm.response.json().data.estado).to.eql('APTO_VENTA'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Estados: el Administrador suspende el comercio S",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{e2_com_s}}/suspender",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{e2_com_s}}",
+                "suspender"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Suspension de prueba del rol Empleado E2\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Estados: el Empleado sigue leyendo S suspendido (perfil)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_s}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Estado SUSPENDIDO', () => pm.expect(pm.response.json().data.estado).to.eql('SUSPENDIDO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Estados: el Empleado sigue leyendo S suspendido (productos)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_s}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Estados: el Empleado sigue leyendo S suspendido (pedidos)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_s}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Estados: el Empleado sigue leyendo S suspendido (resumen de hoy)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_s}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-hoy"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "mis-comercios: el Empleado lista A, B, I y S en orden de alta, con la forma pedida",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/empleados/mis-comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "empleados",
+                "mis-comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"Comercios obtenidos correctamente\"));",
+                  "pm.test('Cuatro comercios en orden de alta: A, B, S, I', () => pm.expect(pm.response.json().data.map((c) => c.id)).to.eql(['e2_com_d1', 'e2_com_b', 'e2_com_s', 'e2_com_i'].map((k) => Number(pm.environment.get(k)))));",
+                  "pm.test('La forma de mis-comercios más fechaAlta', () => pm.response.json().data.forEach((c) => pm.expect(Object.keys(c).sort()).to.eql([\"abiertoAhora\",\"cantidadNotificacionesNoLeidas\",\"cerradoManualmente\",\"estado\",\"fechaAlta\",\"fechaRegistro\",\"fotoPerfilUrl\",\"id\",\"nombre\",\"operativo\",\"puedeCambiarCierre\",\"textoReapertura\"])));",
+                  "pm.test('Notificaciones en 0 y fechaAlta presente', () => pm.response.json().data.forEach((c) => { pm.expect(c.cantidadNotificacionesNoLeidas).to.eql(0); pm.expect(c.fechaAlta).to.be.a('string'); }));",
+                  "pm.test('operativo según el estado', () => pm.expect(pm.response.json().data.map((c) => [c.estado, c.operativo])).to.eql([['APROBADO', true], ['APTO_VENTA', true], ['SUSPENDIDO', false], ['APROBADO', true]]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: la relación con I pasa a INACTIVO",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{e2_com_i}}/empleados/{{e2_emp_id}}/estado?estado=INACTIVO",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{e2_com_i}}",
+                "empleados",
+                "{{e2_emp_id}}",
+                "estado"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "INACTIVO"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "mis-comercios: una relación INACTIVA sale del listado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/empleados/mis-comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "empleados",
+                "mis-comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Quedan A, B y S', () => pm.expect(pm.response.json().data.map((c) => c.id)).to.eql(['e2_com_d1', 'e2_com_b', 'e2_com_s'].map((k) => Number(pm.environment.get(k)))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "mis-comercios: un Cliente sin relaciones recibe una lista vacía",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_sr_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/empleados/mis-comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "empleados",
+                "mis-comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Lista vacía', () => pm.expect(pm.response.json().data).to.eql([]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "mis-comercios: ignora un X-Comercio-Id no numérico",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "abc"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/empleados/mis-comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "empleados",
+                "mis-comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "mis-comercios: ignora un X-Comercio-Id de otro Dueño",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d2}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/empleados/mis-comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "empleados",
+                "mis-comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "mis-comercios: sin token da 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/empleados/mis-comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "empleados",
+                "mis-comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "mis-comercios: el Dueño recibe 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_d1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/empleados/mis-comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "empleados",
+                "mis-comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "mis-comercios: el Administrador recibe 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/empleados/mis-comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "empleados",
+                "mis-comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "mis-comercios del Dueño: sin cambios (sin fechaAlta)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_d1_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/mis-comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "mis-comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Ninguna fila del Dueño tiene fechaAlta', () => pm.response.json().data.forEach((c) => pm.expect(c).to.not.have.property('fechaAlta')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Notificaciones: el Empleado sigue ignorando el header (lista)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_d2}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notificaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Notificaciones: el Empleado sigue ignorando el header (contador)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "abc"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notificaciones/no-leidas/contador",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones",
+                "no-leidas",
+                "contador"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.variables.get('cab_comercio_inyectada') === '1') {",
+              "  pm.request.headers.remove('X-Comercio-Id');",
+              "}"
+            ]
+          }
         }
       ]
     }

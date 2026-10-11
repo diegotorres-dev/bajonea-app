@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 
 import com.bajonea.backend.config.PedidoTimeoutProperties;
 import com.bajonea.backend.config.security.ComercioActivo;
+import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.dto.request.RechazoPedidoRequestDTO;
 import com.bajonea.backend.entities.Cliente;
 import com.bajonea.backend.entities.Comercio;
@@ -117,7 +118,7 @@ class PedidoServiceReembolsoTest {
         when(pedidoRepository.findById(10)).thenReturn(Optional.of(pedido));
         when(pedidoRepository.llegoPagado(10)).thenReturn(true);
 
-        pedidoService.rechazarPedido(new ComercioActivo(comercio.getId(), 5), 10, new RechazoPedidoRequestDTO(MotivoRechazo.SIN_STOCK, null));
+        pedidoService.rechazarPedido(ComercioActivo.delDueno(comercio.getId(), 5, EstadoComercio.APROBADO), 10, new RechazoPedidoRequestDTO(MotivoRechazo.SIN_STOCK, null));
 
         assertEquals(EstadoPedido.RECHAZADO, pedido.getEstado());
         verify(reembolsoService).procesarReembolsoTotal(pedido, MotivoNotaCredito.RECHAZO_COMERCIO);

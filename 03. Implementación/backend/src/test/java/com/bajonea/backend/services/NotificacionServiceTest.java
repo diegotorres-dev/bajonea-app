@@ -21,6 +21,7 @@ import com.bajonea.backend.enums.TipoEntidadNotificacion;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.exceptions.ValidacionException;
 import com.bajonea.backend.repositories.ComercioRepository;
+import com.bajonea.backend.repositories.EmpleadoComercioRepository;
 import com.bajonea.backend.repositories.NotificacionRepository;
 import com.bajonea.backend.repositories.UsuarioRepository;
 import java.time.LocalDateTime;
@@ -47,7 +48,7 @@ class NotificacionServiceTest {
         notificacionRepository = mock(NotificacionRepository.class);
         comercioRepository = mock(ComercioRepository.class);
         service = new NotificacionService(notificacionRepository, mock(UsuarioRepository.class), comercioRepository,
-                new ComercioActivoService(comercioRepository));
+                new ComercioActivoService(comercioRepository, mock(EmpleadoComercioRepository.class)));
     }
 
     private static Notificacion notificacion(int id) {

@@ -67,6 +67,12 @@ public class GlobalExceptionHandler {
                 .body(new ApiResponse<>("No se pudo procesar la solicitud, intentá nuevamente", null));
     }
 
+    @ExceptionHandler(ComercioNoDisponibleException.class)
+    public ResponseEntity<ApiResponse<?>> handleComercioNoDisponible(ComercioNoDisponibleException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(new ApiResponse<>(ex.getMessage(), Map.of("codigo", ComercioNoDisponibleException.CODIGO)));
+    }
+
     @ExceptionHandler(RecursoNoEncontradoException.class)
     public ResponseEntity<ApiResponse<?>> handleRecursoNoEncontrado(RecursoNoEncontradoException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiResponse<>(ex.getMessage(), null));

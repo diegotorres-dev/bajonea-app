@@ -110,9 +110,15 @@ public class ComercioController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Firma generada correctamente", response));
     }
 
+    /**
+     * Ruta delegable (ver {@code DelegacionEmpleado}): el Dueño recibe el perfil completo y el Empleado el DTO
+     * reducido, sin datos fiscales ni del titular.
+     */
     @GetMapping("/perfil")
-    public ResponseEntity<ApiResponse<ComercioResponseDTO>> verPerfil(ComercioActivo comercio) {
-        ComercioResponseDTO response = comercioService.verPerfil(comercio.comercioId());
+    public ResponseEntity<ApiResponse<?>> verPerfil(ComercioActivo comercio) {
+        Object response = comercio.esEmpleado()
+                ? comercioService.verPerfilEmpleado(comercio.comercioId())
+                : comercioService.verPerfil(comercio.comercioId());
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Perfil obtenido correctamente", response));
     }
 

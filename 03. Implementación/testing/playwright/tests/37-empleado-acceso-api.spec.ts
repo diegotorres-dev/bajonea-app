@@ -1,0 +1,470 @@
+import { test, expect } from '@playwright/test';
+import type { APIRequestContext } from '@playwright/test';
+import {
+  aceptarInvitacion,
+  apiConHeaders,
+  apiGet,
+  apiPut,
+  clonarComercioTest,
+  crearCategoria,
+  crearProducto,
+  diaDeHoy,
+  fijarPasswordAdminYLoguear,
+  invitarEmpleado,
+  login,
+  obtenerCodigoInvitacionTest,
+  obtenerLocalidadRioGrande,
+  registrarYVerificarCliente,
+  sqlTest as sql,
+  sufijoUnico,
+} from './helpers/backend';
+import type { ClienteRegistrado } from './helpers/backend';
+import type { Dueno } from './helpers/multicomercio';
+import { prepararAprobado } from './helpers/multicomercio';
+
+type Metodo = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+const HEADER = 'X-Comercio-Id';
+const NO_ENCONTRADO = { mensaje: 'Comercio no encontrado', data: { codigo: 'COMERCIO_NO_DISPONIBLE' } };
+const ACCESIBLES = ['APROBADO', 'APTO_VENTA', 'SUSPENDIDO', 'CERRADO_TEMPORALMENTE'];
+const NO_ACCESIBLES = ['PENDIENTE', 'RECHAZADO', 'INACTIVO', 'RECHAZO_DEFINITIVO'];
+const CAMPOS_PERFIL_EMPLEADO = [
+  'abiertoAhora',
+  'cerradoManualmente',
+  'descripcion',
+  'direccion',
+  'estado',
+  'fotoPerfilUrl',
+  'horarios',
+  'id',
+  'nombre',
+  'telefono',
+];
+const CAMPOS_EXCLUIDOS = [
+  'cuit',
+  'razonSocial',
+  'condicionIva',
+  'tipoSociedad',
+  'domicilioFiscal',
+  'fechaInicioActividades',
+  'representante',
+  'emailContacto',
+  'motivoRechazo',
+  'tipoComercio',
+  'aceptaDelivery',
+  'aceptaRetiro',
+  'puedeCambiarCierre',
+  'textoReapertura',
+];
+const CAMPOS_MIS_COMERCIOS = [
+  'abiertoAhora',
+  'cantidadNotificacionesNoLeidas',
+  'cerradoManualmente',
+  'estado',
+  'fechaAlta',
+  'fechaRegistro',
+  'fotoPerfilUrl',
+  'id',
+  'nombre',
+  'operativo',
+  'puedeCambiarCierre',
+  'textoReapertura',
+];
+
+const conComercio = (comercioId: number | string): Record<string, string> => ({ [HEADER]: String(comercioId) });
+const estadoDe = (comercioId: number, estado: string): string => sql(`UPDATE comercio SET estado = '${estado}' WHERE id = ${comercioId};`);
+
+function perfil(request: APIRequestContext, token: string | undefined, headers: Record<string, string> = {}) {
+  return apiConHeaders(request, 'GET', '/comercios/perfil', token, headers);
+}
+
+function productos(request: APIRequestContext, token: string | undefined, headers: Record<string, string> = {}) {
+  return apiConHeaders(request, 'GET', '/productos', token, headers);
+}
+
+function pedidos(request: APIRequestContext, token: string | undefined, headers: Record<string, string> = {}) {
+  return apiConHeaders(request, 'GET', '/pedidos/comercio', token, headers);
+}
+
+function resumenHoy(request: APIRequestContext, token: string | undefined, headers: Record<string, string> = {}) {
+  return apiConHeaders(request, 'GET', '/pedidos/comercio/resumen-hoy', token, headers);
+}
+
+function misComerciosEmpleado(request: APIRequestContext, token: string | undefined, headers: Record<string, string> = {}) {
+  return apiConHeaders(request, 'GET', '/empleados/mis-comercios', token, headers);
+}
+
+function atajoEstadoRelacion(request: APIRequestContext, comercioId: number, empleadoId: number, estado: 'ACTIVO' | 'INACTIVO') {
+  return apiPut(request, `/test/comercios/${comercioId}/empleados/${empleadoId}/estado?estado=${estado}`, {});
+}
+
+test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', () => {
+  test.describe.configure({ timeout: 240_000 });
+
+  let adminToken: string;
+  let localidadId: string;
+  let dueno: Dueno;
+  let otroDueno: Dueno;
+  let empleado: ClienteRegistrado;
+  let empleadoId: number;
+  let empleadoToken: string;
+  let clienteSinRelacion: ClienteRegistrado;
+  let clienteSinRelacionToken: string;
+  let categoriaId: number;
+
+  async function sumarAlEquipo(request: APIRequestContext, comercioId: number, cuenta: ClienteRegistrado): Promise<void> {
+    const invitacion = await invitarEmpleado(request, dueno.token, comercioId, cuenta.email);
+    expect(invitacion.status, JSON.stringify(invitacion.body)).toBe(201);
+    const codigo = await obtenerCodigoInvitacionTest(request, cuenta.email, comercioId);
+    const aceptada = await aceptarInvitacion(request, { email: cuenta.email, codigo });
+    expect(aceptada.status, JSON.stringify(aceptada.body)).toBe(200);
+  }
+
+  async function comercioDelEquipo(request: APIRequestContext, estado = 'APROBADO'): Promise<number> {
+    const comercioId = await clonarComercioTest(request, dueno.comercioId, `Acceso E2 ${sufijoUnico()}`, 'APROBADO');
+    await sumarAlEquipo(request, comercioId, empleado);
+    if (estado !== 'APROBADO') {
+      estadoDe(comercioId, estado);
+    }
+    return comercioId;
+  }
+
+  test.beforeAll(async ({ request }) => {
+    adminToken = (await fijarPasswordAdminYLoguear(request)).token;
+    localidadId = await obtenerLocalidadRioGrande(request);
+    const horarios = [{ diaSemana: diaDeHoy(), horaApertura: '00:00', horaCierre: '23:59' }];
+    dueno = await prepararAprobado(request, adminToken, localidadId, false, horarios);
+    otroDueno = await prepararAprobado(request, adminToken, localidadId, false, horarios);
+    categoriaId = await crearCategoria(request, adminToken, `Cat E2 ${sufijoUnico()}`);
+    await crearProducto(request, dueno.token, { nombre: `Producto E2 ${sufijoUnico()}`, precio: 1500, categoriaId });
+
+    empleado = await registrarYVerificarCliente(request, localidadId);
+    await sumarAlEquipo(request, dueno.comercioId, empleado);
+    const sesionEmpleado = await login(request, empleado.nombreUsuario, empleado.password);
+    empleadoToken = sesionEmpleado.token;
+    empleadoId = sesionEmpleado.usuario.id;
+
+    clienteSinRelacion = await registrarYVerificarCliente(request, localidadId);
+    clienteSinRelacionToken = (await login(request, clienteSinRelacion.nombreUsuario, clienteSinRelacion.password)).token;
+  });
+
+  test.describe('Lista blanca de lecturas', () => {
+    test('el Empleado lee el perfil del comercio con el DTO reducido, solo con los campos de la lista blanca', async ({ request }) => {
+      const respuesta = await perfil(request, empleadoToken, conComercio(dueno.comercioId));
+
+      expect(respuesta.status).toBe(200);
+      expect(respuesta.body.mensaje).toBe('Perfil obtenido correctamente');
+      const datos = respuesta.body.data;
+      expect(Object.keys(datos).sort()).toEqual(CAMPOS_PERFIL_EMPLEADO);
+      expect(datos.id).toBe(dueno.comercioId);
+      const completo = await perfil(request, dueno.token, conComercio(dueno.comercioId));
+      expect(datos.nombre).toBe(completo.body.data.nombre);
+      expect(datos.estado).toBe('APROBADO');
+      expect(typeof datos.abiertoAhora).toBe('boolean');
+      expect(datos.cerradoManualmente).toBe(false);
+      expect(datos.horarios.length).toBeGreaterThan(0);
+      expect(datos.direccion.calle).toBeTruthy();
+    });
+
+    test('el DTO reducido no contiene ninguno de los campos excluidos ni los valores fiscales o del titular', async ({ request }) => {
+      const completo = await perfil(request, dueno.token, conComercio(dueno.comercioId));
+      expect(completo.status).toBe(200);
+      const respuesta = await perfil(request, empleadoToken, conComercio(dueno.comercioId));
+      const texto = JSON.stringify(respuesta.body);
+
+      for (const campo of CAMPOS_EXCLUIDOS) {
+        expect(Object.keys(respuesta.body.data), campo).not.toContain(campo);
+      }
+      expect(texto).not.toContain(completo.body.data.cuit);
+      expect(texto).not.toContain(completo.body.data.razonSocial);
+      expect(texto).not.toContain(completo.body.data.domicilioFiscal);
+      expect(texto).not.toContain(completo.body.data.emailContacto);
+      expect(texto).not.toContain(dueno.email);
+      expect(texto).not.toContain(dueno.nombreUsuario);
+      expect(texto.toLowerCase()).not.toContain('mercadopago');
+    });
+
+    test('el Dueño sigue recibiendo el DTO completo, con los datos fiscales y el representante', async ({ request }) => {
+      const respuesta = await perfil(request, dueno.token, conComercio(dueno.comercioId));
+
+      expect(respuesta.status).toBe(200);
+      for (const campo of ['cuit', 'razonSocial', 'condicionIva', 'tipoSociedad', 'domicilioFiscal', 'fechaInicioActividades', 'representante', 'emailContacto', 'puedeCambiarCierre']) {
+        expect(Object.keys(respuesta.body.data), campo).toContain(campo);
+      }
+      expect(respuesta.body.data.representante.dni).toBeTruthy();
+    });
+
+    test('el Empleado lee la lista de productos del comercio, igual que el Dueño', async ({ request }) => {
+      const delDueno = await productos(request, dueno.token, conComercio(dueno.comercioId));
+      const delEmpleado = await productos(request, empleadoToken, conComercio(dueno.comercioId));
+
+      expect(delDueno.status).toBe(200);
+      expect(delEmpleado.status).toBe(200);
+      expect(delEmpleado.body.data.length).toBeGreaterThan(0);
+      expect(delEmpleado.body.data).toEqual(delDueno.body.data);
+    });
+
+    test('el Empleado lee los pedidos del comercio y el resumen de hoy', async ({ request }) => {
+      const lista = await pedidos(request, empleadoToken, conComercio(dueno.comercioId));
+      const resumen = await resumenHoy(request, empleadoToken, conComercio(dueno.comercioId));
+      const resumenDueno = await resumenHoy(request, dueno.token, conComercio(dueno.comercioId));
+
+      expect(lista.status).toBe(200);
+      expect(Array.isArray(lista.body.data)).toBe(true);
+      expect(resumen.status).toBe(200);
+      expect(resumen.body.data).toEqual(resumenDueno.body.data);
+    });
+
+    test('con dos comercios, cada header devuelve los datos de su comercio y nunca los del otro', async ({ request }) => {
+      const segundo = await comercioDelEquipo(request);
+
+      const primero = await perfil(request, empleadoToken, conComercio(dueno.comercioId));
+      const otro = await perfil(request, empleadoToken, conComercio(segundo));
+
+      expect(primero.body.data.id).toBe(dueno.comercioId);
+      expect(otro.body.data.id).toBe(segundo);
+      expect(otro.body.data.nombre).not.toBe(primero.body.data.nombre);
+      const productosSegundo = await productos(request, empleadoToken, conComercio(segundo));
+      expect(productosSegundo.status).toBe(200);
+      expect(productosSegundo.body.data).toEqual([]);
+    });
+
+    test('sin token las cuatro lecturas dan 401', async ({ request }) => {
+      for (const llamar of [perfil, productos, pedidos, resumenHoy]) {
+        expect((await llamar(request, undefined, conComercio(dueno.comercioId))).status).toBe(401);
+      }
+    });
+
+    test('el Administrador recibe 403 en las cuatro lecturas, con y sin header', async ({ request }) => {
+      for (const llamar of [perfil, productos, pedidos, resumenHoy]) {
+        expect((await llamar(request, adminToken, conComercio(dueno.comercioId))).status).toBe(403);
+        expect((await llamar(request, adminToken)).status).toBe(403);
+      }
+    });
+  });
+
+  test.describe('Las escrituras y lo exclusivo del Dueño siguen cerrados', () => {
+    test('un Empleado activo recibe 403 en escrituras de perfil, productos, pedidos y cierre', async ({ request }) => {
+      const cabeceras = conComercio(dueno.comercioId);
+      const intentos: Array<[Metodo, string, unknown?]> = [
+        ['PUT', '/comercios/perfil', { nombre: 'Hackeado' }],
+        ['PUT', '/comercios/perfil/foto', { url: 'https://res.cloudinary.com/demo/image/upload/x.png' }],
+        ['POST', '/comercios/perfil/foto/firma'],
+        ['PUT', '/comercios/cerrar'],
+        ['PUT', '/comercios/abrir'],
+        ['POST', '/productos', { nombre: 'X', precio: 1, categoriaId }],
+        ['PUT', '/productos/1', { nombre: 'X', precio: 1, categoriaId }],
+        ['PATCH', '/productos/1/estado', { estado: 'AGOTADO' }],
+        ['PUT', '/pedidos/comercio/1/aceptar'],
+        ['PUT', '/pedidos/comercio/1/rechazar', { motivo: 'SIN_STOCK' }],
+        ['PUT', '/pedidos/comercio/1/despachar'],
+        ['PUT', '/pedidos/comercio/1/entregar'],
+        ['PUT', '/pedidos/comercio/1/anular', { motivo: 'x' }],
+      ];
+      for (const [metodo, ruta, cuerpo] of intentos) {
+        const respuesta = await apiConHeaders(request, metodo, ruta, empleadoToken, cabeceras, cuerpo);
+        expect(respuesta.status, `${metodo} ${ruta}`).toBe(403);
+      }
+    });
+
+    test('un Empleado activo recibe 403 en equipo, redes sociales, Mercado Pago, alta y corrección de comercios', async ({ request }) => {
+      const cabeceras = conComercio(dueno.comercioId);
+      const intentos: Array<[Metodo, string, unknown?]> = [
+        ['GET', '/comercios/equipo'],
+        ['POST', '/comercios/equipo/invitaciones', { email: 'x@bajonea.test' }],
+        ['GET', '/comercios/redes-sociales'],
+        ['POST', '/comercios/redes-sociales', { tipo: 'INSTAGRAM', url: 'https://instagram.com/x' }],
+        ['GET', '/comercios/mis-comercios'],
+        ['GET', '/comercios/alta-adicional/elegibilidad'],
+        ['POST', '/comercios/nuevo/foto/firma'],
+        ['GET', `/comercios/${dueno.comercioId}/correccion`],
+        ['GET', '/oauth/mercadopago/cuenta'],
+        ['GET', '/oauth/mercadopago/iniciar'],
+        ['GET', '/oauth/mercadopago/desvinculacion/previa'],
+        ['DELETE', '/oauth/mercadopago/desvincular'],
+        ['GET', '/pedidos/comercio/1/pago'],
+        ['PUT', `/notificaciones/comercio/${dueno.comercioId}/leidas`],
+      ];
+      for (const [metodo, ruta, cuerpo] of intentos) {
+        const respuesta = await apiConHeaders(request, metodo, ruta, empleadoToken, cabeceras, cuerpo);
+        expect(respuesta.status, `${metodo} ${ruta}`).toBe(403);
+      }
+    });
+  });
+
+  test.describe('El 404 del resolver no distingue ningún caso', () => {
+    test('comercio inexistente, ajeno, sin relación, relación inactiva y estado no accesible dan exactamente el mismo cuerpo', async ({ request }) => {
+      const inactivo = await comercioDelEquipo(request);
+      expect((await atajoEstadoRelacion(request, inactivo, empleadoId, 'INACTIVO')).status).toBe(200);
+      const pendiente = await comercioDelEquipo(request, 'PENDIENTE');
+      const sinRelacion = await clonarComercioTest(request, dueno.comercioId, `Sin relacion ${sufijoUnico()}`, 'APROBADO');
+
+      const respuestas = [
+        await perfil(request, empleadoToken, conComercio(2_000_000_000)),
+        await perfil(request, empleadoToken, conComercio(otroDueno.comercioId)),
+        await perfil(request, empleadoToken, conComercio(sinRelacion)),
+        await perfil(request, empleadoToken, conComercio(inactivo)),
+        await perfil(request, empleadoToken, conComercio(pendiente)),
+        await perfil(request, clienteSinRelacionToken, conComercio(dueno.comercioId)),
+        await perfil(request, dueno.token, conComercio(otroDueno.comercioId)),
+        await perfil(request, dueno.token, conComercio(2_000_000_000)),
+      ];
+
+      for (const respuesta of respuestas) {
+        expect(respuesta.status).toBe(404);
+        expect(respuesta.body).toEqual(NO_ENCONTRADO);
+      }
+      expect(new Set(respuestas.map((r) => JSON.stringify(r.body))).size).toBe(1);
+    });
+
+    test('el mismo 404 se obtiene en las cuatro rutas delegables', async ({ request }) => {
+      for (const llamar of [perfil, productos, pedidos, resumenHoy]) {
+        const respuesta = await llamar(request, empleadoToken, conComercio(otroDueno.comercioId));
+        expect(respuesta.status).toBe(404);
+        expect(respuesta.body).toEqual(NO_ENCONTRADO);
+      }
+    });
+
+    for (const estado of ACCESIBLES) {
+      test(`el Empleado activo accede a un comercio ${estado} en las cuatro lecturas`, async ({ request }) => {
+        const comercioId = await comercioDelEquipo(request, estado);
+
+        for (const llamar of [perfil, productos, pedidos, resumenHoy]) {
+          expect((await llamar(request, empleadoToken, conComercio(comercioId))).status).toBe(200);
+        }
+        expect((await perfil(request, empleadoToken, conComercio(comercioId))).body.data.estado).toBe(estado);
+      });
+    }
+
+    for (const estado of NO_ACCESIBLES) {
+      test(`el Empleado activo no accede a un comercio ${estado}: 404 idéntico`, async ({ request }) => {
+        const comercioId = await comercioDelEquipo(request, estado);
+
+        for (const llamar of [perfil, productos, pedidos, resumenHoy]) {
+          const respuesta = await llamar(request, empleadoToken, conComercio(comercioId));
+          expect(respuesta.status).toBe(404);
+          expect(respuesta.body).toEqual(NO_ENCONTRADO);
+        }
+      });
+    }
+
+    test('desactivar la relación corta el acceso en la request siguiente, con el mismo token, y reactivarla lo devuelve', async ({ request }) => {
+      const comercioId = await comercioDelEquipo(request);
+      expect((await perfil(request, empleadoToken, conComercio(comercioId))).status).toBe(200);
+
+      expect((await atajoEstadoRelacion(request, comercioId, empleadoId, 'INACTIVO')).status).toBe(200);
+      expect(sql(`SELECT fecha_baja IS NOT NULL FROM empleado_comercio WHERE comercio_id = ${comercioId} AND empleado_id = ${empleadoId};`)).toBe('1');
+      const cortado = await perfil(request, empleadoToken, conComercio(comercioId));
+      expect(cortado.status).toBe(404);
+      expect(cortado.body).toEqual(NO_ENCONTRADO);
+      expect((await productos(request, empleadoToken, conComercio(comercioId))).status).toBe(404);
+
+      expect((await atajoEstadoRelacion(request, comercioId, empleadoId, 'ACTIVO')).status).toBe(200);
+      expect(sql(`SELECT fecha_baja IS NULL FROM empleado_comercio WHERE comercio_id = ${comercioId} AND empleado_id = ${empleadoId};`)).toBe('1');
+      expect((await perfil(request, empleadoToken, conComercio(comercioId))).status).toBe(200);
+    });
+
+    test('el atajo de estado de la relación da 404 si el empleado no tiene relación con ese comercio', async ({ request }) => {
+      const respuesta = await atajoEstadoRelacion(request, otroDueno.comercioId, empleadoId, 'INACTIVO');
+
+      expect(respuesta.status).toBe(404);
+    });
+  });
+
+  test.describe('El header', () => {
+    test('ausente, vacío o no numérico da 400 con texto neutro, para el Empleado y para el Dueño', async ({ request }) => {
+      for (const token of [empleadoToken, dueno.token]) {
+        for (const cabeceras of [{}, { [HEADER]: '' }, { [HEADER]: '   ' }, { [HEADER]: 'abc' }, { [HEADER]: '1.5' }]) {
+          const respuesta = await perfil(request, token, cabeceras);
+          expect(respuesta.status, JSON.stringify(cabeceras)).toBe(400);
+          expect(respuesta.body.mensaje).toContain(HEADER);
+          expect(respuesta.body.mensaje).not.toContain('Dueño');
+        }
+      }
+    });
+
+    test('un Cliente sin relación con header ausente recibe 400 y con un comercio ajeno 404, nunca 403', async ({ request }) => {
+      expect((await perfil(request, clienteSinRelacionToken)).status).toBe(400);
+      expect((await perfil(request, clienteSinRelacionToken, conComercio(dueno.comercioId))).status).toBe(404);
+    });
+  });
+
+  test.describe('GET /empleados/mis-comercios', () => {
+    test('lista las relaciones activas con comercio accesible por fecha de alta, con la forma de mis-comercios más fechaAlta', async ({ request }) => {
+      const cuenta = await registrarYVerificarCliente(request, localidadId);
+      const sesion = await login(request, cuenta.nombreUsuario, cuenta.password);
+      const ids: Record<string, number> = {};
+      for (const estado of [...ACCESIBLES, ...NO_ACCESIBLES]) {
+        const comercioId = await clonarComercioTest(request, dueno.comercioId, `Lista E2 ${estado} ${sufijoUnico()}`, 'APROBADO');
+        await sumarAlEquipo(request, comercioId, cuenta);
+        estadoDe(comercioId, estado);
+        ids[estado] = comercioId;
+      }
+      const inactivo = await clonarComercioTest(request, dueno.comercioId, `Lista E2 inactiva ${sufijoUnico()}`, 'APROBADO');
+      await sumarAlEquipo(request, inactivo, cuenta);
+      expect((await atajoEstadoRelacion(request, inactivo, sesion.usuario.id, 'INACTIVO')).status).toBe(200);
+
+      const respuesta = await misComerciosEmpleado(request, sesion.token);
+
+      expect(respuesta.status).toBe(200);
+      expect(respuesta.body.mensaje).toBe('Comercios obtenidos correctamente');
+      const filas = respuesta.body.data as Array<Record<string, any>>;
+      expect(filas.map((fila) => fila.id)).toEqual(ACCESIBLES.map((estado) => ids[estado]));
+      expect(filas.map((fila) => fila.estado)).toEqual(ACCESIBLES);
+      expect(filas.map((fila) => fila.operativo)).toEqual([true, true, false, false]);
+      for (const fila of filas) {
+        expect(Object.keys(fila).sort()).toEqual(CAMPOS_MIS_COMERCIOS);
+        expect(fila.cantidadNotificacionesNoLeidas).toBe(0);
+        expect(fila.fechaAlta).toBeTruthy();
+        expect(fila.fechaRegistro).toBeTruthy();
+      }
+      const altas = filas.map((fila) => fila.fechaAlta as string);
+      expect([...altas].sort()).toEqual(altas);
+      for (const excluido of [...NO_ACCESIBLES.map((estado) => ids[estado]), inactivo]) {
+        expect(filas.map((fila) => fila.id)).not.toContain(excluido);
+      }
+    });
+
+    test('un Cliente sin relaciones recibe una lista vacía', async ({ request }) => {
+      const respuesta = await misComerciosEmpleado(request, clienteSinRelacionToken);
+
+      expect(respuesta.status).toBe(200);
+      expect(respuesta.body.data).toEqual([]);
+    });
+
+    test('ignora el header X-Comercio-Id, incluso uno inválido o ajeno', async ({ request }) => {
+      const base = await misComerciosEmpleado(request, empleadoToken);
+
+      for (const valor of ['abc', '', String(otroDueno.comercioId), '2000000000']) {
+        const respuesta = await misComerciosEmpleado(request, empleadoToken, { [HEADER]: valor });
+        expect(respuesta.status, valor).toBe(200);
+        expect(respuesta.body.data).toEqual(base.body.data);
+      }
+    });
+
+    test('sin token da 401 y el Dueño y el Administrador reciben 403', async ({ request }) => {
+      expect((await misComerciosEmpleado(request, undefined)).status).toBe(401);
+      expect((await misComerciosEmpleado(request, dueno.token)).status).toBe(403);
+      expect((await misComerciosEmpleado(request, adminToken)).status).toBe(403);
+    });
+
+    test('el listado del Dueño no cambia: sigue sin incluir al Empleado y solo se consulta con rol DUENO', async ({ request }) => {
+      const respuesta = await apiGet(request, '/comercios/mis-comercios', dueno.token);
+
+      expect(respuesta.status).toBe(200);
+      expect((respuesta.body.data as Array<Record<string, any>>).every((fila) => !('fechaAlta' in fila))).toBe(true);
+      expect((await apiGet(request, '/comercios/mis-comercios', empleadoToken)).status).toBe(403);
+    });
+  });
+
+  test.describe('Notificaciones: fuera de este tramo', () => {
+    test('el Empleado sigue ignorando el header en las notificaciones, igual que cualquier Cliente', async ({ request }) => {
+      for (const cabeceras of [{}, conComercio(dueno.comercioId), { [HEADER]: 'abc' }, conComercio(otroDueno.comercioId)]) {
+        const lista = await apiConHeaders(request, 'GET', '/notificaciones', empleadoToken, cabeceras);
+        const contador = await apiConHeaders(request, 'GET', '/notificaciones/no-leidas/contador', empleadoToken, cabeceras);
+        expect(lista.status, JSON.stringify(cabeceras)).toBe(200);
+        expect(contador.status, JSON.stringify(cabeceras)).toBe(200);
+      }
+    });
+  });
+});

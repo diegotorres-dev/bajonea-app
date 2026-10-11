@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import com.bajonea.backend.enums.EstadoEmpleadoComercio;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -110,6 +111,13 @@ public class TestController {
     public ResponseEntity<ApiResponse<Void>> vencerInvitacionEmpleado(@PathVariable Integer id) {
         testSupportService.vencerInvitacionEmpleado(id);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Invitación vencida", null));
+    }
+
+    @PutMapping("/comercios/{comercioId}/empleados/{empleadoId}/estado")
+    public ResponseEntity<ApiResponse<Void>> cambiarEstadoRelacionEmpleado(@PathVariable Integer comercioId,
+            @PathVariable Integer empleadoId, @RequestParam EstadoEmpleadoComercio estado) {
+        testSupportService.cambiarEstadoRelacionEmpleado(comercioId, empleadoId, estado);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Estado de la relación actualizado", null));
     }
 
     @GetMapping("/emails-regularizacion/cantidad")

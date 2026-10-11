@@ -74,10 +74,10 @@ Criterios de aceptación adicionales:
 
 Como Empleado, cuando el Dueño desactiva mi relación con un comercio puntual, quiero
 perder el acceso a ese comercio sin que se vean afectadas mis relaciones activas con otros
-comercios, y ser llevado al selector (o ver "Ya no tenés acceso a ningún comercio" con el
-botón "Entrar como Cliente" si no me queda ninguno), para seguir operando con normalidad
-en los demás lugares donde trabajo o usar la plataforma como Cliente. Recibo una
-notificación de la desactivación y mi sesión no se cierra.
+comercios, y ser llevado al selector con un aviso corto (o a mi cuenta de Cliente si no me
+queda ninguno, sin una pantalla dedicada), para seguir operando con normalidad en los demás
+lugares donde trabajo o usar la plataforma como Cliente. Recibo una notificación de la
+desactivación y mi sesión no se cierra.
 
 ## HU-E06: Renunciar a un Comercio
 

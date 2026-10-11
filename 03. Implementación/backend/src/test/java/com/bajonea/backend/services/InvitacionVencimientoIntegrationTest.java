@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bajonea.backend.config.security.ComercioActivo;
+import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.dto.request.AceptarInvitacionEmpleadoRequestDTO;
 import com.bajonea.backend.dto.response.EquipoComercioResponseDTO;
 import com.bajonea.backend.dto.response.InvitacionEmpleadoResponseDTO;
@@ -138,7 +139,7 @@ class InvitacionVencimientoIntegrationTest {
     }
 
     private ComercioActivo activo(Dueno dueno) {
-        return new ComercioActivo(dueno.comercioId(), dueno.id());
+        return ComercioActivo.delDueno(dueno.comercioId(), dueno.id(), EstadoComercio.APROBADO);
     }
 
     private static String emailNuevo() {

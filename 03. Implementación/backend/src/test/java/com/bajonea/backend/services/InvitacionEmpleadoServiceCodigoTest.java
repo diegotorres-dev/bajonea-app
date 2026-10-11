@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bajonea.backend.config.security.ComercioActivo;
+import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.dto.response.InvitacionEmpleadoResponseDTO;
 import com.bajonea.backend.entities.Comercio;
 import com.bajonea.backend.entities.Dueno;
@@ -92,7 +93,7 @@ class InvitacionEmpleadoServiceCodigoTest {
     }
 
     private InvitacionEmpleadoResponseDTO invitar() {
-        return service.invitar(new ComercioActivo(COMERCIO_ID, DUENO_ID), EMAIL);
+        return service.invitar(ComercioActivo.delDueno(COMERCIO_ID, DUENO_ID, EstadoComercio.APROBADO), EMAIL);
     }
 
     @Test

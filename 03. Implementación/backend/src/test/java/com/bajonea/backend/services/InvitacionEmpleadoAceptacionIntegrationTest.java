@@ -12,6 +12,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.bajonea.backend.config.security.ComercioActivo;
+import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.dto.request.AceptarInvitacionEmpleadoRequestDTO;
 import com.bajonea.backend.dto.request.DatosClienteRequestDTO;
 import com.bajonea.backend.dto.request.ValidarInvitacionEmpleadoRequestDTO;
@@ -145,7 +146,7 @@ class InvitacionEmpleadoAceptacionIntegrationTest {
     }
 
     private ComercioActivo activo(Dueno dueno) {
-        return new ComercioActivo(dueno.comercioId(), dueno.id());
+        return ComercioActivo.delDueno(dueno.comercioId(), dueno.id(), EstadoComercio.APROBADO);
     }
 
     private static String emailNuevo() {

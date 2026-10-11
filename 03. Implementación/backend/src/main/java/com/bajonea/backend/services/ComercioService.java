@@ -2,6 +2,7 @@ package com.bajonea.backend.services;
 
 import com.bajonea.backend.dto.request.ComercioPerfilRequestDTO;
 import com.bajonea.backend.dto.request.FotoPerfilComercioRequestDTO;
+import com.bajonea.backend.dto.response.ComercioEmpleadoResponseDTO;
 import com.bajonea.backend.dto.response.ComercioPublicoResponseDTO;
 import com.bajonea.backend.dto.response.ComercioResponseDTO;
 import com.bajonea.backend.dto.response.CloudinarySignatureResponseDTO;
@@ -64,6 +65,24 @@ public class ComercioService {
     public ComercioResponseDTO verPerfil(Integer comercioId) {
         Comercio comercio = obtenerComercio(comercioId);
         return aResponseDTO(comercio);
+    }
+
+    public ComercioEmpleadoResponseDTO verPerfilEmpleado(Integer comercioId) {
+        Comercio comercio = obtenerComercio(comercioId);
+        List<Horario> horariosEntidad = horarioRepository.findByComercioId(comercio.getId());
+        Disponibilidad disponibilidad = disponibilidadComercioService.calcular(comercio, horariosEntidad,
+                disponibilidadComercioService.ahora());
+        return new ComercioEmpleadoResponseDTO(
+                comercio.getId(),
+                comercio.getNombre(),
+                comercio.getDescripcion(),
+                comercio.getFotoPerfilUrl(),
+                comercio.getTelefono(),
+                aDireccionResponseDTO(comercio),
+                horariosEntidad.stream().map(this::aResponseDTO).toList(),
+                comercio.getEstado(),
+                disponibilidad.cerradoManualmente(),
+                disponibilidad.abiertoAhora());
     }
 
     public ComercioResponseDTO editarPerfil(Integer comercioId, ComercioPerfilRequestDTO request) {

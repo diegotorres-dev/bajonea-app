@@ -75,6 +75,12 @@ public class SecurityConfig {
      * públicos porque quien recibe una invitación todavía no tiene sesión ni, a veces, cuenta. Son rutas
      * exactas, nunca un comodín, y la protección es el código de la invitación más el límite por IP de
      * {@link RateLimitPublicoFilter}.
+     * <p>
+     * Rol Empleado (tramo E2): el Empleado es un Cliente con una relación activa con un comercio. Los endpoints de
+     * operación del Comercio siguen cerrados al Dueño por los matchers {@code hasRole("DUENO")} de más abajo; solo
+     * las rutas exactas de {@link DelegacionEmpleado} se abren por delante a {@code DUENO} y {@code CLIENTE}, y
+     * ahí la autorización real es el resolver de comercio activo. El Administrador sigue recibiendo {@code 403}.
+     * {@code GET /api/v1/empleados/mis-comercios} es del Cliente: lo consulta quien ya tiene sesión de Cliente.
      */
     private static final String[] RUTAS_PUBLICAS = {
             "/api/v1/auth/registro/**",
@@ -111,19 +117,23 @@ public class SecurityConfig {
                 .exceptionHandling(exceptionHandling -> exceptionHandling
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(RUTAS_PUBLICAS).permitAll()
-                        .requestMatchers("/api/v1/productos/**", "/api/v1/comercios/**").hasRole("DUENO")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/categorias/**", "/api/v1/tags/**")
-                        .authenticated()
-                        .requestMatchers("/api/v1/categorias/**", "/api/v1/tags/**", "/api/v1/administrador/**")
-                        .hasRole("ADMINISTRADOR")
-                        .requestMatchers("/api/v1/carrito/**", "/api/v1/pedidos/cliente/**", "/api/v1/clientes/**")
-                        .hasRole("CLIENTE")
-                        .requestMatchers("/api/v1/pedidos/comercio/**").hasRole("DUENO")
-                        .requestMatchers("/api/v1/oauth/mercadopago/**").hasRole("DUENO")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/notificaciones/comercio/**").hasRole("DUENO")
-                        .anyRequest().authenticated())
+                .authorizeHttpRequests(auth -> {
+                    auth.requestMatchers(RUTAS_PUBLICAS).permitAll();
+                    auth.requestMatchers(HttpMethod.GET, "/api/v1/empleados/mis-comercios").hasRole("CLIENTE");
+                    for (DelegacionEmpleado.RutaDelegable ruta : DelegacionEmpleado.RUTAS) {
+                        auth.requestMatchers(ruta.metodo(), ruta.patron()).hasAnyRole("DUENO", "CLIENTE");
+                    }
+                    auth.requestMatchers("/api/v1/productos/**", "/api/v1/comercios/**").hasRole("DUENO");
+                    auth.requestMatchers(HttpMethod.GET, "/api/v1/categorias/**", "/api/v1/tags/**").authenticated();
+                    auth.requestMatchers("/api/v1/categorias/**", "/api/v1/tags/**", "/api/v1/administrador/**")
+                            .hasRole("ADMINISTRADOR");
+                    auth.requestMatchers("/api/v1/carrito/**", "/api/v1/pedidos/cliente/**", "/api/v1/clientes/**")
+                            .hasRole("CLIENTE");
+                    auth.requestMatchers("/api/v1/pedidos/comercio/**").hasRole("DUENO");
+                    auth.requestMatchers("/api/v1/oauth/mercadopago/**").hasRole("DUENO");
+                    auth.requestMatchers(HttpMethod.PUT, "/api/v1/notificaciones/comercio/**").hasRole("DUENO");
+                    auth.anyRequest().authenticated();
+                })
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(rateLimitPublicoFilter, JwtAuthenticationFilter.class);
 

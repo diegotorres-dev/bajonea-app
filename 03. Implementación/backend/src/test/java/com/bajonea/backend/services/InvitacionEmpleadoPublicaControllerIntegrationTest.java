@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bajonea.backend.config.security.ComercioActivo;
+import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.dto.request.DatosClienteRequestDTO;
 import com.bajonea.backend.exceptions.CodigoInvitacionInvalidoException;
 import com.bajonea.backend.services.DatosPruebaEmpleado.Dueno;
@@ -97,7 +98,7 @@ class InvitacionEmpleadoPublicaControllerIntegrationTest {
     }
 
     private int invitar(Dueno dueno, String email) {
-        return invitacionService.invitar(new ComercioActivo(dueno.comercioId(), dueno.id()), email).getId();
+        return invitacionService.invitar(ComercioActivo.delDueno(dueno.comercioId(), dueno.id(), EstadoComercio.APROBADO), email).getId();
     }
 
     private String codigoDe(int invitacionId) {
@@ -200,7 +201,7 @@ class InvitacionEmpleadoPublicaControllerIntegrationTest {
             String emailCancelada = emailNuevo();
             int cancelada = invitar(dueno, emailCancelada);
             String codigoCancelada = codigoDe(cancelada);
-            invitacionService.cancelar(new ComercioActivo(dueno.comercioId(), dueno.id()), cancelada);
+            invitacionService.cancelar(ComercioActivo.delDueno(dueno.comercioId(), dueno.id(), EstadoComercio.APROBADO), cancelada);
             cuerpos.add(cuerpoDe(postJson(ACEPTAR, cuerpo(emailCancelada, codigoCancelada, "aceptaTerminos", true, "cuentaNueva", cuentaNueva()))
                     .andExpect(status().isUnauthorized())));
             cuerpos.add(cuerpoDe(postJson(VALIDAR, cuerpo(emailCancelada, codigoCancelada)).andExpect(status().isUnauthorized())));
@@ -208,7 +209,7 @@ class InvitacionEmpleadoPublicaControllerIntegrationTest {
             String emailReemplazada = emailNuevo();
             int original = invitar(otro, emailReemplazada);
             String codigoViejo = codigoDe(original);
-            invitacionService.reenviar(new ComercioActivo(otro.comercioId(), otro.id()), original);
+            invitacionService.reenviar(ComercioActivo.delDueno(otro.comercioId(), otro.id(), EstadoComercio.APROBADO), original);
             cuerpos.add(cuerpoDe(postJson(ACEPTAR, cuerpo(emailReemplazada, codigoViejo, "aceptaTerminos", true, "cuentaNueva", cuentaNueva()))
                     .andExpect(status().isUnauthorized())));
             cuerpos.add(cuerpoDe(postJson(VALIDAR, cuerpo(emailReemplazada, codigoViejo)).andExpect(status().isUnauthorized())));

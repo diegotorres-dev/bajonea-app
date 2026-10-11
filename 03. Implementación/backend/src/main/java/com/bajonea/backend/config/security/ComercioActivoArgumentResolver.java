@@ -36,6 +36,6 @@ public class ComercioActivoArgumentResolver implements HandlerMethodArgumentReso
             throw new IllegalStateException("ComercioActivo requiere un usuario autenticado");
         }
         String header = webRequest.getHeader(ComercioActivoService.HEADER_COMERCIO_ID);
-        return comercioActivoService.resolver(usuario.userId(), header);
+        return comercioActivoService.resolver(usuario.userId(), usuario.rol(), header);
     }
 }

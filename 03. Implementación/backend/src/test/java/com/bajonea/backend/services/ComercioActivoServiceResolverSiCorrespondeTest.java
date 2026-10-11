@@ -9,11 +9,13 @@ import static org.mockito.Mockito.when;
 
 import com.bajonea.backend.config.security.AuthenticatedUser;
 import com.bajonea.backend.config.security.ComercioActivo;
+import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.entities.Comercio;
 import com.bajonea.backend.enums.RolUsuario;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.exceptions.ValidacionException;
 import com.bajonea.backend.repositories.ComercioRepository;
+import com.bajonea.backend.repositories.EmpleadoComercioRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +32,7 @@ class ComercioActivoServiceResolverSiCorrespondeTest {
     @BeforeEach
     void preparar() {
         comercioRepository = mock(ComercioRepository.class);
-        service = new ComercioActivoService(comercioRepository);
+        service = new ComercioActivoService(comercioRepository, mock(EmpleadoComercioRepository.class));
     }
 
     private static AuthenticatedUser usuario(RolUsuario rol) {
@@ -48,11 +50,11 @@ class ComercioActivoServiceResolverSiCorrespondeTest {
 
     @Test
     void elDuenoConHeaderPropioObtieneEseComercio() {
-        when(comercioRepository.findByIdAndDuenoId(31, DUENO_ID)).thenReturn(Optional.of(Comercio.builder().id(31).build()));
+        when(comercioRepository.findByIdAndDuenoId(31, DUENO_ID)).thenReturn(Optional.of(Comercio.builder().id(31).estado(EstadoComercio.APROBADO).build()));
 
         Optional<ComercioActivo> activo = service.resolverSiCorresponde(usuario(RolUsuario.DUENO), " 31 ");
 
-        assertEquals(new ComercioActivo(31, DUENO_ID), activo.orElseThrow());
+        assertEquals(ComercioActivo.delDueno(31, DUENO_ID, EstadoComercio.APROBADO), activo.orElseThrow());
     }
 
     @Test

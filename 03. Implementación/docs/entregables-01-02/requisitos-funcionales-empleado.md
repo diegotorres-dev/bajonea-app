@@ -133,9 +133,26 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
   cumplir con un error de conflicto (409). Los cambios de estado de un comercio no tocan
   las relaciones de sus Empleados.
 - Al desactivar su relación con un comercio, la próxima acción del Empleado sobre ese
-  comercio responde "no encontrado" (404) y la aplicación lo lleva al selector. Si no le
-  queda ningún comercio, ve "Ya no tenés acceso a ningún comercio" con el botón "Entrar
-  como Cliente". Su sesión no se cierra.
+  comercio responde "no encontrado" (404). La aplicación le muestra un aviso corto y lo
+  lleva al selector, o a su cuenta de Cliente si no le queda ningún comercio; no hay una
+  pantalla dedicada. Su sesión no se cierra.
+- El servidor no revela por qué el Empleado no puede acceder a un comercio: un comercio
+  que no existe, que es de otro Dueño, con el que no tiene relación Activa o que está en
+  un estado al que no accede (Pendiente, Rechazado, Inactivo o Rechazo definitivo)
+  responden exactamente lo mismo (404, mismo mensaje y mismo código). La relación se
+  comprueba contra la base en cada solicitud, así que desactivarla corta el acceso en la
+  solicitud siguiente, sin esperar a que venza ninguna sesión.
+- Un Administrador no puede operar un comercio como Empleado (403), y el Dueño y el
+  Administrador no tienen lista de "mis comercios" de Empleado.
+
+> **Estado de implementación (tramo E2, entrega A):** el servidor ya resuelve el comercio
+> del Empleado y le abre cuatro lecturas: el perfil del comercio con un conjunto reducido
+> de datos (nombre, foto, descripción, dirección del local, teléfono, horarios, estado y si
+> está abierto o cerrado manualmente), la lista de productos, la lista de pedidos y el
+> resumen de pedidos del día. Las acciones (editar, abrir y cerrar, gestionar productos y
+> pedidos) siguen cerradas al Empleado hasta el tramo E3, y el selector y las pantallas
+> del Empleado llegan en la entrega B de E2. Las notificaciones por comercio del Empleado
+> quedan para E3.
 
 ---
 

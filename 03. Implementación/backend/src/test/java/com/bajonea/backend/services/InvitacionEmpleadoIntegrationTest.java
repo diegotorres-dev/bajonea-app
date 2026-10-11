@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 
 import com.bajonea.backend.config.security.AuthenticatedUser;
 import com.bajonea.backend.config.security.ComercioActivo;
+import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.dto.response.EquipoComercioResponseDTO;
 import com.bajonea.backend.dto.response.InvitacionEmpleadoResponseDTO;
 import com.bajonea.backend.dto.response.NotificacionResponseDTO;
@@ -194,7 +195,7 @@ class InvitacionEmpleadoIntegrationTest {
     }
 
     private ComercioActivo activo(Dueno dueno) {
-        return new ComercioActivo(dueno.comercioId(), dueno.id());
+        return ComercioActivo.delDueno(dueno.comercioId(), dueno.id(), EstadoComercio.APROBADO);
     }
 
     private static String emailNuevo() {
@@ -318,9 +319,9 @@ class InvitacionEmpleadoIntegrationTest {
             InvitacionEmpleadoResponseDTO invitacion = invitacionService.invitar(activo(dueno), emailNuevo());
 
             RecursoNoEncontradoException ajeno = assertThrows(RecursoNoEncontradoException.class,
-                    () -> comercioActivoService.resolver(otro.id(), String.valueOf(dueno.comercioId())));
+                    () -> comercioActivoService.resolver(otro.id(), RolUsuario.DUENO, String.valueOf(dueno.comercioId())));
             RecursoNoEncontradoException inexistente = assertThrows(RecursoNoEncontradoException.class,
-                    () -> comercioActivoService.resolver(otro.id(), String.valueOf(Integer.MAX_VALUE - 1)));
+                    () -> comercioActivoService.resolver(otro.id(), RolUsuario.DUENO, String.valueOf(Integer.MAX_VALUE - 1)));
             assertEquals(inexistente.getMessage(), ajeno.getMessage());
 
             assertThrows(RecursoNoEncontradoException.class, () -> invitacionService.cancelar(activo(otro), invitacion.getId()));
