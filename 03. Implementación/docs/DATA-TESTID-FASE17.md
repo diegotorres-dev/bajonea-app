@@ -144,9 +144,19 @@ Convención igual que arriba (kebab-case en español, `btn-<verbo>-<objeto>`, lo
 | Selector y hoja "Cambiar de cuenta" | `js/selector-contexto.js` | `fila-contexto-cliente`, `fila-contexto-comercio-{id}`, `fila-contexto-comercio-{id}-subtitulo` y `fila-contexto-cliente-subtitulo` (las filas llevan además `data-resaltada="true"` cuando son el último contexto usado, y `aria-current` cuando son el actual), `etiqueta-estado-contexto-{id}` ("Suspendido" o "Cerrado temporalmente"), `tilde-contexto-actual`, `error-lista-contextos`, `btn-reintentar-contextos` |
 | Hoja "Cambiar de cuenta" | `js/selector-contexto.js` | `hoja-cambiar-cuenta`, `titulo-cambiar-cuenta`, `btn-cerrar-hoja-cambiar-cuenta` (la `lista-contextos` de la hoja es la misma que usa el selector) |
 | `perfil.html` (Cliente) | `.html` | `btn-cambiar-cuenta` (oculta salvo que el usuario sea Empleado de algún comercio) |
-| `comercio-perfil.html` (perfil del Empleado) | `.html` | `btn-cambiar-cuenta`, `btn-mi-cuenta`, `insignia-empleado-perfil`, `seccion-datos-comercio-empleado`, `seccion-cuenta-empleado`, `empleado-descripcion`, `empleado-direccion`, `empleado-telefono`, `empleado-horarios`, `empleado-estado` |
+| `comercio-perfil.html` (perfil del Empleado) | `.html` | `btn-cambiar-cuenta`, `insignia-empleado-perfil`, `seccion-datos-comercio-empleado` (ahora en la vista interna "Datos del comercio"), `empleado-descripcion`, `empleado-direccion`, `empleado-telefono`, `empleado-horarios`, `empleado-estado`. `btn-mi-cuenta` y `seccion-cuenta-empleado` se eliminaron en la entrega B6 |
 | ídem | `js/comercio.js` | `empleado-horario-{dia}` (`lunes` a `domingo`, un renglón por día) |
 | Franja del comercio (Empleado) | `js/selector-comercio.js` | `franja-comercio-insignia-empleado` (el resto de los testids de la franja del Dueño se conserva: `franja-comercio`, `franja-comercio-nombre`, `franja-comercio-chip-cerrado`) |
 | Pedidos del Empleado | `js/comercio.js` | `chip-reembolso-pedido` (en la tarjeta de la lista, dentro de `pedido-item-{id}`), `chip-reembolso-detalle` (en el detalle) |
 
 Totales de esta entrega: 31 patrones de `data-testid` nuevos (4 en `seleccionar-contexto.html`, 12 en `js/selector-contexto.js`, 1 en `perfil.html`, 10 en `comercio-perfil.html`, 3 en `js/comercio.js` y 1 en `js/selector-comercio.js`). Sin comentarios en ningún archivo tocado.
+
+## Rol Empleado, tramo E2 (entrega B6) — perfiles en una sola lista y hoja de pérdida de acceso
+
+| Pantalla | Archivo(s) | `data-testid` |
+|---|---|---|
+| `perfil.html` (Cliente) y `comercio-perfil.html` (Empleado) | `.html` | `lista-perfil` (la lista única de filas; en `comercio-perfil.html` solo existe para el Empleado) |
+| `comercio-perfil.html` (Empleado) | `.html` | `btn-ver-datos-comercio` (fila nueva), `btn-volver-perfil-datos-comercio` (volver de la vista "Datos del comercio"); en el contexto Empleado se reutilizan los testids del perfil del Cliente `btn-editar-datos`, `btn-cambiar-password`, `btn-cerrar-sesion`, `input-nombre`, `input-apellido`, `input-telefono`, `input-nombre-usuario`, `input-email`, `input-dni`, `btn-guardar-datos`, `input-password-*`, `btn-guardar-password` y `btn-volver-perfil`/`btn-volver-perfil-password` |
+| Hoja de pérdida de acceso | `js/api.js` | `aviso-acceso-perdido` (el fondo de la hoja), `titulo-acceso-perdido`, `texto-acceso-perdido-1`, `texto-acceso-perdido-2`, `btn-entendido-acceso-perdido` |
+
+Totales de esta entrega: 8 patrones nuevos (`lista-perfil`, `btn-ver-datos-comercio`, `btn-volver-perfil-datos-comercio` y los cinco de la hoja); se eliminaron 2 (`btn-mi-cuenta`, `seccion-cuenta-empleado`). Sin comentarios en ningún archivo tocado.

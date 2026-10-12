@@ -4,12 +4,14 @@ const TOKEN_KEY = 'bajonea_token';
 const USUARIO_KEY = 'bajonea_usuario';
 const COMERCIO_ACTIVO_KEY = 'bajonea_comercio_activo';
 const AVISO_INVITACION_KEY = 'bajonea_aviso_invitacion';
-const AVISO_ACCESO_PERDIDO_KEY = 'bajonea_aviso_acceso_perdido';
 const CONTEXTO_KEY = 'bajonea_contexto';
 const ULTIMO_COMERCIO_PREFIX = 'bajonea_ultimo_comercio_';
 const ULTIMO_CONTEXTO_PREFIX = 'bajonea_ultimo_contexto_';
 const CODIGO_COMERCIO_NO_DISPONIBLE = 'COMERCIO_NO_DISPONIBLE';
 const RUTA_SELECTOR_CONTEXTO = 'seleccionar-contexto.html';
+const RUTA_INICIO_CLIENTE = 'index.html';
+const ESPERA_MAXIMA_COMERCIOS_MS = 4000;
+const RUTAS_DE_COMERCIO = /^\/(comercios|productos|pedidos\/comercio|notificaciones|oauth)(?=[/?]|$)/;
 export const TIPO_CONTEXTO = Object.freeze({
   CLIENTE: 'CLIENTE',
   DUENO: 'DUENO',
@@ -50,32 +52,6 @@ export function clearSesion() {
   clearContexto();
 }
 
-export function marcarAvisoAccesoPerdido() {
-  try {
-    sessionStorage.setItem(AVISO_ACCESO_PERDIDO_KEY, '1');
-  } catch {
-    return;
-  }
-}
-
-export function consumirAvisoAccesoPerdido() {
-  try {
-    const hayAviso = sessionStorage.getItem(AVISO_ACCESO_PERDIDO_KEY) === '1';
-    sessionStorage.removeItem(AVISO_ACCESO_PERDIDO_KEY);
-    return hayAviso;
-  } catch {
-    return false;
-  }
-}
-
-export function hayAvisoAccesoPerdido() {
-  try {
-    return sessionStorage.getItem(AVISO_ACCESO_PERDIDO_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
 export function getContextoGuardado() {
   const usuario = getUsuario();
   if (!usuario || usuario.rol !== 'CLIENTE') {
@@ -87,7 +63,11 @@ export function getContextoGuardado() {
       return null;
     }
     if (guardado.tipo === TIPO_CONTEXTO.EMPLEADO && Number.isInteger(guardado.comercioId)) {
-      return { tipo: TIPO_CONTEXTO.EMPLEADO, comercioId: guardado.comercioId };
+      return {
+        tipo: TIPO_CONTEXTO.EMPLEADO,
+        comercioId: guardado.comercioId,
+        comercioNombre: typeof guardado.comercioNombre === 'string' && guardado.comercioNombre ? guardado.comercioNombre : null,
+      };
     }
     if (guardado.tipo === TIPO_CONTEXTO.CLIENTE) {
       return { tipo: TIPO_CONTEXTO.CLIENTE, comercioId: null };
@@ -112,7 +92,7 @@ export function getContexto() {
   return getContextoGuardado() || { tipo: TIPO_CONTEXTO.CLIENTE, comercioId: null };
 }
 
-export function setContexto(tipo, comercioId = null, recordar = true) {
+export function setContexto(tipo, comercioId = null, recordar = true, comercioNombre = null) {
   const usuario = getUsuario();
   if (!usuario || usuario.rol !== 'CLIENTE') {
     return;
@@ -122,10 +102,19 @@ export function setContexto(tipo, comercioId = null, recordar = true) {
     usuarioId: usuario.id,
     tipo: esEmpleado ? TIPO_CONTEXTO.EMPLEADO : TIPO_CONTEXTO.CLIENTE,
     comercioId: esEmpleado ? comercioId : null,
+    comercioNombre: esEmpleado && comercioNombre ? comercioNombre : null,
   }));
   if (recordar) {
     localStorage.setItem(`${ULTIMO_CONTEXTO_PREFIX}${usuario.id}`, esEmpleado ? `${TIPO_CONTEXTO.EMPLEADO}:${comercioId}` : TIPO_CONTEXTO.CLIENTE);
   }
+}
+
+export function actualizarNombreContexto(comercioNombre) {
+  const contexto = getContextoGuardado();
+  if (!contexto || contexto.tipo !== TIPO_CONTEXTO.EMPLEADO || !comercioNombre || contexto.comercioNombre === comercioNombre) {
+    return;
+  }
+  setContexto(TIPO_CONTEXTO.EMPLEADO, contexto.comercioId, false, comercioNombre);
 }
 
 export function clearContexto() {
@@ -304,21 +293,127 @@ async function parseBody(response) {
   }
 }
 
+const ICONO_ACCESO_PERDIDO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
+
+let accesoPerdido = false;
+
+export function hayAccesoPerdido() {
+  return accesoPerdido;
+}
+
+function consultarSiQuedanOtrosComercios() {
+  const consulta = apiFetch('/empleados/mis-comercios', { handle5xxGlobally: false, handleRedGlobally: false })
+    .then((comercios) => Array.isArray(comercios) && comercios.length > 0)
+    .catch(() => false);
+  const espera = new Promise((resolve) => {
+    window.setTimeout(() => resolve(false), ESPERA_MAXIMA_COMERCIOS_MS);
+  });
+  return Promise.race([consulta, espera]);
+}
+
+function mostrarAvisoAccesoPerdido({ nombre, quedanOtros }) {
+  if (document.getElementById('aviso-acceso-perdido')) {
+    return;
+  }
+  const overflowPrevio = document.body.style.overflow;
+  const backdrop = document.createElement('div');
+  backdrop.id = 'aviso-acceso-perdido';
+  backdrop.className = 'modal-backdrop';
+  backdrop.setAttribute('data-testid', 'aviso-acceso-perdido');
+  const hoja = document.createElement('div');
+  hoja.className = 'modal-sheet';
+  hoja.setAttribute('role', 'dialog');
+  hoja.setAttribute('aria-modal', 'true');
+  hoja.setAttribute('aria-labelledby', 'aviso-acceso-perdido-titulo');
+
+  const icono = document.createElement('div');
+  icono.className = 'modal-sheet__icon';
+  icono.innerHTML = ICONO_ACCESO_PERDIDO;
+  hoja.appendChild(icono);
+
+  const titulo = document.createElement('h2');
+  titulo.id = 'aviso-acceso-perdido-titulo';
+  titulo.className = 'modal-sheet__title';
+  titulo.setAttribute('data-testid', 'titulo-acceso-perdido');
+  titulo.textContent = 'Ya no tenés acceso a este comercio';
+  hoja.appendChild(titulo);
+
+  const texto = document.createElement('p');
+  texto.className = 'modal-sheet__text';
+  const primera = document.createElement('span');
+  primera.style.display = 'block';
+  primera.setAttribute('data-testid', 'texto-acceso-perdido-1');
+  primera.textContent = `${nombre || 'El comercio'} te sacó del equipo.`;
+  const segunda = document.createElement('span');
+  segunda.style.display = 'block';
+  segunda.setAttribute('data-testid', 'texto-acceso-perdido-2');
+  segunda.textContent = quedanOtros ? 'Elegí con qué cuenta seguir.' : 'Se te redirigirá a tu cuenta de Cliente.';
+  texto.append(primera, segunda);
+  hoja.appendChild(texto);
+
+  const entendido = document.createElement('button');
+  entendido.type = 'button';
+  entendido.className = 'btn btn-primary';
+  entendido.setAttribute('data-testid', 'btn-entendido-acceso-perdido');
+  entendido.textContent = 'Entendido';
+  hoja.appendChild(entendido);
+
+  backdrop.appendChild(hoja);
+  document.body.appendChild(backdrop);
+  document.body.style.overflow = 'hidden';
+  entendido.focus();
+
+  let continuado = false;
+  function continuar() {
+    if (continuado) {
+      return;
+    }
+    continuado = true;
+    document.removeEventListener('keydown', alTeclear);
+    document.body.style.overflow = overflowPrevio;
+    if (quedanOtros) {
+      redirectTo(RUTA_SELECTOR_CONTEXTO);
+      return;
+    }
+    setContexto(TIPO_CONTEXTO.CLIENTE, null, false);
+    redirectTo(RUTA_INICIO_CLIENTE);
+  }
+  function alTeclear(evento) {
+    if (evento.key === 'Escape') {
+      continuar();
+    }
+  }
+  document.addEventListener('keydown', alTeclear);
+  entendido.addEventListener('click', continuar);
+  backdrop.addEventListener('click', (evento) => {
+    if (evento.target === backdrop) {
+      continuar();
+    }
+  });
+}
+
 export function perderAccesoAlComercio() {
+  if (accesoPerdido) {
+    return;
+  }
+  accesoPerdido = true;
   const contexto = getContextoGuardado();
   const ultimo = getUltimoContexto();
+  const nombre = contexto ? contexto.comercioNombre : null;
   clearContexto();
   if (contexto && ultimo && ultimo.tipo === TIPO_CONTEXTO.EMPLEADO && ultimo.comercioId === contexto.comercioId) {
     olvidarUltimoContexto();
   }
-  marcarAvisoAccesoPerdido();
-  redirectTo(RUTA_SELECTOR_CONTEXTO);
+  consultarSiQuedanOtrosComercios().then((quedanOtros) => mostrarAvisoAccesoPerdido({ nombre, quedanOtros }));
 }
 
 export async function apiFetch(path, { method = 'GET', body, auth = true, handle401Globally = true, handle5xxGlobally = true, comercioId, sinComercio = false, conMensaje = false, handleRedGlobally = true } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   const token = getToken();
   const hadToken = Boolean(auth && token);
+  if (accesoPerdido && hadToken && RUTAS_DE_COMERCIO.test(path)) {
+    throw new ApiError(0, 'Acceso perdido', null);
+  }
   if (hadToken) {
     headers.Authorization = `Bearer ${token}`;
     const comercio = comercioParaLaRequest(path, comercioId, sinComercio);

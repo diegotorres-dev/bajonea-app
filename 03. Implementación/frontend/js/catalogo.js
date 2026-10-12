@@ -1,4 +1,4 @@
-import { apiFetch, ApiError, consumirAvisoAccesoPerdido, esContextoComercio, esContextoDueno, esContextoEmpleado, getUsuario, mostrarModalCuentaBloqueada } from './api.js';
+import { apiFetch, ApiError, esContextoComercio, esContextoDueno, esContextoEmpleado, getUsuario, mostrarModalCuentaBloqueada } from './api.js';
 import { exigirContextoCliente } from './contexto.js';
 import { resolverHomePorRol, LABELS_TIPO_COMERCIO } from './auth.js';
 import { contarNotificacionesNoLeidasActivo, resolverComercioActivo, suscribirComercios } from './comercio-activo.js';
@@ -472,9 +472,6 @@ export function renderEmptyState(container, titulo, texto, { textoBoton, hrefBot
 export async function initCatalogo() {
   if (!(await exigirContextoCliente())) {
     return;
-  }
-  if (consumirAvisoAccesoPerdido()) {
-    showToast('Ya no tenés acceso a este comercio', 'warning');
   }
   const usuario = getUsuario();
   if (usuario && usuario.rol !== 'CLIENTE') {

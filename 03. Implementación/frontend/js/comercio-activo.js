@@ -1,8 +1,10 @@
 import {
+  actualizarNombreContexto,
   apiFetch,
   esContextoEmpleado,
   getUsuario,
   getComercioActivoId,
+  hayAccesoPerdido,
   perderAccesoAlComercio,
   setComercioActivoId,
   clearComercioActivoId,
@@ -86,6 +88,9 @@ function resolverComercioDelEmpleado() {
   return refrescarComercios().then((comercios) => {
     const activoId = getComercioActivoId();
     const comercio = comercios.find((candidato) => candidato.id === activoId);
+    if (comercio) {
+      actualizarNombreContexto(comercio.nombre);
+    }
     return comercio ? { tipo: 'empleado', comercio } : { tipo: 'sin-acceso' };
   });
 }
@@ -151,6 +156,9 @@ export function marcarNotificacionesDelComercioLeidas(comercioId) {
 }
 
 async function verificarComercioActivo() {
+  if (hayAccesoPerdido()) {
+    return;
+  }
   let comercios;
   try {
     comercios = await refrescarComercios();
@@ -165,6 +173,8 @@ async function verificarComercioActivo() {
   if (esContextoEmpleado()) {
     if (!activo) {
       perderAccesoAlComercio();
+    } else {
+      actualizarNombreContexto(activo.nombre);
     }
     return;
   }

@@ -1,5 +1,4 @@
 import {
-  consumirAvisoAccesoPerdido,
   getContexto,
   getUltimoContexto,
   getUsuario,
@@ -17,7 +16,6 @@ import { crearAvatar } from './selector-comercio.js';
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const ID_HOJA = 'hoja-cambiar-cuenta';
 const ID_TITULO_HOJA = 'hoja-cambiar-cuenta-titulo';
-const MENSAJE_ACCESO_PERDIDO = 'Ya no tenés acceso a este comercio';
 const FILAS_ESQUELETO = 2;
 
 const ETIQUETA_ESTADO = {
@@ -142,7 +140,7 @@ function pintarOpciones(lista, comercios, { actual, ultimo, mostrarUltimo }) {
       etiquetaTestid: `etiqueta-estado-contexto-${comercio.id}`,
       resaltada: esUltimo(TIPO_CONTEXTO.EMPLEADO, comercio.id),
       actual: esActual(TIPO_CONTEXTO.EMPLEADO, comercio.id),
-      alElegir: () => entrarEnContexto(TIPO_CONTEXTO.EMPLEADO, comercio.id),
+      alElegir: () => entrarEnContexto(TIPO_CONTEXTO.EMPLEADO, comercio.id, comercio.nombre),
     }));
   });
 }
@@ -279,10 +277,6 @@ export async function initSeleccionarContexto() {
     }
     pintarOpciones(lista, comercios, { actual: null, ultimo: getUltimoContexto(), mostrarUltimo: true });
     contenido.classList.remove('is-hidden');
-    if (consumirAvisoAccesoPerdido()) {
-      const { showToast } = await import('./catalogo.js');
-      showToast(MENSAJE_ACCESO_PERDIDO, 'warning');
-    }
   }
 
   await cargar();

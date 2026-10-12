@@ -49,39 +49,18 @@
           </button>
         </div>
       </div>
-      <div class="profile-section is-hidden" id="seccion-empleado-datos" data-testid="seccion-datos-comercio-empleado">
-        <p class="profile-section__title">Datos del comercio</p>
-        <div class="perfil-datos">
-          <div class="field">
-            <span class="field__label">Descripción</span>
-            <p id="empleado-descripcion" data-testid="empleado-descripcion"></p>
-          </div>
-          <div class="field">
-            <span class="field__label">Dirección</span>
-            <p id="empleado-direccion" data-testid="empleado-direccion"></p>
-          </div>
-          <div class="field">
-            <span class="field__label">Teléfono</span>
-            <p id="empleado-telefono" data-testid="empleado-telefono"></p>
-          </div>
-          <div class="field">
-            <span class="field__label">Horarios</span>
-            <div id="empleado-horarios" data-testid="empleado-horarios"></div>
-          </div>
-          <div class="field">
-            <span class="field__label">Estado</span>
-            <p id="empleado-estado" data-testid="empleado-estado"></p>
-          </div>
-        </div>
-      </div>
-      <div class="profile-section is-hidden" id="seccion-empleado-cuenta" data-testid="seccion-cuenta-empleado">
-        <p class="profile-section__title">Mi cuenta</p>
-        <div class="profile-link-list">
-          <a class="profile-link" href="perfil.html" id="mi-cuenta-link" data-testid="btn-mi-cuenta">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span>Mi cuenta</span>
+      <div class="profile-section is-hidden" id="seccion-lista-empleado">
+        <div class="profile-link-list" id="lista-perfil-empleado" data-testid="lista-perfil">
+          <button class="profile-link" type="button" id="ver-datos-comercio-link" data-testid="btn-ver-datos-comercio" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
+            <span>Ver datos del comercio</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-          </a>
+          </button>
+          <button class="profile-link" type="button" id="editar-datos-link" data-testid="btn-editar-datos" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+            <span>Editar datos personales</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
           <button class="profile-link" type="button" id="cambiar-cuenta-link" data-testid="btn-cambiar-cuenta" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
             <span>Cambiar de cuenta</span>
@@ -89,7 +68,7 @@
           </button>
         </div>
       </div>
-      <div class="profile-section">
+      <div class="profile-section" id="seccion-sesion">
         <p class="profile-section__title">Sesión</p>
         <div class="profile-link-list">
           <button class="profile-link profile-link--danger" type="button" id="cerrar-sesion-link" data-testid="btn-cerrar-sesion">
@@ -194,6 +173,92 @@
           <span class="field__label">Fecha de inicio de actividades</span>
           <p id="legal-fecha-inicio" style="font-size:14px;color:var(--color-text-muted);" data-testid="legal-fecha-inicio"></p>
         </div>
+      </div>
+    </section>
+
+    <section id="view-datos-comercio" class="perfil-view is-hidden">
+      <header class="app-header">
+        <button class="app-header__back" type="button" data-volver-perfil aria-label="Volver" data-testid="btn-volver-perfil-datos-comercio">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="app-header__title">Datos del comercio</span>
+      </header>
+      <div class="screen-body" data-testid="seccion-datos-comercio-empleado">
+        <div class="perfil-datos">
+          <div class="field">
+            <span class="field__label">Descripción</span>
+            <p id="empleado-descripcion" data-testid="empleado-descripcion"></p>
+          </div>
+          <div class="field">
+            <span class="field__label">Dirección</span>
+            <p id="empleado-direccion" data-testid="empleado-direccion"></p>
+          </div>
+          <div class="field">
+            <span class="field__label">Teléfono</span>
+            <p id="empleado-telefono" data-testid="empleado-telefono"></p>
+          </div>
+          <div class="field">
+            <span class="field__label">Horarios</span>
+            <div id="empleado-horarios" data-testid="empleado-horarios"></div>
+          </div>
+          <div class="field">
+            <span class="field__label">Estado</span>
+            <p id="empleado-estado" data-testid="empleado-estado"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="view-editar-datos" class="perfil-view is-hidden">
+      <header class="app-header">
+        <button class="app-header__back" type="button" data-volver-perfil aria-label="Volver" data-testid="btn-volver-perfil">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="app-header__title">Editar datos personales</span>
+      </header>
+      <div class="screen-body">
+        <div id="editar-banner-slot" data-testid="mensaje-banner"></div>
+        <form class="form" id="form-editar-datos" novalidate>
+          <div class="field">
+            <label class="field__label" for="editar-nombre">Nombre</label>
+            <div class="input-shell"><input type="text" id="editar-nombre" required maxlength="100" data-testid="input-nombre" /></div>
+            <div class="field__error" id="error-editar-nombre" style="display:none;" data-testid="mensaje-error-nombre"></div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="editar-apellido">Apellido</label>
+            <div class="input-shell"><input type="text" id="editar-apellido" required maxlength="100" data-testid="input-apellido" /></div>
+            <div class="field__error" id="error-editar-apellido" style="display:none;" data-testid="mensaje-error-apellido"></div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="editar-telefono">Teléfono</label>
+            <div class="input-shell">
+              <span class="input-prefix">+54 9</span>
+              <input type="tel" id="editar-telefono" inputmode="numeric" placeholder="2964 000000" required data-testid="input-telefono" />
+            </div>
+            <div class="field__error" id="error-editar-telefono" style="display:none;" data-testid="mensaje-error-telefono"></div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="editar-nombre-usuario">Nombre de usuario</label>
+            <div class="input-shell">
+              <input type="text" id="editar-nombre-usuario" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="20" data-testid="input-nombre-usuario" />
+              <span class="input-shell__status-icon" id="icono-editar-nombre-usuario" style="display:none;" data-testid="icono-estado-nombre-usuario"></span>
+            </div>
+            <p class="field__hint">Podés cambiar tu nombre de usuario hasta 3 veces cada 30 días.</p>
+            <div class="field__status" id="estado-editar-nombre-usuario" style="display:none;" data-testid="estado-nombre-usuario"></div>
+            <div class="field__error" id="error-editar-nombre-usuario" style="display:none;" data-testid="mensaje-error-nombre-usuario"></div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="editar-email">Email</label>
+            <div class="input-shell"><input type="email" id="editar-email" disabled data-testid="input-email" /></div>
+            <p class="field__hint">El email no se puede modificar.</p>
+          </div>
+          <div class="field">
+            <label class="field__label" for="editar-dni">DNI</label>
+            <div class="input-shell"><input type="text" id="editar-dni" disabled data-testid="input-dni" /></div>
+            <p class="field__hint">El DNI no se puede modificar.</p>
+          </div>
+          <button class="btn btn-primary" type="submit" id="guardar-datos-btn" data-testid="btn-guardar-datos">Guardar</button>
+        </form>
       </div>
     </section>
 

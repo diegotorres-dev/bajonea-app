@@ -18,6 +18,7 @@ import {
 } from './comercio-activo.js';
 import { abrirPanelComercios, enlazarMantenerApretado, prepararPaginaComercio } from './selector-comercio.js';
 import { abrirHojaCambiarCuenta } from './selector-contexto.js';
+import { enlazarCambioPassword, enlazarEdicionDatosPersonales } from './perfil-cuenta.js';
 import { montarSwitchCierre } from './cierre-comercio.js';
 import { abrirEquipoComercio, enlazarEquipoComercio } from './equipo-comercio.js';
 import { cerrarVariosComercios, comerciosCerrables } from './apertura-comercio.js';
@@ -1650,22 +1651,65 @@ function pintarHorariosParaEmpleado(contenedor, horarios) {
   });
 }
 
+function prepararVistasDelPerfil(esEmpleado) {
+  const quitar = (...ids) => ids.forEach((id) => {
+    const nodo = document.getElementById(id);
+    if (nodo) {
+      nodo.remove();
+    }
+  });
+  if (!esEmpleado) {
+    quitar('seccion-lista-empleado', 'view-datos-comercio', 'view-editar-datos');
+    return;
+  }
+  const lista = document.getElementById('lista-perfil-empleado');
+  lista.insertBefore(document.getElementById('cambiar-password-link'), document.getElementById('cambiar-cuenta-link'));
+  lista.appendChild(document.getElementById('cerrar-sesion-link'));
+  quitar('seccion-mi-comercio', 'seccion-sesion', 'view-editar-perfil', 'view-datos-legales', 'view-equipo', 'view-mercadopago');
+  document.getElementById('seccion-lista-empleado').classList.remove('is-hidden');
+}
+
 function pintarPerfilDelEmpleado(comercio) {
   document.getElementById('perfil-nombre').textContent = comercio.nombre;
   document.getElementById('perfil-email').classList.add('is-hidden');
   document.getElementById('perfil-insignia-empleado').classList.remove('is-hidden');
   pintarAvatarComercio(document.getElementById('perfil-avatar'), comercio);
-  document.getElementById('seccion-mi-comercio').classList.add('is-hidden');
-  document.getElementById('seccion-empleado-datos').classList.remove('is-hidden');
-  document.getElementById('seccion-empleado-cuenta').classList.remove('is-hidden');
   document.getElementById('empleado-descripcion').textContent = comercio.descripcion || 'Sin descripción';
   document.getElementById('empleado-direccion').textContent = formatearDireccion(comercio.direccion);
   document.getElementById('empleado-telefono').textContent = comercio.telefono;
   pintarHorariosParaEmpleado(document.getElementById('empleado-horarios'), comercio.horarios);
   document.getElementById('empleado-estado').textContent = textoEstadoParaEmpleado(comercio);
+}
+
+async function iniciarPerfilDelEmpleado(comercio) {
+  pintarPerfilDelEmpleado(comercio);
+
+  document.querySelectorAll('[data-volver-perfil]').forEach((btn) => {
+    btn.addEventListener('click', () => mostrarVista('view-principal'));
+  });
+
+  const verDatos = document.getElementById('ver-datos-comercio-link');
+  verDatos.addEventListener('click', () => mostrarVista('view-datos-comercio'));
+  verDatos.disabled = false;
+
   const cambiarCuenta = document.getElementById('cambiar-cuenta-link');
   cambiarCuenta.addEventListener('click', () => abrirHojaCambiarCuenta());
   cambiarCuenta.disabled = false;
+
+  enlazarCambioPassword({ mostrarVista });
+  document.getElementById('cambiar-password-link').disabled = false;
+  document.getElementById('guardar-password-btn').disabled = false;
+
+  let cliente;
+  try {
+    cliente = await apiFetch('/clientes/perfil');
+  } catch {
+    showToast('No pudimos cargar tus datos personales. Intentá nuevamente.', 'error');
+    return;
+  }
+  normalizarCampos(cliente, ['nombre', 'apellido']);
+  enlazarEdicionDatosPersonales({ cliente, mostrarVista, alActualizarDatos: () => {} });
+  document.getElementById('editar-datos-link').disabled = false;
 }
 
 export async function initComercioPerfil() {
@@ -1673,6 +1717,7 @@ export async function initComercioPerfil() {
     return;
   }
 
+  prepararVistasDelPerfil(esContextoEmpleado());
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarPerfil: false, mostrarCampana: false, centrarLogo: true });
   renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'perfil');
   document.getElementById('cerrar-sesion-link').addEventListener('click', mostrarModalConfirmarLogout);
@@ -1684,7 +1729,7 @@ export async function initComercioPerfil() {
   normalizarComercio(comercio);
 
   if (esContextoEmpleado()) {
-    pintarPerfilDelEmpleado(comercio);
+    await iniciarPerfilDelEmpleado(comercio);
     return;
   }
 

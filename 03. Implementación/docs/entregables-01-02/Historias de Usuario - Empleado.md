@@ -78,8 +78,9 @@ Criterios de aceptación adicionales:
 
 Como Empleado, cuando el Dueño desactiva mi relación con un comercio puntual, quiero
 perder el acceso a ese comercio sin que se vean afectadas mis relaciones activas con otros
-comercios, y ser llevado al selector con un aviso corto (o a mi cuenta de Cliente si no me
-queda ninguno, sin una pantalla dedicada), para seguir operando con normalidad en los demás
+comercios, y recibir una hoja de aviso con el nombre del comercio y un botón "Entendido"
+que me lleva al selector (o a mi cuenta de Cliente si no me queda ninguno, sin una pantalla
+dedicada), para seguir operando con normalidad en los demás
 lugares donde trabajo o usar la plataforma como Cliente. Recibo una notificación de la
 desactivación y mi sesión no se cierra.
 

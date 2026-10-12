@@ -11,7 +11,6 @@ import type { ClienteRegistrado, SesionApi } from './backend';
 
 export const CLAVE_CONTEXTO = 'bajonea_contexto';
 export const CLAVE_ULTIMO_CONTEXTO_PREFIJO = 'bajonea_ultimo_contexto_';
-export const CLAVE_AVISO_ACCESO_PERDIDO = 'bajonea_aviso_acceso_perdido';
 export const MENSAJE_ACCESO_PERDIDO = 'Ya no tenés acceso a este comercio';
 
 export async function sumarAlEquipo(

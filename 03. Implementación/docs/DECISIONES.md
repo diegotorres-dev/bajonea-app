@@ -9528,3 +9528,30 @@ Dos condiciones centrales en `js/api.js`, para no esparcer `if`s: `contextoPuede
 4. **El Empleado no ve notificaciones en E2** (campana oculta): hasta E3 no se entera de pedidos nuevos salvo mirando el panel; el sondeo del panel solo refresca la lista de comercios, no los pedidos.
 5. **WebKit/iPhone sin probar**, igual que en el resto de los tramos de UI.
 6. **Para E3:** las acciones de pedidos que se delegan van a devolver `PedidoResponseDTO` completo al Empleado (decisión 7 de A5); el normalizador del frontend ya tolera las dos formas, pero el backend tiene que devolver la reducida.
+
+## 2026-10-12 — Rol Empleado, tramo E2, entrega B6: ajustes de interfaz (perfiles en una sola lista y hoja de pérdida de acceso)
+
+Ajustes de la prueba manual sobre la entrega B de E2. Solo frontend y tests de UI; el backend no se tocó.
+
+**Qué se hizo**
+1. **Perfil del Empleado, una sola lista.** `comercio-perfil.html` en contexto Empleado muestra el encabezado (foto del comercio, nombre y distintivo "Empleado") y una única lista sin títulos de sección: Ver datos del comercio, Editar datos personales, Cambiar contraseña, Cambiar de cuenta y Cerrar sesión (esta última en rojo). "Ver datos del comercio" abre una vista interna (`view-datos-comercio`) con descripción, dirección, teléfono, horarios y estado; ya no hay bloque desplegado ni fila "Mi cuenta".
+2. **Editar datos personales y cambiar contraseña dentro del layout del comercio.** La lógica salió de `js/cliente.js` a un módulo nuevo, `js/perfil-cuenta.js` (`enlazarEdicionDatosPersonales`, `enlazarCambioPassword`, más `renderBanner`, `setLoading` y `bindPasswordToggle`), que usan `perfil.html` y el perfil del Empleado: mismas reglas, mismos mensajes y mismo flujo de nombre de usuario con confirmación de contraseña. Tras guardar los datos se vuelve a la lista; cambiar la contraseña cierra la sesión y va al login, igual que en el Cliente. `comercio-perfil.html` suma la vista `view-editar-datos` (copia de la de `perfil.html`).
+3. **`perfil.html` exige contexto de Cliente** (`exigirContextoCliente`): en contexto Empleado lleva al panel; sin contexto, al selector. No quedan enlaces a `perfil.html` en el contexto Empleado.
+4. **Perfil del Cliente, una sola lista:** Editar datos personales, Cambiar contraseña, Cambiar de cuenta (solo si es Empleado de al menos un comercio) y Cerrar sesión. El perfil del Dueño no cambió.
+5. **Pérdida de acceso: hoja en lugar del toast.** `perderAccesoAlComercio` (`js/api.js`) limpia el contexto, consulta una sola vez `GET /empleados/mis-comercios` (con 4 s de tope; si falla o tarda se asume el caso "Cliente") y muestra una hoja bloqueante (`modal-backdrop` + `modal-sheet` existentes) con candado tachado, "Ya no tenés acceso a este comercio", "{nombre} te sacó del equipo." (o "El comercio te sacó del equipo." si no se conoce el nombre) y "Elegí con qué cuenta seguir." / "Se te redirigirá a tu cuenta de Cliente.". La redirección ocurre al tocar "Entendido", al tocar fuera de la hoja o con Escape. Un indicador de módulo evita mostrarla dos veces. El aviso de un solo uso en `sessionStorage` (`marcarAvisoAccesoPerdido`, `consumirAvisoAccesoPerdido`, `hayAvisoAccesoPerdido`) se eliminó, y con él el toast en `selector-contexto.js` y `catalogo.js`.
+
+**Decisiones no previstas**
+1. **El nombre del comercio se guarda en el contexto** (`comercioNombre` en `sessionStorage['bajonea_contexto']`), porque el contexto solo tenía el id. Lo escriben `entrarEnContexto` y la restauración del último contexto, y se refresca en cada carga del panel y en el sondeo (`actualizarNombreContexto`), así que contextos guardados antes de este cambio lo completan solos.
+2. **Mientras la hoja está abierta se frenan las llamadas del comercio:** `apiFetch` rechaza sin red las rutas de comercio (`/comercios`, `/productos`, `/pedidos/comercio`, `/notificaciones`, `/oauth`) y el sondeo no corre (`hayAccesoPerdido`). Sin esto, con el contexto ya limpio, la página de fondo pedía `/comercios/mis-comercios` como Cliente, recibía `403` y caía en `acceso-denegado`.
+3. **Cerrar la hoja (fuera o Escape) redirige igual que "Entendido";** la consigna decía "o al cerrar la hoja".
+4. **Se reutilizaron los ids y `data-testid` del perfil del Cliente** en el perfil del Empleado. Para no duplicar ids, `initComercioPerfil` quita del DOM las vistas y secciones que no corresponden al rol (`prepararVistasDelPerfil`); las filas "Cambiar contraseña" y "Cerrar sesión" del Dueño se mueven a la lista del Empleado.
+5. **La foto de perfil personal no se edita dentro del comercio:** el avatar del perfil del Empleado es el del comercio y no se puede cambiar (E3 lo decide con la edición del comercio); la foto personal se cambia desde la cuenta de Cliente.
+6. **Si falla la carga de `GET /clientes/perfil` en el perfil del Empleado,** "Editar datos personales" queda deshabilitada y se avisa con un toast; las demás filas siguen funcionando.
+7. **Se retiran las decisiones 10 y 13 de la entrega B** (siempre pasar por el selector y toast `warning`): quedan reemplazadas por la hoja.
+
+**Pruebas:** spec `38-empleado-acceso-ui` de 49 a 66 tests (hoja de pérdida de acceso con sus dos variantes, una sola vez, nombre desconocido, consulta fallida, Escape, sondeo; lista única del Empleado y del Cliente con y sin "Cambiar de cuenta"; "Ver datos del comercio"; datos personales y contraseña dentro del layout del comercio; `perfil.html` redirige; regresión del perfil del Dueño; 375 px). Playwright completo, `workers: 1`, desde una base reseteada: **653/653** (19,9 min), sin fallas conocidas reapareciendo. Sin cambios de backend (no se corrió `mvnw test`, Newman ni estrés). WebKit/iPhone sin probar. Capturas a 375 px en `testing/playwright/tmp-capturas/e2b-b6-*.png`.
+
+**Preguntas abiertas**
+1. ¿La hoja debería poder cerrarse tocando fuera/Escape, o solo con "Entendido"? Hoy cierra y redirige igual.
+2. ¿Querés poder cambiar la foto personal desde el perfil del Empleado? Hoy solo desde "Cliente".
+3. El texto "te sacó del equipo" también se vería en una renuncia o una desactivación hecha por el sistema (E4); si hace falta distinguir causas, se ajusta ahí.

@@ -22,6 +22,7 @@ import { loginUi, prepararAprobado } from './helpers/multicomercio';
 import {
   abrirComoUsuarioConContexto,
   atajoEstadoRelacion,
+  CLAVE_CONTEXTO,
   contextoEnSesion,
   limpiarNotasCredito,
   MENSAJE_ACCESO_PERDIDO,
@@ -330,6 +331,40 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await expect(page.getByTestId('btn-cambiar-cuenta')).toBeHidden();
     });
 
+    test('el perfil del Cliente que también es Empleado es una sola lista de cuatro filas, en orden, sin títulos de sección', async ({ page, request }) => {
+      const sesion = await sesionDe(request, empleadoDos.cuenta);
+      await abrirComoUsuarioConContexto(page, sesion, { contexto: { tipo: 'CLIENTE' }, ultimoContexto: 'CLIENTE' });
+
+      await page.goto('/perfil.html');
+      await expect(page.getByTestId('btn-cambiar-cuenta')).toBeEnabled();
+
+      await expect(page.getByTestId('nombre-cliente-perfil')).not.toBeEmpty();
+      await expect(page.getByTestId('lista-perfil').locator('.profile-link:visible')).toHaveText([
+        'Editar datos personales',
+        'Cambiar contraseña',
+        'Cambiar de cuenta',
+        'Cerrar sesión',
+      ]);
+      await expect(page.locator('.profile-section__title')).toHaveCount(0);
+      await expect(page.getByTestId('btn-cerrar-sesion')).toHaveClass(/profile-link--danger/);
+    });
+
+    test('el perfil de un Cliente sin comercios como Empleado es una lista de tres filas, sin "Cambiar de cuenta"', async ({ page, request }) => {
+      const sesion = await sesionDe(request, clienteSolo);
+      await abrirComoUsuarioConContexto(page, sesion, { contexto: { tipo: 'CLIENTE' } });
+
+      await page.goto('/perfil.html');
+      await expect(page.getByTestId('btn-editar-datos')).toBeEnabled();
+
+      await expect(page.getByTestId('lista-perfil').locator('.profile-link:visible')).toHaveText([
+        'Editar datos personales',
+        'Cambiar contraseña',
+        'Cerrar sesión',
+      ]);
+      await expect(page.locator('.profile-section__title')).toHaveCount(0);
+      await expect(page.getByTestId('btn-cambiar-cuenta')).toBeHidden();
+    });
+
     test('en comercio-perfil.html, en contexto Empleado, la hoja marca el comercio actual y permite pasar a "Cliente"', async ({ page, request }) => {
       await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
       await page.goto('/comercio-perfil.html');
@@ -355,17 +390,29 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await expect(page.getByTestId('lista-pedidos-activos')).toContainText('No tenés pedidos activos');
     });
 
-    test('"Mi cuenta" lleva al perfil personal sin redirigir al panel, con "Cambiar de cuenta" disponible', async ({ page, request }) => {
+    test('en contexto Empleado, abrir perfil.html lleva al panel del comercio, como el resto de las pantallas de Cliente', async ({ page, request }) => {
       await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
-      await page.goto('/comercio-perfil.html');
 
-      await page.getByTestId('btn-mi-cuenta').click();
+      await page.goto('/perfil.html');
 
-      await page.waitForURL('**/perfil.html');
-      await expect(page.getByTestId('nombre-cliente-perfil')).not.toBeEmpty();
-      await expect(page.getByTestId('btn-cambiar-cuenta')).toBeVisible();
-      await expect(page.getByTestId('btn-nav-perfil')).toBeVisible();
+      await page.waitForURL('**/comercio-dashboard.html');
+      await expect(page.getByTestId('franja-comercio-insignia-empleado')).toBeVisible();
       expect(await contextoEnSesion(page)).toMatchObject({ tipo: 'EMPLEADO', comercioId: duenoA.comercioId });
+    });
+
+    test('ningún enlace del contexto Empleado apunta a perfil.html', async ({ page, request }) => {
+      await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
+      const enlacesAPerfilDeCliente = () => page.evaluate(() => Array.from(document.querySelectorAll('a[href]'))
+        .map((enlace) => enlace.getAttribute('href') || '')
+        .filter((href) => /(^|\/)perfil\.html/.test(href)));
+
+      for (const ruta of ['comercio-dashboard.html', 'comercio-productos.html', 'comercio-pedidos.html', 'comercio-perfil.html']) {
+        await page.goto(`/${ruta}`);
+        await expect(page.getByTestId('btn-nav-perfil')).toBeVisible();
+        expect(await enlacesAPerfilDeCliente(), ruta).toEqual([]);
+      }
+      await expect(page.getByTestId('btn-ver-datos-comercio')).toBeEnabled();
+      await expect(page.getByTestId('btn-mi-cuenta')).toHaveCount(0);
     });
 
     test('el Dueño no ve "Cambiar de cuenta" en su perfil', async ({ page, request }) => {
@@ -502,37 +549,151 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await expect(page.getByText('Cargo por servicio (1%)')).toBeVisible();
     });
 
-    test('el perfil del Empleado muestra los datos operativos, "Mi cuenta", "Cambiar de cuenta" y "Cerrar sesión", y oculta lo exclusivo o futuro', async ({ page, request }) => {
+    test('el perfil del Empleado es una sola lista de cinco filas, en orden, sin títulos de sección', async ({ page, request }) => {
       await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
 
       await page.goto('/comercio-perfil.html');
+      await expect(page.getByTestId('btn-ver-datos-comercio')).toBeEnabled();
 
       await expect(page.getByTestId('nombre-comercio-perfil')).toHaveText(duenoA.nombre);
       await expect(page.getByTestId('insignia-empleado-perfil')).toBeVisible();
       await expect(page.getByTestId('email-comercio-perfil')).toBeHidden();
+      await expect(page.getByTestId('lista-perfil').locator('.profile-link')).toHaveText([
+        'Ver datos del comercio',
+        'Editar datos personales',
+        'Cambiar contraseña',
+        'Cambiar de cuenta',
+        'Cerrar sesión',
+      ]);
+      await expect(page.locator('.profile-section__title')).toHaveCount(0);
+      await expect(page.getByTestId('btn-cerrar-sesion')).toHaveClass(/profile-link--danger/);
+      await expect(page.getByTestId('btn-cambiar-cuenta')).toBeEnabled();
+      await expect(page.getByTestId('btn-editar-datos')).toBeEnabled();
+      await expect(page.getByTestId('btn-cambiar-password')).toBeEnabled();
+      for (const oculto of ['btn-editar-perfil-comercio', 'btn-ver-legales', 'btn-ver-equipo', 'btn-ir-mercadopago', 'btn-mi-cuenta']) {
+        await expect(page.getByTestId(oculto), oculto).toHaveCount(0);
+      }
+      await expect(page.getByTestId('empleado-direccion')).toBeHidden();
+      await expect(page.getByText('Renunciar')).toHaveCount(0);
+    });
+
+    test('"Ver datos del comercio" abre una vista interna con los datos operativos y vuelve a la lista', async ({ page, request }) => {
+      await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
+      await page.goto('/comercio-perfil.html');
+      await expect(page.getByTestId('btn-ver-datos-comercio')).toBeEnabled();
+
+      await page.getByTestId('btn-ver-datos-comercio').click();
+
+      await expect(page.getByTestId('seccion-datos-comercio-empleado')).toBeVisible();
+      await expect(page.getByTestId('lista-perfil')).toBeHidden();
+      await expect(page.getByTestId('empleado-descripcion')).not.toBeEmpty();
       await expect(page.getByTestId('empleado-direccion')).not.toBeEmpty();
       await expect(page.getByTestId('empleado-telefono')).toContainText('+549');
       await expect(page.getByTestId('empleado-horarios')).toContainText('Cerrado');
       await expect(page.getByTestId('empleado-estado')).toHaveText(/Abierto ahora|Cerrado en este momento/);
-      await expect(page.getByTestId('btn-mi-cuenta')).toHaveAttribute('href', 'perfil.html');
-      await expect(page.getByTestId('btn-cambiar-cuenta')).toBeEnabled();
-      await expect(page.getByTestId('btn-cerrar-sesion')).toBeVisible();
-      for (const oculto of ['btn-editar-perfil-comercio', 'btn-ver-legales', 'btn-ver-equipo', 'btn-ir-mercadopago', 'btn-cambiar-password']) {
-        await expect(page.getByTestId(oculto), oculto).toBeHidden();
-      }
-      await expect(page.getByText('Renunciar')).toHaveCount(0);
-    });
-
-    test('el perfil del Empleado no muestra los datos fiscales ni el email de contacto del comercio', async ({ page, request }) => {
-      await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
-
-      await page.goto('/comercio-perfil.html');
-      await expect(page.getByTestId('empleado-direccion')).not.toBeEmpty();
-
+      await expect(page.getByTestId('btn-nav-perfil')).toBeVisible();
       const texto = (await page.locator('main').innerText()).toLowerCase();
       for (const prohibido of ['cuit', 'razón social', 'domicilio fiscal', 'mercado pago', 'condición ante el iva']) {
         expect(texto, prohibido).not.toContain(prohibido);
       }
+
+      await page.getByTestId('btn-volver-perfil-datos-comercio').click();
+      await expect(page.getByTestId('lista-perfil')).toBeVisible();
+      await expect(page.getByTestId('seccion-datos-comercio-empleado')).toBeHidden();
+    });
+
+    test('"Editar datos personales" se abre dentro del layout del comercio, valida igual que el Cliente y al guardar vuelve a la lista', async ({ page, request }) => {
+      const [comercio] = await comerciosNuevos(request, 1);
+      const empleado = await crearEmpleado(request, [comercio]);
+      const sesion = await abrirComoEmpleado(page, request, empleado, comercio);
+      await page.goto('/comercio-perfil.html');
+      await expect(page.getByTestId('btn-editar-datos')).toBeEnabled();
+
+      await page.getByTestId('btn-editar-datos').click();
+
+      expect(page.url()).toContain('comercio-perfil.html');
+      await expect(page.getByTestId('input-nombre')).toBeVisible();
+      await expect(page.getByTestId('input-nombre')).not.toHaveValue('');
+      await expect(page.getByTestId('input-email')).toBeDisabled();
+      await expect(page.getByTestId('btn-nav-perfil')).toBeVisible();
+      await expect(page.getByTestId('btn-nav-panel')).toBeVisible();
+      await expect(page.getByTestId('nombre-cliente-perfil')).toHaveCount(0);
+
+      await page.getByTestId('input-nombre').fill('');
+      await page.getByTestId('btn-guardar-datos').click();
+      await expect(page.getByTestId('mensaje-error-nombre')).toHaveText('El nombre es obligatorio.');
+      await page.getByTestId('input-nombre').fill('Nombre123');
+      await page.getByTestId('btn-guardar-datos').click();
+      await expect(page.getByTestId('mensaje-error-nombre')).toContainText('solo letras, espacios y guiones');
+
+      await page.getByTestId('input-nombre').fill('Marta Elena');
+      await page.getByTestId('btn-guardar-datos').click();
+
+      await expect(page.getByTestId('lista-perfil')).toBeVisible();
+      await expect(page.getByTestId('input-nombre')).toBeHidden();
+      await expect(page.getByText('Datos actualizados correctamente')).toBeVisible();
+      await expect(page.getByTestId('nombre-comercio-perfil')).not.toHaveText('Marta Elena');
+      expect(page.url()).toContain('comercio-perfil.html');
+      const perfil = await apiConHeaders(request, 'GET', '/clientes/perfil', sesion.token, {});
+      expect(perfil.body.data.nombre).toBe('Marta Elena');
+    });
+
+    test('"Cambiar contraseña" se abre dentro del layout del comercio, valida igual que el Cliente y no navega a perfil.html', async ({ page, request }) => {
+      await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
+      await page.goto('/comercio-perfil.html');
+      await expect(page.getByTestId('btn-cambiar-password')).toBeEnabled();
+
+      await page.getByTestId('btn-cambiar-password').click();
+
+      expect(page.url()).toContain('comercio-perfil.html');
+      await expect(page.getByTestId('input-password-actual')).toBeVisible();
+      await expect(page.getByTestId('btn-nav-perfil')).toBeVisible();
+      await expect(page.getByTestId('btn-nav-panel')).toBeVisible();
+      await page.getByTestId('btn-guardar-password').click();
+      await expect(page.getByTestId('mensaje-error-password-actual')).toHaveText('Ingresá tu contraseña actual.');
+      await page.getByTestId('input-password-actual').fill(empleadoDos.cuenta.password);
+      await page.getByTestId('input-password-nueva').fill('corta');
+      await page.getByTestId('input-password-confirmar').fill('corta');
+      await page.getByTestId('btn-guardar-password').click();
+      await expect(page.getByTestId('mensaje-error-password-nueva')).toHaveText('Debe tener mínimo 8 caracteres, una mayúscula, una minúscula y un número.');
+      await page.getByTestId('input-password-nueva').fill('NuevaClave123');
+      await page.getByTestId('input-password-confirmar').fill('OtraClave123');
+      await page.getByTestId('btn-guardar-password').click();
+      await expect(page.getByTestId('mensaje-error-password-confirmar')).toHaveText('Las contraseñas ingresadas no coinciden.');
+
+      await page.getByTestId('btn-volver-perfil-password').click();
+      await expect(page.getByTestId('lista-perfil')).toBeVisible();
+      expect(page.url()).toContain('comercio-perfil.html');
+    });
+
+    test('cambiar la contraseña desde el perfil del Empleado la actualiza y lleva al inicio de sesión', async ({ page, request }) => {
+      const [comercio] = await comerciosNuevos(request, 1);
+      const empleado = await crearEmpleado(request, [comercio]);
+      await abrirComoEmpleado(page, request, empleado, comercio);
+      await page.goto('/comercio-perfil.html');
+      await expect(page.getByTestId('btn-cambiar-password')).toBeEnabled();
+      await page.getByTestId('btn-cambiar-password').click();
+
+      await page.getByTestId('input-password-actual').fill(empleado.cuenta.password);
+      await page.getByTestId('input-password-nueva').fill('NuevaClave123');
+      await page.getByTestId('input-password-confirmar').fill('NuevaClave123');
+      await page.getByTestId('btn-guardar-password').click();
+
+      await page.waitForURL('**/login.html?passwordActualizada=1');
+      const conLaNueva = await login(request, empleado.cuenta.nombreUsuario, 'NuevaClave123');
+      expect(conLaNueva.token).toBeTruthy();
+    });
+
+    test('el Empleado conserva "Cerrar sesión" con confirmación en su lista', async ({ page, request }) => {
+      await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
+      await page.goto('/comercio-perfil.html');
+      await expect(page.getByTestId('btn-cerrar-sesion')).toBeVisible();
+
+      await page.getByTestId('btn-cerrar-sesion').click();
+      await expect(page.getByText('¿Cerrar sesión?')).toBeVisible();
+      await page.getByTestId('btn-confirmar-logout').click();
+
+      await page.waitForURL('**/login.html**');
     });
 
     test('el Dueño conserva todas las filas de su perfil, sin la sección del Empleado', async ({ page, request }) => {
@@ -550,6 +711,26 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       }
       await expect(page.getByTestId('seccion-datos-comercio-empleado')).toBeHidden();
       await expect(page.getByTestId('insignia-empleado-perfil')).toBeHidden();
+    });
+
+    test('el perfil del Dueño no cambia: conserva los títulos "Mi comercio" y "Sesión" y no tiene la lista del Empleado', async ({ page, request }) => {
+      const sesion = await login(request, duenoA.nombreUsuario, duenoA.password);
+      await abrirComoUsuarioConContexto(page, sesion);
+      await page.addInitScript(([id, usuarioId]) => {
+        sessionStorage.setItem('bajonea_comercio_activo', JSON.stringify({ usuarioId, comercioId: id }));
+      }, [duenoA.comercioId, sesion.usuario.id] as const);
+
+      await page.goto('/comercio-perfil.html');
+      await expect(page.getByTestId('btn-editar-perfil-comercio')).toBeEnabled();
+
+      await expect(page.locator('.profile-section__title')).toHaveText(['Mi comercio', 'Sesión']);
+      await expect(page.getByTestId('btn-ver-datos-comercio')).toHaveCount(0);
+      await expect(page.getByTestId('btn-editar-datos')).toHaveCount(0);
+      await expect(page.getByTestId('btn-cambiar-password')).toBeVisible();
+      await expect(page.getByTestId('btn-cerrar-sesion')).toBeVisible();
+      await page.getByTestId('btn-editar-perfil-comercio').click();
+      await expect(page.getByTestId('input-nombre')).toHaveValue(duenoA.nombre);
+      await expect(page.getByTestId('input-descripcion')).toBeVisible();
     });
 
     test('un comercio suspendido o cerrado temporalmente entra en solo lectura con un aviso en el panel y su estado en el perfil', async ({ page, request }) => {
@@ -668,63 +849,170 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
   });
 
   test.describe('Pérdida de acceso en medio del uso', () => {
-    test('por un 404 de comercio no disponible: limpia el contexto, avisa y va al selector si quedan otros comercios', async ({ page, request }) => {
-      const [conservado, perdido] = await comerciosNuevos(request, 2);
-      const empleado = await crearEmpleado(request, [conservado, perdido]);
+    interface Deteccion {
+      sesion: SesionApi;
+      nombrePerdido: string;
+      estado: { viva: boolean; consultasPosteriores: number; falla: boolean };
+    }
+
+    async function prepararDeteccion(page: Page, request: APIRequestContext, empleado: Empleado, perdido: number, pagina: string, conSondeoSimulado = true): Promise<Deteccion> {
       const sesion = await abrirComoEmpleado(page, request, empleado, perdido);
       const lista = await apiConHeaders(request, 'GET', '/empleados/mis-comercios', sesion.token, {});
+      const nombrePerdido = (lista.body.data as Array<{ id: number; nombre: string }>).find((c) => c.id === perdido)!.nombre;
+      const estado = { viva: !conSondeoSimulado, consultasPosteriores: 0, falla: false };
       await page.route('**/empleados/mis-comercios', (ruta) => {
-        if (ruta.request().frame().url().includes('/comercio-')) {
+        if (!estado.viva) {
           return ruta.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(lista.body) });
+        }
+        estado.consultasPosteriores += 1;
+        if (estado.falla) {
+          return ruta.fulfill({ status: 500, contentType: 'application/json', body: '{"mensaje":"Error","data":null}' });
         }
         return ruta.continue();
       });
-      await page.goto('/comercio-dashboard.html');
+      await page.goto(`/${pagina}`);
       await expect(page.getByTestId('franja-comercio-insignia-empleado')).toBeVisible();
+      return { sesion, nombrePerdido, estado };
+    }
+
+    async function provocarPerdidaPorApi(page: Page, request: APIRequestContext, empleado: Empleado, perdido: number, deteccion: Deteccion, rutas: string[] = ['/productos']) {
+      await atajoEstadoRelacion(request, perdido, empleado.usuarioId, 'INACTIVO');
+      deteccion.estado.viva = true;
+      const respuesta404 = page.waitForResponse((r) => r.status() === 404 && r.url().includes(rutas[0]));
+      await page.evaluate(async (paths) => {
+        const { apiFetch } = await import('./js/api.js');
+        paths.forEach((path) => apiFetch(path).catch(() => {}));
+      }, rutas);
+      await respuesta404;
+    }
+
+    async function esperarHoja(page: Page) {
+      await expect(page.getByTestId('aviso-acceso-perdido')).toBeVisible();
+      await expect(page.getByTestId('titulo-acceso-perdido')).toHaveText(MENSAJE_ACCESO_PERDIDO);
+    }
+
+    test('por un 404 de comercio no disponible con otros comercios: limpia el contexto, muestra la hoja y "Entendido" lleva al selector', async ({ page, request }) => {
+      const [conservado, perdido] = await comerciosNuevos(request, 2);
+      const empleado = await crearEmpleado(request, [conservado, perdido]);
+      const deteccion = await prepararDeteccion(page, request, empleado, perdido, 'comercio-dashboard.html');
 
       await atajoEstadoRelacion(request, perdido, empleado.usuarioId, 'INACTIVO');
+      deteccion.estado.viva = true;
       const respuesta404 = page.waitForResponse((r) => r.status() === 404 && r.url().includes('/pedidos/comercio'));
       await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
       await respuesta404;
 
-      await page.waitForURL('**/seleccionar-contexto.html');
-      await expect(page.getByText(MENSAJE_ACCESO_PERDIDO)).toBeVisible();
-      await expect(page.getByTestId(`fila-contexto-comercio-${conservado}`)).toBeVisible();
-      await expect(page.getByTestId(`fila-contexto-comercio-${perdido}`)).toHaveCount(0);
+      await esperarHoja(page);
+      await expect(page.getByTestId('texto-acceso-perdido-1')).toHaveText(`${deteccion.nombrePerdido} te sacó del equipo.`);
+      await expect(page.getByTestId('texto-acceso-perdido-2')).toHaveText('Elegí con qué cuenta seguir.');
+      expect(page.url()).toContain('comercio-dashboard.html');
       expect(await contextoEnSesion(page)).toBeNull();
       expect(await ultimoContextoGuardado(page, empleado.usuarioId)).toBeNull();
+
+      await page.getByTestId('btn-entendido-acceso-perdido').click();
+
+      await page.waitForURL('**/seleccionar-contexto.html');
+      await expect(page.getByTestId(`fila-contexto-comercio-${conservado}`)).toBeVisible();
+      await expect(page.getByTestId(`fila-contexto-comercio-${perdido}`)).toHaveCount(0);
+      await expect(page.getByTestId('aviso-acceso-perdido')).toHaveCount(0);
       expect(page.url()).not.toContain('acceso-denegado');
     });
 
-    test('por un 404 de comercio no disponible sin otros comercios: va al inicio de Cliente con el aviso', async ({ page, request }) => {
+    test('por un 404 sin otros comercios: la hoja avisa que pasa a su cuenta de Cliente y "Entendido" va al inicio de Cliente', async ({ page, request }) => {
       const [perdido] = await comerciosNuevos(request, 1);
       const empleado = await crearEmpleado(request, [perdido]);
-      const sesion = await abrirComoEmpleado(page, request, empleado, perdido);
-      const lista = await apiConHeaders(request, 'GET', '/empleados/mis-comercios', sesion.token, {});
-      await page.route('**/empleados/mis-comercios', (ruta) => {
-        if (ruta.request().frame().url().includes('/comercio-')) {
-          return ruta.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(lista.body) });
-        }
-        return ruta.continue();
-      });
-      await page.goto('/comercio-pedidos.html');
-      await expect(page.getByTestId('franja-comercio-insignia-empleado')).toBeVisible();
+      const deteccion = await prepararDeteccion(page, request, empleado, perdido, 'comercio-pedidos.html');
 
-      await atajoEstadoRelacion(request, perdido, empleado.usuarioId, 'INACTIVO');
-      const respuesta404 = page.waitForResponse((r) => r.status() === 404 && r.url().includes('/productos'));
-      await page.evaluate(async () => {
-        const { apiFetch } = await import('./js/api.js');
-        apiFetch('/productos').catch(() => {});
-      });
-      await respuesta404;
+      await provocarPerdidaPorApi(page, request, empleado, perdido, deteccion);
+
+      await esperarHoja(page);
+      await expect(page.getByTestId('texto-acceso-perdido-1')).toHaveText(`${deteccion.nombrePerdido} te sacó del equipo.`);
+      await expect(page.getByTestId('texto-acceso-perdido-2')).toHaveText('Se te redirigirá a tu cuenta de Cliente.');
+      expect(page.url()).toContain('comercio-pedidos.html');
+      expect(await contextoEnSesion(page)).toBeNull();
+
+      await page.getByTestId('btn-entendido-acceso-perdido').click();
 
       await page.waitForURL('**/index.html');
-      await expect(page.getByText(MENSAJE_ACCESO_PERDIDO)).toBeVisible();
       expect(await contextoEnSesion(page)).toMatchObject({ tipo: 'CLIENTE' });
       expect(await ultimoContextoGuardado(page, empleado.usuarioId)).not.toBe(`EMPLEADO:${perdido}`);
+      await expect(page.getByTestId('aviso-acceso-perdido')).toHaveCount(0);
     });
 
-    test('por el sondeo de cada 15 segundos: detecta que el comercio desapareció de la lista y va al selector', async ({ page, request }) => {
+    test('la hoja bloquea la interacción con la pantalla de fondo y no hay pantalla intermedia ni toast', async ({ page, request }) => {
+      const [perdido] = await comerciosNuevos(request, 1);
+      const empleado = await crearEmpleado(request, [perdido]);
+      const deteccion = await prepararDeteccion(page, request, empleado, perdido, 'comercio-dashboard.html');
+
+      await provocarPerdidaPorApi(page, request, empleado, perdido, deteccion);
+      await esperarHoja(page);
+
+      await expect(page.getByTestId('btn-nav-pedidos').click({ trial: true, timeout: 1500 })).rejects.toThrow();
+      await expect(page.getByTestId('btn-nav-perfil').click({ trial: true, timeout: 1500 })).rejects.toThrow();
+      await expect(page.getByTestId('btn-entendido-acceso-perdido')).toBeVisible();
+      await expect(page.getByTestId('btn-entendido-acceso-perdido')).toHaveText('Entendido');
+      await expect(page.locator('.toast')).toHaveCount(0);
+      expect(page.url()).toContain('comercio-dashboard.html');
+      expect(page.url()).not.toContain('acceso-denegado');
+    });
+
+    test('la hoja se muestra una sola vez aunque fallen varias llamadas a la vez, con una única consulta de comercios', async ({ page, request }) => {
+      const [conservado, perdido] = await comerciosNuevos(request, 2);
+      const empleado = await crearEmpleado(request, [conservado, perdido]);
+      const deteccion = await prepararDeteccion(page, request, empleado, perdido, 'comercio-dashboard.html');
+
+      await provocarPerdidaPorApi(page, request, empleado, perdido, deteccion, ['/productos', '/pedidos/comercio', '/comercios/perfil', '/pedidos/comercio/resumen-hoy']);
+
+      await esperarHoja(page);
+      await page.waitForTimeout(800);
+      await expect(page.getByTestId('aviso-acceso-perdido')).toHaveCount(1);
+      expect(deteccion.estado.consultasPosteriores).toBe(1);
+    });
+
+    test('si no se conoce el nombre del comercio dice "El comercio te sacó del equipo."', async ({ page, request }) => {
+      const [perdido] = await comerciosNuevos(request, 1);
+      const empleado = await crearEmpleado(request, [perdido]);
+      const deteccion = await prepararDeteccion(page, request, empleado, perdido, 'comercio-dashboard.html');
+      await page.evaluate((clave) => {
+        const contexto = JSON.parse(sessionStorage.getItem(clave) as string);
+        delete contexto.comercioNombre;
+        sessionStorage.setItem(clave, JSON.stringify(contexto));
+      }, CLAVE_CONTEXTO);
+
+      await provocarPerdidaPorApi(page, request, empleado, perdido, deteccion);
+
+      await esperarHoja(page);
+      await expect(page.getByTestId('texto-acceso-perdido-1')).toHaveText('El comercio te sacó del equipo.');
+    });
+
+    test('si la consulta de comercios falla, se asume el caso "Cliente" y "Entendido" va al inicio de Cliente', async ({ page, request }) => {
+      const [conservado, perdido] = await comerciosNuevos(request, 2);
+      const empleado = await crearEmpleado(request, [conservado, perdido]);
+      const deteccion = await prepararDeteccion(page, request, empleado, perdido, 'comercio-productos.html');
+      deteccion.estado.falla = true;
+
+      await provocarPerdidaPorApi(page, request, empleado, perdido, deteccion);
+
+      await esperarHoja(page);
+      await expect(page.getByTestId('texto-acceso-perdido-2')).toHaveText('Se te redirigirá a tu cuenta de Cliente.');
+      await page.getByTestId('btn-entendido-acceso-perdido').click();
+      await page.waitForURL('**/index.html');
+      expect(await contextoEnSesion(page)).toMatchObject({ tipo: 'CLIENTE' });
+    });
+
+    test('cerrar la hoja con Escape también redirige', async ({ page, request }) => {
+      const [conservado, perdido] = await comerciosNuevos(request, 2);
+      const empleado = await crearEmpleado(request, [conservado, perdido]);
+      const deteccion = await prepararDeteccion(page, request, empleado, perdido, 'comercio-dashboard.html');
+      await provocarPerdidaPorApi(page, request, empleado, perdido, deteccion);
+      await esperarHoja(page);
+
+      await page.keyboard.press('Escape');
+
+      await page.waitForURL('**/seleccionar-contexto.html');
+    });
+
+    test('por el sondeo de cada 15 segundos con otros comercios: muestra la hoja y "Entendido" va al selector', async ({ page, request }) => {
       test.setTimeout(120_000);
       const [conservado, perdido] = await comerciosNuevos(request, 2);
       const empleado = await crearEmpleado(request, [conservado, perdido]);
@@ -734,13 +1022,16 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
 
       await atajoEstadoRelacion(request, perdido, empleado.usuarioId, 'INACTIVO');
 
-      await page.waitForURL('**/seleccionar-contexto.html', { timeout: 30_000 });
-      await expect(page.getByText(MENSAJE_ACCESO_PERDIDO)).toBeVisible();
-      await expect(page.getByTestId(`fila-contexto-comercio-${perdido}`)).toHaveCount(0);
+      await expect(page.getByTestId('aviso-acceso-perdido')).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByTestId('titulo-acceso-perdido')).toHaveText(MENSAJE_ACCESO_PERDIDO);
+      await expect(page.getByTestId('texto-acceso-perdido-2')).toHaveText('Elegí con qué cuenta seguir.');
       expect(await contextoEnSesion(page)).toBeNull();
+      await page.getByTestId('btn-entendido-acceso-perdido').click();
+      await page.waitForURL('**/seleccionar-contexto.html');
+      await expect(page.getByTestId(`fila-contexto-comercio-${perdido}`)).toHaveCount(0);
     });
 
-    test('por el sondeo sin otros comercios: va al inicio de Cliente con el aviso', async ({ page, request }) => {
+    test('por el sondeo sin otros comercios: muestra la hoja y "Entendido" va al inicio de Cliente', async ({ page, request }) => {
       test.setTimeout(120_000);
       const [perdido] = await comerciosNuevos(request, 1);
       const empleado = await crearEmpleado(request, [perdido]);
@@ -750,9 +1041,34 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
 
       await atajoEstadoRelacion(request, perdido, empleado.usuarioId, 'INACTIVO');
 
-      await page.waitForURL('**/index.html', { timeout: 30_000 });
-      await expect(page.getByText(MENSAJE_ACCESO_PERDIDO)).toBeVisible();
+      await expect(page.getByTestId('aviso-acceso-perdido')).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByTestId('texto-acceso-perdido-2')).toHaveText('Se te redirigirá a tu cuenta de Cliente.');
+      await page.getByTestId('btn-entendido-acceso-perdido').click();
+      await page.waitForURL('**/index.html');
       expect(await contextoEnSesion(page)).toMatchObject({ tipo: 'CLIENTE' });
+    });
+
+    test('tras la pérdida, el sondeo deja de pedir la lista del Dueño (nunca cae en acceso-denegado)', async ({ page, request }) => {
+      test.setTimeout(120_000);
+      const [perdido] = await comerciosNuevos(request, 1);
+      const empleado = await crearEmpleado(request, [perdido]);
+      const consultasDelDueno: string[] = [];
+      page.on('request', (r) => {
+        if (r.url().includes('/comercios/mis-comercios')) {
+          consultasDelDueno.push(r.url());
+        }
+      });
+      await abrirComoEmpleado(page, request, empleado, perdido);
+      await page.goto('/comercio-dashboard.html');
+      await expect(page.getByTestId('franja-comercio-insignia-empleado')).toBeVisible();
+      await atajoEstadoRelacion(request, perdido, empleado.usuarioId, 'INACTIVO');
+      await expect(page.getByTestId('aviso-acceso-perdido')).toBeVisible({ timeout: 30_000 });
+
+      await page.waitForTimeout(16_000);
+
+      expect(consultasDelDueno).toEqual([]);
+      expect(page.url()).toContain('comercio-dashboard.html');
+      await expect(page.getByTestId('aviso-acceso-perdido')).toHaveCount(1);
     });
 
     test('el sondeo del Empleado consulta solo la lista de sus comercios y nunca la del Dueño', async ({ page, request }) => {
@@ -811,7 +1127,6 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
         'comercio-pedidos.html',
         `comercio-pedido-detalle.html?id=${idsPedido.aceptado}`,
         'comercio-perfil.html',
-        'perfil.html',
       ]) {
         await page.goto(`/${ruta}`);
         await page.waitForLoadState('networkidle');
@@ -836,8 +1151,8 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
 
       await page.goto('/comercio-dashboard.html');
       await expect(page.getByTestId(`pedido-item-${idsPedido.aceptado}`)).toBeVisible();
-      await page.goto('/perfil.html');
-      await expect(page.getByTestId('nombre-cliente-perfil')).not.toBeEmpty();
+      await page.goto('/comercio-perfil.html');
+      await expect(page.getByTestId('btn-editar-datos')).toBeEnabled();
 
       expect(cabeceras['/api/v1/pedidos/comercio']).toBe(String(duenoA.comercioId));
       expect(cabeceras['/api/v1/pedidos/comercio/resumen-hoy']).toBe(String(duenoA.comercioId));
@@ -849,7 +1164,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
     test('las pantallas de Cliente redirigen al panel del comercio cuando la pestaña está en contexto Empleado', async ({ page, request }) => {
       await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
 
-      for (const ruta of ['index.html', 'explorar.html', 'carrito.html', 'checkout.html', 'pedidos.html', 'pedido-detalle.html?id=1', 'notificaciones.html', `comercio-detalle.html?id=${duenoA.comercioId}`]) {
+      for (const ruta of ['index.html', 'explorar.html', 'carrito.html', 'checkout.html', 'pedidos.html', 'pedido-detalle.html?id=1', 'notificaciones.html', 'perfil.html', `comercio-detalle.html?id=${duenoA.comercioId}`]) {
         await page.goto(`/${ruta}`);
         await page.waitForURL('**/comercio-dashboard.html');
         await expect(page.getByTestId('franja-comercio-insignia-empleado'), ruta).toBeVisible();
@@ -962,15 +1277,94 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await sinScrollHorizontal(page);
 
       await page.goto('/comercio-perfil.html');
-      await expect(page.getByTestId('empleado-estado')).not.toBeEmpty();
+      await expect(page.getByTestId('btn-ver-datos-comercio')).toBeEnabled();
       await sinScrollHorizontal(page);
       await capturar(page, 'e-perfil');
+
+      await page.getByTestId('btn-ver-datos-comercio').click();
+      await expect(page.getByTestId('empleado-estado')).not.toBeEmpty();
+      await sinScrollHorizontal(page);
+      await capturar(page, 'f-ver-datos-comercio');
+      await page.getByTestId('btn-volver-perfil-datos-comercio').click();
+
+      await page.getByTestId('btn-editar-datos').click();
+      await expect(page.getByTestId('input-nombre')).toBeVisible();
+      await expect(page.getByTestId('btn-nav-perfil')).toBeVisible();
+      await sinScrollHorizontal(page);
+      await page.getByTestId('btn-volver-perfil').click();
+
+      await page.getByTestId('btn-cambiar-password').click();
+      await expect(page.getByTestId('input-password-actual')).toBeVisible();
+      await expect(page.getByTestId('btn-nav-perfil')).toBeVisible();
+      await sinScrollHorizontal(page);
+      await page.getByTestId('btn-volver-perfil-password').click();
 
       await page.getByTestId('btn-cambiar-cuenta').click();
       await expect(page.getByTestId('fila-contexto-cliente')).toBeVisible();
       await expect(page.getByTestId('lista-contextos').locator('button')).toHaveCount(3);
       await sinScrollHorizontal(page);
       await capturar(page, 'b-hoja-cambiar-cuenta');
+    });
+
+    test('el perfil del Cliente (con y sin "Cambiar de cuenta") entra sin scroll horizontal', async ({ page, request, browser }) => {
+      const conComercios = await sesionDe(request, empleadoDos.cuenta);
+      await abrirComoUsuarioConContexto(page, conComercios, { contexto: { tipo: 'CLIENTE' }, ultimoContexto: 'CLIENTE' });
+      await page.goto('/perfil.html');
+      await expect(page.getByTestId('btn-cambiar-cuenta')).toBeEnabled();
+      await expect(page.getByTestId('lista-perfil').locator('.profile-link:visible')).toHaveCount(4);
+      await sinScrollHorizontal(page);
+      await capturar(page, 'g-perfil-cliente-con-cambiar-cuenta');
+
+      const sinComercios = await sesionDe(request, clienteSolo);
+      const contextoDos = await browser.newContext({ viewport: { width: 375, height: 812 }, baseURL: 'http://localhost:5501' });
+      const otraPagina = await contextoDos.newPage();
+      await abrirComoUsuarioConContexto(otraPagina, sinComercios, { contexto: { tipo: 'CLIENTE' } });
+      await otraPagina.goto('/perfil.html');
+      await expect(otraPagina.getByTestId('btn-editar-datos')).toBeEnabled();
+      await expect(otraPagina.getByTestId('lista-perfil').locator('.profile-link:visible')).toHaveCount(3);
+      await sinScrollHorizontal(otraPagina);
+      await capturar(otraPagina, 'h-perfil-cliente-sin-cambiar-cuenta');
+      await contextoDos.close();
+    });
+
+    test('la hoja de pérdida de acceso entra sin scroll horizontal en sus dos variantes', async ({ page, request, browser }) => {
+      const [conservado, perdido] = await comerciosNuevos(request, 2);
+      const empleado = await crearEmpleado(request, [conservado, perdido]);
+      const sesion = await abrirComoEmpleado(page, request, empleado, perdido);
+      await page.goto('/comercio-dashboard.html');
+      await expect(page.getByTestId('franja-comercio-insignia-empleado')).toBeVisible();
+      await atajoEstadoRelacion(request, perdido, empleado.usuarioId, 'INACTIVO');
+      const respuesta404 = page.waitForResponse((r) => r.status() === 404 && r.url().includes('/productos'));
+      await page.evaluate(async () => {
+        const { apiFetch } = await import('./js/api.js');
+        apiFetch('/productos').catch(() => {});
+      });
+      await respuesta404;
+      await expect(page.getByTestId('aviso-acceso-perdido')).toBeVisible();
+      await expect(page.getByTestId('texto-acceso-perdido-2')).toHaveText('Elegí con qué cuenta seguir.');
+      await sinScrollHorizontal(page);
+      await capturar(page, 'i-acceso-perdido-con-otros');
+
+      const [ultimo] = await comerciosNuevos(request, 1);
+      const unico = await crearEmpleado(request, [ultimo]);
+      const contextoDos = await browser.newContext({ viewport: { width: 375, height: 812 }, baseURL: 'http://localhost:5501' });
+      const otra = await contextoDos.newPage();
+      await abrirComoEmpleado(otra, request, unico, ultimo);
+      await otra.goto('/comercio-dashboard.html');
+      await expect(otra.getByTestId('franja-comercio-insignia-empleado')).toBeVisible();
+      await atajoEstadoRelacion(request, ultimo, unico.usuarioId, 'INACTIVO');
+      const otra404 = otra.waitForResponse((r) => r.status() === 404 && r.url().includes('/productos'));
+      await otra.evaluate(async () => {
+        const { apiFetch } = await import('./js/api.js');
+        apiFetch('/productos').catch(() => {});
+      });
+      await otra404;
+      await expect(otra.getByTestId('aviso-acceso-perdido')).toBeVisible();
+      await expect(otra.getByTestId('texto-acceso-perdido-2')).toHaveText('Se te redirigirá a tu cuenta de Cliente.');
+      await sinScrollHorizontal(otra);
+      await capturar(otra, 'j-acceso-perdido-sin-otros');
+      expect(sesion.token).toBeTruthy();
+      await contextoDos.close();
     });
   });
 });

@@ -137,9 +137,16 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
   cumplir con un error de conflicto (409). Los cambios de estado de un comercio no tocan
   las relaciones de sus Empleados.
 - Al desactivar su relación con un comercio, la próxima acción del Empleado sobre ese
-  comercio responde "no encontrado" (404). La aplicación le muestra un aviso corto y lo
-  lleva al selector, o a su cuenta de Cliente si no le queda ningún comercio; no hay una
-  pantalla dedicada. Su sesión no se cierra.
+  comercio responde "no encontrado" (404). La aplicación detecta la pérdida en esa acción
+  o en el sondeo de cada 15 segundos y muestra, encima de la pantalla en la que está y
+  bloqueando el fondo, una hoja con un candado tachado, el título "Ya no tenés acceso a
+  este comercio", el texto "{nombre del comercio} te sacó del equipo." (o "El comercio te
+  sacó del equipo." si no se conoce el nombre) y una segunda línea: "Elegí con qué cuenta
+  seguir." si le quedan otros comercios, o "Se te redirigirá a tu cuenta de Cliente." si no
+  le queda ninguno (también si no se pudo consultar). Al tocar "Entendido" (o al cerrar la
+  hoja) va al selector de contexto o al inicio de Cliente, respectivamente. La hoja se
+  muestra una sola vez aunque fallen varias llamadas a la vez; no hay una pantalla
+  dedicada. Su sesión no se cierra.
 - El servidor no revela por qué el Empleado no puede acceder a un comercio: un comercio
   que no existe, que es de otro Dueño, con el que no tiene relación Activa o que está en
   un estado al que no accede (Pendiente, Rechazado, Inactivo o Rechazo definitivo)
@@ -164,8 +171,12 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
 > monto). Las notificaciones por comercio del Empleado quedan para E3: hasta entonces el
 > Empleado no ve la campana dentro de un comercio. Si en medio del uso pierde el acceso a
 > un comercio (su relación se desactiva), la aplicación lo detecta en la próxima acción o
-> en el sondeo de cada 15 segundos, le muestra "Ya no tenés acceso a este comercio" y lo
-> lleva al selector, o al inicio de Cliente si no le queda ningún comercio.
+> en el sondeo de cada 15 segundos, le muestra una hoja inferior "Ya no tenés acceso a este
+> comercio" (con el nombre del comercio y el botón "Entendido") y, al cerrarla, lo lleva al
+> selector, o al inicio de Cliente si no le queda ningún comercio. Su perfil dentro de un
+> comercio es una sola lista (Ver datos del comercio, Editar datos personales, Cambiar
+> contraseña, Cambiar de cuenta y Cerrar sesión): los datos personales y la contraseña se
+> editan dentro del mismo layout del comercio, sin pasar por las pantallas de Cliente.
 
 ---
 
@@ -275,5 +286,11 @@ bloqueado para el Empleado por defecto.
 - Sesión única por usuario, también para quien es Cliente y Empleado: iniciar sesión en
   otro dispositivo cierra la sesión del anterior en ambos contextos. El selector de
   contexto lo comunica.
-- El perfil personal del Empleado (datos, foto, cambio de contraseña) reutiliza el perfil
-  existente del Cliente.
+- El perfil del Empleado dentro de un comercio es una sola lista de filas, sin títulos de
+  sección: "Ver datos del comercio" (descripción, dirección, teléfono, horarios y estado,
+  sin datos fiscales ni legales), "Editar datos personales", "Cambiar contraseña", "Cambiar
+  de cuenta" y "Cerrar sesión". Los datos personales (nombre, apellido, teléfono y nombre de
+  usuario) y el cambio de contraseña usan las mismas reglas y mensajes que el perfil del
+  Cliente, pero se abren dentro del layout del comercio, con la barra inferior del
+  comercio. La foto de perfil personal se cambia desde la cuenta de Cliente (Cambiar de
+  cuenta).

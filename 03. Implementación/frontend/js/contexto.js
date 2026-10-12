@@ -23,8 +23,8 @@ export function rutaInicioDeContexto(tipo) {
   return tipo === TIPO_CONTEXTO.EMPLEADO || tipo === TIPO_CONTEXTO.DUENO ? RUTA_INICIO_COMERCIO : RUTA_INICIO_CLIENTE;
 }
 
-export function entrarEnContexto(tipo, comercioId = null) {
-  setContexto(tipo, comercioId);
+export function entrarEnContexto(tipo, comercioId = null, comercioNombre = null) {
+  setContexto(tipo, comercioId, true, comercioNombre);
   window.location.href = rutaInicioDeContexto(tipo);
 }
 
@@ -41,8 +41,9 @@ async function restaurarUltimoContexto() {
     setContexto(TIPO_CONTEXTO.CLIENTE, null, false);
     return getContextoGuardado();
   }
-  if (comercios.some((comercio) => comercio.id === ultimo.comercioId)) {
-    setContexto(TIPO_CONTEXTO.EMPLEADO, ultimo.comercioId);
+  const comercioUltimo = comercios.find((comercio) => comercio.id === ultimo.comercioId);
+  if (comercioUltimo) {
+    setContexto(TIPO_CONTEXTO.EMPLEADO, ultimo.comercioId, true, comercioUltimo.nombre);
     return getContextoGuardado();
   }
   olvidarUltimoContexto();

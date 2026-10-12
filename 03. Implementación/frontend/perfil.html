@@ -17,9 +17,8 @@
         <h2 id="perfil-nombre" data-testid="nombre-cliente-perfil"></h2>
         <p id="perfil-email" data-testid="email-cliente-perfil"></p>
       </div>
-      <div class="profile-section">
-        <p class="profile-section__title">Mi cuenta</p>
-        <div class="profile-link-list">
+      <div class="profile-section" id="seccion-lista-cliente">
+        <div class="profile-link-list" data-testid="lista-perfil">
           <button class="profile-link" type="button" id="editar-datos-link" data-testid="btn-editar-datos" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
             <span>Editar datos personales</span>
@@ -30,11 +29,6 @@
             <span>Cambiar contraseña</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
-        </div>
-      </div>
-      <div class="profile-section">
-        <p class="profile-section__title">Sesión</p>
-        <div class="profile-link-list">
           <button class="profile-link is-hidden" type="button" id="cambiar-cuenta-link" data-testid="btn-cambiar-cuenta" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
             <span>Cambiar de cuenta</span>

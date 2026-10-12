@@ -44,8 +44,9 @@ Requisitos aplicables a todos los roles del sistema: Cliente, Dueño, Empleado y
 - Al iniciar sesión en otro dispositivo, la sesión única cierra la sesión anterior en
   ambos contextos; el selector lo comunica.
 - Si a un Empleado se le desactiva una relación, su próxima acción sobre ese comercio
-  responde "no encontrado" y la aplicación le muestra un aviso corto y lo lleva al
-  selector; si no le queda ningún comercio, lo lleva a su cuenta de Cliente (sin una
+  responde "no encontrado" y la aplicación le muestra una hoja inferior "Ya no tenés
+  acceso a este comercio" (con el nombre del comercio y el botón "Entendido"); al cerrarla
+  lo lleva al selector, o a su cuenta de Cliente si no le queda ningún comercio (sin una
   pantalla dedicada). Su sesión no se cierra.
 - Entrada para quien fue invitado como Empleado: el login ofrece el botón "Tengo una
   invitación", y el registro una línea que lleva a la misma pantalla (ver Requisitos
