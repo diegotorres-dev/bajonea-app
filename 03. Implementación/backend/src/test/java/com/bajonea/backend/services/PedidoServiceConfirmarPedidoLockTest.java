@@ -35,6 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.PlatformTransactionManager;
 
 /**
  * Crear un pedido lee el estado del comercio con bloqueo compartido y revalida {@code APTO_VENTA} dentro de la
@@ -68,7 +69,7 @@ class PedidoServiceConfirmarPedidoLockTest {
                 mock(HistorialEstadoPedidoRepository.class), mock(UsuarioRepository.class),
                 mock(NotificacionService.class), mock(CarritoService.class), comercioService,
                 mock(ConfiguracionTarifaService.class), timeouts, mock(ReembolsoService.class),
-                mock(NotaCreditoService.class));
+                mock(NotaCreditoService.class), mock(PlatformTransactionManager.class));
         ReflectionTestUtils.setField(pedidoService, "entityManager", entityManager);
 
         comercioDelCarrito = mock(Comercio.class);

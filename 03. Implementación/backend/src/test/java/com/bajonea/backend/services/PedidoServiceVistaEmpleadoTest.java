@@ -49,6 +49,7 @@ import java.util.TreeSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
+import org.springframework.transaction.PlatformTransactionManager;
 
 /**
  * Vista del Empleado de los pedidos del comercio: lista blanca de campos, reembolso en términos simples y
@@ -97,7 +98,8 @@ class PedidoServiceVistaEmpleadoTest {
                 mock(ConfiguracionTarifaService.class),
                 timeouts,
                 mock(ReembolsoService.class),
-                notaCreditoService);
+                notaCreditoService,
+                mock(PlatformTransactionManager.class));
 
         cliente = mock(Cliente.class, Answers.RETURNS_DEEP_STUBS);
         when(cliente.getId()).thenReturn(77);

@@ -206,9 +206,9 @@ Los pedidos atraviesan los siguientes estados a lo largo de su ciclo de vida:
 Diferencias entre lo especificado en este documento y en los Requisitos Funcionales, y lo implementado al 2026-09-25. Son funcionalidades especificadas y todavía no implementadas, no cambios de alcance.
 
 **Pagos y reembolsos**
-- **Nota de crédito y reembolso:** la entidad `NotaCredito` existe, pero el flujo de reembolso no. Los estados que la especificación marca "con reembolso" (rechazo, cancelación, anulación, expiración por falta de respuesta y cancelación por suspensión) hoy cambian el estado del pedido sin devolver el dinero; el código lo deja marcado con un TODO en `PedidoService`.
+- **Nota de crédito y reembolso:** el reembolso total ya funciona para el rechazo, la expiración por falta de respuesta, la cancelación por suspensión y la anulación del comercio (tramos de NotaCredito y E3, bloque A0). La anulación crea siempre la nota de crédito en la misma transacción en que el pedido pasa a Anulado (si el pedido no tiene un pago aprobado y confirmado no hay nada que devolver y se anula sin nota); las otras tres la crean inmediatamente después de confirmar el cambio de estado. Sigue sin devolver el dinero la **cancelación del Cliente**: cambia el estado del pedido y el código lo deja marcado con un TODO en `PedidoService`.
 - **Pago tardío y pago duplicado:** un pago aprobado sobre un pedido ya cancelado, o un segundo pago aprobado sobre un pedido ya pagado, solo generan una alerta registrada en base de datos (`alerta_webhook_mp`). No se devuelve el dinero y la consulta de las alertas por pantalla no existe.
-- **Cancelación y anulación con devolución de dinero** y **reembolso parcial por ítem:** sin implementar.
+- **Cancelación del Cliente con devolución de dinero** y **reembolso parcial por ítem:** sin implementar.
 - **Pago en revisión:** mientras un pago está `pending` o `in_process` no se puede reintentar el pago hasta que se resuelva o venza el pedido. Es un comportamiento intencional.
 
 **Integración con MercadoPago**

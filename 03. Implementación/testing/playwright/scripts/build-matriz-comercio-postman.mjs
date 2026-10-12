@@ -381,7 +381,16 @@ const folder38 = {
       req('PUT', '/comercios/perfil/foto', { url: urlLarga }, 'matriz_comercio_foto_token'),
       assertFieldMessage(400, 'url', 'La URL de la foto de perfil no puede superar los 500 caracteres'),
     ),
-    item('Foto perfil Comercio - url valida (debe aceptar)', req('PUT', '/comercios/perfil/foto', { url: 'https://res.cloudinary.com/demo/image/upload/v1/matriz-foto-nueva.jpg' }, 'matriz_comercio_foto_token'), assertStatusOnly(200)),
+    item('Foto perfil Comercio - firma de subida (la URL valida tiene que estar en la carpeta que firma el servidor)', req('POST', '/comercios/perfil/foto/firma', {}, 'matriz_comercio_foto_token'), [
+      "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+      "pm.environment.set('matriz_foto_cloud', pm.response.json().data.cloudName);",
+      "pm.environment.set('matriz_foto_folder', pm.response.json().data.folder);",
+    ]),
+    item('Foto perfil Comercio - url de la carpeta de otro comercio (debe rechazar con 400)', req('PUT', '/comercios/perfil/foto', { url: 'https://res.cloudinary.com/{{matriz_foto_cloud}}/image/upload/v1/comercios/999999/perfil/matriz-foto-ajena.jpg' }, 'matriz_comercio_foto_token'), [
+      "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+      "pm.test('Mensaje exacto', () => pm.expect(pm.response.json().mensaje).to.eql('La foto de perfil no es válida. Subila de nuevo desde el formulario.'));",
+    ]),
+    item('Foto perfil Comercio - url valida de su propia carpeta (debe aceptar)', req('PUT', '/comercios/perfil/foto', { url: 'https://res.cloudinary.com/{{matriz_foto_cloud}}/image/upload/v1/{{matriz_foto_folder}}matriz-foto-nueva.jpg' }, 'matriz_comercio_foto_token'), assertStatusOnly(200)),
   ],
 };
 
@@ -460,7 +469,16 @@ const folder40 = {
     item('Imagen producto - url esquema invalido (http)', req('POST', '/productos/{{matriz_producto_id_imagenes}}/imagenes', { url: 'http://res.cloudinary.com/demo/x.jpg', orden: 0, esPrincipal: true }, 'matriz_comercio_productos_token'), assertFieldMessage(400, 'url', 'La URL debe pertenecer al dominio de Cloudinary')),
     item('Imagen producto - orden nulo', req('POST', '/productos/{{matriz_producto_id_imagenes}}/imagenes', { url: 'https://res.cloudinary.com/demo/image/upload/v1/matriz-img1.jpg', orden: null, esPrincipal: true }, 'matriz_comercio_productos_token'), assertFieldMessage(400, 'orden', 'El orden es obligatorio')),
     item('Imagen producto - orden negativo', req('POST', '/productos/{{matriz_producto_id_imagenes}}/imagenes', { url: 'https://res.cloudinary.com/demo/image/upload/v1/matriz-img1.jpg', orden: -1, esPrincipal: true }, 'matriz_comercio_productos_token'), assertFieldMessage(400, 'orden', 'El orden debe ser un valor positivo')),
-    item('Imagen producto - valida (debe aceptar, primera imagen del producto)', req('POST', '/productos/{{matriz_producto_id_imagenes}}/imagenes', { url: 'https://res.cloudinary.com/demo/image/upload/v1/matriz-img1.jpg', orden: 0, esPrincipal: true }, 'matriz_comercio_productos_token'), [
+    item('Imagen producto - firma de subida (la URL valida tiene que estar en la carpeta que firma el servidor)', req('POST', '/productos/{{matriz_producto_id_imagenes}}/cloudinary/firma', {}, 'matriz_comercio_productos_token'), [
+      "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+      "pm.environment.set('matriz_img_cloud', pm.response.json().data.cloudName);",
+      "pm.environment.set('matriz_img_folder', pm.response.json().data.folder);",
+    ]),
+    item('Imagen producto - url de la carpeta de otro comercio (debe rechazar con 400)', req('POST', '/productos/{{matriz_producto_id_imagenes}}/imagenes', { url: 'https://res.cloudinary.com/{{matriz_img_cloud}}/image/upload/v1/productos/999999/{{matriz_producto_id_imagenes}}/matriz-img-ajena.jpg', orden: 0, esPrincipal: true }, 'matriz_comercio_productos_token'), [
+      "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+      "pm.test('Mensaje exacto', () => pm.expect(pm.response.json().mensaje).to.eql('La imagen no es válida. Subila de nuevo desde el formulario.'));",
+    ]),
+    item('Imagen producto - valida (debe aceptar, primera imagen del producto)', req('POST', '/productos/{{matriz_producto_id_imagenes}}/imagenes', { url: 'https://res.cloudinary.com/{{matriz_img_cloud}}/image/upload/v1/{{matriz_img_folder}}matriz-img1.jpg', orden: 0, esPrincipal: true }, 'matriz_comercio_productos_token'), [
       "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
       'const json = pm.response.json();',
       "pm.environment.set('matriz_imagen_id', json.data.id);",
@@ -470,9 +488,13 @@ const folder40 = {
     item('OrdenImagenRequestDTO - orden valido 0 (debe aceptar)', req('PATCH', '/productos/{{matriz_producto_id_imagenes}}/imagenes/{{matriz_imagen_id}}/orden', { orden: 0 }, 'matriz_comercio_productos_token'), assertStatusOnly(200)),
     item('UrlImagenRequestDTO - url vacia', req('PATCH', '/productos/{{matriz_producto_id_imagenes}}/imagenes/{{matriz_imagen_id}}/url', { url: '' }, 'matriz_comercio_productos_token'), assertFieldMessage(400, 'url', 'No debe estar vacío')),
     item('UrlImagenRequestDTO - url host invalido', req('PATCH', '/productos/{{matriz_producto_id_imagenes}}/imagenes/{{matriz_imagen_id}}/url', { url: 'https://evil.com/x.jpg' }, 'matriz_comercio_productos_token'), assertFieldMessage(400, 'url', 'La URL debe pertenecer al dominio de Cloudinary')),
+    item('UrlImagenRequestDTO - url de la carpeta de otro producto (debe rechazar con 400)', req('PATCH', '/productos/{{matriz_producto_id_imagenes}}/imagenes/{{matriz_imagen_id}}/url', { url: 'https://res.cloudinary.com/{{matriz_img_cloud}}/image/upload/v1/productos/999999/999999/matriz-ajena.jpg' }, 'matriz_comercio_productos_token'), [
+      "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+      "pm.test('Mensaje exacto', () => pm.expect(pm.response.json().mensaje).to.eql('La imagen no es válida. Subila de nuevo desde el formulario.'));",
+    ]),
     item(
       '[comportamiento intencional, ya documentado en la auditoria] UrlImagenRequestDTO - url con extension .pdf (sin @Pattern de extension, debe aceptar)',
-      req('PATCH', '/productos/{{matriz_producto_id_imagenes}}/imagenes/{{matriz_imagen_id}}/url', { url: 'https://res.cloudinary.com/demo/image/upload/v1/matriz-recorte.pdf' }, 'matriz_comercio_productos_token'),
+      req('PATCH', '/productos/{{matriz_producto_id_imagenes}}/imagenes/{{matriz_imagen_id}}/url', { url: 'https://res.cloudinary.com/{{matriz_img_cloud}}/image/upload/v1/{{matriz_img_folder}}matriz-recorte.pdf' }, 'matriz_comercio_productos_token'),
       assertStatusOnly(200),
     ),
   ],

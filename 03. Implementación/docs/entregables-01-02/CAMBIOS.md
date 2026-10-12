@@ -5,6 +5,24 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
 
+## Tramo E3, bloque A0: anular genera la nota de crédito, una sola transición ganadora por pedido y fotos solo de su carpeta (2026-10-12)
+
+Endurecimiento previo a delegar escrituras al Empleado (backend y pruebas; sin pantallas ni migraciones). Cambia el comportamiento del Dueño en tres puntos: anular un pedido crea siempre la nota de crédito por el total en la misma operación (si el reembolso en Mercado Pago no se puede procesar, la nota queda en la pantalla de reembolsos del Administrador) y el aviso al Cliente dice que la devolución está en gestión; toda transición de estado de un pedido se atiende de a una (gana la primera, la segunda recibe "el pedido ya fue resuelto" y no deja historial, aviso ni reembolso), incluidos los procesos automáticos; la foto del comercio y las imágenes de producto solo se aceptan de la carpeta que firmó el servidor para ese comercio o producto.
+
+**Documentos de esta carpeta que cambiaron** (Diego los copia a mano a `01.` y `02.`):
+- `alcance-y-limitaciones.md` (Limitaciones conocidas, "Nota de crédito y reembolso"): la anulación ya devuelve el dinero; queda sin devolver solo la cancelación del Cliente.
+- `requisitos-funcionales-sistema.md` (T10): el aviso de anulación indica que la devolución del pago está en gestión.
+- `requisitos-funcionales-comercio.md` (anular un pedido y reglas del panel de pedidos): la nota de crédito se crea en la misma operación que la anulación, qué pasa ante una segunda anulación o una acción simultánea, y la regla de "gana la primera" para acciones simultáneas.
+- `requisitos-no-funcionales.md` (Integración con MercadoPago y seguridad): serialización de las transiciones de estado del pedido y validación de la carpeta de las imágenes.
+
+**No cambiaron** `diccionario-de-datos.md` (sin tablas, columnas, estados ni restricciones nuevas: `nota_credito` sigue siendo N:1 con `pago`), los requisitos e historias de Empleado, Dueño, Cliente y Administrador, las historias de usuario del Comercio (HU-CO12 ya decía que anular garantiza el reembolso automático), los DFD ni los diagramas ER y relacional.
+
+**Pendientes que el bloque deja a la vista** (no son cambios de documento): la cancelación del Cliente sigue sin reembolso; el motivo de anulación es texto libre en el código y "motivo predefinido" en los requisitos; el rechazo, la expiración y la suspensión crean su nota después de confirmar el cambio de estado (la anulación, dentro). Ver `docs/DECISIONES.md`, 2026-10-12.
+
+**Pruebas:** `mvnw test` 575/575; Playwright 664/665 desde una base reseteada (spec `39-pedidos-anulacion-concurrencia-api` nuevo de 12 tests; el único fallo, el inestable conocido de 375 px del spec 36); Newman 1999 requests y 3181 assertions sin fallos (carpeta 58 nueva de 91 requests); estrés `stress-locks-tramoE3-A0.mjs` de 8 escenarios y los estreses anteriores de bloqueos sin `5xx` ni deadlocks. Detalle en `docs/DECISIONES.md`, 2026-10-12.
+
+Fuera de esta carpeta: `CLAUDE.md`, `docs/DECISIONES.md`, `docs/CONCURRENCIA-Y-TRANSACCIONES.md`, `docs/APRENDIZAJES-TECNICOS.md`, `testing/playwright/README.md`, la colección y el environment de `postman/`.
+
 ## Tramo E2, entrega B6: ajustes de interfaz de los perfiles y aviso de pérdida de acceso (2026-10-12)
 
 Ajustes de la prueba manual sobre la entrega B de E2 (solo frontend y pruebas de pantalla; el servidor no cambió). Los perfiles del Cliente y del Empleado pasan a ser una sola lista de filas sin títulos de sección; el Empleado edita sus datos personales y cambia su contraseña dentro del layout del comercio (sin pasar por las pantallas de Cliente); y la pérdida de acceso a un comercio se avisa con una hoja inferior ("Ya no tenés acceso a este comercio", con el nombre del comercio y el botón "Entendido") en lugar del toast.

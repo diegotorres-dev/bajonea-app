@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import com.bajonea.backend.config.PedidoTimeoutProperties;
 import com.bajonea.backend.config.security.ComercioActivo;
 import com.bajonea.backend.enums.EstadoComercio;
+import com.bajonea.backend.dto.request.AnulacionPedidoRequestDTO;
 import com.bajonea.backend.dto.request.RechazoPedidoRequestDTO;
 import com.bajonea.backend.entities.Cliente;
 import com.bajonea.backend.entities.Comercio;
@@ -34,6 +35,7 @@ import com.bajonea.backend.repositories.DireccionRepository;
 import com.bajonea.backend.repositories.HistorialEstadoPedidoRepository;
 import com.bajonea.backend.repositories.ItemCarritoRepository;
 import com.bajonea.backend.repositories.PedidoRepository;
+import com.bajonea.backend.repositories.PedidoRepository.ParticipantesPedido;
 import com.bajonea.backend.repositories.UsuarioRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -42,6 +44,8 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.PlatformTransactionManager;
 
 class PedidoServiceReembolsoTest {
 
@@ -86,7 +90,13 @@ class PedidoServiceReembolsoTest {
                 mock(ConfiguracionTarifaService.class),
                 timeouts,
                 reembolsoService,
-                notaCreditoService);
+                notaCreditoService,
+                mock(PlatformTransactionManager.class));
+        ReflectionTestUtils.setField(pedidoService, "entityManager", mock(jakarta.persistence.EntityManager.class));
+        ParticipantesPedido participantes = mock(ParticipantesPedido.class);
+        when(participantes.getClienteId()).thenReturn(9);
+        when(participantes.getDuenoId()).thenReturn(5);
+        when(pedidoRepository.findParticipantesById(anyInt())).thenReturn(Optional.of(participantes));
 
         cliente = mock(Cliente.class, Answers.RETURNS_DEEP_STUBS);
         comercio = mock(Comercio.class, Answers.RETURNS_DEEP_STUBS);
@@ -127,7 +137,8 @@ class PedidoServiceReembolsoTest {
     @Test
     void expirarPedidoSinRespuestaDisparaReembolsoYAvisaConElPlazoRealDe30Minutos() {
         Pedido vencido = pedido(20, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, EstadoPagoPedido.PAGADO);
-        when(pedidoRepository.findByEstado(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO)).thenReturn(List.of(vencido));
+        when(pedidoRepository.findIdsByEstado(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO)).thenReturn(List.of(20));
+        when(pedidoRepository.findById(20)).thenReturn(Optional.of(vencido));
         when(historialRepository.findTopByPedidoIdAndEstadoOrderByFechaHoraDesc(20, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO))
                 .thenReturn(Optional.of(entradaHaceMinutos(31)));
 
@@ -144,7 +155,8 @@ class PedidoServiceReembolsoTest {
     @Test
     void pedidoDentroDelPlazoDeRespuestaNoExpiraNiReembolsa() {
         Pedido reciente = pedido(21, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, EstadoPagoPedido.PAGADO);
-        when(pedidoRepository.findByEstado(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO)).thenReturn(List.of(reciente));
+        when(pedidoRepository.findIdsByEstado(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO)).thenReturn(List.of(21));
+        when(pedidoRepository.findById(21)).thenReturn(Optional.of(reciente));
         when(historialRepository.findTopByPedidoIdAndEstadoOrderByFechaHoraDesc(21, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO))
                 .thenReturn(Optional.of(entradaHaceMinutos(29)));
 
@@ -157,7 +169,9 @@ class PedidoServiceReembolsoTest {
     @Test
     void suspensionDeComercioReembolsaLosPedidosPagadosQueCancelaElSistema() {
         Pedido enPreparacion = pedido(30, EstadoPedido.EN_PREPARACION, EstadoPagoPedido.PAGADO);
-        when(pedidoRepository.findByComercioIdAndEstadoIn(eq(40), any())).thenReturn(List.of(enPreparacion));
+        when(pedidoRepository.findIdsByComercioIdAndEstadoIn(eq(40), eq(List.of(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, EstadoPedido.EN_PREPARACION))))
+                .thenReturn(List.of(30));
+        when(pedidoRepository.findById(30)).thenReturn(Optional.of(enPreparacion));
 
         pedidoService.cancelarPedidosPorSuspensionComercio(40);
 
@@ -168,7 +182,9 @@ class PedidoServiceReembolsoTest {
     @Test
     void canceladoPorSistemaSinPagoConfirmadoNuncaLlamaAlReembolso() {
         Pedido sinPagar = pedido(31, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, EstadoPagoPedido.PENDIENTE);
-        when(pedidoRepository.findByComercioIdAndEstadoIn(eq(40), any())).thenReturn(List.of(sinPagar));
+        when(pedidoRepository.findIdsByComercioIdAndEstadoIn(eq(40), eq(List.of(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, EstadoPedido.EN_PREPARACION))))
+                .thenReturn(List.of(31));
+        when(pedidoRepository.findById(31)).thenReturn(Optional.of(sinPagar));
 
         pedidoService.cancelarPedidosPorSuspensionComercio(40);
 
@@ -179,7 +195,8 @@ class PedidoServiceReembolsoTest {
     @Test
     void timeoutDePagoNoConfirmadoCancelaSinReembolso() {
         Pedido sinPagar = pedido(32, EstadoPedido.PENDIENTE_PAGO, EstadoPagoPedido.PENDIENTE);
-        when(pedidoRepository.findByEstadoAndFechaCreacionBefore(eq(EstadoPedido.PENDIENTE_PAGO), any())).thenReturn(List.of(sinPagar));
+        when(pedidoRepository.findIdsByEstadoAndFechaCreacionBefore(eq(EstadoPedido.PENDIENTE_PAGO), any())).thenReturn(List.of(32));
+        when(pedidoRepository.findById(32)).thenReturn(Optional.of(sinPagar));
 
         pedidoService.expirarPagosVencidos();
 
@@ -188,7 +205,7 @@ class PedidoServiceReembolsoTest {
     }
 
     @Test
-    void cancelarYAnularSiguenSinReembolsoHastaLaTarea2() {
+    void cancelarDelClienteSigueSinReembolsoHastaLaTarea2() {
         Pedido pedido = pedido(40, EstadoPedido.EN_PREPARACION, EstadoPagoPedido.PAGADO);
         when(pedidoRepository.findById(40)).thenReturn(Optional.of(pedido));
         when(cliente.getId()).thenReturn(9);
@@ -226,6 +243,55 @@ class PedidoServiceReembolsoTest {
 
         assertEquals(null, dto.getReembolsoEstado());
         assertEquals(null, dto.getReembolsoMonto());
+    }
+
+    @Test
+    void anularPedidoPagadoGeneraLaNotaConLaTransaccionYAvisaQueLaDevolucionEstaEnGestion() {
+        Pedido pedido = pedido(60, EstadoPedido.EN_PREPARACION, EstadoPagoPedido.PAGADO);
+        when(pedidoRepository.findById(60)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.llegoPagado(60)).thenReturn(true);
+        when(reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.ANULACION_COMERCIO)).thenReturn(true);
+
+        pedidoService.anularPedido(ComercioActivo.delDueno(40, 5, EstadoComercio.APROBADO), 60,
+                new AnulacionPedidoRequestDTO("Se rompio la freidora"));
+
+        assertEquals(EstadoPedido.ANULADO, pedido.getEstado());
+        verify(reembolsoService).generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.ANULACION_COMERCIO);
+        verify(reembolsoService, never()).procesarReembolsoTotal(any(), any());
+        verify(notificacionService).crear(anyInt(),
+                org.mockito.ArgumentMatchers.argThat(mensaje -> mensaje.contains("gestionando la devolución de tu pago")
+                        && mensaje.contains("Motivo: Se rompio la freidora")),
+                eq(TipoNotificacion.PEDIDO_ANULADO_COMERCIO), any(), eq(60));
+    }
+
+    @Test
+    void anularUnPedidoSinPagoReembolsableNoPrometeUnaDevolucion() {
+        Pedido pedido = pedido(61, EstadoPedido.EN_PREPARACION, EstadoPagoPedido.PAGADO);
+        when(pedidoRepository.findById(61)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.llegoPagado(61)).thenReturn(true);
+        when(reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.ANULACION_COMERCIO)).thenReturn(false);
+
+        pedidoService.anularPedido(ComercioActivo.delDueno(40, 5, EstadoComercio.APROBADO), 61,
+                new AnulacionPedidoRequestDTO("Sin gas"));
+
+        assertEquals(EstadoPedido.ANULADO, pedido.getEstado());
+        verify(notificacionService).crear(anyInt(),
+                org.mockito.ArgumentMatchers.argThat(mensaje -> !mensaje.contains("devolución")),
+                eq(TipoNotificacion.PEDIDO_ANULADO_COMERCIO), any(), eq(61));
+    }
+
+    @Test
+    void anularUnPedidoQueNoEstaEnPreparacionDaConflictoSinNotaNiAviso() {
+        Pedido pedido = pedido(62, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, EstadoPagoPedido.PAGADO);
+        when(pedidoRepository.findById(62)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.llegoPagado(62)).thenReturn(true);
+
+        org.junit.jupiter.api.Assertions.assertThrows(com.bajonea.backend.exceptions.ConflictoDeNegocioException.class,
+                () -> pedidoService.anularPedido(ComercioActivo.delDueno(40, 5, EstadoComercio.APROBADO), 62,
+                        new AnulacionPedidoRequestDTO("x")));
+
+        verifyNoInteractions(reembolsoService);
+        verifyNoInteractions(notificacionService);
     }
 
     private static <T> List<T> anyList() {

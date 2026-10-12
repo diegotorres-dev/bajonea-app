@@ -63,6 +63,7 @@ class ReembolsoServiceTest {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.clearSynchronization();
         }
+        TransactionSynchronizationManager.setActualTransactionActive(false);
     }
 
     private Pago pago(String mpEstado, LocalDateTime fechaConfirmacion, String idTransaccionMp) {
@@ -237,6 +238,106 @@ class ReembolsoServiceTest {
         }
 
         verifyNoInteractions(client);
+        verifyNoInteractions(pagoService);
+    }
+    private void abrirTransaccionSimulada() {
+        TransactionSynchronizationManager.initSynchronization();
+        TransactionSynchronizationManager.setActualTransactionActive(true);
+    }
+
+    @Test
+    void laAnulacionCreaLaNotaDentroDeLaTransaccionYSoloLaLlamadaAMercadoPagoEsPosteriorAlCommit() {
+        Pago pago = pagoAprobado();
+        darPago(pago);
+        when(cuentaService.buscarActivaPorDueno(DUENO_ID)).thenReturn(Optional.of(cuentaActiva()));
+        when(notaCreditoService.crear(pago, MONTO, MotivoNotaCredito.ANULACION_COMERCIO)).thenReturn(notaPendiente(pago));
+        when(client.solicitarReembolsoTotal(anyString(), anyString(), anyString())).thenReturn(ResultadoReembolsoMp.exito("777"));
+        abrirTransaccionSimulada();
+
+        boolean hayNota = reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.ANULACION_COMERCIO);
+
+        assertTrue(hayNota);
+        verify(notaCreditoService).crear(pago, MONTO, MotivoNotaCredito.ANULACION_COMERCIO);
+        verifyNoInteractions(client);
+        for (TransactionSynchronization sync : TransactionSynchronizationManager.getSynchronizations()) {
+            sync.afterCommit();
+        }
+        verify(client).solicitarReembolsoTotal(eq("1234567"), eq("APP_USR-token-del-comercio"), eq("nc-900-1"));
+        verify(notaCreditoService).registrarReembolsoExitoso(900, "777");
+    }
+
+    @Test
+    void laAnulacionConLaCuentaDesvinculadaDejaLaNotaEnRevisionManualSinDiferirNada() {
+        Pago pago = pagoAprobado();
+        darPago(pago);
+        when(cuentaService.buscarActivaPorDueno(DUENO_ID)).thenReturn(Optional.empty());
+        when(notaCreditoService.crearPendienteRevisionManual(eq(pago), eq(MONTO), eq(MotivoNotaCredito.ANULACION_COMERCIO), anyString()))
+                .thenReturn(notaPendiente(pago));
+        abrirTransaccionSimulada();
+
+        boolean hayNota = reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.ANULACION_COMERCIO);
+
+        assertTrue(hayNota);
+        assertTrue(TransactionSynchronizationManager.getSynchronizations().isEmpty());
+        verifyNoInteractions(client);
+    }
+
+    @Test
+    void laAnulacionDeUnPedidoSinPagoReembolsableNoCreaNotaYLoInforma() {
+        when(pagoService.buscarPorPedidoParaActualizar(PEDIDO_ID)).thenReturn(Optional.empty());
+        abrirTransaccionSimulada();
+
+        assertFalse(reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.ANULACION_COMERCIO));
+
+        verify(notaCreditoService, never()).crear(any(), any(), any());
+        verify(notaCreditoService, never()).crearPendienteRevisionManual(any(), any(), any(), any());
+    }
+
+    @Test
+    void siElPagoYaTieneLaNotaPorElMontoCompletoLaAnulacionNoCreaOtraPeroInformaQueHayDevolucion() {
+        Pago pago = pagoAprobado();
+        when(pagoService.buscarPorPedidoParaActualizar(PEDIDO_ID)).thenReturn(Optional.of(pago));
+        when(notaCreditoService.montoCubierto(PAGO_ID)).thenReturn(MONTO);
+        abrirTransaccionSimulada();
+
+        assertTrue(reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.ANULACION_COMERCIO));
+
+        verify(notaCreditoService, never()).crear(any(), any(), any());
+        assertTrue(TransactionSynchronizationManager.getSynchronizations().isEmpty());
+    }
+
+    @Test
+    void siLaTransaccionDeLaAnulacionSeRevierteNoSePideNingunReembolso() {
+        Pago pago = pagoAprobado();
+        darPago(pago);
+        when(cuentaService.buscarActivaPorDueno(DUENO_ID)).thenReturn(Optional.of(cuentaActiva()));
+        when(notaCreditoService.crear(pago, MONTO, MotivoNotaCredito.ANULACION_COMERCIO)).thenReturn(notaPendiente(pago));
+        abrirTransaccionSimulada();
+
+        reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.ANULACION_COMERCIO);
+        for (TransactionSynchronization sync : TransactionSynchronizationManager.getSynchronizations()) {
+            sync.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK);
+        }
+
+        verifyNoInteractions(client);
+    }
+
+    @Test
+    void siNoSePuedeEscribirLaNotaLaExcepcionLlegaAlLlamadorParaRevertirLaAnulacion() {
+        Pago pago = pagoAprobado();
+        darPago(pago);
+        when(cuentaService.buscarActivaPorDueno(DUENO_ID)).thenReturn(Optional.of(cuentaActiva()));
+        when(notaCreditoService.crear(pago, MONTO, MotivoNotaCredito.ANULACION_COMERCIO)).thenThrow(new IllegalStateException("no se pudo escribir"));
+        abrirTransaccionSimulada();
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
+                () -> reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.ANULACION_COMERCIO));
+    }
+
+    @Test
+    void generarLaNotaDeUnaAnulacionFueraDeUnaTransaccionEsUnError() {
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
+                () -> reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.ANULACION_COMERCIO));
         verifyNoInteractions(pagoService);
     }
 }

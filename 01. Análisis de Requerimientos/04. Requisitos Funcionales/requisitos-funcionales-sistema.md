@@ -145,7 +145,7 @@ El sistema emite notificaciones push (y en algunos casos email) ante los siguien
 | T7 | Aviso 75 min sin confirmación de entrega | Cliente | Push + Panel |
 | T8 | Pedido auto-confirmado como entregado (incluye opciones: reclamo y contactar comercio) | Cliente | Push + Panel |
 | T9 | Pedido cancelado por el cliente | Dueño y Empleados activos del comercio | Push + Panel |
-| T10 | Pedido anulado por el comercio (con motivo y detalle) | Cliente | Push + Panel |
+| T10 | Pedido anulado por el comercio (con motivo y detalle; avisa que la devolución del pago está en gestión cuando el pedido tenía un pago aprobado) | Cliente | Push + Panel |
 | T11 | Pedido cancelado por sistema (con motivo) | Cliente | Push + Panel + Email |
 | T12 | Pedido expirado por falta de respuesta del comercio | Cliente | Push + Panel |
 | T13 | Pedido expirado — sin respuesta | Dueño y Empleados activos del comercio | Push + Panel |

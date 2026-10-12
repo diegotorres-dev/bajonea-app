@@ -239,9 +239,15 @@ horario, también con el aviso de cuándo reabre.
 - El Dueño o un Empleado autorizado debe poder anular un pedido desde estado
   EN_PREPARACION, seleccionando un **motivo predefinido** de la lista de motivos de
   rechazo. Esta acción es irreversible y genera automáticamente la nota de crédito y el
-  reembolso al cliente. No aplica desde estados posteriores.
+  reembolso al cliente. No aplica desde estados posteriores. La nota de crédito se crea en
+  la misma operación en que el pedido pasa a ANULADO (si no se puede crear, el pedido no
+  queda anulado); si el reembolso en MercadoPago no se puede procesar, la nota queda
+  disponible en la pantalla de reembolsos del Administrador. Anular dos veces el mismo
+  pedido, o anularlo cuando otra persona ya lo despachó, responde que el pedido ya no está
+  en preparación y no genera una segunda nota.
 - El pedido vence automáticamente (estado EXPIRADO) si nadie responde en 30 minutos desde
   la confirmación del pago, generando el reembolso correspondiente al cliente.
+- Cuando dos personas actúan a la vez sobre el mismo pedido (por ejemplo, aceptar y rechazar, o anular y despachar, o el Cliente cancelando mientras el comercio acepta), el sistema las atiende de a una: gana la primera, la segunda recibe un aviso de que el pedido ya fue resuelto, y solo la acción ganadora deja historial, aviso al cliente y reembolso. Lo mismo vale para los procesos automáticos (expiración, autoconfirmación) cuando coinciden con una acción de una persona.
 - El Dueño o un Empleado autorizado ve únicamente los pedidos que llegaron al comercio con el pago aprobado (los que pasaron por PENDIENTE_CONFIRMACION_COMERCIO). Un pedido que nunca llegó pagado no aparece en la lista, en el resumen ni en el detalle de pago, y sus acciones responden como recurso inexistente.
 - La fecha de un pedido para el comercio es la de la confirmación del pago, no la de su creación, y es la que define qué pedidos cuentan como "de hoy".
 - El panel muestra tres contadores del día: pedidos de hoy (los que llegaron pagados hoy, sin importar cómo terminaron), pendientes (los que están en PENDIENTE_CONFIRMACION_COMERCIO) y facturado hoy (suma del subtotal de los que llegaron pagados hoy y hoy están en EN_PREPARACION, EN_CAMINO, LISTO_PARA_RETIRAR o ENTREGADO).

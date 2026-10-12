@@ -3,6 +3,7 @@ package com.bajonea.backend.services;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -55,5 +56,13 @@ class AtajosDeTestFueraDelPerfilTest {
         mockMvc.perform(put("/api/v1/test/comercios/1/empleados/2/estado").param("estado", "INACTIVO")).andExpect(status().isNotFound());
         mockMvc.perform(get("/api/v1/test/token").param("email", "a@b.com").param("tipo", "VERIFICACION_EMAIL"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void lasRutasDeLosProcesosDePedidosYDelPagoSinteticoNoExisten() throws Exception {
+        for (String nombre : new String[] {"expirar-pagos", "avisar-y-autoconfirmar", "expirar-sin-respuesta", "autoconfirmar-retiros"}) {
+            mockMvc.perform(post("/api/v1/test/jobs/pedidos/" + nombre)).andExpect(status().isNotFound());
+        }
+        mockMvc.perform(put("/api/v1/test/pedidos/1/pago-aprobado").param("registrarPago", "true")).andExpect(status().isNotFound());
     }
 }

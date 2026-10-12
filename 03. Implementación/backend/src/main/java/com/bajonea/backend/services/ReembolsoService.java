@@ -79,6 +79,41 @@ public class ReembolsoService {
         ejecutarSinPropagar(pedidoId, motivo);
     }
 
+    /**
+     * Variante para quien no puede dejar un pedido sin su nota de crédito (la anulación del comercio): la nota se
+     * crea en la <b>misma transacción</b> que el cambio de estado del pedido, así que si no se puede escribir la
+     * nota el pedido no queda anulado. Exige una transacción abierta con el pedido ya bloqueado
+     * ({@code PedidoService.bloquearParaActualizar}): ese bloqueo es lo que impide que dos anulaciones simultáneas
+     * creen dos notas, y además se vuelve a mirar el monto ya cubierto del pago por si acaso. Solo la
+     * llamada a Mercado Pago se difiere a después del commit (con el mismo registro del resultado que el reembolso
+     * común), y únicamente si el commit ocurre: una transición que pierde la carrera nunca llega a pedir plata.
+     *
+     * <p>Devuelve {@code true} si el pedido tiene una nota de crédito (recién creada o ya existente) y por lo tanto
+     * hay una devolución en gestión; {@code false} si el pedido no tiene un pago aprobado y confirmado que
+     * reembolsar.
+     */
+    public boolean generarNotaYReembolsarTotal(Pedido pedido, MotivoNotaCredito motivo) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IllegalStateException("La nota de crédito de una anulación se crea dentro de la transacción del cambio de estado");
+        }
+        Integer pedidoId = pedido.getId();
+        PreparacionReembolso preparacion = prepararIntento(pedidoId, motivo);
+        IntentoReembolso intento = preparacion.intento();
+        if (intento != null) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    try {
+                        solicitarYRegistrar(intento);
+                    } catch (RuntimeException ex) {
+                        log.error("Reembolso del pedidoId={} ({}) terminó con un error inesperado", pedidoId, motivo, ex);
+                    }
+                }
+            });
+        }
+        return preparacion.hayNota();
+    }
+
     private void ejecutarSinPropagar(Integer pedidoId, MotivoNotaCredito motivo) {
         try {
             ejecutar(pedidoId, motivo);
@@ -88,7 +123,7 @@ public class ReembolsoService {
     }
 
     private void ejecutar(Integer pedidoId, MotivoNotaCredito motivo) {
-        IntentoReembolso intento = transaccionNueva.execute(status -> prepararIntento(pedidoId, motivo));
+        IntentoReembolso intento = transaccionNueva.execute(status -> prepararIntento(pedidoId, motivo).intento());
         if (intento == null) {
             return;
         }
@@ -153,20 +188,20 @@ public class ReembolsoService {
                 numeroIntento, pedidoId, nota.getMotivo());
     }
 
-    private IntentoReembolso prepararIntento(Integer pedidoId, MotivoNotaCredito motivo) {
+    private PreparacionReembolso prepararIntento(Integer pedidoId, MotivoNotaCredito motivo) {
         Optional<Pago> pagoOpt = pagoService.buscarPorPedidoParaActualizar(pedidoId);
         if (pagoOpt.isEmpty()) {
             log.info("Pedido {} sin pago de Mercado Pago asociado: no hay nada que reembolsar", pedidoId);
-            return null;
+            return PreparacionReembolso.SIN_NOTA;
         }
         Pago pago = pagoOpt.get();
         if (!esPagoReembolsable(pago)) {
             log.info("Pedido {}: el pago no está aprobado y confirmado (mp_estado={}), no se reembolsa", pedidoId, pago.getMpEstado());
-            return null;
+            return PreparacionReembolso.SIN_NOTA;
         }
         if (notaCreditoService.montoCubierto(pago.getId()).compareTo(pago.getMonto()) >= 0) {
             log.info("Pedido {}: el pago ya tiene reembolso registrado por el monto completo, no se duplica", pedidoId);
-            return null;
+            return new PreparacionReembolso(null, true);
         }
 
         Integer duenoId = pago.getPedido().getComercio().getDueno().getId();
@@ -175,18 +210,23 @@ public class ReembolsoService {
             NotaCredito nota = notaCreditoService.crearPendienteRevisionManual(pago, pago.getMonto(), motivo, ERROR_CUENTA_DESVINCULADA);
             log.warn("Pedido {}: cuenta de Mercado Pago del comercio desvinculada, nota de crédito {} queda pendiente de revisión manual",
                     pedidoId, nota.getId());
-            return null;
+            return new PreparacionReembolso(null, true);
         }
 
         NotaCredito nota = notaCreditoService.crear(pago, pago.getMonto(), motivo);
-        return new IntentoReembolso(nota.getId(), pago.getIdTransaccionMp(), cuenta.get().getAccessToken(), pago.getMonto(),
-                nota.getIntentos() + 1, pedidoId, motivo);
+        return new PreparacionReembolso(new IntentoReembolso(nota.getId(), pago.getIdTransaccionMp(), cuenta.get().getAccessToken(),
+                pago.getMonto(), nota.getIntentos() + 1, pedidoId, motivo), true);
     }
 
     private static boolean esPagoReembolsable(Pago pago) {
         return ESTADO_PAGO_APROBADO.equals(pago.getMpEstado())
                 && pago.getFechaConfirmacion() != null
                 && pago.getIdTransaccionMp() != null;
+    }
+
+    private record PreparacionReembolso(IntentoReembolso intento, boolean hayNota) {
+
+        static final PreparacionReembolso SIN_NOTA = new PreparacionReembolso(null, false);
     }
 
     private record IntentoReembolso(Integer notaCreditoId, String paymentId, String accessToken, BigDecimal monto,

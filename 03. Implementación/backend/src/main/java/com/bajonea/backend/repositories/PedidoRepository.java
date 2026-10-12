@@ -5,6 +5,7 @@ import com.bajonea.backend.enums.EstadoPedido;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,6 +29,31 @@ public interface PedidoRepository extends JpaRepository<Pedido, Integer> {
     List<Pedido> findByEstadoAndSuspensionRetiroExpiraLessThan(EstadoPedido estado, LocalDateTime ahora);
 
     List<Pedido> findByComercioIdAndEstadoIn(Integer comercioId, List<EstadoPedido> estados);
+
+    @Query("select p.cliente.id as clienteId, p.comercio.dueno.id as duenoId from Pedido p where p.id = :pedidoId")
+    Optional<ParticipantesPedido> findParticipantesById(@Param("pedidoId") Integer pedidoId);
+
+    interface ParticipantesPedido {
+
+        Integer getClienteId();
+
+        Integer getDuenoId();
+    }
+
+    @Query("select p.id from Pedido p where p.estado = :estado order by p.id")
+    List<Integer> findIdsByEstado(@Param("estado") EstadoPedido estado);
+
+    @Query("select p.id from Pedido p where p.estado = :estado and p.fechaCreacion < :corte order by p.id")
+    List<Integer> findIdsByEstadoAndFechaCreacionBefore(@Param("estado") EstadoPedido estado, @Param("corte") LocalDateTime corte);
+
+    @Query("select p.id from Pedido p where p.estado = :estado and p.suspensionRetiroExpira < :ahora order by p.id")
+    List<Integer> findIdsByEstadoAndSuspensionRetiroExpiraLessThan(@Param("estado") EstadoPedido estado,
+            @Param("ahora") LocalDateTime ahora);
+
+    @Query("select p.id from Pedido p where p.comercio.id = :comercioId and p.estado in :estados order by p.id")
+    List<Integer> findIdsByComercioIdAndEstadoIn(@Param("comercioId") Integer comercioId,
+            @Param("estados") Collection<EstadoPedido> estados);
+
 
     @Query("select p from Pedido p where p.comercio.id = :comercioId and exists ("
             + "select 1 from HistorialEstadoPedido h where h.pedido = p and h.estado = "

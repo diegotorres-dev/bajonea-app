@@ -113,6 +113,7 @@ public class ComercioService {
 
     public ComercioResponseDTO actualizarFotoPerfil(Integer comercioId, FotoPerfilComercioRequestDTO request) {
         Comercio comercio = obtenerComercio(comercioId);
+        cloudinaryService.validarFotoPerfilComercio(comercio.getId(), request.getUrl());
         comercio.setFotoPerfilUrl(request.getUrl());
         comercio.setFechaModificacion(LocalDateTime.now());
         comercioRepository.save(comercio);

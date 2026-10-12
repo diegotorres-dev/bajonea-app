@@ -4,6 +4,8 @@ import com.bajonea.backend.entities.Comercio;
 import com.bajonea.backend.entities.Direccion;
 import com.bajonea.backend.entities.Horario;
 import com.bajonea.backend.entities.InvitacionEmpleado;
+import com.bajonea.backend.entities.Pago;
+import com.bajonea.backend.entities.Pedido;
 import com.bajonea.backend.entities.Token;
 import com.bajonea.backend.entities.Usuario;
 import com.bajonea.backend.enums.CanalNotificacion;
@@ -22,6 +24,7 @@ import com.bajonea.backend.repositories.EmpleadoComercioRepository;
 import com.bajonea.backend.repositories.HorarioRepository;
 import com.bajonea.backend.repositories.InvitacionEmpleadoRepository;
 import com.bajonea.backend.repositories.NotificacionRepository;
+import com.bajonea.backend.repositories.PedidoRepository;
 import com.bajonea.backend.repositories.TokenRepository;
 import com.bajonea.backend.repositories.UsuarioRepository;
 import java.time.Clock;
@@ -32,6 +35,7 @@ import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -57,6 +61,9 @@ public class TestSupportService {
     private final HorarioRepository horarioRepository;
     private final CuentaMercadoPagoService cuentaMercadoPagoService;
     private final PedidoService pedidoService;
+    private final PedidoSchedulerService pedidoSchedulerService;
+    private final PedidoRepository pedidoRepository;
+    private final PagoService pagoService;
     private final InvitacionEmpleadoRepository invitacionEmpleadoRepository;
     private final EmpleadoComercioRepository empleadoComercioRepository;
     private final NotificacionRepository notificacionRepository;
@@ -102,6 +109,31 @@ public class TestSupportService {
     @Transactional
     public void confirmarPagoAprobado(Integer pedidoId) {
         pedidoService.confirmarPagoAprobado(pedidoId);
+    }
+
+    /**
+     * Igual que {@link #confirmarPagoAprobado(Integer)}, y además deja la fila de {@code pago} que dejaría el webhook
+     * real (monto del pedido, {@code mp_estado = approved}, id de transacción sintético y fecha de confirmación), para
+     * que los reembolsos (rechazo, expiración, anulación) tengan un pago reembolsable sobre el cual crear su nota de
+     * crédito. No toca Mercado Pago.
+     */
+    @Transactional
+    public void confirmarPagoAprobadoConRegistro(Integer pedidoId) {
+        pedidoService.confirmarPagoAprobado(pedidoId);
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado"));
+        Pago pago = pagoService.buscarPorPedido(pedidoId)
+                .orElseGet(() -> pagoService.crearPreferencia(pedido, "sintetica-" + pedidoId, null, null));
+        pagoService.registrarResultado(pago, "sintetico-" + pedidoId, "approved", "account_money", true);
+    }
+
+    /**
+     * Ejecuta a pedido uno de los procesos automáticos de pedidos con la hora indicada (en el perfil {@code test}
+     * no corren solos).
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public void ejecutarProcesoDePedidos(String nombre, LocalDateTime ahora) {
+        pedidoSchedulerService.ejecutar(nombre, ahora == null ? LocalDateTime.now(clock) : ahora);
     }
 
     /**

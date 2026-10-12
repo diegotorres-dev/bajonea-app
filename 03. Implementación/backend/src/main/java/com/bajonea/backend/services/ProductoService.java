@@ -279,6 +279,8 @@ public class ProductoService {
         Comercio comercio = obtenerComercio(comercioId);
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
 
+        cloudinaryService.validarImagenProducto(comercio.getId(), producto.getId(), request.getUrl());
+
         long existentes = imagenProductoRepository.countByProductoId(productoId);
         if (existentes >= MAX_IMAGENES_POR_PRODUCTO) {
             throw new ConflictoDeNegocioException(
@@ -327,6 +329,7 @@ public class ProductoService {
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
         ImagenProducto imagen = obtenerImagenDelProducto(imagenId, producto);
 
+        cloudinaryService.validarImagenProducto(comercio.getId(), producto.getId(), nuevaUrl);
         imagen.setUrl(nuevaUrl);
         imagenProductoRepository.save(imagen);
 

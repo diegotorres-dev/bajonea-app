@@ -90,6 +90,8 @@
 - Las llamadas a la API de MercadoPago deben tener un tiempo máximo de espera (5 segundos de conexión y de lectura); ante una falla o demora, el sistema responde con un error de servicio no disponible en lugar de asumir un estado.
 - La verificación de que el split se aplicó (comparación de `fee_details` contra el `marketplace_fee` esperado) es informativa: ante una diferencia registra una alerta y nunca bloquea ni revierte el pago del cliente.
 - El procesamiento de los webhooks y de la sincronización de pagos debe ser idempotente y seguro ante notificaciones simultáneas sobre el mismo pedido (bloqueo pesimista del pedido); un pago aprobado nunca se sobrescribe.
+- Toda transición de estado de un pedido (acciones del comercio, acciones del cliente, confirmación del pago y procesos automáticos) debe serializarse con un bloqueo pesimista del pedido y volver a validar el estado una vez obtenido el bloqueo, de modo que ante acciones simultáneas haya una única transición ganadora y la perdedora no deje historial, avisos ni reembolsos. Los procesos automáticos resuelven un pedido por transacción.
+- Las imágenes de un producto y la foto de perfil de un comercio solo se aceptan si pertenecen a la carpeta de almacenamiento que el sistema firmó para ese comercio o producto: la URL de otra carpeta, de otro comercio o de otra cuenta de almacenamiento se rechaza.
 
 ---
 

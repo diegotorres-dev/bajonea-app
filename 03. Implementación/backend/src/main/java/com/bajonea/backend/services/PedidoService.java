@@ -45,6 +45,7 @@ import com.bajonea.backend.repositories.DireccionRepository;
 import com.bajonea.backend.repositories.HistorialEstadoPedidoRepository;
 import com.bajonea.backend.repositories.ItemCarritoRepository;
 import com.bajonea.backend.repositories.PedidoRepository;
+import com.bajonea.backend.repositories.PedidoRepository.ParticipantesPedido;
 import com.bajonea.backend.repositories.UsuarioRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
@@ -56,9 +57,16 @@ import java.util.Map;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.TreeSet;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Máquina de estados completa del Pedido (Fase 19, ver CLAUDE.md §6 y docs/DECISIONES.md):
@@ -71,9 +79,17 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code HistorialEstadoPedido} es la fuente canónica de todos los timestamps y actores del
  * ciclo de vida (ver diccionario de datos); {@code Pedido} solo conserva el estado actual.
  * Los estados terminales negativos con reembolso pendiente llaman a {@link ReembolsoService}
- * ({@code RECHAZADO}, {@code EXPIRADO} y la cancelación por suspensión de comercio); los de
- * {@code CANCELADO} y {@code ANULADO} conservan su TODO hasta que existan sus endpoints reales
- * (ver docs/DECISIONES.md).
+ * ({@code RECHAZADO}, {@code EXPIRADO} y la cancelación por suspensión de comercio, con la nota después del
+ * commit; {@code ANULADO}, con la nota creada en la misma transacción del cambio de estado). {@code CANCELADO}
+ * (del Cliente) conserva su TODO (ver docs/DECISIONES.md).
+ *
+ * <p><b>Concurrencia (bloque A0 de E3):</b> toda transición de estado de un pedido —las acciones del comercio, las
+ * del Cliente, el webhook y la sincronización de pago y los procesos automáticos— toma primero las filas de los
+ * usuarios involucrados con bloqueo compartido (id ascendente), después la fila del pedido con
+ * {@code PESSIMISTIC_WRITE} ({@link #bloquearParaActualizar}), y recién entonces vuelve a validar el estado, calcula
+ * la hora de la operación y escribe. La que llega segunda ve el estado ya cambiado y responde {@code 409} (o no
+ * hace nada, en los procesos) sin escribir historial, avisos ni reembolsos. El orden global de bloqueos está en
+ * docs/CONCURRENCIA-Y-TRANSACCIONES.md.
  */
 @Service
 @RequiredArgsConstructor
@@ -96,6 +112,9 @@ public class PedidoService {
     private final PedidoTimeoutProperties timeoutProperties;
     private final ReembolsoService reembolsoService;
     private final NotaCreditoService notaCreditoService;
+    private final PlatformTransactionManager transactionManager;
+
+    private static final Logger log = LoggerFactory.getLogger(PedidoService.class);
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -105,6 +124,7 @@ public class PedidoService {
             EstadoPedido.EN_PREPARACION, EstadoPedido.EN_CAMINO, EstadoPedido.LISTO_PARA_RETIRAR, EstadoPedido.ENTREGADO);
 
     public PedidoResponseDTO confirmarPedido(Integer usuarioId, PedidoRequestDTO request) {
+        usuarioRepository.leerIdConBloqueoCompartido(usuarioId);
         Cliente cliente = clienteRepository.findById(usuarioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Cliente no encontrado"));
 
@@ -210,8 +230,7 @@ public class PedidoService {
      * de pago) no hace nada, no reintenta la transición.
      */
     public void confirmarPagoAprobado(Integer pedidoId) {
-        Pedido pedido = pedidoRepository.findById(pedidoId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado"));
+        Pedido pedido = bloquearParaActualizar(pedidoId);
         if (pedido.getEstado() != EstadoPedido.PENDIENTE_PAGO) {
             return;
         }
@@ -241,8 +260,7 @@ public class PedidoService {
      * pagado ni uno que salió de {@code PENDIENTE_PAGO}.
      */
     public void marcarPagoRechazado(Integer pedidoId) {
-        Pedido pedido = pedidoRepository.findById(pedidoId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado"));
+        Pedido pedido = bloquearParaActualizar(pedidoId);
         if (pedido.getEstado() != EstadoPedido.PENDIENTE_PAGO || pedido.getPagoEstado() == EstadoPagoPedido.PAGADO) {
             return;
         }
@@ -252,14 +270,47 @@ public class PedidoService {
     }
 
     /**
-     * Bloquea la fila del pedido (SELECT ... FOR UPDATE) y recarga su estado, para serializar el
-     * webhook y la sincronización que pueden llegar a la vez sobre el mismo pedido.
+     * Punto único de entrada de toda transición de estado de un pedido existente. Toma, en este orden: (1) las
+     * filas de los usuarios involucrados (quien actúa, el Cliente del pedido y el usuario del Dueño, cuyas
+     * claves foráneas van a tocar el historial y los avisos) con {@code LOCK IN SHARE MODE} y en id ascendente,
+     * y (2) la fila del pedido con {@code SELECT ... FOR UPDATE}, recargando su estado confirmado. Los usuarios van
+     * primero por la misma regla del login y del cierre manual (quien escribe una fila con clave foránea a un
+     * usuario y además bloquea otra fila toma antes el usuario; ver docs/APRENDIZAJES-TECNICOS.md): si el pedido
+     * se bloqueara antes, una acción podría quedar con el pedido en la mano esperando un usuario que el login ya
+     * pidió con {@code FOR UPDATE}, y cruzarse con otra transacción que sostiene ese usuario y quiere el pedido.
+     * Quien llama tiene que volver a validar el estado <b>después</b> de este método y calcular la hora de la
+     * operación también después.
      */
     Pedido bloquearParaActualizar(Integer pedidoId) {
+        return bloquearParaActualizar(pedidoId, null);
+    }
+
+    Pedido bloquearParaActualizar(Integer pedidoId, Integer actorUsuarioId) {
+        ParticipantesPedido participantes = pedidoRepository.findParticipantesById(pedidoId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado"));
+        TreeSet<Integer> usuarios = new TreeSet<>();
+        if (actorUsuarioId != null) {
+            usuarios.add(actorUsuarioId);
+        }
+        usuarios.add(participantes.getClienteId());
+        usuarios.add(participantes.getDuenoId());
+        for (Integer usuarioId : usuarios) {
+            usuarioRepository.leerIdConBloqueoCompartido(usuarioId);
+        }
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado"));
         entityManager.refresh(pedido, LockModeType.PESSIMISTIC_WRITE);
         return pedido;
+    }
+
+    private Pedido obtenerPedidoDelComercioParaActualizar(ComercioActivo comercioActivo, Integer pedidoId) {
+        obtenerPedidoDelComercio(comercioActivo.comercioId(), pedidoId);
+        return bloquearParaActualizar(pedidoId, comercioActivo.actorUsuarioId());
+    }
+
+    private Pedido obtenerPedidoDelClienteParaActualizar(Integer usuarioId, Integer pedidoId) {
+        obtenerPedidoDelCliente(usuarioId, pedidoId);
+        return bloquearParaActualizar(pedidoId, usuarioId);
     }
 
     public PedidoResponseDTO obtenerDetalleCliente(Pedido pedido) {
@@ -267,7 +318,7 @@ public class PedidoService {
     }
 
     public PedidoResponseDTO aceptarPedido(ComercioActivo comercioActivo, Integer pedidoId) {
-        Pedido pedido = obtenerPedidoDelComercio(comercioActivo.comercioId(), pedidoId);
+        Pedido pedido = obtenerPedidoDelComercioParaActualizar(comercioActivo, pedidoId);
 
         if (pedido.getEstado() != EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO) {
             throw new ConflictoDeNegocioException("El pedido ya fue resuelto, no está en estado PENDIENTE_CONFIRMACION_COMERCIO");
@@ -285,7 +336,7 @@ public class PedidoService {
     }
 
     public PedidoResponseDTO rechazarPedido(ComercioActivo comercioActivo, Integer pedidoId, RechazoPedidoRequestDTO request) {
-        Pedido pedido = obtenerPedidoDelComercio(comercioActivo.comercioId(), pedidoId);
+        Pedido pedido = obtenerPedidoDelComercioParaActualizar(comercioActivo, pedidoId);
 
         if (pedido.getEstado() != EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO) {
             throw new ConflictoDeNegocioException("El pedido ya fue resuelto, no está en estado PENDIENTE_CONFIRMACION_COMERCIO");
@@ -317,7 +368,7 @@ public class PedidoService {
     }
 
     public PedidoResponseDTO avanzarAEntregaEnCurso(ComercioActivo comercioActivo, Integer pedidoId) {
-        Pedido pedido = obtenerPedidoDelComercio(comercioActivo.comercioId(), pedidoId);
+        Pedido pedido = obtenerPedidoDelComercioParaActualizar(comercioActivo, pedidoId);
 
         if (pedido.getEstado() != EstadoPedido.EN_PREPARACION) {
             throw new ConflictoDeNegocioException("El pedido no está en preparación");
@@ -344,7 +395,7 @@ public class PedidoService {
     }
 
     public PedidoResponseDTO confirmarEntregaCliente(Integer usuarioId, Integer pedidoId) {
-        Pedido pedido = obtenerPedidoDelCliente(usuarioId, pedidoId);
+        Pedido pedido = obtenerPedidoDelClienteParaActualizar(usuarioId, pedidoId);
 
         if (pedido.getEstado() != EstadoPedido.EN_CAMINO) {
             throw new ConflictoDeNegocioException("El pedido no está en camino");
@@ -357,7 +408,7 @@ public class PedidoService {
     }
 
     public PedidoResponseDTO confirmarEntregaComercio(ComercioActivo comercioActivo, Integer pedidoId) {
-        Pedido pedido = obtenerPedidoDelComercio(comercioActivo.comercioId(), pedidoId);
+        Pedido pedido = obtenerPedidoDelComercioParaActualizar(comercioActivo, pedidoId);
 
         if (pedido.getEstado() != EstadoPedido.LISTO_PARA_RETIRAR) {
             throw new ConflictoDeNegocioException("El pedido no está listo para retirar");
@@ -370,7 +421,7 @@ public class PedidoService {
     }
 
     public PedidoResponseDTO cancelarPedido(Integer usuarioId, Integer pedidoId) {
-        Pedido pedido = obtenerPedidoDelCliente(usuarioId, pedidoId);
+        Pedido pedido = obtenerPedidoDelClienteParaActualizar(usuarioId, pedidoId);
 
         if (pedido.getEstado() != EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO && pedido.getEstado() != EstadoPedido.EN_PREPARACION) {
             throw new ConflictoDeNegocioException("El pedido ya no se puede cancelar");
@@ -390,7 +441,7 @@ public class PedidoService {
     }
 
     public PedidoResponseDTO anularPedido(ComercioActivo comercioActivo, Integer pedidoId, AnulacionPedidoRequestDTO request) {
-        Pedido pedido = obtenerPedidoDelComercio(comercioActivo.comercioId(), pedidoId);
+        Pedido pedido = obtenerPedidoDelComercioParaActualizar(comercioActivo, pedidoId);
 
         if (pedido.getEstado() != EstadoPedido.EN_PREPARACION) {
             throw new ConflictoDeNegocioException("El pedido no está en preparación");
@@ -401,11 +452,13 @@ public class PedidoService {
         pedido.setMotivo(request.getMotivo());
         pedidoRepository.save(pedido);
         registrarHistorial(pedido, ActorPedido.DUENO, comercioActivo.duenoId());
-        // TODO: genera reembolso, pendiente de NotaCredito.
+        boolean devolucionEnGestion = reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.ANULACION_COMERCIO);
 
-        notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
-                "Tu pedido #" + pedido.getId() + " a " + pedido.getComercio().getNombre()
-                        + " fue anulado por el comercio. Motivo: " + request.getMotivo(),
+        String mensaje = "Tu pedido #" + pedido.getId() + " a " + pedido.getComercio().getNombre()
+                + " fue anulado por el comercio"
+                + (devolucionEnGestion ? " y estamos gestionando la devolución de tu pago" : "")
+                + ". Motivo: " + request.getMotivo();
+        notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(), mensaje,
                 TipoNotificacion.PEDIDO_ANULADO_COMERCIO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
 
         return aResponseDTO(pedido);
@@ -480,12 +533,18 @@ public class PedidoService {
      * {@code AdministradorService.suspenderComercio}). Los pedidos en curso ({@code PENDIENTE_CONFIRMACION_COMERCIO}/
      * {@code EN_PREPARACION}) se cancelan de inmediato; los {@code LISTO_PARA_RETIRAR} no se
      * tocan todavía — solo se les marca el vencimiento del timer de retiro, que resuelve
-     * {@link #autoconfirmarRetirosPorSuspension}.
+     * {@link #autoconfirmarRetirosPorSuspension}. Cada pedido se toma con {@link #bloquearParaActualizar} (en id
+     * ascendente) y se vuelve a validar su estado: uno que el comercio, el Cliente o un proceso acaba de resolver
+     * se salta sin escribir nada.
      */
     public void cancelarPedidosPorSuspensionComercio(Integer comercioId) {
-        List<Pedido> activos = pedidoRepository.findByComercioIdAndEstadoIn(comercioId,
+        List<Integer> activos = pedidoRepository.findIdsByComercioIdAndEstadoIn(comercioId,
                 List.of(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, EstadoPedido.EN_PREPARACION));
-        for (Pedido pedido : activos) {
+        for (Integer pedidoId : activos) {
+            Pedido pedido = bloquearParaActualizar(pedidoId);
+            if (pedido.getEstado() != EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO && pedido.getEstado() != EstadoPedido.EN_PREPARACION) {
+                continue;
+            }
             pedido.setEstado(EstadoPedido.CANCELADO_POR_SISTEMA);
             pedido.setCanceladoPor(CanceladoPor.SISTEMA);
             pedidoRepository.save(pedido);
@@ -496,26 +555,65 @@ public class PedidoService {
             notificarCancelacionSistema(pedido, "el comercio fue suspendido");
         }
 
-        List<Pedido> listosParaRetirar = pedidoRepository.findByComercioIdAndEstado(comercioId, EstadoPedido.LISTO_PARA_RETIRAR);
-        LocalDateTime expira = LocalDateTime.now().plusMinutes(timeoutProperties.getRetiroSuspensionMinutos());
-        for (Pedido pedido : listosParaRetirar) {
-            pedido.setSuspensionRetiroExpira(expira);
+        List<Integer> listosParaRetirar = pedidoRepository.findIdsByComercioIdAndEstadoIn(comercioId,
+                List.of(EstadoPedido.LISTO_PARA_RETIRAR));
+        for (Integer pedidoId : listosParaRetirar) {
+            Pedido pedido = bloquearParaActualizar(pedidoId);
+            if (pedido.getEstado() != EstadoPedido.LISTO_PARA_RETIRAR) {
+                continue;
+            }
+            pedido.setSuspensionRetiroExpira(LocalDateTime.now().plusMinutes(timeoutProperties.getRetiroSuspensionMinutos()));
             pedidoRepository.save(pedido);
         }
     }
 
-    /** Job 1: expiración de pago — {@code PENDIENTE_PAGO} sin confirmar tras el umbral configurado. */
+    /**
+     * Los 4 procesos automáticos eligen sin bloqueo los ids candidatos y resuelven cada pedido en su propia
+     * transacción corta ({@link #enTransaccionPorPedido}): bloquean el pedido, vuelven a validar el estado y la
+     * condición de tiempo con el pedido ya bloqueado y recién entonces escriben. Un pedido que otra transacción
+     * (el comercio, el Cliente, el webhook de pago) resolvió entre la lectura de los ids y el bloqueo se salta; el
+     * aviso y el reembolso salen solo de la transición que ganó. La hora de la decisión se lee con el
+     * {@link Supplier} después del bloqueo; las pruebas pasan una hora fija. Un pedido que falla no frena a los
+     * demás. {@code SUPPORTS}: no abren una transacción propia (la abre cada pedido).
+     */
+    @Transactional(propagation = Propagation.SUPPORTS)
     public void expirarPagosVencidos() {
-        LocalDateTime corte = LocalDateTime.now().minusMinutes(timeoutProperties.getPagoMinutos());
-        List<Pedido> vencidos = pedidoRepository.findByEstadoAndFechaCreacionBefore(EstadoPedido.PENDIENTE_PAGO, corte);
-        for (Pedido pedido : vencidos) {
-            pedido.setEstado(EstadoPedido.CANCELADO_POR_SISTEMA);
-            pedido.setCanceladoPor(CanceladoPor.SISTEMA);
-            pedido.setMotivo(pedido.getPagoEstado() == EstadoPagoPedido.RECHAZADO ? "Pago rechazado" : "Pago no confirmado");
-            pedidoRepository.save(pedido);
-            registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.TIMEOUT_PAGO);
-            notificarCancelacionSistema(pedido, "no se confirmó el pago a tiempo");
+        expirarPagosVencidos(LocalDateTime::now);
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public void expirarPagosVencidos(LocalDateTime ahora) {
+        expirarPagosVencidos(() -> ahora);
+    }
+
+    /** Job 1: expiración de pago — {@code PENDIENTE_PAGO} sin confirmar tras el umbral configurado. */
+    private void expirarPagosVencidos(Supplier<LocalDateTime> reloj) {
+        LocalDateTime corteInicial = reloj.get().minusMinutes(timeoutProperties.getPagoMinutos());
+        for (Integer pedidoId : pedidoRepository.findIdsByEstadoAndFechaCreacionBefore(EstadoPedido.PENDIENTE_PAGO, corteInicial)) {
+            enTransaccionPorPedido("expirarPagosVencidos", pedidoId, () -> {
+                Pedido pedido = bloquearParaActualizar(pedidoId);
+                LocalDateTime corte = reloj.get().minusMinutes(timeoutProperties.getPagoMinutos());
+                if (pedido.getEstado() != EstadoPedido.PENDIENTE_PAGO || !pedido.getFechaCreacion().isBefore(corte)) {
+                    return;
+                }
+                pedido.setEstado(EstadoPedido.CANCELADO_POR_SISTEMA);
+                pedido.setCanceladoPor(CanceladoPor.SISTEMA);
+                pedido.setMotivo(pedido.getPagoEstado() == EstadoPagoPedido.RECHAZADO ? "Pago rechazado" : "Pago no confirmado");
+                pedidoRepository.save(pedido);
+                registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.TIMEOUT_PAGO);
+                notificarCancelacionSistema(pedido, "no se confirmó el pago a tiempo");
+            });
         }
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public void avisar75MinYAutoconfirmar() {
+        avisar75MinYAutoconfirmar(LocalDateTime::now);
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public void avisar75MinYAutoconfirmar(LocalDateTime ahora) {
+        avisar75MinYAutoconfirmar(() -> ahora);
     }
 
     /**
@@ -524,71 +622,116 @@ public class PedidoService {
      * {@code autoconfirmacionEnCaminoMinutos}, si nadie confirmó, autoconfirma {@code ENTREGADO}
      * (T8). Mismo cron para las dos cosas — confirmado con Diego.
      */
-    public void avisar75MinYAutoconfirmar() {
-        LocalDateTime ahora = LocalDateTime.now();
-        for (Pedido pedido : pedidoRepository.findByEstado(EstadoPedido.EN_CAMINO)) {
-            LocalDateTime entradaEnCamino = obtenerFechaEntradaAEstado(pedido, EstadoPedido.EN_CAMINO);
-            if (entradaEnCamino == null) {
-                continue;
-            }
-            long minutosTranscurridos = Duration.between(entradaEnCamino, ahora).toMinutes();
+    private void avisar75MinYAutoconfirmar(Supplier<LocalDateTime> reloj) {
+        for (Integer pedidoId : pedidoRepository.findIdsByEstado(EstadoPedido.EN_CAMINO)) {
+            enTransaccionPorPedido("avisar75MinYAutoconfirmar", pedidoId, () -> {
+                Pedido pedido = bloquearParaActualizar(pedidoId);
+                if (pedido.getEstado() != EstadoPedido.EN_CAMINO) {
+                    return;
+                }
+                LocalDateTime entradaEnCamino = obtenerFechaEntradaAEstado(pedido, EstadoPedido.EN_CAMINO);
+                if (entradaEnCamino == null) {
+                    return;
+                }
+                long minutosTranscurridos = Duration.between(entradaEnCamino, reloj.get()).toMinutes();
 
-            if (minutosTranscurridos >= timeoutProperties.getAutoconfirmacionEnCaminoMinutos()) {
-                marcarEntregado(pedido, FuenteEntrega.SISTEMA);
-                registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.TIMEOUT_ENTREGA);
-                notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
-                        "Tu pedido #" + pedido.getId()
-                                + " fue autoconfirmado como entregado. Si no lo recibiste, podés iniciar un reclamo o contactar al comercio.",
-                        TipoNotificacion.PEDIDO_AUTOCONFIRMADO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
-            } else if (!pedido.isPrimerAvisoEmitido() && minutosTranscurridos >= timeoutProperties.getAvisoEnCaminoMinutos()) {
-                pedido.setPrimerAvisoEmitido(true);
-                pedidoRepository.save(pedido);
-                notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
-                        "Tu pedido #" + pedido.getId() + " está en camino hace un buen rato. Confirmá la recepción cuando llegue.",
-                        TipoNotificacion.AVISO_75MIN_SIN_CONFIRMACION, TipoEntidadNotificacion.PEDIDO, pedido.getId());
-            }
+                if (minutosTranscurridos >= timeoutProperties.getAutoconfirmacionEnCaminoMinutos()) {
+                    marcarEntregado(pedido, FuenteEntrega.SISTEMA);
+                    registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.TIMEOUT_ENTREGA);
+                    notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
+                            "Tu pedido #" + pedido.getId()
+                                    + " fue autoconfirmado como entregado. Si no lo recibiste, podés iniciar un reclamo o contactar al comercio.",
+                            TipoNotificacion.PEDIDO_AUTOCONFIRMADO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
+                } else if (!pedido.isPrimerAvisoEmitido() && minutosTranscurridos >= timeoutProperties.getAvisoEnCaminoMinutos()) {
+                    pedido.setPrimerAvisoEmitido(true);
+                    pedidoRepository.save(pedido);
+                    notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
+                            "Tu pedido #" + pedido.getId() + " está en camino hace un buen rato. Confirmá la recepción cuando llegue.",
+                            TipoNotificacion.AVISO_75MIN_SIN_CONFIRMACION, TipoEntidadNotificacion.PEDIDO, pedido.getId());
+                }
+            });
         }
     }
 
-    /** Job 3: {@code PENDIENTE_CONFIRMACION_COMERCIO} sin respuesta del comercio tras el umbral configurado -> {@code EXPIRADO}. */
+    @Transactional(propagation = Propagation.SUPPORTS)
     public void expirarPedidosSinRespuestaComercio() {
-        LocalDateTime ahora = LocalDateTime.now();
-        for (Pedido pedido : pedidoRepository.findByEstado(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO)) {
-            LocalDateTime entradaPendiente = obtenerFechaEntradaAEstado(pedido, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO);
-            if (entradaPendiente == null
-                    || Duration.between(entradaPendiente, ahora).toMinutes() < timeoutProperties.getRespuestaComercioMinutos()) {
-                continue;
-            }
+        expirarPedidosSinRespuestaComercio(LocalDateTime::now);
+    }
 
-            pedido.setEstado(EstadoPedido.EXPIRADO);
-            pedido.setCanceladoPor(CanceladoPor.SISTEMA);
-            pedidoRepository.save(pedido);
-            registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.TIMEOUT_RESPUESTA_COMERCIO);
-            reembolsoService.procesarReembolsoTotal(pedido, MotivoNotaCredito.EXPIRACION_SIN_RESPUESTA);
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public void expirarPedidosSinRespuestaComercio(LocalDateTime ahora) {
+        expirarPedidosSinRespuestaComercio(() -> ahora);
+    }
 
-            notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
-                    "El comercio no respondió en " + timeoutProperties.getRespuestaComercioMinutos() + " minutos tu pedido #" + pedido.getId()
-                            + ". Se canceló y estamos gestionando la devolución de tu pago; podés ver su estado en el detalle del pedido.",
-                    TipoNotificacion.PEDIDO_EXPIRADO_CLIENTE, TipoEntidadNotificacion.PEDIDO, pedido.getId());
-            notificacionService.crear(pedido.getComercio().getDueno().getPersonaJuridica().getPersona().getUsuario().getId(),
-                    "El pedido #" + pedido.getId() + " expiró por falta de respuesta.",
-                    TipoNotificacion.PEDIDO_EXPIRADO_COMERCIO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
+    /** Job 3: {@code PENDIENTE_CONFIRMACION_COMERCIO} sin respuesta del comercio tras el umbral configurado -> {@code EXPIRADO}. */
+    private void expirarPedidosSinRespuestaComercio(Supplier<LocalDateTime> reloj) {
+        for (Integer pedidoId : pedidoRepository.findIdsByEstado(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO)) {
+            enTransaccionPorPedido("expirarPedidosSinRespuestaComercio", pedidoId, () -> {
+                Pedido pedido = bloquearParaActualizar(pedidoId);
+                if (pedido.getEstado() != EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO) {
+                    return;
+                }
+                LocalDateTime entradaPendiente = obtenerFechaEntradaAEstado(pedido, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO);
+                if (entradaPendiente == null
+                        || Duration.between(entradaPendiente, reloj.get()).toMinutes() < timeoutProperties.getRespuestaComercioMinutos()) {
+                    return;
+                }
+
+                pedido.setEstado(EstadoPedido.EXPIRADO);
+                pedido.setCanceladoPor(CanceladoPor.SISTEMA);
+                pedidoRepository.save(pedido);
+                registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.TIMEOUT_RESPUESTA_COMERCIO);
+                reembolsoService.procesarReembolsoTotal(pedido, MotivoNotaCredito.EXPIRACION_SIN_RESPUESTA);
+
+                notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
+                        "El comercio no respondió en " + timeoutProperties.getRespuestaComercioMinutos() + " minutos tu pedido #" + pedido.getId()
+                                + ". Se canceló y estamos gestionando la devolución de tu pago; podés ver su estado en el detalle del pedido.",
+                        TipoNotificacion.PEDIDO_EXPIRADO_CLIENTE, TipoEntidadNotificacion.PEDIDO, pedido.getId());
+                notificacionService.crear(pedido.getComercio().getDueno().getPersonaJuridica().getPersona().getUsuario().getId(),
+                        "El pedido #" + pedido.getId() + " expiró por falta de respuesta.",
+                        TipoNotificacion.PEDIDO_EXPIRADO_COMERCIO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
+            });
         }
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public void autoconfirmarRetirosPorSuspension() {
+        autoconfirmarRetirosPorSuspension(LocalDateTime::now);
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public void autoconfirmarRetirosPorSuspension(LocalDateTime ahora) {
+        autoconfirmarRetirosPorSuspension(() -> ahora);
     }
 
     /**
      * Job 4: {@code LISTO_PARA_RETIRAR} cuyo timer de suspensión venció -> autoconfirma
      * {@code ENTREGADO}, sin reembolso (ver diccionario: {@code fuente_entrega = SISTEMA}).
      */
-    public void autoconfirmarRetirosPorSuspension() {
-        for (Pedido pedido : pedidoRepository.findByEstadoAndSuspensionRetiroExpiraLessThan(
-                EstadoPedido.LISTO_PARA_RETIRAR, LocalDateTime.now())) {
-            marcarEntregado(pedido, FuenteEntrega.SISTEMA);
-            registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.TIMEOUT_RETIRO_SUSPENSION);
+    private void autoconfirmarRetirosPorSuspension(Supplier<LocalDateTime> reloj) {
+        for (Integer pedidoId : pedidoRepository.findIdsByEstadoAndSuspensionRetiroExpiraLessThan(
+                EstadoPedido.LISTO_PARA_RETIRAR, reloj.get())) {
+            enTransaccionPorPedido("autoconfirmarRetirosPorSuspension", pedidoId, () -> {
+                Pedido pedido = bloquearParaActualizar(pedidoId);
+                if (pedido.getEstado() != EstadoPedido.LISTO_PARA_RETIRAR || pedido.getSuspensionRetiroExpira() == null
+                        || !pedido.getSuspensionRetiroExpira().isBefore(reloj.get())) {
+                    return;
+                }
+                marcarEntregado(pedido, FuenteEntrega.SISTEMA);
+                registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.TIMEOUT_RETIRO_SUSPENSION);
 
-            notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
-                    "Tu pedido #" + pedido.getId() + " se cerró automáticamente: el comercio está suspendido y venció el plazo de retiro.",
-                    TipoNotificacion.PEDIDO_CERRADO_TIMER_SUSPENSION, TipoEntidadNotificacion.PEDIDO, pedido.getId());
+                notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
+                        "Tu pedido #" + pedido.getId() + " se cerró automáticamente: el comercio está suspendido y venció el plazo de retiro.",
+                        TipoNotificacion.PEDIDO_CERRADO_TIMER_SUSPENSION, TipoEntidadNotificacion.PEDIDO, pedido.getId());
+            });
+        }
+    }
+
+    private void enTransaccionPorPedido(String proceso, Integer pedidoId, Runnable accion) {
+        try {
+            new TransactionTemplate(transactionManager).executeWithoutResult(status -> accion.run());
+        } catch (RuntimeException ex) {
+            log.error("El proceso {} falló para el pedidoId={}; sigue con los demás", proceso, pedidoId, ex);
         }
     }
 

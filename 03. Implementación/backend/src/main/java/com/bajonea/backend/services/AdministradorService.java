@@ -310,6 +310,8 @@ public class AdministradorService {
         Administrador administrador = administradorRepository.findById(administradorId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Administrador no encontrado"));
 
+        comercioService.duenoBloqueadoConBloqueo(comercio.getDueno().getId());
+
         EstadoComercio estadoOrigen = comercio.getEstado();
         comercio.setEstado(EstadoComercio.SUSPENDIDO);
         comercio.setFechaModificacion(LocalDateTime.now());

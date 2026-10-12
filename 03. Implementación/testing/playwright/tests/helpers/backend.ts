@@ -476,8 +476,8 @@ export async function marcarAptoVenta(request: APIRequestContext, comercioId: nu
   }
 }
 
-export async function confirmarPagoTest(request: APIRequestContext, pedidoId: number): Promise<void> {
-  const { status, body } = await apiPut(request, `/test/pedidos/${pedidoId}/pago-aprobado`, {});
+export async function confirmarPagoTest(request: APIRequestContext, pedidoId: number, registrarPago = false): Promise<void> {
+  const { status, body } = await apiPut(request, `/test/pedidos/${pedidoId}/pago-aprobado${registrarPago ? '?registrarPago=true' : ''}`, {});
   if (status !== 200) {
     throw new Error(`No se pudo confirmar el pago del pedido ${pedidoId}: ${status} ${JSON.stringify(body)}`);
   }

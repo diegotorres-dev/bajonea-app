@@ -4,6 +4,8 @@
 
 Este documento se escribe **antes** de construir los Services de la Fase 8 en adelante, para que las decisiones de concurrencia/transacciones de cada Service se tomen con este análisis ya hecho, no como ocurrencia tardía.
 
+> **Actualización 2026-10-12 (tramo E3, bloque A0): ya no se asume un solo operador.** Con el rol Empleado, un mismo pedido puede ser tocado a la vez por el Dueño, por uno o más Empleados, por el Cliente y por los procesos automáticos. Los criterios "No" de las filas del módulo Pedido que se justificaban con "un solo Comercio operando" dejaron de valer: ver la sección 5bis, que reemplaza a esas filas, y el **orden global de bloqueos** que cierra el documento.
+
 ---
 
 ## Criterio general para decidir "¿se implementa ahora?"
@@ -62,10 +64,42 @@ Este documento se escribe **antes** de construir los Services de la Fase 8 en ad
 
 | Escenario | Riesgo si no se trata | Estrategia elegida | Justificación | ¿Se implementa en este MVP? |
 |---|---|---|---|---|
-| Doble aceptación/rechazo casi simultáneo de un mismo `Pedido` por el Comercio (dos pestañas, doble click en "Aceptar") | Mismo patrón que la aprobación de comercio (§2): ambas requests leen `estado = PENDIENTE`, la segunda sobrescribe el resultado de la primera, se disparan notificaciones contradictorias al Cliente (`PEDIDO_ACEPTADO` seguido de `PEDIDO_RECHAZADO` o viceversa). | Validar `estado == PENDIENTE` dentro de la misma transacción antes de mutar, mismo patrón que §2 — parte del diseño normal de `PedidoService`, sin lock pesimista agregado. | Mismo razonamiento que la aprobación de comercio: un solo Comercio de prueba operando manualmente, colisión de impacto acotado y fácilmente detectable en la revisión del estado final. | **No** se agrega lock explícito — el chequeo de estado se implementa como parte normal del Service (Fase 9), no como mitigación extra. |
+| Doble aceptación/rechazo casi simultáneo de un mismo `Pedido` por el Comercio (dos pestañas, doble click en "Aceptar") | **Reemplazada por la sección 5bis (2026-10-12).** Con varios operadores el chequeo de estado sin lock deja de alcanzar: dos personas que aprietan "Aceptar" y "Rechazar" a la vez dejaban el pedido `RECHAZADO` con el aviso "aceptado" ya enviado, un historial doble y un reembolso disparado. | Lock pesimista sobre el pedido en toda transición de estado, con el estado vuelto a validar después del lock. Ver 5bis. | Ya no hay un solo Comercio operando. | **Sí — implementado en el bloque A0 de E3.** |
 | `Pedido.precio`/`DetallePedido.precio_unitario` inconsistente si el `Producto.precio` cambia entre que el Cliente arma el carrito y confirma el pedido | Ninguno real — el precio se **congela** en `DetallePedido` al confirmar el pedido (ya documentado en `modelo-mvp.md`, tabla `producto`: "el precio se congela en `detalle_pedido.precio_unitario` al confirmar el pedido"). No hay ventana de inconsistencia: se lee el precio vigente una sola vez, en el momento de la confirmación, y se persiste como snapshot inmutable. | — | Ya resuelto por diseño desde la Fase 2 (modelo de datos), no es una decisión de concurrencia pendiente. | **No aplica** — ya resuelto por diseño. |
 
 ---
+
+## 5bis. Pedido con varios operadores — tramo E3, bloque A0 (2026-10-12), implementado
+
+**Qué cambió respecto de la sección 5.** Ninguna acción de pedido tomaba un bloqueo y `Pedido` no tiene `@Version`. Con el Dueño y los Empleados operando el mismo comercio, con el Cliente cancelando o confirmando la entrega y con los cuatro procesos automáticos corriendo cada 1 o 5 minutos, ese supuesto ya no es válido.
+
+**Regla.** Toda transición de estado de un pedido existente pasa por `PedidoService.bloquearParaActualizar(pedidoId, actorUsuarioId)`, que hace tres cosas en este orden: (1) toma con `LOCK IN SHARE MODE` las filas de los usuarios involucrados —quien actúa, el Cliente del pedido y el usuario del Dueño—, en id ascendente (`UsuarioRepository.leerIdConBloqueoCompartido`); (2) toma la fila del pedido con `SELECT ... FOR UPDATE` y vuelve a hidratarla (`entityManager.refresh(pedido, PESSIMISTIC_WRITE)`, porque con `open-in-view` una consulta con lock no refresca una entidad ya cargada); (3) devuelve el pedido. Recién entonces quien llamó **vuelve a validar el estado** (`409` con los mismos textos de siempre si ya cambió), calcula la hora de la operación y escribe historial, avisos y reembolso. La que llega segunda ve el estado ya cambiado: no escribe nada.
+
+**Inventario de transiciones cubiertas.**
+
+| Transición | Quién la dispara | Estados | Cómo se serializa |
+|---|---|---|---|
+| Aceptar, rechazar, despachar, entregar, anular | Dueño (y Empleado, desde E3) | `PENDIENTE_CONFIRMACION_COMERCIO`, `EN_PREPARACION`, `LISTO_PARA_RETIRAR` | `obtenerPedidoDelComercioParaActualizar`: pertenencia sin lock, después `bloquearParaActualizar` |
+| Cancelar, confirmar entrega | Cliente | `PENDIENTE_CONFIRMACION_COMERCIO`, `EN_PREPARACION`, `EN_CAMINO` | `obtenerPedidoDelClienteParaActualizar` |
+| Confirmar pago aprobado, marcar pago rechazado | Webhook, sincronización y atajo de test | `PENDIENTE_PAGO` | `aplicarResultadoPago` ya bloqueaba el pedido; ahora además `confirmarPagoAprobado` y `marcarPagoRechazado` lo bloquean por su cuenta (el atajo de test no pasaba por el bloqueo) |
+| Vencimiento del pago | Proceso, cada 60 s | `PENDIENTE_PAGO` → `CANCELADO_POR_SISTEMA` | Ids sin lock y una transacción corta por pedido que lo bloquea y revalida estado y fecha |
+| Aviso de 75 minutos y autoconfirmación de 90 | Proceso, cada 60 s | `EN_CAMINO` → `ENTREGADO` | Ídem; revalida también `primerAvisoEmitido` |
+| Expiración sin respuesta del comercio | Proceso, cada 5 min | `PENDIENTE_CONFIRMACION_COMERCIO` → `EXPIRADO` | Ídem; el reembolso se registra `afterCommit` solo si esa transacción gana |
+| Retiro vencido por suspensión | Proceso, cada 5 min | `LISTO_PARA_RETIRAR` → `ENTREGADO` | Ídem |
+| Cancelación por suspensión del comercio | Administrador | `PENDIENTE_CONFIRMACION_COMERCIO`, `EN_PREPARACION`, y el plazo de los `LISTO_PARA_RETIRAR` | `AdministradorService.suspenderComercio` toma primero el usuario del Dueño; por cada pedido (id ascendente) se hace `bloquearParaActualizar` y se revalida; uno que ya cambió se salta |
+| Crear el pedido | Cliente | (nace en `PENDIENTE_PAGO`) | Primero el usuario del Cliente, después el comercio con `LOCK IN SHARE MODE` (sin cambios), después el insert |
+
+Los cuatro procesos pasaron a una transacción **por pedido** (`TransactionTemplate`; los métodos públicos son `SUPPORTS` para no abrir una transacción grande): un pedido que falla se registra en el log y no frena a los demás, y ninguna transacción de un proceso acumula bloqueos de varios pedidos. Cada proceso acepta la hora a usar (`expirarPagosVencidos(LocalDateTime)`, etc.) para que las pruebas no dependan del reloj, y con `pedido.jobs.habilitado=false` (perfil `test`) no corren solos.
+
+**Reembolso y avisos solo de la transición ganadora.** Todo lo que sale de una transición se escribe dentro de su transacción (historial, avisos) o se difiere a `afterCommit` (la llamada a Mercado Pago de `rechazar`, de la expiración y de la suspensión), así que una transición que pierde la carrera —que lanza `409` antes de escribir o, en un proceso, sale sin hacer nada— no deja ni un aviso, ni una fila de historial, ni un pedido de reembolso.
+
+**Anular: la nota de crédito nace en la misma transacción del cambio de estado.** `ReembolsoService.generarNotaYReembolsarTotal` (que exige una transacción abierta con el pedido ya bloqueado) crea la `NotaCredito` por el total pagado (`PENDIENTE`, o `PENDIENTE_REVISION_MANUAL` si la cuenta de Mercado Pago está desvinculada, que es lo que muestra la pantalla de reembolsos del Administrador) y registra para después del commit solo la llamada a Mercado Pago. Si no se puede escribir la nota, el pedido no queda `ANULADO`. Un pedido sin pago aprobado y confirmado (algo que en producción no ocurre en `EN_PREPARACION`, pero sí con el atajo de test que confirma el pago sin registrarlo) se anula igual, sin nota y sin prometer una devolución en el aviso.
+
+**Por qué no hay una restricción única en la base.** `nota_credito` es N:1 con `pago` desde `V2` (la restricción `uq_nota_credito_pago` se eliminó a propósito para el reembolso parcial por ítem que viene después), y un `UNIQUE (pago_id, motivo)` impediría dos reembolsos parciales del mismo motivo. La garantía de "nunca dos notas para el mismo pedido" sale del lock del pedido (la segunda anulación ve `ANULADO` y responde `409` antes de llegar a la nota) más una segunda defensa: `prepararIntento` no crea otra nota si el monto ya cubierto del pago alcanza al monto pagado. Probada con seis anulaciones simultáneas (Java, Playwright y el estrés).
+
+**Qué sigue sin reembolso:** `cancelarPedido` del Cliente conserva su `TODO` (la cancelación del Cliente es otro tramo). `rechazar`, la expiración y la suspensión siguen creando la nota **después** del commit y, por eso, la respuesta HTTP de `rechazar` todavía no trae el estado del reembolso (la de `anular` sí). Ver `docs/DECISIONES.md`, 2026-10-12.
+
+**Pruebas.** `PedidoServiceCarreraTest` (14, con repositorios simulados: orden de los bloqueos y que la perdedora no escribe nada, en las acciones y en los procesos), `PedidoTransicionesIntegrationTest` (13, contra `bajonea_test` con hilos y datos confirmados; sin el lock fallan 7), spec 39 de Playwright, carpeta 58 de Newman y `stress-locks-tramoE3-A0.mjs` (8 escenarios, incluido el cruce con el login del Dueño y con la suspensión del comercio).
 
 ## 6. Módulo Notificación — Fase 8/12, a construir
 
@@ -98,9 +132,23 @@ Es el único caso de este documento que cumple el criterio "Sí" (código ya exi
 Lista priorizada, de mayor a menor urgencia real (no de facilidad de implementación):
 
 1. **Idempotencia del webhook de MercadoPago** (§7) — primero, porque es el único riesgo de este documento donde el disparador de la colisión es una garantía del proveedor, no del volumen de usuarios. Con dinero real involucrado, es el de mayor costo de no tratarlo.
-2. **Chequeo de estado + lock optimista (`@Version`) en `Pedido` y `Comercio`** (§2 y §5) — para que la aprobación/rechazo y la aceptación/rechazo de pedidos no dependan solo del chequeo de estado en el Service, sino que además fallen de forma explícita (`OptimisticLockException` → 409) ante una escritura concurrente real, en vez de que la segunda escritura gane silenciosamente.
+2. ~~**Chequeo de estado + lock optimista (`@Version`) en `Pedido` y `Comercio`**~~ — para `Pedido` quedó resuelto el 2026-10-12 (§5bis) con lock pesimista, coherente con el resto del proyecto y sin necesidad de `@Version`; sigue pendiente para la aprobación y el rechazo de `Comercio` (§2).
 3. **Lock optimista (`@Version`) en `Token`** (§1) — para que el doble uso de un token de un solo uso quede explícitamente rechazado en vez de ejecutarse dos veces de forma silenciosa.
 4. **Validación transaccional del límite de imágenes en `Producto`** (§3) — `COUNT` con lock o `@Version`, para que agregar imágenes desde dos requests concurrentes no pueda superar las 5.
 5. **Regla "un comercio a la vez" en `Carrito` con verificación atómica** (§4) — una vez que el módulo exista y haya usuarios reales concurrentes, no solo un evaluador.
 
 Los escenarios marcados como "No aplica" (stock numérico, precio congelado, notificaciones idempotentes) no entran a esta lista porque no representan una decisión de concurrencia pendiente — son casos ya resueltos por el propio diseño del modelo de datos.
+
+---
+
+## Orden global de bloqueos (vigente desde 2026-10-12)
+
+Toda transacción que toma más de un bloqueo los toma en este orden, y ninguna pide uno "hacia atrás". Las reglas detalladas y los deadlocks reales que las originaron están en `docs/APRENDIZAJES-TECNICOS.md`.
+
+1. **`usuario`** (compartido, `LOCK IN SHARE MODE`; ascendente por id si son varios): quien actúa, el Cliente del pedido y el usuario del Dueño. Lo toma antes que cualquier otra fila quien va a escribir una fila con clave foránea a un usuario (historial, aviso, nota) y además va a bloquear otra fila. El login y el bloqueo de cuenta toman el usuario con `FOR UPDATE` y después, solo en el Dueño, los comercios.
+2. **`dueno`**, después **`cuenta_mercado_pago`** (alta adicional, aprobación, vinculación y desvinculación).
+3. **`comercio`** (cerrar y abrir, aprobar, vincular, desvincular, suspender, bloqueo de cuenta). Las acciones de pedido **no** bloquean el comercio: leen su estado sin lock.
+4. **`pedido`** (`FOR UPDATE`). La desvinculación de Mercado Pago los lee con bloqueo compartido y la suspensión los toma uno por uno, siempre después del comercio.
+5. **`pago`** (`FOR UPDATE`, para reembolsar) y recién después los inserts: **`nota_credito`**, **`historial_estado_pedido`**, **`notificacion`**.
+
+Por qué los usuarios van antes que el pedido: en InnoDB un pedido de bloqueo compartido que llega detrás de un `FOR UPDATE` ya en espera se encola. Si una acción del comercio tuviera el pedido y pidiera después el usuario del Cliente, y el Cliente estuviera haciendo login (`FOR UPDATE` sobre su usuario, esperando que otra transacción suelte el compartido) mientras esa otra transacción —la cancelación del mismo Cliente— espera el pedido, el ciclo se cierra sin que nadie haya hecho nada incorrecto (razonado sobre el orden de la cola de InnoDB, no reproducido: se evitó). Con los usuarios tomados primero, quien tiene el pedido ya no necesita esperar nada más. Cuando el destinatario de un aviso no se conoce antes de entrar a la transacción (el fan-out a los Empleados del tramo E3, bloque A4), esos usuarios también se toman antes del pedido, en el mismo orden ascendente.

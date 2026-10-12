@@ -95,9 +95,21 @@ public class TestController {
     }
 
     @PutMapping("/pedidos/{id}/pago-aprobado")
-    public ResponseEntity<ApiResponse<Void>> confirmarPagoAprobado(@PathVariable Integer id) {
-        testSupportService.confirmarPagoAprobado(id);
+    public ResponseEntity<ApiResponse<Void>> confirmarPagoAprobado(@PathVariable Integer id,
+            @RequestParam(defaultValue = "false") boolean registrarPago) {
+        if (registrarPago) {
+            testSupportService.confirmarPagoAprobadoConRegistro(id);
+        } else {
+            testSupportService.confirmarPagoAprobado(id);
+        }
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pago del pedido confirmado", null));
+    }
+
+    @PostMapping("/jobs/pedidos/{nombre}")
+    public ResponseEntity<ApiResponse<Void>> ejecutarProcesoDePedidos(@PathVariable String nombre,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime ahora) {
+        testSupportService.ejecutarProcesoDePedidos(nombre, ahora);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Proceso de pedidos ejecutado", null));
     }
 
     @GetMapping("/invitaciones-empleado/codigo")

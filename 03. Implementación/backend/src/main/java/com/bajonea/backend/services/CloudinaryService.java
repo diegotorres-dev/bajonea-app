@@ -58,6 +58,10 @@ public class CloudinaryService {
 
     private static final String UPLOAD_PRESET = "bajonea_imagenes_mvp";
 
+    private static final String MENSAJE_FOTO_INVALIDA = "La foto de perfil no es válida. Subila de nuevo desde el formulario.";
+
+    private static final String MENSAJE_IMAGEN_INVALIDA = "La imagen no es válida. Subila de nuevo desde el formulario.";
+
     private final Cloudinary cloudinary;
     private final ImagenProductoRepository imagenProductoRepository;
 
@@ -119,18 +123,32 @@ public class CloudinaryService {
      * {@code PUT /comercios/perfil/foto}.
      */
     public void validarFotoPerfilComercio(Integer comercioId, String url) {
-        validarUrlEnCarpeta("comercios/" + comercioId + "/perfil/", url);
+        validarUrlEnCarpeta("comercios/" + comercioId + "/perfil/", url, MENSAJE_FOTO_INVALIDA);
+    }
+
+    /**
+     * La URL de una imagen de la galería de un producto (alta, reemplazo o recorte) tiene que ser de esta cuenta de
+     * Cloudinary y estar dentro de {@code productos/{comercioId}/{productoId}/}, la carpeta que firman
+     * {@link #generarFirmaImagenProducto} y {@link #generarFirmaRecorteImagen}. Evita que se use una imagen de otro
+     * comercio, de otro producto o de cualquier otra carpeta.
+     */
+    public void validarImagenProducto(Integer comercioId, Integer productoId, String url) {
+        validarUrlEnCarpeta("productos/" + comercioId + "/" + productoId + "/", url, MENSAJE_IMAGEN_INVALIDA);
     }
 
     private void validarUrlEnCarpeta(String carpetaEsperada, String url) {
+        validarUrlEnCarpeta(carpetaEsperada, url, MENSAJE_FOTO_INVALIDA);
+    }
+
+    private void validarUrlEnCarpeta(String carpetaEsperada, String url, String mensaje) {
         String prefijo = "https://res.cloudinary.com/" + cloudName + "/image/upload/";
         if (url == null || !url.startsWith(prefijo)) {
-            throw new ValidacionException("La foto de perfil no es válida. Subila de nuevo desde el formulario.");
+            throw new ValidacionException(mensaje);
         }
         String resto = url.substring(prefijo.length());
         Pattern carpeta = Pattern.compile("^(v\\d+/)?" + Pattern.quote(carpetaEsperada) + "[^/]+$");
         if (!carpeta.matcher(resto).matches()) {
-            throw new ValidacionException("La foto de perfil no es válida. Subila de nuevo desde el formulario.");
+            throw new ValidacionException(mensaje);
         }
     }
 

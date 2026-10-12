@@ -1316,7 +1316,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await capturar(page, 'g-perfil-cliente-con-cambiar-cuenta');
 
       const sinComercios = await sesionDe(request, clienteSolo);
-      const contextoDos = await browser.newContext({ viewport: { width: 375, height: 812 }, baseURL: 'http://localhost:5501' });
+      const contextoDos = await browser.newContext({ viewport: { width: 375, height: 812 }, baseURL: process.env.E2E_FRONTEND_URL || 'http://localhost:5501' });
       const otraPagina = await contextoDos.newPage();
       await abrirComoUsuarioConContexto(otraPagina, sinComercios, { contexto: { tipo: 'CLIENTE' } });
       await otraPagina.goto('/perfil.html');
@@ -1347,7 +1347,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
 
       const [ultimo] = await comerciosNuevos(request, 1);
       const unico = await crearEmpleado(request, [ultimo]);
-      const contextoDos = await browser.newContext({ viewport: { width: 375, height: 812 }, baseURL: 'http://localhost:5501' });
+      const contextoDos = await browser.newContext({ viewport: { width: 375, height: 812 }, baseURL: process.env.E2E_FRONTEND_URL || 'http://localhost:5501' });
       const otra = await contextoDos.newPage();
       await abrirComoEmpleado(otra, request, unico, ultimo);
       await otra.goto('/comercio-dashboard.html');
