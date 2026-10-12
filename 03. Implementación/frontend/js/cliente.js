@@ -1,4 +1,7 @@
-import { apiFetch, ApiError, getUsuario, clearSesion } from './api.js';
+import { apiFetch, ApiError, esContextoEmpleado, getUsuario, clearSesion } from './api.js';
+import { resolverContextoDeLaPestania, RUTA_SELECTOR_CONTEXTO, consultarComerciosDelEmpleado } from './contexto.js';
+import { abrirHojaCambiarCuenta } from './selector-contexto.js';
+import { renderBottomNavComercio } from './comercio.js';
 import { logout, construirTelefono, bindNombreUsuario } from './auth.js';
 import {
   esPasswordSegura,
@@ -217,10 +220,35 @@ export async function initPerfil() {
     return;
   }
 
+  if (usuarioSesion.rol === 'CLIENTE' && !(await resolverContextoDeLaPestania())) {
+    window.location.href = RUTA_SELECTOR_CONTEXTO;
+    return;
+  }
+
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarPerfil: false, mostrarCampana: false, centrarLogo: true });
-  renderBottomNav(document.getElementById('bottom-nav-slot'), 'perfil');
+  if (esContextoEmpleado()) {
+    renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'perfil');
+  } else {
+    renderBottomNav(document.getElementById('bottom-nav-slot'), 'perfil');
+  }
 
   document.getElementById('cerrar-sesion-link').addEventListener('click', mostrarModalConfirmarLogout);
+
+  const cambiarCuentaLink = document.getElementById('cambiar-cuenta-link');
+  cambiarCuentaLink.addEventListener('click', () => abrirHojaCambiarCuenta());
+  consultarComerciosDelEmpleado()
+    .then((comercios) => {
+      if (comercios.length > 0 || esContextoEmpleado()) {
+        cambiarCuentaLink.classList.remove('is-hidden');
+        cambiarCuentaLink.disabled = false;
+      }
+    })
+    .catch(() => {
+      if (esContextoEmpleado()) {
+        cambiarCuentaLink.classList.remove('is-hidden');
+        cambiarCuentaLink.disabled = false;
+      }
+    });
 
   const cliente = await apiFetch('/clientes/perfil');
   normalizarCampos(cliente, ['nombre', 'apellido']);

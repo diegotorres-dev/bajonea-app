@@ -305,6 +305,9 @@ test.describe('Invitación de empleado (UI), tramo E1 B2', () => {
     expect(await page.evaluate(() => sessionStorage.getItem('bajonea_aviso_invitacion'))).toBeNull();
 
     await loginUi(page, existente.nombreUsuario, existente.password);
+    await page.waitForURL('**/seleccionar-contexto.html');
+    await expect(page.getByTestId(`fila-contexto-comercio-${comercioId}`)).toContainText(comercioNombre);
+    await page.getByTestId('fila-contexto-cliente').click();
     await page.waitForURL('**/index.html');
   });
 
@@ -370,6 +373,9 @@ test.describe('Invitación de empleado (UI), tramo E1 B2', () => {
     expect(verificar.status).toBe(200);
     expect(verificar.body.data.usuario.rol).toBe('CLIENTE');
     await loginUi(page, nombreUsuario, password);
+    await page.waitForURL('**/seleccionar-contexto.html');
+    await expect(page.getByTestId('fila-contexto-cliente')).toBeVisible();
+    await page.getByTestId('fila-contexto-cliente').click();
     await page.waitForURL('**/index.html');
   });
 

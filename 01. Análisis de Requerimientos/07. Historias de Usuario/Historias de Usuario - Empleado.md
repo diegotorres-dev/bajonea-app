@@ -42,10 +42,11 @@ Cliente, y elegir desde un selector cuál estoy operando en cada momento, para t
 más de un lugar sin conflictos de sesión entre mis distintos trabajos.
 
 Criterios de aceptación adicionales:
-- El sistema recuerda el último contexto que elegí y entra directo; el selector aparece la
-  primera vez o cuando el último ya no es válido, y puedo cambiar desde el perfil sin
-  cerrar sesión.
-- Con un solo comercio entro directo a ese comercio.
+- Al iniciar sesión veo un selector con "Cliente" y mis comercios, con el último contexto
+  que usé resaltado; en una pestaña nueva con la sesión ya iniciada entro directo a ese
+  último contexto, si sigue siendo válido. Puedo cambiar desde el perfil con "Cambiar de
+  cuenta" sin cerrar sesión.
+- Si no soy Empleado de ningún comercio, entro directo como Cliente.
 - Si inicio sesión en otro dispositivo, mi sesión anterior se cierra en ambos contextos.
 
 ## HU-E03: Gestionar Productos y Pedidos del Comercio Asignado
@@ -54,7 +55,10 @@ Como Empleado activo en un comercio, quiero crear y editar productos, gestionar 
 pedidos entrantes (aceptar, rechazar, despachar, entregar y anular), ver el historial y
 las ventas, abrir y cerrar el comercio, y editar sus datos y su foto, para cumplir con mis
 tareas diarias del mismo modo que lo haría el Dueño. Recibo las notificaciones operativas
-del comercio (pedido nuevo, cancelaciones, vencimientos).
+del comercio (pedido nuevo, cancelaciones, vencimientos). En los pedidos veo lo que
+necesito para atender al cliente (ítems, subtotal, total pagado, motivo de rechazo o
+anulación y el estado del reembolso en términos simples), pero no los cargos de servicio,
+la comisión ni los datos de MercadoPago.
 
 ## HU-E04: Operar dentro de mis Permisos
 
@@ -74,10 +78,10 @@ Criterios de aceptación adicionales:
 
 Como Empleado, cuando el Dueño desactiva mi relación con un comercio puntual, quiero
 perder el acceso a ese comercio sin que se vean afectadas mis relaciones activas con otros
-comercios, y ser llevado al selector (o ver "Ya no tenés acceso a ningún comercio" con el
-botón "Entrar como Cliente" si no me queda ninguno), para seguir operando con normalidad
-en los demás lugares donde trabajo o usar la plataforma como Cliente. Recibo una
-notificación de la desactivación y mi sesión no se cierra.
+comercios, y ser llevado al selector con un aviso corto (o a mi cuenta de Cliente si no me
+queda ninguno, sin una pantalla dedicada), para seguir operando con normalidad en los demás
+lugares donde trabajo o usar la plataforma como Cliente. Recibo una notificación de la
+desactivación y mi sesión no se cierra.
 
 ## HU-E06: Renunciar a un Comercio
 

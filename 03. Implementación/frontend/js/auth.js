@@ -1,4 +1,5 @@
-import { apiFetch, ApiError, setSesion, clearSesion, consumirAvisoInvitacion } from './api.js';
+import { apiFetch, ApiError, getContextoGuardado, setSesion, setContexto, clearSesion, consumirAvisoInvitacion, TIPO_CONTEXTO } from './api.js';
+import { consultarComerciosDelEmpleado, RUTA_SELECTOR_CONTEXTO } from './contexto.js';
 import { resolverComercioActivo, destinoDeNavegacion } from './comercio-activo.js';
 import { crearInputOtp } from './otp.js';
 import { subirFotoPerfilRegistroComercio, CloudinaryUploadError } from './cloudinary.js';
@@ -65,7 +66,8 @@ function renderBannerConEnlace(slot, kind, { antes, enlace = null, despues = '' 
 
 export async function resolverHomePorRol(usuario) {
   if (usuario.rol === 'CLIENTE') {
-    return 'index.html';
+    const contexto = getContextoGuardado();
+    return contexto && contexto.tipo === TIPO_CONTEXTO.EMPLEADO ? 'comercio-dashboard.html' : 'index.html';
   }
   if (usuario.rol === 'ADMINISTRADOR') {
     return 'admin-dashboard.html';
@@ -126,6 +128,19 @@ export function initLogin() {
   }
 
   async function redirigirPostLogin(usuario) {
+    if (usuario.rol === 'CLIENTE') {
+      let comercios = [];
+      try {
+        comercios = await consultarComerciosDelEmpleado();
+      } catch {
+        comercios = [];
+      }
+      if (comercios.length > 0) {
+        window.location.href = RUTA_SELECTOR_CONTEXTO;
+        return;
+      }
+      setContexto(TIPO_CONTEXTO.CLIENTE, null, false);
+    }
     try {
       const destino = await resolverHomePorRol(usuario);
       if (destino) {

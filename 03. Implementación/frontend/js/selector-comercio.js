@@ -1,4 +1,5 @@
-import { apiFetch, getComercioActivoId, getUsuario } from './api.js';
+import { apiFetch, esContextoEmpleado, getComercioActivoId, perderAccesoAlComercio } from './api.js';
+import { exigirContextoComercio } from './contexto.js';
 import {
   activarComercio,
   contarNotificacionesNoLeidasOtros,
@@ -110,7 +111,7 @@ function pintarAvatar(contenedor, comercio) {
   contenedor.appendChild(texto);
 }
 
-function crearAvatar(comercio, modificador) {
+export function crearAvatar(comercio, modificador) {
   const avatar = crear('span', `selector-avatar selector-avatar--${modificador}`);
   pintarAvatar(avatar, comercio);
   return avatar;
@@ -137,7 +138,32 @@ export function montarFranjaComercio(slot) {
   let chipCerradoEl = null;
   let firma = '';
 
+  function construirDelEmpleado() {
+    boton = crear('div', 'comercio-franja comercio-franja--empleado');
+    boton.setAttribute('data-testid', 'franja-comercio');
+    avatarEl = crear('span', 'selector-avatar selector-avatar--franja');
+    const textos = crear('span', 'comercio-franja__textos');
+    nombreEl = crear('span', 'comercio-franja__nombre');
+    nombreEl.setAttribute('data-testid', 'franja-comercio-nombre');
+    const insignia = crear('span', 'comercio-franja__insignia');
+    insignia.setAttribute('data-testid', 'franja-comercio-insignia-empleado');
+    insignia.textContent = 'Empleado';
+    textos.appendChild(nombreEl);
+    textos.appendChild(insignia);
+    chipCerradoEl = crear('span', 'comercio-franja__chip is-hidden');
+    chipCerradoEl.setAttribute('data-testid', 'franja-comercio-chip-cerrado');
+    chipCerradoEl.textContent = ETIQUETA_CERRADO;
+    boton.appendChild(avatarEl);
+    boton.appendChild(textos);
+    boton.appendChild(chipCerradoEl);
+    slot.replaceChildren(boton);
+  }
+
   function construir() {
+    if (esContextoEmpleado()) {
+      construirDelEmpleado();
+      return;
+    }
     boton = crear('button', 'comercio-franja');
     boton.type = 'button';
     boton.setAttribute('aria-haspopup', 'dialog');
@@ -180,10 +206,14 @@ export function montarFranjaComercio(slot) {
       firma = firmaNueva;
       pintarAvatar(avatarEl, activo);
       nombreEl.textContent = activo.nombre;
-      boton.setAttribute('aria-label', `Comercio activo: ${activo.nombre}. Cambiar de comercio`);
+      if (puntitoEl) {
+        boton.setAttribute('aria-label', `Comercio activo: ${activo.nombre}. Cambiar de comercio`);
+      }
     }
     chipCerradoEl.classList.toggle('is-hidden', !mostrarChipCerrado(activo));
-    puntitoEl.classList.toggle('is-hidden', contarNotificacionesNoLeidasOtros() === 0);
+    if (puntitoEl) {
+      puntitoEl.classList.toggle('is-hidden', contarNotificacionesNoLeidasOtros() === 0);
+    }
   }
 
   actualizar();
@@ -489,21 +519,25 @@ export function enlazarMantenerApretado(elemento, alDisparar) {
   elemento.addEventListener('contextmenu', (evento) => evento.preventDefault());
 }
 
-export async function prepararPaginaDueno({ slotFranja = null } = {}) {
-  const usuario = getUsuario();
-  if (!usuario || usuario.rol !== 'DUENO') {
-    window.location.href = 'login.html';
+export async function prepararPaginaComercio({ slotFranja = null } = {}) {
+  const tipo = await exigirContextoComercio();
+  if (!tipo) {
     return null;
   }
+  const esEmpleado = tipo === 'EMPLEADO';
   if (slotFranja) {
     montarFranjaComercio(slotFranja);
   }
   const destino = await resolverComercioActivo();
-  if (destino.tipo !== 'operativo') {
+  if (destino.tipo === 'sin-acceso') {
+    perderAccesoAlComercio();
+    return null;
+  }
+  if (destino.tipo !== 'operativo' && destino.tipo !== 'empleado') {
     window.location.href = destinoDeNavegacion(destino);
     return null;
   }
-  if (slotFranja) {
+  if (slotFranja || esEmpleado) {
     iniciarPollingComercios();
   }
   return destino.comercio;

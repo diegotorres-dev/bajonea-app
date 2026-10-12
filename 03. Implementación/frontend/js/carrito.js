@@ -1,4 +1,5 @@
 import { apiFetch, ApiError, getUsuario } from './api.js';
+import { exigirContextoCliente } from './contexto.js';
 import { renderTopBar, renderBottomNav, showToast, pintarAvatarComercio, actualizarContadorCarrito } from './catalogo.js';
 import { normalizarCampos, excedeSubtotalMaximo, mensajeSubtotalMaximoExcedido } from './validators.js';
 
@@ -266,6 +267,9 @@ function renderConProductos(container, footerSlot, carrito, comercioInfo, produc
 }
 
 export async function initCarrito() {
+  if (!(await exigirContextoCliente())) {
+    return;
+  }
   const usuario = getUsuario();
   if (!usuario || usuario.rol !== 'CLIENTE') {
     window.location.href = 'login.html';

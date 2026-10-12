@@ -17,8 +17,9 @@
         <input type="file" id="input-avatar" accept="image/jpeg,image/png,image/webp" class="is-hidden" data-testid="input-foto-comercio" />
         <h2 id="perfil-nombre" data-testid="nombre-comercio-perfil"></h2>
         <p id="perfil-email" data-testid="email-comercio-perfil"></p>
+        <span class="perfil-insignia is-hidden" id="perfil-insignia-empleado" data-testid="insignia-empleado-perfil">Empleado</span>
       </div>
-      <div class="profile-section">
+      <div class="profile-section" id="seccion-mi-comercio">
         <p class="profile-section__title">Mi comercio</p>
         <div class="profile-link-list">
           <button class="profile-link" type="button" id="editar-perfil-link" data-testid="btn-editar-perfil-comercio" disabled>
@@ -44,6 +45,46 @@
           <button class="profile-link" type="button" id="cambiar-password-link" data-testid="btn-cambiar-password" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             <span>Cambiar contraseña</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="profile-section is-hidden" id="seccion-empleado-datos" data-testid="seccion-datos-comercio-empleado">
+        <p class="profile-section__title">Datos del comercio</p>
+        <div class="perfil-datos">
+          <div class="field">
+            <span class="field__label">Descripción</span>
+            <p id="empleado-descripcion" data-testid="empleado-descripcion"></p>
+          </div>
+          <div class="field">
+            <span class="field__label">Dirección</span>
+            <p id="empleado-direccion" data-testid="empleado-direccion"></p>
+          </div>
+          <div class="field">
+            <span class="field__label">Teléfono</span>
+            <p id="empleado-telefono" data-testid="empleado-telefono"></p>
+          </div>
+          <div class="field">
+            <span class="field__label">Horarios</span>
+            <div id="empleado-horarios" data-testid="empleado-horarios"></div>
+          </div>
+          <div class="field">
+            <span class="field__label">Estado</span>
+            <p id="empleado-estado" data-testid="empleado-estado"></p>
+          </div>
+        </div>
+      </div>
+      <div class="profile-section is-hidden" id="seccion-empleado-cuenta" data-testid="seccion-cuenta-empleado">
+        <p class="profile-section__title">Mi cuenta</p>
+        <div class="profile-link-list">
+          <a class="profile-link" href="perfil.html" id="mi-cuenta-link" data-testid="btn-mi-cuenta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Mi cuenta</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </a>
+          <button class="profile-link" type="button" id="cambiar-cuenta-link" data-testid="btn-cambiar-cuenta" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+            <span>Cambiar de cuenta</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
         </div>

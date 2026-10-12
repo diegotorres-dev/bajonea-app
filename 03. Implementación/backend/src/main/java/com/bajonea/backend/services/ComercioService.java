@@ -78,11 +78,16 @@ public class ComercioService {
                 comercio.getDescripcion(),
                 comercio.getFotoPerfilUrl(),
                 comercio.getTelefono(),
+                comercio.getTipoComercio(),
+                comercio.isAceptaDelivery(),
+                comercio.isAceptaRetiro(),
                 aDireccionResponseDTO(comercio),
                 horariosEntidad.stream().map(this::aResponseDTO).toList(),
                 comercio.getEstado(),
                 disponibilidad.cerradoManualmente(),
-                disponibilidad.abiertoAhora());
+                disponibilidad.abiertoAhora(),
+                disponibilidad.puedeCambiarCierre(),
+                disponibilidad.textoReapertura());
     }
 
     public ComercioResponseDTO editarPerfil(Integer comercioId, ComercioPerfilRequestDTO request) {

@@ -1,4 +1,5 @@
 import { apiFetch, ApiError, getUsuario } from './api.js';
+import { exigirContextoCliente } from './contexto.js';
 import { showToast } from './catalogo.js';
 import { crearBannerCierre, crearBotonVolverAlCatalogo, esConflictoDeCierre, estaAbiertoParaClientes } from './apertura-comercio.js';
 import { normalizarCampos } from './validators.js';
@@ -65,6 +66,9 @@ function renderAvisoCierre(slot, texto, botonAccion) {
 }
 
 export async function initCheckout() {
+  if (!(await exigirContextoCliente())) {
+    return;
+  }
   const usuario = getUsuario();
   if (!usuario || usuario.rol !== 'CLIENTE') {
     window.location.href = 'login.html';

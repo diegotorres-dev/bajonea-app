@@ -8,7 +8,6 @@ import com.bajonea.backend.dto.request.RechazoPedidoRequestDTO;
 import com.bajonea.backend.dto.response.ApiResponse;
 import com.bajonea.backend.dto.response.PagoResponseDTO;
 import com.bajonea.backend.dto.response.PedidoResponseDTO;
-import com.bajonea.backend.dto.response.ResumenPedidosHoyResponseDTO;
 import com.bajonea.backend.services.MercadoPagoPagoService;
 import com.bajonea.backend.services.PedidoService;
 import com.bajonea.backend.dto.request.SincronizarPagoRequestDTO;
@@ -93,17 +92,25 @@ public class PedidoController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pedido cancelado correctamente", response));
     }
 
+    /**
+     * Ruta delegable (ver {@code DelegacionEmpleado}): el Dueño recibe los pedidos completos y el Empleado el DTO
+     * reducido, sin cargos de servicio ni datos de Mercado Pago.
+     */
     @GetMapping("/comercio")
-    public ResponseEntity<ApiResponse<List<PedidoResponseDTO>>> listarPedidosComercio(
+    public ResponseEntity<ApiResponse<List<?>>> listarPedidosComercio(
             ComercioActivo comercio) {
-        List<PedidoResponseDTO> pedidos = pedidoService.listarPedidosComercio(comercio.comercioId());
+        List<?> pedidos = comercio.esEmpleado()
+                ? pedidoService.listarPedidosComercioEmpleado(comercio.comercioId())
+                : pedidoService.listarPedidosComercio(comercio.comercioId());
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pedidos obtenidos correctamente", pedidos));
     }
 
     @GetMapping("/comercio/resumen-hoy")
-    public ResponseEntity<ApiResponse<ResumenPedidosHoyResponseDTO>> obtenerResumenHoy(
+    public ResponseEntity<ApiResponse<?>> obtenerResumenHoy(
             ComercioActivo comercio) {
-        ResumenPedidosHoyResponseDTO response = pedidoService.obtenerResumenHoy(comercio.comercioId());
+        Object response = comercio.esEmpleado()
+                ? pedidoService.obtenerResumenHoyEmpleado(comercio.comercioId())
+                : pedidoService.obtenerResumenHoy(comercio.comercioId());
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Resumen obtenido correctamente", response));
     }
 

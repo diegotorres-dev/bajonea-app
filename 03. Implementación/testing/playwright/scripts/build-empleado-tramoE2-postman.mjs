@@ -247,7 +247,23 @@ agregar(
 );
 agregar(...sumarAlEquipo(COM_B, 'B'), ...sumarAlEquipo(COM_S, 'S'), ...sumarAlEquipo(COM_I, 'I'));
 
-const CAMPOS_PERFIL = ['abiertoAhora', 'cerradoManualmente', 'descripcion', 'direccion', 'estado', 'fotoPerfilUrl', 'horarios', 'id', 'nombre', 'telefono'];
+const CAMPOS_PERFIL = [
+  'abiertoAhora',
+  'aceptaDelivery',
+  'aceptaRetiro',
+  'cerradoManualmente',
+  'descripcion',
+  'direccion',
+  'estado',
+  'fotoPerfilUrl',
+  'horarios',
+  'id',
+  'nombre',
+  'puedeCambiarCierre',
+  'telefono',
+  'textoReapertura',
+  'tipoComercio',
+];
 const CAMPOS_EXCLUIDOS = [
   'cuit',
   'razonSocial',
@@ -258,11 +274,6 @@ const CAMPOS_EXCLUIDOS = [
   'representante',
   'emailContacto',
   'motivoRechazo',
-  'tipoComercio',
-  'aceptaDelivery',
-  'aceptaRetiro',
-  'puedeCambiarCierre',
-  'textoReapertura',
 ];
 const CAMPOS_MIS_COMERCIOS = [
   'abiertoAhora',
@@ -288,6 +299,7 @@ agregar(
     guardar(v('cuit_a'), 'pm.response.json().data.cuit'),
     guardar(v('razon_a'), 'pm.response.json().data.razonSocial'),
     guardar(v('nombre_a'), 'pm.response.json().data.nombre'),
+    guardar(v('perfil_dueno_ref'), 'JSON.stringify(pm.response.json().data)'),
   ]),
   get('Empleado: perfil de A con el DTO reducido', '/comercios/perfil', TOKEN_EMP, COM_A, [
     status(200),
@@ -296,6 +308,7 @@ agregar(
     `pm.test('Ninguno de los campos excluidos', () => ${JSON.stringify(CAMPOS_EXCLUIDOS)}.forEach((c) => pm.expect(pm.response.json().data).to.not.have.property(c)));`,
     "pm.test('Sin el CUIT, la razón social ni el email del Dueño', () => { const t = pm.response.text(); pm.expect(t).to.not.include(pm.environment.get('e2_cuit_a')); pm.expect(t).to.not.include(pm.environment.get('e2_razon_a')); pm.expect(t).to.not.include(pm.environment.get('e2_d1_email')); });",
     "pm.test('Sin nada de Mercado Pago', () => pm.expect(pm.response.text().toLowerCase()).to.not.include('mercadopago'));",
+    "pm.test('Tipo de comercio, modalidades, puedeCambiarCierre y textoReapertura iguales a los del Dueño', () => { const e = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_perfil_dueno_ref')); ['tipoComercio', 'aceptaDelivery', 'aceptaRetiro', 'puedeCambiarCierre', 'textoReapertura'].forEach((c) => pm.expect(e[c]).to.eql(d[c])); });",
     "pm.test('El nombre es el del comercio', () => pm.expect(pm.response.json().data.nombre).to.eql(pm.environment.get('e2_nombre_a')));",
     "pm.test('Estado APROBADO y comercio abierto sin cierre manual', () => { const d = pm.response.json().data; pm.expect(d.estado).to.eql('APROBADO'); pm.expect(d.cerradoManualmente).to.eql(false); pm.expect(d.horarios.length).to.be.above(0); });",
   ]),
@@ -426,6 +439,88 @@ agregar(
   get('Estados: el Empleado sigue leyendo S suspendido (productos)', '/productos', TOKEN_EMP, COM_S, [status(200)]),
   get('Estados: el Empleado sigue leyendo S suspendido (pedidos)', '/pedidos/comercio', TOKEN_EMP, COM_S, [status(200)]),
   get('Estados: el Empleado sigue leyendo S suspendido (resumen de hoy)', '/pedidos/comercio/resumen-hoy', TOKEN_EMP, COM_S, [status(200)]),
+);
+
+const CAMPOS_PEDIDO = [
+  'canceladoPor',
+  'comentarioRechazo',
+  'comercioId',
+  'detalles',
+  'direccion',
+  'estado',
+  'fechaCreacion',
+  'fechaEntrega',
+  'fechaPagoAprobado',
+  'fuenteEntrega',
+  'id',
+  'motivoAnulacion',
+  'motivoRechazo',
+  'nombreCliente',
+  'reembolsoEstado',
+  'reembolsoMonto',
+  'subtotal',
+  'tipoEntrega',
+  'total',
+];
+const CAMPOS_PEDIDO_EXCLUIDOS = ['clienteId', 'pagoEstado', 'cargoServicioCliente', 'cargoServicioComercio'];
+const REEMBOLSO_SIMPLE = { PENDIENTE: 'EN_PROCESO', PENDIENTE_REINTENTO: 'EN_PROCESO', PROCESADO: 'REEMBOLSADO', FALLIDO: 'EN_REVISION', PENDIENTE_REVISION_MANUAL: 'EN_REVISION' };
+const PALABRAS_PROHIBIDAS_PEDIDO = ['cargoservicio', 'marketplace', 'mercadopago', 'ultimoerror', 'intentos', 'pagoestado', 'clienteid', 'fallido', 'revision_manual', 'reintento'];
+
+agregar(...altaCliente('ped', { login: true }));
+agregar(
+  item('Pedidos: el Dueño d1 crea un producto en B', req('POST', '/productos', { token: TOKEN_D1, comercio: COM_B, body: { nombre: 'Producto Pedidos E2', precio: 1500, categoriaId: `{{${v('categoria_id')}}}` } }), [
+    status(201),
+    guardar(v('prod_b'), 'pm.response.json().data.id'),
+  ]),
+);
+
+function pedidoDeB(clave) {
+  return [
+    item(`Pedidos: el Cliente agrega el producto de B al carrito (${clave})`, req('POST', '/carrito/items', { token: v('ped_token'), body: { productoId: `{{${v('prod_b')}}}`, cantidad: 1 } }), [status(201)]),
+    item(`Pedidos: el Cliente crea el pedido ${clave}`, req('POST', '/pedidos/cliente', { token: v('ped_token'), body: { tipoEntrega: 'RETIRO', direccionId: null } }), [
+      status(201),
+      guardar(v(`ped_${clave}`), 'pm.response.json().data.id'),
+    ]),
+    item(`Pedidos: se confirma el pago del pedido ${clave}`, req('PUT', `/test/pedidos/{{${v(`ped_${clave}`)}}}/pago-aprobado`, { body: {} }), [status(200)]),
+  ];
+}
+
+agregar(
+  ...pedidoDeB('pendiente'),
+  ...pedidoDeB('aceptado'),
+  ...pedidoDeB('rechazado'),
+  item('Pedidos: el Dueño d1 acepta el pedido aceptado', req('PUT', `/pedidos/comercio/{{${v('ped_aceptado')}}}/aceptar`, { token: TOKEN_D1, comercio: COM_B }), [status(200)]),
+  item('Pedidos: el Dueño d1 rechaza el pedido rechazado', req('PUT', `/pedidos/comercio/{{${v('ped_rechazado')}}}/rechazar`, { token: TOKEN_D1, comercio: COM_B, body: { motivo: 'SIN_STOCK' } }), [status(200)]),
+  get('Pedidos: el Dueño recibe el DTO completo (referencia)', '/pedidos/comercio', TOKEN_D1, COM_B, [
+    status(200),
+    "pm.test('Tres pedidos', () => pm.expect(pm.response.json().data.length).to.eql(3));",
+    `pm.test('Con los cargos de servicio, el id del cliente y el estado del pago', () => pm.response.json().data.forEach((p) => { ${JSON.stringify(CAMPOS_PEDIDO_EXCLUIDOS)}.forEach((c) => pm.expect(p).to.have.property(c)); ${JSON.stringify(CAMPOS_PEDIDO)}.forEach((c) => pm.expect(p).to.have.property(c)); }));`,
+    guardar(v('pedidos_dueno'), 'JSON.stringify(pm.response.json().data)'),
+  ]),
+  get('Pedidos: el Empleado recibe el DTO reducido, solo con los campos de la lista blanca', '/pedidos/comercio', TOKEN_EMP, COM_B, [
+    status(200),
+    mensajeEs('Pedidos obtenidos correctamente'),
+    "pm.test('Tres pedidos', () => pm.expect(pm.response.json().data.length).to.eql(3));",
+    `pm.test('Exactamente los campos de la lista blanca', () => pm.response.json().data.forEach((p) => pm.expect(Object.keys(p).sort()).to.eql(${JSON.stringify(CAMPOS_PEDIDO)})));`,
+    `pm.test('Ninguno de los campos excluidos', () => pm.response.json().data.forEach((p) => ${JSON.stringify(CAMPOS_PEDIDO_EXCLUIDOS)}.forEach((c) => pm.expect(p).to.not.have.property(c))));`,
+    `pm.test('Sin cargos, comisiones, Mercado Pago ni datos técnicos del reembolso', () => { const t = pm.response.text().toLowerCase(); ${JSON.stringify(PALABRAS_PROHIBIDAS_PEDIDO)}.forEach((p) => pm.expect(t).to.not.include(p)); });`,
+    "pm.test('Mismos pedidos, en el mismo orden, y mismos valores en los campos compartidos', () => { const e = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_pedidos_dueno')); pm.expect(e.map((p) => p.id)).to.eql(d.map((p) => p.id)); e.forEach((p, i) => Object.keys(p).filter((c) => c !== 'reembolsoEstado').forEach((c) => pm.expect(p[c]).to.eql(d[i][c]))); });",
+    `pm.test('El reembolso en términos simples, derivado del estado que ve el Dueño', () => { const e = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_pedidos_dueno')); const mapa = ${JSON.stringify(REEMBOLSO_SIMPLE)}; e.forEach((p, i) => pm.expect(p.reembolsoEstado).to.eql(d[i].reembolsoEstado === null ? 'SIN_REEMBOLSO' : mapa[d[i].reembolsoEstado])); });`,
+    "pm.test('El pendiente y el aceptado sin reembolso, con monto nulo', () => { const e = pm.response.json().data; [pm.environment.get('e2_ped_pendiente'), pm.environment.get('e2_ped_aceptado')].forEach((id) => { const p = e.find((x) => x.id === Number(id)); pm.expect(p.reembolsoEstado).to.eql('SIN_REEMBOLSO'); pm.expect(p.reembolsoMonto).to.eql(null); }); });",
+    "pm.test('El rechazado trae el motivo y quién lo canceló', () => { const p = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('e2_ped_rechazado'))); pm.expect(p.estado).to.eql('RECHAZADO'); pm.expect(p.motivoRechazo).to.eql('SIN_STOCK'); pm.expect(p.canceladoPor).to.eql('COMERCIO'); });",
+    "pm.test('Ítems, subtotal y total del pedido aceptado', () => { const p = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('e2_ped_aceptado'))); pm.expect(p.estado).to.eql('EN_PREPARACION'); pm.expect(p.subtotal).to.eql(1500); pm.expect(p.total).to.be.at.least(1500); pm.expect(p.detalles[0].precioUnitario).to.eql(1500); pm.expect(p.nombreCliente).to.be.a('string'); });",
+  ]),
+  get('Pedidos: el resumen del Dueño es el neto (referencia)', '/pedidos/comercio/resumen-hoy', TOKEN_D1, COM_B, [
+    status(200),
+    guardar(v('resumen_b_dueno'), 'JSON.stringify(pm.response.json().data)'),
+    "pm.test('Facturado neto, tres pedidos de hoy y uno pendiente', () => { const r = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_pedidos_dueno')); const aceptado = d.find((p) => p.id === Number(pm.environment.get('e2_ped_aceptado'))); pm.expect(r.totalFacturadoHoy).to.be.closeTo(aceptado.subtotal - aceptado.cargoServicioComercio, 0.001); pm.expect(r.cantidadPedidosHoy).to.eql(3); pm.expect(r.cantidadPendientes).to.eql(1); });",
+  ]),
+  get('Pedidos: el resumen del Empleado trae tres campos, el facturado bruto y los mismos contadores', '/pedidos/comercio/resumen-hoy', TOKEN_EMP, COM_B, [
+    status(200),
+    "pm.test('Solo los tres campos', () => pm.expect(Object.keys(pm.response.json().data).sort()).to.eql(['cantidadPedidosHoy', 'cantidadPendientes', 'totalFacturadoHoy']));",
+    "pm.test('Facturado bruto de productos del pedido aceptado', () => pm.expect(pm.response.json().data.totalFacturadoHoy).to.eql(1500));",
+    "pm.test('Mismos contadores que el Dueño', () => { const e = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_resumen_b_dueno')); pm.expect(e.cantidadPedidosHoy).to.eql(d.cantidadPedidosHoy); pm.expect(e.cantidadPendientes).to.eql(d.cantidadPendientes); });",
+  ]),
 );
 
 const misComercios = (nombre, token, testLines, comercio) => item(nombre, req('GET', '/empleados/mis-comercios', { token, comercio }), testLines);

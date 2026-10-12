@@ -119,14 +119,18 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
 
 - El Empleado puede operar, con su mismo login, todos los comercios donde tenga una
   relación Activa, sin restricción de que pertenezcan al mismo Dueño.
-- Con un solo comercio, entra directo a ese comercio. Con varios, usa el mismo panel y
-  la misma franja de selección de comercio del Dueño, sin "Agregar comercio" ni avisos de
-  cobro (ver Requisitos Funcionales — Generales, sección Autenticación y selector de
-  contexto).
+- Al iniciar sesión, si tiene al menos un comercio, ve un selector a pantalla completa con
+  "Cliente" y cada comercio, y entra al contexto que elige (ver Requisitos Funcionales —
+  Generales, sección Autenticación y selector de contexto). Dentro de un comercio ve el
+  mismo panel y las mismas cuatro pestañas (Panel, Productos, Pedidos, Perfil) que el
+  Dueño, con el distintivo "Empleado" debajo del nombre del comercio, sin campana de
+  notificaciones, sin "Agregar comercio" ni avisos de cobro. Para cambiar de comercio o
+  pasar a su cuenta de Cliente usa "Cambiar de cuenta" en su perfil.
 - El selector del Empleado muestra los comercios donde su relación está Activa y el
   comercio es operativo (Aprobado o Apto para Venta), más los Suspendidos y los Cerrados
-  Temporalmente con un aviso. No aparecen los comercios Inactivos, de Rechazo definitivo,
-  Pendientes ni Rechazados.
+  Temporalmente con su estado y un aviso corto (se pueden elegir y entran en solo
+  lectura). No aparecen los comercios Inactivos, de Rechazo definitivo, Pendientes ni
+  Rechazados.
 - Cuando el comercio no es operativo (Suspendido o Cerrado Temporalmente), el Empleado no
   puede operarlo, salvo terminar lo que ya estaba en marcha: entregar los pedidos Listos
   para Retirar y confirmar las entregas de los pedidos En Camino. El servidor lo hace
@@ -145,14 +149,23 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
 - Un Administrador no puede operar un comercio como Empleado (403), y el Dueño y el
   Administrador no tienen lista de "mis comercios" de Empleado.
 
-> **Estado de implementación (tramo E2, entrega A):** el servidor ya resuelve el comercio
+> **Estado de implementación (tramo E2, entregas A y B):** el servidor ya resuelve el comercio
 > del Empleado y le abre cuatro lecturas: el perfil del comercio con un conjunto reducido
-> de datos (nombre, foto, descripción, dirección del local, teléfono, horarios, estado y si
-> está abierto o cerrado manualmente), la lista de productos, la lista de pedidos y el
-> resumen de pedidos del día. Las acciones (editar, abrir y cerrar, gestionar productos y
-> pedidos) siguen cerradas al Empleado hasta el tramo E3, y el selector y las pantallas
-> del Empleado llegan en la entrega B de E2. Las notificaciones por comercio del Empleado
-> quedan para E3.
+> de datos (nombre, foto, descripción, dirección del local, teléfono, tipo de comercio,
+> modalidades de entrega, horarios, estado, si está abierto o cerrado manualmente, si puede
+> cambiar el cierre y el texto de reapertura), la lista de productos, la lista de pedidos y
+> el resumen de pedidos del día, estos dos últimos sin los cargos de servicio ni los datos
+> de Mercado Pago (ver Permisos Delegados). Las acciones (editar, abrir y cerrar, gestionar productos y
+> pedidos) siguen cerradas al Empleado hasta el tramo E3. La entrega B de E2 suma las
+> pantallas: selector de contexto después del login, "Cambiar de cuenta" en el perfil, y un
+> panel de solo lectura (Panel con "Ventas de hoy", Productos y Pedidos sin acciones, y un
+> Perfil con los datos operativos del comercio), con el reembolso de cada pedido en
+> términos simples ("Reembolso en proceso", "Reembolsado" o "Reembolso en revisión", con el
+> monto). Las notificaciones por comercio del Empleado quedan para E3: hasta entonces el
+> Empleado no ve la campana dentro de un comercio. Si en medio del uso pierde el acceso a
+> un comercio (su relación se desactiva), la aplicación lo detecta en la próxima acción o
+> en el sondeo de cada 15 segundos, le muestra "Ya no tenés acceso a este comercio" y lo
+> lleva al selector, o al inicio de Cliente si no le queda ningún comercio.
 
 ---
 
@@ -162,14 +175,26 @@ Por cada comercio donde el Empleado tenga una relación Activa y el comercio sea
 puede:
 
 - Ver y editar el perfil del comercio con un conjunto reducido de datos (nombre,
-  descripción, teléfono, email de contacto, modalidades de entrega) y cambiar su foto de
-  perfil. El Empleado no ve la razón social, el CUIT, la condición de IVA, el tipo de
+  descripción, teléfono, email de contacto, tipo de comercio, modalidades de entrega,
+  horarios y estado de apertura) y cambiar su foto de perfil. (Hasta el tramo E3 el
+  Empleado ve todos esos datos salvo el email de contacto.) El Empleado no ve la razón social, el CUIT, la condición de IVA, el tipo de
   sociedad, el domicilio fiscal, la fecha de inicio de actividades ni los datos del
   representante.
 - Abrir y cerrar el comercio manualmente (queda registrado con rol Empleado).
 - Crear, editar y gestionar la disponibilidad de los productos y sus imágenes
   (incluido descontinuarlos).
-- Ver el historial de pedidos y las ventas del comercio.
+- Ver el historial de pedidos y las ventas del comercio. El Empleado ve lo necesario para
+  operar y atender al cliente: el número y el estado del pedido, el nombre del cliente, la
+  modalidad de entrega y la dirección, los ítems con cantidades y precios, el subtotal, el
+  total que pagó el cliente, el motivo de un rechazo o una anulación y las fechas. También
+  ve el estado del reembolso del pedido, solo para leer y en términos simples (sin
+  reembolso, en proceso, reembolsado o en revisión) con el monto. No ve los cargos de
+  servicio (ni el del cliente ni el del comercio), la comisión, el neto a cobrar por el
+  comercio, ni ningún dato de MercadoPago o del detalle técnico de un reembolso. El
+  contador del panel, que para el Empleado se llama "Ventas de hoy" (el Dueño ve
+  "Facturado hoy"), suma el subtotal de los productos de los pedidos facturados, sin
+  descontar el cargo de servicio del comercio (el Dueño ve esa misma suma ya neta); los
+  contadores de pedidos de hoy y pendientes son los mismos para ambos.
 - Aceptar, rechazar, despachar, entregar y anular pedidos.
 - Recibir y ver las notificaciones operativas del comercio.
 

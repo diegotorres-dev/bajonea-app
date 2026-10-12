@@ -7,7 +7,9 @@ import com.bajonea.backend.dto.request.PedidoRequestDTO;
 import com.bajonea.backend.dto.request.RechazoPedidoRequestDTO;
 import com.bajonea.backend.dto.response.DetallePedidoResponseDTO;
 import com.bajonea.backend.dto.response.DireccionResponseDTO;
+import com.bajonea.backend.dto.response.PedidoEmpleadoResponseDTO;
 import com.bajonea.backend.dto.response.PedidoResponseDTO;
+import com.bajonea.backend.dto.response.ResumenPedidosHoyEmpleadoResponseDTO;
 import com.bajonea.backend.dto.response.ResumenPedidosHoyResponseDTO;
 import com.bajonea.backend.entities.Carrito;
 import com.bajonea.backend.entities.Cliente;
@@ -432,28 +434,45 @@ public class PedidoService {
                 .toList();
     }
 
+    public List<PedidoEmpleadoResponseDTO> listarPedidosComercioEmpleado(Integer comercioId) {
+        return listarPedidosComercio(comercioId).stream().map(PedidoEmpleadoResponseDTO::desde).toList();
+    }
+
     public ResumenPedidosHoyResponseDTO obtenerResumenHoy(Integer comercioId) {
+        List<Pedido> pedidosHoy = pedidosLlegadosPagadosHoy(comercioId);
+        BigDecimal totalFacturadoHoy = pedidosHoy.stream()
+                .filter(pedido -> ESTADOS_FACTURADOS.contains(pedido.getEstado()))
+                .map(pedido -> pedido.getSubtotal().subtract(pedido.getCargoServicioComercio()))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new ResumenPedidosHoyResponseDTO(totalFacturadoHoy, pedidosHoy.size(), contarPendientes(pedidosHoy));
+    }
+
+    public ResumenPedidosHoyEmpleadoResponseDTO obtenerResumenHoyEmpleado(Integer comercioId) {
+        List<Pedido> pedidosHoy = pedidosLlegadosPagadosHoy(comercioId);
+        BigDecimal totalFacturadoHoy = pedidosHoy.stream()
+                .filter(pedido -> ESTADOS_FACTURADOS.contains(pedido.getEstado()))
+                .map(Pedido::getSubtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return new ResumenPedidosHoyEmpleadoResponseDTO(totalFacturadoHoy, pedidosHoy.size(), contarPendientes(pedidosHoy));
+    }
+
+    private List<Pedido> pedidosLlegadosPagadosHoy(Integer comercioId) {
         LocalDateTime inicioHoy = LocalDate.now().atStartOfDay();
         LocalDateTime finHoy = inicioHoy.plusDays(1);
         List<Pedido> llegadosPagados = pedidoRepository.findLlegadosPagadosByComercioId(comercioId);
         Map<Integer, LocalDateTime> fechasPago = fechasPagoAprobado(llegadosPagados);
-        List<Pedido> pedidosHoy = llegadosPagados.stream()
+        return llegadosPagados.stream()
                 .filter(pedido -> {
                     LocalDateTime fecha = fechasPago.get(pedido.getId());
                     return fecha != null && !fecha.isBefore(inicioHoy) && fecha.isBefore(finHoy);
                 })
                 .toList();
+    }
 
-        BigDecimal totalFacturadoHoy = pedidosHoy.stream()
-                .filter(pedido -> ESTADOS_FACTURADOS.contains(pedido.getEstado()))
-                .map(pedido -> pedido.getSubtotal().subtract(pedido.getCargoServicioComercio()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        int cantidadPedidosHoy = pedidosHoy.size();
-        int cantidadPendientes = (int) pedidosHoy.stream()
+    private int contarPendientes(List<Pedido> pedidosHoy) {
+        return (int) pedidosHoy.stream()
                 .filter(pedido -> pedido.getEstado() == EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO)
                 .count();
-
-        return new ResumenPedidosHoyResponseDTO(totalFacturadoHoy, cantidadPedidosHoy, cantidadPendientes);
     }
 
     /**

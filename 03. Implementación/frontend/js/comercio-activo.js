@@ -1,7 +1,9 @@
 import {
   apiFetch,
+  esContextoEmpleado,
   getUsuario,
   getComercioActivoId,
+  perderAccesoAlComercio,
   setComercioActivoId,
   clearComercioActivoId,
   getUltimoComercioId,
@@ -56,7 +58,7 @@ export function suscribirComercios(oyente) {
 }
 
 export async function refrescarComercios() {
-  const comercios = await apiFetch('/comercios/mis-comercios');
+  const comercios = await apiFetch(esContextoEmpleado() ? '/empleados/mis-comercios' : '/comercios/mis-comercios');
   comerciosEnMemoria = [...comercios].sort(
     (a, b) => String(a.fechaRegistro).localeCompare(String(b.fechaRegistro)) || a.id - b.id,
   );
@@ -80,8 +82,25 @@ export function elegirDestino(comercios) {
   return { tipo: 'ninguno' };
 }
 
+function resolverComercioDelEmpleado() {
+  return refrescarComercios().then((comercios) => {
+    const activoId = getComercioActivoId();
+    const comercio = comercios.find((candidato) => candidato.id === activoId);
+    return comercio ? { tipo: 'empleado', comercio } : { tipo: 'sin-acceso' };
+  });
+}
+
 export function resolverComercioActivo() {
   const usuario = getUsuario();
+  if (esContextoEmpleado()) {
+    if (!resolucionEnCurso) {
+      resolucionEnCurso = resolverComercioDelEmpleado().catch((error) => {
+        resolucionEnCurso = null;
+        throw error;
+      });
+    }
+    return resolucionEnCurso;
+  }
   if (!usuario || usuario.rol !== 'DUENO') {
     return Promise.resolve({ tipo: 'ninguno' });
   }
@@ -118,7 +137,7 @@ export function reiniciarResolucion() {
 }
 
 export function destinoDeNavegacion(destino) {
-  if (destino.tipo === 'operativo') {
+  if (destino.tipo === 'operativo' || destino.tipo === 'empleado') {
     return RUTA_DASHBOARD;
   }
   if (destino.tipo === 'estado') {
@@ -143,6 +162,12 @@ async function verificarComercioActivo() {
     return;
   }
   const activo = comercios.find((comercio) => comercio.id === activoId);
+  if (esContextoEmpleado()) {
+    if (!activo) {
+      perderAccesoAlComercio();
+    }
+    return;
+  }
   if (activo && activo.operativo) {
     return;
   }

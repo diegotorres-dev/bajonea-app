@@ -1,4 +1,5 @@
 import { apiFetch } from './api.js';
+import { exigirContextoCliente } from './contexto.js';
 import { renderTopBar, renderBottomNav, renderEmptyState } from './catalogo.js';
 import { normalizarCampos } from './validators.js';
 
@@ -134,6 +135,9 @@ function renderPaginacion(container, { paginaActual, totalPaginas }, onCambiarPa
 }
 
 export async function initExplorar() {
+  if (!(await exigirContextoCliente())) {
+    return;
+  }
   const topBarSlot = document.getElementById('top-bar-slot');
   renderTopBar(topBarSlot, { mostrarPerfil: false, centrarLogo: true });
 

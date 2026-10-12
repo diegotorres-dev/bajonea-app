@@ -77873,7 +77873,8 @@
                   "pm.test('El Dueño recibe el DTO completo', () => [\"cuit\",\"razonSocial\",\"condicionIva\",\"tipoSociedad\",\"domicilioFiscal\",\"fechaInicioActividades\",\"representante\",\"emailContacto\",\"puedeCambiarCierre\"].forEach((c) => pm.expect(pm.response.json().data).to.have.property(c)));",
                   "pm.environment.set('e2_cuit_a', pm.response.json().data.cuit);",
                   "pm.environment.set('e2_razon_a', pm.response.json().data.razonSocial);",
-                  "pm.environment.set('e2_nombre_a', pm.response.json().data.nombre);"
+                  "pm.environment.set('e2_nombre_a', pm.response.json().data.nombre);",
+                  "pm.environment.set('e2_perfil_dueno_ref', JSON.stringify(pm.response.json().data));"
                 ]
               }
             }
@@ -77913,10 +77914,11 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"Perfil obtenido correctamente\"));",
-                  "pm.test('Solo los campos de la lista blanca', () => pm.expect(Object.keys(pm.response.json().data).sort()).to.eql([\"abiertoAhora\",\"cerradoManualmente\",\"descripcion\",\"direccion\",\"estado\",\"fotoPerfilUrl\",\"horarios\",\"id\",\"nombre\",\"telefono\"]));",
-                  "pm.test('Ninguno de los campos excluidos', () => [\"cuit\",\"razonSocial\",\"condicionIva\",\"tipoSociedad\",\"domicilioFiscal\",\"fechaInicioActividades\",\"representante\",\"emailContacto\",\"motivoRechazo\",\"tipoComercio\",\"aceptaDelivery\",\"aceptaRetiro\",\"puedeCambiarCierre\",\"textoReapertura\"].forEach((c) => pm.expect(pm.response.json().data).to.not.have.property(c)));",
+                  "pm.test('Solo los campos de la lista blanca', () => pm.expect(Object.keys(pm.response.json().data).sort()).to.eql([\"abiertoAhora\",\"aceptaDelivery\",\"aceptaRetiro\",\"cerradoManualmente\",\"descripcion\",\"direccion\",\"estado\",\"fotoPerfilUrl\",\"horarios\",\"id\",\"nombre\",\"puedeCambiarCierre\",\"telefono\",\"textoReapertura\",\"tipoComercio\"]));",
+                  "pm.test('Ninguno de los campos excluidos', () => [\"cuit\",\"razonSocial\",\"condicionIva\",\"tipoSociedad\",\"domicilioFiscal\",\"fechaInicioActividades\",\"representante\",\"emailContacto\",\"motivoRechazo\"].forEach((c) => pm.expect(pm.response.json().data).to.not.have.property(c)));",
                   "pm.test('Sin el CUIT, la razón social ni el email del Dueño', () => { const t = pm.response.text(); pm.expect(t).to.not.include(pm.environment.get('e2_cuit_a')); pm.expect(t).to.not.include(pm.environment.get('e2_razon_a')); pm.expect(t).to.not.include(pm.environment.get('e2_d1_email')); });",
                   "pm.test('Sin nada de Mercado Pago', () => pm.expect(pm.response.text().toLowerCase()).to.not.include('mercadopago'));",
+                  "pm.test('Tipo de comercio, modalidades, puedeCambiarCierre y textoReapertura iguales a los del Dueño', () => { const e = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_perfil_dueno_ref')); ['tipoComercio', 'aceptaDelivery', 'aceptaRetiro', 'puedeCambiarCierre', 'textoReapertura'].forEach((c) => pm.expect(e[c]).to.eql(d[c])); });",
                   "pm.test('El nombre es el del comercio', () => pm.expect(pm.response.json().data.nombre).to.eql(pm.environment.get('e2_nombre_a')));",
                   "pm.test('Estado APROBADO y comercio abierto sin cierre manual', () => { const d = pm.response.json().data; pm.expect(d.estado).to.eql('APROBADO'); pm.expect(d.cerradoManualmente).to.eql(false); pm.expect(d.horarios.length).to.be.above(0); });"
                 ]
@@ -80524,6 +80526,923 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Cliente ped",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Clienta\",\n  \"apellido\": \"Acceso\",\n  \"dni\": \"{{e2_ped_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551235\",\n  \"nombreUsuario\": \"{{e2_ped_usuario}}\",\n  \"email\": \"{{e2_ped_email}}\",\n  \"password\": \"{{e2_ped_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('e2_ped_email', 'e2.ped.' + s + '@bajonea.test');",
+                  "pm.environment.set('e2_ped_usuario', ('e2ped' + s).slice(0, 20));",
+                  "pm.environment.set('e2_ped_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('e2_ped_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Cliente ped",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{e2_ped_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{e2_ped_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e2_ped_codigo_verif', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Cliente ped",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{e2_ped_email}}\",\n  \"codigo\": \"{{e2_ped_codigo_verif}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Cliente ped",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{e2_ped_usuario}}\",\n  \"password\": \"{{e2_ped_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e2_ped_token', pm.response.json().data.token);",
+                  "pm.environment.set('e2_ped_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pedidos: el Dueño d1 crea un producto en B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_b}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Producto Pedidos E2\",\n  \"precio\": 1500,\n  \"categoriaId\": \"{{e2_categoria_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('e2_prod_b', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pedidos: el Cliente agrega el producto de B al carrito (pendiente)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_ped_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": \"{{e2_prod_b}}\",\n  \"cantidad\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pedidos: el Cliente crea el pedido pendiente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_ped_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoEntrega\": \"RETIRO\",\n  \"direccionId\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('e2_ped_pendiente', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pedidos: se confirma el pago del pedido pendiente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/pedidos/{{e2_ped_pendiente}}/pago-aprobado",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "pedidos",
+                "{{e2_ped_pendiente}}",
+                "pago-aprobado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pedidos: el Cliente agrega el producto de B al carrito (aceptado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_ped_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": \"{{e2_prod_b}}\",\n  \"cantidad\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pedidos: el Cliente crea el pedido aceptado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_ped_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoEntrega\": \"RETIRO\",\n  \"direccionId\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('e2_ped_aceptado', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pedidos: se confirma el pago del pedido aceptado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/pedidos/{{e2_ped_aceptado}}/pago-aprobado",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "pedidos",
+                "{{e2_ped_aceptado}}",
+                "pago-aprobado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pedidos: el Cliente agrega el producto de B al carrito (rechazado)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_ped_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productoId\": \"{{e2_prod_b}}\",\n  \"cantidad\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pedidos: el Cliente crea el pedido rechazado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_ped_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipoEntrega\": \"RETIRO\",\n  \"direccionId\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('e2_ped_rechazado', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pedidos: se confirma el pago del pedido rechazado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/pedidos/{{e2_ped_rechazado}}/pago-aprobado",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "pedidos",
+                "{{e2_ped_rechazado}}",
+                "pago-aprobado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pedidos: el Dueño d1 acepta el pedido aceptado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_b}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{e2_ped_aceptado}}/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{e2_ped_aceptado}}",
+                "aceptar"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pedidos: el Dueño d1 rechaza el pedido rechazado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_b}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{e2_ped_rechazado}}/rechazar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{e2_ped_rechazado}}",
+                "rechazar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"SIN_STOCK\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pedidos: el Dueño recibe el DTO completo (referencia)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_b}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Tres pedidos', () => pm.expect(pm.response.json().data.length).to.eql(3));",
+                  "pm.test('Con los cargos de servicio, el id del cliente y el estado del pago', () => pm.response.json().data.forEach((p) => { [\"clienteId\",\"pagoEstado\",\"cargoServicioCliente\",\"cargoServicioComercio\"].forEach((c) => pm.expect(p).to.have.property(c)); [\"canceladoPor\",\"comentarioRechazo\",\"comercioId\",\"detalles\",\"direccion\",\"estado\",\"fechaCreacion\",\"fechaEntrega\",\"fechaPagoAprobado\",\"fuenteEntrega\",\"id\",\"motivoAnulacion\",\"motivoRechazo\",\"nombreCliente\",\"reembolsoEstado\",\"reembolsoMonto\",\"subtotal\",\"tipoEntrega\",\"total\"].forEach((c) => pm.expect(p).to.have.property(c)); }));",
+                  "pm.environment.set('e2_pedidos_dueno', JSON.stringify(pm.response.json().data));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pedidos: el Empleado recibe el DTO reducido, solo con los campos de la lista blanca",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_b}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"Pedidos obtenidos correctamente\"));",
+                  "pm.test('Tres pedidos', () => pm.expect(pm.response.json().data.length).to.eql(3));",
+                  "pm.test('Exactamente los campos de la lista blanca', () => pm.response.json().data.forEach((p) => pm.expect(Object.keys(p).sort()).to.eql([\"canceladoPor\",\"comentarioRechazo\",\"comercioId\",\"detalles\",\"direccion\",\"estado\",\"fechaCreacion\",\"fechaEntrega\",\"fechaPagoAprobado\",\"fuenteEntrega\",\"id\",\"motivoAnulacion\",\"motivoRechazo\",\"nombreCliente\",\"reembolsoEstado\",\"reembolsoMonto\",\"subtotal\",\"tipoEntrega\",\"total\"])));",
+                  "pm.test('Ninguno de los campos excluidos', () => pm.response.json().data.forEach((p) => [\"clienteId\",\"pagoEstado\",\"cargoServicioCliente\",\"cargoServicioComercio\"].forEach((c) => pm.expect(p).to.not.have.property(c))));",
+                  "pm.test('Sin cargos, comisiones, Mercado Pago ni datos técnicos del reembolso', () => { const t = pm.response.text().toLowerCase(); [\"cargoservicio\",\"marketplace\",\"mercadopago\",\"ultimoerror\",\"intentos\",\"pagoestado\",\"clienteid\",\"fallido\",\"revision_manual\",\"reintento\"].forEach((p) => pm.expect(t).to.not.include(p)); });",
+                  "pm.test('Mismos pedidos, en el mismo orden, y mismos valores en los campos compartidos', () => { const e = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_pedidos_dueno')); pm.expect(e.map((p) => p.id)).to.eql(d.map((p) => p.id)); e.forEach((p, i) => Object.keys(p).filter((c) => c !== 'reembolsoEstado').forEach((c) => pm.expect(p[c]).to.eql(d[i][c]))); });",
+                  "pm.test('El reembolso en términos simples, derivado del estado que ve el Dueño', () => { const e = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_pedidos_dueno')); const mapa = {\"PENDIENTE\":\"EN_PROCESO\",\"PENDIENTE_REINTENTO\":\"EN_PROCESO\",\"PROCESADO\":\"REEMBOLSADO\",\"FALLIDO\":\"EN_REVISION\",\"PENDIENTE_REVISION_MANUAL\":\"EN_REVISION\"}; e.forEach((p, i) => pm.expect(p.reembolsoEstado).to.eql(d[i].reembolsoEstado === null ? 'SIN_REEMBOLSO' : mapa[d[i].reembolsoEstado])); });",
+                  "pm.test('El pendiente y el aceptado sin reembolso, con monto nulo', () => { const e = pm.response.json().data; [pm.environment.get('e2_ped_pendiente'), pm.environment.get('e2_ped_aceptado')].forEach((id) => { const p = e.find((x) => x.id === Number(id)); pm.expect(p.reembolsoEstado).to.eql('SIN_REEMBOLSO'); pm.expect(p.reembolsoMonto).to.eql(null); }); });",
+                  "pm.test('El rechazado trae el motivo y quién lo canceló', () => { const p = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('e2_ped_rechazado'))); pm.expect(p.estado).to.eql('RECHAZADO'); pm.expect(p.motivoRechazo).to.eql('SIN_STOCK'); pm.expect(p.canceladoPor).to.eql('COMERCIO'); });",
+                  "pm.test('Ítems, subtotal y total del pedido aceptado', () => { const p = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('e2_ped_aceptado'))); pm.expect(p.estado).to.eql('EN_PREPARACION'); pm.expect(p.subtotal).to.eql(1500); pm.expect(p.total).to.be.at.least(1500); pm.expect(p.detalles[0].precioUnitario).to.eql(1500); pm.expect(p.nombreCliente).to.be.a('string'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pedidos: el resumen del Dueño es el neto (referencia)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_d1_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_b}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-hoy"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('e2_resumen_b_dueno', JSON.stringify(pm.response.json().data));",
+                  "pm.test('Facturado neto, tres pedidos de hoy y uno pendiente', () => { const r = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_pedidos_dueno')); const aceptado = d.find((p) => p.id === Number(pm.environment.get('e2_ped_aceptado'))); pm.expect(r.totalFacturadoHoy).to.be.closeTo(aceptado.subtotal - aceptado.cargoServicioComercio, 0.001); pm.expect(r.cantidadPedidosHoy).to.eql(3); pm.expect(r.cantidadPendientes).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pedidos: el resumen del Empleado trae tres campos, el facturado bruto y los mismos contadores",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{e2_emp_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{e2_com_b}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-hoy"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Solo los tres campos', () => pm.expect(Object.keys(pm.response.json().data).sort()).to.eql(['cantidadPedidosHoy', 'cantidadPendientes', 'totalFacturadoHoy']));",
+                  "pm.test('Facturado bruto de productos del pedido aceptado', () => pm.expect(pm.response.json().data.totalFacturadoHoy).to.eql(1500));",
+                  "pm.test('Mismos contadores que el Dueño', () => { const e = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_resumen_b_dueno')); pm.expect(e.cantidadPedidosHoy).to.eql(d.cantidadPedidosHoy); pm.expect(e.cantidadPendientes).to.eql(d.cantidadPendientes); });"
                 ]
               }
             }

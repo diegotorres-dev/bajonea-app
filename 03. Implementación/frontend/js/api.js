@@ -4,7 +4,18 @@ const TOKEN_KEY = 'bajonea_token';
 const USUARIO_KEY = 'bajonea_usuario';
 const COMERCIO_ACTIVO_KEY = 'bajonea_comercio_activo';
 const AVISO_INVITACION_KEY = 'bajonea_aviso_invitacion';
+const AVISO_ACCESO_PERDIDO_KEY = 'bajonea_aviso_acceso_perdido';
+const CONTEXTO_KEY = 'bajonea_contexto';
 const ULTIMO_COMERCIO_PREFIX = 'bajonea_ultimo_comercio_';
+const ULTIMO_CONTEXTO_PREFIX = 'bajonea_ultimo_contexto_';
+const CODIGO_COMERCIO_NO_DISPONIBLE = 'COMERCIO_NO_DISPONIBLE';
+const RUTA_SELECTOR_CONTEXTO = 'seleccionar-contexto.html';
+export const TIPO_CONTEXTO = Object.freeze({
+  CLIENTE: 'CLIENTE',
+  DUENO: 'DUENO',
+  EMPLEADO: 'EMPLEADO',
+  ADMINISTRADOR: 'ADMINISTRADOR',
+});
 const HEADER_COMERCIO_ID = 'X-Comercio-Id';
 const RUTAS_DEL_DUENO = /^\/(comercios\/(perfil|redes-sociales|cerrar|abrir|equipo)|productos|pedidos\/comercio|notificaciones)(?=[/?]|$)/;
 const RUTAS_DEL_DUENO_SIN_HEADER = /^\/notificaciones\/comercio\//;
@@ -36,6 +47,130 @@ export function clearSesion() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USUARIO_KEY);
   clearComercioActivoId();
+  clearContexto();
+}
+
+export function marcarAvisoAccesoPerdido() {
+  try {
+    sessionStorage.setItem(AVISO_ACCESO_PERDIDO_KEY, '1');
+  } catch {
+    return;
+  }
+}
+
+export function consumirAvisoAccesoPerdido() {
+  try {
+    const hayAviso = sessionStorage.getItem(AVISO_ACCESO_PERDIDO_KEY) === '1';
+    sessionStorage.removeItem(AVISO_ACCESO_PERDIDO_KEY);
+    return hayAviso;
+  } catch {
+    return false;
+  }
+}
+
+export function hayAvisoAccesoPerdido() {
+  try {
+    return sessionStorage.getItem(AVISO_ACCESO_PERDIDO_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function getContextoGuardado() {
+  const usuario = getUsuario();
+  if (!usuario || usuario.rol !== 'CLIENTE') {
+    return null;
+  }
+  try {
+    const guardado = JSON.parse(sessionStorage.getItem(CONTEXTO_KEY));
+    if (!guardado || guardado.usuarioId !== usuario.id) {
+      return null;
+    }
+    if (guardado.tipo === TIPO_CONTEXTO.EMPLEADO && Number.isInteger(guardado.comercioId)) {
+      return { tipo: TIPO_CONTEXTO.EMPLEADO, comercioId: guardado.comercioId };
+    }
+    if (guardado.tipo === TIPO_CONTEXTO.CLIENTE) {
+      return { tipo: TIPO_CONTEXTO.CLIENTE, comercioId: null };
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+export function getContexto() {
+  const usuario = getUsuario();
+  if (!usuario) {
+    return null;
+  }
+  if (usuario.rol === 'DUENO') {
+    return { tipo: TIPO_CONTEXTO.DUENO, comercioId: getComercioActivoId() };
+  }
+  if (usuario.rol === 'ADMINISTRADOR') {
+    return { tipo: TIPO_CONTEXTO.ADMINISTRADOR, comercioId: null };
+  }
+  return getContextoGuardado() || { tipo: TIPO_CONTEXTO.CLIENTE, comercioId: null };
+}
+
+export function setContexto(tipo, comercioId = null, recordar = true) {
+  const usuario = getUsuario();
+  if (!usuario || usuario.rol !== 'CLIENTE') {
+    return;
+  }
+  const esEmpleado = tipo === TIPO_CONTEXTO.EMPLEADO;
+  sessionStorage.setItem(CONTEXTO_KEY, JSON.stringify({
+    usuarioId: usuario.id,
+    tipo: esEmpleado ? TIPO_CONTEXTO.EMPLEADO : TIPO_CONTEXTO.CLIENTE,
+    comercioId: esEmpleado ? comercioId : null,
+  }));
+  if (recordar) {
+    localStorage.setItem(`${ULTIMO_CONTEXTO_PREFIX}${usuario.id}`, esEmpleado ? `${TIPO_CONTEXTO.EMPLEADO}:${comercioId}` : TIPO_CONTEXTO.CLIENTE);
+  }
+}
+
+export function clearContexto() {
+  sessionStorage.removeItem(CONTEXTO_KEY);
+}
+
+export function getUltimoContexto() {
+  const usuario = getUsuario();
+  if (!usuario) {
+    return null;
+  }
+  const crudo = localStorage.getItem(`${ULTIMO_CONTEXTO_PREFIX}${usuario.id}`);
+  if (crudo === TIPO_CONTEXTO.CLIENTE) {
+    return { tipo: TIPO_CONTEXTO.CLIENTE, comercioId: null };
+  }
+  const coincidencia = /^EMPLEADO:(\d+)$/.exec(crudo || '');
+  if (coincidencia && Number(coincidencia[1]) > 0) {
+    return { tipo: TIPO_CONTEXTO.EMPLEADO, comercioId: Number(coincidencia[1]) };
+  }
+  return null;
+}
+
+export function olvidarUltimoContexto() {
+  const usuario = getUsuario();
+  if (usuario) {
+    localStorage.removeItem(`${ULTIMO_CONTEXTO_PREFIX}${usuario.id}`);
+  }
+}
+
+export function esContextoEmpleado() {
+  const contexto = getContexto();
+  return Boolean(contexto) && contexto.tipo === TIPO_CONTEXTO.EMPLEADO;
+}
+
+export function esContextoDueno() {
+  const contexto = getContexto();
+  return Boolean(contexto) && contexto.tipo === TIPO_CONTEXTO.DUENO;
+}
+
+export function esContextoComercio() {
+  return esContextoDueno() || esContextoEmpleado();
+}
+
+export function contextoPuedeOperar() {
+  return esContextoDueno();
 }
 
 export function marcarAvisoInvitacion() {
@@ -60,6 +195,10 @@ export function getComercioActivoId() {
   const usuario = getUsuario();
   if (!usuario) {
     return null;
+  }
+  const contextoGuardado = getContextoGuardado();
+  if (contextoGuardado && contextoGuardado.tipo === TIPO_CONTEXTO.EMPLEADO) {
+    return contextoGuardado.comercioId;
   }
   try {
     const guardado = JSON.parse(sessionStorage.getItem(COMERCIO_ACTIVO_KEY));
@@ -94,8 +233,8 @@ export function clearComercioActivoId() {
   sessionStorage.removeItem(COMERCIO_ACTIVO_KEY);
 }
 
-function comercioParaLaRequest(path, usuario, comercioId, sinComercio) {
-  if (sinComercio || !usuario || usuario.rol !== 'DUENO') {
+function comercioParaLaRequest(path, comercioId, sinComercio) {
+  if (sinComercio || !esContextoComercio()) {
     return null;
   }
   if (!RUTAS_DEL_DUENO.test(path) || RUTAS_DEL_DUENO_SIN_HEADER.test(path)) {
@@ -165,13 +304,24 @@ async function parseBody(response) {
   }
 }
 
+export function perderAccesoAlComercio() {
+  const contexto = getContextoGuardado();
+  const ultimo = getUltimoContexto();
+  clearContexto();
+  if (contexto && ultimo && ultimo.tipo === TIPO_CONTEXTO.EMPLEADO && ultimo.comercioId === contexto.comercioId) {
+    olvidarUltimoContexto();
+  }
+  marcarAvisoAccesoPerdido();
+  redirectTo(RUTA_SELECTOR_CONTEXTO);
+}
+
 export async function apiFetch(path, { method = 'GET', body, auth = true, handle401Globally = true, handle5xxGlobally = true, comercioId, sinComercio = false, conMensaje = false, handleRedGlobally = true } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   const token = getToken();
   const hadToken = Boolean(auth && token);
   if (hadToken) {
     headers.Authorization = `Bearer ${token}`;
-    const comercio = comercioParaLaRequest(path, getUsuario(), comercioId, sinComercio);
+    const comercio = comercioParaLaRequest(path, comercioId, sinComercio);
     if (comercio !== null) {
       headers[HEADER_COMERCIO_ID] = String(comercio);
     }
@@ -212,6 +362,17 @@ export async function apiFetch(path, { method = 'GET', body, auth = true, handle
   if (response.status === 401 && hadToken && handle401Globally) {
     clearSesion();
     showSesionCerradaModal();
+    throw new ApiError(response.status, parsed.mensaje, parsed.data);
+  }
+
+  if (
+    response.status === 404
+    && headers[HEADER_COMERCIO_ID]
+    && esContextoEmpleado()
+    && parsed.data
+    && parsed.data.codigo === CODIGO_COMERCIO_NO_DISPONIBLE
+  ) {
+    perderAccesoAlComercio();
     throw new ApiError(response.status, parsed.mensaje, parsed.data);
   }
 

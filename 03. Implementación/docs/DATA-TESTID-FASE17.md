@@ -133,3 +133,20 @@ Este documento no recogió los `data-testid` de los tramos 2 a 4 del multi-comer
 | Panel "Tus comercios" | `js/selector-comercio.js` | `aviso-vincular-mercadopago`, `btn-aviso-vincular-mercadopago` ("Vincular cuenta") |
 
 Totales de esta entrega: 19 testids nuevos (más `btn-confirmar-desvincular-mp` y `btn-cancelar-desvincular-mp`, que conservan su nombre) y 1 reemplazado. Sin comentarios en ningún archivo tocado.
+
+## Rol Empleado, tramo E2 (entrega B) — contexto y panel de solo lectura
+
+Convención igual que arriba (kebab-case en español, `btn-<verbo>-<objeto>`, los repetidos dentro de una lista llevan el id del recurso como sufijo).
+
+| Pantalla | Archivo(s) | `data-testid` |
+|---|---|---|
+| `seleccionar-contexto.html` (selector después del login) | `.html` | `selector-contexto` (contenedor, oculto hasta cargar la lista), `titulo-selector-contexto`, `lista-contextos`, `ayuda-selector-contexto` |
+| Selector y hoja "Cambiar de cuenta" | `js/selector-contexto.js` | `fila-contexto-cliente`, `fila-contexto-comercio-{id}`, `fila-contexto-comercio-{id}-subtitulo` y `fila-contexto-cliente-subtitulo` (las filas llevan además `data-resaltada="true"` cuando son el último contexto usado, y `aria-current` cuando son el actual), `etiqueta-estado-contexto-{id}` ("Suspendido" o "Cerrado temporalmente"), `tilde-contexto-actual`, `error-lista-contextos`, `btn-reintentar-contextos` |
+| Hoja "Cambiar de cuenta" | `js/selector-contexto.js` | `hoja-cambiar-cuenta`, `titulo-cambiar-cuenta`, `btn-cerrar-hoja-cambiar-cuenta` (la `lista-contextos` de la hoja es la misma que usa el selector) |
+| `perfil.html` (Cliente) | `.html` | `btn-cambiar-cuenta` (oculta salvo que el usuario sea Empleado de algún comercio) |
+| `comercio-perfil.html` (perfil del Empleado) | `.html` | `btn-cambiar-cuenta`, `btn-mi-cuenta`, `insignia-empleado-perfil`, `seccion-datos-comercio-empleado`, `seccion-cuenta-empleado`, `empleado-descripcion`, `empleado-direccion`, `empleado-telefono`, `empleado-horarios`, `empleado-estado` |
+| ídem | `js/comercio.js` | `empleado-horario-{dia}` (`lunes` a `domingo`, un renglón por día) |
+| Franja del comercio (Empleado) | `js/selector-comercio.js` | `franja-comercio-insignia-empleado` (el resto de los testids de la franja del Dueño se conserva: `franja-comercio`, `franja-comercio-nombre`, `franja-comercio-chip-cerrado`) |
+| Pedidos del Empleado | `js/comercio.js` | `chip-reembolso-pedido` (en la tarjeta de la lista, dentro de `pedido-item-{id}`), `chip-reembolso-detalle` (en el detalle) |
+
+Totales de esta entrega: 31 patrones de `data-testid` nuevos (4 en `seleccionar-contexto.html`, 12 en `js/selector-contexto.js`, 1 en `perfil.html`, 10 en `comercio-perfil.html`, 3 en `js/comercio.js` y 1 en `js/selector-comercio.js`). Sin comentarios en ningún archivo tocado.

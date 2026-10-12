@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>¿Cómo querés ingresar? — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <main class="app-main selector-contexto">
+    <div class="selector-contexto__marca">
+      <img class="header-logo" src="assets/img/bajonea-logo-orange-header.png" alt="Bajoneá" />
+    </div>
+    <div class="selector-contexto__contenido is-hidden" id="selector-contenido" data-testid="selector-contexto">
+      <h1 class="selector-contexto__titulo" data-testid="titulo-selector-contexto">¿Cómo querés ingresar?</h1>
+      <div class="panel-comercios__lista selector-contexto__lista" id="lista-contextos" data-testid="lista-contextos"></div>
+      <p class="field__hint selector-contexto__ayuda" data-testid="ayuda-selector-contexto">Después podés cambiar de cuenta desde tu perfil.</p>
+    </div>
+  </main>
+</div>
+<script type="module">
+import { initSeleccionarContexto } from './js/selector-contexto.js';
+initSeleccionarContexto();
+</script>
+</body>
+</html>

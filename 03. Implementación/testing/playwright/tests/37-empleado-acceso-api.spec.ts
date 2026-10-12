@@ -2,11 +2,14 @@ import { test, expect } from '@playwright/test';
 import type { APIRequestContext } from '@playwright/test';
 import {
   aceptarInvitacion,
+  agregarItemCarrito,
   apiConHeaders,
   apiGet,
   apiPut,
   clonarComercioTest,
+  confirmarPagoTest,
   crearCategoria,
+  crearPedido,
   crearProducto,
   diaDeHoy,
   fijarPasswordAdminYLoguear,
@@ -30,6 +33,8 @@ const ACCESIBLES = ['APROBADO', 'APTO_VENTA', 'SUSPENDIDO', 'CERRADO_TEMPORALMEN
 const NO_ACCESIBLES = ['PENDIENTE', 'RECHAZADO', 'INACTIVO', 'RECHAZO_DEFINITIVO'];
 const CAMPOS_PERFIL_EMPLEADO = [
   'abiertoAhora',
+  'aceptaDelivery',
+  'aceptaRetiro',
   'cerradoManualmente',
   'descripcion',
   'direccion',
@@ -38,7 +43,10 @@ const CAMPOS_PERFIL_EMPLEADO = [
   'horarios',
   'id',
   'nombre',
+  'puedeCambiarCierre',
   'telefono',
+  'textoReapertura',
+  'tipoComercio',
 ];
 const CAMPOS_EXCLUIDOS = [
   'cuit',
@@ -50,12 +58,38 @@ const CAMPOS_EXCLUIDOS = [
   'representante',
   'emailContacto',
   'motivoRechazo',
-  'tipoComercio',
-  'aceptaDelivery',
-  'aceptaRetiro',
-  'puedeCambiarCierre',
-  'textoReapertura',
 ];
+const CAMPOS_PEDIDO_EMPLEADO = [
+  'canceladoPor',
+  'comentarioRechazo',
+  'comercioId',
+  'detalles',
+  'direccion',
+  'estado',
+  'fechaCreacion',
+  'fechaEntrega',
+  'fechaPagoAprobado',
+  'fuenteEntrega',
+  'id',
+  'motivoAnulacion',
+  'motivoRechazo',
+  'nombreCliente',
+  'reembolsoEstado',
+  'reembolsoMonto',
+  'subtotal',
+  'tipoEntrega',
+  'total',
+];
+const CAMPOS_PEDIDO_EXCLUIDOS = ['clienteId', 'pagoEstado', 'cargoServicioCliente', 'cargoServicioComercio'];
+const CAMPOS_RESUMEN = ['cantidadPedidosHoy', 'cantidadPendientes', 'totalFacturadoHoy'];
+const ESTADOS_FACTURADOS = ['EN_PREPARACION', 'EN_CAMINO', 'LISTO_PARA_RETIRAR', 'ENTREGADO'];
+const REEMBOLSO_SIMPLE: Record<string, string> = {
+  PENDIENTE: 'EN_PROCESO',
+  PENDIENTE_REINTENTO: 'EN_PROCESO',
+  PROCESADO: 'REEMBOLSADO',
+  FALLIDO: 'EN_REVISION',
+  PENDIENTE_REVISION_MANUAL: 'EN_REVISION',
+};
 const CAMPOS_MIS_COMERCIOS = [
   'abiertoAhora',
   'cantidadNotificacionesNoLeidas',
@@ -112,8 +146,13 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
   let clienteSinRelacionToken: string;
   let categoriaId: number;
 
-  async function sumarAlEquipo(request: APIRequestContext, comercioId: number, cuenta: ClienteRegistrado): Promise<void> {
-    const invitacion = await invitarEmpleado(request, dueno.token, comercioId, cuenta.email);
+  async function sumarAlEquipo(
+    request: APIRequestContext,
+    comercioId: number,
+    cuenta: ClienteRegistrado,
+    tokenDelDueno: string = dueno.token,
+  ): Promise<void> {
+    const invitacion = await invitarEmpleado(request, tokenDelDueno, comercioId, cuenta.email);
     expect(invitacion.status, JSON.stringify(invitacion.body)).toBe(201);
     const codigo = await obtenerCodigoInvitacionTest(request, cuenta.email, comercioId);
     const aceptada = await aceptarInvitacion(request, { email: cuenta.email, codigo });
@@ -164,6 +203,21 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
       expect(datos.cerradoManualmente).toBe(false);
       expect(datos.horarios.length).toBeGreaterThan(0);
       expect(datos.direccion.calle).toBeTruthy();
+    });
+
+    test('el perfil reducido suma tipo de comercio, modalidades de entrega, puedeCambiarCierre y textoReapertura, con los mismos valores que ve el Dueño', async ({ request }) => {
+      const delEmpleado = (await perfil(request, empleadoToken, conComercio(dueno.comercioId))).body.data;
+      const delDueno = (await perfil(request, dueno.token, conComercio(dueno.comercioId))).body.data;
+
+      for (const campo of ['tipoComercio', 'aceptaDelivery', 'aceptaRetiro', 'puedeCambiarCierre', 'textoReapertura']) {
+        expect(Object.keys(delEmpleado), campo).toContain(campo);
+        expect(delEmpleado[campo], campo).toEqual(delDueno[campo]);
+      }
+      expect(typeof delEmpleado.tipoComercio).toBe('string');
+      expect(typeof delEmpleado.aceptaDelivery).toBe('boolean');
+      expect(typeof delEmpleado.aceptaRetiro).toBe('boolean');
+      expect(delEmpleado.aceptaDelivery || delEmpleado.aceptaRetiro).toBe(true);
+      expect(typeof delEmpleado.puedeCambiarCierre).toBe('boolean');
     });
 
     test('el DTO reducido no contiene ninguno de los campos excluidos ni los valores fiscales o del titular', async ({ request }) => {
@@ -240,6 +294,180 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
         expect((await llamar(request, adminToken, conComercio(dueno.comercioId))).status).toBe(403);
         expect((await llamar(request, adminToken)).status).toBe(403);
       }
+    });
+  });
+
+  test.describe('Pedidos y resumen del día: DTO reducido del Empleado', () => {
+    const PRECIO = 3300;
+    let duenoMp: Dueno;
+    const ids: Record<string, number> = {};
+    const pedidosSembrados: number[] = [];
+
+    function sembrarNota(pedidoId: number, estado: string): void {
+      sql(
+        `INSERT INTO pago (pedido_id, monto, mp_estado, id_transaccion_mp, fecha_confirmacion) ` +
+          `SELECT id, total, 'approved', 'sintetico-${pedidoId}', NOW() FROM pedido WHERE id = ${pedidoId};`,
+      );
+      sql(
+        `INSERT INTO nota_credito (pago_id, monto, motivo, estado, intentos, mp_payment_id, ultimo_error, fecha_emision) ` +
+          `SELECT p.id, p.monto, 'RECHAZO_COMERCIO', '${estado}', 2, p.id_transaccion_mp, 'error tecnico sintetico del spec 37', NOW() ` +
+          `FROM pago p WHERE p.pedido_id = ${pedidoId};`,
+      );
+      pedidosSembrados.push(pedidoId);
+    }
+
+    function listaDe(request: APIRequestContext, token: string) {
+      return apiConHeaders(request, 'GET', '/pedidos/comercio', token, conComercio(duenoMp.comercioId));
+    }
+
+    function resumenDe(request: APIRequestContext, token: string) {
+      return apiConHeaders(request, 'GET', '/pedidos/comercio/resumen-hoy', token, conComercio(duenoMp.comercioId));
+    }
+
+    test.beforeAll(async ({ request }) => {
+      const horarios = [{ diaSemana: diaDeHoy(), horaApertura: '00:00', horaCierre: '23:59' }];
+      duenoMp = await prepararAprobado(request, adminToken, localidadId, true, horarios);
+      const productoId = await crearProducto(request, duenoMp.token, { nombre: `Producto Pedidos E2 ${sufijoUnico()}`, precio: PRECIO, categoriaId });
+      await sumarAlEquipo(request, duenoMp.comercioId, empleado, duenoMp.token);
+
+      const cliente = await registrarYVerificarCliente(request, localidadId);
+      const clienteSesion = await login(request, cliente.nombreUsuario, cliente.password);
+      for (const clave of ['pendiente', 'aceptado', 'rechazado', 'procesado', 'reintento', 'fallido']) {
+        await agregarItemCarrito(request, clienteSesion.token, productoId, 1);
+        const pedidoId = await crearPedido(request, clienteSesion.token, 'RETIRO');
+        await confirmarPagoTest(request, pedidoId);
+        ids[clave] = pedidoId;
+      }
+      const aceptar = await apiConHeaders(request, 'PUT', `/pedidos/comercio/${ids.aceptado}/aceptar`, duenoMp.token, conComercio(duenoMp.comercioId));
+      expect(aceptar.status, JSON.stringify(aceptar.body)).toBe(200);
+      const rechazar = await apiConHeaders(request, 'PUT', `/pedidos/comercio/${ids.rechazado}/rechazar`, duenoMp.token, conComercio(duenoMp.comercioId), {
+        motivo: 'SIN_STOCK',
+      });
+      expect(rechazar.status, JSON.stringify(rechazar.body)).toBe(200);
+      sembrarNota(ids.procesado, 'PROCESADO');
+      sembrarNota(ids.reintento, 'PENDIENTE_REINTENTO');
+      sembrarNota(ids.fallido, 'FALLIDO');
+    });
+
+    test.afterAll(() => {
+      if (pedidosSembrados.length > 0) {
+        sql(`DELETE FROM nota_credito WHERE pago_id IN (SELECT id FROM pago WHERE pedido_id IN (${pedidosSembrados.join(',')}));`);
+        sql(`DELETE FROM pago WHERE pedido_id IN (${pedidosSembrados.join(',')}) AND id_transaccion_mp LIKE 'sintetico-%';`);
+      }
+    });
+
+    test('cada pedido que recibe el Empleado tiene exactamente los campos de la lista blanca y ninguno de los excluidos', async ({ request }) => {
+      const respuesta = await listaDe(request, empleadoToken);
+
+      expect(respuesta.status).toBe(200);
+      const lista = respuesta.body.data as Array<Record<string, any>>;
+      expect(lista.length).toBe(Object.keys(ids).length);
+      for (const pedido of lista) {
+        expect(Object.keys(pedido).sort(), `pedido ${pedido.id}`).toEqual(CAMPOS_PEDIDO_EMPLEADO);
+        for (const excluido of CAMPOS_PEDIDO_EXCLUIDOS) {
+          expect(Object.keys(pedido), excluido).not.toContain(excluido);
+        }
+        for (const detalle of pedido.detalles) {
+          expect(Object.keys(detalle).sort()).toEqual(['cantidad', 'nombreProducto', 'nota', 'precioUnitario', 'productoId', 'subtotal']);
+        }
+      }
+    });
+
+    test('el texto de la respuesta del Empleado no contiene cargos de servicio, comisiones ni datos de Mercado Pago o técnicos del reembolso', async ({ request }) => {
+      const texto = JSON.stringify((await listaDe(request, empleadoToken)).body).toLowerCase();
+
+      for (const prohibido of ['cargoservicio', 'marketplace', 'mercadopago', 'mp_', 'ultimoerror', 'intentos', 'error tecnico', 'sintetico', 'pagoestado', 'clienteid', 'fallido', 'revision_manual', 'reintento']) {
+        expect(texto, prohibido).not.toContain(prohibido);
+      }
+    });
+
+    test('los datos compartidos del pedido coinciden con los del Dueño: identificador, estado, cliente, entrega, ítems, subtotal, total, motivos y fechas', async ({ request }) => {
+      const delEmpleado = (await listaDe(request, empleadoToken)).body.data as Array<Record<string, any>>;
+      const delDueno = (await listaDe(request, duenoMp.token)).body.data as Array<Record<string, any>>;
+
+      expect(delEmpleado.map((p) => p.id)).toEqual(delDueno.map((p) => p.id));
+      for (const [i, pedido] of delEmpleado.entries()) {
+        const completo = delDueno[i];
+        for (const campo of CAMPOS_PEDIDO_EMPLEADO.filter((c) => c !== 'reembolsoEstado')) {
+          expect(pedido[campo], `pedido ${pedido.id} ${campo}`).toEqual(completo[campo]);
+        }
+      }
+      const rechazado = delEmpleado.find((p) => p.id === ids.rechazado)!;
+      expect(rechazado.estado).toBe('RECHAZADO');
+      expect(rechazado.motivoRechazo).toBe('SIN_STOCK');
+      expect(rechazado.canceladoPor).toBe('COMERCIO');
+      const aceptado = delEmpleado.find((p) => p.id === ids.aceptado)!;
+      expect(aceptado.estado).toBe('EN_PREPARACION');
+      expect(aceptado.detalles[0].precioUnitario).toBe(PRECIO);
+      expect(aceptado.subtotal).toBe(PRECIO);
+      expect(aceptado.total).toBeGreaterThanOrEqual(PRECIO);
+      expect(aceptado.nombreCliente).toBeTruthy();
+      expect(aceptado.tipoEntrega).toBe('RETIRO');
+    });
+
+    test('el Dueño sigue recibiendo el DTO completo, con los cargos de servicio, el id del cliente y el estado del pago', async ({ request }) => {
+      const lista = (await listaDe(request, duenoMp.token)).body.data as Array<Record<string, any>>;
+
+      expect(lista.length).toBeGreaterThan(0);
+      for (const pedido of lista) {
+        for (const campo of [...CAMPOS_PEDIDO_EXCLUIDOS, ...CAMPOS_PEDIDO_EMPLEADO]) {
+          expect(Object.keys(pedido), `pedido ${pedido.id} ${campo}`).toContain(campo);
+        }
+      }
+      const aceptado = lista.find((p) => p.id === ids.aceptado)!;
+      expect(aceptado.pagoEstado).toBe('PAGADO');
+      expect(aceptado.cargoServicioComercio).toBeGreaterThanOrEqual(0);
+    });
+
+    test('el reembolso se ve en términos simples: sin reembolso, en proceso, reembolsado y en revisión, con el monto', async ({ request }) => {
+      const delEmpleado = (await listaDe(request, empleadoToken)).body.data as Array<Record<string, any>>;
+      const delDueno = (await listaDe(request, duenoMp.token)).body.data as Array<Record<string, any>>;
+      const porId = (lista: Array<Record<string, any>>, id: number) => lista.find((p) => p.id === id)!;
+
+      expect(porId(delEmpleado, ids.pendiente).reembolsoEstado).toBe('SIN_REEMBOLSO');
+      expect(porId(delEmpleado, ids.pendiente).reembolsoMonto).toBeNull();
+      expect(porId(delEmpleado, ids.aceptado).reembolsoEstado).toBe('SIN_REEMBOLSO');
+      const procesado = porId(delEmpleado, ids.procesado);
+      expect(procesado.reembolsoEstado).toBe('REEMBOLSADO');
+      expect(procesado.reembolsoMonto).toBe(porId(delDueno, ids.procesado).reembolsoMonto);
+      expect(procesado.reembolsoMonto).toBeGreaterThan(0);
+      expect(porId(delEmpleado, ids.reintento).reembolsoEstado).toBe('EN_PROCESO');
+      expect(porId(delEmpleado, ids.fallido).reembolsoEstado).toBe('EN_REVISION');
+      expect(porId(delDueno, ids.fallido).reembolsoEstado).toBe('FALLIDO');
+      for (const pedido of delEmpleado) {
+        const crudo = porId(delDueno, pedido.id).reembolsoEstado as string | null;
+        expect(pedido.reembolsoEstado, `pedido ${pedido.id}`).toBe(crudo === null ? 'SIN_REEMBOLSO' : REEMBOLSO_SIMPLE[crudo]);
+      }
+    });
+
+    test('el resumen del Empleado trae solo tres campos; el facturado es el bruto de productos y el del Dueño el neto, con los mismos contadores', async ({ request }) => {
+      const resumenEmpleado = (await resumenDe(request, empleadoToken)).body.data;
+      const resumenDueno = (await resumenDe(request, duenoMp.token)).body.data;
+      const completos = (await listaDe(request, duenoMp.token)).body.data as Array<Record<string, any>>;
+      const facturados = completos.filter((p) => ESTADOS_FACTURADOS.includes(p.estado));
+      const bruto = facturados.reduce((suma, p) => suma + p.subtotal, 0);
+      const neto = facturados.reduce((suma, p) => suma + p.subtotal - p.cargoServicioComercio, 0);
+
+      expect(Object.keys(resumenEmpleado).sort()).toEqual(CAMPOS_RESUMEN);
+      expect(Object.keys(resumenDueno).sort()).toEqual(CAMPOS_RESUMEN);
+      expect(facturados.length).toBe(1);
+      expect(resumenEmpleado.totalFacturadoHoy).toBeCloseTo(bruto, 2);
+      expect(resumenDueno.totalFacturadoHoy).toBeCloseTo(neto, 2);
+      expect(resumenEmpleado.totalFacturadoHoy).toBe(PRECIO);
+      expect(resumenEmpleado.cantidadPedidosHoy).toBe(resumenDueno.cantidadPedidosHoy);
+      expect(resumenEmpleado.cantidadPedidosHoy).toBe(Object.keys(ids).length);
+      expect(resumenEmpleado.cantidadPendientes).toBe(resumenDueno.cantidadPendientes);
+      expect(resumenEmpleado.cantidadPendientes).toBe(4);
+    });
+
+    test('el Empleado no ve pedidos de otro comercio: con el header de su otro comercio la lista y el resumen están vacíos', async ({ request }) => {
+      const vacio = await apiConHeaders(request, 'GET', '/pedidos/comercio', empleadoToken, conComercio(dueno.comercioId));
+      const resumen = await apiConHeaders(request, 'GET', '/pedidos/comercio/resumen-hoy', empleadoToken, conComercio(dueno.comercioId));
+
+      expect(vacio.status).toBe(200);
+      expect(vacio.body.data).toEqual([]);
+      expect(resumen.body.data.totalFacturadoHoy).toBe(0);
+      expect(resumen.body.data.cantidadPedidosHoy).toBe(0);
     });
   });
 

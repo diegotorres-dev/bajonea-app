@@ -1,6 +1,7 @@
 import { apiFetch, getUsuario } from './api.js';
 import { renderTopBar } from './catalogo.js';
-import { prepararPaginaDueno } from './selector-comercio.js';
+import { prepararPaginaComercio } from './selector-comercio.js';
+import { exigirContextoCliente } from './contexto.js';
 
 const POLLING_INTERVAL_MS = 15000;
 
@@ -103,6 +104,9 @@ function renderNotificacion(notificacion, rol) {
 }
 
 export async function initNotificaciones() {
+  if (!(await exigirContextoCliente())) {
+    return;
+  }
   const usuario = getUsuario();
   if (!usuario || (usuario.rol !== 'CLIENTE' && usuario.rol !== 'DUENO')) {
     window.location.href = 'login.html';
@@ -111,7 +115,7 @@ export async function initNotificaciones() {
 
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Notificaciones' });
 
-  if (usuario.rol === 'DUENO' && !(await prepararPaginaDueno())) {
+  if (usuario.rol === 'DUENO' && !(await prepararPaginaComercio())) {
     return;
   }
 

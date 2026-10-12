@@ -1,4 +1,5 @@
 import { apiFetch, ApiError, getUsuario } from './api.js';
+import { exigirDueno } from './contexto.js';
 import { subirFotoCorreccionComercio, CloudinaryUploadError } from './cloudinary.js';
 import { construirTelefono, resolverHomePorRol } from './auth.js';
 import { crearBloqueMotivoRechazo } from './catalogo.js';
@@ -97,11 +98,10 @@ function ordenarRedes(redes) {
 }
 
 export async function initComercioCorregir() {
-  const usuario = getUsuario();
-  if (!usuario || usuario.rol !== 'DUENO') {
-    window.location.href = 'login.html';
+  if (!(await exigirDueno())) {
     return;
   }
+  const usuario = getUsuario();
 
   const comercioId = Number(new URLSearchParams(window.location.search).get('id'));
   if (!Number.isInteger(comercioId) || comercioId <= 0) {

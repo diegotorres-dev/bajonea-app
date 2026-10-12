@@ -1,4 +1,5 @@
-import { apiFetch, ApiError, getUsuario, clearSesion } from './api.js';
+import { apiFetch, ApiError, clearSesion, contextoPuedeOperar, esContextoComercio, esContextoDueno, esContextoEmpleado, getUsuario } from './api.js';
+import { exigirContextoComercio, exigirDueno } from './contexto.js';
 import { logout, construirTelefono, resolverHomePorRol, LABELS_TIPO_SOCIEDAD, LABELS_CONDICION_IVA } from './auth.js';
 import { resumenHorarioHoy, renderTopBar, showToast, pintarAvatarComercio, renderPedidoEstadoHeader, manejarBloqueoPorCambioPassword, crearBloqueMotivoRechazo } from './catalogo.js';
 import { SOPORTE_CONTACTO_URL } from './config.js';
@@ -15,7 +16,8 @@ import {
   suscribirComercios,
   RUTA_DASHBOARD,
 } from './comercio-activo.js';
-import { abrirPanelComercios, enlazarMantenerApretado, prepararPaginaDueno } from './selector-comercio.js';
+import { abrirPanelComercios, enlazarMantenerApretado, prepararPaginaComercio } from './selector-comercio.js';
+import { abrirHojaCambiarCuenta } from './selector-contexto.js';
 import { montarSwitchCierre } from './cierre-comercio.js';
 import { abrirEquipoComercio, enlazarEquipoComercio } from './equipo-comercio.js';
 import { cerrarVariosComercios, comerciosCerrables } from './apertura-comercio.js';
@@ -57,11 +59,45 @@ function normalizarComercio(comercio) {
   return comercio;
 }
 
+const TEXTO_REEMBOLSO = {
+  EN_PROCESO: 'Reembolso en proceso',
+  REEMBOLSADO: 'Reembolsado',
+  EN_REVISION: 'Reembolso en revisión',
+};
+
 function normalizarPedido(pedido) {
   normalizarCampos(pedido, ['nombreCliente']);
   normalizarCampos(pedido.direccion, ['calle']);
   (pedido.detalles || []).forEach((detalle) => normalizarCampos(detalle, ['nombreProducto']));
+  const vistaReducida = !Object.hasOwn(pedido, 'cargoServicioComercio');
+  pedido.vistaReducida = vistaReducida;
+  pedido.cargoServicioComercio = vistaReducida ? null : pedido.cargoServicioComercio;
+  pedido.neto = vistaReducida ? pedido.subtotal : pedido.subtotal - pedido.cargoServicioComercio;
+  pedido.reembolso = vistaReducida && TEXTO_REEMBOLSO[pedido.reembolsoEstado]
+    ? { clave: pedido.reembolsoEstado, monto: pedido.reembolsoMonto }
+    : null;
   return pedido;
+}
+
+function normalizarResumen(resumen) {
+  return {
+    ventasHoy: resumen.totalFacturadoHoy,
+    etiquetaVentas: esContextoEmpleado() ? 'Ventas de hoy' : 'Facturado hoy',
+    cantidadPedidosHoy: resumen.cantidadPedidosHoy,
+    cantidadPendientes: resumen.cantidadPendientes,
+  };
+}
+
+function textoReembolso(reembolso) {
+  const base = TEXTO_REEMBOLSO[reembolso.clave];
+  return reembolso.monto === null || reembolso.monto === undefined ? base : `${base} · ${formatearPrecio(reembolso.monto)}`;
+}
+
+function crearChipReembolso(pedido, testid) {
+  const chip = crear('span', `reembolso-chip reembolso-chip--${pedido.reembolso.clave.toLowerCase().replace(/_/g, '-')}`);
+  chip.setAttribute('data-testid', testid);
+  chip.textContent = textoReembolso(pedido.reembolso);
+  return chip;
 }
 
 const ICONS = {
@@ -211,11 +247,10 @@ function leerComercioIdDeLaUrl() {
 }
 
 export async function initComercioEstadoPagina(estadoEsperado) {
-  const usuario = getUsuario();
-  if (!usuario || usuario.rol !== 'DUENO') {
-    window.location.href = 'login.html';
+  if (!(await exigirDueno())) {
     return null;
   }
+  const usuario = getUsuario();
   const emailEl = document.getElementById('usuario-email');
   if (emailEl) {
     emailEl.textContent = usuario.email;
@@ -342,8 +377,7 @@ export async function initComercioRechazoDefinitivo() {
 }
 
 export function renderBottomNavComercio(container, activo) {
-  const usuario = getUsuario();
-  if (!usuario || usuario.rol !== 'DUENO') {
+  if (!esContextoComercio()) {
     return;
   }
   const nav = crear('nav', 'bottom-nav');
@@ -378,8 +412,10 @@ export function renderBottomNavComercio(container, activo) {
 
   if (avatarPerfil) {
     const perfilLink = avatarPerfil.closest('a');
-    perfilLink.classList.add('bottom-nav__item--selector');
-    enlazarMantenerApretado(perfilLink, () => abrirPanelComercios());
+    if (esContextoDueno()) {
+      perfilLink.classList.add('bottom-nav__item--selector');
+      enlazarMantenerApretado(perfilLink, () => abrirPanelComercios());
+    }
     let firma = null;
     const pintar = () => {
       const activo = getComercioActivoEnMemoria();
@@ -426,14 +462,16 @@ function renderHeaderDashboard(container) {
   brand.appendChild(brandLogo);
   bar.appendChild(brand);
 
-  const bellLink = document.createElement('a');
-  bellLink.href = 'notificaciones.html';
-  bellLink.className = 'top-bar__action top-bar__action--bell';
-  bellLink.setAttribute('data-testid', 'btn-notificaciones');
-  bellLink.innerHTML = ICONS.bell;
-  bar.appendChild(bellLink);
-  pintarBadgeBell(bellLink);
-  suscribirComercios(() => pintarBadgeBell(bellLink));
+  if (esContextoDueno()) {
+    const bellLink = document.createElement('a');
+    bellLink.href = 'notificaciones.html';
+    bellLink.className = 'top-bar__action top-bar__action--bell';
+    bellLink.setAttribute('data-testid', 'btn-notificaciones');
+    bellLink.innerHTML = ICONS.bell;
+    bar.appendChild(bellLink);
+    pintarBadgeBell(bellLink);
+    suscribirComercios(() => pintarBadgeBell(bellLink));
+  }
 
   container.appendChild(bar);
 }
@@ -443,7 +481,7 @@ function renderMetricas(container, resumen) {
   container.className = 'stats-bar';
 
   const metricas = [
-    { valor: formatearPrecio(resumen.totalFacturadoHoy), label: 'Facturado hoy' },
+    { valor: formatearPrecio(resumen.ventasHoy), label: resumen.etiquetaVentas },
     { valor: String(resumen.cantidadPedidosHoy), label: 'Pedidos hoy' },
     { valor: String(resumen.cantidadPendientes), label: 'Pendientes' },
   ];
@@ -459,6 +497,11 @@ function renderMetricas(container, resumen) {
     container.appendChild(card);
   });
 }
+
+const AVISO_COMERCIO_NO_OPERATIVO = {
+  SUSPENDIDO: 'Este comercio está suspendido. Podés consultar su información, pero no operar.',
+  CERRADO_TEMPORALMENTE: 'Este comercio está cerrado temporalmente. Podés consultar su información, pero no operar.',
+};
 
 const ESTADO_BADGE_COMERCIO = {
   PENDIENTE_CONFIRMACION_COMERCIO: { label: 'Nuevo', dotClass: 'pedido-estado__dot--pendiente' },
@@ -501,6 +544,12 @@ function renderPedidoActivoCard(pedido) {
   badge.appendChild(label);
   top.appendChild(badge);
   card.appendChild(top);
+
+  if (pedido.reembolso) {
+    const filaReembolso = crear('div', 'pedido-card__reembolso');
+    filaReembolso.appendChild(crearChipReembolso(pedido, 'chip-reembolso-pedido'));
+    card.appendChild(filaReembolso);
+  }
 
   const bottom = crear('div', 'pedido-card__bottom');
   const total = crear('span', 'pedido-card__total');
@@ -546,15 +595,15 @@ function renderPedidosActivos(listContainer, badgeContainer, pedidos) {
 }
 
 export async function initComercioDashboard() {
-  const usuario = getUsuario();
-  if (!usuario || usuario.rol !== 'DUENO') {
-    window.location.href = 'login.html';
+  if (!(await exigirContextoComercio())) {
     return;
   }
   renderHeaderDashboard(document.getElementById('top-bar-slot'));
   renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'panel');
-  montarSwitchCierre(document.getElementById('cierre-comercio-slot'));
-  const activo = await prepararPaginaDueno({ slotFranja: document.getElementById('franja-comercio-slot') });
+  if (contextoPuedeOperar()) {
+    montarSwitchCierre(document.getElementById('cierre-comercio-slot'));
+  }
+  const activo = await prepararPaginaComercio({ slotFranja: document.getElementById('franja-comercio-slot') });
   if (!activo) {
     return;
   }
@@ -567,11 +616,16 @@ export async function initComercioDashboard() {
     if (!enMemoria) {
       return;
     }
+    if (esContextoEmpleado() && AVISO_COMERCIO_NO_OPERATIVO[enMemoria.estado]) {
+      renderBanner(document.getElementById('banner-estado-slot'), 'warning', AVISO_COMERCIO_NO_OPERATIVO[enMemoria.estado]);
+      return;
+    }
     const abierto = enMemoria.abiertoAhora;
+    const sujeto = esContextoEmpleado() ? 'Este comercio' : 'Tu comercio';
     renderEstadoBanner(
       document.getElementById('banner-estado-slot'),
       abierto,
-      abierto ? `Tu comercio está abierto ahora. ${resumenHoy}` : 'Tu comercio está cerrado en este momento',
+      abierto ? `${sujeto} está abierto ahora. ${resumenHoy}` : `${sujeto} está cerrado en este momento`,
     );
   }
   pintarBannerEstado();
@@ -591,7 +645,7 @@ export async function initComercioDashboard() {
       apiFetch('/pedidos/comercio'),
     ]);
     pedidos.forEach(normalizarPedido);
-    renderMetricas(document.getElementById('metrics-row'), resumen);
+    renderMetricas(document.getElementById('metrics-row'), normalizarResumen(resumen));
     renderPedidosActivos(document.getElementById('pedidos-activos-list'), document.getElementById('badge-pedidos-activos'), pedidos);
   }
 
@@ -633,15 +687,13 @@ const PRIORIDAD_ESTADO_PEDIDO = {
 };
 
 export async function initComercioPedidos() {
-  const usuario = getUsuario();
-  if (!usuario || usuario.rol !== 'DUENO') {
-    window.location.href = 'login.html';
+  if (!(await exigirContextoComercio())) {
     return;
   }
 
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Pedidos' });
   renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'pedidos');
-  if (!(await prepararPaginaDueno({ slotFranja: document.getElementById('franja-comercio-slot') }))) {
+  if (!(await prepararPaginaComercio({ slotFranja: document.getElementById('franja-comercio-slot') }))) {
     return;
   }
 
@@ -704,18 +756,21 @@ const ESTADO_DETALLE_COMERCIO = {
     iconClass: 'pedido-detail__icon--pendiente',
     icon: ICONS.clock,
     texto: 'Este pedido está esperando tu confirmación.',
+    textoEmpleado: 'Este pedido está esperando la confirmación del comercio.',
   },
   EN_PREPARACION: {
     label: 'En preparación',
     iconClass: 'pedido-detail__icon--preparacion',
     icon: ICONS.flame,
     texto: 'Aceptaste este pedido. Lo tenés en preparación.',
+    textoEmpleado: 'Este pedido está en preparación.',
   },
   EN_CAMINO: {
     label: 'En camino',
     iconClass: 'pedido-detail__icon--pendiente',
     icon: ICONS.truck,
     texto: 'Despachaste este pedido. Está en camino al cliente.',
+    textoEmpleado: 'Este pedido está en camino al cliente.',
   },
   LISTO_PARA_RETIRAR: {
     label: 'Listo para retirar',
@@ -734,12 +789,14 @@ const ESTADO_DETALLE_COMERCIO = {
     iconClass: 'pedido-detail__icon--rechazado',
     icon: ICONS.xCircle,
     texto: 'Rechazaste este pedido.',
+    textoEmpleado: 'El comercio rechazó este pedido.',
   },
   ANULADO: {
     label: 'Anulado',
     iconClass: 'pedido-detail__icon--pendiente',
     icon: ICONS.xCircle,
     texto: 'Anulaste este pedido.',
+    textoEmpleado: 'El comercio anuló este pedido.',
   },
   CANCELADO: {
     label: 'Cancelado',
@@ -1013,12 +1070,19 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado) {
     iconClass: info.iconClass,
     icono: info.icon,
     label: info.label,
-    texto: info.texto,
+    texto: pedido.vistaReducida && info.textoEmpleado ? info.textoEmpleado : info.texto,
     numeroTexto: `Pedido #${pedido.id} · ${formatearFecha(pedido.fechaPagoAprobado)}`,
     motivoRechazo: motivoInfo,
   });
 
   const body = crear('div', 'screen-body screen-body--tight');
+
+  if (pedido.reembolso) {
+    const bloqueReembolso = crear('div');
+    bloqueReembolso.style.marginBottom = '12px';
+    bloqueReembolso.appendChild(crearChipReembolso(pedido, 'chip-reembolso-detalle'));
+    body.appendChild(bloqueReembolso);
+  }
 
   const clienteCard = crear('div', 'summary-card');
   const clienteIcon = crear('div', 'summary-card__icon');
@@ -1075,25 +1139,40 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado) {
     }
   });
 
-  const cargoLine = crear('div', 'order-line');
-  const cargoLabel = document.createElement('span');
-  cargoLabel.textContent = 'Cargo por servicio (1%)';
-  cargoLine.appendChild(cargoLabel);
-  const cargoValue = document.createElement('span');
-  cargoValue.textContent = `-${formatearPrecio(pedido.cargoServicioComercio)}`;
-  cargoLine.appendChild(cargoValue);
-  body.appendChild(cargoLine);
+  if (pedido.cargoServicioComercio !== null) {
+    const cargoLine = crear('div', 'order-line');
+    const cargoLabel = document.createElement('span');
+    cargoLabel.textContent = 'Cargo por servicio (1%)';
+    cargoLine.appendChild(cargoLabel);
+    const cargoValue = document.createElement('span');
+    cargoValue.textContent = `-${formatearPrecio(pedido.cargoServicioComercio)}`;
+    cargoLine.appendChild(cargoValue);
+    body.appendChild(cargoLine);
+  }
+
+  if (pedido.vistaReducida) {
+    const subtotalLine = crear('div', 'order-line');
+    subtotalLine.setAttribute('data-testid', 'subtotal-pedido');
+    const subtotalLabel = document.createElement('span');
+    subtotalLabel.textContent = 'Subtotal';
+    subtotalLine.appendChild(subtotalLabel);
+    const subtotalValue = document.createElement('span');
+    subtotalValue.textContent = formatearPrecio(pedido.subtotal);
+    subtotalLine.appendChild(subtotalValue);
+    body.appendChild(subtotalLine);
+  }
 
   const totalLine = crear('div', 'order-line order-line--total');
+  totalLine.setAttribute('data-testid', 'total-pagado-pedido');
   const totalLabel = document.createElement('span');
-  totalLabel.textContent = 'Total';
+  totalLabel.textContent = pedido.vistaReducida ? 'Total pagado' : 'Total';
   totalLine.appendChild(totalLabel);
   const totalValue = document.createElement('span');
-  totalValue.textContent = formatearPrecio(pedido.subtotal - pedido.cargoServicioComercio);
+  totalValue.textContent = formatearPrecio(pedido.vistaReducida ? pedido.total : pedido.neto);
   totalLine.appendChild(totalValue);
   body.appendChild(totalLine);
 
-  if (pedido.estado === 'PENDIENTE_CONFIRMACION_COMERCIO' || pedido.estado === 'EN_PREPARACION' || pedido.estado === 'LISTO_PARA_RETIRAR') {
+  if (contextoPuedeOperar() && (pedido.estado === 'PENDIENTE_CONFIRMACION_COMERCIO' || pedido.estado === 'EN_PREPARACION' || pedido.estado === 'LISTO_PARA_RETIRAR')) {
     const accionesSlot = crear('div');
     accionesSlot.style.marginTop = '24px';
     body.appendChild(accionesSlot);
@@ -1135,14 +1214,12 @@ function renderPedidoNoEncontrado(container) {
 }
 
 export async function initComercioPedidoDetalle() {
-  const usuario = getUsuario();
-  if (!usuario || usuario.rol !== 'DUENO') {
-    window.location.href = 'login.html';
+  if (!(await exigirContextoComercio())) {
     return;
   }
 
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Pedido' });
-  if (!(await prepararPaginaDueno())) {
+  if (!(await prepararPaginaComercio())) {
     return;
   }
 
@@ -1537,22 +1614,79 @@ function mostrarModalFotoPerfilComercio({ onEditar }) {
   });
 }
 
+const DIAS_DE_LA_SEMANA = [
+  { clave: 'LUNES', etiqueta: 'Lunes' },
+  { clave: 'MARTES', etiqueta: 'Martes' },
+  { clave: 'MIERCOLES', etiqueta: 'Miércoles' },
+  { clave: 'JUEVES', etiqueta: 'Jueves' },
+  { clave: 'VIERNES', etiqueta: 'Viernes' },
+  { clave: 'SABADO', etiqueta: 'Sábado' },
+  { clave: 'DOMINGO', etiqueta: 'Domingo' },
+];
+
+function textoEstadoParaEmpleado(comercio) {
+  if (comercio.estado === 'SUSPENDIDO') {
+    return 'Suspendido';
+  }
+  if (comercio.estado === 'CERRADO_TEMPORALMENTE') {
+    return 'Cerrado temporalmente';
+  }
+  if (comercio.cerradoManualmente) {
+    return 'Pedidos pausados';
+  }
+  return comercio.abiertoAhora ? 'Abierto ahora' : 'Cerrado en este momento';
+}
+
+function pintarHorariosParaEmpleado(contenedor, horarios) {
+  contenedor.replaceChildren();
+  DIAS_DE_LA_SEMANA.forEach((dia) => {
+    const franjas = (horarios || []).filter((horario) => horario.diaSemana === dia.clave);
+    const fila = crear('p', 'perfil-datos__horario');
+    fila.setAttribute('data-testid', `empleado-horario-${dia.clave.toLowerCase()}`);
+    fila.textContent = franjas.length === 0
+      ? `${dia.etiqueta}: Cerrado`
+      : `${dia.etiqueta}: ${franjas.map((franja) => `${franja.horaApertura.slice(0, 5)} - ${franja.horaCierre.slice(0, 5)}`).join(' / ')}`;
+    contenedor.appendChild(fila);
+  });
+}
+
+function pintarPerfilDelEmpleado(comercio) {
+  document.getElementById('perfil-nombre').textContent = comercio.nombre;
+  document.getElementById('perfil-email').classList.add('is-hidden');
+  document.getElementById('perfil-insignia-empleado').classList.remove('is-hidden');
+  pintarAvatarComercio(document.getElementById('perfil-avatar'), comercio);
+  document.getElementById('seccion-mi-comercio').classList.add('is-hidden');
+  document.getElementById('seccion-empleado-datos').classList.remove('is-hidden');
+  document.getElementById('seccion-empleado-cuenta').classList.remove('is-hidden');
+  document.getElementById('empleado-descripcion').textContent = comercio.descripcion || 'Sin descripción';
+  document.getElementById('empleado-direccion').textContent = formatearDireccion(comercio.direccion);
+  document.getElementById('empleado-telefono').textContent = comercio.telefono;
+  pintarHorariosParaEmpleado(document.getElementById('empleado-horarios'), comercio.horarios);
+  document.getElementById('empleado-estado').textContent = textoEstadoParaEmpleado(comercio);
+  const cambiarCuenta = document.getElementById('cambiar-cuenta-link');
+  cambiarCuenta.addEventListener('click', () => abrirHojaCambiarCuenta());
+  cambiarCuenta.disabled = false;
+}
+
 export async function initComercioPerfil() {
-  const usuario = getUsuario();
-  if (!usuario || usuario.rol !== 'DUENO') {
-    window.location.href = 'login.html';
+  if (!(await exigirContextoComercio())) {
     return;
   }
 
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarPerfil: false, mostrarCampana: false, centrarLogo: true });
   renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'perfil');
   document.getElementById('cerrar-sesion-link').addEventListener('click', mostrarModalConfirmarLogout);
-  if (!(await prepararPaginaDueno({ slotFranja: document.getElementById('franja-comercio-slot') }))) {
+  if (!(await prepararPaginaComercio({ slotFranja: document.getElementById('franja-comercio-slot') }))) {
     return;
   }
 
   const comercio = await apiFetch('/comercios/perfil');
   normalizarComercio(comercio);
+
+  if (esContextoEmpleado()) {
+    pintarPerfilDelEmpleado(comercio);
+    return;
+  }
 
   document.getElementById('perfil-nombre').textContent = comercio.nombre;
   document.getElementById('perfil-email').textContent = comercio.emailContacto;
@@ -1896,13 +2030,15 @@ function renderProductoRow(producto, onKebab) {
   info.appendChild(precio);
   row.appendChild(info);
 
-  const kebab = crear('button', 'product-row__kebab');
-  kebab.type = 'button';
-  kebab.setAttribute('aria-label', 'Acciones del producto');
-  kebab.setAttribute('data-testid', `btn-acciones-producto-${producto.id}`);
-  kebab.innerHTML = ICONS.kebab;
-  kebab.addEventListener('click', () => onKebab(producto));
-  row.appendChild(kebab);
+  if (onKebab) {
+    const kebab = crear('button', 'product-row__kebab');
+    kebab.type = 'button';
+    kebab.setAttribute('aria-label', 'Acciones del producto');
+    kebab.setAttribute('data-testid', `btn-acciones-producto-${producto.id}`);
+    kebab.innerHTML = ICONS.kebab;
+    kebab.addEventListener('click', () => onKebab(producto));
+    row.appendChild(kebab);
+  }
 
   return row;
 }
@@ -2029,15 +2165,13 @@ function mostrarModalConfirmarDescontinuar(producto, onConfirmar) {
 }
 
 export async function initComercioProductos() {
-  const usuario = getUsuario();
-  if (!usuario || usuario.rol !== 'DUENO') {
-    window.location.href = 'login.html';
+  if (!(await exigirContextoComercio())) {
     return;
   }
 
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Mis productos' });
   renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'productos');
-  if (!(await prepararPaginaDueno({ slotFranja: document.getElementById('franja-comercio-slot') }))) {
+  if (!(await prepararPaginaComercio({ slotFranja: document.getElementById('franja-comercio-slot') }))) {
     return;
   }
 
@@ -2096,7 +2230,7 @@ export async function initComercioProductos() {
       empty.style.padding = '24px 0';
       empty.style.textAlign = 'center';
       empty.textContent = productos.length === 0
-        ? 'Todavía no cargaste ningún producto. Usá el botón + para crear el primero.'
+        ? (contextoPuedeOperar() ? 'Todavía no cargaste ningún producto. Usá el botón + para crear el primero.' : 'Este comercio todavía no tiene productos cargados.')
         : 'No encontramos productos con ese filtro.';
       contentEl.appendChild(empty);
       return;
@@ -2105,7 +2239,7 @@ export async function initComercioProductos() {
     const section = crear('div', 'product-section');
     section.style.padding = '0';
     filtrados.forEach((producto) => {
-      section.appendChild(renderProductoRow(producto, abrirMenuAccion));
+      section.appendChild(renderProductoRow(producto, contextoPuedeOperar() ? abrirMenuAccion : null));
     });
     contentEl.appendChild(section);
   }
@@ -2159,17 +2293,20 @@ export async function initComercioProductos() {
     renderLista();
   });
 
-  document.getElementById('crear-producto-fab').addEventListener('click', () => {
-    window.location.href = 'comercio-producto-form.html';
-  });
+  const botonCrearProducto = document.getElementById('crear-producto-fab');
+  if (contextoPuedeOperar()) {
+    botonCrearProducto.addEventListener('click', () => {
+      window.location.href = 'comercio-producto-form.html';
+    });
+  } else {
+    botonCrearProducto.classList.add('is-hidden');
+  }
 
   renderLista();
 }
 
 export async function initComercioProductoForm() {
-  const usuario = getUsuario();
-  if (!usuario || usuario.rol !== 'DUENO') {
-    window.location.href = 'login.html';
+  if (!(await exigirDueno())) {
     return;
   }
 
@@ -2182,7 +2319,7 @@ export async function initComercioProductoForm() {
     titulo: esEdicion ? 'Editar producto' : 'Nuevo producto',
   });
   document.getElementById('guardar-producto-btn').textContent = esEdicion ? 'Guardar cambios' : 'Crear producto';
-  if (!(await prepararPaginaDueno())) {
+  if (!(await prepararPaginaComercio())) {
     return;
   }
 

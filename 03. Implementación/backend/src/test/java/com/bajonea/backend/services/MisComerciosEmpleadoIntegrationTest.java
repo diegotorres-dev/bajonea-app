@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.bajonea.backend.dto.response.ComercioEmpleadoResponseDTO;
 import com.bajonea.backend.dto.response.MiComercioEmpleadoResponseDTO;
 import com.bajonea.backend.enums.EstadoComercio;
+import com.bajonea.backend.enums.TipoComercio;
 import com.bajonea.backend.services.DatosPruebaEmpleado.Dueno;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -120,9 +121,14 @@ class MisComerciosEmpleadoIntegrationTest {
         JsonNode json = objectMapper.valueToTree(perfil);
         Set<String> campos = new java.util.TreeSet<>();
         json.fieldNames().forEachRemaining(campos::add);
-        assertEquals(Set.of("id", "nombre", "descripcion", "fotoPerfilUrl", "telefono", "direccion", "horarios", "estado",
-                "cerradoManualmente", "abiertoAhora"), campos);
+        assertEquals(Set.of("id", "nombre", "descripcion", "fotoPerfilUrl", "telefono", "tipoComercio", "aceptaDelivery",
+                "aceptaRetiro", "direccion", "horarios", "estado", "cerradoManualmente", "abiertoAhora", "puedeCambiarCierre",
+                "textoReapertura"), campos);
         assertEquals(dueno.nombreComercio(), perfil.getNombre());
+        assertEquals(TipoComercio.RESTAURANTE, perfil.getTipoComercio());
+        assertTrue(perfil.isAceptaDelivery());
+        assertFalse(perfil.isAceptaRetiro());
+        assertFalse(perfil.isCerradoManualmente());
         assertFalse(perfil.getHorarios().isEmpty());
         assertEquals("Av. San Martin", perfil.getDireccion().getCalle());
     }

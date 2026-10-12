@@ -26,16 +26,21 @@ Requisitos aplicables a todos los roles del sistema: Cliente, Dueño, Empleado y
 
 ### Selector de contexto
 
-> **Estado de implementación:** planificado, tramo E2 (ver `docs/DECISIONES.md`, 2026-10-05).
+> **Estado de implementación:** implementado en el tramo E2, entrega B (ver `docs/DECISIONES.md`, 2026-10-11).
 
-- Al iniciar sesión, si la cuenta tiene más de un contexto (Cliente y uno o más
-  comercios), el sistema recuerda el último contexto elegido por esa persona y entra
-  directo a él. El selector aparece la primera vez, o cuando el último contexto ya no es
-  válido (por ejemplo, la relación con el comercio se desactivó). Se puede cambiar de
-  contexto desde el perfil, sin cerrar sesión.
-- Un Empleado con un solo comercio entra directo a ese comercio. Con varios comercios usa
-  el mismo panel y la misma franja de selección que el Dueño, sin la opción "Agregar
-  comercio" ni los avisos de cobro.
+- Al iniciar sesión, si la cuenta es de Cliente y además es Empleado de uno o más
+  comercios, el sistema muestra un selector a pantalla completa con "Cliente" y cada
+  comercio (con el último contexto usado resaltado); si no es Empleado de ningún comercio,
+  entra directo como Cliente. Si la consulta de sus comercios falla, entra como Cliente.
+  El último contexto se recuerda por persona: una pestaña nueva con la sesión ya iniciada
+  entra directo a él, validando que siga existiendo (si ya no existe, va al selector o, si
+  no le queda ningún comercio, a su cuenta de Cliente). Se puede cambiar de contexto desde
+  el perfil con "Cambiar de cuenta" (una hoja inferior con las mismas opciones), sin
+  cerrar sesión.
+- Dentro de un comercio, el Empleado usa el mismo panel que el Dueño, sin la opción
+  "Agregar comercio", sin el panel "Tus comercios" ni los avisos de cobro. Con la pestaña
+  en un comercio, las pantallas de Cliente (inicio, explorar, carrito, pedidos) llevan al
+  panel del comercio; para usarlas hay que pasar por "Cambiar de cuenta".
 - Al iniciar sesión en otro dispositivo, la sesión única cierra la sesión anterior en
   ambos contextos; el selector lo comunica.
 - Si a un Empleado se le desactiva una relación, su próxima acción sobre ese comercio

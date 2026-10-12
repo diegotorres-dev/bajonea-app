@@ -1,4 +1,5 @@
-import { apiFetch, ApiError, getUsuario, mostrarModalCuentaBloqueada } from './api.js';
+import { apiFetch, ApiError, consumirAvisoAccesoPerdido, esContextoComercio, esContextoDueno, esContextoEmpleado, getUsuario, mostrarModalCuentaBloqueada } from './api.js';
+import { exigirContextoCliente } from './contexto.js';
 import { resolverHomePorRol, LABELS_TIPO_COMERCIO } from './auth.js';
 import { contarNotificacionesNoLeidasActivo, resolverComercioActivo, suscribirComercios } from './comercio-activo.js';
 import { normalizarCampos, excedeSubtotalMaximo, mensajeSubtotalMaximoExcedido } from './validators.js';
@@ -89,8 +90,7 @@ function pintarBadgeDueno(bellLink) {
 }
 
 async function cargarBadgeNotificaciones(bellLink) {
-  const usuario = getUsuario();
-  if (usuario && usuario.rol === 'DUENO') {
+  if (esContextoDueno()) {
     suscribirComercios(() => pintarBadgeDueno(bellLink));
     resolverComercioActivo().then(() => pintarBadgeDueno(bellLink)).catch(() => {});
     return;
@@ -144,7 +144,7 @@ export function renderTopBar(container, { mostrarVolver = false, titulo = null, 
 
     const usuario = getUsuario();
     if (usuario) {
-      if ((usuario.rol === 'CLIENTE' || usuario.rol === 'DUENO') && mostrarCampana) {
+      if ((usuario.rol === 'CLIENTE' || usuario.rol === 'DUENO') && mostrarCampana && !esContextoEmpleado()) {
         const bellLink = document.createElement('a');
         bellLink.href = 'notificaciones.html';
         bellLink.setAttribute('data-testid', 'btn-notificaciones');
@@ -156,7 +156,7 @@ export function renderTopBar(container, { mostrarVolver = false, titulo = null, 
 
       if (mostrarPerfil) {
         const link = document.createElement('a');
-        link.href = usuario.rol === 'DUENO' ? 'comercio-perfil.html' : 'perfil.html';
+        link.href = esContextoComercio() ? 'comercio-perfil.html' : 'perfil.html';
         link.setAttribute('data-testid', 'btn-perfil');
         link.className = 'top-bar__action';
         link.innerHTML = ICONS.user;
@@ -470,6 +470,12 @@ export function renderEmptyState(container, titulo, texto, { textoBoton, hrefBot
 }
 
 export async function initCatalogo() {
+  if (!(await exigirContextoCliente())) {
+    return;
+  }
+  if (consumirAvisoAccesoPerdido()) {
+    showToast('Ya no tenés acceso a este comercio', 'warning');
+  }
   const usuario = getUsuario();
   if (usuario && usuario.rol !== 'CLIENTE') {
     const destino = await resolverHomePorRol(usuario).catch(() => null);
@@ -985,6 +991,9 @@ async function mostrarModalConflictoComercio(producto, cantidad, nota) {
 }
 
 export async function initComercioDetalle() {
+  if (!(await exigirContextoCliente())) {
+    return;
+  }
   const params = new URLSearchParams(window.location.search);
   const comercioId = Number(params.get('id'));
   const topBarSlot = document.getElementById('top-bar-slot');

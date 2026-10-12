@@ -1,4 +1,5 @@
 import { apiFetch, ApiError, getUsuario } from './api.js';
+import { exigirContextoCliente } from './contexto.js';
 import { renderTopBar, renderBottomNav, pintarAvatarComercio, renderPedidoEstadoHeader, showToast } from './catalogo.js';
 import { normalizarCampos } from './validators.js';
 
@@ -246,6 +247,9 @@ function renderPedidoCard(pedido, comercio) {
 }
 
 export async function initPedidosHistorial() {
+  if (!(await exigirContextoCliente())) {
+    return;
+  }
   const usuario = getUsuario();
   if (!usuario || usuario.rol !== 'CLIENTE') {
     window.location.href = 'login.html';
@@ -386,6 +390,9 @@ function renderAccionesCliente(container, pedido, onActualizado, { procesando = 
 }
 
 export async function initPedidoDetalle() {
+  if (!(await exigirContextoCliente())) {
+    return;
+  }
   const usuario = getUsuario();
   if (!usuario || usuario.rol !== 'CLIENTE') {
     window.location.href = 'login.html';

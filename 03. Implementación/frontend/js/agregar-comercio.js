@@ -1,4 +1,5 @@
 import { apiFetch, ApiError, getUsuario } from './api.js';
+import { exigirDueno } from './contexto.js';
 import { subirFotoNuevoComercio, CloudinaryUploadError } from './cloudinary.js';
 import { construirTelefono } from './auth.js';
 import {
@@ -63,11 +64,10 @@ function irAlInicio() {
 }
 
 export async function initAgregarComercio() {
-  const usuario = getUsuario();
-  if (!usuario || usuario.rol !== 'DUENO') {
-    window.location.href = 'login.html';
+  if (!(await exigirDueno())) {
     return;
   }
+  const usuario = getUsuario();
 
   const bannerSlot = document.getElementById('banner-slot');
   const steps = [document.getElementById('step-1'), document.getElementById('step-2'), document.getElementById('step-3')];
