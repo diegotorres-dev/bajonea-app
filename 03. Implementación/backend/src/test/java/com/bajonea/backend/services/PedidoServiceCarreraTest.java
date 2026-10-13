@@ -39,6 +39,7 @@ import com.bajonea.backend.repositories.UsuarioRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -89,7 +90,8 @@ class PedidoServiceCarreraTest {
                 mock(ItemCarritoRepository.class), mock(ClienteRepository.class), comercioRepository,
                 mock(DireccionRepository.class), historialRepository, usuarioRepository, notificacionService,
                 mock(CarritoService.class), mock(ComercioService.class), mock(ConfiguracionTarifaService.class), timeouts,
-                reembolsoService, mock(NotaCreditoService.class), mock(PlatformTransactionManager.class), comercioActivoService);
+                reembolsoService, mock(NotaCreditoService.class), mock(PlatformTransactionManager.class), comercioActivoService,
+                Clock.systemDefaultZone());
         ReflectionTestUtils.setField(pedidoService, "entityManager", entityManager);
 
         ParticipantesPedido participantes = mock(ParticipantesPedido.class);

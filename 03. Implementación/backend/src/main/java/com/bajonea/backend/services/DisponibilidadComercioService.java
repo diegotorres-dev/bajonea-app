@@ -8,9 +8,9 @@ import com.bajonea.backend.enums.EstadoApertura;
 import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.repositories.HistorialCierreComercioRepository;
 import com.bajonea.backend.repositories.HorarioRepository;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -22,7 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Única fuente de la hora de los comercios y de la lectura de sus franjas horarias: abierto o cerrado ahora,
  * si se puede cerrar o abrir a mano, cuándo empieza la próxima franja y el texto de reapertura. Toda hora
- * nueva del cierre manual (franjas, historial, job, texto) sale de acá, en {@code -03:00} explícito.
+ * nueva del cierre manual (franjas, historial, job, texto) sale de acá, con el reloj de la aplicación (zona de
+ * {@code app.zona-horaria}, por defecto Ushuaia, UTC-03:00).
  * <p>
  * Una franja que cierra a las 23:59 se interpreta como fin del día (24:00), para que no quede un hueco entre
  * 23:59:00 y 23:59:59. Las franjas que cruzan la medianoche se cargan como dos filas y no se unen: un cierre
@@ -33,8 +34,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class DisponibilidadComercioService {
 
-    public static final ZoneOffset ZONA_COMERCIO = ZoneOffset.of("-03:00");
-
     private static final int SEGUNDOS_POR_DIA = 24 * 60 * 60;
     private static final int DIAS_POR_SEMANA = 7;
     private static final DateTimeFormatter FORMATO_HORA = DateTimeFormatter.ofPattern("HH:mm");
@@ -42,13 +41,14 @@ public class DisponibilidadComercioService {
 
     private final HorarioRepository horarioRepository;
     private final HistorialCierreComercioRepository historialCierreComercioRepository;
+    private final Clock clock;
 
     public record Disponibilidad(boolean cerradoManualmente, boolean abiertoAhora, boolean puedeCambiarCierre,
             String textoReapertura, EstadoApertura estadoApertura) {
     }
 
     public LocalDateTime ahora() {
-        return LocalDateTime.now(ZONA_COMERCIO);
+        return LocalDateTime.now(clock);
     }
 
     public boolean dentroDeFranja(List<Horario> horarios, LocalDateTime ahora) {

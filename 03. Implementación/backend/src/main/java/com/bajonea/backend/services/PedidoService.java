@@ -52,12 +52,14 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeSet;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
@@ -116,6 +118,7 @@ public class PedidoService {
     private final NotaCreditoService notaCreditoService;
     private final PlatformTransactionManager transactionManager;
     private final ComercioActivoService comercioActivoService;
+    private final Clock clock;
 
     private static final Logger log = LoggerFactory.getLogger(PedidoService.class);
 
@@ -202,7 +205,7 @@ public class PedidoService {
                 .cargoServicioCliente(cargoServicioCliente)
                 .cargoServicioComercio(cargoServicioComercio)
                 .total(subtotalPedido.add(cargoServicioCliente))
-                .fechaCreacion(LocalDateTime.now())
+                .fechaCreacion(LocalDateTime.now(clock))
                 .build();
         pedidoRepository.save(pedido);
 
@@ -553,7 +556,7 @@ public class PedidoService {
     }
 
     private List<Pedido> pedidosLlegadosPagadosHoy(Integer comercioId) {
-        LocalDateTime inicioHoy = LocalDate.now().atStartOfDay();
+        LocalDateTime inicioHoy = LocalDate.now(clock).atStartOfDay();
         LocalDateTime finHoy = inicioHoy.plusDays(1);
         List<Pedido> llegadosPagados = pedidoRepository.findLlegadosPagadosByComercioId(comercioId);
         Map<Integer, LocalDateTime> fechasPago = fechasPagoAprobado(llegadosPagados);
@@ -605,7 +608,7 @@ public class PedidoService {
             if (pedido.getEstado() != EstadoPedido.LISTO_PARA_RETIRAR) {
                 continue;
             }
-            pedido.setSuspensionRetiroExpira(LocalDateTime.now().plusMinutes(timeoutProperties.getRetiroSuspensionMinutos()));
+            pedido.setSuspensionRetiroExpira(LocalDateTime.now(clock).plusMinutes(timeoutProperties.getRetiroSuspensionMinutos()));
             pedidoRepository.save(pedido);
         }
     }
@@ -621,7 +624,7 @@ public class PedidoService {
      */
     @Transactional(propagation = Propagation.SUPPORTS)
     public void expirarPagosVencidos() {
-        expirarPagosVencidos(LocalDateTime::now);
+        expirarPagosVencidos(() -> LocalDateTime.now(clock));
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -651,7 +654,7 @@ public class PedidoService {
 
     @Transactional(propagation = Propagation.SUPPORTS)
     public void avisar75MinYAutoconfirmar() {
-        avisar75MinYAutoconfirmar(LocalDateTime::now);
+        avisar75MinYAutoconfirmar(() -> LocalDateTime.now(clock));
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -698,7 +701,7 @@ public class PedidoService {
 
     @Transactional(propagation = Propagation.SUPPORTS)
     public void expirarPedidosSinRespuestaComercio() {
-        expirarPedidosSinRespuestaComercio(LocalDateTime::now);
+        expirarPedidosSinRespuestaComercio(() -> LocalDateTime.now(clock));
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -739,7 +742,7 @@ public class PedidoService {
 
     @Transactional(propagation = Propagation.SUPPORTS)
     public void autoconfirmarRetirosPorSuspension() {
-        autoconfirmarRetirosPorSuspension(LocalDateTime::now);
+        autoconfirmarRetirosPorSuspension(() -> LocalDateTime.now(clock));
     }
 
     @Transactional(propagation = Propagation.SUPPORTS)
@@ -787,7 +790,7 @@ public class PedidoService {
     private void marcarEntregado(Pedido pedido, FuenteEntrega fuente) {
         pedido.setEstado(EstadoPedido.ENTREGADO);
         pedido.setFuenteEntrega(fuente);
-        pedido.setFechaEntrega(LocalDateTime.now());
+        pedido.setFechaEntrega(LocalDateTime.now(clock));
         pedidoRepository.save(pedido);
     }
 
@@ -808,7 +811,7 @@ public class PedidoService {
                 .actorRol(actorRol)
                 .actorUsuario(actorUsuarioId == null ? null : usuarioRepository.getReferenceById(actorUsuarioId))
                 .motivoTimeout(motivoTimeout)
-                .fechaHora(LocalDateTime.now())
+                .fechaHora(LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS))
                 .build();
         historialEstadoPedidoRepository.save(historial);
     }

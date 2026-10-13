@@ -311,7 +311,10 @@ bloqueado para el Empleado por defecto.
   lee del usuario. Los pedidos y los cierres y aperturas no se registran ahí, porque ya
   tienen su propio historial (`HistorialEstadoPedido` e `HistorialCierreComercio`). La
   pestaña Actividad de "Ver equipo" junta en una sola lista, ordenada por fecha, esas tres
-  fuentes. El Empleado no ve esa pestaña: la ve el Dueño (tramo E3) y el Administrador, en
+  fuentes; de los pedidos entra todo lo que el comercio vio, sea quien sea el actor (las
+  personas del comercio, el Cliente y el sistema), desde la llegada del pedido ya pagado
+  ("Pedido recibido"), sin el pedido que todavía no se pagó ni el que venció por falta de
+  pago. El Empleado no ve esa pestaña: la ve el Dueño (tramo E3) y el Administrador, en
   solo lectura (tramo E4). El servidor ya registra las ediciones del Dueño y ya ofrece la
   lista (`GET /api/v1/comercios/equipo/actividad`, solo Dueño; bloque A1 del tramo E3); las
   ediciones de un Empleado se registran con el rol Empleado cuando se habiliten sus

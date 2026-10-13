@@ -8,6 +8,7 @@ import com.bajonea.backend.enums.AccionEdicion;
 import com.bajonea.backend.enums.ActorPedido;
 import com.bajonea.backend.enums.EstadoPedido;
 import com.bajonea.backend.enums.FuenteActividad;
+import com.bajonea.backend.enums.MotivoTimeoutPedido;
 import com.bajonea.backend.enums.TipoEntidadEdicion;
 import com.bajonea.backend.exceptions.ComercioNoDisponibleException;
 import com.bajonea.backend.exceptions.ValidacionException;
@@ -20,6 +21,7 @@ import com.bajonea.backend.repositories.HistorialEstadoPedidoRepository;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -29,9 +31,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Actividad de un comercio: una sola lista, de la más nueva a la más vieja, que mezcla tres historiales que ya
- * existen: las ediciones del catálogo y el perfil ({@code historial_edicion_comercio}), las acciones de sus
- * personas sobre los pedidos ({@code historial_estado_pedido}, solo las del Dueño y los Empleados) y los cierres y
- * reaperturas ({@code historial_cierre_comercio}, también las automáticas del sistema).
+ * existen: las ediciones del catálogo y el perfil ({@code historial_edicion_comercio}), todo lo que le pasó a sus
+ * pedidos desde que el comercio los ve ({@code historial_estado_pedido}: acciones del Dueño y los Empleados, del
+ * Cliente y del sistema, incluida la llegada del pedido pagado; no el nacimiento en {@code PENDIENTE_PAGO} ni su
+ * vencimiento por falta de pago) y los cierres y reaperturas ({@code historial_cierre_comercio}, también las
+ * automáticas del sistema). Las tres fuentes escriben la hora con el reloj de la aplicación, así que el orden
+ * entre ellas es el real.
  * <p>
  * Paginación por cursor sobre el orden total {@code (fecha_hora desc, fuente asc, id desc)}: el cursor es la
  * posición de la última fila entregada, así que una fila nueva no corre las páginas ni repite ni saltea filas.
@@ -50,7 +55,9 @@ public class ActividadComercioService {
     static final int LIMITE_MAXIMO = 100;
 
     private static final LocalDateTime SIN_CURSOR_FECHA = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
-    private static final List<ActorPedido> ACTORES_DEL_COMERCIO = List.of(ActorPedido.DUENO, ActorPedido.EMPLEADO);
+    private static final List<EstadoPedido> ESTADOS_VISIBLES = Arrays.stream(EstadoPedido.values())
+            .filter(estado -> estado != EstadoPedido.PENDIENTE_PAGO)
+            .toList();
 
     private static final Comparator<Fila> ORDEN_DE_LA_LISTA = Comparator
             .comparing(Fila::fechaHora, Comparator.<LocalDateTime>reverseOrder())
@@ -74,7 +81,7 @@ public class ActividadComercioService {
         PageRequest pagina = PageRequest.of(0, tamanio + 1);
 
         List<Fila> filas = new ArrayList<>();
-        for (FilaActividadPedido fila : historialEstadoPedidoRepository.actividadDelComercio(comercioId, ACTORES_DEL_COMERCIO,
+        for (FilaActividadPedido fila : historialEstadoPedidoRepository.actividadDelComercio(comercioId, ESTADOS_VISIBLES,
                 desde.fecha(), desde.idMaximoDe(FuenteActividad.PEDIDO), pagina)) {
             filas.add(desdePedido(fila));
         }
@@ -163,15 +170,18 @@ public class ActividadComercioService {
 
     private static Fila desdePedido(FilaActividadPedido fila) {
         String rol = fila.actorRol().name();
+        boolean delSistema = fila.actorRol() == ActorPedido.SISTEMA;
         ActividadComercioItemResponseDTO item = new ActividadComercioItemResponseDTO("PEDIDO-" + fila.id(), FuenteActividad.PEDIDO,
-                fila.fechaHora(), fila.usuarioId(), nombreDe(fila.actorNombre(), fila.actorApellido()), rol, textoDeRol(rol),
-                fila.estado().name(), textoDePedido(fila.estado()), "PEDIDO", fila.pedidoId(), "Pedido #" + fila.pedidoId(), null);
+                fila.fechaHora(), delSistema ? null : fila.usuarioId(),
+                delSistema ? null : nombreDe(fila.actorNombre(), fila.actorApellido()), rol, textoDeRol(rol),
+                fila.estado().name(), textoDePedido(fila.estado(), fila.actorRol(), fila.motivoTimeout()), "PEDIDO",
+                fila.pedidoId(), "Pedido #" + fila.pedidoId(), null);
         return new Fila(FuenteActividad.PEDIDO, fila.id(), fila.fechaHora(), item);
     }
 
     private static Fila desdeCierre(FilaActividadCierre fila) {
         String rol = fila.actorRol().name();
-        String nombre = fila.usuarioId() == null ? "Sistema" : nombreDe(fila.actorNombre(), fila.actorApellido());
+        String nombre = fila.usuarioId() == null ? null : nombreDe(fila.actorNombre(), fila.actorApellido());
         String texto = fila.accion() == AccionCierre.CERRADO ? "Cerró el comercio" : "Reabrió el comercio";
         ActividadComercioItemResponseDTO item = new ActividadComercioItemResponseDTO("CIERRE-" + fila.id(), FuenteActividad.CIERRE,
                 fila.fechaHora(), fila.usuarioId(), nombre, rol, textoDeRol(rol), fila.accion().name(), texto, "COMERCIO", null,
@@ -188,19 +198,40 @@ public class ActividadComercioService {
         return switch (rol) {
             case "DUENO" -> "Dueño";
             case "EMPLEADO" -> "Empleado";
+            case "CLIENTE" -> "Cliente";
             case "SISTEMA" -> "Sistema";
             default -> rol;
         };
     }
 
-    private static String textoDePedido(EstadoPedido estado) {
+    private static String textoDePedido(EstadoPedido estado, ActorPedido actor, MotivoTimeoutPedido motivoTimeout) {
+        return switch (actor) {
+            case SISTEMA -> textoDePedidoDelSistema(estado, motivoTimeout);
+            case CLIENTE -> switch (estado) {
+                case CANCELADO -> "Canceló un pedido";
+                case ENTREGADO -> "Confirmó la recepción de un pedido";
+                default -> "Cambió el estado de un pedido";
+            };
+            case DUENO, EMPLEADO -> switch (estado) {
+                case EN_PREPARACION -> "Aceptó un pedido";
+                case RECHAZADO -> "Rechazó un pedido";
+                case EN_CAMINO -> "Despachó un pedido";
+                case LISTO_PARA_RETIRAR -> "Dejó un pedido listo para retirar";
+                case ENTREGADO -> "Marcó un pedido como entregado";
+                case ANULADO -> "Anuló un pedido";
+                default -> "Cambió el estado de un pedido";
+            };
+        };
+    }
+
+    private static String textoDePedidoDelSistema(EstadoPedido estado, MotivoTimeoutPedido motivoTimeout) {
         return switch (estado) {
-            case EN_PREPARACION -> "Aceptó un pedido";
-            case RECHAZADO -> "Rechazó un pedido";
-            case EN_CAMINO -> "Despachó un pedido";
-            case LISTO_PARA_RETIRAR -> "Dejó un pedido listo para retirar";
-            case ENTREGADO -> "Marcó un pedido como entregado";
-            case ANULADO -> "Anuló un pedido";
+            case PENDIENTE_CONFIRMACION_COMERCIO -> "Pedido recibido";
+            case EXPIRADO -> "Venció un pedido sin respuesta del comercio";
+            case CANCELADO_POR_SISTEMA -> "Canceló un pedido por la suspensión del comercio";
+            case ENTREGADO -> motivoTimeout == MotivoTimeoutPedido.TIMEOUT_RETIRO_SUSPENSION
+                    ? "Cerró automáticamente un pedido listo para retirar (comercio suspendido)"
+                    : "Confirmó automáticamente la entrega de un pedido";
             default -> "Cambió el estado de un pedido";
         };
     }

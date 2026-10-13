@@ -20,6 +20,7 @@ import com.bajonea.backend.repositories.HistorialCierreComercioRepository;
 import com.bajonea.backend.repositories.HistorialEstadoComercioRepository;
 import com.bajonea.backend.repositories.HorarioRepository;
 import com.bajonea.backend.repositories.UsuarioRepository;
+import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,7 +51,8 @@ class ComercioServiceBloqueoVigenteTest {
         usuarioRepository = mock(UsuarioRepository.class);
         service = new ComercioService(comercioRepository, mock(DireccionRepository.class), mock(HorarioRepository.class),
                 historialRepository, mock(CloudinaryService.class),
-                new DisponibilidadComercioService(mock(HorarioRepository.class), mock(HistorialCierreComercioRepository.class)),
+                new DisponibilidadComercioService(mock(HorarioRepository.class), mock(HistorialCierreComercioRepository.class),
+                        Clock.systemDefaultZone()),
                 usuarioRepository, mock(HistorialEdicionComercioService.class));
         when(historialRepository.save(any(HistorialEstadoComercio.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
     }

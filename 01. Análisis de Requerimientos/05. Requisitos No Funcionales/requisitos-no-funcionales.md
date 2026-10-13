@@ -71,6 +71,10 @@
   reembolsos, expiración de tokens) deben ejecutarse de forma confiable y registrar
   cualquier fallo para su posterior revisión y reintento (ver sección "Registro de
   Eventos del Sistema").
+- El sistema debe usar un único reloj y una única zona horaria configurable (por defecto
+  `America/Argentina/Ushuaia`, UTC-03:00) para guardar y comparar las horas de los historiales,
+  los plazos de los pedidos, las invitaciones y los horarios de atención, de modo que el orden
+  y los plazos no dependan de la zona de la máquina donde corra el servidor.
 
 ---
 

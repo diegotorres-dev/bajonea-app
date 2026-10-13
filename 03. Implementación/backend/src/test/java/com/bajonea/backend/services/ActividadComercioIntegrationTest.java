@@ -46,7 +46,8 @@ import org.springframework.test.web.servlet.ResultActions;
  * orden total (fecha descendente, y en un empate pedidos, ediciones y cierres, cada uno por id descendente), la
  * paginación por cursor sin repetir ni saltear filas aun con filas de la misma fecha en el límite de una página, el
  * nombre del actor resuelto en las mismas consultas (tres por página, sin consultas por fila), lo que no
- * aparece (otro comercio, acciones del Cliente y del sistema sobre pedidos) y la autorización del endpoint.
+ * aparece (otro comercio, el nacimiento del pedido y su vencimiento por falta de pago) y la autorización del
+ * endpoint. Las acciones del Cliente y del sistema sobre los pedidos sí aparecen (bloque A2b).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -107,16 +108,31 @@ class ActividadComercioIntegrationTest {
         long p1 = pedidoHistorial(pedido1, "EN_PREPARACION", "DUENO", dueno.id(), T0.plusMinutes(2));
         long p5 = pedidoHistorial(pedido2, "EN_CAMINO", "DUENO", dueno.id(), T0.plusMinutes(2));
         long p2 = pedidoHistorial(pedido2, "ENTREGADO", "EMPLEADO", empleado.id(), T0.plusMinutes(3));
-        pedidoHistorial(pedido2, "PENDIENTE_CONFIRMACION_COMERCIO", "CLIENTE", comprador, T0.plusMinutes(4));
-        pedidoHistorial(pedido1, "EXPIRADO", "SISTEMA", null, T0.plusMinutes(5));
+        long recibido = pedidoHistorial(pedido1, "PENDIENTE_CONFIRMACION_COMERCIO", "SISTEMA", null, T0.plusMinutes(4));
+        long expirado = pedidoHistorial(pedido1, "EXPIRADO", "SISTEMA", null, T0.plusMinutes(5), "TIMEOUT_RESPUESTA_COMERCIO");
         long c1 = cierre(dueno, "CERRADO", "DUENO", dueno.id(), T0.plusMinutes(2));
         long c2 = cierre(dueno, "REABIERTO", "SISTEMA", null, T0.plusMinutes(6));
 
+        int pedido3 = pedido(dueno, "CANCELADO");
+        long cancelo = pedidoHistorial(pedido3, "CANCELADO", "CLIENTE", comprador, T0.minusMinutes(1));
+        long recepcion = pedidoHistorial(pedido2, "ENTREGADO", "CLIENTE", comprador, T0.minusMinutes(2));
+        long autoconfirmada = pedidoHistorial(pedido2, "ENTREGADO", "SISTEMA", null, T0.minusMinutes(3), "TIMEOUT_ENTREGA");
+        long retiroCerrado = pedidoHistorial(pedido2, "ENTREGADO", "SISTEMA", null, T0.minusMinutes(4), "TIMEOUT_RETIRO_SUSPENSION");
+        long suspendido = pedidoHistorial(pedido3, "CANCELADO_POR_SISTEMA", "SISTEMA", null, T0.minusMinutes(5));
+        int sinPagar = pedido(dueno, "CANCELADO_POR_SISTEMA");
+        pedidoHistorial(sinPagar, "PENDIENTE_PAGO", "CLIENTE", comprador, T0.minusMinutes(6));
+        pedidoHistorial(sinPagar, "CANCELADO_POR_SISTEMA", "SISTEMA", null, T0.minusMinutes(7), "TIMEOUT_PAGO");
+        pedidoHistorial(sinPagar, "PENDIENTE", "CLIENTE", comprador, T0.minusMinutes(8));
+
         edicion(duenoAjeno, duenoAjeno.id(), "DUENO", T0.plusMinutes(2), "CREAR", "Producto ajeno", null);
+        pedidoHistorial(pedido(duenoAjeno, "PENDIENTE_CONFIRMACION_COMERCIO"), "PENDIENTE_CONFIRMACION_COMERCIO", "SISTEMA", null,
+                T0.plusMinutes(3));
         cierre(duenoAjeno, "CERRADO", "DUENO", duenoAjeno.id(), T0.plusMinutes(3));
 
-        esperados.addAll(List.of("CIERRE-" + c2, "PEDIDO-" + p2, "PEDIDO-" + p5, "PEDIDO-" + p1, "EDICION-" + e4, "EDICION-" + e3,
-                "CIERRE-" + c1, "EDICION-" + e2, "EDICION-" + e1));
+        esperados.addAll(List.of("CIERRE-" + c2, "PEDIDO-" + expirado, "PEDIDO-" + recibido, "PEDIDO-" + p2, "PEDIDO-" + p5,
+                "PEDIDO-" + p1, "EDICION-" + e4, "EDICION-" + e3, "CIERRE-" + c1, "EDICION-" + e2, "EDICION-" + e1,
+                "PEDIDO-" + cancelo, "PEDIDO-" + recepcion, "PEDIDO-" + autoconfirmada, "PEDIDO-" + retiroCerrado,
+                "PEDIDO-" + suspendido));
     }
 
     private long edicion(Dueno comercio, int usuarioId, String rol, LocalDateTime fecha, String accion, String nombre, String detalle) {
@@ -134,8 +150,12 @@ class ActividadComercioIntegrationTest {
     }
 
     private long pedidoHistorial(int pedidoId, String estado, String rol, Integer usuarioId, LocalDateTime fecha) {
-        jdbcTemplate.update("INSERT INTO historial_estado_pedido (pedido_id, estado, actor_rol, actor_usuario_id, fecha_hora) "
-                + "VALUES (?, ?, ?, ?, ?)", pedidoId, estado, rol, usuarioId, fecha);
+        return pedidoHistorial(pedidoId, estado, rol, usuarioId, fecha, null);
+    }
+
+    private long pedidoHistorial(int pedidoId, String estado, String rol, Integer usuarioId, LocalDateTime fecha, String motivoTimeout) {
+        jdbcTemplate.update("INSERT INTO historial_estado_pedido (pedido_id, estado, actor_rol, actor_usuario_id, motivo_timeout, "
+                + "fecha_hora) VALUES (?, ?, ?, ?, ?, ?)", pedidoId, estado, rol, usuarioId, motivoTimeout, fecha);
         return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
     }
 
@@ -187,12 +207,13 @@ class ActividadComercioIntegrationTest {
         List<ActividadComercioItemResponseDTO> items = actividadService.listar(dueno.comercioId(), 100, null).getItems();
 
         ActividadComercioItemResponseDTO reapertura = items.get(0);
-        assertEquals("Sistema", reapertura.getActorNombre());
+        assertNull(reapertura.getActorNombre());
+        assertEquals("SISTEMA", reapertura.getActorRol());
         assertEquals("Sistema", reapertura.getActorRolTexto());
         assertNull(reapertura.getActorUsuarioId());
         assertEquals("Reabrió el comercio", reapertura.getAccionTexto());
 
-        ActividadComercioItemResponseDTO entrega = items.get(1);
+        ActividadComercioItemResponseDTO entrega = items.get(3);
         assertEquals(nombreDe(empleado.id()), entrega.getActorNombre());
         assertEquals("EMPLEADO", entrega.getActorRol());
         assertEquals("Empleado", entrega.getActorRolTexto());
@@ -200,12 +221,12 @@ class ActividadComercioIntegrationTest {
         assertEquals("PEDIDO", entrega.getEntidadTipo());
         assertTrue(entrega.getEntidadNombre().startsWith("Pedido #"));
 
-        ActividadComercioItemResponseDTO cierreDelDueno = items.get(6);
+        ActividadComercioItemResponseDTO cierreDelDueno = items.get(8);
         assertEquals(nombreDe(dueno.id()), cierreDelDueno.getActorNombre());
         assertEquals("Dueño", cierreDelDueno.getActorRolTexto());
         assertEquals("Cerró el comercio", cierreDelDueno.getAccionTexto());
 
-        ActividadComercioItemResponseDTO edicion = items.get(5);
+        ActividadComercioItemResponseDTO edicion = items.get(7);
         assertEquals("Cambió la disponibilidad de un producto", edicion.getAccionTexto());
         assertEquals("Producto dos", edicion.getEntidadNombre());
         assertEquals("Pasó a agotado", edicion.getDetalle());
@@ -228,6 +249,35 @@ class ActividadComercioIntegrationTest {
             } while (cursor != null);
 
             assertEquals(esperados, recorridas, "Recorrido con límite " + limite);
+        }
+    }
+
+    @Test
+    void elClienteYElSistemaApareceEnLosPedidosConSuTextoYSinNombreElSistema() {
+        List<ActividadComercioItemResponseDTO> items = actividadService.listar(dueno.comercioId(), 100, null).getItems();
+
+        ActividadComercioItemResponseDTO recibido = items.get(2);
+        assertEquals("PENDIENTE_CONFIRMACION_COMERCIO", recibido.getAccion());
+        assertEquals("Pedido recibido", recibido.getAccionTexto());
+        assertEquals("SISTEMA", recibido.getActorRol());
+        assertNull(recibido.getActorNombre());
+        assertNull(recibido.getActorUsuarioId());
+
+        ActividadComercioItemResponseDTO cancelo = items.get(11);
+        assertEquals("Canceló un pedido", cancelo.getAccionTexto());
+        assertEquals("CLIENTE", cancelo.getActorRol());
+        assertEquals("Cliente", cancelo.getActorRolTexto());
+        assertEquals(nombreDe(comprador), cancelo.getActorNombre());
+        assertEquals(comprador, cancelo.getActorUsuarioId());
+
+        assertEquals("Confirmó la recepción de un pedido", items.get(12).getAccionTexto());
+        assertEquals("Confirmó automáticamente la entrega de un pedido", items.get(13).getAccionTexto());
+        assertEquals("Cerró automáticamente un pedido listo para retirar (comercio suspendido)", items.get(14).getAccionTexto());
+        assertEquals("Canceló un pedido por la suspensión del comercio", items.get(15).getAccionTexto());
+        assertEquals("Venció un pedido sin respuesta del comercio", items.get(1).getAccionTexto());
+        for (int sistema : new int[] {1, 2, 13, 14, 15}) {
+            assertNull(items.get(sistema).getActorNombre(), "Fila " + sistema);
+            assertNull(items.get(sistema).getActorUsuarioId(), "Fila " + sistema);
         }
     }
 

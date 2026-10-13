@@ -29,6 +29,7 @@ import com.bajonea.backend.repositories.ItemCarritoRepository;
 import com.bajonea.backend.repositories.PedidoRepository;
 import com.bajonea.backend.repositories.UsuarioRepository;
 import jakarta.persistence.EntityManager;
+import java.time.Clock;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,7 +70,8 @@ class PedidoServiceConfirmarPedidoLockTest {
                 mock(HistorialEstadoPedidoRepository.class), mock(UsuarioRepository.class),
                 mock(NotificacionService.class), mock(CarritoService.class), comercioService,
                 mock(ConfiguracionTarifaService.class), timeouts, mock(ReembolsoService.class),
-                mock(NotaCreditoService.class), mock(PlatformTransactionManager.class), mock(ComercioActivoService.class));
+                mock(NotaCreditoService.class), mock(PlatformTransactionManager.class), mock(ComercioActivoService.class),
+                Clock.systemDefaultZone());
         ReflectionTestUtils.setField(pedidoService, "entityManager", entityManager);
 
         comercioDelCarrito = mock(Comercio.class);

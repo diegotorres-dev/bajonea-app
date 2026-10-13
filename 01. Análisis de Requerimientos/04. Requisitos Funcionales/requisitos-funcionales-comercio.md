@@ -299,7 +299,9 @@ horario, también con el aviso de cuándo reabre.
 - El sistema debe notificar ante: nuevo pedido recibido, aprobación, rechazo o
   suspensión del comercio, pedido expirado por no respuesta.
 - El sistema debe registrar el historial de estados de cada pedido con marcas de
-  tiempo en cada transición.
+  tiempo en cada transición, con la hora del reloj único de la aplicación (zona
+  `America/Argentina/Ushuaia` por defecto). La actividad del comercio muestra de ese historial
+  todo lo que el comercio vio, de cualquier actor, desde la llegada del pedido pagado.
 
 ---
 

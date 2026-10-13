@@ -86475,7 +86475,7 @@
           ]
         },
         {
-          "name": "[A1] Antes de editar nada: la actividad ya trae lo que hicieron las carpetas anteriores (pedidos, fotos y cierres) sin acciones del Cliente ni del sistema",
+          "name": "[A1] Antes de editar nada: la actividad ya trae lo que hicieron las carpetas anteriores (pedidos con sus acciones del Cliente y del sistema, fotos y cierres)",
           "request": {
             "method": "GET",
             "header": [
@@ -86516,7 +86516,8 @@
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
                   "pm.test('Trae lineas de pedidos del Dueño', () => pm.expect(d.items.some((i) => i.fuente === 'PEDIDO' && i.actorRol === 'DUENO')).to.eql(true));",
-                  "pm.test('No trae acciones del Cliente ni del sistema sobre los pedidos', () => pm.expect(d.items.filter((i) => i.fuente === 'PEDIDO').every((i) => i.actorRol === 'DUENO' || i.actorRol === 'EMPLEADO')).to.eql(true));",
+                  "pm.test('Trae tambien acciones del Cliente y del sistema sobre los pedidos (Pedido recibido) desde el bloque A2b', () => { const pedidos = d.items.filter((i) => i.fuente === 'PEDIDO'); pm.expect(pedidos.some((i) => i.actorRol === 'SISTEMA' && i.accionTexto === 'Pedido recibido')).to.eql(true); pm.expect(pedidos.every((i) => ['DUENO', 'EMPLEADO', 'CLIENTE', 'SISTEMA'].includes(i.actorRol))).to.eql(true); });",
+                  "pm.test('No trae el nacimiento del pedido ni su vencimiento por falta de pago', () => pm.expect(d.items.filter((i) => i.fuente === 'PEDIDO').some((i) => i.accion === 'PENDIENTE_PAGO')).to.eql(false));",
                   "pm.test('Trae el alta de la imagen y el cambio de la foto del comercio de la carpeta anterior', () => { pm.expect(d.items.some((i) => i.accionTexto === 'Agregó una imagen a un producto')).to.eql(true); pm.expect(d.items.some((i) => i.entidadTipo === 'COMERCIO' && i.detalle === 'Editó: foto de perfil')).to.eql(true); });",
                   "pm.test('Esta ordenada de la mas nueva a la mas vieja', () => { const fechas = d.items.map((i) => i.fechaHora); pm.expect(fechas).to.eql([...fechas].sort().reverse()); });",
                   "pm.environment.set('a1_antes', d.items.length);"
@@ -95841,6 +95842,4117 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "60 - Actividad del comercio E3 A2b (pedidos del Cliente y del sistema, \"Pedido recibido\", sistema sin nombre, lo que el comercio nunca vio y paginacion)",
+      "item": [
+        {
+          "name": "Login Administrador (sesion propia de esta carpeta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{admin_usuario}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('token_admin', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Dueño (con entrega a domicilio y retiro)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "comercio"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razonSocial\": \"Actividad A2b SRL\",\n  \"cuit\": \"{{ab_cuit_tmp}}\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Direccion fiscal A2b 100\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Local Actividad A2b\",\n  \"descripcion\": \"Comercio generado por la coleccion de Postman (actividad con pedidos, E3 A2b)\",\n  \"telefono\": \"+5492964555445\",\n  \"emailContacto\": \"{{ab_d_email}}\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"nombreUsuario\": \"{{ab_d_usuario}}\",\n  \"email\": \"{{ab_d_email}}\",\n  \"password\": \"{{ab_d_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"801\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Carlos\",\n  \"apellidoRepresentante\": \"Sanchez\",\n  \"dniRepresentante\": \"{{ab_dni_rep_tmp}}\",\n  \"telefonoRepresentante\": \"+5492964701104\",\n  \"fechaNacimientoRepresentante\": \"1988-04-04\",\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/postman-actividad-a2b.jpg\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/actividada2b\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('ab_d_email', 'ab.d.' + s + '@bajonea.test');",
+                  "pm.environment.set('ab_d_usuario', ('abd' + s).slice(0, 20));",
+                  "pm.environment.set('ab_d_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('ab_d_dni', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "const mult = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];",
+                  "let cuit = null;",
+                  "while (cuit === null) {",
+                  "  const base = '30' + String(Math.floor(10000000 + Math.random() * 89999999));",
+                  "  let suma = 0;",
+                  "  for (let i = 0; i < 10; i += 1) suma += Number(base[i]) * mult[i];",
+                  "  let dv = 11 - (suma % 11);",
+                  "  if (dv === 11) dv = 0;",
+                  "  if (dv !== 10) cuit = base + dv;",
+                  "}",
+                  "pm.environment.set('ab_cuit_tmp', cuit);",
+                  "pm.environment.set('ab_dni_rep_tmp', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Dueño",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{ab_d_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{ab_d_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('ab_d_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Dueño",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{ab_d_email}}\",\n  \"codigo\": \"{{ab_d_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Dueño",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{ab_d_usuario}}\",\n  \"password\": \"{{ab_d_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('ab_d_token', pm.response.json().data.token);",
+                  "pm.environment.set('ab_d_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador busca el comercio pendiente del Dueño",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/pendientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "pendientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.emailCuenta === pm.environment.get('ab_d_email').toLowerCase());",
+                  "pm.test('El comercio del Dueño esta pendiente', () => pm.expect(c).to.exist);",
+                  "pm.environment.set('ab_com', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador aprueba el comercio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{ab_com}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{ab_com}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: el comercio pasa a APTO_VENTA sin cuenta de Mercado Pago vinculada",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{ab_com}}/apto-venta",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{ab_com}}",
+                "apto-venta"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador crea la categoria del producto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categorias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"{{ab_cat_nombre}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('ab_cat_nombre', 'Cat Actividad A2b ' + Date.now().toString(36));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('ab_cat', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueño crea el producto con el que compran los Clientes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"Producto Actividad A2b\", \"descripcion\": \"Descripcion A2b\", \"precio\": 10000, \"categoriaId\": {{ab_cat}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('ab_prodD', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Compradora",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Compradora\",\n  \"apellido\": \"Actividad\",\n  \"dni\": \"{{ab_c_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551236\",\n  \"nombreUsuario\": \"{{ab_c_usuario}}\",\n  \"email\": \"{{ab_c_email}}\",\n  \"password\": \"{{ab_c_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('ab_c_email', 'ab.c.' + s + '@bajonea.test');",
+                  "pm.environment.set('ab_c_usuario', ('abc' + s).slice(0, 20));",
+                  "pm.environment.set('ab_c_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('ab_c_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Compradora",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{ab_c_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{ab_c_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('ab_c_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Compradora",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{ab_c_email}}\",\n  \"codigo\": \"{{ab_c_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Compradora",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{ab_c_usuario}}\",\n  \"password\": \"{{ab_c_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('ab_c_token', pm.response.json().data.token);",
+                  "pm.environment.set('ab_c_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La Compradora lee su direccion para los pedidos a domicilio",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/clientes/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "clientes",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('ab_c_dir', pm.response.json().data.direccion.id);",
+                  "pm.environment.set('ab_c_nombre_completo', pm.response.json().data.nombre + ' ' + pm.response.json().data.apellido);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Empleada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Empleada\",\n  \"apellido\": \"Actividad\",\n  \"dni\": \"{{ab_e_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551236\",\n  \"nombreUsuario\": \"{{ab_e_usuario}}\",\n  \"email\": \"{{ab_e_email}}\",\n  \"password\": \"{{ab_e_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('ab_e_email', 'ab.e.' + s + '@bajonea.test');",
+                  "pm.environment.set('ab_e_usuario', ('abe' + s).slice(0, 20));",
+                  "pm.environment.set('ab_e_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('ab_e_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Empleada",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{ab_e_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{ab_e_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('ab_e_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Empleada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{ab_e_email}}\",\n  \"codigo\": \"{{ab_e_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueño invita a la Empleada al comercio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{ab_e_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de la invitacion",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/invitaciones-empleado/codigo?email={{ab_e_email}}&comercioId={{ab_com}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "invitaciones-empleado",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{ab_e_email}}"
+                },
+                {
+                  "key": "comercioId",
+                  "value": "{{ab_com}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('ab_inv_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La Empleada acepta la invitacion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{ab_e_email}}\",\n  \"codigo\": \"{{ab_inv_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Empleada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{ab_e_usuario}}\",\n  \"password\": \"{{ab_e_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('ab_e_token', pm.response.json().data.token);",
+                  "pm.environment.set('ab_e_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido sinpagar] El Cliente vacia el carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Carrito vaciado o ya vacio', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido sinpagar] El Cliente agrega el producto al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productoId\": {{ab_prodD}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido sinpagar] El Cliente confirma el pedido (retiro en el local)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tipoEntrega\": \"RETIRO\", \"direccionId\": null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('ab_ped_sinpagar', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin pagar: el pedido todavia no aparece en la actividad (el comercio no lo vio)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const mios = pm.response.json().data.items.filter((i) => i.entidadTipo === 'PEDIDO' && i.entidadId === Number(pm.environment.get('ab_ped_sinpagar')));",
+                  "pm.test('El pedido no tiene ninguna fila en la actividad', () => pm.expect(mios).to.have.length(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido sinpagar] Atajo de test: el pago queda aprobado y registrado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/pedidos/{{ab_ped_sinpagar}}/pago-aprobado?registrarPago=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "pedidos",
+                "{{ab_ped_sinpagar}}",
+                "pago-aprobado"
+              ],
+              "query": [
+                {
+                  "key": "registrarPago",
+                  "value": "true"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pagado: aparece \"Pedido recibido\" del sistema, sin nombre ni usuario",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const mios = pm.response.json().data.items.filter((i) => i.entidadTipo === 'PEDIDO' && i.entidadId === Number(pm.environment.get('ab_ped_sinpagar')));",
+                  "pm.test('Los textos del pedido, del mas nuevo al mas viejo, son Pedido recibido', () => pm.expect(mios.map((i) => i.accionTexto)).to.eql([\"Pedido recibido\"]));",
+                  "pm.test('Los roles son SISTEMA', () => pm.expect(mios.map((i) => i.actorRol)).to.eql([\"SISTEMA\"]));",
+                  "pm.test('La fila 0 es del sistema, sin nombre ni usuario', () => { const f = mios[0]; pm.expect(f.actorRol).to.eql('SISTEMA'); pm.expect(f.actorRolTexto).to.eql('Sistema'); pm.expect(f.actorNombre).to.eql(null); pm.expect(f.actorUsuarioId).to.eql(null); });",
+                  "pm.test('El codigo estable es el estado destino y la entidad es el pedido', () => { pm.expect(mios[0].accion).to.eql('PENDIENTE_CONFIRMACION_COMERCIO'); pm.expect(mios[0].entidadNombre).to.eql('Pedido #' + pm.environment.get('ab_ped_sinpagar')); pm.expect(mios[0].fuente).to.eql('PEDIDO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido ciclo] El Cliente vacia el carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Carrito vaciado o ya vacio', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido ciclo] El Cliente agrega el producto al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productoId\": {{ab_prodD}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido ciclo] El Cliente confirma el pedido (retiro en el local)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tipoEntrega\": \"RETIRO\", \"direccionId\": null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('ab_ped_ciclo', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido ciclo] Atajo de test: el pago queda aprobado y registrado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/pedidos/{{ab_ped_ciclo}}/pago-aprobado?registrarPago=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "pedidos",
+                "{{ab_ped_ciclo}}",
+                "pago-aprobado"
+              ],
+              "query": [
+                {
+                  "key": "registrarPago",
+                  "value": "true"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ciclo: la Empleada acepta el pedido",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_e_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{ab_ped_ciclo}}/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{ab_ped_ciclo}}",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ciclo: el Dueño lo deja listo para retirar",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{ab_ped_ciclo}}/despachar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{ab_ped_ciclo}}",
+                "despachar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ciclo: la Empleada lo marca como entregado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_e_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{ab_ped_ciclo}}/entregar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{ab_ped_ciclo}}",
+                "entregar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ciclo: aparece completo, del mas nuevo al mas viejo, con el rol de cada actor",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const mios = pm.response.json().data.items.filter((i) => i.entidadTipo === 'PEDIDO' && i.entidadId === Number(pm.environment.get('ab_ped_ciclo')));",
+                  "pm.test('Los textos del pedido, del mas nuevo al mas viejo, son Marcó un pedido como entregado / Dejó un pedido listo para retirar / Aceptó un pedido / Pedido recibido', () => pm.expect(mios.map((i) => i.accionTexto)).to.eql([\"Marcó un pedido como entregado\",\"Dejó un pedido listo para retirar\",\"Aceptó un pedido\",\"Pedido recibido\"]));",
+                  "pm.test('Los roles son EMPLEADO / DUENO / EMPLEADO / SISTEMA', () => pm.expect(mios.map((i) => i.actorRol)).to.eql([\"EMPLEADO\",\"DUENO\",\"EMPLEADO\",\"SISTEMA\"]));",
+                  "pm.test('Las filas de personas traen su nombre completo y su usuario', () => { mios.slice(0, 3).forEach((f) => { pm.expect(f.actorNombre).to.be.a('string').and.not.empty; pm.expect(f.actorUsuarioId).to.be.a('number'); }); pm.expect(mios[0].actorUsuarioId).to.eql(Number(pm.environment.get('ab_e_id'))); pm.expect(mios[1].actorUsuarioId).to.eql(Number(pm.environment.get('ab_d_id'))); });",
+                  "pm.test('La fila 3 es del sistema, sin nombre ni usuario', () => { const f = mios[3]; pm.expect(f.actorRol).to.eql('SISTEMA'); pm.expect(f.actorRolTexto).to.eql('Sistema'); pm.expect(f.actorNombre).to.eql(null); pm.expect(f.actorUsuarioId).to.eql(null); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido cancela] El Cliente vacia el carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Carrito vaciado o ya vacio', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido cancela] El Cliente agrega el producto al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productoId\": {{ab_prodD}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido cancela] El Cliente confirma el pedido (retiro en el local)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tipoEntrega\": \"RETIRO\", \"direccionId\": null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('ab_ped_cancela', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido cancela] Atajo de test: el pago queda aprobado y registrado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/pedidos/{{ab_ped_cancela}}/pago-aprobado?registrarPago=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "pedidos",
+                "{{ab_ped_cancela}}",
+                "pago-aprobado"
+              ],
+              "query": [
+                {
+                  "key": "registrarPago",
+                  "value": "true"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelacion: la Compradora cancela el pedido",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{ab_ped_cancela}}/cancelar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{ab_ped_cancela}}",
+                "cancelar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelacion: aparece como accion del Cliente con su nombre completo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const mios = pm.response.json().data.items.filter((i) => i.entidadTipo === 'PEDIDO' && i.entidadId === Number(pm.environment.get('ab_ped_cancela')));",
+                  "pm.test('Los textos del pedido, del mas nuevo al mas viejo, son Canceló un pedido / Pedido recibido', () => pm.expect(mios.map((i) => i.accionTexto)).to.eql([\"Canceló un pedido\",\"Pedido recibido\"]));",
+                  "pm.test('Los roles son CLIENTE / SISTEMA', () => pm.expect(mios.map((i) => i.actorRol)).to.eql([\"CLIENTE\",\"SISTEMA\"]));",
+                  "pm.test('La fila del Cliente trae su nombre completo, su usuario y el rol en texto', () => { const f = mios[0]; pm.expect(f.actorNombre).to.eql(pm.environment.get('ab_c_nombre_completo')); pm.expect(f.actorUsuarioId).to.eql(Number(pm.environment.get('ab_c_id'))); pm.expect(f.actorRolTexto).to.eql('Cliente'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido domicilio] El Cliente vacia el carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Carrito vaciado o ya vacio', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido domicilio] El Cliente agrega el producto al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productoId\": {{ab_prodD}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido domicilio] El Cliente confirma el pedido (a domicilio)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tipoEntrega\": \"DOMICILIO\", \"direccionId\": {{ab_c_dir}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('ab_ped_domicilio', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido domicilio] Atajo de test: el pago queda aprobado y registrado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/pedidos/{{ab_ped_domicilio}}/pago-aprobado?registrarPago=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "pedidos",
+                "{{ab_ped_domicilio}}",
+                "pago-aprobado"
+              ],
+              "query": [
+                {
+                  "key": "registrarPago",
+                  "value": "true"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Entrega: el Dueño acepta el pedido a domicilio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{ab_ped_domicilio}}/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{ab_ped_domicilio}}",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Entrega: el Dueño lo despacha",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{ab_ped_domicilio}}/despachar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{ab_ped_domicilio}}",
+                "despachar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Entrega: la Compradora confirma la recepcion",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{ab_ped_domicilio}}/entregar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{ab_ped_domicilio}}",
+                "entregar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Entrega: la confirmacion del Cliente aparece con su nombre",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const mios = pm.response.json().data.items.filter((i) => i.entidadTipo === 'PEDIDO' && i.entidadId === Number(pm.environment.get('ab_ped_domicilio')));",
+                  "pm.test('Los textos del pedido, del mas nuevo al mas viejo, son Confirmó la recepción de un pedido / Despachó un pedido / Aceptó un pedido / Pedido recibido', () => pm.expect(mios.map((i) => i.accionTexto)).to.eql([\"Confirmó la recepción de un pedido\",\"Despachó un pedido\",\"Aceptó un pedido\",\"Pedido recibido\"]));",
+                  "pm.test('Los roles son CLIENTE / DUENO / DUENO / SISTEMA', () => pm.expect(mios.map((i) => i.actorRol)).to.eql([\"CLIENTE\",\"DUENO\",\"DUENO\",\"SISTEMA\"]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido auto] El Cliente vacia el carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Carrito vaciado o ya vacio', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido auto] El Cliente agrega el producto al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productoId\": {{ab_prodD}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido auto] El Cliente confirma el pedido (a domicilio)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tipoEntrega\": \"DOMICILIO\", \"direccionId\": {{ab_c_dir}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('ab_ped_auto', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido auto] Atajo de test: el pago queda aprobado y registrado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/pedidos/{{ab_ped_auto}}/pago-aprobado?registrarPago=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "pedidos",
+                "{{ab_ped_auto}}",
+                "pago-aprobado"
+              ],
+              "query": [
+                {
+                  "key": "registrarPago",
+                  "value": "true"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Autoconfirmacion: el Dueño acepta el pedido a domicilio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{ab_ped_auto}}/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{ab_ped_auto}}",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Autoconfirmacion: el Dueño lo despacha",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{ab_ped_auto}}/despachar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{ab_ped_auto}}",
+                "despachar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Autoconfirmacion: el proceso automatico, dos horas despues, lo da por entregado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/jobs/pedidos/avisar-y-autoconfirmar?ahora={{ab_ahora}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "jobs",
+                "pedidos",
+                "avisar-y-autoconfirmar"
+              ],
+              "query": [
+                {
+                  "key": "ahora",
+                  "value": "{{ab_ahora}}"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ahora = new Date(Date.now() - 3 * 3600 * 1000 + 120 * 60 * 1000);",
+                  "pm.environment.set('ab_ahora', ahora.toISOString().slice(0, 19));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Autoconfirmacion: aparece como accion del sistema, sin nombre",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const mios = pm.response.json().data.items.filter((i) => i.entidadTipo === 'PEDIDO' && i.entidadId === Number(pm.environment.get('ab_ped_auto')));",
+                  "pm.test('Los textos del pedido, del mas nuevo al mas viejo, son Confirmó automáticamente la entrega de un pedido / Despachó un pedido / Aceptó un pedido / Pedido recibido', () => pm.expect(mios.map((i) => i.accionTexto)).to.eql([\"Confirmó automáticamente la entrega de un pedido\",\"Despachó un pedido\",\"Aceptó un pedido\",\"Pedido recibido\"]));",
+                  "pm.test('Los roles son SISTEMA / DUENO / DUENO / SISTEMA', () => pm.expect(mios.map((i) => i.actorRol)).to.eql([\"SISTEMA\",\"DUENO\",\"DUENO\",\"SISTEMA\"]));",
+                  "pm.test('La fila 0 es del sistema, sin nombre ni usuario', () => { const f = mios[0]; pm.expect(f.actorRol).to.eql('SISTEMA'); pm.expect(f.actorRolTexto).to.eql('Sistema'); pm.expect(f.actorNombre).to.eql(null); pm.expect(f.actorUsuarioId).to.eql(null); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido vence] El Cliente vacia el carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Carrito vaciado o ya vacio', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido vence] El Cliente agrega el producto al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productoId\": {{ab_prodD}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido vence] El Cliente confirma el pedido (retiro en el local)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tipoEntrega\": \"RETIRO\", \"direccionId\": null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('ab_ped_vence', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido vence] Atajo de test: el pago queda aprobado y registrado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/pedidos/{{ab_ped_vence}}/pago-aprobado?registrarPago=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "pedidos",
+                "{{ab_ped_vence}}",
+                "pago-aprobado"
+              ],
+              "query": [
+                {
+                  "key": "registrarPago",
+                  "value": "true"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vencimiento: el proceso automatico, 45 minutos despues, lo da por vencido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/jobs/pedidos/expirar-sin-respuesta?ahora={{ab_ahora}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "jobs",
+                "pedidos",
+                "expirar-sin-respuesta"
+              ],
+              "query": [
+                {
+                  "key": "ahora",
+                  "value": "{{ab_ahora}}"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ahora = new Date(Date.now() - 3 * 3600 * 1000 + 45 * 60 * 1000);",
+                  "pm.environment.set('ab_ahora', ahora.toISOString().slice(0, 19));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vencimiento: aparece como accion del sistema",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const mios = pm.response.json().data.items.filter((i) => i.entidadTipo === 'PEDIDO' && i.entidadId === Number(pm.environment.get('ab_ped_vence')));",
+                  "pm.test('Los textos del pedido, del mas nuevo al mas viejo, son Venció un pedido sin respuesta del comercio / Pedido recibido', () => pm.expect(mios.map((i) => i.accionTexto)).to.eql([\"Venció un pedido sin respuesta del comercio\",\"Pedido recibido\"]));",
+                  "pm.test('Los roles son SISTEMA / SISTEMA', () => pm.expect(mios.map((i) => i.actorRol)).to.eql([\"SISTEMA\",\"SISTEMA\"]));",
+                  "pm.test('La fila 0 es del sistema, sin nombre ni usuario', () => { const f = mios[0]; pm.expect(f.actorRol).to.eql('SISTEMA'); pm.expect(f.actorRolTexto).to.eql('Sistema'); pm.expect(f.actorNombre).to.eql(null); pm.expect(f.actorUsuarioId).to.eql(null); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido nopago] El Cliente vacia el carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Carrito vaciado o ya vacio', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido nopago] El Cliente agrega el producto al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productoId\": {{ab_prodD}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido nopago] El Cliente confirma el pedido (retiro en el local)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tipoEntrega\": \"RETIRO\", \"direccionId\": null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('ab_ped_nopago', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Falta de pago: el proceso automatico, 45 minutos despues, cancela el pedido que nunca se pago",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/jobs/pedidos/expirar-pagos?ahora={{ab_ahora}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "jobs",
+                "pedidos",
+                "expirar-pagos"
+              ],
+              "query": [
+                {
+                  "key": "ahora",
+                  "value": "{{ab_ahora}}"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ahora = new Date(Date.now() - 3 * 3600 * 1000 + 45 * 60 * 1000);",
+                  "pm.environment.set('ab_ahora', ahora.toISOString().slice(0, 19));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Falta de pago: el pedido figura cancelado por el sistema para su Cliente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const p = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('ab_ped_nopago')));",
+                  "pm.test('Cancelado por el sistema', () => pm.expect(p.estado).to.eql('CANCELADO_POR_SISTEMA'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Falta de pago: el comercio nunca lo vio, no hay ninguna fila en la actividad",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const mios = pm.response.json().data.items.filter((i) => i.entidadTipo === 'PEDIDO' && i.entidadId === Number(pm.environment.get('ab_ped_nopago')));",
+                  "pm.test('El pedido no tiene ninguna fila en la actividad', () => pm.expect(mios).to.have.length(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspension: el Dueño tiene un segundo comercio (clon en APTO_VENTA)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{ab_com}}/clonar?nombre=Clon Actividad A2b&estado=APTO_VENTA",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{ab_com}}",
+                "clonar"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "Clon Actividad A2b"
+                },
+                {
+                  "key": "estado",
+                  "value": "APTO_VENTA"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('ab_clon', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspension: el Dueño crea el producto del segundo comercio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_clon}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"Producto Clon A2b\", \"descripcion\": \"Descripcion A2b\", \"precio\": 9000, \"categoriaId\": {{ab_cat}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('ab_prodClon', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido suspendido] El Cliente vacia el carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Carrito vaciado o ya vacio', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido suspendido] El Cliente agrega el producto al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productoId\": {{ab_prodClon}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido suspendido] El Cliente confirma el pedido (retiro en el local)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tipoEntrega\": \"RETIRO\", \"direccionId\": null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('ab_ped_suspendido', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido suspendido] Atajo de test: el pago queda aprobado y registrado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/pedidos/{{ab_ped_suspendido}}/pago-aprobado?registrarPago=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "pedidos",
+                "{{ab_ped_suspendido}}",
+                "pago-aprobado"
+              ],
+              "query": [
+                {
+                  "key": "registrarPago",
+                  "value": "true"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspension: el Dueño acepta el pedido del segundo comercio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_clon}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{ab_ped_suspendido}}/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{ab_ped_suspendido}}",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspension: el Administrador suspende el segundo comercio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{ab_clon}}/suspender",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{ab_clon}}",
+                "suspender"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Prueba de la actividad A2b\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspension: el segundo comercio ve la cancelacion como accion del sistema",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_clon}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const mios = pm.response.json().data.items.filter((i) => i.entidadTipo === 'PEDIDO' && i.entidadId === Number(pm.environment.get('ab_ped_suspendido')));",
+                  "pm.test('Los textos del pedido, del mas nuevo al mas viejo, son Canceló un pedido por la suspensión del comercio / Aceptó un pedido / Pedido recibido', () => pm.expect(mios.map((i) => i.accionTexto)).to.eql([\"Canceló un pedido por la suspensión del comercio\",\"Aceptó un pedido\",\"Pedido recibido\"]));",
+                  "pm.test('Los roles son SISTEMA / DUENO / SISTEMA', () => pm.expect(mios.map((i) => i.actorRol)).to.eql([\"SISTEMA\",\"DUENO\",\"SISTEMA\"]));",
+                  "pm.test('La fila 0 es del sistema, sin nombre ni usuario', () => { const f = mios[0]; pm.expect(f.actorRol).to.eql('SISTEMA'); pm.expect(f.actorRolTexto).to.eql('Sistema'); pm.expect(f.actorNombre).to.eql(null); pm.expect(f.actorUsuarioId).to.eql(null); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspension: el primer comercio no ve nada de ese pedido",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const mios = pm.response.json().data.items.filter((i) => i.entidadTipo === 'PEDIDO' && i.entidadId === Number(pm.environment.get('ab_ped_suspendido')));",
+                  "pm.test('El pedido no tiene ninguna fila en la actividad', () => pm.expect(mios).to.have.length(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Orden: la lista completa viene del mas nuevo al mas viejo, sin repetidos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const items = pm.response.json().data.items;",
+                  "pm.test('Hay filas de las tres fuentes', () => { const fuentes = new Set(items.map((i) => i.fuente)); pm.expect(fuentes.has('PEDIDO')).to.eql(true); pm.expect(fuentes.has('EDICION')).to.eql(true); });",
+                  "pm.test('Las horas no suben nunca', () => { for (let i = 1; i < items.length; i += 1) pm.expect(new Date(items[i - 1].fechaHora).getTime()).to.be.at.least(new Date(items[i].fechaHora).getTime()); });",
+                  "pm.test('Ningun identificador se repite', () => pm.expect(new Set(items.map((i) => i.id)).size).to.eql(items.length));",
+                  "pm.environment.set('ab_total', items.length);",
+                  "pm.environment.set('ab_ids', JSON.stringify(items.map((i) => i.id)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Paginacion: la primera pagina de 4 trae el cursor",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=4",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "4"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Trae 4 filas y hay mas', () => { const d = pm.response.json().data; pm.expect(d.items).to.have.length(4); pm.expect(d.hayMas).to.eql(true); pm.expect(d.siguienteCursor).to.be.a('string'); });",
+                  "pm.environment.set('ab_cursor', pm.response.json().data.siguienteCursor);",
+                  "pm.environment.set('ab_pag', JSON.stringify(pm.response.json().data.items.map((i) => i.id)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Paginacion: la segunda pagina sigue donde terminó la primera, sin repetir",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=4&cursor={{ab_cursor}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "4"
+                },
+                {
+                  "key": "cursor",
+                  "value": "{{ab_cursor}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const primera = JSON.parse(pm.environment.get('ab_pag'));",
+                  "const segunda = pm.response.json().data.items.map((i) => i.id);",
+                  "const completa = JSON.parse(pm.environment.get('ab_ids'));",
+                  "pm.test('Primera y segunda pagina son las primeras 8 de la lista completa', () => pm.expect(primera.concat(segunda)).to.eql(completa.slice(0, primera.length + segunda.length)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Paginacion: un cursor que no se entiende es 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=4&cursor=basura",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "4"
+                },
+                {
+                  "key": "cursor",
+                  "value": "basura"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Autorizacion: la Empleada sigue sin ver la actividad",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_e_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Autorizacion: la Compradora tampoco",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_c_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Autorizacion: sin token es 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
                 ]
               }
             }

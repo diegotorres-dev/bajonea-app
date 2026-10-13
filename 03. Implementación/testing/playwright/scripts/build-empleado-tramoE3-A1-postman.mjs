@@ -66,11 +66,12 @@ const items = [];
 const agregar = (...nuevos) => items.push(...nuevos);
 
 agregar(
-  actividad('Antes de editar nada: la actividad ya trae lo que hicieron las carpetas anteriores (pedidos, fotos y cierres) sin acciones del Cliente ni del sistema', 'limite=100', [
+  actividad('Antes de editar nada: la actividad ya trae lo que hicieron las carpetas anteriores (pedidos con sus acciones del Cliente y del sistema, fotos y cierres)', 'limite=100', [
     status(200),
     "const d = pm.response.json().data;",
     "pm.test('Trae lineas de pedidos del Dueño', () => pm.expect(d.items.some((i) => i.fuente === 'PEDIDO' && i.actorRol === 'DUENO')).to.eql(true));",
-    "pm.test('No trae acciones del Cliente ni del sistema sobre los pedidos', () => pm.expect(d.items.filter((i) => i.fuente === 'PEDIDO').every((i) => i.actorRol === 'DUENO' || i.actorRol === 'EMPLEADO')).to.eql(true));",
+    "pm.test('Trae tambien acciones del Cliente y del sistema sobre los pedidos (Pedido recibido) desde el bloque A2b', () => { const pedidos = d.items.filter((i) => i.fuente === 'PEDIDO'); pm.expect(pedidos.some((i) => i.actorRol === 'SISTEMA' && i.accionTexto === 'Pedido recibido')).to.eql(true); pm.expect(pedidos.every((i) => ['DUENO', 'EMPLEADO', 'CLIENTE', 'SISTEMA'].includes(i.actorRol))).to.eql(true); });",
+    "pm.test('No trae el nacimiento del pedido ni su vencimiento por falta de pago', () => pm.expect(d.items.filter((i) => i.fuente === 'PEDIDO').some((i) => i.accion === 'PENDIENTE_PAGO')).to.eql(false));",
     "pm.test('Trae el alta de la imagen y el cambio de la foto del comercio de la carpeta anterior', () => { pm.expect(d.items.some((i) => i.accionTexto === 'Agregó una imagen a un producto')).to.eql(true); pm.expect(d.items.some((i) => i.entidadTipo === 'COMERCIO' && i.detalle === 'Editó: foto de perfil')).to.eql(true); });",
     "pm.test('Esta ordenada de la mas nueva a la mas vieja', () => { const fechas = d.items.map((i) => i.fechaHora); pm.expect(fechas).to.eql([...fechas].sort().reverse()); });",
     guardar(v('antes'), 'd.items.length'),

@@ -112,7 +112,9 @@ Criterios de aceptación adicionales:
 - Si un empleado renunció, o una invitación se canceló, solo puedo volver a sumarlo con una
   invitación nueva.
 - Veo el historial del equipo (invitación, aceptación, cancelación, baja, renuncia,
-  reactivación, con quién lo hizo y cuándo) y la actividad del comercio (quién hizo qué).
+  reactivación, con quién lo hizo y cuándo) y la actividad del comercio (quién hizo qué,
+  incluido lo que hicieron el Cliente y el sistema con mis pedidos, como "Pedido recibido"
+  o la cancelación del Cliente; el pedido que nunca se pagó no aparece).
 - Veo el nombre de quien hizo cada cambio de estado de un pedido y cada cierre o
   reapertura, incluso si el empleado ya está inactivo.
 - Recibo una notificación cuando un empleado renuncia.

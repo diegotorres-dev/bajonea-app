@@ -311,6 +311,24 @@ Para aplicar el guard de suspensión del Empleado, la primera idea fue leer el e
 
 La desactivación real del Empleado llega en E4. Para probar hoy que las escrituras delegadas la esperan, el estrés abre una sesión de `mysql.exe` aparte que toma `empleado_comercio` con `FOR UPDATE`, duerme 1,5 segundos, la pasa a `INACTIVO` y confirma (`desactivarMientrasOpera`). Las escrituras HTTP que llegan en ese lapso pasan el resolver (lee sin bloqueo y ve `ACTIVO`) y se quedan esperando en la revalidación de la transacción; al despertar ven `INACTIVO` y responden 404. Sin la revalidación, las mismas escrituras terminan en 200 y el estrés lo reporta. Es determinista y no depende de acertar una ventana de milisegundos. El atajo de test `cambiarEstadoRelacionEmpleado` toma la relación `FOR UPDATE` por el mismo motivo.
 
+### Un solo reloj para lo que se guarda y se compara: probar la zona con un segundo backend en otra zona de la JVM (tramo E3, bloque A2b)
+
+- **Regla:** toda hora que se escribe y se compara contra otra escrita (historiales, `fecha_creacion` y plazos de los pedidos, invitaciones, horarios de los comercios) sale del bean `Clock` (`ClockConfig`, propiedad `app.zona-horaria`, por defecto `America/Argentina/Ushuaia`). Un `LocalDateTime.now()` suelto usa la zona de la JVM: sirve mientras la JVM esté en la misma zona y se rompe en silencio en otro servidor. Ejemplo real encontrado: `MercadoPagoPagoService` restaba `pedido.getFechaCreacion()` (reloj único) a `LocalDateTime.now()` (JVM).
+- **Cómo se audita:** listar las columnas que salen del `Clock`, buscar cada lector (`getFechaCreacion()`, `getFechaHora()`, consultas con `fecha_*`) y cada `NOW()`/`current_timestamp` (los `DEFAULT current_timestamp()` de algunas tablas no se usan porque las inserciones mandan la fecha). Un valor que solo se guarda y se muestra puede seguir en la zona de la JVM.
+- **Cómo se prueba la zona:** un test de unidad con un `Clock` fijo en una zona lejana (`PedidoServiceRelojTest`, `Pacific/Auckland`) y, para la integración, un segundo backend de test con la JVM en otra zona: `./mvnw spring-boot:run -Dspring-boot.run.profiles=test "-Dspring-boot.run.jvmArguments=-Duser.timezone=UTC" -Dspring-boot.run.arguments=--server.port=8082` y el spec 43 con `E2E_API_BASE_URL=http://localhost:8082/api/v1`. Con la escritura del historial de pedidos en `LocalDateTime.now()` suelto, el test de orden entre fuentes falla (la fila del pedido sale 3 horas "en el futuro"); con el `Clock`, pasa. Los procesos automáticos se disparan con `ahora=` calculado en la zona de la aplicación (`Date.now() - 3 h`), no con la zona de quien corre la prueba.
+- **No migrar filas:** al cambiar la zona de un entorno con datos en otra zona, solo los pedidos en vuelo se ven desplazados esas horas, de forma transitoria.
+
+### `mysql.exe` en Windows devuelve `\r\n`: cortar con `/\r?\n/` en los scripts de Node (tramo E3, bloque A2b)
+
+- **Síntoma:** el estrés comparaba el conjunto de ids de la API con el de `mysql.exe` y reportaba "faltan" y "sobran" las mismas filas.
+- **Causa:** `split('\n')` deja un `\r` pegado a cada id menos el último (`execFileSync(...).trim()`).
+- **Qué hacer:** `split(/\r?\n/)` siempre que se parsee la salida de `mysql.exe` desde Node.
+
+### Estrés de una lista paginada por cursor: qué se puede afirmar y cómo se mide el volumen (tramo E3, bloque A2b)
+
+- **Qué se afirma con escrituras en paralelo:** (1) ningún id se repite en un recorrido; (2) el orden es el total `(fecha desc, fuente, id desc)`; (3) toda fila que ya existía al empezar el recorrido aparece (las nuevas van arriba, no se garantiza verlas); (4) con todo quieto, el recorrido es exactamente el conjunto visible en la base, con cualquier límite. Se comparan contra una consulta SQL independiente que repite la regla de visibilidad.
+- **Volumen sintético:** `INSERT ... SELECT` sobre el motor de secuencias de MariaDB (`seq_1_to_N`) con horas repetidas a propósito (30000 pedidos sobre 5000 minutos: muchos empates entre pedidos y entre fuentes); se borra al terminar. Con 30000 pedidos y 90302 filas visibles: 256 ms de mediana por página de 100 filas, 444 ms en el percentil 95; seis lectores en paralelo, 1,1 s de mediana. El costo de una página crece con el historial del comercio (recorre y ordena todas sus filas) y es CPU de la base, no bloqueos.
+
 ## Lista de despliegue
 
 Pendientes que no son código y hay que revisar en cada entorno antes de contar con la función:

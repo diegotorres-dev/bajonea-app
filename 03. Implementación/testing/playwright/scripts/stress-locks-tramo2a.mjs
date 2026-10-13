@@ -4,7 +4,7 @@ const B = process.env.E2E_API_BASE_URL || 'http://localhost:8080/api/v1';
 const LOC = process.env.LOC;
 const CLOUD = process.env.CLOUDINARY_CLOUD_NAME;
 const ROUNDS = Number(process.env.ROUNDS || 15);
-const ADMIN = { nombreUsuario: 'adminbajonea', password: 'PostmanAdmin123' };
+const ADMIN = { nombreUsuario: process.env.ADMIN_USUARIO || 'adminbajonea', password: process.env.ADMIN_PASSWORD || 'PostmanAdmin123' };
 const sql = (q) => execFileSync('C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', '-B', 'bajonea_test', '-e', q]).toString().trim();
 
 if (!LOC || !CLOUD) {

@@ -81,3 +81,17 @@ Ideas propias de Diego, no forman parte del diseño ya documentado en el diccion
 ## Fuera de este plan (post-entrega)
 
 21. **Rol de repartidor + tracking de pedido en tiempo real** — queda último en la lista, por si se llega a implementar dentro de los 2 meses una vez cerrado todo lo anterior. A diferencia del resto del plan, esto no tiene ningún modelo de datos diseñado todavía (no está en el diccionario de datos ni en `bajonea_final.sql`) — implicaría diseñar un rol nuevo completo desde cero, gestión de ubicación en tiempo real (WebSockets o polling) y algún proveedor externo de rutas. Dado el estado real actual (ningún punto de la auditoría está completo end-to-end, 5 gaps de alta complejidad en danza), se trata como trabajo post-entrega y no como parte del compromiso de los 2 meses.
+
+
+
+- Terminar todo lo de empleado
+- Extras de productos - QUITAR
+- Reclamos y soporte
+- Documentación de libreta sanitaria o carnet (PDF o imagen)
+- Preguntas frecuentes
+- Términos y condiciones
+- Estadísticas para los comercios
+- Cada dueño recibe una notificación diaria a su mail de cuánto facturó
+- Nombre único por comercio en todo el sistema
+- Facturación se hace por turno 
+- Agregar productos y cambiar precios se realiza cuando NO está dentro de su jornada de horario

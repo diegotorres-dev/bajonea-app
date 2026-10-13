@@ -37,6 +37,7 @@ import com.bajonea.backend.repositories.PedidoRepository;
 import com.bajonea.backend.repositories.PedidoRepository.ParticipantesPedido;
 import com.bajonea.backend.repositories.UsuarioRepository;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -90,7 +91,8 @@ class PedidoServiceReembolsoTest {
                 timeouts,
                 reembolsoService,
                 notaCreditoService,
-                mock(PlatformTransactionManager.class), mock(ComercioActivoService.class));
+                mock(PlatformTransactionManager.class), mock(ComercioActivoService.class),
+                Clock.systemDefaultZone());
         ReflectionTestUtils.setField(pedidoService, "entityManager", mock(jakarta.persistence.EntityManager.class));
         ParticipantesPedido participantes = mock(ParticipantesPedido.class);
         when(participantes.getClienteId()).thenReturn(9);

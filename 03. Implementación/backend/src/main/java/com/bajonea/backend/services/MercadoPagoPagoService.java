@@ -20,6 +20,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -84,6 +85,7 @@ public class MercadoPagoPagoService {
     private final MercadoPagoConfig mercadoPagoConfig;
     private final AlertaWebhookMpService alertaWebhookMpService;
     private final PedidoTimeoutProperties timeoutProperties;
+    private final Clock clock;
 
     private static final ZoneOffset ZONA_PREFERENCIA = ZoneOffset.of("-03:00");
     private static final DateTimeFormatter FORMATO_FECHA_MP = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSxxx");
@@ -405,11 +407,11 @@ public class MercadoPagoPagoService {
         BigDecimal marketplaceFee = pedido.getCargoServicioCliente().add(pedido.getCargoServicioComercio());
 
         Duration restante = Duration.ofMinutes(timeoutProperties.getPagoMinutos())
-                .minus(Duration.between(pedido.getFechaCreacion(), LocalDateTime.now()));
+                .minus(Duration.between(pedido.getFechaCreacion(), LocalDateTime.now(clock)));
         if (restante.isZero() || restante.isNegative()) {
             throw new ConflictoDeNegocioException("El pedido venció, ya no se puede pagar");
         }
-        OffsetDateTime ahora = OffsetDateTime.now(ZONA_PREFERENCIA);
+        OffsetDateTime ahora = OffsetDateTime.ofInstant(clock.instant(), ZONA_PREFERENCIA);
         String vigenteDesde = ahora.truncatedTo(ChronoUnit.SECONDS).format(FORMATO_FECHA_MP);
         String vigenteHasta = ahora.plus(restante).format(FORMATO_FECHA_MP);
 

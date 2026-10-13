@@ -41,6 +41,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -99,7 +100,8 @@ class PedidoServiceVistaEmpleadoTest {
                 timeouts,
                 mock(ReembolsoService.class),
                 notaCreditoService,
-                mock(PlatformTransactionManager.class), mock(ComercioActivoService.class));
+                mock(PlatformTransactionManager.class), mock(ComercioActivoService.class),
+                Clock.systemDefaultZone());
 
         cliente = mock(Cliente.class, Answers.RETURNS_DEEP_STUBS);
         when(cliente.getId()).thenReturn(77);

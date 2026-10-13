@@ -15,6 +15,7 @@ import com.bajonea.backend.repositories.HistorialCierreComercioRepository;
 import com.bajonea.backend.repositories.HorarioRepository;
 import com.bajonea.backend.repositories.NotificacionRepository;
 import com.bajonea.backend.repositories.NotificacionRepository.ContadorNoLeidasPorComercio;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -38,7 +39,8 @@ class MisComerciosServiceTest {
         notificacionRepository = mock(NotificacionRepository.class);
         horarioRepository = mock(HorarioRepository.class);
         service = new MisComerciosService(comercioRepository, notificacionRepository, horarioRepository,
-                new DisponibilidadComercioService(horarioRepository, mock(HistorialCierreComercioRepository.class)));
+                new DisponibilidadComercioService(horarioRepository, mock(HistorialCierreComercioRepository.class),
+                        Clock.systemDefaultZone()));
     }
 
     private static Comercio comercio(int id, String nombre, EstadoComercio estado, LocalDateTime fechaRegistro) {

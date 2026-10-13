@@ -17,6 +17,9 @@ import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.repositories.HistorialCierreComercioRepository;
 import com.bajonea.backend.repositories.HorarioRepository;
 import com.bajonea.backend.services.DisponibilidadComercioService.Disponibilidad;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -35,7 +38,8 @@ class DisponibilidadComercioServiceTest {
     @BeforeEach
     void preparar() {
         historialRepository = mock(HistorialCierreComercioRepository.class);
-        service = new DisponibilidadComercioService(mock(HorarioRepository.class), historialRepository);
+        service = new DisponibilidadComercioService(mock(HorarioRepository.class), historialRepository,
+                Clock.fixed(Instant.parse("2026-10-05T15:00:00Z"), ZoneId.of("America/Argentina/Ushuaia")));
     }
 
     private static Horario franja(DiaSemana dia, String apertura, String cierre) {
@@ -53,8 +57,8 @@ class DisponibilidadComercioServiceTest {
     }
 
     @Test
-    void laZonaHorariaEsMenosTresExplicito() {
-        assertEquals("-03:00", DisponibilidadComercioService.ZONA_COMERCIO.getId());
+    void ahoraSaleDelRelojDeLaAplicacionYNoDeLaZonaDeLaJvm() {
+        assertEquals(LUNES.atTime(12, 0), service.ahora());
     }
 
     @Test

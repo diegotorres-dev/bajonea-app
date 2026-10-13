@@ -29,6 +29,7 @@ import com.bajonea.backend.repositories.HorarioRepository;
 import com.bajonea.backend.repositories.UsuarioRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -63,7 +64,7 @@ class CierreComercioServiceTest {
         usuarioRepository = mock(UsuarioRepository.class);
         entityManager = mock(EntityManager.class);
         ahora = LUNES.atTime(11, 0, 30);
-        DisponibilidadComercioService disponibilidad = new DisponibilidadComercioService(horarioRepository, historialRepository) {
+        DisponibilidadComercioService disponibilidad = new DisponibilidadComercioService(horarioRepository, historialRepository, Clock.systemDefaultZone()) {
             @Override
             public LocalDateTime ahora() {
                 return ahora;

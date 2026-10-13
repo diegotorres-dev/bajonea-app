@@ -19,6 +19,7 @@ import com.bajonea.backend.repositories.HistorialCierreComercioRepository;
 import com.bajonea.backend.repositories.HistorialEstadoComercioRepository;
 import com.bajonea.backend.repositories.HorarioRepository;
 import com.bajonea.backend.repositories.UsuarioRepository;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -45,7 +46,7 @@ class ComercioServiceValidarAceptaPedidosTest {
         horarioRepository = mock(HorarioRepository.class);
         ahora = LUNES.atTime(12, 0);
         DisponibilidadComercioService disponibilidad = new DisponibilidadComercioService(horarioRepository,
-                mock(HistorialCierreComercioRepository.class)) {
+                mock(HistorialCierreComercioRepository.class), Clock.systemDefaultZone()) {
             @Override
             public LocalDateTime ahora() {
                 return ahora;
