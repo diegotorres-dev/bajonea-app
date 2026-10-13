@@ -6,6 +6,7 @@ import com.bajonea.backend.enums.EstadoReembolsoEmpleado;
 import com.bajonea.backend.enums.FuenteEntrega;
 import com.bajonea.backend.enums.MotivoRechazo;
 import com.bajonea.backend.enums.TipoEntrega;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,6 +19,9 @@ import lombok.Getter;
  * y el estado del reembolso en términos simples. No lleva el cargo de servicio (ni el del cliente ni el del
  * comercio), el neto a cobrar, el id interno del cliente, el estado técnico del pago ni nada de Mercado Pago. Un
  * campo nuevo de {@link PedidoResponseDTO} no llega al Empleado salvo que se agregue acá a propósito.
+ * {@code esPedidoPropio} es {@code true} cuando el Empleado que consulta es el Cliente del pedido (la pantalla
+ * muestra "Tu pedido" y sin botones de gestión); lo calcula el servidor por id de usuario y solo existe en este DTO,
+ * nunca en el del Dueño ni en los del Cliente.
  */
 @Getter
 public class PedidoEmpleadoResponseDTO {
@@ -42,7 +46,11 @@ public class PedidoEmpleadoResponseDTO {
     private final EstadoReembolsoEmpleado reembolsoEstado;
     private final BigDecimal reembolsoMonto;
 
-    private PedidoEmpleadoResponseDTO(PedidoResponseDTO pedido) {
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private final Boolean esPedidoPropio;
+
+    private PedidoEmpleadoResponseDTO(PedidoResponseDTO pedido, Integer empleadoUsuarioId) {
+        this.esPedidoPropio = empleadoUsuarioId != null && empleadoUsuarioId.equals(pedido.getClienteId());
         this.id = pedido.getId();
         this.nombreCliente = pedido.getNombreCliente();
         this.comercioId = pedido.getComercioId();
@@ -64,7 +72,7 @@ public class PedidoEmpleadoResponseDTO {
         this.reembolsoMonto = pedido.getReembolsoMonto();
     }
 
-    public static PedidoEmpleadoResponseDTO desde(PedidoResponseDTO pedido) {
-        return new PedidoEmpleadoResponseDTO(pedido);
+    public static PedidoEmpleadoResponseDTO desde(PedidoResponseDTO pedido, Integer empleadoUsuarioId) {
+        return new PedidoEmpleadoResponseDTO(pedido, empleadoUsuarioId);
     }
 }

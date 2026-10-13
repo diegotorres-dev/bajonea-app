@@ -83,7 +83,14 @@ Criterios de aceptación adicionales:
   retirado" pasados 60 minutos desde que quedó listo. Puedo entregarlo en cualquier
   momento, sin esperar.
 - Puedo pedir en mi propio comercio como Cliente, pero no gestionar mis propios pedidos:
-  los veo con la etiqueta "Tu pedido", sin botones.
+  los veo con la etiqueta "Tu pedido", sin botones. Si intento gestionarlos (o ver su
+  recorrido), el sistema me responde "No podés gestionar tus propios pedidos". El Dueño y
+  mis compañeros sí pueden gestionarlos.
+- Puedo actuar sobre cualquier otro pedido del comercio, aunque lo haya aceptado otra
+  persona del equipo.
+- En el detalle de un pedido veo su recorrido: quién hizo cada paso (nombre y rol), a qué
+  hora y, si se rechazó o se anuló, el motivo. El sistema figura sin nombre y el Cliente con
+  su nombre.
 
 ## HU-E05: Perder Acceso a un Comercio Desactivado
 

@@ -442,3 +442,20 @@ No cambian el modelo relacional ni el diagrama entidad-relación (sin migracione
 ## Mantenimiento previo a B2 — carrera del perfil del Cliente y banners sin HTML (2026-10-08)
 
 Solo frontend y pruebas; backend, migraciones, Newman y estreses sin cambios. `perfil.html`: los botones de editar datos, cambiar contraseña y foto nacen deshabilitados y `js/cliente.js` los habilita al terminar de enlazar los manejadores (causa raíz de la inestabilidad de `11:74`, `11:134` y `19:635`); "Cerrar sesión" se enlaza antes de cargar el perfil. `renderBanner` (`js/form-utils.js`, `js/cliente.js`, `js/comercio.js`) deja de interpretar el mensaje como HTML; los avisos del login con enlace se arman con `renderBannerConEnlace` (`js/auth.js`). Playwright: 489/489 (4 tests nuevos: specs 01, 02 y 11); spec 11 ×10 = 120/120 y spec 19 ×10 = 380/380. Documentación: `docs/DECISIONES.md`, `CLAUDE.md` y `testing/playwright/README.md`. Los demás documentos de esta carpeta no cambian.
+
+## Tramo E3, bloque A3: pedido propio y trazabilidad del pedido (2026-10-13)
+
+Backend y pruebas; sin migraciones ni pantallas. Implementa la decisión 28 ("pedido propio" = el Empleado es el Cliente del pedido): sus cinco acciones del comercio y la trazabilidad responden `409` `PEDIDO_PROPIO`; la vista del Empleado trae `esPedidoPropio`; comprar en el comercio propio sigue permitido. Suma `GET /api/v1/pedidos/comercio/{id}/trazabilidad` (recorrido del pedido para el Dueño y los Empleados). Las carpetas `01.` y `02.` no se editaron: hay que copiar los archivos de la tabla.
+
+| Documento | Qué cambia |
+|---|---|
+| `requisitos-funcionales-empleado.md` | "Pedidos Propios" reescrita (implementada: `PEDIDO_PROPIO`, `esPedidoPropio`, solo falta el aviso de A4; "pedido propio" y "Tu pedido" significan siempre "soy el Cliente"). "Trazabilidad": el recorrido del pedido y sus reglas de visibilidad. |
+| `requisitos-funcionales-comercio.md` | Regla del pedido propio en "Gestión de Pedidos" y el recorrido del pedido en "Historial y Seguimiento". |
+| `requisitos-funcionales-dueño.md` | El recorrido del pedido; el Dueño no recibe la marca y gestiona cualquier pedido. |
+| `requisitos-funcionales-sistema.md` | "Trazabilidad de un pedido" y "Pedido propio" en el historial de estados del pedido. |
+| `Historias de Usuario - Empleado.md` | Pedido propio con el mensaje, actuar sobre pedidos que aceptó otra persona y ver el recorrido. |
+| `Historias de Usuario - Dueño.md` | Recorrido de cada pedido y gestión de cualquier pedido. |
+| `Historias de Usuario - Comercio.md` | HU-CO15 nueva, "Ver Quién Atendió un Pedido". |
+
+No cambian el diccionario de datos ni los diagramas (sin migración). Otros documentos del repositorio: `docs/DECISIONES.md` (entrada del bloque A3 y la decisión 28 marcada como implementada), `docs/CONCURRENCIA-Y-TRANSACCIONES.md` (nota del bloque A3 en 5bis), `docs/AUDITORIA-E3.md` (`esPropio` renombrado a `esPedidoPropio`) y `CLAUDE.md`.
+

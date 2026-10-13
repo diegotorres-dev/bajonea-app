@@ -11,6 +11,8 @@ import com.bajonea.backend.dto.response.PedidoEmpleadoResponseDTO;
 import com.bajonea.backend.dto.response.PedidoResponseDTO;
 import com.bajonea.backend.services.MercadoPagoPagoService;
 import com.bajonea.backend.services.PedidoService;
+import com.bajonea.backend.services.TrazabilidadPedidoService;
+import com.bajonea.backend.dto.response.TrazabilidadPedidoResponseDTO;
 import com.bajonea.backend.dto.request.SincronizarPagoRequestDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -34,6 +36,7 @@ public class PedidoController {
 
     private final PedidoService pedidoService;
     private final MercadoPagoPagoService mercadoPagoPagoService;
+    private final TrazabilidadPedidoService trazabilidadPedidoService;
 
     @PostMapping("/cliente")
     public ResponseEntity<ApiResponse<PedidoResponseDTO>> confirmarPedido(@Valid @RequestBody PedidoRequestDTO request,
@@ -101,9 +104,20 @@ public class PedidoController {
     public ResponseEntity<ApiResponse<List<?>>> listarPedidosComercio(
             ComercioActivo comercio) {
         List<?> pedidos = comercio.esEmpleado()
-                ? pedidoService.listarPedidosComercioEmpleado(comercio.comercioId())
+                ? pedidoService.listarPedidosComercioEmpleado(comercio.comercioId(), comercio.actorUsuarioId())
                 : pedidoService.listarPedidosComercio(comercio.comercioId());
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pedidos obtenidos correctamente", pedidos));
+    }
+
+    /**
+     * Recorrido del pedido ("atendido por"): lo ven el Dueño y los Empleados activos del comercio (ruta delegable).
+     * El Cliente no tiene acceso: sin relación con el comercio recibe {@code 400} (sin header) o {@code 404}.
+     */
+    @GetMapping("/comercio/{id}/trazabilidad")
+    public ResponseEntity<ApiResponse<TrazabilidadPedidoResponseDTO>> obtenerTrazabilidad(ComercioActivo comercio,
+            @PathVariable Integer id) {
+        TrazabilidadPedidoResponseDTO response = trazabilidadPedidoService.obtener(comercio, id);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Trazabilidad obtenida correctamente", response));
     }
 
     @GetMapping("/comercio/resumen-hoy")
@@ -153,6 +167,6 @@ public class PedidoController {
     }
 
     private static Object paraActor(ComercioActivo comercio, PedidoResponseDTO pedido) {
-        return comercio.esEmpleado() ? PedidoEmpleadoResponseDTO.desde(pedido) : pedido;
+        return comercio.esEmpleado() ? PedidoEmpleadoResponseDTO.desde(pedido, comercio.actorUsuarioId()) : pedido;
     }
 }

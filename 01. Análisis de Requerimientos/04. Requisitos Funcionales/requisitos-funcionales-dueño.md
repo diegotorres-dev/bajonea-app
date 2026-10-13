@@ -209,7 +209,11 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
 - El Dueño recibe una notificación cuando el invitado acepta la invitación (T33) y cuando
   un Empleado renuncia (T34).
 - El Dueño ve el nombre de quien hizo cada cambio de estado de un pedido y cada cierre o
-  reapertura del comercio, incluso si el Empleado ya está inactivo.
+  reapertura del comercio, incluso si el Empleado ya está inactivo. El recorrido de un
+  pedido (`GET /api/v1/pedidos/comercio/{id}/trazabilidad`) lo ven el Dueño y los Empleados
+  activos; el Dueño figura en él con su nombre y apellido. El Dueño no recibe la marca
+  `esPedidoPropio` (nunca es Cliente de su comercio) y puede gestionar cualquier pedido,
+  incluido el de un Empleado que compró en el comercio.
 
 ---
 

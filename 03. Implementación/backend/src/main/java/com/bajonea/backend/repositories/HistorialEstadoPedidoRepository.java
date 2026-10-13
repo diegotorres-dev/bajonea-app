@@ -40,4 +40,19 @@ public interface HistorialEstadoPedidoRepository extends JpaRepository<Historial
             """)
     List<FilaActividadPedido> actividadDelComercio(@Param("comercioId") Integer comercioId, @Param("estados") List<EstadoPedido> estados,
             @Param("fecha") LocalDateTime fecha, @Param("idMaximo") Integer idMaximo, Pageable pagina);
+
+    /**
+     * Recorrido de un pedido para la trazabilidad, de la primera a la última transición, con la misma regla de
+     * visibilidad que la actividad (lista blanca de estados y sin el vencimiento por falta de pago) y el nombre de
+     * quien actuó resuelto en la misma consulta. Sin paginación: un pedido tiene pocas transiciones.
+     */
+    @Query("""
+            SELECT new com.bajonea.backend.repositories.FilaActividadPedido(h.id, h.fechaHora, h.actorUsuario.id, h.actorRol,
+                   pf.nombre, pf.apellido, p.id, h.estado, h.motivoTimeout)
+            FROM HistorialEstadoPedido h JOIN h.pedido p LEFT JOIN PersonaFisica pf ON pf.id = h.actorUsuario.id
+            WHERE p.id = :pedidoId AND h.estado IN :estados
+              AND (h.motivoTimeout IS NULL OR h.motivoTimeout <> com.bajonea.backend.enums.MotivoTimeoutPedido.TIMEOUT_PAGO)
+            ORDER BY h.fechaHora ASC, h.id ASC
+            """)
+    List<FilaActividadPedido> trazabilidadDelPedido(@Param("pedidoId") Integer pedidoId, @Param("estados") List<EstadoPedido> estados);
 }

@@ -35,6 +35,7 @@ import com.bajonea.backend.enums.TipoEntidadNotificacion;
 import com.bajonea.backend.enums.TipoEntrega;
 import com.bajonea.backend.enums.TipoNotificacion;
 import com.bajonea.backend.exceptions.ComercioNoDisponibleException;
+import com.bajonea.backend.exceptions.ConflictoComercioException;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.exceptions.ValidacionException;
@@ -337,7 +338,22 @@ public class PedidoService {
 
     private Pedido obtenerPedidoDelComercioParaActualizar(ComercioActivo comercioActivo, Integer pedidoId, boolean aceptaPedidoNuevo) {
         obtenerPedidoDelComercio(comercioActivo.comercioId(), pedidoId);
-        return bloquearParaActualizar(pedidoId, comercioActivo.actorUsuarioId(), comercioActivo, aceptaPedidoNuevo);
+        Pedido pedido = bloquearParaActualizar(pedidoId, comercioActivo.actorUsuarioId(), comercioActivo, aceptaPedidoNuevo);
+        exigirQueNoSeaPedidoPropio(comercioActivo, pedido.getCliente().getId());
+        return pedido;
+    }
+
+    /**
+     * Un Empleado no gestiona (ni consulta la trazabilidad de) un pedido del que él mismo es el Cliente: {@code 409}
+     * {@code PEDIDO_PROPIO}. Se valida por id de usuario, con el cliente leído de la fila del pedido ya bloqueada
+     * (en las acciones) o de la lectura consistente (en la trazabilidad). Solo aplica al Empleado: el Dueño nunca
+     * es Cliente de su propio comercio.
+     */
+    public static void exigirQueNoSeaPedidoPropio(ComercioActivo actor, Integer clienteId) {
+        if (actor.esEmpleado() && actor.actorUsuarioId().equals(clienteId)) {
+            throw new ConflictoComercioException(ConflictoComercioException.PEDIDO_PROPIO,
+                    ConflictoComercioException.MENSAJE_PEDIDO_PROPIO);
+        }
     }
 
     private static ActorPedido actorDePedido(ComercioActivo comercioActivo) {
@@ -533,8 +549,10 @@ public class PedidoService {
                 .toList();
     }
 
-    public List<PedidoEmpleadoResponseDTO> listarPedidosComercioEmpleado(Integer comercioId) {
-        return listarPedidosComercio(comercioId).stream().map(PedidoEmpleadoResponseDTO::desde).toList();
+    public List<PedidoEmpleadoResponseDTO> listarPedidosComercioEmpleado(Integer comercioId, Integer empleadoUsuarioId) {
+        return listarPedidosComercio(comercioId).stream()
+                .map(pedido -> PedidoEmpleadoResponseDTO.desde(pedido, empleadoUsuarioId))
+                .toList();
     }
 
     public ResumenPedidosHoyResponseDTO obtenerResumenHoy(Integer comercioId) {

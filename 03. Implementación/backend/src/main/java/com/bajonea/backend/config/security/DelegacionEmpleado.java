@@ -5,7 +5,7 @@ import org.springframework.http.HttpMethod;
 
 /**
  * Lista blanca de los endpoints de operación del Comercio que un Empleado puede usar (rol Empleado: las cuatro
- * lecturas de E2 y las 17 escrituras de E3, bloque A2). Es
+ * lecturas de E2, la trazabilidad de pedidos del bloque A3 de E3 y las 17 escrituras de E3, bloque A2). Es
  * la única fuente: la usan {@link SecurityConfig}, que los abre a {@code DUENO} y {@code CLIENTE} (el Empleado es
  * un Cliente con una relación activa con el comercio) por delante de los matchers {@code hasRole("DUENO")}, y la
  * prueba de arranque que clasifica todos los mappings del módulo. Cada entrada es una ruta exacta con su método,
@@ -27,6 +27,7 @@ public final class DelegacionEmpleado {
             new RutaDelegable(HttpMethod.GET, "/api/v1/productos"),
             new RutaDelegable(HttpMethod.GET, "/api/v1/pedidos/comercio"),
             new RutaDelegable(HttpMethod.GET, "/api/v1/pedidos/comercio/resumen-hoy"),
+            new RutaDelegable(HttpMethod.GET, "/api/v1/pedidos/comercio/{id}/trazabilidad"),
             new RutaDelegable(HttpMethod.POST, "/api/v1/productos"),
             new RutaDelegable(HttpMethod.PUT, "/api/v1/productos/{id}"),
             new RutaDelegable(HttpMethod.PATCH, "/api/v1/productos/{id}/estado"),

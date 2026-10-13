@@ -116,7 +116,10 @@ Criterios de aceptación adicionales:
   incluido lo que hicieron el Cliente y el sistema con mis pedidos, como "Pedido recibido"
   o la cancelación del Cliente; el pedido que nunca se pagó no aparece).
 - Veo el nombre de quien hizo cada cambio de estado de un pedido y cada cierre o
-  reapertura, incluso si el empleado ya está inactivo.
+  reapertura, incluso si el empleado ya está inactivo. En el detalle de cada pedido veo
+  su recorrido completo (quién, cuándo y, en rechazos y anulaciones, el motivo).
+- Puedo gestionar cualquier pedido del comercio, incluido el de un empleado que compró
+  como cliente; mis empleados no pueden gestionar los suyos.
 - Recibo una notificación cuando un empleado renuncia.
 
 ## HU-D09: Solicitar Revisión de Solicitud Rechazada

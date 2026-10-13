@@ -164,15 +164,15 @@ Mismo criterio que `EstadoReembolsoEmpleado`, `ComercioEmpleadoResponseDTO` y `P
 
 | Escritura | Qué filtra hoy | Propuesta |
 |---|---|---|
-| 15 a 19 (acciones de pedido) | `PedidoResponseDTO` completo: `cargoServicioCliente`, `cargoServicioComercio`, `clienteId`, `pagoEstado` | Devolver `PedidoEmpleadoResponseDTO.desde(...)` al Empleado. Sumarle el campo `esPropio` (ver 4.1). |
+| 15 a 19 (acciones de pedido) | `PedidoResponseDTO` completo: `cargoServicioCliente`, `cargoServicioComercio`, `clienteId`, `pagoEstado` | Devolver `PedidoEmpleadoResponseDTO.desde(...)` al Empleado. Sumarle el campo `esPedidoPropio` (ver 4.1). |
 | 10 y 12 (perfil y foto) | `ComercioResponseDTO` completo (razón social, CUIT, condición de IVA, tipo de sociedad, domicilio fiscal, fecha de inicio, representante, motivo de rechazo) | Devolver `ComercioEmpleadoResponseDTO`; sumarle `emailContacto` (la A5 lo dejó afuera "hasta E3": para editarlo el Empleado tiene que verlo). |
 | 1 a 9 (productos) | `ProductoResponseDTO`: id, nombre, descripción, precio, categoría, comercio (id y nombre), estado, imágenes, tags | Sin datos sensibles: igual para ambos. |
 | 13 y 14 (cierre) | `CierreComercioResponseDTO`: cuatro indicadores | Igual (más `cerradoPorNombre` si se acepta la pregunta 9). |
 | 4, 8 y 11 (firmas) | `CloudinarySignatureResponseDTO` (firma, marca de tiempo, api key pública, cloud name, carpeta, preset) | Igual: no son secretos. |
 
-### 4.1 Campo `esPropio` en el pedido del Empleado
+### 4.1 Campo `esPedidoPropio` en el pedido del Empleado
 
-`PedidoEmpleadoResponseDTO` excluye `clienteId` a propósito (A5). Para la etiqueta "Tu pedido" el servidor calcula `esPropio = pedido.clienteId == actorUsuarioId` y lo agrega al DTO reducido (para el Dueño no hace falta: un Dueño no es Cliente). La validación real de "no podés gestionar tus propios pedidos" va en el servicio de las cinco acciones, por id de usuario, con `ConflictoDeNegocioException` (`409`, nunca `403`, ver el hallazgo 7). También se aplica **dentro del lock del pedido** (no en el controller).
+`PedidoEmpleadoResponseDTO` excluye `clienteId` a propósito (A5). Para la etiqueta "Tu pedido" el servidor calcula `esPedidoPropio = pedido.clienteId == actorUsuarioId` y lo agrega al DTO reducido (para el Dueño no hace falta: un Dueño no es Cliente). La validación real de "no podés gestionar tus propios pedidos" va en el servicio de las cinco acciones, por id de usuario, con `ConflictoDeNegocioException` (`409`, nunca `403`, ver el hallazgo 7). También se aplica **dentro del lock del pedido** (no en el controller).
 
 ---
 
@@ -315,7 +315,7 @@ Todos los archivos nuevos o editados sin comentarios (`.html`, `.css`, `.js`) y 
 | Ramas de solo lectura del panel | `js/comercio.js`: `initComercioDashboard` (598), banner y textos neutros (620 a 626: `esContextoEmpleado() ? 'Este comercio'`, aviso de no operativo), `normalizarResumen` (83, etiqueta "Ventas de hoy" se mantiene), `renderHeaderDashboard` (454). |
 | Campana | `js/catalogo.js:93` y `147`; `js/comercio.js:466` y `pintarBadgeBell`; `js/comercio-activo.js` (el contador del Empleado vendrá del backend en `cantidadNotificacionesNoLeidas`); `js/notificaciones.js` líneas 73, 107 y 118. |
 | Interruptor de cierre | `js/cierre-comercio.js` y `montarSwitchCierre` (se monta si `contextoPuedeOperar()`); subtítulo con quién cerró (si se acepta la pregunta 9). |
-| Pedidos | `initComercioPedidos` (690), `renderPedidoActivoCard` (520), `renderPedidoDetalleComercio` (1060 a 1190: acciones en 1176; sumar etiqueta "Tu pedido" y esconder acciones si `esPropio`; bloque de trazabilidad), `normalizarPedido` (69, sumar `esPropio`), `renderAccionesPendiente/EnPreparacion/ListoParaRetirar` (899, 995, 1038: el `onActualizado` recibe la respuesta de la acción, que ahora será la reducida, y el normalizador ya tolera las dos formas). Aviso del servidor "No podés gestionar tus propios pedidos" (`409`) como toast/banner. |
+| Pedidos | `initComercioPedidos` (690), `renderPedidoActivoCard` (520), `renderPedidoDetalleComercio` (1060 a 1190: acciones en 1176; sumar etiqueta "Tu pedido" y esconder acciones si `esPedidoPropio`; bloque de trazabilidad), `normalizarPedido` (69, sumar `esPedidoPropio`), `renderAccionesPendiente/EnPreparacion/ListoParaRetirar` (899, 995, 1038: el `onActualizado` recibe la respuesta de la acción, que ahora será la reducida, y el normalizador ya tolera las dos formas). Aviso del servidor "No podés gestionar tus propios pedidos" (`409`) como toast/banner. |
 | Productos | `initComercioProductos` (2212; `contextoPuedeOperar()` ya gobierna el menú y el botón de crear), `initComercioProductoForm` (**2354, hoy `exigirDueno`: pasar a `exigirContextoComercio`**), `mostrarModalAccionProducto` (2091), `js/cloudinary.js`. |
 | Edición del comercio | `js/comercio.js`: `prepararVistasDelPerfil` (1654: hoy quita `view-editar-perfil` para el Empleado), `iniciarPerfilDelEmpleado` (1684), `initComercioPerfil` (1715), el manejador de `input-avatar` (foto) y el formulario `view-editar-perfil` de `comercio-perfil.html`. El Empleado necesita una fila "Editar datos del comercio" (pregunta 7) y la foto; sin legales, equipo, Mercado Pago ni redes. |
 | Pestaña Actividad | `js/equipo-comercio.js` (sumar `actividad` a `PESTANAS` y `PINTORES_DE_PESTANA`, endpoint nuevo, paginación por cursor, filtro por persona), `comercio-perfil.html` (`view-equipo`), `css/styles.css`. Solo Dueño (el Empleado no ve "Ver equipo"). |
@@ -401,7 +401,7 @@ Cada entrega con su prueba completa (mvnw, Playwright, Newman, estrés), checkli
 | **A0** | Endurecimiento previo (requiere tus respuestas 1 y 4): reembolso en `anular` (`ANULACION_COMERCIO`) con test; lock del pedido en las cinco acciones y revalidación en los jobs; validación de carpeta en foto del comercio e imágenes de producto. | Chico | — |
 | **A1** | `V32`, entidad, repositorio, enums y `ActividadComercioService`; `GET /comercios/equipo/actividad` del Dueño; diccionario v1.13. | Mediano | — |
 | **A2** | Autorización de escrituras: `ActorComercioService` (relación `LOCK IN SHARE MODE`, guard de estado), 19 servicios con `ComercioActivo`, lista blanca de 19 + lecturas nuevas, `ComercioActivo` como primer parámetro, categoría `COMPARTIDO` y prueba de forma de respuesta, DTO reducido en perfil y foto (con `emailContacto`), `ComercioActivo.delEmpleado`. | **Pesado** | A0 |
-| **A3** | Pedidos: actor dinámico en historial y cierre, pedido propio (`esPropio`, `409`), DTO reducido de las cinco acciones, `GET /pedidos/comercio/{id}/trazabilidad`, registro de actividad en los 19 puntos y redes sociales. | **Pesado** | A1, A2 |
+| **A3** | Pedidos: actor dinámico en historial y cierre, pedido propio (`esPedidoPropio`, `409`), DTO reducido de las cinco acciones, `GET /pedidos/comercio/{id}/trazabilidad`, registro de actividad en los 19 puntos y redes sociales. | **Pesado** | A1, A2 |
 | **A4** | Notificaciones: fan-out (T1, T9, T13), separación por tipo, `GET /notificaciones` y contador para el Empleado, contador de `mis-comercios`. | Mediano | A2 |
 | **A5** | Tests: Java, spec `39`, carpeta 58 de Newman, estrés `stress-locks-empleado-e3.mjs`, atajos de test (jobs de pedidos), reescritura de los tests que se rompen (sección 9.1). | **Pesado** | A1 a A4 |
 | **A6 (separable)** | T30: aviso de pedido autoconfirmado a Dueño y Empleados. | Chico | A4 |

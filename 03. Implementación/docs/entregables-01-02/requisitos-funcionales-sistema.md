@@ -121,6 +121,8 @@ Al inactivarse automáticamente un comercio por inactividad (3 meses sin activid
 
 - Cada cambio de estado de un pedido genera un registro de historial con el estado resultante, la fecha y hora, el rol del actor (Cliente, Dueño, Empleado o Sistema), el usuario que ejecutó la transición (nulo cuando el actor es el Sistema) y, cuando la transición la produjo un timeout automático, el motivo del timeout (pago, respuesta del comercio, entrega o retiro por suspensión).
 - El historial es la fuente de las fechas del ciclo de vida del pedido, en particular de la fecha de llegada al comercio con el pago aprobado.
+- **Trazabilidad de un pedido.** El sistema debe ofrecer al Dueño y a los Empleados activos del comercio el recorrido de un pedido (`GET /api/v1/pedidos/comercio/{id}/trazabilidad`) a partir de este historial, con las mismas reglas de visibilidad que la actividad del comercio (sin el pedido todavía no pagado ni su vencimiento por falta de pago; el sistema sin nombre; el Cliente, el Dueño y los Empleados con nombre y apellido). Es una lectura sin bloqueos, en dos consultas dentro de una misma transacción de solo lectura, sin ids de usuario ni datos personales en la respuesta. Un Empleado que es el Cliente del pedido recibe `409` `PEDIDO_PROPIO`.
+- **Pedido propio.** Una acción del comercio (aceptar, rechazar, despachar, entregar, anular) de un Empleado sobre un pedido cuyo Cliente es ese mismo Empleado se rechaza con `409` `PEDIDO_PROPIO` y no deja historial, aviso ni reembolso. Se valida por id de usuario dentro de la transacción de la acción, después de bloquear el pedido y leyendo el Cliente de la fila bloqueada.
 
 ---
 

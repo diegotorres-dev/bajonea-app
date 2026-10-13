@@ -60,7 +60,7 @@ class PedidoServiceVistaEmpleadoTest {
 
     private static final Set<String> CAMPOS_EMPLEADO = Set.of("id", "nombreCliente", "comercioId", "estado", "tipoEntrega",
             "direccion", "motivoRechazo", "comentarioRechazo", "canceladoPor", "fuenteEntrega", "motivoAnulacion", "fechaCreacion",
-            "fechaPagoAprobado", "fechaEntrega", "detalles", "subtotal", "total", "reembolsoEstado", "reembolsoMonto");
+            "fechaPagoAprobado", "fechaEntrega", "detalles", "subtotal", "total", "reembolsoEstado", "reembolsoMonto", "esPedidoPropio");
     private static final Set<String> CAMPOS_EXCLUIDOS = Set.of("clienteId", "pagoEstado", "cargoServicioCliente",
             "cargoServicioComercio");
 
@@ -158,7 +158,7 @@ class PedidoServiceVistaEmpleadoTest {
         rechazado.setCanceladoPor(CanceladoPor.COMERCIO);
         pagadosHoy(rechazado);
 
-        List<PedidoEmpleadoResponseDTO> lista = pedidoService.listarPedidosComercioEmpleado(40);
+        List<PedidoEmpleadoResponseDTO> lista = pedidoService.listarPedidosComercioEmpleado(40, 5);
 
         assertEquals(1, lista.size());
         Set<String> campos = camposDe(lista.get(0));
@@ -175,6 +175,18 @@ class PedidoServiceVistaEmpleadoTest {
         assertEquals(CanceladoPor.COMERCIO, dto.getCanceladoPor());
         assertEquals(new BigDecimal("10000"), dto.getSubtotal());
         assertEquals(new BigDecimal("10200"), dto.getTotal());
+    }
+
+    @Test
+    void laMarcaEsPedidoPropioEsTrueSoloCuandoElEmpleadoQueConsultaEsElClienteDelPedido() {
+        pagadosHoy(pedido(3, EstadoPedido.EN_PREPARACION, "10000", "100"));
+
+        List<PedidoEmpleadoResponseDTO> comoCliente = pedidoService.listarPedidosComercioEmpleado(40, 77);
+        List<PedidoEmpleadoResponseDTO> comoOtro = pedidoService.listarPedidosComercioEmpleado(40, 5);
+
+        assertTrue(comoCliente.get(0).getEsPedidoPropio());
+        assertFalse(comoOtro.get(0).getEsPedidoPropio());
+        assertFalse(objectMapper.valueToTree(pedidoService.listarPedidosComercio(40)).toString().contains("esPedidoPropio"));
     }
 
     @Test
@@ -207,7 +219,7 @@ class PedidoServiceVistaEmpleadoTest {
                 nota(14, EstadoNotaCredito.FALLIDO, "5200"),
                 nota(15, EstadoNotaCredito.PENDIENTE_REVISION_MANUAL, "6200")));
 
-        List<PedidoEmpleadoResponseDTO> lista = pedidoService.listarPedidosComercioEmpleado(40);
+        List<PedidoEmpleadoResponseDTO> lista = pedidoService.listarPedidosComercioEmpleado(40, 5);
 
         assertEquals(List.of(EstadoReembolsoEmpleado.SIN_REEMBOLSO, EstadoReembolsoEmpleado.EN_PROCESO, EstadoReembolsoEmpleado.EN_PROCESO,
                 EstadoReembolsoEmpleado.REEMBOLSADO, EstadoReembolsoEmpleado.EN_REVISION, EstadoReembolsoEmpleado.EN_REVISION),

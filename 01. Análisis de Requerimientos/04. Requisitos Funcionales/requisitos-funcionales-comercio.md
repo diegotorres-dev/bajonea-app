@@ -285,6 +285,7 @@ horario, también con el aviso de cuándo reabre.
 - Cerrar y abrir el comercio a mano solo se puede dentro de un horario de atención y con el
   comercio operativo; si no, responde 409 con el código COMERCIO_NO_OPERATIVO o
   FUERA_DE_HORARIO. Un Empleado puede abrir un cierre manual aunque lo haya hecho el Dueño.
+- Un Empleado no puede gestionar un pedido del que él mismo es el Cliente (aceptar, rechazar, despachar, entregar y anular responden `409` con el código `PEDIDO_PROPIO` y el mensaje "No podés gestionar tus propios pedidos"); el Dueño y cualquier otro Empleado sí. Cualquier persona del equipo puede actuar sobre un pedido que aceptó otra. La vista del Empleado marca su pedido con `esPedidoPropio` (ver `requisitos-funcionales-empleado.md`).
 - Cuando dos personas actúan a la vez sobre el mismo pedido (por ejemplo, aceptar y rechazar, o anular y despachar, o el Cliente cancelando mientras el comercio acepta), el sistema las atiende de a una: gana la primera, la segunda recibe un aviso de que el pedido ya fue resuelto, y solo la acción ganadora deja historial, aviso al cliente y reembolso. Lo mismo vale para los procesos automáticos (expiración, autoconfirmación) cuando coinciden con una acción de una persona.
 - El Dueño o un Empleado autorizado ve únicamente los pedidos que llegaron al comercio con el pago aprobado (los que pasaron por PENDIENTE_CONFIRMACION_COMERCIO). Un pedido que nunca llegó pagado no aparece en la lista, en el resumen ni en el detalle de pago, y sus acciones responden como recurso inexistente.
 - La fecha de un pedido para el comercio es la de la confirmación del pago, no la de su creación, y es la que define qué pedidos cuentan como "de hoy".
@@ -298,6 +299,9 @@ horario, también con el aviso de cuándo reabre.
   pedidos del comercio con filtros por estado, fecha y cliente.
 - El sistema debe notificar ante: nuevo pedido recibido, aprobación, rechazo o
   suspensión del comercio, pedido expirado por no respuesta.
+- El Dueño o un Empleado autorizado debe poder ver el recorrido de un pedido (quién hizo
+  cada paso, con nombre, rol, hora y, en rechazos y anulaciones, el motivo) con
+  `GET /api/v1/pedidos/comercio/{id}/trazabilidad`; el Cliente no lo ve.
 - El sistema debe registrar el historial de estados de cada pedido con marcas de
   tiempo en cada transición, con la hora del reloj único de la aplicación (zona
   `America/Argentina/Ushuaia` por defecto). La actividad del comercio muestra de ese historial

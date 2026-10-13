@@ -122,3 +122,18 @@ Como Dueño o Empleado autorizado, quiero ver únicamente los pedidos cuyo pago 
 confirmado, con la fecha en que se pagaron y los contadores del día (pedidos de hoy,
 pendientes y facturado), para gestionar solo ventas reales y tener un resumen fiel de mi
 jornada.
+
+## HU-CO15: Ver Quién Atendió un Pedido
+
+Como Dueño o Empleado autorizado, quiero ver en el detalle de un pedido el recorrido de
+cada paso (quién lo hizo, a qué hora y, si se rechazó o se anuló, el motivo) para saber
+quién atendió cada pedido y resolver dudas con el cliente.
+
+**Criterios de aceptación**
+- Veo cada transición del pedido, de la primera a la última, con el nombre y apellido de
+  quien actuó y su rol (Dueño, Empleado, Cliente o Sistema); el sistema figura sin nombre.
+- En el rechazo y la anulación veo el motivo y el comentario.
+- No veo el pedido todavía no pagado ni su vencimiento por falta de pago.
+- El cliente no ve qué empleado atendió su pedido.
+- Si soy Empleado y el pedido es uno que yo mismo hice como cliente, no puedo ver su
+  recorrido ni gestionarlo ("No podés gestionar tus propios pedidos").

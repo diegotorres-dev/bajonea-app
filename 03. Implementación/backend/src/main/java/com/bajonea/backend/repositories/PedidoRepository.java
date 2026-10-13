@@ -2,6 +2,7 @@ package com.bajonea.backend.repositories;
 
 import com.bajonea.backend.entities.Pedido;
 import com.bajonea.backend.enums.EstadoPedido;
+import com.bajonea.backend.enums.MotivoRechazo;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -64,6 +65,31 @@ public interface PedidoRepository extends JpaRepository<Pedido, Integer> {
             + "select 1 from HistorialEstadoPedido h where h.pedido = p and h.estado = "
             + "com.bajonea.backend.enums.EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO)")
     boolean llegoPagado(@Param("pedidoId") Integer pedidoId);
+
+    /**
+     * Datos del pedido que necesita la trazabilidad, en una sola lectura que además valida que el pedido sea del
+     * comercio y que haya llegado pagado (si no, vacío). Proyección: no carga la entidad.
+     */
+    @Query("select p.id as id, p.cliente.id as clienteId, p.motivoRechazo as motivoRechazo, "
+            + "p.comentarioRechazo as comentarioRechazo, p.motivo as motivo from Pedido p "
+            + "where p.id = :pedidoId and p.comercio.id = :comercioId and exists ("
+            + "select 1 from HistorialEstadoPedido h where h.pedido = p and h.estado = "
+            + "com.bajonea.backend.enums.EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO)")
+    Optional<DatosTrazabilidadPedido> findDatosTrazabilidad(@Param("pedidoId") Integer pedidoId,
+            @Param("comercioId") Integer comercioId);
+
+    interface DatosTrazabilidadPedido {
+
+        Integer getId();
+
+        Integer getClienteId();
+
+        MotivoRechazo getMotivoRechazo();
+
+        String getComentarioRechazo();
+
+        String getMotivo();
+    }
 
     /**
      * Los pedidos {@code PENDIENTE_PAGO} de los comercios indicados, leídos con bloqueo compartido: trae las

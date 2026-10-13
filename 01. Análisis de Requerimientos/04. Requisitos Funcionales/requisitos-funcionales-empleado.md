@@ -291,11 +291,30 @@ bloqueado para el Empleado por defecto.
 
 ## Pedidos Propios
 
-- Un Empleado puede hacer pedidos como Cliente en su propio comercio, pero no puede
-  gestionar sus propios pedidos (se valida por el id del usuario): el pedido aparece en su
-  panel con la etiqueta "Tu pedido" y sin botones de gestión, lo gestionan el Dueño u otro
-  Empleado, no recibe la notificación de "pedido nuevo" de su propio pedido y, si intenta
-  gestionarlo, ve "No podés gestionar tus propios pedidos".
+> **Estado de implementación:** la regla, la marca de la lista y la trazabilidad están implementadas (tramo E3, bloque A3). Lo único que falta de esta sección es que el Empleado no reciba el aviso de "pedido nuevo" de su propio pedido: llega con el aviso al equipo del bloque A4.
+
+"Pedido propio" y "Tu pedido" significan siempre lo mismo: un pedido del que la persona que consulta es el Cliente. No tiene nada que ver con quién lo aceptó.
+
+- Un Empleado puede hacer pedidos como Cliente en su propio comercio (el carrito y la
+  confirmación del pedido no lo bloquean), pero no puede gestionar un pedido del que él mismo
+  es el Cliente: aceptar, rechazar, despachar, entregar y anular responden `409` con el
+  código `PEDIDO_PROPIO` y el mensaje "No podés gestionar tus propios pedidos". Se valida por
+  el id del usuario, dentro de la transacción, después de bloquear el pedido y leyendo el
+  Cliente de esa fila. Aplica solo al Empleado: el Dueño nunca es Cliente de su comercio.
+- La regla se evalúa antes que el estado del pedido (un pedido propio en un estado que no
+  corresponde a la acción también da `PEDIDO_PROPIO`). La única excepción es aceptar con el
+  comercio suspendido o cerrado temporalmente, donde el aviso de comercio sin operación
+  (`COMERCIO_SIN_OPERACION`) se evalúa antes, porque se comprueba antes de bloquear el pedido.
+- La lista de pedidos y las respuestas de las cinco acciones, para el Empleado, traen el
+  campo booleano `esPedidoPropio` (`true` cuando quien consulta es el Cliente del pedido). La
+  pantalla muestra el pedido en su panel con la etiqueta "Tu pedido" y sin botones de
+  gestión. El campo lo calcula el servidor y existe solo en la vista del Empleado: el Dueño y
+  el Cliente no lo reciben.
+- Cualquier otro Empleado, o el Dueño, puede gestionar ese pedido; y todos pueden actuar
+  sobre un pedido que aceptó otra persona, sin restricción por quién lo aceptó.
+- El Empleado que es el Cliente del pedido tampoco puede ver su trazabilidad: recibe el mismo
+  `409` `PEDIDO_PROPIO`.
+- No recibe la notificación de "pedido nuevo" de su propio pedido (pendiente del bloque A4).
 
 ---
 
@@ -304,6 +323,20 @@ bloqueado para el Empleado por defecto.
 - El nombre de quien hizo cada cambio de estado de un pedido, y cada cierre o reapertura,
   se muestra en el detalle del panel del comercio (Dueño y Empleados), incluso si el
   Empleado ya está inactivo. El Cliente no ve qué empleado atendió su pedido.
+- **Recorrido del pedido ("Atendido por").** El servidor ofrece `GET /api/v1/pedidos/comercio/{id}/trazabilidad`
+  (bloque A3 del tramo E3; la pantalla llega en la entrega B), que devuelve, de la primera a
+  la última, cada transición del pedido con su estado, la hora, un texto legible ("Aceptó el
+  pedido"), el rol y el nombre y apellido de quien actuó y, en el rechazo y la anulación, el
+  motivo. Lo ven el Dueño y todos los Empleados activos del comercio (con el comercio
+  indicado en `X-Comercio-Id`). Reglas de visibilidad iguales a las de la actividad: no
+  aparece el pedido todavía no pagado ni su vencimiento por falta de pago; el sistema va
+  sin nombre; el Cliente figura con su nombre y apellido; el Dueño figura con su nombre y
+  apellido, sin ningún otro dato. No lleva ids de usuario ni datos personales (DNI,
+  teléfono, email), ni cargos de servicio ni datos de pago. Un pedido de otro comercio,
+  inexistente o que nunca se pagó responde `404`; un Cliente sin relación con el comercio
+  recibe `400` (sin header) o `404` `COMERCIO_NO_DISPONIBLE` (con header), nunca la trazabilidad;
+  el Administrador recibe `403`. Es una lectura sin bloqueos: si el pedido cambia de estado
+  mientras se lee, la respuesta muestra el recorrido de antes o el de después, nunca uno a medias.
 - Las altas, ediciones, bajas y cambios de estado de productos, imágenes, perfil y
   horarios, hechos por el Dueño o por un Empleado, quedan en el registro de ediciones del
   comercio (`HistorialEdicionComercio`), sin guardar valores anteriores. Cada fila guarda el

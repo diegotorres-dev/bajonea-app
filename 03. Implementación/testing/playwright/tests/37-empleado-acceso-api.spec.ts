@@ -65,6 +65,7 @@ const CAMPOS_PEDIDO_EMPLEADO = [
   'comercioId',
   'detalles',
   'direccion',
+  'esPedidoPropio',
   'estado',
   'fechaCreacion',
   'fechaEntrega',
@@ -387,7 +388,7 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
       expect(delEmpleado.map((p) => p.id)).toEqual(delDueno.map((p) => p.id));
       for (const [i, pedido] of delEmpleado.entries()) {
         const completo = delDueno[i];
-        for (const campo of CAMPOS_PEDIDO_EMPLEADO.filter((c) => c !== 'reembolsoEstado')) {
+        for (const campo of CAMPOS_PEDIDO_EMPLEADO.filter((c) => c !== 'reembolsoEstado' && c !== 'esPedidoPropio')) {
           expect(pedido[campo], `pedido ${pedido.id} ${campo}`).toEqual(completo[campo]);
         }
       }
@@ -409,9 +410,10 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
 
       expect(lista.length).toBeGreaterThan(0);
       for (const pedido of lista) {
-        for (const campo of [...CAMPOS_PEDIDO_EXCLUIDOS, ...CAMPOS_PEDIDO_EMPLEADO]) {
+        for (const campo of [...CAMPOS_PEDIDO_EXCLUIDOS, ...CAMPOS_PEDIDO_EMPLEADO.filter((c) => c !== 'esPedidoPropio')]) {
           expect(Object.keys(pedido), `pedido ${pedido.id} ${campo}`).toContain(campo);
         }
+        expect(Object.keys(pedido)).not.toContain('esPedidoPropio');
       }
       const aceptado = lista.find((p) => p.id === ids.aceptado)!;
       expect(aceptado.pagoEstado).toBe('PAGADO');
