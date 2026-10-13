@@ -279,6 +279,22 @@ Medido el 2026-09-30 (`CASO=primera-vinculacion` en `testing/playwright/scripts/
 
 ---
 
+### Una fila de historial con claves foráneas a `usuario` y `comercio` se interbloquea con el bloqueo de cuenta si el usuario no se toma primero (tramo E3, bloque A1)
+
+- `historial_edicion_comercio` tiene claves foráneas a `comercio` y a `usuario`: el `INSERT` toma un bloqueo compartido sobre las dos filas padre (primero la del comercio, que es la primera clave declarada). El bloqueo de cuenta por intentos fallidos del login toma el usuario del Dueño con `FOR UPDATE` y después pide el comercio. Una escritura que toma el comercio (o lo escribe, como `editarPerfil`) y recién al registrar pide el usuario queda esperando al login, que a su vez espera al comercio: interbloqueo.
+- Regla: quien escribe y va a registrar toma **primero** la fila del usuario que actúa con `LOCK IN SHARE MODE` (`HistorialEdicionComercioService.iniciarEscritura`, primera instrucción de cada escritura auditada). Es el mismo patrón que el cierre manual del comercio y el orden global de `docs/CONCURRENCIA-Y-TRANSACCIONES.md`.
+- La prueba `HistorialEdicionComercioLockIntegrationTest` simula el login (toma el usuario y después el comercio) mientras otro hilo edita el perfil. Se verificó que muerde: sin la línea de `iniciarEscritura` en `editarPerfil` falla con `Deadlock found when trying to get lock`; con la línea las dos transacciones terminan.
+- **Segundo cruce, por mejora de bloqueo (encontrado por el estrés, no por la prueba anterior):** Hibernate difiere los `UPDATE` de las entidades modificadas hasta el flush del commit, pero el `INSERT` de una entidad con id autogenerado se ejecuta en el acto. Si una escritura modifica el comercio (`editarPerfil`) y registra después en el historial, el orden real en la base es `INSERT` (bloqueo **compartido** sobre el comercio por la clave foránea) y recién después `UPDATE comercio` (bloqueo **exclusivo**). Dos transacciones así se quedan cada una con el compartido esperando el exclusivo: `Deadlock found`. También se cruza con `cerrar`, `abrir` y el bloqueo de cuenta, que piden el exclusivo del comercio. Regla: antes de insertar una fila con clave foránea al mismo padre que la escritura va a modificar, volcar la escritura pendiente (`entityManager.flush()`); `HistorialEdicionComercioService.registrar` lo hace por todos. Probado con seis hilos editando el perfil a la vez (falla sin el volcado, pasa con él) y con `stress-locks-tramoE3-A1.mjs` (255 deadlocks antes, 0 después).
+- `registrar` e `iniciarEscritura` son `Propagation.MANDATORY`: llamarlos sin transacción en curso es un error (el registro nunca se escribe por su cuenta, siempre en la transacción de la escritura que audita).
+
+### Los nombres de clave foránea son únicos por base, no por tabla; los prefijos de abreviatura se agotan (tramo E3, bloque A1)
+
+- El diccionario proponía `fk_hec_comercio` y `idx_hec_*` para `historial_edicion_comercio`, pero `fk_hec_comercio` ya existe en `historial_estado_comercio` (V1) y MariaDB exige nombres de restricción únicos en toda la base (los de índice solo por tabla). V31 ya había tenido que usar `hec2`. `V32` usa `hed`. Antes de nombrar restricciones en una migración nueva: `grep -rhoE "(fk|ck|uk)_[a-z0-9]+_" backend/src/main/resources/db/migration | sort | uniq -c`.
+
+### Paginar por cursor una lista que mezcla varias tablas: el orden total necesita un desempate por fuente (tramo E3, bloque A1)
+
+- La actividad del comercio mezcla tres historiales. El orden es `(fecha_hora desc, fuente, id desc)`: dos filas de tablas distintas pueden tener la misma fecha (columnas `datetime` sin fracciones) y sin un desempate fijo el cursor repetiría o saltearía filas en el límite de una página. El cursor lleva `(fecha, fuente, id)` de la última fila entregada; cada tabla se consulta con `fecha < F o (fecha = F y id <= M)`, donde `M` es el mayor id aún no entregado de esa fuente en la fecha del cursor (todo si la fuente va después de la del cursor, nada si va antes, `id - 1` si es la misma) y un tope de `limite + 1`. Las primeras `limite + 1` filas del total siempre están entre las primeras `limite + 1` de alguna fuente, así que tres consultas por página alcanzan. Probado recorriendo con límites de 1 a 4 sobre filas empatadas.
+
 ## Lista de despliegue
 
 Pendientes que no son código y hay que revisar en cada entorno antes de contar con la función:

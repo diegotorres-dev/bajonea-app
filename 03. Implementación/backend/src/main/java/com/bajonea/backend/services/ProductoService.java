@@ -1,5 +1,6 @@
 package com.bajonea.backend.services;
 
+import com.bajonea.backend.config.security.ComercioActivo;
 import com.bajonea.backend.dto.request.ImagenProductoRequestDTO;
 import com.bajonea.backend.dto.request.ProductoRequestDTO;
 import com.bajonea.backend.dto.response.CategoriaFiltroResponseDTO;
@@ -18,8 +19,10 @@ import com.bajonea.backend.entities.Producto;
 import com.bajonea.backend.entities.ProductoTag;
 import com.bajonea.backend.entities.ProductoTagId;
 import com.bajonea.backend.entities.Tag;
+import com.bajonea.backend.enums.AccionEdicion;
 import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.EstadoProducto;
+import com.bajonea.backend.enums.TipoEntidadEdicion;
 import com.bajonea.backend.enums.TipoNotificacion;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
@@ -39,6 +42,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -72,9 +76,11 @@ public class ProductoService {
     private final CarritoRepository carritoRepository;
     private final NotificacionService notificacionService;
     private final CloudinaryService cloudinaryService;
+    private final HistorialEdicionComercioService historialEdicionComercioService;
 
-    public ProductoResponseDTO crearProducto(Integer comercioId, ProductoRequestDTO request) {
-        Comercio comercio = obtenerComercio(comercioId);
+    public ProductoResponseDTO crearProducto(ComercioActivo actor, ProductoRequestDTO request) {
+        historialEdicionComercioService.iniciarEscritura(actor);
+        Comercio comercio = obtenerComercio(actor.comercioId());
         Categoria categoria = obtenerCategoria(request.getCategoriaId());
 
         Producto producto = Producto.builder()
@@ -89,12 +95,15 @@ public class ProductoService {
         productoRepository.save(producto);
 
         asignarTags(producto, request.getTagIds());
+        historialEdicionComercioService.registrar(actor, TipoEntidadEdicion.PRODUCTO, producto.getId(), producto.getNombre(),
+                AccionEdicion.CREAR, null);
 
         return aResponseDTO(producto);
     }
 
-    public ProductoResponseDTO editarProducto(Integer comercioId, Integer productoId, ProductoRequestDTO request) {
-        Comercio comercio = obtenerComercio(comercioId);
+    public ProductoResponseDTO editarProducto(ComercioActivo actor, Integer productoId, ProductoRequestDTO request) {
+        historialEdicionComercioService.iniciarEscritura(actor);
+        Comercio comercio = obtenerComercio(actor.comercioId());
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
 
         if (producto.getEstado() == EstadoProducto.DESCONTINUADO) {
@@ -107,7 +116,29 @@ public class ProductoService {
 
         Categoria categoria = obtenerCategoria(request.getCategoriaId());
 
-        producto.setNombre(TextoUtils.aTitleCase(request.getNombre()));
+        String nombreNuevo = TextoUtils.aTitleCase(request.getNombre());
+        List<Integer> tagsAntes = productoTagRepository.findByProductoId(productoId).stream()
+                .map(productoTag -> productoTag.getTag().getId()).sorted().toList();
+        List<Integer> tagsDespues = request.getTagIds() == null ? List.of()
+                : request.getTagIds().stream().distinct().sorted().toList();
+        List<String> camposCambiados = new ArrayList<>();
+        if (!Objects.equals(producto.getNombre(), nombreNuevo)) {
+            camposCambiados.add("nombre");
+        }
+        if (!Objects.equals(producto.getDescripcion(), request.getDescripcion())) {
+            camposCambiados.add("descripción");
+        }
+        if (producto.getPrecio().compareTo(request.getPrecio()) != 0) {
+            camposCambiados.add("precio");
+        }
+        if (!producto.getCategoria().getId().equals(categoria.getId())) {
+            camposCambiados.add("categoría");
+        }
+        if (!tagsAntes.equals(tagsDespues)) {
+            camposCambiados.add("etiquetas");
+        }
+
+        producto.setNombre(nombreNuevo);
         producto.setDescripcion(request.getDescripcion());
         producto.setPrecio(request.getPrecio());
         producto.setCategoria(categoria);
@@ -116,6 +147,11 @@ public class ProductoService {
 
         productoTagRepository.deleteByProductoId(productoId);
         asignarTags(producto, request.getTagIds());
+
+        if (!camposCambiados.isEmpty()) {
+            historialEdicionComercioService.registrar(actor, TipoEntidadEdicion.PRODUCTO, producto.getId(), producto.getNombre(),
+                    AccionEdicion.EDITAR, HistorialEdicionComercioService.detalleDeEdicion(camposCambiados));
+        }
 
         return aResponseDTO(producto);
     }
@@ -238,8 +274,9 @@ public class ProductoService {
         return new FiltrosCatalogoResponseDTO(categorias, tags);
     }
 
-    public ProductoResponseDTO cambiarEstado(Integer comercioId, Integer productoId, EstadoProducto nuevoEstado) {
-        Comercio comercio = obtenerComercio(comercioId);
+    public ProductoResponseDTO cambiarEstado(ComercioActivo actor, Integer productoId, EstadoProducto nuevoEstado) {
+        historialEdicionComercioService.iniciarEscritura(actor);
+        Comercio comercio = obtenerComercio(actor.comercioId());
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
 
         EstadoProducto estadoActual = producto.getEstado();
@@ -258,6 +295,8 @@ public class ProductoService {
         if (nuevoEstado == EstadoProducto.AGOTADO || nuevoEstado == EstadoProducto.DESCONTINUADO) {
             limpiarCarritosActivos(producto);
         }
+        historialEdicionComercioService.registrar(actor, TipoEntidadEdicion.PRODUCTO, producto.getId(), producto.getNombre(),
+                AccionEdicion.CAMBIAR_ESTADO, "Pasó a " + textoDeEstado(nuevoEstado));
 
         return aResponseDTO(producto);
     }
@@ -275,8 +314,9 @@ public class ProductoService {
         return cloudinaryService.generarFirmaRecorteImagen(comercio.getId(), producto.getId());
     }
 
-    public ImagenProductoResponseDTO agregarImagen(Integer comercioId, Integer productoId, ImagenProductoRequestDTO request) {
-        Comercio comercio = obtenerComercio(comercioId);
+    public ImagenProductoResponseDTO agregarImagen(ComercioActivo actor, Integer productoId, ImagenProductoRequestDTO request) {
+        historialEdicionComercioService.iniciarEscritura(actor);
+        Comercio comercio = obtenerComercio(actor.comercioId());
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
 
         cloudinaryService.validarImagenProducto(comercio.getId(), producto.getId(), request.getUrl());
@@ -299,41 +339,66 @@ public class ProductoService {
                 .esPrincipal(esPrincipal)
                 .build();
         imagenProductoRepository.save(imagen);
+        historialEdicionComercioService.registrar(actor, TipoEntidadEdicion.IMAGEN_PRODUCTO, imagen.getId(), producto.getNombre(),
+                AccionEdicion.CREAR, null);
 
         return new ImagenProductoResponseDTO(imagen.getId(), imagen.getUrl(), imagen.getOrden(), imagen.isEsPrincipal());
     }
 
-    public void eliminarImagen(Integer comercioId, Integer productoId, Integer imagenId) {
-        Comercio comercio = obtenerComercio(comercioId);
+    public void eliminarImagen(ComercioActivo actor, Integer productoId, Integer imagenId) {
+        historialEdicionComercioService.iniciarEscritura(actor);
+        Comercio comercio = obtenerComercio(actor.comercioId());
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
         ImagenProducto imagen = obtenerImagenDelProducto(imagenId, producto);
         imagenProductoRepository.delete(imagen);
         recalcularImagenPrincipal(productoId);
+        historialEdicionComercioService.registrar(actor, TipoEntidadEdicion.IMAGEN_PRODUCTO, imagenId, producto.getNombre(),
+                AccionEdicion.ELIMINAR, null);
     }
 
-    public ImagenProductoResponseDTO reordenarImagen(Integer comercioId, Integer productoId, Integer imagenId, Integer nuevoOrden) {
-        Comercio comercio = obtenerComercio(comercioId);
+    public ImagenProductoResponseDTO reordenarImagen(ComercioActivo actor, Integer productoId, Integer imagenId, Integer nuevoOrden) {
+        historialEdicionComercioService.iniciarEscritura(actor);
+        Comercio comercio = obtenerComercio(actor.comercioId());
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
         ImagenProducto imagen = obtenerImagenDelProducto(imagenId, producto);
 
+        boolean cambioElOrden = !Objects.equals(imagen.getOrden(), nuevoOrden);
         imagen.setOrden(nuevoOrden);
         imagenProductoRepository.save(imagen);
         recalcularImagenPrincipal(productoId);
+        if (cambioElOrden) {
+            historialEdicionComercioService.registrar(actor, TipoEntidadEdicion.IMAGEN_PRODUCTO, imagenId, producto.getNombre(),
+                    AccionEdicion.EDITAR, "Editó: orden");
+        }
 
         ImagenProducto actualizada = obtenerImagenDelProducto(imagenId, producto);
         return new ImagenProductoResponseDTO(actualizada.getId(), actualizada.getUrl(), actualizada.getOrden(), actualizada.isEsPrincipal());
     }
 
-    public ImagenProductoResponseDTO actualizarUrlImagen(Integer comercioId, Integer productoId, Integer imagenId, String nuevaUrl) {
-        Comercio comercio = obtenerComercio(comercioId);
+    public ImagenProductoResponseDTO actualizarUrlImagen(ComercioActivo actor, Integer productoId, Integer imagenId, String nuevaUrl) {
+        historialEdicionComercioService.iniciarEscritura(actor);
+        Comercio comercio = obtenerComercio(actor.comercioId());
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
         ImagenProducto imagen = obtenerImagenDelProducto(imagenId, producto);
 
         cloudinaryService.validarImagenProducto(comercio.getId(), producto.getId(), nuevaUrl);
+        boolean cambioLaUrl = !Objects.equals(imagen.getUrl(), nuevaUrl);
         imagen.setUrl(nuevaUrl);
         imagenProductoRepository.save(imagen);
+        if (cambioLaUrl) {
+            historialEdicionComercioService.registrar(actor, TipoEntidadEdicion.IMAGEN_PRODUCTO, imagenId, producto.getNombre(),
+                    AccionEdicion.EDITAR, "Editó: imagen");
+        }
 
         return new ImagenProductoResponseDTO(imagen.getId(), imagen.getUrl(), imagen.getOrden(), imagen.isEsPrincipal());
+    }
+
+    private static String textoDeEstado(EstadoProducto estado) {
+        return switch (estado) {
+            case DISPONIBLE -> "disponible";
+            case AGOTADO -> "agotado";
+            case DESCONTINUADO -> "descontinuado";
+        };
     }
 
     private void desmarcarPrincipalActual(Integer productoId) {

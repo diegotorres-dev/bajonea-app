@@ -1,5 +1,6 @@
 package com.bajonea.backend.services;
 
+import com.bajonea.backend.config.security.ComercioActivo;
 import com.bajonea.backend.dto.request.ComercioPerfilRequestDTO;
 import com.bajonea.backend.dto.request.FotoPerfilComercioRequestDTO;
 import com.bajonea.backend.dto.response.ComercioEmpleadoResponseDTO;
@@ -15,8 +16,10 @@ import com.bajonea.backend.entities.HistorialEstadoComercio;
 import com.bajonea.backend.entities.Horario;
 import com.bajonea.backend.entities.PersonaFisica;
 import com.bajonea.backend.services.DisponibilidadComercioService.Disponibilidad;
+import com.bajonea.backend.enums.AccionEdicion;
 import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.EstadoUsuario;
+import com.bajonea.backend.enums.TipoEntidadEdicion;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.repositories.ComercioRepository;
@@ -30,7 +33,9 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,6 +63,7 @@ public class ComercioService {
     private final CloudinaryService cloudinaryService;
     private final DisponibilidadComercioService disponibilidadComercioService;
     private final UsuarioRepository usuarioRepository;
+    private final HistorialEdicionComercioService historialEdicionComercioService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -90,11 +96,30 @@ public class ComercioService {
                 disponibilidad.textoReapertura());
     }
 
-    public ComercioResponseDTO editarPerfil(Integer comercioId, ComercioPerfilRequestDTO request) {
+    public ComercioResponseDTO editarPerfil(ComercioActivo actor, ComercioPerfilRequestDTO request) {
         ComercioValidaciones.validarModalidadesEntrega(request.isAceptaDelivery(), request.isAceptaRetiro());
-        Comercio comercio = obtenerComercio(comercioId);
+        historialEdicionComercioService.iniciarEscritura(actor);
+        Comercio comercio = obtenerComercio(actor.comercioId());
 
-        comercio.setNombre(TextoUtils.aTitleCase(request.getNombre()));
+        String nombreNuevo = TextoUtils.aTitleCase(request.getNombre());
+        List<String> camposCambiados = new ArrayList<>();
+        if (!Objects.equals(comercio.getNombre(), nombreNuevo)) {
+            camposCambiados.add("nombre");
+        }
+        if (!Objects.equals(comercio.getDescripcion(), request.getDescripcion())) {
+            camposCambiados.add("descripción");
+        }
+        if (!Objects.equals(comercio.getTelefono(), request.getTelefono())) {
+            camposCambiados.add("teléfono");
+        }
+        if (!Objects.equals(comercio.getEmail(), request.getEmailContacto())) {
+            camposCambiados.add("email de contacto");
+        }
+        if (comercio.isAceptaDelivery() != request.isAceptaDelivery() || comercio.isAceptaRetiro() != request.isAceptaRetiro()) {
+            camposCambiados.add("modalidades de entrega");
+        }
+
+        comercio.setNombre(nombreNuevo);
         comercio.setDescripcion(request.getDescripcion());
         comercio.setTelefono(request.getTelefono());
         comercio.setEmail(request.getEmailContacto());
@@ -102,6 +127,11 @@ public class ComercioService {
         comercio.setAceptaRetiro(request.isAceptaRetiro());
         comercio.setFechaModificacion(LocalDateTime.now());
         comercioRepository.save(comercio);
+
+        if (!camposCambiados.isEmpty()) {
+            historialEdicionComercioService.registrar(actor, TipoEntidadEdicion.COMERCIO, comercio.getId(), comercio.getNombre(),
+                    AccionEdicion.EDITAR, HistorialEdicionComercioService.detalleDeEdicion(camposCambiados));
+        }
 
         return aResponseDTO(comercio);
     }
@@ -111,12 +141,18 @@ public class ComercioService {
         return cloudinaryService.generarFirmaFotoPerfilComercio(comercio.getId());
     }
 
-    public ComercioResponseDTO actualizarFotoPerfil(Integer comercioId, FotoPerfilComercioRequestDTO request) {
-        Comercio comercio = obtenerComercio(comercioId);
+    public ComercioResponseDTO actualizarFotoPerfil(ComercioActivo actor, FotoPerfilComercioRequestDTO request) {
+        historialEdicionComercioService.iniciarEscritura(actor);
+        Comercio comercio = obtenerComercio(actor.comercioId());
         cloudinaryService.validarFotoPerfilComercio(comercio.getId(), request.getUrl());
+        boolean cambioLaFoto = !Objects.equals(comercio.getFotoPerfilUrl(), request.getUrl());
         comercio.setFotoPerfilUrl(request.getUrl());
         comercio.setFechaModificacion(LocalDateTime.now());
         comercioRepository.save(comercio);
+        if (cambioLaFoto) {
+            historialEdicionComercioService.registrar(actor, TipoEntidadEdicion.COMERCIO, comercio.getId(), comercio.getNombre(),
+                    AccionEdicion.EDITAR, HistorialEdicionComercioService.detalleDeEdicion(List.of("foto de perfil")));
+        }
         return aResponseDTO(comercio);
     }
 

@@ -2,9 +2,11 @@ package com.bajonea.backend.controllers;
 
 import com.bajonea.backend.config.security.ComercioActivo;
 import com.bajonea.backend.dto.request.InvitarEmpleadoRequestDTO;
+import com.bajonea.backend.dto.response.ActividadComercioResponseDTO;
 import com.bajonea.backend.dto.response.ApiResponse;
 import com.bajonea.backend.dto.response.EquipoComercioResponseDTO;
 import com.bajonea.backend.dto.response.InvitacionEmpleadoResponseDTO;
+import com.bajonea.backend.services.ActividadComercioService;
 import com.bajonea.backend.services.InvitacionEmpleadoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -29,11 +32,24 @@ import org.springframework.web.bind.annotation.RestController;
 public class EquipoComercioController {
 
     private final InvitacionEmpleadoService invitacionEmpleadoService;
+    private final ActividadComercioService actividadComercioService;
 
     @GetMapping
     public ResponseEntity<ApiResponse<EquipoComercioResponseDTO>> verEquipo(ComercioActivo comercio) {
         EquipoComercioResponseDTO response = invitacionEmpleadoService.listarEquipo(comercio);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Equipo obtenido correctamente", response));
+    }
+
+    /**
+     * Actividad del comercio (ediciones, acciones sobre pedidos y cierres), de la más nueva a la más vieja, de a
+     * {@code limite} filas (30 por defecto, 100 como máximo). Para pedir la página siguiente se manda el
+     * {@code siguienteCursor} de la anterior como {@code cursor}. Solo el Dueño.
+     */
+    @GetMapping("/actividad")
+    public ResponseEntity<ApiResponse<ActividadComercioResponseDTO>> verActividad(ComercioActivo comercio,
+            @RequestParam(required = false) Integer limite, @RequestParam(required = false) String cursor) {
+        ActividadComercioResponseDTO response = actividadComercioService.listar(comercio, limite, cursor);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Actividad obtenida correctamente", response));
     }
 
     @PostMapping("/invitaciones")

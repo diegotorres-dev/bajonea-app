@@ -125,7 +125,7 @@ public class ComercioController {
     @PutMapping("/perfil")
     public ResponseEntity<ApiResponse<ComercioResponseDTO>> editarPerfil(@Valid @RequestBody ComercioPerfilRequestDTO request,
             ComercioActivo comercio) {
-        ComercioResponseDTO response = comercioService.editarPerfil(comercio.comercioId(), request);
+        ComercioResponseDTO response = comercioService.editarPerfil(comercio, request);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Perfil actualizado correctamente", response));
     }
 
@@ -139,7 +139,7 @@ public class ComercioController {
     @PutMapping("/perfil/foto")
     public ResponseEntity<ApiResponse<ComercioResponseDTO>> actualizarFotoPerfil(
             @Valid @RequestBody FotoPerfilComercioRequestDTO request, ComercioActivo comercio) {
-        ComercioResponseDTO response = comercioService.actualizarFotoPerfil(comercio.comercioId(), request);
+        ComercioResponseDTO response = comercioService.actualizarFotoPerfil(comercio, request);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Foto de perfil actualizada correctamente", response));
     }
 

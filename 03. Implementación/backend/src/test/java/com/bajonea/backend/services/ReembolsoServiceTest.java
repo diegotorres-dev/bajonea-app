@@ -95,19 +95,9 @@ class ReembolsoServiceTest {
         return NotaCredito.builder().id(900).pago(pago).monto(MONTO).intentos(0).build();
     }
 
-    @Test
-    void pagoAprobadoGeneraNotaYReembolsaElMontoTotalConElTokenDelComercio() {
-        Pago pago = pagoAprobado();
-        darPago(pago);
-        when(cuentaService.buscarActivaPorDueno(DUENO_ID)).thenReturn(Optional.of(cuentaActiva()));
-        when(notaCreditoService.crear(pago, MONTO, MotivoNotaCredito.RECHAZO_COMERCIO)).thenReturn(notaPendiente(pago));
-        when(client.solicitarReembolsoTotal(anyString(), anyString(), anyString())).thenReturn(ResultadoReembolsoMp.exito("555"));
-
-        reembolsoService.procesarReembolsoTotal(pedido, MotivoNotaCredito.RECHAZO_COMERCIO);
-
-        verify(client).solicitarReembolsoTotal(eq("1234567"), eq("APP_USR-token-del-comercio"), eq("nc-900-1"));
-        verify(notaCreditoService).registrarReembolsoExitoso(900, "555");
-        verify(notaCreditoService, never()).registrarReembolsoFallido(any(), any());
+    private void abrirTransaccionSimulada() {
+        TransactionSynchronizationManager.initSynchronization();
+        TransactionSynchronizationManager.setActualTransactionActive(true);
     }
 
     @Test
@@ -118,131 +108,48 @@ class ReembolsoServiceTest {
         when(notaCreditoService.crear(pago, MONTO, MotivoNotaCredito.EXPIRACION_SIN_RESPUESTA)).thenReturn(notaPendiente(pago));
         when(client.solicitarReembolsoTotal(anyString(), anyString(), anyString()))
                 .thenReturn(ResultadoReembolsoMp.fallido("Mercado Pago respondió 400: insufficient money"));
+        abrirTransaccionSimulada();
 
-        reembolsoService.procesarReembolsoTotal(pedido, MotivoNotaCredito.EXPIRACION_SIN_RESPUESTA);
+        reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.EXPIRACION_SIN_RESPUESTA);
+        confirmarTransaccion();
 
         verify(notaCreditoService).registrarReembolsoFallido(900, "Mercado Pago respondió 400: insufficient money");
         verify(notaCreditoService, never()).registrarReembolsoExitoso(any(), any());
     }
 
     @Test
-    void unaExcepcionInesperadaNuncaLlegaAlLlamador() {
+    void unaExcepcionInesperadaEnLaLlamadaAMercadoPagoNuncaLlegaAlLlamador() {
         Pago pago = pagoAprobado();
         darPago(pago);
         when(cuentaService.buscarActivaPorDueno(DUENO_ID)).thenReturn(Optional.of(cuentaActiva()));
         when(notaCreditoService.crear(pago, MONTO, MotivoNotaCredito.RECHAZO_COMERCIO)).thenReturn(notaPendiente(pago));
         when(client.solicitarReembolsoTotal(anyString(), anyString(), anyString())).thenThrow(new IllegalStateException("boom"));
+        abrirTransaccionSimulada();
 
-        reembolsoService.procesarReembolsoTotal(pedido, MotivoNotaCredito.RECHAZO_COMERCIO);
+        reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.RECHAZO_COMERCIO);
+        confirmarTransaccion();
 
         verify(notaCreditoService, never()).registrarReembolsoExitoso(any(), any());
     }
 
     @Test
-    void pedidoSinPagoDeMercadoPagoNoReembolsaNiCreaNota() {
-        when(pagoService.buscarPorPedidoParaActualizar(PEDIDO_ID)).thenReturn(Optional.empty());
+    void unPagoQueNoEstaAprobadoYConfirmadoNoSeReembolsaNiCreaNota() {
+        for (Pago pagoNoReembolsable : new Pago[] {pago("rejected", null, "999"), pago("approved", null, "999"), pago(null, null, null)}) {
+            darPago(pagoNoReembolsable);
+            abrirTransaccionSimulada();
 
-        reembolsoService.procesarReembolsoTotal(pedido, MotivoNotaCredito.RECHAZO_COMERCIO);
-
-        verifyNoInteractions(client);
-        verify(notaCreditoService, never()).crear(any(), any(), any());
-    }
-
-    @Test
-    void pagoRechazadoConIdDeTransaccionNoSeReembolsa() {
-        darPago(pago("rejected", null, "999"));
-
-        reembolsoService.procesarReembolsoTotal(pedido, MotivoNotaCredito.SUSPENSION_COMERCIO);
+            assertFalse(reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.SUSPENSION_COMERCIO));
+            limpiarSincronizacion();
+        }
 
         verifyNoInteractions(client);
         verify(notaCreditoService, never()).crear(any(), any(), any());
     }
 
-    @Test
-    void pagoAprobadoSinFechaDeConfirmacionNoSeReembolsa() {
-        darPago(pago("approved", null, "999"));
-
-        reembolsoService.procesarReembolsoTotal(pedido, MotivoNotaCredito.SUSPENSION_COMERCIO);
-
-        verifyNoInteractions(client);
-        verify(notaCreditoService, never()).crear(any(), any(), any());
-    }
-
-    @Test
-    void pagoSinEstadoDeMercadoPagoNoSeReembolsa() {
-        darPago(pago(null, null, null));
-
-        reembolsoService.procesarReembolsoTotal(pedido, MotivoNotaCredito.SUSPENSION_COMERCIO);
-
-        verifyNoInteractions(client);
-        verify(notaCreditoService, never()).crear(any(), any(), any());
-    }
-
-    @Test
-    void cuentaDesvinculadaDejaLaNotaPendienteDeRevisionManualSinLlamarAMercadoPago() {
-        Pago pago = pagoAprobado();
-        darPago(pago);
-        when(cuentaService.buscarActivaPorDueno(DUENO_ID)).thenReturn(Optional.empty());
-        when(notaCreditoService.crearPendienteRevisionManual(eq(pago), eq(MONTO), eq(MotivoNotaCredito.RECHAZO_COMERCIO), anyString()))
-                .thenReturn(notaPendiente(pago));
-
-        reembolsoService.procesarReembolsoTotal(pedido, MotivoNotaCredito.RECHAZO_COMERCIO);
-
-        verify(notaCreditoService).crearPendienteRevisionManual(eq(pago), eq(MONTO), eq(MotivoNotaCredito.RECHAZO_COMERCIO), anyString());
-        verify(notaCreditoService, never()).crear(any(), any(), any());
-        verifyNoInteractions(client);
-    }
-
-    @Test
-    void siElPagoYaTieneReembolsoPorElMontoCompletoNoSeDuplica() {
-        Pago pago = pagoAprobado();
-        when(pagoService.buscarPorPedidoParaActualizar(PEDIDO_ID)).thenReturn(Optional.of(pago));
-        when(notaCreditoService.montoCubierto(PAGO_ID)).thenReturn(MONTO);
-
-        reembolsoService.procesarReembolsoTotal(pedido, MotivoNotaCredito.RECHAZO_COMERCIO);
-
-        verifyNoInteractions(client);
-        verify(notaCreditoService, never()).crear(any(), any(), any());
-    }
-
-    @Test
-    void dentroDeUnaTransaccionElReembolsoSeDifiereAHastaDespuesDelCommit() {
-        Pago pago = pagoAprobado();
-        darPago(pago);
-        when(cuentaService.buscarActivaPorDueno(DUENO_ID)).thenReturn(Optional.of(cuentaActiva()));
-        when(notaCreditoService.crear(pago, MONTO, MotivoNotaCredito.RECHAZO_COMERCIO)).thenReturn(notaPendiente(pago));
-        when(client.solicitarReembolsoTotal(anyString(), anyString(), anyString())).thenReturn(ResultadoReembolsoMp.exito("555"));
-
-        TransactionSynchronizationManager.initSynchronization();
-        reembolsoService.procesarReembolsoTotal(pedido, MotivoNotaCredito.RECHAZO_COMERCIO);
-
-        assertFalse(TransactionSynchronizationManager.getSynchronizations().isEmpty());
-        verifyNoInteractions(client);
-
+    private void confirmarTransaccion() {
         for (TransactionSynchronization sync : TransactionSynchronizationManager.getSynchronizations()) {
             sync.afterCommit();
         }
-
-        assertTrue(TransactionSynchronizationManager.isSynchronizationActive());
-        verify(client).solicitarReembolsoTotal(eq("1234567"), anyString(), anyString());
-        verify(notaCreditoService).registrarReembolsoExitoso(900, "555");
-    }
-
-    @Test
-    void siLaTransaccionQueDisparaElReembolsoSeRevierteNoSeReembolsaNada() {
-        TransactionSynchronizationManager.initSynchronization();
-        reembolsoService.procesarReembolsoTotal(pedido, MotivoNotaCredito.RECHAZO_COMERCIO);
-
-        for (TransactionSynchronization sync : TransactionSynchronizationManager.getSynchronizations()) {
-            sync.afterCompletion(TransactionSynchronization.STATUS_ROLLED_BACK);
-        }
-
-        verifyNoInteractions(client);
-        verifyNoInteractions(pagoService);
-    }
-    private void abrirTransaccionSimulada() {
-        TransactionSynchronizationManager.initSynchronization();
-        TransactionSynchronizationManager.setActualTransactionActive(true);
     }
 
     @Test

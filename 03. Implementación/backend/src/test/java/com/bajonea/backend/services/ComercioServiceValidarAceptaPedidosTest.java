@@ -53,7 +53,7 @@ class ComercioServiceValidarAceptaPedidosTest {
         };
         service = new ComercioService(mock(ComercioRepository.class), mock(DireccionRepository.class), horarioRepository,
                 mock(HistorialEstadoComercioRepository.class), mock(CloudinaryService.class), disponibilidad,
-                mock(UsuarioRepository.class));
+                mock(UsuarioRepository.class), mock(HistorialEdicionComercioService.class));
         comercio = Comercio.builder().id(5).estado(EstadoComercio.APTO_VENTA).build();
         when(horarioRepository.findByComercioId(5)).thenReturn(List.of(
                 Horario.builder().diaSemana(DiaSemana.LUNES).horaApertura(LocalTime.of(10, 0)).horaCierre(LocalTime.of(14, 0)).build()));

@@ -36,14 +36,14 @@ public class ProductoController {
     @PostMapping
     public ResponseEntity<ApiResponse<ProductoResponseDTO>> crearProducto(@Valid @RequestBody ProductoRequestDTO request,
             ComercioActivo comercio) {
-        ProductoResponseDTO response = productoService.crearProducto(comercio.comercioId(), request);
+        ProductoResponseDTO response = productoService.crearProducto(comercio, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>("Producto creado correctamente", response));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<ProductoResponseDTO>> editarProducto(@PathVariable Integer id,
             @Valid @RequestBody ProductoRequestDTO request, ComercioActivo comercio) {
-        ProductoResponseDTO response = productoService.editarProducto(comercio.comercioId(), id, request);
+        ProductoResponseDTO response = productoService.editarProducto(comercio, id, request);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Producto actualizado correctamente", response));
     }
 
@@ -57,7 +57,7 @@ public class ProductoController {
     @PatchMapping("/{id}/estado")
     public ResponseEntity<ApiResponse<ProductoResponseDTO>> cambiarEstado(@PathVariable Integer id,
             @Valid @RequestBody CambioEstadoProductoRequestDTO request, ComercioActivo comercio) {
-        ProductoResponseDTO response = productoService.cambiarEstado(comercio.comercioId(), id, request.getEstado());
+        ProductoResponseDTO response = productoService.cambiarEstado(comercio, id, request.getEstado());
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Estado del producto actualizado correctamente", response));
     }
 
@@ -71,14 +71,14 @@ public class ProductoController {
     @PostMapping("/{id}/imagenes")
     public ResponseEntity<ApiResponse<ImagenProductoResponseDTO>> agregarImagen(@PathVariable Integer id,
             @Valid @RequestBody ImagenProductoRequestDTO request, ComercioActivo comercio) {
-        ImagenProductoResponseDTO response = productoService.agregarImagen(comercio.comercioId(), id, request);
+        ImagenProductoResponseDTO response = productoService.agregarImagen(comercio, id, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>("Imagen agregada correctamente", response));
     }
 
     @DeleteMapping("/{id}/imagenes/{imagenId}")
     public ResponseEntity<ApiResponse<Void>> eliminarImagen(@PathVariable Integer id, @PathVariable Integer imagenId,
             ComercioActivo comercio) {
-        productoService.eliminarImagen(comercio.comercioId(), id, imagenId);
+        productoService.eliminarImagen(comercio, id, imagenId);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Imagen eliminada correctamente", null));
     }
 
@@ -86,7 +86,7 @@ public class ProductoController {
     public ResponseEntity<ApiResponse<ImagenProductoResponseDTO>> reordenarImagen(@PathVariable Integer id,
             @PathVariable Integer imagenId, @Valid @RequestBody OrdenImagenRequestDTO request,
             ComercioActivo comercio) {
-        ImagenProductoResponseDTO response = productoService.reordenarImagen(comercio.comercioId(), id, imagenId, request.getOrden());
+        ImagenProductoResponseDTO response = productoService.reordenarImagen(comercio, id, imagenId, request.getOrden());
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Orden de la imagen actualizado correctamente", response));
     }
 
@@ -101,7 +101,7 @@ public class ProductoController {
     public ResponseEntity<ApiResponse<ImagenProductoResponseDTO>> actualizarUrlImagen(@PathVariable Integer id,
             @PathVariable Integer imagenId, @Valid @RequestBody UrlImagenRequestDTO request,
             ComercioActivo comercio) {
-        ImagenProductoResponseDTO response = productoService.actualizarUrlImagen(comercio.comercioId(), id, imagenId, request.getUrl());
+        ImagenProductoResponseDTO response = productoService.actualizarUrlImagen(comercio, id, imagenId, request.getUrl());
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Imagen actualizada correctamente", response));
     }
 }

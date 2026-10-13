@@ -82202,7 +82202,7 @@
       ]
     },
     {
-      "name": "58 - Pedidos E3 A0 (anular genera la nota de crédito, 409 por estado ya resuelto en todas las transiciones y fotos solo de su carpeta)",
+      "name": "58 - Pedidos y actividad E3 (A0: anular genera la nota de crédito, 409 por estado ya resuelto en todas las transiciones y fotos solo de su carpeta; A1: historial de ediciones y actividad del comercio)",
       "item": [
         {
           "name": "Login Administrador (sesion propia de esta carpeta)",
@@ -86820,6 +86820,1203 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "pm.test('Queda la url nueva', () => pm.expect(pm.response.json().data.url).to.include('a0-recorte-'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] Antes de editar nada: la actividad ya trae lo que hicieron las carpetas anteriores (pedidos, fotos y cierres) sin acciones del Cliente ni del sistema",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('Trae lineas de pedidos del Dueño', () => pm.expect(d.items.some((i) => i.fuente === 'PEDIDO' && i.actorRol === 'DUENO')).to.eql(true));",
+                  "pm.test('No trae acciones del Cliente ni del sistema sobre los pedidos', () => pm.expect(d.items.filter((i) => i.fuente === 'PEDIDO').every((i) => i.actorRol === 'DUENO' || i.actorRol === 'EMPLEADO')).to.eql(true));",
+                  "pm.test('Trae el alta de la imagen y el cambio de la foto del comercio de la carpeta anterior', () => { pm.expect(d.items.some((i) => i.accionTexto === 'Agregó una imagen a un producto')).to.eql(true); pm.expect(d.items.some((i) => i.entidadTipo === 'COMERCIO' && i.detalle === 'Editó: foto de perfil')).to.eql(true); });",
+                  "pm.test('Esta ordenada de la mas nueva a la mas vieja', () => { const fechas = d.items.map((i) => i.fechaHora); pm.expect(fechas).to.eql([...fechas].sort().reverse()); });",
+                  "pm.environment.set('a1_antes', d.items.length);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] El Dueño crea un producto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"Producto Actividad A1\", \"descripcion\": \"Descripcion A1\", \"precio\": 12000, \"categoriaId\": {{a0_cat}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('a1_prod', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] El Dueño agrega una imagen al producto nuevo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos/{{a1_prod}}/imagenes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos",
+                "{{a1_prod}}",
+                "imagenes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"url\": \"https://res.cloudinary.com/{{a0_cloud}}/image/upload/v1/productos/{{a0_com}}/{{a1_prod}}/a1-{{a0_archivo}}.png\", \"orden\": 0, \"esPrincipal\": true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('a1_img', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] El Dueño edita el nombre y el precio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos/{{a1_prod}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos",
+                "{{a1_prod}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"Producto Actividad A1 Editado\", \"descripcion\": \"Descripcion A1\", \"precio\": 13500, \"categoriaId\": {{a0_cat}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] El Dueño guarda lo mismo otra vez (sin cambios)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos/{{a1_prod}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos",
+                "{{a1_prod}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"Producto Actividad A1 Editado\", \"descripcion\": \"Descripcion A1\", \"precio\": 13500, \"categoriaId\": {{a0_cat}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] El Dueño marca el producto como agotado",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos/{{a1_prod}}/estado",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos",
+                "{{a1_prod}}",
+                "estado"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"estado\": \"AGOTADO\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] El Dueño reordena la imagen al mismo orden (sin cambios)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos/{{a1_prod}}/imagenes/{{a1_img}}/orden",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos",
+                "{{a1_prod}}",
+                "imagenes",
+                "{{a1_img}}",
+                "orden"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"orden\": 0}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] El Dueño elimina la imagen",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos/{{a1_prod}}/imagenes/{{a1_img}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos",
+                "{{a1_prod}}",
+                "imagenes",
+                "{{a1_img}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] El Dueño edita el perfil del comercio (teléfono)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"Local Pedidos A0\", \"descripcion\": \"Comercio generado por la coleccion de Postman (pedidos, E3 A0)\", \"telefono\": \"+5492964555999\", \"emailContacto\": \"{{a0_d_email}}\", \"aceptaDelivery\": false, \"aceptaRetiro\": true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] El Dueño agrega una red social",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/redes-sociales",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "redes-sociales"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tipo\": \"TIKTOK\", \"url\": \"tiktok.com/a1-actividad\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('a1_red', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] El Dueño edita el enlace de la red social",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/redes-sociales/{{a1_red}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "redes-sociales",
+                "{{a1_red}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tipo\": \"TIKTOK\", \"url\": \"tiktok.com/a1-actividad-2\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] El Dueño da de baja la red social",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/redes-sociales/{{a1_red}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "redes-sociales",
+                "{{a1_red}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] El Dueño cierra el comercio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/cerrar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "cerrar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] El Dueño reabre el comercio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/abrir",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "abrir"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] La actividad muestra todo lo anterior, una linea por cambio efectivo y sin valores",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "const producto = d.items.filter((i) => i.entidadTipo === 'PRODUCTO' && i.entidadId === Number(pm.environment.get('a1_prod')));",
+                  "pm.test('El producto tiene alta, una sola edicion (nombre y precio) y el cambio de estado', () => { pm.expect(producto.map((i) => i.accion).sort()).to.eql(['CAMBIAR_ESTADO', 'CREAR', 'EDITAR']); pm.expect(producto.find((i) => i.accion === 'EDITAR').detalle).to.eql('Editó: nombre, precio'); pm.expect(producto.find((i) => i.accion === 'CAMBIAR_ESTADO').detalle).to.eql('Pasó a agotado'); });",
+                  "pm.test('Todas las lineas del producto son del Dueño y llevan el nombre del producto en ese momento', () => { pm.expect(producto.every((i) => i.actorRol === 'DUENO' && i.actorRolTexto === 'Dueño' && i.actorNombre === 'Carlos Sanchez')).to.eql(true); pm.expect(producto.find((i) => i.accion === 'EDITAR').entidadNombre).to.eql('Producto Actividad A1 Editado'); });",
+                  "const imagen = d.items.filter((i) => i.entidadTipo === 'IMAGEN_PRODUCTO' && i.entidadId === Number(pm.environment.get('a1_img')));",
+                  "pm.test('La imagen tiene alta y baja y ningun cambio de orden (reordenar al mismo orden no registra)', () => pm.expect(imagen.map((i) => i.accion).sort()).to.eql(['CREAR', 'ELIMINAR']));",
+                  "pm.test('El perfil registra solo el campo que cambio', () => { const perfil = d.items.find((i) => i.entidadTipo === 'COMERCIO' && i.detalle === 'Editó: teléfono'); pm.expect(perfil).to.exist; pm.expect(perfil.accionTexto).to.eql('Editó los datos del comercio'); });",
+                  "pm.test('Las redes sociales registran alta, edicion y baja', () => { const redes = d.items.filter((i) => i.entidadTipo === 'RED_SOCIAL' && i.entidadNombre === 'TikTok'); pm.expect(redes.map((i) => i.accion).sort()).to.eql(['CREAR', 'EDITAR', 'ELIMINAR']); });",
+                  "pm.test('El cierre y la reapertura del comercio aparecen como lineas de cierre', () => { const cierres = d.items.filter((i) => i.fuente === 'CIERRE'); pm.expect(cierres.some((i) => i.accionTexto === 'Cerró el comercio' && i.actorRolTexto === 'Dueño')).to.eql(true); pm.expect(cierres.some((i) => i.accionTexto === 'Reabrió el comercio')).to.eql(true); });",
+                  "pm.test('Ningun detalle guarda valores', () => pm.expect(JSON.stringify(d.items.map((i) => i.detalle))).to.not.include('13500'));",
+                  "pm.test('Sigue ordenada de la mas nueva a la mas vieja', () => { const fechas = d.items.map((i) => i.fechaHora); pm.expect(fechas).to.eql([...fechas].sort().reverse()); });",
+                  "pm.test('Cada linea tiene un id unico', () => pm.expect(new Set(d.items.map((i) => i.id)).size).to.eql(d.items.length));",
+                  "pm.environment.set('a1_despues', d.items.length);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] Guardar lo mismo no agrego lineas: solo se sumaron las lineas esperadas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const sumadas = pm.response.json().data.items.length - Number(pm.environment.get('a1_antes'));",
+                  "pm.test('Se sumaron 11 lineas: 3 del producto, 2 de la imagen, 1 del perfil, 3 de redes y 2 de cierre; las 2 acciones sin cambio no suman', () => pm.expect(sumadas).to.eql(11));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] Primera pagina de 3 lineas con cursor para seguir",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=3",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "3"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('Trae 3 lineas y avisa que hay mas con un cursor', () => { pm.expect(d.items).to.have.length(3); pm.expect(d.hayMas).to.eql(true); pm.expect(d.siguienteCursor).to.be.a('string').and.not.empty; });",
+                  "pm.environment.set('a1_cursor', d.siguienteCursor);",
+                  "pm.environment.set('a1_pagina1', d.items.map((i) => i.id).join(','));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] Segunda pagina con el cursor: sigue donde terminó la primera sin repetir",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=3&cursor={{a1_cursor}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "3"
+                },
+                {
+                  "key": "cursor",
+                  "value": "{{a1_cursor}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "const primera = pm.environment.get('a1_pagina1').split(',');",
+                  "pm.test('Trae 3 lineas distintas de las de la primera pagina', () => { pm.expect(d.items).to.have.length(3); pm.expect(d.items.some((i) => primera.includes(i.id))).to.eql(false); });",
+                  "pm.test('Son las que siguen en el orden total', () => { const fechas = d.items.map((i) => i.fechaHora); pm.expect(fechas).to.eql([...fechas].sort().reverse()); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] El limite tiene tope de 100 (pedir 1000 devuelve a lo sumo 100)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=1000",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "1000"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('A lo sumo 100 lineas', () => pm.expect(pm.response.json().data.items.length).to.be.at.most(100));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] Un limite de 0 es 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] Un cursor que no se entiende es 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?cursor=basura",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "cursor",
+                  "value": "basura"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] Sin el header del comercio es 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] Un comercio que no existe es el mismo 404 de siempre",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "999999999"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Mismo mensaje y mismo codigo estable', () => { const b = pm.response.json(); pm.expect(b.mensaje).to.eql('Comercio no encontrado'); pm.expect(b.data.codigo).to.eql('COMERCIO_NO_DISPONIBLE'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] Sin token es 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[A1] Un Cliente (aunque mande el header) recibe 403: la actividad es del Dueño",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_c_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
                 ]
               }
             }

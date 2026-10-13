@@ -3,8 +3,8 @@
 **Proyecto:** Bajoneá — Plataforma de pedidos gastronómicos en línea  
 **Motor de base de datos:** MySQL (InnoDB)  
 **ORM / Migraciones:** Spring Data JPA + Hibernate / Flyway  
-**Versión del modelo:** 1.12  
-**Estado de la v1.12:** el modelo del rol Empleado decidido el 2026-10-05 (ver `docs/DECISIONES.md`) está **implementado en parte** (tramo E1, bloques A1 y A2, 2026-10-06): las migraciones `V29` (estado de la relación `ACTIVO`/`INACTIVO`), `V30` (`InvitacionEmpleado`) y `V31` (`HistorialEmpleadoComercio`) están aplicadas, con sus entidades, repositorios y los servicios de invitar, reenviar, cancelar y listar el equipo, pero todavía sin endpoints ni pantallas (bloques A3 a A5 y entrega B). `HistorialEdicionComercio` (`V32`, que reemplaza a la `ActividadComercio` propuesta antes; ver la tabla) sigue **planificada**: se aplica en el tramo E3 y no existe todavía en la base. Los pasajes que describen lo que aún no existe están marcados como planificados.  
+**Versión del modelo:** 1.13  
+**Estado de la v1.12:** el modelo del rol Empleado decidido el 2026-10-05 (ver `docs/DECISIONES.md`) está **implementado en parte** (tramo E1, bloques A1 y A2, 2026-10-06): las migraciones `V29` (estado de la relación `ACTIVO`/`INACTIVO`), `V30` (`InvitacionEmpleado`) y `V31` (`HistorialEmpleadoComercio`) están aplicadas, con sus entidades, repositorios y los servicios de invitar, reenviar, cancelar y listar el equipo, pero todavía sin endpoints ni pantallas (bloques A3 a A5 y entrega B). `HistorialEdicionComercio` (`V32`, que reemplaza a la `ActividadComercio` propuesta antes; ver la tabla) está **implementada** desde el tramo E3, bloque A1 (2026-10-12): la tabla, su entidad y el registro de las escrituras del Dueño existen; el registro de las escrituras de un Empleado llega con los bloques A2 y A3. El estado `NO_RETIRADO` del pedido y la notificación T36 (migración `V33`, tramo E3, bloque A4b) siguen **planificados**. Los pasajes que describen lo que aún no existe están marcados como planificados.  
 
 ## 1. Tipos Enumerados (ENUMs)
 
@@ -240,7 +240,7 @@ Estado de la relación entre un Empleado y un Comercio puntual (tabla `EmpleadoC
 
 ### ENUM: TipoEntidadEdicion
 
-*Planificado (migración `V32`, que se aplica en el tramo E3).* Tipo de entidad sobre la que se hizo un cambio registrado en `HistorialEdicionComercio`.
+*Implementado (migración `V32`, tramo E3, bloque A1).* Tipo de entidad sobre la que se hizo un cambio registrado en `HistorialEdicionComercio`.
 
 | Valor | Descripción |
 |-------|-------------|
@@ -258,7 +258,7 @@ No hay valor `PEDIDO`: las transiciones de un pedido ya quedan en `HistorialEsta
 
 ### ENUM: AccionEdicion
 
-*Planificado (migración `V32`, tramo E3).* Acción registrada en `HistorialEdicionComercio`. Es un conjunto chico y estable: el detalle va en el texto de `detalle`, no en valores nuevos del ENUM.
+*Implementado (migración `V32`, tramo E3, bloque A1).* Acción registrada en `HistorialEdicionComercio`. Es un conjunto chico y estable: el detalle va en el texto de `detalle`, no en valores nuevos del ENUM.
 
 | Valor | Descripción |
 |-------|-------------|
@@ -351,6 +351,7 @@ Estados del ciclo de vida de un pedido.
 | `ANULADO` | Anulado por el comercio desde estado `EN_PREPARACION`. | Sí |
 | `CANCELADO_POR_SISTEMA` | Cancelado automáticamente por el sistema (vencimiento del plazo de pago, con el pago sin resolver o rechazado; suspensión o inactivación del comercio). El reembolso se genera **solo** si el pago ya había sido confirmado previamente. | Condicional |
 | `EXPIRADO` | El comercio no respondió dentro de 30 minutos (`pedido.timeout.respuesta-comercio-minutos`) tras la confirmación del pago. | Sí |
+| `NO_RETIRADO` | *(Planificado: migración `V33`, tramo E3, bloque A4b.)* El comercio cerró un pedido de retiro que estaba en `LISTO_PARA_RETIRAR` porque el cliente no se presentó. Estado terminal; solo se alcanza desde `LISTO_PARA_RETIRAR` y solo en modalidad `RETIRO`, y solo después de una espera mínima de 60 minutos desde que el pedido quedó listo (configurable; la espera no aplica a confirmar la entrega, que es inmediata). El comercio conserva el pago: el pedido estaba preparado. El Cliente lo ve como "No retirado"; cuenta en el "facturado hoy". | No |
 
 > **Valor `PENDIENTE` residual:** la migración `V6` renombró el estado histórico `PENDIENTE` a `PENDIENTE_CONFIRMACION_COMERCIO`, pero conservó el literal `PENDIENTE` en el ENUM físico de MySQL de `pedido.estado` e `historial_estado_pedido.estado` para no invalidar pedidos de prueba ya guardados con ese valor. El enum Java `EstadoPedido` no lo contempla; ningún código lo escribe.
 
@@ -443,7 +444,7 @@ Actor que confirmó o cerró la entrega del pedido. Campo discriminador en `Pedi
 |-------|-------------|
 | `CLIENTE` | El cliente confirmó haber recibido el pedido a domicilio. |
 | `COMERCIO` | El comercio confirmó la entrega del pedido de retiro en el local. |
-| `COMERCIO_SIN_RETIRO` | El comercio cerró el pedido de retiro por no presentarse el cliente dentro del plazo establecido. |
+| `COMERCIO_SIN_RETIRO` | Sin uso. Estaba previsto para cerrar un pedido de retiro por no presentarse el cliente; ese cierre pasa a ser el estado `NO_RETIRADO` (planificado, `V33`) y `ENTREGADO` queda reservado para entregas reales. |
 | `SISTEMA` | El sistema confirmó la entrega automáticamente (timer de 90 min en `EN_CAMINO` o timer de suspensión en `LISTO_PARA_RETIRAR`). |
 
 > Se registra **únicamente** cuando `estado = ENTREGADO`. Es `NULL` en todos los demás estados.
@@ -563,6 +564,7 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 | `PEDIDO_AUTOCONFIRMADO_COMERCIO` | T30 | Dueno y Empleados activos del comercio | Push | El sistema autoconfirmó la entrega del pedido (timer 90 min). Hoy no se emite a nadie; planificado como último ítem del tramo E3. |
 | `INVITACION_EMPLEADO` | T31 | Persona invitada | Email | Invitación para operar un comercio como Empleado. El email lleva el código en el texto y un enlace genérico a `{app.frontend-base-url}/invitacion-empleado.html` (sin código, sin email y sin `#` en la URL); no genera una fila de notificación in-app. |
 | `EMPLEADO_DESACTIVADO` | T32 | Empleado | Push | El Dueno desactivó al empleado de un comercio puntual. |
+| `PEDIDO_NO_RETIRADO` | T36 | Cliente | Push | *(Planificado: migración `V33`, tramo E3, bloque A4b.)* El comercio cerró como `NO_RETIRADO` un pedido de retiro: "Tu pedido #12 no fue retirado y el comercio lo cerró. Como ya estaba preparado, no hay devolución del pago." |
 
 > **Reutilización de tipos para el Empleado (sin valores nuevos de ENUM; T35 implementado en el bloque A2 de E1, el resto planificado en E1 a E4):** T33 (invitación aceptada) usa `INVITACION_EMPLEADO` dirigido al Dueno, con `entidad_tipo = COMERCIO`; T34 (el empleado renunció) usa `EMPLEADO_DESACTIVADO` dirigido al Dueno con otro texto; T35 (aviso de regularización a una cuenta que no se pudo invitar) usa `INVITACION_EMPLEADO` con `canal = EMAIL` y `estado = ENVIADO`, dirigido al `usuario_id` de la persona, y sirve para contar el tope de 3 por día por destinatario (24 horas corridas; la fila se escribe aunque falle el envío, porque significa "se intentó"). Los listados y el contador de la campana del Cliente filtran `canal = PUSH` para no mostrar estas filas. Las operativas (T1, T9, T13 y T30) se emiten una vez por cada Empleado `ACTIVO` además del Dueno.
 
@@ -1058,7 +1060,7 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 
 ### Tabla: HistorialEdicionComercio
 
-> **Planificada — migración `V32`, que se aplica en el tramo E3** (no existe todavía en la base ni en el código). Tabla física `historial_edicion_comercio`. Reemplaza, por decisión del 2026-10-12, a la `ActividadComercio` propuesta antes.
+> **Implementada — migración `V32` (tramo E3, bloque A1, 2026-10-12).** Tabla física `historial_edicion_comercio`, entidad `HistorialEdicionComercio`. Reemplaza, por decisión del 2026-10-12, a la `ActividadComercio` propuesta antes.
 
 **Descripción:** Registro de solo inserción de quién hizo qué cambio sobre el catálogo y el perfil del comercio y cuándo: altas, ediciones, bajas y cambios de estado de productos, imágenes, perfil y horarios, hechos por el Dueno o por un Empleado. No guarda valores anteriores. No registra pedidos ni cierres y aperturas, porque ya tienen su propio historial (`HistorialEstadoPedido` e `HistorialCierreComercio`); la pestaña Actividad de "Ver equipo" junta las tres fuentes en una sola lista por fecha.
 
@@ -1077,7 +1079,7 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 
 **Índices:** `PRIMARY KEY (id)` | `INDEX (comercio_id, fecha_hora, id)` | `INDEX (usuario_id)`
 
-**DDL propuesto (no aplicado):**
+**DDL aplicado (migración `V32__crear_historial_edicion_comercio.sql`):**
 
 ```sql
 CREATE TABLE `historial_edicion_comercio` (
@@ -1092,16 +1094,18 @@ CREATE TABLE `historial_edicion_comercio` (
   `detalle` varchar(255) DEFAULT NULL,
   `fecha_hora` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id`),
-  KEY `idx_hec_comercio_fecha` (`comercio_id`,`fecha_hora`,`id`),
-  KEY `idx_hec_usuario` (`usuario_id`),
-  CONSTRAINT `fk_hec_comercio` FOREIGN KEY (`comercio_id`) REFERENCES `comercio` (`id`),
-  CONSTRAINT `fk_hec_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuario` (`id`)
+  KEY `idx_hed_comercio_fecha` (`comercio_id`,`fecha_hora`,`id`),
+  KEY `idx_hed_usuario` (`usuario_id`),
+  CONSTRAINT `fk_hed_comercio` FOREIGN KEY (`comercio_id`) REFERENCES `comercio` (`id`),
+  CONSTRAINT `fk_hed_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuario` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ```
 
+Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los nombres de restricción son únicos por base y `fk_hec_comercio` ya existe en `historial_estado_comercio`.
+
 **Reglas de negocio:**
-- Se escribe desde los servicios, en la misma transacción del cambio, solo cuando hubo un cambio efectivo. Cubre las escrituras delegables de productos, imágenes y perfil y las del Dueno que no se delegan (redes sociales), para que la vista del Dueno sea completa.
-- La ve el Dueno completa (tramo E3) y el Administrador en solo lectura (tramo E4); el Empleado no la ve. Se pagina por `(fecha_hora, id)` descendente.
+- Se escribe desde los servicios, en la misma transacción del cambio (si el cambio falla no queda fila y si la fila no se puede escribir el cambio no se confirma), solo cuando hubo un cambio efectivo. Quien escribe toma primero la fila del usuario que actúa y después la del comercio (orden global de bloqueos): el insert toma bloqueos compartidos por sus dos claves foráneas y, sin ese orden, se cruzaría con el bloqueo de cuenta del Dueno. Cubre las escrituras delegables de productos, imágenes y perfil y las del Dueno que no se delegan (redes sociales), para que la vista del Dueno sea completa. Hoy no se escriben filas de `HORARIO`, `GRUPO_EXTRA` ni `EXTRA` (no existe edición de horarios ni extras); la fecha es la hora del comercio (UTC-03:00) sin fracciones, como en `HistorialCierreComercio`.
+- La ve el Dueno completa (tramo E3) y el Administrador en solo lectura (tramo E4); el Empleado no la ve. La lista `GET /api/v1/comercios/equipo/actividad` junta esta tabla con `HistorialEstadoPedido` (solo las filas de los actores Dueno y Empleado, no las del Cliente ni las del sistema) y `HistorialCierreComercio` (todas), ordenadas por `(fecha_hora, fuente, id)` descendente y paginadas por cursor. Los dos índices de esta tabla y `idx_hci_comercio_fecha` de `HistorialCierreComercio` alcanzan para esa lectura; la parte de pedidos entra por `pedido.comercio_id` (`idx_pedido_comercio`) y `idx_hep_pedido_fecha`.
 
 ---
 
@@ -1791,8 +1795,8 @@ CREATE TABLE `historial_edicion_comercio` (
 | 63 | `HistorialEmpleadoComercio` | `empleado_comercio_id` | `EmpleadoComercio` | N:1 | N eventos → 1 relación | *Implementada (`V31`).* Relación afectada (nulable: eventos de invitación). |
 | 64 | `HistorialEmpleadoComercio` | `invitacion_id` | `InvitacionEmpleado` | N:1 | N eventos → 1 invitación | *Implementada (`V31`).* Invitación afectada (nulable: eventos de la relación). |
 | 65 | `HistorialEmpleadoComercio` | `actor_usuario_id` | `Usuario` | N:1 | N eventos → 1 usuario | *Implementada (`V31`).* Quien ejecutó el evento. |
-| 66 | `HistorialEdicionComercio` | `comercio_id` | `Comercio` | N:1 | N registros → 1 comercio | *Planificada (`V32`, tramo E3).* Registro de ediciones del catálogo y el perfil del comercio. |
-| 67 | `HistorialEdicionComercio` | `usuario_id` | `Usuario` | N:1 | N registros → 1 usuario | *Planificada (`V32`, tramo E3).* Quien hizo la acción. |
+| 66 | `HistorialEdicionComercio` | `comercio_id` | `Comercio` | N:1 | N registros → 1 comercio | *Implementada (`V32`, tramo E3, bloque A1).* Registro de ediciones del catálogo y el perfil del comercio. |
+| 67 | `HistorialEdicionComercio` | `usuario_id` | `Usuario` | N:1 | N registros → 1 usuario | *Implementada (`V32`, tramo E3, bloque A1).* Quien hizo la acción. |
 
 ---
 

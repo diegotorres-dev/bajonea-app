@@ -6,7 +6,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 /**
  * Ejecuta una acción con efecto hacia afuera (un email) recién cuando la transacción en curso se confirma,
  * para no mandar un código de una transacción que después se revierte. Sin transacción en curso corre en
- * el acto. Misma idea que {@code ReembolsoService.procesarReembolsoTotal}.
+ * el acto. Misma idea que la llamada a Mercado Pago de {@code ReembolsoService.generarNotaYReembolsarTotal}.
  */
 public final class EjecucionPostCommit {
 

@@ -35,21 +35,21 @@ public class RedSocialController {
     @PostMapping
     public ResponseEntity<ApiResponse<RedSocialResponseDTO>> agregar(@Valid @RequestBody RedSocialRequestDTO request,
             ComercioActivo comercio) {
-        RedSocialResponseDTO response = redSocialService.agregar(comercio.comercioId(), request);
+        RedSocialResponseDTO response = redSocialService.agregar(comercio, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>("Red social agregada correctamente", response));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<RedSocialResponseDTO>> editar(@PathVariable Integer id,
             @Valid @RequestBody RedSocialRequestDTO request, ComercioActivo comercio) {
-        RedSocialResponseDTO response = redSocialService.editar(comercio.comercioId(), id, request);
+        RedSocialResponseDTO response = redSocialService.editar(comercio, id, request);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Red social actualizada correctamente", response));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> darDeBaja(@PathVariable Integer id,
             ComercioActivo comercio) {
-        redSocialService.darDeBaja(comercio.comercioId(), id);
+        redSocialService.darDeBaja(comercio, id);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Red social dada de baja correctamente", null));
     }
 }

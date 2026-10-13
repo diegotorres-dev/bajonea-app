@@ -1,15 +1,20 @@
 package com.bajonea.backend.services;
 
+import com.bajonea.backend.config.security.ComercioActivo;
 import com.bajonea.backend.dto.request.RedSocialRequestDTO;
 import com.bajonea.backend.dto.response.RedSocialResponseDTO;
 import com.bajonea.backend.entities.Comercio;
 import com.bajonea.backend.entities.RedSocial;
+import com.bajonea.backend.enums.AccionEdicion;
+import com.bajonea.backend.enums.TipoEntidadEdicion;
+import com.bajonea.backend.enums.TipoRedSocial;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.RedSocialRepository;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +28,7 @@ public class RedSocialService {
 
     private final RedSocialRepository redSocialRepository;
     private final ComercioRepository comercioRepository;
+    private final HistorialEdicionComercioService historialEdicionComercioService;
 
     public List<RedSocialResponseDTO> listarActivas(Integer comercioId) {
         Comercio comercio = obtenerComercio(comercioId);
@@ -31,8 +37,9 @@ public class RedSocialService {
                 .toList();
     }
 
-    public RedSocialResponseDTO agregar(Integer comercioId, RedSocialRequestDTO request) {
-        Comercio comercio = obtenerComercio(comercioId);
+    public RedSocialResponseDTO agregar(ComercioActivo actor, RedSocialRequestDTO request) {
+        historialEdicionComercioService.iniciarEscritura(actor);
+        Comercio comercio = obtenerComercio(actor.comercioId());
         RedSocial existente = redSocialRepository.findByComercioIdAndTipo(comercio.getId(), request.getTipo())
                 .orElse(null);
 
@@ -55,6 +62,8 @@ public class RedSocialService {
                     .fechaCreacion(LocalDateTime.now())
                     .build();
             redSocialRepository.save(nueva);
+            historialEdicionComercioService.registrar(actor, TipoEntidadEdicion.RED_SOCIAL, nueva.getId(), nombreDe(nueva.getTipo()),
+                    AccionEdicion.CREAR, null);
             return aResponseDTO(nueva);
         }
 
@@ -62,25 +71,48 @@ public class RedSocialService {
         existente.setFechaBaja(null);
         existente.setFechaModificacion(LocalDateTime.now());
         redSocialRepository.save(existente);
+        historialEdicionComercioService.registrar(actor, TipoEntidadEdicion.RED_SOCIAL, existente.getId(), nombreDe(existente.getTipo()),
+                AccionEdicion.CREAR, null);
         return aResponseDTO(existente);
     }
 
-    public RedSocialResponseDTO editar(Integer comercioId, Integer redSocialId, RedSocialRequestDTO request) {
-        Comercio comercio = obtenerComercio(comercioId);
+    public RedSocialResponseDTO editar(ComercioActivo actor, Integer redSocialId, RedSocialRequestDTO request) {
+        historialEdicionComercioService.iniciarEscritura(actor);
+        Comercio comercio = obtenerComercio(actor.comercioId());
         RedSocial redSocial = obtenerRedSocialDelComercio(redSocialId, comercio);
 
+        boolean cambioElEnlace = !Objects.equals(redSocial.getUrl(), request.getUrl());
         redSocial.setUrl(request.getUrl());
         redSocial.setFechaModificacion(LocalDateTime.now());
         redSocialRepository.save(redSocial);
+        if (cambioElEnlace) {
+            historialEdicionComercioService.registrar(actor, TipoEntidadEdicion.RED_SOCIAL, redSocial.getId(),
+                    nombreDe(redSocial.getTipo()), AccionEdicion.EDITAR, HistorialEdicionComercioService.detalleDeEdicion(List.of("enlace")));
+        }
         return aResponseDTO(redSocial);
     }
 
-    public void darDeBaja(Integer comercioId, Integer redSocialId) {
-        Comercio comercio = obtenerComercio(comercioId);
+    public void darDeBaja(ComercioActivo actor, Integer redSocialId) {
+        historialEdicionComercioService.iniciarEscritura(actor);
+        Comercio comercio = obtenerComercio(actor.comercioId());
         RedSocial redSocial = obtenerRedSocialDelComercio(redSocialId, comercio);
 
         redSocial.setFechaBaja(LocalDateTime.now());
         redSocialRepository.save(redSocial);
+        historialEdicionComercioService.registrar(actor, TipoEntidadEdicion.RED_SOCIAL, redSocial.getId(), nombreDe(redSocial.getTipo()),
+                AccionEdicion.ELIMINAR, null);
+    }
+
+    private static String nombreDe(TipoRedSocial tipo) {
+        return switch (tipo) {
+            case INSTAGRAM -> "Instagram";
+            case FACEBOOK -> "Facebook";
+            case TIKTOK -> "TikTok";
+            case WHATSAPP -> "WhatsApp";
+            case X -> "X";
+            case SITIO_WEB -> "Sitio web";
+            case OTRO -> "Otra red social";
+        };
     }
 
     private Comercio obtenerComercio(Integer comercioId) {

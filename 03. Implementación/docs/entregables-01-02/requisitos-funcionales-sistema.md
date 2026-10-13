@@ -171,6 +171,7 @@ El sistema emite notificaciones push (y en algunos casos email) ante los siguien
 | T33 | Invitación de Empleado aceptada | Dueño | Push + Panel |
 | T34 | Empleado renunció a un comercio | Dueño | Push + Panel |
 | T35 | Aviso de regularización: se intentó invitar a una cuenta bloqueada, suspendida, inactiva o sin verificar | Persona con esa cuenta | Email |
+| T36 | Pedido de retiro cerrado como No Retirado por el comercio (planificado: tramo E3, bloque A4b; "Tu pedido #12 no fue retirado y el comercio lo cerró. Como ya estaba preparado, no hay devolución del pago.") | Cliente | Push + Panel |
 
 - Al auto-confirmar la entrega (T8), la notificación incluye botones para iniciar reclamo o contactar al comercio directamente.
 - T2 y T4 corresponden al mismo evento: cuando el comercio acepta un pedido, este pasa directamente a EN_PREPARACION. La notificación al cliente unifica ambos conceptos en un único mensaje ("Tu pedido fue aceptado y ya está en preparación").
@@ -233,11 +234,12 @@ El sistema emite notificaciones push (y en algunos casos email) ante los siguien
 
 ## Actividad del Comercio
 
-> **Estado de implementación:** planificado, tramo E3 (la tabla se crea en E1).
+> **Estado de implementación:** la tabla, el registro de las escrituras del Dueño y la lista de actividad están implementados (tramo E3, bloque A1). Las escrituras de un Empleado se registran con su rol cuando se habiliten (bloques A2 y A3); la pestaña en pantalla llega en la entrega B.
 
 - El sistema debe registrar en `HistorialEdicionComercio` las altas, ediciones, bajas y cambios de estado de productos, imágenes, perfil y horarios del comercio, hechos por el Dueño o por un Empleado y, cuando existan, de grupos de extras y extras. Guarda el usuario, su rol (Dueño o Empleado), el tipo y el nombre de la entidad en ese momento y un detalle breve, sin guardar valores anteriores ni el nombre de quien actuó. Los pedidos y los cierres y aperturas no se registran ahí: ya tienen `HistorialEstadoPedido` e `HistorialCierreComercio`, y la pestaña Actividad junta las tres fuentes en una lista por fecha.
-- Se escribe desde los servicios, en la misma transacción que la escritura, y solo cuando hubo un cambio efectivo. Repite a propósito datos que ya guardan otras tablas (historial de estados del pedido, historial de cierre) para que la vista de equipo lea una sola tabla.
+- Se escribe desde los servicios, en la misma transacción que la escritura (si la escritura falla no queda registro y si el registro falla la escritura no se confirma), y solo cuando hubo un cambio efectivo. Hoy se registran las altas, ediciones, bajas y cambios de estado de productos, las altas, el orden, el reemplazo y la baja de imágenes de producto, los cambios del perfil del comercio (descripción, teléfono, datos de contacto, modalidades de entrega y foto) y las altas, ediciones y bajas de redes sociales; la apertura y el cierre del comercio no van a esta tabla.
 - La ve el Dueño completa y el Administrador en solo lectura; el Empleado no la ve.
+- **Lista de actividad.** El sistema debe ofrecer al Dueño una lista de la actividad de su comercio (`GET /api/v1/comercios/equipo/actividad`) que junta, ordenada de la más nueva a la más vieja, tres fuentes: el registro de ediciones, las acciones de las personas del comercio (Dueño y Empleados) sobre los pedidos, y los cierres y reaperturas del comercio (incluidas las automáticas del sistema). Cada línea trae quién actuó (nombre y rol: Dueño, Empleado o Sistema), qué hizo en texto legible, sobre qué entidad y cuándo. Se pagina por cursor ("ver más"): 30 líneas por página por defecto, 100 como máximo; una línea nueva no repite ni saltea líneas de las páginas ya entregadas. Las acciones del Cliente y del sistema sobre los pedidos no aparecen. Un usuario que no es el Dueño del comercio recibe "comercio no encontrado" (404) o, si es un Empleado, acceso denegado: el Empleado no ve la actividad. El Administrador la va a leer en solo lectura con el mismo servicio (tramo E4).
 
 ---
 

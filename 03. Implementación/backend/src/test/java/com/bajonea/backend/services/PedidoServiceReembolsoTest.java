@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -132,7 +131,6 @@ class PedidoServiceReembolsoTest {
 
         assertEquals(EstadoPedido.RECHAZADO, pedido.getEstado());
         verify(reembolsoService).generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.RECHAZO_COMERCIO);
-        verify(reembolsoService, never()).procesarReembolsoTotal(any(), any());
     }
 
     @Test
@@ -215,7 +213,6 @@ class PedidoServiceReembolsoTest {
 
         assertEquals(EstadoPedido.CANCELADO, pedido.getEstado());
         verify(reembolsoService).generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.CANCELACION_CLIENTE);
-        verify(reembolsoService, never()).procesarReembolsoTotal(any(), any());
         verify(notificacionService).crear(anyInt(), anyString(), eq(TipoNotificacion.PEDIDO_CANCELADO_CLIENTE), any(), eq(40));
     }
 
@@ -334,7 +331,6 @@ class PedidoServiceReembolsoTest {
 
         assertEquals(EstadoPedido.ANULADO, pedido.getEstado());
         verify(reembolsoService).generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.ANULACION_COMERCIO);
-        verify(reembolsoService, never()).procesarReembolsoTotal(any(), any());
         verify(notificacionService).crear(anyInt(),
                 org.mockito.ArgumentMatchers.argThat(mensaje -> mensaje.contains("gestionando la devolución de tu pago")
                         && mensaje.contains("Motivo: Otro. Se rompio la freidora")),

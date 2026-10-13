@@ -21,19 +21,16 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
- * Reembolso total de un pedido cuyo pago ya estaba confirmado en MercadoPago. Es un proceso aparte
- * del cambio de estado del pedido: nunca lanza hacia quien lo invoca (un reembolso que falla no
- * puede deshacer un rechazo, una expiración ni una cancelación ya decididos) y deja siempre una
- * {@code NotaCredito} como rastro consultable, en el estado que corresponda al resultado real.
+ * Reembolso total de un pedido cuyo pago ya estaba confirmado en MercadoPago. La nota de crédito se crea en la
+ * <b>misma transacción</b> que el cambio de estado del pedido ({@link #generarNotaYReembolsarTotal}), con el
+ * pedido ya bloqueado: si no se puede escribir la nota el pedido no cambia de estado, y una transición que pierde
+ * una carrera nunca llega a pedir plata. Solo la llamada a MercadoPago va después del commit; si falla, nunca
+ * deshace el cambio de estado ya confirmado: la nota queda en el estado que corresponda al resultado real
+ * ({@code PROCESADO}, {@code FALLIDO} o {@code PENDIENTE_REVISION_MANUAL}) como rastro consultable por el
+ * Administrador, que puede reintentarla ({@link #reintentarNotaCredito}).
  *
- * <p>Orden de ejecución: si se lo invoca dentro de una transacción (todos los llamadores actuales
- * — {@code PedidoService} es {@code @Transactional} de clase) el reembolso se difiere a después
- * del commit, para no pedirle plata de vuelta a MercadoPago por un cambio de estado que después
- * se revierta, y para no mantener bloqueada la fila del pedido durante la llamada HTTP. Fuera de
- * una transacción corre en el acto. En ambos casos son 3 pasos: (1) transacción corta que valida
- * y crea la nota {@code PENDIENTE}, (2) llamada a MercadoPago sin transacción, (3) transacción
- * corta que registra el resultado. No usa {@code @Transactional} de clase a propósito: la
- * llamada HTTP no debe correr dentro de una transacción.
+ * <p>La llamada HTTP no corre dentro de una transacción ni mantiene bloqueada la fila del pedido. No usa
+ * {@code @Transactional} de clase a propósito.
  *
  * <p>Criterio único de "pago reembolsable": {@code mp_estado = 'approved'} y
  * {@code fecha_confirmacion} no nula. {@code id_transaccion_mp} por sí solo no sirve (también se
@@ -65,28 +62,15 @@ public class ReembolsoService {
         this.transaccionNueva.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
-    public void procesarReembolsoTotal(Pedido pedido, MotivoNotaCredito motivo) {
-        Integer pedidoId = pedido.getId();
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    ejecutarSinPropagar(pedidoId, motivo);
-                }
-            });
-            return;
-        }
-        ejecutarSinPropagar(pedidoId, motivo);
-    }
-
     /**
-     * Variante para quien no puede dejar un pedido sin su nota de crédito (la anulación del comercio): la nota se
-     * crea en la <b>misma transacción</b> que el cambio de estado del pedido, así que si no se puede escribir la
-     * nota el pedido no queda anulado. Exige una transacción abierta con el pedido ya bloqueado
-     * ({@code PedidoService.bloquearParaActualizar}): ese bloqueo es lo que impide que dos anulaciones simultáneas
-     * creen dos notas, y además se vuelve a mirar el monto ya cubierto del pago por si acaso. Solo la
-     * llamada a Mercado Pago se difiere a después del commit (con el mismo registro del resultado que el reembolso
-     * común), y únicamente si el commit ocurre: una transición que pierde la carrera nunca llega a pedir plata.
+     * Crea la nota de crédito de quien no puede dejar un pedido sin ella (anulación, rechazo, vencimiento sin
+     * respuesta, suspensión del comercio y cancelación del Cliente): la nota se crea en la <b>misma transacción</b>
+     * que el cambio de estado del pedido, así que si no se puede escribir la nota el pedido no cambia de estado.
+     * Exige una transacción abierta con el pedido ya bloqueado ({@code PedidoService.bloquearParaActualizar}): ese
+     * bloqueo es lo que impide que dos transiciones simultáneas creen dos notas, y además se vuelve a mirar el
+     * monto ya cubierto del pago por si acaso. Solo la llamada a Mercado Pago se difiere a después del commit
+     * (con el registro del resultado en una transacción propia), y únicamente si el commit ocurre: una transición
+     * que pierde la carrera nunca llega a pedir plata.
      *
      * <p>Devuelve {@code true} si el pedido tiene una nota de crédito (recién creada o ya existente) y por lo tanto
      * hay una devolución en gestión; {@code false} si el pedido no tiene un pago aprobado y confirmado que
@@ -114,26 +98,10 @@ public class ReembolsoService {
         return preparacion.hayNota();
     }
 
-    private void ejecutarSinPropagar(Integer pedidoId, MotivoNotaCredito motivo) {
-        try {
-            ejecutar(pedidoId, motivo);
-        } catch (RuntimeException ex) {
-            log.error("Reembolso del pedidoId={} ({}) terminó con un error inesperado", pedidoId, motivo, ex);
-        }
-    }
-
-    private void ejecutar(Integer pedidoId, MotivoNotaCredito motivo) {
-        IntentoReembolso intento = transaccionNueva.execute(status -> prepararIntento(pedidoId, motivo).intento());
-        if (intento == null) {
-            return;
-        }
-        solicitarYRegistrar(intento);
-    }
-
     /**
      * Reintento manual (Administrador) de una nota que quedó en {@code PENDIENTE_REVISION_MANUAL} o
      * {@code FALLIDO}. Mismo flujo que el reembolso original, pero sobre la nota existente en vez de
-     * crear una nueva. A diferencia de {@link #procesarReembolsoTotal}, acá sí se lanzan las
+     * crear una nueva. A diferencia de la llamada a Mercado Pago que sigue a un cambio de estado, acá sí se lanzan las
      * excepciones de negocio: quien lo dispara es una persona esperando una respuesta. Corre
      * siempre en el acto (nunca diferido a un commit) y no debe invocarse dentro de una
      * transacción abierta, para que la llamada a MercadoPago quede fuera de ella.

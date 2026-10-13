@@ -3,8 +3,10 @@ package com.bajonea.backend.services;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.bajonea.backend.config.security.ComercioActivo;
 import com.bajonea.backend.dto.request.FotoPerfilComercioRequestDTO;
 import com.bajonea.backend.dto.request.ImagenProductoRequestDTO;
+import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.exceptions.ValidacionException;
 import com.bajonea.backend.services.DatosPruebaEmpleado.Dueno;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -53,6 +55,10 @@ class ImagenesPorCarpetaIntegrationTest {
     private record Producto(Dueno dueno, int productoId) {
     }
 
+    private static ComercioActivo actor(Dueno dueno) {
+        return ComercioActivo.delDueno(dueno.comercioId(), dueno.id(), EstadoComercio.APROBADO);
+    }
+
     private Producto productoNuevo() {
         DatosPruebaEmpleado datos = new DatosPruebaEmpleado(registroService, objectMapper, jdbcTemplate);
         Dueno dueno = datos.registrarDuenoAprobado();
@@ -73,8 +79,8 @@ class ImagenesPorCarpetaIntegrationTest {
         Producto p = productoNuevo();
         String carpeta = prefijo() + "v1/productos/" + p.dueno().comercioId() + "/" + p.productoId() + "/";
 
-        var creada = productoService.agregarImagen(p.dueno().comercioId(), p.productoId(), new ImagenProductoRequestDTO(carpeta + "a.png", 0, true));
-        var recortada = productoService.actualizarUrlImagen(p.dueno().comercioId(), p.productoId(), creada.getId(), carpeta + "a-recortada.png");
+        var creada = productoService.agregarImagen(actor(p.dueno()), p.productoId(), new ImagenProductoRequestDTO(carpeta + "a.png", 0, true));
+        var recortada = productoService.actualizarUrlImagen(actor(p.dueno()), p.productoId(), creada.getId(), carpeta + "a-recortada.png");
 
         assertEquals(carpeta + "a-recortada.png", recortada.getUrl());
         assertEquals(1, imagenes(p.productoId()));
@@ -91,14 +97,14 @@ class ImagenesPorCarpetaIntegrationTest {
 
         for (String url : new String[] {deOtroComercio, deOtroProducto, fotoDePerfil}) {
             assertThrows(ValidacionException.class,
-                    () -> productoService.agregarImagen(p.dueno().comercioId(), p.productoId(), new ImagenProductoRequestDTO(url, 0, true)));
+                    () -> productoService.agregarImagen(actor(p.dueno()), p.productoId(), new ImagenProductoRequestDTO(url, 0, true)));
         }
         assertEquals(0, imagenes(p.productoId()));
 
-        var creada = productoService.agregarImagen(p.dueno().comercioId(), p.productoId(), new ImagenProductoRequestDTO(propia + "a.png", 0, true));
+        var creada = productoService.agregarImagen(actor(p.dueno()), p.productoId(), new ImagenProductoRequestDTO(propia + "a.png", 0, true));
         for (String url : new String[] {deOtroComercio, deOtroProducto, fotoDePerfil}) {
             assertThrows(ValidacionException.class,
-                    () -> productoService.actualizarUrlImagen(p.dueno().comercioId(), p.productoId(), creada.getId(), url));
+                    () -> productoService.actualizarUrlImagen(actor(p.dueno()), p.productoId(), creada.getId(), url));
         }
         assertEquals(propia + "a.png", jdbcTemplate.queryForObject("SELECT url FROM imagen_producto WHERE id = ?", String.class, creada.getId()));
     }
@@ -114,10 +120,10 @@ class ImagenesPorCarpetaIntegrationTest {
             prefijo() + "v1/comercios/" + ajeno.dueno().comercioId() + "/perfil/nueva.png",
             prefijo() + "v1/productos/" + comercioId + "/" + p.productoId() + "/nueva.png",
             prefijo() + "v1/comercios/pre-registro/nueva.png"}) {
-            assertThrows(ValidacionException.class, () -> comercioService.actualizarFotoPerfil(comercioId, new FotoPerfilComercioRequestDTO(url)));
+            assertThrows(ValidacionException.class, () -> comercioService.actualizarFotoPerfil(actor(p.dueno()), new FotoPerfilComercioRequestDTO(url)));
         }
 
-        comercioService.actualizarFotoPerfil(comercioId, new FotoPerfilComercioRequestDTO(propia));
+        comercioService.actualizarFotoPerfil(actor(p.dueno()), new FotoPerfilComercioRequestDTO(propia));
         assertEquals(propia, jdbcTemplate.queryForObject("SELECT foto_perfil_url FROM comercio WHERE id = ?", String.class, comercioId));
     }
 }

@@ -74,6 +74,7 @@ class ClasificacionRutasComercioTest {
         exclusivo("PUT /api/v1/comercios/cerrar");
         exclusivo("PUT /api/v1/comercios/abrir");
         exclusivo("GET /api/v1/comercios/equipo");
+        exclusivo("GET /api/v1/comercios/equipo/actividad");
         exclusivo("POST /api/v1/comercios/equipo/invitaciones");
         exclusivo("POST /api/v1/comercios/equipo/invitaciones/{invitacionId}/reenviar");
         exclusivo("PUT /api/v1/comercios/equipo/invitaciones/{invitacionId}/cancelar");
