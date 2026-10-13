@@ -212,17 +212,15 @@ items.push(
     status(200),
     guardar('t4a_cantidad_cliente', 'pm.response.json().data.length'),
   ]),
-  listarNotificaciones('[Cliente] notificaciones con un header no numerico: mismas, sin error', 'token_cliente', { [HEADER]: 'abc' }, [
-    status(200),
-    "pm.test('Mismas que sin header', () => pm.expect(pm.response.json().data.length).to.eql(" + entero('t4a_cantidad_cliente') + '));',
+  listarNotificaciones('[Cliente] notificaciones con un header no numerico: 400 (E3 A2)', 'token_cliente', { [HEADER]: 'abc' }, [
+    status(400),
   ]),
-  listarNotificaciones('[Cliente] notificaciones con el header de un comercio: mismas', 'token_cliente', conComercio('comercio_m_a_id'), [
-    status(200),
-    "pm.test('Mismas que sin header', () => pm.expect(pm.response.json().data.length).to.eql(" + entero('t4a_cantidad_cliente') + '));',
+  listarNotificaciones('[Cliente] notificaciones con el header de un comercio donde no es Empleado: 404 (E3 A2)', 'token_cliente', conComercio('comercio_m_a_id'), [
+    status(404),
+    "pm.test('Codigo estable', () => pm.expect(pm.response.json().data.codigo).to.eql('COMERCIO_NO_DISPONIBLE'));",
   ]),
-  contador('[Cliente] contador con header de un comercio: sin error', 'token_cliente', conComercio('comercio_m_a_id'), [
-    status(200),
-    "pm.test('Es un numero', () => pm.expect(pm.response.json().data).to.be.a('number'));",
+  contador('[Cliente] contador con el header de un comercio donde no es Empleado: 404 (E3 A2)', 'token_cliente', conComercio('comercio_m_a_id'), [
+    status(404),
   ]),
 );
 

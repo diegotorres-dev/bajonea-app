@@ -131,15 +131,31 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
   Temporalmente con su estado y un aviso corto (se pueden elegir y entran en solo
   lectura). No aparecen los comercios Inactivos, de Rechazo definitivo, Pendientes ni
   Rechazados.
-- Cuando el comercio no es operativo (Suspendido o Cerrado Temporalmente), el Empleado
-  puede terminar lo que ya estaba en marcha: despachar, entregar (también un pedido Listo
-  para Retirar) y anular los pedidos ya aceptados. No acepta pedidos nuevos, no toca
-  productos ni el perfil, y no abre ni cierra el comercio. El servidor lo hace cumplir con
-  un error de conflicto (409). Las entregas de los pedidos En Camino no las confirma el
-  comercio: las confirma el Cliente o el sistema (aviso a los 75 minutos y autoconfirmación
-  a los 90). Por ahora el Dueño queda sin cambios en estos estados; la diferencia entre el
-  Dueño y el Empleado se resuelve en el tramo de rediseño de la suspensión. Los cambios de
-  estado de un comercio no tocan las relaciones de sus Empleados.
+- Cuando el comercio no es operativo (Suspendido o Cerrado Temporalmente), lo que el
+  Empleado puede hacer depende del estado de cada pedido:
+  - **Pendiente de confirmación:** solo puede rechazarlo (con devolución inmediata del
+    pago); no puede aceptarlo.
+  - **En preparación:** puede despacharlo o anularlo.
+  - **En camino:** no puede hacer nada. Lo confirma el Cliente o el sistema (aviso a los 75
+    minutos y autoconfirmación a los 90).
+  - **Listo para retirar:** puede entregarlo, o cerrarlo como No Retirado una vez cumplida
+    la espera mínima (ver "Pedido no retirado").
+
+  Sobre el catálogo y el perfil la regla depende del estado: con el comercio **Suspendido**
+  no puede modificar productos, imágenes ni la descripción y el teléfono (responde conflicto
+  409 con el código COMERCIO_SUSPENDIDO); con el comercio **Cerrado Temporalmente** sí puede
+  hacerlo. En ambos estados no puede abrir ni cerrar el comercio (409 con el código
+  COMERCIO_NO_OPERATIVO). Intentar aceptar un pedido nuevo responde 409 con el código
+  COMERCIO_SIN_OPERACION. Con un comercio operativo cerrado a mano (la bandera de cierre
+  manual encendida), el Empleado sí puede aceptar los pedidos pendientes: el cierre solo
+  frena los pedidos nuevos de los Clientes. Rechazar, despachar, entregar y anular no
+  tienen una regla propia del estado del comercio: las permite o no el estado de cada
+  pedido, igual que para el Dueño. Por ahora el Dueño queda sin cambios en estos estados
+  (puede, por ejemplo, editar productos y perfil con el comercio Suspendido: hueco conocido
+  que se resuelve en el tramo de rediseño de la suspensión). Los cambios de estado de un
+  comercio no tocan las relaciones de sus Empleados. *(Esta regla reemplaza a la del bloque
+  A0b, donde rechazar con el comercio no operativo respondía 409; implementada en el bloque
+  A2 de E3.)*
 - Al desactivar su relación con un comercio, la próxima acción del Empleado sobre ese
   comercio responde "no encontrado" (404). La aplicación detecta la pérdida en esa acción
   o en el sondeo de cada 15 segundos y muestra, encima de la pantalla en la que está y
@@ -160,24 +176,30 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
 - Un Administrador no puede operar un comercio como Empleado (403), y el Dueño y el
   Administrador no tienen lista de "mis comercios" de Empleado.
 
-> **Estado de implementación (tramo E2, entregas A y B):** el servidor ya resuelve el comercio
-> del Empleado y le abre cuatro lecturas: el perfil del comercio con un conjunto reducido
-> de datos (nombre, foto, descripción, dirección del local, teléfono, tipo de comercio,
-> modalidades de entrega, horarios, estado, si está abierto o cerrado manualmente, si puede
-> cambiar el cierre y el texto de reapertura), la lista de productos, la lista de pedidos y
-> el resumen de pedidos del día, estos dos últimos sin los cargos de servicio ni los datos
-> de Mercado Pago (ver Permisos Delegados). Las acciones (editar, abrir y cerrar, gestionar productos y
-> pedidos) siguen cerradas al Empleado hasta el tramo E3. La entrega B de E2 suma las
-> pantallas: selector de contexto después del login, "Cambiar de cuenta" en el perfil, y un
-> panel de solo lectura (Panel con "Ventas de hoy", Productos y Pedidos sin acciones, y un
-> Perfil con los datos operativos del comercio), con el reembolso de cada pedido en
-> términos simples ("Reembolso en proceso", "Reembolsado" o "Reembolso en revisión", con el
-> monto). Las notificaciones por comercio del Empleado quedan para E3: hasta entonces el
-> Empleado no ve la campana dentro de un comercio. Si en medio del uso pierde el acceso a
-> un comercio (su relación se desactiva), la aplicación lo detecta en la próxima acción o
-> en el sondeo de cada 15 segundos, le muestra una hoja inferior "Ya no tenés acceso a este
-> comercio" (con el nombre del comercio y el botón "Entendido") y, al cerrarla, lo lleva al
-> selector, o al inicio de Cliente si no le queda ningún comercio. Su perfil dentro de un
+> **Estado de implementación (tramo E2, entregas A y B, y tramo E3, bloque A2):** el servidor
+> resuelve el comercio del Empleado y le abre cuatro lecturas: el perfil del comercio con un
+> conjunto reducido de datos (nombre, foto, descripción, dirección del local, teléfono, email
+> de contacto, tipo de comercio, modalidades de entrega, horarios, estado, si está abierto o
+> cerrado manualmente, si puede cambiar el cierre y el texto de reapertura), la lista de
+> productos, la lista de pedidos y el resumen de pedidos del día, estos dos últimos sin los
+> cargos de servicio ni los datos de Mercado Pago (ver Permisos Delegados). **Desde el bloque
+> A2 de E3 el servidor también le abre las 17 escrituras delegables** (productos e imágenes,
+> descripción y teléfono, abrir y cerrar, y las cinco acciones sobre pedidos), con la relación
+> revalidada dentro de cada operación, las reglas por estado del comercio descritas arriba y
+> el actor real (Empleado) en todos los historiales; las pantallas con esas acciones llegan en
+> la entrega B de E3. La entrega B de E2 sumó las pantallas: selector de contexto después del
+> login, "Cambiar de cuenta" en el perfil, y un panel de solo lectura (Panel con "Ventas de
+> hoy", Productos y Pedidos sin acciones, y un Perfil con los datos operativos del comercio),
+> con el reembolso de cada pedido en términos simples ("Reembolso en proceso", "Reembolsado"
+> o "Reembolso en revisión", con el monto). Las notificaciones por comercio del Empleado
+> llegan con el aviso al equipo (bloque A4): un Cliente que manda el comercio en la
+> consulta de notificaciones ya se trata como Empleado de ese comercio (404 si no lo es),
+> pero hoy no recibe ninguna. Si en medio del uso pierde el acceso a un comercio (su relación
+> se desactiva), la aplicación lo detecta en la próxima acción o en el sondeo de cada 15
+> segundos, le muestra una hoja inferior "Ya no tenés acceso a este comercio" (con el nombre
+> del comercio y el botón "Entendido") y, al cerrarla, lo lleva al selector, o al inicio de
+> Cliente si no le queda ningún comercio. El manejo en pantalla del 404 de las notificaciones
+> cuando pierde la relación llega con la desactivación del tramo E4. Su perfil dentro de un
 > comercio es una sola lista (Ver datos del comercio, Editar datos personales, Cambiar
 > contraseña, Cambiar de cuenta y Cerrar sesión): los datos personales y la contraseña se
 > editan dentro del mismo layout del comercio, sin pasar por las pantallas de Cliente.
@@ -194,13 +216,18 @@ puede:
   entrega, horarios y estado de apertura) y editar solo tres: la descripción, el teléfono
   y los horarios. El nombre, la foto, la dirección y el tipo de comercio son de solo
   lectura para el Empleado y los cambia únicamente el Dueño (el email de contacto y las
-  modalidades de entrega también quedan de solo lectura). El Empleado no ve la razón
-  social, el CUIT, la condición de IVA, el tipo de sociedad, el domicilio fiscal, la fecha
-  de inicio de actividades ni los datos del representante. (Hasta el tramo E3 el Empleado
-  ve todos esos datos salvo el email de contacto. La edición de horarios todavía no existe
-  para nadie: hoy los horarios solo se cargan en el alta y en la corrección de un comercio
-  rechazado; el Empleado la tendrá cuando exista.)
-- Abrir y cerrar el comercio manualmente (queda registrado con rol Empleado).
+  modalidades de entrega también son de solo lectura: el Empleado los ve, no los cambia).
+  La edición se hace por una ruta propia que solo acepta la descripción y el teléfono
+  (cualquier otro campo, como el nombre o el email, da error de datos inválidos 400 y no
+  cambia nada). El Empleado no ve la razón social, el CUIT, la condición de IVA, el tipo de
+  sociedad, el domicilio fiscal, la fecha de inicio de actividades ni los datos del
+  representante. La edición de horarios todavía no existe para nadie: hoy los horarios solo
+  se cargan en el alta y en la corrección de un comercio rechazado; el Empleado la tendrá
+  cuando exista.
+- Abrir y cerrar el comercio manualmente (queda registrado con rol Empleado). Puede abrir un
+  cierre manual aunque lo haya hecho el Dueño; solo dentro de un horario de atención y con
+  el comercio operativo (si está Suspendido o Cerrado Temporalmente, o fuera de horario,
+  responde conflicto 409).
 - Crear, editar y gestionar la disponibilidad de los productos y sus imágenes
   (incluido descontinuarlos).
 - Ver el historial de pedidos y las ventas del comercio. El Empleado ve lo necesario para
@@ -220,7 +247,18 @@ puede:
   minutos y autoconfirmación a los 90). Al rechazar o anular un pedido ya pagado, la nota
   de crédito de la devolución se crea en la misma operación que el cambio de estado.
 - En total son 17 escrituras delegables: 9 de productos (con imágenes y firmas de subida),
-  3 de comercio (perfil, cerrar y abrir) y 5 de pedidos.
+  3 de comercio (descripción y teléfono, cerrar y abrir) y 5 de pedidos. El resto del perfil
+  (edición completa, foto y su firma) es exclusivo del Dueño y el Empleado recibe 403. Con el cierre de un pedido de
+  retiro como No Retirado (tramo E3, bloque A4b) pasan a ser 18 (6 de pedidos).
+- **Pedido no retirado.** Cuando un pedido de retiro quedó Listo para Retirar y el cliente
+  no se presentó, el Empleado (y el Dueño) puede cerrarlo como No Retirado. Es un estado
+  final que solo existe desde Listo para Retirar y solo en pedidos de retiro. No hay
+  devolución: el comercio se queda con el pago, porque el pedido ya estaba preparado.
+  "Entregado" queda reservado para entregas reales. Para cerrarlo tiene que haber pasado
+  una espera mínima de 60 minutos desde que el pedido quedó Listo para Retirar (el valor es
+  configurable); la espera aplica solo a este cierre: "Entregar" es inmediato. El Cliente
+  ve el pedido como "No retirado", el pedido cuenta en "Facturado hoy" y el Cliente recibe
+  la notificación T36.
 - Recibir y ver las notificaciones operativas del comercio.
 
 **Futuros delegables** (hoy no tienen endpoint): grupos de extras y extras. Se
@@ -274,7 +312,10 @@ bloqueado para el Empleado por defecto.
   tienen su propio historial (`HistorialEstadoPedido` e `HistorialCierreComercio`). La
   pestaña Actividad de "Ver equipo" junta en una sola lista, ordenada por fecha, esas tres
   fuentes. El Empleado no ve esa pestaña: la ve el Dueño (tramo E3) y el Administrador, en
-  solo lectura (tramo E4).
+  solo lectura (tramo E4). El servidor ya registra las ediciones del Dueño y ya ofrece la
+  lista (`GET /api/v1/comercios/equipo/actividad`, solo Dueño; bloque A1 del tramo E3); las
+  ediciones de un Empleado se registran con el rol Empleado cuando se habiliten sus
+  escrituras (bloques A2 y A3), y la pestaña en pantalla llega en la entrega B.
 
 ---
 
@@ -286,10 +327,11 @@ bloqueado para el Empleado por defecto.
   rechazo, suspensión) ni las de cobro.
 - El listado y el contador de notificaciones del contexto Cliente quedan separados de los
   del comercio: el Cliente ve solo las suyas como cliente.
-- **Pendiente, no implementado (tramo E3, bloque A4):** avisar al Cliente cuando el comercio
-  cierra un pedido de retiro porque el cliente no se presentó. Ese cierre hoy no existe en
-  el código: la fuente de entrega `COMERCIO_SIN_RETIRO` está en la base pero ningún
-  endpoint la usa (el comercio solo confirma la entrega con la fuente `COMERCIO`).
+- **Pendiente, no implementado (tramo E3, bloque A4b):** avisar al Cliente (T36, "Tu pedido
+  #12 no fue retirado y el comercio lo cerró. Como ya estaba preparado, no hay devolución
+  del pago.") cuando el comercio cierra como No Retirado un pedido de retiro. Ese cierre hoy
+  no existe en el código; reemplaza a la fuente de entrega `COMERCIO_SIN_RETIRO`, que deja
+  de ser necesaria.
 - Al desactivarlo el Dueño, el Empleado recibe la notificación T32. Cuando renuncia, el
   Dueño recibe una notificación equivalente (T34). Cuando el invitado acepta, el Dueño
   recibe T33.

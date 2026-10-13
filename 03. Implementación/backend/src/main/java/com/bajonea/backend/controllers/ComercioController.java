@@ -3,6 +3,7 @@ package com.bajonea.backend.controllers;
 import com.bajonea.backend.config.security.AuthenticatedUser;
 import com.bajonea.backend.config.security.ComercioActivo;
 import com.bajonea.backend.dto.request.AltaComercioAdicionalRequestDTO;
+import com.bajonea.backend.dto.request.ComercioDatosOperativosRequestDTO;
 import com.bajonea.backend.dto.request.ComercioPerfilRequestDTO;
 import com.bajonea.backend.dto.request.FotoPerfilComercioRequestDTO;
 import com.bajonea.backend.dto.request.ReSolicitudComercioRequestDTO;
@@ -123,8 +124,8 @@ public class ComercioController {
     }
 
     @PutMapping("/perfil")
-    public ResponseEntity<ApiResponse<ComercioResponseDTO>> editarPerfil(@Valid @RequestBody ComercioPerfilRequestDTO request,
-            ComercioActivo comercio) {
+    public ResponseEntity<ApiResponse<ComercioResponseDTO>> editarPerfil(ComercioActivo comercio,
+            @Valid @RequestBody ComercioPerfilRequestDTO request) {
         ComercioResponseDTO response = comercioService.editarPerfil(comercio, request);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Perfil actualizado correctamente", response));
     }
@@ -138,27 +139,43 @@ public class ComercioController {
 
     @PutMapping("/perfil/foto")
     public ResponseEntity<ApiResponse<ComercioResponseDTO>> actualizarFotoPerfil(
-            @Valid @RequestBody FotoPerfilComercioRequestDTO request, ComercioActivo comercio) {
+            ComercioActivo comercio, @Valid @RequestBody FotoPerfilComercioRequestDTO request) {
         ComercioResponseDTO response = comercioService.actualizarFotoPerfil(comercio, request);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Foto de perfil actualizada correctamente", response));
     }
 
     /**
+     * Edición de descripción y teléfono, delegable al Empleado (ver {@code DelegacionEmpleado}). El Dueño sigue
+     * editando el perfil completo con {@code PUT /perfil}, exclusivo suyo. La respuesta es el perfil reducido para el
+     * Empleado y el completo para el Dueño.
+     */
+    @PutMapping("/perfil/datos-operativos")
+    public ResponseEntity<ApiResponse<?>> editarDatosOperativos(ComercioActivo comercio,
+            @Valid @RequestBody ComercioDatosOperativosRequestDTO request) {
+        Object response = comercioService.editarDatosOperativos(comercio, request);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Perfil actualizado correctamente", response));
+    }
+
+    /**
      * Cierre manual del comercio activo: frena pedidos nuevos, no corta los que están en curso. Solo dentro de
      * una franja horaria. Idempotente: cerrar un comercio ya cerrado responde {@code 200} con el estado actual.
-     * El actor se pasa al servicio desde el inicio para poder sumar al Empleado sin tocarlo.
+     * Delegable al Empleado: el actor y su usuario se toman del comercio activo.
      */
     @PutMapping("/cerrar")
     public ResponseEntity<ApiResponse<CierreComercioResponseDTO>> cerrar(ComercioActivo comercio) {
-        CierreComercioResponseDTO response = cierreComercioService.cerrar(comercio.comercioId(), comercio.duenoId(),
-                ActorCierre.DUENO);
+        CierreComercioResponseDTO response = cierreComercioService.cerrar(comercio.comercioId(), comercio.actorUsuarioId(),
+                actorDeCierre(comercio));
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Estado de apertura actualizado correctamente", response));
     }
 
     @PutMapping("/abrir")
     public ResponseEntity<ApiResponse<CierreComercioResponseDTO>> abrir(ComercioActivo comercio) {
-        CierreComercioResponseDTO response = cierreComercioService.abrir(comercio.comercioId(), comercio.duenoId(),
-                ActorCierre.DUENO);
+        CierreComercioResponseDTO response = cierreComercioService.abrir(comercio.comercioId(), comercio.actorUsuarioId(),
+                actorDeCierre(comercio));
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Estado de apertura actualizado correctamente", response));
+    }
+
+    private static ActorCierre actorDeCierre(ComercioActivo comercio) {
+        return comercio.esEmpleado() ? ActorCierre.EMPLEADO : ActorCierre.DUENO;
     }
 }

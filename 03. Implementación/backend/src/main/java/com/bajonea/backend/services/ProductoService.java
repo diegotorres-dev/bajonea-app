@@ -24,6 +24,7 @@ import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.EstadoProducto;
 import com.bajonea.backend.enums.TipoEntidadEdicion;
 import com.bajonea.backend.enums.TipoNotificacion;
+import com.bajonea.backend.exceptions.ComercioNoDisponibleException;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.repositories.CarritoRepository;
@@ -79,8 +80,7 @@ public class ProductoService {
     private final HistorialEdicionComercioService historialEdicionComercioService;
 
     public ProductoResponseDTO crearProducto(ComercioActivo actor, ProductoRequestDTO request) {
-        historialEdicionComercioService.iniciarEscritura(actor);
-        Comercio comercio = obtenerComercio(actor.comercioId());
+        Comercio comercio = iniciarEscrituraDeCatalogo(actor);
         Categoria categoria = obtenerCategoria(request.getCategoriaId());
 
         Producto producto = Producto.builder()
@@ -102,8 +102,7 @@ public class ProductoService {
     }
 
     public ProductoResponseDTO editarProducto(ComercioActivo actor, Integer productoId, ProductoRequestDTO request) {
-        historialEdicionComercioService.iniciarEscritura(actor);
-        Comercio comercio = obtenerComercio(actor.comercioId());
+        Comercio comercio = iniciarEscrituraDeCatalogo(actor);
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
 
         if (producto.getEstado() == EstadoProducto.DESCONTINUADO) {
@@ -275,8 +274,7 @@ public class ProductoService {
     }
 
     public ProductoResponseDTO cambiarEstado(ComercioActivo actor, Integer productoId, EstadoProducto nuevoEstado) {
-        historialEdicionComercioService.iniciarEscritura(actor);
-        Comercio comercio = obtenerComercio(actor.comercioId());
+        Comercio comercio = iniciarEscrituraDeCatalogo(actor);
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
 
         EstadoProducto estadoActual = producto.getEstado();
@@ -301,22 +299,23 @@ public class ProductoService {
         return aResponseDTO(producto);
     }
 
-    public CloudinarySignatureResponseDTO generarFirmaImagen(Integer comercioId, Integer productoId) {
-        Comercio comercio = obtenerComercio(comercioId);
+    public CloudinarySignatureResponseDTO generarFirmaImagen(ComercioActivo actor, Integer productoId) {
+        ComercioActivoService.validarComercioModificable(actor, actor.estadoComercio());
+        Comercio comercio = obtenerComercio(actor.comercioId());
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
         return cloudinaryService.generarFirmaImagenProducto(comercio.getId(), producto.getId());
     }
 
-    public CloudinarySignatureResponseDTO generarFirmaRecorteImagen(Integer comercioId, Integer productoId, Integer imagenId) {
-        Comercio comercio = obtenerComercio(comercioId);
+    public CloudinarySignatureResponseDTO generarFirmaRecorteImagen(ComercioActivo actor, Integer productoId, Integer imagenId) {
+        ComercioActivoService.validarComercioModificable(actor, actor.estadoComercio());
+        Comercio comercio = obtenerComercio(actor.comercioId());
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
         obtenerImagenDelProducto(imagenId, producto);
         return cloudinaryService.generarFirmaRecorteImagen(comercio.getId(), producto.getId());
     }
 
     public ImagenProductoResponseDTO agregarImagen(ComercioActivo actor, Integer productoId, ImagenProductoRequestDTO request) {
-        historialEdicionComercioService.iniciarEscritura(actor);
-        Comercio comercio = obtenerComercio(actor.comercioId());
+        Comercio comercio = iniciarEscrituraDeCatalogo(actor);
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
 
         cloudinaryService.validarImagenProducto(comercio.getId(), producto.getId(), request.getUrl());
@@ -346,8 +345,7 @@ public class ProductoService {
     }
 
     public void eliminarImagen(ComercioActivo actor, Integer productoId, Integer imagenId) {
-        historialEdicionComercioService.iniciarEscritura(actor);
-        Comercio comercio = obtenerComercio(actor.comercioId());
+        Comercio comercio = iniciarEscrituraDeCatalogo(actor);
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
         ImagenProducto imagen = obtenerImagenDelProducto(imagenId, producto);
         imagenProductoRepository.delete(imagen);
@@ -357,8 +355,7 @@ public class ProductoService {
     }
 
     public ImagenProductoResponseDTO reordenarImagen(ComercioActivo actor, Integer productoId, Integer imagenId, Integer nuevoOrden) {
-        historialEdicionComercioService.iniciarEscritura(actor);
-        Comercio comercio = obtenerComercio(actor.comercioId());
+        Comercio comercio = iniciarEscrituraDeCatalogo(actor);
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
         ImagenProducto imagen = obtenerImagenDelProducto(imagenId, producto);
 
@@ -376,8 +373,7 @@ public class ProductoService {
     }
 
     public ImagenProductoResponseDTO actualizarUrlImagen(ComercioActivo actor, Integer productoId, Integer imagenId, String nuevaUrl) {
-        historialEdicionComercioService.iniciarEscritura(actor);
-        Comercio comercio = obtenerComercio(actor.comercioId());
+        Comercio comercio = iniciarEscrituraDeCatalogo(actor);
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
         ImagenProducto imagen = obtenerImagenDelProducto(imagenId, producto);
 
@@ -466,6 +462,23 @@ public class ProductoService {
     private Comercio obtenerComercio(Integer comercioId) {
         return comercioRepository.findById(comercioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
+    }
+
+    /**
+     * Arranque común de las escrituras del catálogo: el usuario que actúa y, si es Empleado, su relación (ver
+     * {@link HistorialEdicionComercioService#iniciarEscritura}); después, solo para el Empleado, el estado del
+     * comercio leído con bloqueo compartido para aplicar el guard de suspensión. No escribe el comercio, así que el
+     * bloqueo compartido no se mejora a exclusivo más adelante.
+     */
+    private Comercio iniciarEscrituraDeCatalogo(ComercioActivo actor) {
+        historialEdicionComercioService.iniciarEscritura(actor);
+        if (actor.esEmpleado()) {
+            EstadoComercio estado = comercioRepository.leerEstadoConBloqueoCompartido(actor.comercioId())
+                    .map(lectura -> EstadoComercio.valueOf(lectura.getEstado()))
+                    .orElseThrow(ComercioNoDisponibleException::new);
+            ComercioActivoService.validarComercioModificable(actor, estado);
+        }
+        return obtenerComercio(actor.comercioId());
     }
 
     private Categoria obtenerCategoria(Integer categoriaId) {

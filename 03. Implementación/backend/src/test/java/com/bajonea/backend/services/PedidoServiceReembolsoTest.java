@@ -90,7 +90,7 @@ class PedidoServiceReembolsoTest {
                 timeouts,
                 reembolsoService,
                 notaCreditoService,
-                mock(PlatformTransactionManager.class));
+                mock(PlatformTransactionManager.class), mock(ComercioActivoService.class));
         ReflectionTestUtils.setField(pedidoService, "entityManager", mock(jakarta.persistence.EntityManager.class));
         ParticipantesPedido participantes = mock(ParticipantesPedido.class);
         when(participantes.getClienteId()).thenReturn(9);

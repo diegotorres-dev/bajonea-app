@@ -53,14 +53,22 @@ public class HistorialEdicionComercioService {
     private final ComercioRepository comercioRepository;
     private final UsuarioRepository usuarioRepository;
     private final DisponibilidadComercioService disponibilidadComercioService;
+    private final ComercioActivoService comercioActivoService;
 
     @PersistenceContext
     private EntityManager entityManager;
 
+    /**
+     * Primera instrucción de toda escritura del catálogo, el perfil y las redes sociales: toma la fila del usuario
+     * que actúa (orden de bloqueo, nivel 1) y, si el actor es un Empleado, revalida con bloqueo compartido que su
+     * relación con el comercio siga {@code ACTIVO} (nivel 2). Si dejó de estarlo responde el mismo {@code 404}
+     * {@code COMERCIO_NO_DISPONIBLE} que el resolver.
+     */
     @Transactional(propagation = Propagation.MANDATORY)
     public void iniciarEscritura(ComercioActivo actor) {
         usuarioRepository.leerIdConBloqueoCompartido(actor.actorUsuarioId())
                 .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+        comercioActivoService.exigirRelacionActiva(actor);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)

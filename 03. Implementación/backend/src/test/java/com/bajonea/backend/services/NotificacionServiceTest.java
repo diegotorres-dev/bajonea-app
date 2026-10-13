@@ -16,8 +16,10 @@ import com.bajonea.backend.dto.response.NotificacionResponseDTO;
 import com.bajonea.backend.entities.Comercio;
 import com.bajonea.backend.entities.Notificacion;
 import com.bajonea.backend.entities.Usuario;
+import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.RolUsuario;
 import com.bajonea.backend.enums.TipoEntidadNotificacion;
+import com.bajonea.backend.exceptions.ComercioNoDisponibleException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.exceptions.ValidacionException;
 import com.bajonea.backend.repositories.ComercioRepository;
@@ -37,6 +39,7 @@ class NotificacionServiceTest {
 
     private NotificacionRepository notificacionRepository;
     private ComercioRepository comercioRepository;
+    private EmpleadoComercioRepository empleadoComercioRepository;
     private NotificacionService service;
 
     private final AuthenticatedUser dueno = new AuthenticatedUser(USUARIO_ID, 1, RolUsuario.DUENO);
@@ -47,8 +50,9 @@ class NotificacionServiceTest {
     void preparar() {
         notificacionRepository = mock(NotificacionRepository.class);
         comercioRepository = mock(ComercioRepository.class);
+        empleadoComercioRepository = mock(EmpleadoComercioRepository.class);
         service = new NotificacionService(notificacionRepository, mock(UsuarioRepository.class), comercioRepository,
-                new ComercioActivoService(comercioRepository, mock(EmpleadoComercioRepository.class)));
+                new ComercioActivoService(comercioRepository, empleadoComercioRepository));
     }
 
     private static Notificacion notificacion(int id) {
@@ -79,14 +83,42 @@ class NotificacionServiceTest {
     }
 
     @Test
-    void elClienteListaTodasEIgnoraElHeaderAunqueSeaInvalido() {
+    void elClienteSinHeaderListaTodasLasSuyas() {
         when(notificacionRepository.findPushByUsuarioIdOrderByFechaCreacionDesc(USUARIO_ID)).thenReturn(List.of(notificacion(1)));
 
-        List<NotificacionResponseDTO> resultado = service.listar(cliente, "abc");
-
-        assertEquals(1, resultado.size());
+        assertEquals(1, service.listar(cliente, null).size());
+        assertEquals(1, service.listar(cliente, "").size());
+        assertEquals(1, service.listar(cliente, "  ").size());
         verify(notificacionRepository, never()).findByUsuarioIdAndComercioId(anyInt(), anyInt());
         verifyNoInteractions(comercioRepository);
+    }
+
+    @Test
+    void elClienteConHeaderNoNumericoRecibe400() {
+        assertThrows(ValidacionException.class, () -> service.listar(cliente, "abc"));
+        assertThrows(ValidacionException.class, () -> service.contarNoLeidas(cliente, "abc"));
+        verify(notificacionRepository, never()).findPushByUsuarioIdOrderByFechaCreacionDesc(anyInt());
+    }
+
+    @Test
+    void elClienteConHeaderDeUnComercioDondeNoEsEmpleadoActivoRecibeElMismo404EnListarYContador() {
+        assertThrows(ComercioNoDisponibleException.class, () -> service.listar(cliente, String.valueOf(COMERCIO_ID)));
+        assertThrows(ComercioNoDisponibleException.class, () -> service.contarNoLeidas(cliente, String.valueOf(COMERCIO_ID)));
+        verify(notificacionRepository, never()).findPushByUsuarioIdOrderByFechaCreacionDesc(anyInt());
+        verify(notificacionRepository, never()).findByUsuarioIdAndComercioId(anyInt(), anyInt());
+    }
+
+    @Test
+    void elEmpleadoActivoConHeaderDeSuComercioListaYCuentaLasNotificacionesDeEseComercio() {
+        Comercio comercio = Comercio.builder().id(COMERCIO_ID).estado(EstadoComercio.APTO_VENTA)
+                .dueno(com.bajonea.backend.entities.Dueno.builder().id(99).build()).build();
+        when(empleadoComercioRepository.findComercioAccesible(anyInt(), anyInt(), any(), any())).thenReturn(Optional.of(comercio));
+        when(notificacionRepository.findByUsuarioIdAndComercioId(USUARIO_ID, COMERCIO_ID)).thenReturn(List.of(notificacion(4)));
+        when(notificacionRepository.countNoLeidasByUsuarioIdAndComercioId(USUARIO_ID, COMERCIO_ID)).thenReturn(1L);
+
+        assertEquals(List.of(4), service.listar(cliente, String.valueOf(COMERCIO_ID)).stream().map(NotificacionResponseDTO::getId).toList());
+        assertEquals(1, service.contarNoLeidas(cliente, String.valueOf(COMERCIO_ID)));
+        verify(notificacionRepository, never()).findPushByUsuarioIdOrderByFechaCreacionDesc(anyInt());
     }
 
     @Test
@@ -120,7 +152,7 @@ class NotificacionServiceTest {
         when(notificacionRepository.countPushNoLeidasByUsuarioId(USUARIO_ID)).thenReturn(9L);
 
         assertEquals(2, service.contarNoLeidas(dueno, String.valueOf(COMERCIO_ID)));
-        assertEquals(9, service.contarNoLeidas(cliente, String.valueOf(COMERCIO_ID)));
+        assertEquals(9, service.contarNoLeidas(cliente, null));
     }
 
     @Test

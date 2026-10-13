@@ -6,7 +6,7 @@ import com.bajonea.backend.entities.HistorialCierreComercio;
 import com.bajonea.backend.entities.Horario;
 import com.bajonea.backend.enums.AccionCierre;
 import com.bajonea.backend.enums.ActorCierre;
-import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
+import com.bajonea.backend.exceptions.ConflictoComercioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.HistorialCierreComercioRepository;
@@ -42,6 +42,10 @@ import org.springframework.transaction.annotation.Transactional;
  * intentos fallidos hace al revés (tiene el usuario y pide el comercio), y las dos transacciones quedaban en
  * deadlock. Con este orden la que llega segunda espera a que la primera termine; si el bloqueo ganó, el comercio
  * ya no es operativo y el cierre responde {@code 409}. La reapertura automática no actúa un usuario y no lo toma.
+ * <p>
+ * Si quien actúa es un Empleado, después de su usuario revalida con bloqueo compartido que su relación con el comercio
+ * siga {@code ACTIVO} (si no, el mismo {@code 404} del resolver) y recién entonces bloquea el comercio. Los dos
+ * {@code 409} de negocio llevan código estable: {@code COMERCIO_NO_OPERATIVO} y {@code FUERA_DE_HORARIO}.
  */
 @Service
 @RequiredArgsConstructor
@@ -58,6 +62,7 @@ public class CierreComercioService {
     private final HistorialCierreComercioRepository historialCierreComercioRepository;
     private final DisponibilidadComercioService disponibilidadComercioService;
     private final UsuarioRepository usuarioRepository;
+    private final ComercioActivoService comercioActivoService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -75,14 +80,17 @@ public class CierreComercioService {
         if (actor != ActorCierre.SISTEMA && actorUsuarioId != null) {
             usuarioRepository.leerIdConBloqueoCompartido(actorUsuarioId);
         }
+        if (actor == ActorCierre.EMPLEADO) {
+            comercioActivoService.exigirRelacionActiva(actorUsuarioId, comercioId);
+        }
         Comercio comercio = bloquearComercio(comercioId);
         LocalDateTime ahora = disponibilidadComercioService.ahora().truncatedTo(ChronoUnit.SECONDS);
         if (!ComercioActivoService.esOperativo(comercio.getEstado())) {
-            throw new ConflictoDeNegocioException(MENSAJE_NO_OPERATIVO);
+            throw new ConflictoComercioException(ConflictoComercioException.NO_OPERATIVO, MENSAJE_NO_OPERATIVO);
         }
         List<Horario> horarios = horarioRepository.findByComercioId(comercio.getId());
         if (!disponibilidadComercioService.dentroDeFranja(horarios, ahora)) {
-            throw new ConflictoDeNegocioException(MENSAJE_FUERA_DE_HORARIO);
+            throw new ConflictoComercioException(ConflictoComercioException.FUERA_DE_HORARIO, MENSAJE_FUERA_DE_HORARIO);
         }
         if (comercio.isCerradoManualmente() != cerrar) {
             comercio.setCerradoManualmente(cerrar);

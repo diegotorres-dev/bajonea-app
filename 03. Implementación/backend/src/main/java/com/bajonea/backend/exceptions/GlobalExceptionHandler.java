@@ -83,6 +83,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse<>(ex.getMessage(), ex.getData()));
     }
 
+    @ExceptionHandler(ConflictoComercioException.class)
+    public ResponseEntity<ApiResponse<?>> handleConflictoComercio(ConflictoComercioException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ApiResponse<>(ex.getMessage(), Map.of("codigo", ex.getCodigo())));
+    }
+
     @ExceptionHandler(ConflictoDeNegocioException.class)
     public ResponseEntity<ApiResponse<?>> handleConflictoDeNegocio(ConflictoDeNegocioException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiResponse<>(ex.getMessage(), null));

@@ -99,7 +99,7 @@ class PedidoServiceVistaEmpleadoTest {
                 timeouts,
                 mock(ReembolsoService.class),
                 notaCreditoService,
-                mock(PlatformTransactionManager.class));
+                mock(PlatformTransactionManager.class), mock(ComercioActivoService.class));
 
         cliente = mock(Cliente.class, Answers.RETURNS_DEEP_STUBS);
         when(cliente.getId()).thenReturn(77);

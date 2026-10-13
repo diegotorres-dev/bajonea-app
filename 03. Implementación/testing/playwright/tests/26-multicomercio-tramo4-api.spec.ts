@@ -267,19 +267,23 @@ test.describe('Multi-comercio, tramo 4 (API): mis-comercios y notificaciones por
       }
     });
 
-    test('el Cliente ve todas las suyas e ignora el header, aunque sea invalido, ajeno o inexistente', async ({ request }) => {
+    test('el Cliente sin header ve todas las suyas; con un header (que lo trata como Empleado de ese comercio) recibe 404 si no es Empleado activo, o 400 si no es numerico (E3 A2)', async ({ request }) => {
       const sinHeader = await notificaciones(request, clienteToken);
       expect(sinHeader.status).toBe(200);
       expect((sinHeader.body.data as any[]).length).toBeGreaterThan(0);
       const contadorSinHeader = (await contador(request, clienteToken)).body.data;
-      for (const valor of ['abc', String(comercioA), String(otroDueno.comercioId), '99999999']) {
+      const enBlanco = await notificaciones(request, clienteToken, '');
+      expect(enBlanco.status).toBe(200);
+      expect(enBlanco.body.data).toEqual(sinHeader.body.data);
+      expect((await contador(request, clienteToken, '')).body.data).toBe(contadorSinHeader);
+      for (const valor of [String(comercioA), String(otroDueno.comercioId), '99999999']) {
         const conHeader = await notificaciones(request, clienteToken, valor);
-        expect(conHeader.status, `header ${valor}`).toBe(200);
-        expect(conHeader.body.data).toEqual(sinHeader.body.data);
-        const contadorConHeader = await contador(request, clienteToken, valor);
-        expect(contadorConHeader.status).toBe(200);
-        expect(contadorConHeader.body.data).toBe(contadorSinHeader);
+        expect(conHeader.status, `header ${valor}`).toBe(404);
+        expect(conHeader.body.data).toEqual({ codigo: 'COMERCIO_NO_DISPONIBLE' });
+        expect((await contador(request, clienteToken, valor)).status).toBe(404);
       }
+      expect((await notificaciones(request, clienteToken, 'abc')).status).toBe(400);
+      expect((await contador(request, clienteToken, 'abc')).status).toBe(400);
     });
 
     test('el Administrador tampoco usa el header', async ({ request }) => {

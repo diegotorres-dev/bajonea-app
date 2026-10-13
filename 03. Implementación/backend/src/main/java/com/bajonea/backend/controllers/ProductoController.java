@@ -29,20 +29,25 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/productos")
 @RequiredArgsConstructor
+/**
+ * Rutas de operación del Comercio sobre su catálogo: el Dueño y el Empleado activo las usan por igual (todas figuran
+ * en {@code DelegacionEmpleado}). {@code ComercioActivo} va siempre como primer parámetro para que el resolver
+ * (relación activa, comercio disponible) corra antes de leer y validar el cuerpo.
+ */
 public class ProductoController {
 
     private final ProductoService productoService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse<ProductoResponseDTO>> crearProducto(@Valid @RequestBody ProductoRequestDTO request,
-            ComercioActivo comercio) {
+    public ResponseEntity<ApiResponse<ProductoResponseDTO>> crearProducto(ComercioActivo comercio,
+            @Valid @RequestBody ProductoRequestDTO request) {
         ProductoResponseDTO response = productoService.crearProducto(comercio, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>("Producto creado correctamente", response));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<ProductoResponseDTO>> editarProducto(@PathVariable Integer id,
-            @Valid @RequestBody ProductoRequestDTO request, ComercioActivo comercio) {
+    public ResponseEntity<ApiResponse<ProductoResponseDTO>> editarProducto(ComercioActivo comercio,
+            @PathVariable Integer id, @Valid @RequestBody ProductoRequestDTO request) {
         ProductoResponseDTO response = productoService.editarProducto(comercio, id, request);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Producto actualizado correctamente", response));
     }
@@ -55,52 +60,50 @@ public class ProductoController {
     }
 
     @PatchMapping("/{id}/estado")
-    public ResponseEntity<ApiResponse<ProductoResponseDTO>> cambiarEstado(@PathVariable Integer id,
-            @Valid @RequestBody CambioEstadoProductoRequestDTO request, ComercioActivo comercio) {
+    public ResponseEntity<ApiResponse<ProductoResponseDTO>> cambiarEstado(ComercioActivo comercio,
+            @PathVariable Integer id, @Valid @RequestBody CambioEstadoProductoRequestDTO request) {
         ProductoResponseDTO response = productoService.cambiarEstado(comercio, id, request.getEstado());
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Estado del producto actualizado correctamente", response));
     }
 
     @PostMapping("/{id}/cloudinary/firma")
-    public ResponseEntity<ApiResponse<CloudinarySignatureResponseDTO>> generarFirmaImagen(@PathVariable Integer id,
-            ComercioActivo comercio) {
-        CloudinarySignatureResponseDTO response = productoService.generarFirmaImagen(comercio.comercioId(), id);
+    public ResponseEntity<ApiResponse<CloudinarySignatureResponseDTO>> generarFirmaImagen(ComercioActivo comercio,
+            @PathVariable Integer id) {
+        CloudinarySignatureResponseDTO response = productoService.generarFirmaImagen(comercio, id);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Firma generada correctamente", response));
     }
 
     @PostMapping("/{id}/imagenes")
-    public ResponseEntity<ApiResponse<ImagenProductoResponseDTO>> agregarImagen(@PathVariable Integer id,
-            @Valid @RequestBody ImagenProductoRequestDTO request, ComercioActivo comercio) {
+    public ResponseEntity<ApiResponse<ImagenProductoResponseDTO>> agregarImagen(ComercioActivo comercio,
+            @PathVariable Integer id, @Valid @RequestBody ImagenProductoRequestDTO request) {
         ImagenProductoResponseDTO response = productoService.agregarImagen(comercio, id, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>("Imagen agregada correctamente", response));
     }
 
     @DeleteMapping("/{id}/imagenes/{imagenId}")
-    public ResponseEntity<ApiResponse<Void>> eliminarImagen(@PathVariable Integer id, @PathVariable Integer imagenId,
-            ComercioActivo comercio) {
+    public ResponseEntity<ApiResponse<Void>> eliminarImagen(ComercioActivo comercio,
+            @PathVariable Integer id, @PathVariable Integer imagenId) {
         productoService.eliminarImagen(comercio, id, imagenId);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Imagen eliminada correctamente", null));
     }
 
     @PatchMapping("/{id}/imagenes/{imagenId}/orden")
-    public ResponseEntity<ApiResponse<ImagenProductoResponseDTO>> reordenarImagen(@PathVariable Integer id,
-            @PathVariable Integer imagenId, @Valid @RequestBody OrdenImagenRequestDTO request,
-            ComercioActivo comercio) {
+    public ResponseEntity<ApiResponse<ImagenProductoResponseDTO>> reordenarImagen(ComercioActivo comercio,
+            @PathVariable Integer id, @PathVariable Integer imagenId, @Valid @RequestBody OrdenImagenRequestDTO request) {
         ImagenProductoResponseDTO response = productoService.reordenarImagen(comercio, id, imagenId, request.getOrden());
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Orden de la imagen actualizado correctamente", response));
     }
 
     @PostMapping("/{id}/imagenes/{imagenId}/recorte/firma")
-    public ResponseEntity<ApiResponse<CloudinarySignatureResponseDTO>> generarFirmaRecorteImagen(@PathVariable Integer id,
-            @PathVariable Integer imagenId, ComercioActivo comercio) {
-        CloudinarySignatureResponseDTO response = productoService.generarFirmaRecorteImagen(comercio.comercioId(), id, imagenId);
+    public ResponseEntity<ApiResponse<CloudinarySignatureResponseDTO>> generarFirmaRecorteImagen(ComercioActivo comercio,
+            @PathVariable Integer id, @PathVariable Integer imagenId) {
+        CloudinarySignatureResponseDTO response = productoService.generarFirmaRecorteImagen(comercio, id, imagenId);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Firma generada correctamente", response));
     }
 
     @PatchMapping("/{id}/imagenes/{imagenId}/url")
-    public ResponseEntity<ApiResponse<ImagenProductoResponseDTO>> actualizarUrlImagen(@PathVariable Integer id,
-            @PathVariable Integer imagenId, @Valid @RequestBody UrlImagenRequestDTO request,
-            ComercioActivo comercio) {
+    public ResponseEntity<ApiResponse<ImagenProductoResponseDTO>> actualizarUrlImagen(ComercioActivo comercio,
+            @PathVariable Integer id, @PathVariable Integer imagenId, @Valid @RequestBody UrlImagenRequestDTO request) {
         ImagenProductoResponseDTO response = productoService.actualizarUrlImagen(comercio, id, imagenId, request.getUrl());
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Imagen actualizada correctamente", response));
     }

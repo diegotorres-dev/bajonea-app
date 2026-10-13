@@ -241,7 +241,7 @@ items.push(
   abrir('[validaciones] Abrir sin X-Comercio-Id: 400', tok('a'), {}, 400),
   abrir('[validaciones] Abrir con el comercio de otro Dueño: 404', tok('c'), conComercio(v('a', 'com')), 404),
   cerrar('[validaciones] Cerrar sin token: 401', undefined, conComercio(v('a', 'com')), 401),
-  cerrar('[validaciones] Cerrar siendo Cliente: 403', 'c1_token_cliente1', conComercio(v('a', 'com')), 403),
+  cerrar('[validaciones] Cerrar siendo Cliente sin relacion con el comercio: 404 (E3 A2)', 'c1_token_cliente1', conComercio(v('a', 'com')), 404),
   abrir('[validaciones] Abrir siendo Administrador: 403', 'token_admin', conComercio(v('a', 'com')), 403),
   perfil('[validaciones] Los rechazos no cambiaron nada en A', 'a', false, true, true, null),
 

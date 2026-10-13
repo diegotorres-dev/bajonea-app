@@ -29,6 +29,16 @@ public interface EmpleadoComercioRepository extends JpaRepository<EmpleadoComerc
             @Param("comercioId") Integer comercioId);
 
     /**
+     * Estado de la relación leído con {@code LOCK IN SHARE MODE} (lo último confirmado, y la desactivación, que la
+     * toma {@code FOR UPDATE}, espera hasta que termine la transacción de quien lee). Consulta nativa porque
+     * MariaDB 10.4 no entiende el {@code FOR SHARE} que genera Hibernate. Lo usa la revalidación de cada escritura
+     * delegada; en el orden de bloqueo va después de los usuarios y antes del comercio.
+     */
+    @Query(value = "SELECT estado FROM empleado_comercio WHERE empleado_id = :empleadoId AND comercio_id = :comercioId LOCK IN SHARE MODE",
+            nativeQuery = true)
+    Optional<String> leerEstadoConBloqueoCompartido(@Param("empleadoId") Integer empleadoId, @Param("comercioId") Integer comercioId);
+
+    /**
      * Equipo de un comercio con los datos de cada empleado en una sola consulta: nombre y apellido salen de su
      * persona física y email y foto de su usuario. Orden estable por fecha de alta.
      */

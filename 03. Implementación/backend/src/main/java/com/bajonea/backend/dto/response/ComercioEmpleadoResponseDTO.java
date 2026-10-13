@@ -10,8 +10,8 @@ import lombok.Getter;
  * una lista blanca de campos: nombre, foto, descripción, dirección del local, teléfono, tipo de comercio,
  * modalidades de entrega, horarios, estado, si está abierto o cerrado manualmente, si puede cambiar el cierre y
  * el texto de reapertura. No lleva datos fiscales ni del titular (CUIT, razón social, condición de IVA, tipo de
- * sociedad, domicilio fiscal, fecha de inicio de actividades, representante), ni el email de contacto (queda
- * para E3), ni el motivo de rechazo, ni nada de Mercado Pago. Un campo nuevo de {@link ComercioResponseDTO} no
+ * sociedad, domicilio fiscal, fecha de inicio de actividades, representante), ni el motivo de rechazo, ni nada
+ * de Mercado Pago. El email de contacto del comercio sí figura, solo lectura: el Empleado no lo puede editar. Un campo nuevo de {@link ComercioResponseDTO} no
  * llega al Empleado salvo que se agregue acá a propósito.
  */
 @Getter
@@ -22,6 +22,7 @@ public class ComercioEmpleadoResponseDTO {
     private final String descripcion;
     private final String fotoPerfilUrl;
     private final String telefono;
+    private final String emailContacto;
     private final TipoComercio tipoComercio;
     private final boolean aceptaDelivery;
     private final boolean aceptaRetiro;
@@ -34,7 +35,7 @@ public class ComercioEmpleadoResponseDTO {
     private final String textoReapertura;
 
     public ComercioEmpleadoResponseDTO(Integer id, String nombre, String descripcion, String fotoPerfilUrl, String telefono,
-            TipoComercio tipoComercio, boolean aceptaDelivery, boolean aceptaRetiro, DireccionResponseDTO direccion,
+            String emailContacto, TipoComercio tipoComercio, boolean aceptaDelivery, boolean aceptaRetiro, DireccionResponseDTO direccion,
             List<HorarioResponseDTO> horarios, EstadoComercio estado, boolean cerradoManualmente, boolean abiertoAhora,
             boolean puedeCambiarCierre, String textoReapertura) {
         this.id = id;
@@ -42,6 +43,7 @@ public class ComercioEmpleadoResponseDTO {
         this.descripcion = descripcion;
         this.fotoPerfilUrl = fotoPerfilUrl;
         this.telefono = telefono;
+        this.emailContacto = emailContacto;
         this.tipoComercio = tipoComercio;
         this.aceptaDelivery = aceptaDelivery;
         this.aceptaRetiro = aceptaRetiro;

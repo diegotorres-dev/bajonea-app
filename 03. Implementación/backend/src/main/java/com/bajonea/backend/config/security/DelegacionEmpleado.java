@@ -4,7 +4,8 @@ import java.util.List;
 import org.springframework.http.HttpMethod;
 
 /**
- * Lista blanca de los endpoints de operación del Comercio que un Empleado puede usar (rol Empleado, tramo E2). Es
+ * Lista blanca de los endpoints de operación del Comercio que un Empleado puede usar (rol Empleado: las cuatro
+ * lecturas de E2 y las 17 escrituras de E3, bloque A2). Es
  * la única fuente: la usan {@link SecurityConfig}, que los abre a {@code DUENO} y {@code CLIENTE} (el Empleado es
  * un Cliente con una relación activa con el comercio) por delante de los matchers {@code hasRole("DUENO")}, y la
  * prueba de arranque que clasifica todos los mappings del módulo. Cada entrada es una ruta exacta con su método,
@@ -25,7 +26,24 @@ public final class DelegacionEmpleado {
             new RutaDelegable(HttpMethod.GET, "/api/v1/comercios/perfil"),
             new RutaDelegable(HttpMethod.GET, "/api/v1/productos"),
             new RutaDelegable(HttpMethod.GET, "/api/v1/pedidos/comercio"),
-            new RutaDelegable(HttpMethod.GET, "/api/v1/pedidos/comercio/resumen-hoy"));
+            new RutaDelegable(HttpMethod.GET, "/api/v1/pedidos/comercio/resumen-hoy"),
+            new RutaDelegable(HttpMethod.POST, "/api/v1/productos"),
+            new RutaDelegable(HttpMethod.PUT, "/api/v1/productos/{id}"),
+            new RutaDelegable(HttpMethod.PATCH, "/api/v1/productos/{id}/estado"),
+            new RutaDelegable(HttpMethod.POST, "/api/v1/productos/{id}/cloudinary/firma"),
+            new RutaDelegable(HttpMethod.POST, "/api/v1/productos/{id}/imagenes"),
+            new RutaDelegable(HttpMethod.DELETE, "/api/v1/productos/{id}/imagenes/{imagenId}"),
+            new RutaDelegable(HttpMethod.PATCH, "/api/v1/productos/{id}/imagenes/{imagenId}/orden"),
+            new RutaDelegable(HttpMethod.POST, "/api/v1/productos/{id}/imagenes/{imagenId}/recorte/firma"),
+            new RutaDelegable(HttpMethod.PATCH, "/api/v1/productos/{id}/imagenes/{imagenId}/url"),
+            new RutaDelegable(HttpMethod.PUT, "/api/v1/comercios/perfil/datos-operativos"),
+            new RutaDelegable(HttpMethod.PUT, "/api/v1/comercios/cerrar"),
+            new RutaDelegable(HttpMethod.PUT, "/api/v1/comercios/abrir"),
+            new RutaDelegable(HttpMethod.PUT, "/api/v1/pedidos/comercio/{id}/aceptar"),
+            new RutaDelegable(HttpMethod.PUT, "/api/v1/pedidos/comercio/{id}/rechazar"),
+            new RutaDelegable(HttpMethod.PUT, "/api/v1/pedidos/comercio/{id}/despachar"),
+            new RutaDelegable(HttpMethod.PUT, "/api/v1/pedidos/comercio/{id}/entregar"),
+            new RutaDelegable(HttpMethod.PUT, "/api/v1/pedidos/comercio/{id}/anular"));
 
     private DelegacionEmpleado() {
     }

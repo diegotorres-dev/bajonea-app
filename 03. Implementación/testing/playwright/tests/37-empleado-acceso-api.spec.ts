@@ -38,6 +38,7 @@ const CAMPOS_PERFIL_EMPLEADO = [
   'cerradoManualmente',
   'descripcion',
   'direccion',
+  'emailContacto',
   'estado',
   'fotoPerfilUrl',
   'horarios',
@@ -56,7 +57,6 @@ const CAMPOS_EXCLUIDOS = [
   'domicilioFiscal',
   'fechaInicioActividades',
   'representante',
-  'emailContacto',
   'motivoRechazo',
 ];
 const CAMPOS_PEDIDO_EMPLEADO = [
@@ -232,8 +232,7 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
       expect(texto).not.toContain(completo.body.data.cuit);
       expect(texto).not.toContain(completo.body.data.razonSocial);
       expect(texto).not.toContain(completo.body.data.domicilioFiscal);
-      expect(texto).not.toContain(completo.body.data.emailContacto);
-      expect(texto).not.toContain(dueno.email);
+      expect(texto.split(dueno.email).length - 1, 'el email aparece a lo sumo una vez, como emailContacto').toBeLessThanOrEqual(1);
       expect(texto).not.toContain(dueno.nombreUsuario);
       expect(texto.toLowerCase()).not.toContain('mercadopago');
     });
@@ -472,22 +471,12 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
   });
 
   test.describe('Las escrituras y lo exclusivo del Dueño siguen cerrados', () => {
-    test('un Empleado activo recibe 403 en escrituras de perfil, productos, pedidos y cierre', async ({ request }) => {
+    test('un Empleado activo recibe 403 en la edicion completa del perfil, la foto y su firma (las escrituras delegadas de E3 A2 se prueban en el spec 42)', async ({ request }) => {
       const cabeceras = conComercio(dueno.comercioId);
       const intentos: Array<[Metodo, string, unknown?]> = [
         ['PUT', '/comercios/perfil', { nombre: 'Hackeado' }],
         ['PUT', '/comercios/perfil/foto', { url: 'https://res.cloudinary.com/demo/image/upload/x.png' }],
         ['POST', '/comercios/perfil/foto/firma'],
-        ['PUT', '/comercios/cerrar'],
-        ['PUT', '/comercios/abrir'],
-        ['POST', '/productos', { nombre: 'X', precio: 1, categoriaId }],
-        ['PUT', '/productos/1', { nombre: 'X', precio: 1, categoriaId }],
-        ['PATCH', '/productos/1/estado', { estado: 'AGOTADO' }],
-        ['PUT', '/pedidos/comercio/1/aceptar'],
-        ['PUT', '/pedidos/comercio/1/rechazar', { motivo: 'SIN_STOCK' }],
-        ['PUT', '/pedidos/comercio/1/despachar'],
-        ['PUT', '/pedidos/comercio/1/entregar'],
-        ['PUT', '/pedidos/comercio/1/anular', { motivo: 'SIN_STOCK' }],
       ];
       for (const [metodo, ruta, cuerpo] of intentos) {
         const respuesta = await apiConHeaders(request, metodo, ruta, empleadoToken, cabeceras, cuerpo);
@@ -685,13 +674,18 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
     });
   });
 
-  test.describe('Notificaciones: fuera de este tramo', () => {
-    test('el Empleado sigue ignorando el header en las notificaciones, igual que cualquier Cliente', async ({ request }) => {
-      for (const cabeceras of [{}, conComercio(dueno.comercioId), { [HEADER]: 'abc' }, conComercio(otroDueno.comercioId)]) {
+  test.describe('Notificaciones con el header (E3 A2)', () => {
+    test('el Empleado sin header ve las suyas; con el header de su comercio 200; con uno ajeno 404 y con uno no numerico 400', async ({ request }) => {
+      for (const [cabeceras, esperado] of [
+        [{}, 200],
+        [conComercio(dueno.comercioId), 200],
+        [{ [HEADER]: 'abc' }, 400],
+        [conComercio(otroDueno.comercioId), 404],
+      ] as Array<[Record<string, string>, number]>) {
         const lista = await apiConHeaders(request, 'GET', '/notificaciones', empleadoToken, cabeceras);
         const contador = await apiConHeaders(request, 'GET', '/notificaciones/no-leidas/contador', empleadoToken, cabeceras);
-        expect(lista.status, JSON.stringify(cabeceras)).toBe(200);
-        expect(contador.status, JSON.stringify(cabeceras)).toBe(200);
+        expect(lista.status, JSON.stringify(cabeceras)).toBe(esperado);
+        expect(contador.status, JSON.stringify(cabeceras)).toBe(esperado);
       }
     });
   });

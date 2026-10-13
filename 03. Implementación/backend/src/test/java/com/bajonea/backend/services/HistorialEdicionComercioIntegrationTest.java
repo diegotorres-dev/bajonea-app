@@ -273,6 +273,7 @@ class HistorialEdicionComercioIntegrationTest {
     @Test
     void elRolDelActorQueSePasaEsElQueSeGuarda() {
         int clienteId = datos.registrarCliente();
+        datos.vincularEmpleado(clienteId, dueno.comercioId(), "ACTIVO", java.time.LocalDateTime.now().minusDays(1));
         ComercioActivo empleado = new ComercioActivo(dueno.comercioId(), dueno.id(), clienteId, RolActorComercio.EMPLEADO,
                 EstadoComercio.APROBADO);
 

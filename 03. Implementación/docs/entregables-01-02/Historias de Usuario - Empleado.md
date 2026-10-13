@@ -75,8 +75,10 @@ Criterios de aceptación adicionales:
   devuelve en el acto) y no aceptarlo; si está en preparación puedo despacharlo o anularlo;
   si está en camino no puedo hacer nada (lo confirma el cliente o el sistema); si está
   listo para retirar puedo entregarlo o cerrarlo como no retirado cuando pasó la espera
-  mínima de 60 minutos (sin devolución del pago). No toco productos ni el perfil y no abro
-  ni cierro el comercio.
+  mínima de 60 minutos (sin devolución del pago). Con el comercio suspendido no puedo
+  modificar productos, imágenes, descripción ni teléfono; con el comercio cerrado
+  temporalmente sí. En ninguno de los dos puedo abrir ni cerrar el comercio. Si el comercio
+  solo está cerrado a mano (sigue operativo) sí puedo aceptar los pedidos pendientes.
 - Si un pedido de retiro quedó listo y el cliente no vino, puedo cerrarlo como "no
   retirado" pasados 60 minutos desde que quedó listo. Puedo entregarlo en cualquier
   momento, sin esperar.

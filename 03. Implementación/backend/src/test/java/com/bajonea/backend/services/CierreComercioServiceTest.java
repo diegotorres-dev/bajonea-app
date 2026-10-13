@@ -70,7 +70,7 @@ class CierreComercioServiceTest {
             }
         };
         service = new CierreComercioService(comercioRepository, horarioRepository, historialRepository, disponibilidad,
-                usuarioRepository);
+                usuarioRepository, mock(ComercioActivoService.class));
         ReflectionTestUtils.setField(service, "entityManager", entityManager);
 
         comercio = Comercio.builder().id(COMERCIO_ID).estado(EstadoComercio.APTO_VENTA).build();

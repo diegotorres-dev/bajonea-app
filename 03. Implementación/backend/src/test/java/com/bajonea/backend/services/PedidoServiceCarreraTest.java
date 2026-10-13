@@ -62,6 +62,8 @@ class PedidoServiceCarreraTest {
     private NotificacionService notificacionService;
     private ReembolsoService reembolsoService;
     private EntityManager entityManager;
+    private ComercioRepository comercioRepository;
+    private ComercioActivoService comercioActivoService;
     private PedidoService pedidoService;
     private Comercio comercio;
     private Cliente cliente;
@@ -74,6 +76,8 @@ class PedidoServiceCarreraTest {
         notificacionService = mock(NotificacionService.class);
         reembolsoService = mock(ReembolsoService.class);
         entityManager = mock(EntityManager.class);
+        comercioRepository = mock(ComercioRepository.class);
+        comercioActivoService = mock(ComercioActivoService.class);
         PedidoTimeoutProperties timeouts = new PedidoTimeoutProperties();
         timeouts.setPagoMinutos(30);
         timeouts.setRespuestaComercioMinutos(30);
@@ -82,10 +86,10 @@ class PedidoServiceCarreraTest {
         timeouts.setRetiroSuspensionMinutos(90);
 
         pedidoService = new PedidoService(pedidoRepository, mock(DetallePedidoRepository.class), mock(CarritoRepository.class),
-                mock(ItemCarritoRepository.class), mock(ClienteRepository.class), mock(ComercioRepository.class),
+                mock(ItemCarritoRepository.class), mock(ClienteRepository.class), comercioRepository,
                 mock(DireccionRepository.class), historialRepository, usuarioRepository, notificacionService,
                 mock(CarritoService.class), mock(ComercioService.class), mock(ConfiguracionTarifaService.class), timeouts,
-                reembolsoService, mock(NotaCreditoService.class), mock(PlatformTransactionManager.class));
+                reembolsoService, mock(NotaCreditoService.class), mock(PlatformTransactionManager.class), comercioActivoService);
         ReflectionTestUtils.setField(pedidoService, "entityManager", entityManager);
 
         ParticipantesPedido participantes = mock(ParticipantesPedido.class);
@@ -124,6 +128,12 @@ class PedidoServiceCarreraTest {
         }).when(entityManager).refresh(pedido, LockModeType.PESSIMISTIC_WRITE);
     }
 
+    private void estadoDelComercio(int comercioId, EstadoComercio estado) {
+        com.bajonea.backend.repositories.ComercioRepository.EstadoYCierreComercio lectura = mock(com.bajonea.backend.repositories.ComercioRepository.EstadoYCierreComercio.class);
+        when(lectura.getEstado()).thenReturn(estado.name());
+        when(comercioRepository.leerEstadoConBloqueoCompartido(comercioId)).thenReturn(Optional.of(lectura));
+    }
+
     private ComercioActivo dueno() {
         return ComercioActivo.delDueno(40, 5, EstadoComercio.APTO_VENTA);
     }
@@ -141,13 +151,16 @@ class PedidoServiceCarreraTest {
         Pedido pedido = pedido(10, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO);
         ComercioActivo actor = new ComercioActivo(40, 5, 12, com.bajonea.backend.enums.RolActorComercio.EMPLEADO,
                 EstadoComercio.APTO_VENTA);
+        estadoDelComercio(40, EstadoComercio.APTO_VENTA);
 
         pedidoService.aceptarPedido(actor, 10);
 
-        InOrder orden = inOrder(usuarioRepository, entityManager);
+        InOrder orden = inOrder(usuarioRepository, comercioActivoService, comercioRepository, entityManager);
         orden.verify(usuarioRepository).leerIdConBloqueoCompartido(5);
         orden.verify(usuarioRepository).leerIdConBloqueoCompartido(9);
         orden.verify(usuarioRepository).leerIdConBloqueoCompartido(12);
+        orden.verify(comercioActivoService).exigirRelacionActiva(actor);
+        orden.verify(comercioRepository).leerEstadoConBloqueoCompartido(40);
         orden.verify(entityManager).refresh(pedido, LockModeType.PESSIMISTIC_WRITE);
         assertEquals(EstadoPedido.EN_PREPARACION, pedido.getEstado());
     }

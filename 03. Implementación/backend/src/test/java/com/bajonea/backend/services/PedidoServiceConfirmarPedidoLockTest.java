@@ -69,7 +69,7 @@ class PedidoServiceConfirmarPedidoLockTest {
                 mock(HistorialEstadoPedidoRepository.class), mock(UsuarioRepository.class),
                 mock(NotificacionService.class), mock(CarritoService.class), comercioService,
                 mock(ConfiguracionTarifaService.class), timeouts, mock(ReembolsoService.class),
-                mock(NotaCreditoService.class), mock(PlatformTransactionManager.class));
+                mock(NotaCreditoService.class), mock(PlatformTransactionManager.class), mock(ComercioActivoService.class));
         ReflectionTestUtils.setField(pedidoService, "entityManager", entityManager);
 
         comercioDelCarrito = mock(Comercio.class);

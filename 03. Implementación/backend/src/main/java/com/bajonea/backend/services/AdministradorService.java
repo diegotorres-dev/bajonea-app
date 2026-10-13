@@ -39,6 +39,9 @@ import com.bajonea.backend.repositories.HistorialEstadoComercioRepository;
 import com.bajonea.backend.repositories.HorarioRepository;
 import com.bajonea.backend.repositories.RedSocialRepository;
 import com.bajonea.backend.repositories.TagRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.PersistenceContext;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -60,6 +63,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional
 public class AdministradorService {
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private final ComercioRepository comercioRepository;
     private final DireccionRepository direccionRepository;
@@ -298,19 +304,27 @@ public class AdministradorService {
      * decisiones de otro alcance: a qué estado vuelve el comercio, qué pasa con los pedidos ya
      * cancelados). Dispara la lógica reactiva de {@code PedidoService} sobre los pedidos activos
      * de este comercio.
+     * <p>
+     * Orden de bloqueo: el usuario del Dueño (compartido) y después el comercio con {@code FOR UPDATE} <b>antes</b> de
+     * escribir nada. Sin eso, el {@code INSERT} del historial de estados tomaba un bloqueo compartido sobre el
+     * comercio (clave foránea) y el {@code UPDATE} diferido pedía después el exclusivo: una mejora de bloqueo que se
+     * interbloquea con cualquier otra operación que tome el comercio {@code FOR UPDATE} (por ejemplo, la edición de
+     * descripción y teléfono de un Empleado). Además el estado se valida sobre la fila ya bloqueada, así dos
+     * suspensiones simultáneas no pasan las dos la validación.
      */
     public void suspenderComercio(Integer comercioId, Integer administradorId, SuspensionComercioRequestDTO request) {
         Comercio comercio = comercioRepository.findById(comercioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
 
-        if (comercio.getEstado() != EstadoComercio.APROBADO && comercio.getEstado() != EstadoComercio.APTO_VENTA) {
-            throw new ConflictoDeNegocioException("Solo se puede suspender un comercio aprobado");
-        }
-
         Administrador administrador = administradorRepository.findById(administradorId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Administrador no encontrado"));
 
         comercioService.duenoBloqueadoConBloqueo(comercio.getDueno().getId());
+        entityManager.refresh(comercio, LockModeType.PESSIMISTIC_WRITE);
+
+        if (comercio.getEstado() != EstadoComercio.APROBADO && comercio.getEstado() != EstadoComercio.APTO_VENTA) {
+            throw new ConflictoDeNegocioException("Solo se puede suspender un comercio aprobado");
+        }
 
         EstadoComercio estadoOrigen = comercio.getEstado();
         comercio.setEstado(EstadoComercio.SUSPENDIDO);

@@ -34,6 +34,7 @@ import com.bajonea.backend.enums.MotivoTimeoutPedido;
 import com.bajonea.backend.enums.TipoEntidadNotificacion;
 import com.bajonea.backend.enums.TipoEntrega;
 import com.bajonea.backend.enums.TipoNotificacion;
+import com.bajonea.backend.exceptions.ComercioNoDisponibleException;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.exceptions.ValidacionException;
@@ -114,6 +115,7 @@ public class PedidoService {
     private final ReembolsoService reembolsoService;
     private final NotaCreditoService notaCreditoService;
     private final PlatformTransactionManager transactionManager;
+    private final ComercioActivoService comercioActivoService;
 
     private static final Logger log = LoggerFactory.getLogger(PedidoService.class);
 
@@ -287,6 +289,19 @@ public class PedidoService {
     }
 
     Pedido bloquearParaActualizar(Integer pedidoId, Integer actorUsuarioId) {
+        return bloquearParaActualizar(pedidoId, actorUsuarioId, null, false);
+    }
+
+    /**
+     * Igual que {@link #bloquearParaActualizar(Integer)} para una acción del comercio. Si el actor es un Empleado,
+     * después de los usuarios y antes del pedido revalida con bloqueo compartido que su relación con el comercio siga
+     * {@code ACTIVO} (si no, {@code 404} {@code COMERCIO_NO_DISPONIBLE}) y, solo al aceptar un pedido nuevo
+     * ({@code aceptaPedidoNuevo}), lee el estado del comercio con bloqueo compartido y responde {@code 409}
+     * {@code COMERCIO_SIN_OPERACION} si es {@code SUSPENDIDO} o {@code CERRADO_TEMPORALMENTE}. Rechazar, despachar,
+     * entregar y anular no miran el estado del comercio: las permite o no el estado del pedido. El Dueño no cambia:
+     * no toma relación ni comercio (orden de bloqueo: usuario, relación, comercio, pedido).
+     */
+    Pedido bloquearParaActualizar(Integer pedidoId, Integer actorUsuarioId, ComercioActivo comercioActivo, boolean aceptaPedidoNuevo) {
         ParticipantesPedido participantes = pedidoRepository.findParticipantesById(pedidoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado"));
         TreeSet<Integer> usuarios = new TreeSet<>();
@@ -298,6 +313,15 @@ public class PedidoService {
         for (Integer usuarioId : usuarios) {
             usuarioRepository.leerIdConBloqueoCompartido(usuarioId);
         }
+        if (comercioActivo != null && comercioActivo.esEmpleado()) {
+            comercioActivoService.exigirRelacionActiva(comercioActivo);
+            if (aceptaPedidoNuevo) {
+                EstadoComercio estadoComercio = comercioRepository.leerEstadoConBloqueoCompartido(comercioActivo.comercioId())
+                        .map(lectura -> EstadoComercio.valueOf(lectura.getEstado()))
+                        .orElseThrow(ComercioNoDisponibleException::new);
+                ComercioActivoService.validarComercioAceptaPedidosNuevos(estadoComercio);
+            }
+        }
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado"));
         entityManager.refresh(pedido, LockModeType.PESSIMISTIC_WRITE);
@@ -305,8 +329,16 @@ public class PedidoService {
     }
 
     private Pedido obtenerPedidoDelComercioParaActualizar(ComercioActivo comercioActivo, Integer pedidoId) {
+        return obtenerPedidoDelComercioParaActualizar(comercioActivo, pedidoId, false);
+    }
+
+    private Pedido obtenerPedidoDelComercioParaActualizar(ComercioActivo comercioActivo, Integer pedidoId, boolean aceptaPedidoNuevo) {
         obtenerPedidoDelComercio(comercioActivo.comercioId(), pedidoId);
-        return bloquearParaActualizar(pedidoId, comercioActivo.actorUsuarioId());
+        return bloquearParaActualizar(pedidoId, comercioActivo.actorUsuarioId(), comercioActivo, aceptaPedidoNuevo);
+    }
+
+    private static ActorPedido actorDePedido(ComercioActivo comercioActivo) {
+        return comercioActivo.esEmpleado() ? ActorPedido.EMPLEADO : ActorPedido.DUENO;
     }
 
     private Pedido obtenerPedidoDelClienteParaActualizar(Integer usuarioId, Integer pedidoId) {
@@ -319,7 +351,7 @@ public class PedidoService {
     }
 
     public PedidoResponseDTO aceptarPedido(ComercioActivo comercioActivo, Integer pedidoId) {
-        Pedido pedido = obtenerPedidoDelComercioParaActualizar(comercioActivo, pedidoId);
+        Pedido pedido = obtenerPedidoDelComercioParaActualizar(comercioActivo, pedidoId, true);
 
         if (pedido.getEstado() != EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO) {
             throw new ConflictoDeNegocioException("El pedido ya fue resuelto, no está en estado PENDIENTE_CONFIRMACION_COMERCIO");
@@ -327,7 +359,7 @@ public class PedidoService {
 
         pedido.setEstado(EstadoPedido.EN_PREPARACION);
         pedidoRepository.save(pedido);
-        registrarHistorial(pedido, ActorPedido.DUENO, comercioActivo.duenoId());
+        registrarHistorial(pedido, actorDePedido(comercioActivo), comercioActivo.actorUsuarioId());
 
         notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
                 "Tu pedido a " + pedido.getComercio().getNombre() + " fue aceptado y está en preparación.",
@@ -353,7 +385,7 @@ public class PedidoService {
         pedido.setMotivoRechazo(request.getMotivo());
         pedido.setComentarioRechazo(request.getComentario());
         pedidoRepository.save(pedido);
-        registrarHistorial(pedido, ActorPedido.DUENO, comercioActivo.duenoId());
+        registrarHistorial(pedido, actorDePedido(comercioActivo), comercioActivo.actorUsuarioId());
         boolean devolucionEnGestion = reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.RECHAZO_COMERCIO);
 
         String mensaje = "Tu pedido #" + pedido.getId() + " a " + pedido.getComercio().getNombre()
@@ -381,7 +413,7 @@ public class PedidoService {
                 : EstadoPedido.LISTO_PARA_RETIRAR;
         pedido.setEstado(destino);
         pedidoRepository.save(pedido);
-        registrarHistorial(pedido, ActorPedido.DUENO, comercioActivo.duenoId());
+        registrarHistorial(pedido, actorDePedido(comercioActivo), comercioActivo.actorUsuarioId());
 
         TipoNotificacion tipo = destino == EstadoPedido.EN_CAMINO
                 ? TipoNotificacion.PEDIDO_EN_CAMINO
@@ -417,7 +449,7 @@ public class PedidoService {
         }
 
         marcarEntregado(pedido, FuenteEntrega.COMERCIO);
-        registrarHistorial(pedido, ActorPedido.DUENO, comercioActivo.duenoId());
+        registrarHistorial(pedido, actorDePedido(comercioActivo), comercioActivo.actorUsuarioId());
 
         return aResponseDTO(pedido);
     }
@@ -462,7 +494,7 @@ public class PedidoService {
         pedido.setComentarioRechazo(comentario);
         pedido.setMotivo(motivoTexto);
         pedidoRepository.save(pedido);
-        registrarHistorial(pedido, ActorPedido.DUENO, comercioActivo.duenoId());
+        registrarHistorial(pedido, actorDePedido(comercioActivo), comercioActivo.actorUsuarioId());
         boolean devolucionEnGestion = reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.ANULACION_COMERCIO);
 
         String mensaje = "Tu pedido #" + pedido.getId() + " a " + pedido.getComercio().getNombre()

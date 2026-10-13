@@ -268,14 +268,23 @@ horario, también con el aviso de cuándo reabre.
   en la corrida siguiente) y solo la llamada a MercadoPago ocurre después de confirmar.
 - Las entregas de los pedidos a domicilio EN_CAMINO no las confirma el comercio: las confirma
   el Cliente o el sistema (aviso a los 75 minutos y autoconfirmación a los 90).
-- Con el comercio Suspendido o Cerrado Temporalmente, lo que un Empleado puede hacer depende
-  del estado de cada pedido: PENDIENTE_CONFIRMACION_COMERCIO solo se puede rechazar (con el
-  reembolso inmediato), no aceptar; EN_PREPARACION se puede despachar o anular; EN_CAMINO no se
-  puede tocar (lo resuelve el Cliente o el sistema); LISTO_PARA_RETIRAR se puede entregar o
-  cerrar como NO_RETIRADO (con la espera de 60 minutos). No puede tocar productos ni el
-  perfil, ni abrir o cerrar. El Dueño queda sin cambios por ahora; la diferencia se resuelve
-  en el tramo de rediseño de la suspensión. (Esta regla reemplaza a la del bloque A0b, que
-  hacía responder 409 al rechazo; se implementa en el bloque A2.)
+- Con el comercio Suspendido o Cerrado Temporalmente, lo que un Empleado puede hacer con los
+  pedidos depende del estado de cada uno: PENDIENTE_CONFIRMACION_COMERCIO solo se puede
+  rechazar (con el reembolso inmediato), no aceptar (409, código COMERCIO_SIN_OPERACION);
+  EN_PREPARACION se puede despachar o anular; EN_CAMINO no se puede tocar (lo resuelve el
+  Cliente o el sistema); LISTO_PARA_RETIRAR se puede entregar o cerrar como NO_RETIRADO (con
+  la espera de 60 minutos). Sobre el catálogo y el perfil: con el comercio Suspendido el
+  Empleado no puede modificar productos, imágenes, descripción ni teléfono (409, código
+  COMERCIO_SUSPENDIDO); con el comercio Cerrado Temporalmente sí puede. En los dos estados no
+  puede abrir ni cerrar el comercio (409, código COMERCIO_NO_OPERATIVO, igual que el Dueño).
+  Con un comercio operativo cerrado a mano, el Empleado sí acepta pedidos pendientes. El Dueño
+  queda sin cambios por ahora (puede, por ejemplo, editar productos y perfil con el comercio
+  Suspendido); la diferencia se resuelve en el tramo de rediseño de la suspensión. (Esta
+  regla reemplaza a la del bloque A0b, que hacía responder 409 al rechazo; implementada en el
+  bloque A2.)
+- Cerrar y abrir el comercio a mano solo se puede dentro de un horario de atención y con el
+  comercio operativo; si no, responde 409 con el código COMERCIO_NO_OPERATIVO o
+  FUERA_DE_HORARIO. Un Empleado puede abrir un cierre manual aunque lo haya hecho el Dueño.
 - Cuando dos personas actúan a la vez sobre el mismo pedido (por ejemplo, aceptar y rechazar, o anular y despachar, o el Cliente cancelando mientras el comercio acepta), el sistema las atiende de a una: gana la primera, la segunda recibe un aviso de que el pedido ya fue resuelto, y solo la acción ganadora deja historial, aviso al cliente y reembolso. Lo mismo vale para los procesos automáticos (expiración, autoconfirmación) cuando coinciden con una acción de una persona.
 - El Dueño o un Empleado autorizado ve únicamente los pedidos que llegaron al comercio con el pago aprobado (los que pasaron por PENDIENTE_CONFIRMACION_COMERCIO). Un pedido que nunca llegó pagado no aparece en la lista, en el resumen ni en el detalle de pago, y sus acciones responden como recurso inexistente.
 - La fecha de un pedido para el comercio es la de la confirmación del pago, no la de su creación, y es la que define qué pedidos cuentan como "de hoy".

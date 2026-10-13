@@ -202,12 +202,12 @@ test.describe('Cierre manual del comercio (API), tramo C1', () => {
       expect(filas(dueno.comercioId)).toBe(0);
     });
 
-    test('un Cliente recibe 403 en cerrar y abrir', async ({ request }) => {
+    test('un Cliente sin relacion con el comercio recibe 404 en cerrar y abrir (E3 A2: ya no es 403, la ruta es delegable al Empleado)', async ({ request }) => {
       const { dueno } = await duenoAbierto(request);
       const clienteToken = await clienteLogueado(request);
 
-      expect((await cerrar(request, clienteToken, cabecera(dueno.comercioId))).status).toBe(403);
-      expect((await abrir(request, clienteToken, cabecera(dueno.comercioId))).status).toBe(403);
+      expect((await cerrar(request, clienteToken, cabecera(dueno.comercioId))).status).toBe(404);
+      expect((await abrir(request, clienteToken, cabecera(dueno.comercioId))).status).toBe(404);
       expect(bandera(dueno.comercioId)).toBe(0);
     });
 

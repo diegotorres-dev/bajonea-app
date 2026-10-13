@@ -180,8 +180,10 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   invitación Pendiente, Vencida o con el código bloqueado; una aceptada, cancelada o
   reemplazada ya no. Una invitación invalidada por cinco intentos fallidos se muestra como
   "Código bloqueado". En el tramo E1 esta vista
-  ("Ver equipo") no tiene pestaña Actividad (la barra de pestañas está pensada para sumarla):
-  la tabla de actividad (`V32`) se aplica en el tramo E3.
+  ("Ver equipo") no tiene pestaña Actividad en pantalla (la barra de pestañas está pensada para
+  sumarla): el servidor ya registra las ediciones del catálogo y el perfil y ya ofrece la lista
+  de actividad (`GET /api/v1/comercios/equipo/actividad`, tramo E3, bloque A1); la pestaña
+  llega en la entrega de pantallas de E3.
 - El Dueño debe poder desactivar la relación de un Empleado con un comercio puntual en
   cualquier momento (queda Inactiva con motivo `BAJA_DUENO`), sin afectar las relaciones
   de ese Empleado con otros comercios, propios o de otros Dueños. El Empleado desactivado
@@ -191,8 +193,13 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
 - El Dueño debe poder ver el historial del equipo de cada comercio (invitación,
   aceptación, invitación cancelada, baja, renuncia y reactivación, con quién lo hizo y
   cuándo) y la actividad del comercio (quién hizo qué: crear, editar, eliminar, cambiar
-  estado, abrir y cerrar). La actividad la ve el Dueño completa; el Empleado no la ve y el
-  Administrador la ve en solo lectura.
+  estado, abrir y cerrar). La actividad es una sola lista, de la más nueva a la más vieja,
+  que junta las ediciones del catálogo y el perfil (productos, imágenes, datos del comercio y
+  redes sociales), las acciones de las personas del comercio sobre los pedidos (aceptar,
+  rechazar, despachar, entregar y anular) y los cierres y reaperturas del comercio; cada línea
+  trae el nombre y el rol (Dueño, Empleado o Sistema) de quien actuó, qué hizo y cuándo, y se
+  pide de a 30 líneas con "ver más". La actividad la ve el Dueño completa; el Empleado no la
+  ve y el Administrador la ve en solo lectura.
 - El Dueño recibe una notificación cuando el invitado acepta la invitación (T33) y cuando
   un Empleado renuncia (T34).
 - El Dueño ve el nombre de quien hizo cada cambio de estado de un pedido y cada cierre o
@@ -216,6 +223,10 @@ Las siguientes acciones no son delegables a un Empleado, aunque este tenga acces
 Activo al comercio:
 
 - Editar los datos fiscales y de persona jurídica.
+- Cambiar el nombre, la foto, la dirección y el tipo de comercio, el email de contacto y las
+  modalidades de entrega (la edición completa del perfil). De todo el perfil, el Empleado solo
+  edita la descripción y el teléfono, por una ruta aparte que rechaza cualquier otro campo; el
+  Dueño también puede usarla.
 - Vincular o desvincular la cuenta de MercadoPago.
 - Invitar, reenviar y cancelar invitaciones, desactivar y reactivar Empleados, y ver el
   historial del equipo y la actividad del comercio.
@@ -225,6 +236,10 @@ Activo al comercio:
 - La futura documentación de habilitación del comercio.
 - Dar de baja o cerrar definitivamente un comercio puntual.
 - Crear comercios nuevos bajo su propio perfil de Dueño.
+
+Con el comercio Suspendido o Cerrado Temporalmente, hoy el Dueño no tiene las restricciones
+que sí tiene el Empleado (por ejemplo, puede editar productos y perfil con el comercio
+Suspendido): es un hueco conocido que se resuelve en el tramo de rediseño de la suspensión.
 
 Todo lo que no esté explícitamente clasificado como delegable (ver Requisitos Funcionales
 — Empleado, sección Permisos Delegados) queda reservado al Dueño por defecto.

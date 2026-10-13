@@ -34,6 +34,9 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  * <li>{@code DELEGABLE}: lo puede usar un Empleado. Tiene que figurar en {@link DelegacionEmpleado} y declarar
  * {@link ComercioActivo}; el Administrador recibe {@code 403}.</li>
  * <li>{@code EXCLUSIVO}: solo el Dueño. Un Cliente (y por lo tanto un Empleado) recibe {@code 403}.</li>
+ * <li>{@code COMPARTIDO}: ruta que usan varios roles y que cambia de comportamiento según el rol y el header
+ * {@code X-Comercio-Id} (las notificaciones: el Cliente sin header ve las suyas, con header se trata como Empleado
+ * de ese comercio, el Dueño exige el header y el Administrador lo ignora).</li>
  * <li>{@code PROPIO}: actúa sobre el usuario autenticado, no sobre un comercio.</li>
  * <li>{@code PUBLICO}: público por diseño (callback de OAuth que invoca el navegador, sin JWT).</li>
  * </ul>
@@ -47,7 +50,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 class ClasificacionRutasComercioTest {
 
     private enum Categoria {
-        DELEGABLE, EXCLUSIVO, PROPIO, PUBLICO
+        DELEGABLE, EXCLUSIVO, COMPARTIDO, PROPIO, PUBLICO
     }
 
     private static final List<String> PREFIJOS = List.of("/api/v1/comercios", "/api/v1/productos", "/api/v1/pedidos/comercio",
@@ -60,6 +63,23 @@ class ClasificacionRutasComercioTest {
         delegable("GET /api/v1/productos");
         delegable("GET /api/v1/pedidos/comercio");
         delegable("GET /api/v1/pedidos/comercio/resumen-hoy");
+        delegable("POST /api/v1/productos");
+        delegable("PUT /api/v1/productos/{id}");
+        delegable("PATCH /api/v1/productos/{id}/estado");
+        delegable("POST /api/v1/productos/{id}/cloudinary/firma");
+        delegable("POST /api/v1/productos/{id}/imagenes");
+        delegable("DELETE /api/v1/productos/{id}/imagenes/{imagenId}");
+        delegable("PATCH /api/v1/productos/{id}/imagenes/{imagenId}/orden");
+        delegable("POST /api/v1/productos/{id}/imagenes/{imagenId}/recorte/firma");
+        delegable("PATCH /api/v1/productos/{id}/imagenes/{imagenId}/url");
+        delegable("PUT /api/v1/comercios/perfil/datos-operativos");
+        delegable("PUT /api/v1/comercios/cerrar");
+        delegable("PUT /api/v1/comercios/abrir");
+        delegable("PUT /api/v1/pedidos/comercio/{id}/aceptar");
+        delegable("PUT /api/v1/pedidos/comercio/{id}/rechazar");
+        delegable("PUT /api/v1/pedidos/comercio/{id}/despachar");
+        delegable("PUT /api/v1/pedidos/comercio/{id}/entregar");
+        delegable("PUT /api/v1/pedidos/comercio/{id}/anular");
 
         exclusivo("POST /api/v1/comercios");
         exclusivo("GET /api/v1/comercios/mis-comercios");
@@ -71,8 +91,6 @@ class ClasificacionRutasComercioTest {
         exclusivo("PUT /api/v1/comercios/perfil");
         exclusivo("POST /api/v1/comercios/perfil/foto/firma");
         exclusivo("PUT /api/v1/comercios/perfil/foto");
-        exclusivo("PUT /api/v1/comercios/cerrar");
-        exclusivo("PUT /api/v1/comercios/abrir");
         exclusivo("GET /api/v1/comercios/equipo");
         exclusivo("GET /api/v1/comercios/equipo/actividad");
         exclusivo("POST /api/v1/comercios/equipo/invitaciones");
@@ -83,22 +101,8 @@ class ClasificacionRutasComercioTest {
         exclusivo("PUT /api/v1/comercios/redes-sociales/{id}");
         exclusivo("DELETE /api/v1/comercios/redes-sociales/{id}");
 
-        exclusivo("POST /api/v1/productos");
-        exclusivo("PUT /api/v1/productos/{id}");
-        exclusivo("PATCH /api/v1/productos/{id}/estado");
-        exclusivo("POST /api/v1/productos/{id}/cloudinary/firma");
-        exclusivo("POST /api/v1/productos/{id}/imagenes");
-        exclusivo("DELETE /api/v1/productos/{id}/imagenes/{imagenId}");
-        exclusivo("PATCH /api/v1/productos/{id}/imagenes/{imagenId}/orden");
-        exclusivo("POST /api/v1/productos/{id}/imagenes/{imagenId}/recorte/firma");
-        exclusivo("PATCH /api/v1/productos/{id}/imagenes/{imagenId}/url");
 
         exclusivo("GET /api/v1/pedidos/comercio/{id}/pago");
-        exclusivo("PUT /api/v1/pedidos/comercio/{id}/aceptar");
-        exclusivo("PUT /api/v1/pedidos/comercio/{id}/rechazar");
-        exclusivo("PUT /api/v1/pedidos/comercio/{id}/despachar");
-        exclusivo("PUT /api/v1/pedidos/comercio/{id}/entregar");
-        exclusivo("PUT /api/v1/pedidos/comercio/{id}/anular");
 
         exclusivo("GET /api/v1/oauth/mercadopago/iniciar");
         exclusivo("GET /api/v1/oauth/mercadopago/desvinculacion/previa");
@@ -106,9 +110,9 @@ class ClasificacionRutasComercioTest {
         exclusivo("GET /api/v1/oauth/mercadopago/cuenta");
         CLASIFICACION.put("GET /api/v1/oauth/mercadopago/callback", Categoria.PUBLICO);
 
-        CLASIFICACION.put("GET /api/v1/notificaciones", Categoria.PROPIO);
+        CLASIFICACION.put("GET /api/v1/notificaciones", Categoria.COMPARTIDO);
         CLASIFICACION.put("PUT /api/v1/notificaciones/{id}/leida", Categoria.PROPIO);
-        CLASIFICACION.put("GET /api/v1/notificaciones/no-leidas/contador", Categoria.PROPIO);
+        CLASIFICACION.put("GET /api/v1/notificaciones/no-leidas/contador", Categoria.COMPARTIDO);
         exclusivo("PUT /api/v1/notificaciones/comercio/{comercioId}/leidas");
 
         CLASIFICACION.put("GET /api/v1/empleados/mis-comercios", Categoria.PROPIO);
@@ -154,7 +158,7 @@ class ClasificacionRutasComercioTest {
         Set<String> sinClasificar = new TreeSet<>(mappingsReales().keySet());
         sinClasificar.removeAll(CLASIFICACION.keySet());
 
-        assertTrue(sinClasificar.isEmpty(), "Mappings sin clasificar (DELEGABLE, EXCLUSIVO, PROPIO o PUBLICO): " + sinClasificar);
+        assertTrue(sinClasificar.isEmpty(), "Mappings sin clasificar (DELEGABLE, EXCLUSIVO, COMPARTIDO, PROPIO o PUBLICO): " + sinClasificar);
     }
 
     @Test
@@ -199,6 +203,38 @@ class ClasificacionRutasComercioTest {
     }
 
     @Test
+    void todoDelegableDeEscrituraDeclaraComercioActivoComoPrimerParametro() {
+        Map<String, HandlerMethod> reales = mappingsReales();
+        List<String> mal = new ArrayList<>();
+        for (DelegacionEmpleado.RutaDelegable ruta : DelegacionEmpleado.RUTAS) {
+            if (HttpMethod.GET.equals(ruta.metodo())) {
+                continue;
+            }
+            HandlerMethod handler = reales.get(ruta.clave());
+            boolean primero = handler != null && handler.getMethodParameters().length > 0
+                    && ComercioActivo.class.equals(handler.getMethodParameters()[0].getParameterType());
+            if (!primero) {
+                mal.add(ruta.clave());
+            }
+        }
+
+        assertTrue(mal.isEmpty(), "Escrituras delegables cuyo primer parámetro no es ComercioActivo (el resolver tiene que correr antes de leer el cuerpo): " + mal);
+    }
+
+    @Test
+    void lasRutasExclusivasDelDuenoNoEstanEnLaListaBlanca() {
+        Set<String> listaBlanca = new TreeSet<>();
+        DelegacionEmpleado.RUTAS.forEach(ruta -> listaBlanca.add(ruta.clave()));
+        for (String clave : List.of("PUT /api/v1/comercios/perfil", "PUT /api/v1/comercios/perfil/foto",
+                "POST /api/v1/comercios/perfil/foto/firma", "GET /api/v1/comercios/equipo", "GET /api/v1/comercios/redes-sociales",
+                "GET /api/v1/pedidos/comercio/{id}/pago")) {
+            assertEquals(Categoria.EXCLUSIVO, CLASIFICACION.get(clave), clave);
+            assertTrue(!listaBlanca.contains(clave), clave + " no puede estar en la lista blanca");
+        }
+        assertEquals(21, listaBlanca.size());
+    }
+
+    @Test
     void ningunNoDelegableDeclaraComercioActivoSinEstarClasificadoExclusivo() {
         Map<String, HandlerMethod> reales = mappingsReales();
         List<String> incoherentes = new ArrayList<>();
@@ -211,7 +247,7 @@ class ClasificacionRutasComercioTest {
             }
         });
 
-        assertTrue(incoherentes.isEmpty(), "Rutas con ComercioActivo clasificadas como propias o públicas: " + incoherentes);
+        assertTrue(incoherentes.isEmpty(), "Rutas con ComercioActivo clasificadas como compartidas, propias o públicas: " + incoherentes);
     }
 
     @Test
@@ -231,6 +267,14 @@ class ClasificacionRutasComercioTest {
                     verificar(fallos, entrada.getKey(), RolUsuario.DUENO, metodo, ruta, 400);
                     verificar(fallos, entrada.getKey(), RolUsuario.ADMINISTRADOR, metodo, ruta, 403);
                 }
+                case COMPARTIDO -> {
+                    verificar(fallos, entrada.getKey(), RolUsuario.CLIENTE, metodo, ruta, 200);
+                    verificar(fallos, entrada.getKey(), RolUsuario.ADMINISTRADOR, metodo, ruta, 200);
+                    verificar(fallos, entrada.getKey(), RolUsuario.DUENO, metodo, ruta, 400);
+                    verificarConHeader(fallos, entrada.getKey(), RolUsuario.CLIENTE, metodo, ruta, "99999999", 404);
+                    verificarConHeader(fallos, entrada.getKey(), RolUsuario.CLIENTE, metodo, ruta, "abc", 400);
+                    verificarConHeader(fallos, entrada.getKey(), RolUsuario.ADMINISTRADOR, metodo, ruta, "abc", 200);
+                }
                 case PROPIO -> {
                     if (ruta.startsWith("/api/v1/empleados")) {
                         verificar(fallos, entrada.getKey(), RolUsuario.CLIENTE, metodo, ruta, 200);
@@ -248,13 +292,21 @@ class ClasificacionRutasComercioTest {
 
     private void verificar(List<String> fallos, String clave, RolUsuario rol, HttpMethod metodo, String ruta, int esperado)
             throws Exception {
+        verificarConHeader(fallos, clave, rol, metodo, ruta, null, esperado);
+    }
+
+    private void verificarConHeader(List<String> fallos, String clave, RolUsuario rol, HttpMethod metodo, String ruta,
+            String comercioId, int esperado) throws Exception {
         AuthenticatedUser principal = new AuthenticatedUser(1, 1, rol);
         UsernamePasswordAuthenticationToken autenticacion = new UsernamePasswordAuthenticationToken(principal, null,
                 List.of(new SimpleGrantedAuthority("ROLE_" + rol.name())));
-        int real = mockMvc.perform(request(metodo, ruta).with(authentication(autenticacion)))
-                .andReturn().getResponse().getStatus();
+        var solicitud = request(metodo, ruta).with(authentication(autenticacion));
+        if (comercioId != null) {
+            solicitud = solicitud.header("X-Comercio-Id", comercioId);
+        }
+        int real = mockMvc.perform(solicitud).andReturn().getResponse().getStatus();
         if (real != esperado) {
-            fallos.add(clave + " como " + rol + ": esperado " + esperado + ", real " + real);
+            fallos.add(clave + " como " + rol + (comercioId == null ? "" : " con header " + comercioId) + ": esperado " + esperado + ", real " + real);
         }
         assertNotEquals(401, real, clave + " como " + rol + " no debería pedir autenticación");
     }

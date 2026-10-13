@@ -70,10 +70,18 @@ comercio, para que quede claro qué decisiones quedan reservadas
 exclusivamente al Dueño. Todo lo que no está explícitamente permitido me queda bloqueado.
 
 Criterios de aceptación adicionales:
-- Si el comercio está suspendido o cerrado temporalmente lo veo con un aviso. Puedo
-  despachar, entregar (también un pedido listo para retirar) y anular los pedidos ya
-  aceptados; no acepto pedidos nuevos, no toco productos ni el perfil y no abro ni cierro el
-  comercio. Las entregas en camino las confirma el cliente o el sistema, no el comercio.
+- Si el comercio está suspendido o cerrado temporalmente lo veo con un aviso. Según el
+  estado de cada pedido: si está pendiente de confirmación solo puedo rechazarlo (el pago se
+  devuelve en el acto) y no aceptarlo; si está en preparación puedo despacharlo o anularlo;
+  si está en camino no puedo hacer nada (lo confirma el cliente o el sistema); si está
+  listo para retirar puedo entregarlo o cerrarlo como no retirado cuando pasó la espera
+  mínima de 60 minutos (sin devolución del pago). Con el comercio suspendido no puedo
+  modificar productos, imágenes, descripción ni teléfono; con el comercio cerrado
+  temporalmente sí. En ninguno de los dos puedo abrir ni cerrar el comercio. Si el comercio
+  solo está cerrado a mano (sigue operativo) sí puedo aceptar los pedidos pendientes.
+- Si un pedido de retiro quedó listo y el cliente no vino, puedo cerrarlo como "no
+  retirado" pasados 60 minutos desde que quedó listo. Puedo entregarlo en cualquier
+  momento, sin esperar.
 - Puedo pedir en mi propio comercio como Cliente, pero no gestionar mis propios pedidos:
   los veo con la etiqueta "Tu pedido", sin botones.
 

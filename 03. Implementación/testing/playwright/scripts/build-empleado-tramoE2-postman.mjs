@@ -254,6 +254,7 @@ const CAMPOS_PERFIL = [
   'cerradoManualmente',
   'descripcion',
   'direccion',
+  'emailContacto',
   'estado',
   'fotoPerfilUrl',
   'horarios',
@@ -272,7 +273,6 @@ const CAMPOS_EXCLUIDOS = [
   'domicilioFiscal',
   'fechaInicioActividades',
   'representante',
-  'emailContacto',
   'motivoRechazo',
 ];
 const CAMPOS_MIS_COMERCIOS = [
@@ -306,7 +306,7 @@ agregar(
     mensajeEs('Perfil obtenido correctamente'),
     `pm.test('Solo los campos de la lista blanca', () => pm.expect(Object.keys(pm.response.json().data).sort()).to.eql(${JSON.stringify(CAMPOS_PERFIL)}));`,
     `pm.test('Ninguno de los campos excluidos', () => ${JSON.stringify(CAMPOS_EXCLUIDOS)}.forEach((c) => pm.expect(pm.response.json().data).to.not.have.property(c)));`,
-    "pm.test('Sin el CUIT, la razón social ni el email del Dueño', () => { const t = pm.response.text(); pm.expect(t).to.not.include(pm.environment.get('e2_cuit_a')); pm.expect(t).to.not.include(pm.environment.get('e2_razon_a')); pm.expect(t).to.not.include(pm.environment.get('e2_d1_email')); });",
+    "pm.test('Sin el CUIT ni la razón social, y el email aparece a lo sumo una vez, como emailContacto', () => { const t = pm.response.text(); pm.expect(t).to.not.include(pm.environment.get('e2_cuit_a')); pm.expect(t).to.not.include(pm.environment.get('e2_razon_a')); pm.expect(t.split(pm.environment.get('e2_d1_email')).length - 1).to.be.at.most(1); });",
     "pm.test('Sin nada de Mercado Pago', () => pm.expect(pm.response.text().toLowerCase()).to.not.include('mercadopago'));",
     "pm.test('Tipo de comercio, modalidades, puedeCambiarCierre y textoReapertura iguales a los del Dueño', () => { const e = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_perfil_dueno_ref')); ['tipoComercio', 'aceptaDelivery', 'aceptaRetiro', 'puedeCambiarCierre', 'textoReapertura'].forEach((c) => pm.expect(e[c]).to.eql(d[c])); });",
     "pm.test('El nombre es el del comercio', () => pm.expect(pm.response.json().data.nombre).to.eql(pm.environment.get('e2_nombre_a')));",
@@ -362,14 +362,6 @@ const escrituras = [
   ['PUT', '/comercios/perfil', { nombre: 'Hackeado' }],
   ['PUT', '/comercios/perfil/foto', { url: 'https://res.cloudinary.com/demo/image/upload/x.png' }],
   ['POST', '/comercios/perfil/foto/firma'],
-  ['PUT', '/comercios/cerrar'],
-  ['PUT', '/comercios/abrir'],
-  ['POST', '/productos', { nombre: 'Intruso', precio: 1, categoriaId: 1 }],
-  ['PUT', '/productos/1', { nombre: 'Intruso', precio: 1, categoriaId: 1 }],
-  ['PATCH', '/productos/1/estado', { estado: 'AGOTADO' }],
-  ['PUT', '/pedidos/comercio/1/aceptar'],
-  ['PUT', '/pedidos/comercio/1/despachar'],
-  ['PUT', '/pedidos/comercio/1/entregar'],
   ['GET', '/comercios/equipo'],
   ['POST', '/comercios/equipo/invitaciones', { email: 'intruso.e2@bajonea.test' }],
   ['GET', '/comercios/redes-sociales'],
@@ -552,8 +544,8 @@ agregar(
     status(200),
     "pm.test('Ninguna fila del Dueño tiene fechaAlta', () => pm.response.json().data.forEach((c) => pm.expect(c).to.not.have.property('fechaAlta')));",
   ]),
-  get('Notificaciones: el Empleado sigue ignorando el header (lista)', '/notificaciones', TOKEN_EMP, COM_AJENO, [status(200)]),
-  get('Notificaciones: el Empleado sigue ignorando el header (contador)', '/notificaciones/no-leidas/contador', TOKEN_EMP, 'abc', [status(200)]),
+  get('Notificaciones: el Empleado con el header de otro comercio recibe el mismo 404 (lista)', '/notificaciones', TOKEN_EMP, COM_AJENO, [status(404)]),
+  get('Notificaciones: el Empleado con un header no numerico recibe 400 (contador)', '/notificaciones/no-leidas/contador', TOKEN_EMP, 'abc', [status(400)]),
 );
 
 const SCRIPT_PRE_REQUEST_SIN_HEADER_AUTOMATICO = [

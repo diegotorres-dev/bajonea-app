@@ -244,11 +244,12 @@ public class TestSupportService {
     /**
      * Atajo de entorno de test: cambia el estado de la relación de un empleado con un comercio (el endpoint real
      * para desactivar y reactivar llega en el tramo E4). Al pasar a {@code INACTIVO} fija {@code fecha_baja}; al
-     * volver a {@code ACTIVO} la limpia. No toca historial ni avisos.
+     * volver a {@code ACTIVO} la limpia. Toma la relación con {@code FOR UPDATE}, como lo hará la desactivación real de
+     * E4, para que las pruebas de concurrencia representen el caso real. No toca historial ni avisos.
      */
     @Transactional
     public void cambiarEstadoRelacionEmpleado(Integer comercioId, Integer empleadoId, EstadoEmpleadoComercio estado) {
-        EmpleadoComercio relacion = empleadoComercioRepository.findByEmpleadoIdAndComercioId(empleadoId, comercioId)
+        EmpleadoComercio relacion = empleadoComercioRepository.findByEmpleadoIdAndComercioIdConBloqueo(empleadoId, comercioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Relación de empleado no encontrada"));
         relacion.setEstado(estado);
         relacion.setFechaBaja(estado == EstadoEmpleadoComercio.INACTIVO ? LocalDateTime.now(clock) : null);

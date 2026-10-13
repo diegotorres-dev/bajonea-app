@@ -223,6 +223,10 @@ Las siguientes acciones no son delegables a un Empleado, aunque este tenga acces
 Activo al comercio:
 
 - Editar los datos fiscales y de persona jurídica.
+- Cambiar el nombre, la foto, la dirección y el tipo de comercio, el email de contacto y las
+  modalidades de entrega (la edición completa del perfil). De todo el perfil, el Empleado solo
+  edita la descripción y el teléfono, por una ruta aparte que rechaza cualquier otro campo; el
+  Dueño también puede usarla.
 - Vincular o desvincular la cuenta de MercadoPago.
 - Invitar, reenviar y cancelar invitaciones, desactivar y reactivar Empleados, y ver el
   historial del equipo y la actividad del comercio.
@@ -232,6 +236,10 @@ Activo al comercio:
 - La futura documentación de habilitación del comercio.
 - Dar de baja o cerrar definitivamente un comercio puntual.
 - Crear comercios nuevos bajo su propio perfil de Dueño.
+
+Con el comercio Suspendido o Cerrado Temporalmente, hoy el Dueño no tiene las restricciones
+que sí tiene el Empleado (por ejemplo, puede editar productos y perfil con el comercio
+Suspendido): es un hueco conocido que se resuelve en el tramo de rediseño de la suspensión.
 
 Todo lo que no esté explícitamente clasificado como delegable (ver Requisitos Funcionales
 — Empleado, sección Permisos Delegados) queda reservado al Dueño por defecto.

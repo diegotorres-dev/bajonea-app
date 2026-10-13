@@ -7,6 +7,7 @@ import com.bajonea.backend.dto.request.PedidoRequestDTO;
 import com.bajonea.backend.dto.request.RechazoPedidoRequestDTO;
 import com.bajonea.backend.dto.response.ApiResponse;
 import com.bajonea.backend.dto.response.PagoResponseDTO;
+import com.bajonea.backend.dto.response.PedidoEmpleadoResponseDTO;
 import com.bajonea.backend.dto.response.PedidoResponseDTO;
 import com.bajonea.backend.services.MercadoPagoPagoService;
 import com.bajonea.backend.services.PedidoService;
@@ -114,38 +115,44 @@ public class PedidoController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Resumen obtenido correctamente", response));
     }
 
+    /**
+     * Las cinco acciones del comercio sobre un pedido son delegables al Empleado (ver {@code DelegacionEmpleado}):
+     * el Dueño recibe el pedido completo y el Empleado el reducido, sin cargos de servicio ni datos de Mercado Pago.
+     * {@code ComercioActivo} va primero para que el resolver corra antes de leer y validar el cuerpo.
+     */
     @PutMapping("/comercio/{id}/aceptar")
-    public ResponseEntity<ApiResponse<PedidoResponseDTO>> aceptarPedido(@PathVariable Integer id,
-            ComercioActivo comercio) {
+    public ResponseEntity<ApiResponse<?>> aceptarPedido(ComercioActivo comercio, @PathVariable Integer id) {
         PedidoResponseDTO response = pedidoService.aceptarPedido(comercio, id);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pedido aceptado correctamente", response));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pedido aceptado correctamente", paraActor(comercio, response)));
     }
 
     @PutMapping("/comercio/{id}/rechazar")
-    public ResponseEntity<ApiResponse<PedidoResponseDTO>> rechazarPedido(@PathVariable Integer id,
-            @Valid @RequestBody RechazoPedidoRequestDTO request, ComercioActivo comercio) {
+    public ResponseEntity<ApiResponse<?>> rechazarPedido(ComercioActivo comercio, @PathVariable Integer id,
+            @Valid @RequestBody RechazoPedidoRequestDTO request) {
         PedidoResponseDTO response = pedidoService.rechazarPedido(comercio, id, request);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pedido rechazado correctamente", response));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pedido rechazado correctamente", paraActor(comercio, response)));
     }
 
     @PutMapping("/comercio/{id}/despachar")
-    public ResponseEntity<ApiResponse<PedidoResponseDTO>> avanzarAEntregaEnCurso(@PathVariable Integer id,
-            ComercioActivo comercio) {
+    public ResponseEntity<ApiResponse<?>> avanzarAEntregaEnCurso(ComercioActivo comercio, @PathVariable Integer id) {
         PedidoResponseDTO response = pedidoService.avanzarAEntregaEnCurso(comercio, id);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pedido despachado correctamente", response));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pedido despachado correctamente", paraActor(comercio, response)));
     }
 
     @PutMapping("/comercio/{id}/entregar")
-    public ResponseEntity<ApiResponse<PedidoResponseDTO>> confirmarEntregaComercio(@PathVariable Integer id,
-            ComercioActivo comercio) {
+    public ResponseEntity<ApiResponse<?>> confirmarEntregaComercio(ComercioActivo comercio, @PathVariable Integer id) {
         PedidoResponseDTO response = pedidoService.confirmarEntregaComercio(comercio, id);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Entrega confirmada correctamente", response));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Entrega confirmada correctamente", paraActor(comercio, response)));
     }
 
     @PutMapping("/comercio/{id}/anular")
-    public ResponseEntity<ApiResponse<PedidoResponseDTO>> anularPedido(@PathVariable Integer id,
-            @Valid @RequestBody AnulacionPedidoRequestDTO request, ComercioActivo comercio) {
+    public ResponseEntity<ApiResponse<?>> anularPedido(ComercioActivo comercio, @PathVariable Integer id,
+            @Valid @RequestBody AnulacionPedidoRequestDTO request) {
         PedidoResponseDTO response = pedidoService.anularPedido(comercio, id, request);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pedido anulado correctamente", response));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pedido anulado correctamente", paraActor(comercio, response)));
+    }
+
+    private static Object paraActor(ComercioActivo comercio, PedidoResponseDTO pedido) {
+        return comercio.esEmpleado() ? PedidoEmpleadoResponseDTO.desde(pedido) : pedido;
     }
 }

@@ -1,6 +1,7 @@
 package com.bajonea.backend.services;
 
 import com.bajonea.backend.config.security.ComercioActivo;
+import com.bajonea.backend.dto.request.ComercioDatosOperativosRequestDTO;
 import com.bajonea.backend.dto.request.ComercioPerfilRequestDTO;
 import com.bajonea.backend.dto.request.FotoPerfilComercioRequestDTO;
 import com.bajonea.backend.dto.response.ComercioEmpleadoResponseDTO;
@@ -74,7 +75,10 @@ public class ComercioService {
     }
 
     public ComercioEmpleadoResponseDTO verPerfilEmpleado(Integer comercioId) {
-        Comercio comercio = obtenerComercio(comercioId);
+        return aEmpleadoResponseDTO(obtenerComercio(comercioId));
+    }
+
+    private ComercioEmpleadoResponseDTO aEmpleadoResponseDTO(Comercio comercio) {
         List<Horario> horariosEntidad = horarioRepository.findByComercioId(comercio.getId());
         Disponibilidad disponibilidad = disponibilidadComercioService.calcular(comercio, horariosEntidad,
                 disponibilidadComercioService.ahora());
@@ -84,6 +88,7 @@ public class ComercioService {
                 comercio.getDescripcion(),
                 comercio.getFotoPerfilUrl(),
                 comercio.getTelefono(),
+                comercio.getEmail(),
                 comercio.getTipoComercio(),
                 comercio.isAceptaDelivery(),
                 comercio.isAceptaRetiro(),
@@ -94,6 +99,42 @@ public class ComercioService {
                 disponibilidad.abiertoAhora(),
                 disponibilidad.puedeCambiarCierre(),
                 disponibilidad.textoReapertura());
+    }
+
+    /**
+     * Edición de descripción y teléfono, la única que puede hacer un Empleado sobre el perfil (también la puede usar
+     * el Dueño). Orden de bloqueo: el usuario que actúa y la relación del Empleado ({@code iniciarEscritura}) y
+     * después el comercio con {@code FOR UPDATE} directo, porque esta operación lo escribe: leerlo con bloqueo
+     * compartido para validar el estado y mejorarlo a exclusivo al actualizar interbloquea dos ediciones a la vez.
+     * El estado se valida sobre la fila ya bloqueada: un Empleado con el comercio {@code SUSPENDIDO} recibe
+     * {@code 409} {@code COMERCIO_SUSPENDIDO}. Devuelve el DTO que corresponde al actor (el reducido para el
+     * Empleado).
+     */
+    public Object editarDatosOperativos(ComercioActivo actor, ComercioDatosOperativosRequestDTO request) {
+        historialEdicionComercioService.iniciarEscritura(actor);
+        Comercio comercio = obtenerComercio(actor.comercioId());
+        entityManager.refresh(comercio, LockModeType.PESSIMISTIC_WRITE);
+        ComercioActivoService.validarComercioModificable(actor, comercio.getEstado());
+
+        List<String> camposCambiados = new ArrayList<>();
+        if (!Objects.equals(comercio.getDescripcion(), request.getDescripcion())) {
+            camposCambiados.add("descripción");
+        }
+        if (!Objects.equals(comercio.getTelefono(), request.getTelefono())) {
+            camposCambiados.add("teléfono");
+        }
+
+        comercio.setDescripcion(request.getDescripcion());
+        comercio.setTelefono(request.getTelefono());
+        comercio.setFechaModificacion(LocalDateTime.now());
+        comercioRepository.save(comercio);
+
+        if (!camposCambiados.isEmpty()) {
+            historialEdicionComercioService.registrar(actor, TipoEntidadEdicion.COMERCIO, comercio.getId(), comercio.getNombre(),
+                    AccionEdicion.EDITAR, HistorialEdicionComercioService.detalleDeEdicion(camposCambiados));
+        }
+
+        return actor.esEmpleado() ? aEmpleadoResponseDTO(comercio) : aResponseDTO(comercio);
     }
 
     public ComercioResponseDTO editarPerfil(ComercioActivo actor, ComercioPerfilRequestDTO request) {

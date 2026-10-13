@@ -13,7 +13,9 @@ import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.RolUsuario;
 import com.bajonea.backend.enums.TipoEntidadNotificacion;
 import com.bajonea.backend.enums.TipoNotificacion;
+import com.bajonea.backend.exceptions.ComercioNoDisponibleException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
+import com.bajonea.backend.exceptions.ValidacionException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import java.util.List;
@@ -141,9 +143,12 @@ class NotificacionesPorComercioIntegrationTest {
                 () -> notificacionService.contarNoLeidas(dueno.principal(), String.valueOf(otroDueno.comercioId())));
 
         AuthenticatedUser cliente = new AuthenticatedUser(clienteId, 1, RolUsuario.CLIENTE);
-        assertEquals(List.of("Del cliente sobre el pedido de A"), mensajes(notificacionService.listar(cliente, "abc")),
-                "el Cliente ve todas las suyas e ignora el header, aunque sea inválido o de un comercio");
-        assertEquals(1, notificacionService.contarNoLeidas(cliente, String.valueOf(comercioA)));
+        assertEquals(List.of("Del cliente sobre el pedido de A"), mensajes(notificacionService.listar(cliente, null)),
+                "el Cliente sin header ve todas las suyas");
+        assertEquals(1, notificacionService.contarNoLeidas(cliente, null));
+        assertThrows(ValidacionException.class, () -> notificacionService.listar(cliente, "abc"));
+        assertThrows(ComercioNoDisponibleException.class, () -> notificacionService.listar(cliente, String.valueOf(comercioA)));
+        assertThrows(ComercioNoDisponibleException.class, () -> notificacionService.contarNoLeidas(cliente, String.valueOf(comercioA)));
     }
 
     private void marcadoDeLeidas(Dueno dueno, Dueno otroDueno, int comercioA, int comercioB, int comercioC) {
