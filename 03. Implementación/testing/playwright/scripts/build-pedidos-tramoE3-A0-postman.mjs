@@ -204,7 +204,8 @@ const aceptar = (nombre, clave, codigo, extra) => accion(nombre, clave, 'PUT', '
 const rechazar = (nombre, clave, codigo, extra) => accion(nombre, clave, 'PUT', 'rechazar', codigo, { body: { motivo: 'SIN_STOCK' }, extra });
 const despachar = (nombre, clave, codigo, extra) => accion(nombre, clave, 'PUT', 'despachar', codigo, { extra });
 const entregar = (nombre, clave, codigo, extra) => accion(nombre, clave, 'PUT', 'entregar', codigo, { extra });
-const anular = (nombre, clave, codigo, motivo = 'Se rompió el horno', extra) => accion(nombre, clave, 'PUT', 'anular', codigo, { body: motivo === null ? {} : { motivo }, extra });
+const MOTIVO_ANULACION = { motivo: 'OTRO', comentario: 'Se rompió el horno' };
+const anular = (nombre, clave, codigo, motivo = MOTIVO_ANULACION, extra) => accion(nombre, clave, 'PUT', 'anular', codigo, { body: motivo === null ? {} : motivo, extra });
 const cancelarCliente = (nombre, clave, codigo, extra) =>
   item(nombre, req('PUT', `/pedidos/cliente/${P(clave)}/cancelar`, { token: TOKEN_CLIENTE, body: {} }), [status(codigo), ...(extra || [])]);
 
@@ -236,9 +237,9 @@ const avisosDelCliente = (nombre, clave, lineas) =>
 agregar(
   ...crearPedido('a'),
   aceptar('[pedido a] El Dueño acepta el pedido', 'a', 200),
-  anular('[pedido a] El Dueño anula el pedido en preparacion con motivo', 'a', 200, 'Se rompió el horno', [
+  anular('[pedido a] El Dueño anula el pedido en preparacion con motivo', 'a', 200, MOTIVO_ANULACION, [
     "const d = pm.response.json().data;",
-    "pm.test('Queda ANULADO con el motivo', () => { pm.expect(d.estado).to.eql('ANULADO'); pm.expect(d.motivoAnulacion).to.eql('Se rompió el horno'); });",
+    "pm.test('Queda ANULADO con el motivo', () => { pm.expect(d.estado).to.eql('ANULADO'); pm.expect(d.motivoAnulacion).to.eql('Otro. Se rompió el horno'); pm.expect(d.motivoRechazo).to.eql('OTRO'); });",
     "pm.test('La respuesta ya trae la nota de credito por el total, en revision manual (cuenta de cobro desvinculada)', () => { pm.expect(d.reembolsoEstado).to.eql('PENDIENTE_REVISION_MANUAL'); pm.expect(Number(d.reembolsoMonto)).to.eql(Number(d.total)); });",
   ]),
   pedidoDelCliente('a', [
@@ -253,7 +254,7 @@ agregar(
     "pm.test('Hay exactamente una nota para el pedido', () => pm.expect(notas).to.have.length(1));",
     "pm.test('Es por anulacion del comercio, pendiente de revision manual y por el total', () => { pm.expect(notas[0].motivo).to.eql('ANULACION_COMERCIO'); pm.expect(notas[0].estado).to.eql('PENDIENTE_REVISION_MANUAL'); });",
   ]),
-  anular('[pedido a] Anular de nuevo es un 409 y no crea otra nota', 'a', 409, 'Otra vez', [mensajeEs(MENSAJE_NO_PREPARACION)]),
+  anular('[pedido a] Anular de nuevo es un 409 y no crea otra nota', 'a', 409, { motivo: 'CERRADO' }, [mensajeEs(MENSAJE_NO_PREPARACION)]),
   despachar('[pedido a] Despachar un pedido ya anulado es 409', 'a', 409, [mensajeEs(MENSAJE_NO_PREPARACION)]),
   aceptar('[pedido a] Aceptar un pedido ya anulado es 409', 'a', 409, [mensajeEs(MENSAJE_RESUELTO)]),
   rechazar('[pedido a] Rechazar un pedido ya anulado es 409', 'a', 409, [mensajeEs(MENSAJE_RESUELTO)]),
@@ -269,14 +270,15 @@ agregar(
 
 agregar(
   ...crearPedido('b'),
-  anular('[pedido b] Anular un pedido que todavia espera la respuesta del comercio es 409', 'b', 409, 'Todavia no lo acepte', [mensajeEs(MENSAJE_NO_PREPARACION)]),
+  anular('[pedido b] Anular un pedido que todavia espera la respuesta del comercio es 409', 'b', 409, { motivo: 'CERRADO' }, [mensajeEs(MENSAJE_NO_PREPARACION)]),
   aceptar('[pedido b] El Dueño acepta el pedido', 'b', 200),
   anular('[pedido b] Anular sin motivo es 400', 'b', 400, null),
-  anular('[pedido b] Anular con un motivo en blanco es 400', 'b', 400, '   '),
+  anular('[pedido b] Anular con motivo OTRO y comentario en blanco es 400', 'b', 400, { motivo: 'OTRO', comentario: '   ' }),
+  anular('[pedido b] Anular con un motivo que no es de la lista es 400', 'b', 400, { motivo: 'Se rompió el horno' }),
   rechazar('[pedido b] Rechazar un pedido ya aceptado es 409 (el aceptar ya gano)', 'b', 409, [mensajeEs(MENSAJE_RESUELTO)]),
   aceptar('[pedido b] Aceptar dos veces es 409', 'b', 409, [mensajeEs(MENSAJE_RESUELTO)]),
   despachar('[pedido b] El Dueño despacha el pedido (queda listo para retirar)', 'b', 200),
-  anular('[pedido b] Anular un pedido ya despachado es 409', 'b', 409, 'Tarde', [mensajeEs(MENSAJE_NO_PREPARACION)]),
+  anular('[pedido b] Anular un pedido ya despachado es 409', 'b', 409, { motivo: 'CERRADO' }, [mensajeEs(MENSAJE_NO_PREPARACION)]),
   despachar('[pedido b] Despachar dos veces es 409', 'b', 409, [mensajeEs(MENSAJE_NO_PREPARACION)]),
   entregar('[pedido b] El Dueño entrega el pedido', 'b', 200),
   entregar('[pedido b] Entregar dos veces es 409', 'b', 409, [mensajeEs('El pedido no está listo para retirar')]),
@@ -288,7 +290,7 @@ agregar(
 agregar(
   ...crearPedido('c', { registrarPago: false }),
   aceptar('[pedido c] El Dueño acepta el pedido', 'c', 200),
-  anular('[pedido c] Anular un pedido sin pago aprobado registrado es 200 y no trae reembolso', 'c', 200, 'Sin insumos', [
+  anular('[pedido c] Anular un pedido sin pago aprobado registrado es 200 y no trae reembolso', 'c', 200, { motivo: 'SIN_STOCK' }, [
     "const d = pm.response.json().data;",
     "pm.test('Queda ANULADO sin reembolso', () => { pm.expect(d.estado).to.eql('ANULADO'); pm.expect(d.reembolsoEstado).to.eql(null); });",
   ]),
@@ -303,11 +305,16 @@ agregar(
   ...crearPedido('d'),
   rechazar('[pedido d] El Dueño rechaza el pedido pagado', 'd', 200, [
     "pm.test('Queda RECHAZADO', () => pm.expect(pm.response.json().data.estado).to.eql('RECHAZADO'));",
+    "pm.test('La respuesta del rechazo ya trae la nota de credito por el total, en revision manual', () => { const d = pm.response.json().data; pm.expect(d.reembolsoEstado).to.eql('PENDIENTE_REVISION_MANUAL'); pm.expect(Number(d.reembolsoMonto)).to.eql(Number(d.total)); });",
+  ]),
+  avisosDelCliente('[pedido d] El aviso del rechazo dice que la devolucion esta en gestion', 'd', [
+    "const rechazo = avisos.find((a) => a.mensaje.includes('rechazado'));",
+    "pm.test('El aviso promete la devolucion', () => { pm.expect(rechazo).to.exist; pm.expect(rechazo.mensaje).to.include('gestionando la devolución de tu pago'); });",
   ]),
   pedidoDelCliente('d', ["pm.test('El Cliente ve el rechazo con el reembolso en gestion', () => { pm.expect(p.estado).to.eql('RECHAZADO'); pm.expect(p.reembolsoEstado).to.eql('PENDIENTE_REVISION_MANUAL'); });"]),
   aceptar('[pedido d] Aceptar un pedido ya rechazado es 409', 'd', 409, [mensajeEs(MENSAJE_RESUELTO)]),
   rechazar('[pedido d] Rechazar dos veces es 409', 'd', 409, [mensajeEs(MENSAJE_RESUELTO)]),
-  anular('[pedido d] Anular un pedido rechazado es 409', 'd', 409, 'x', [mensajeEs(MENSAJE_NO_PREPARACION)]),
+  anular('[pedido d] Anular un pedido rechazado es 409', 'd', 409, { motivo: 'CERRADO' }, [mensajeEs(MENSAJE_NO_PREPARACION)]),
   cancelarCliente('[pedido d] El Cliente no puede cancelar un pedido rechazado (409)', 'd', 409, [mensajeEs('El pedido ya no se puede cancelar')]),
   reembolsosDelAdmin('[pedido d] Una sola nota por rechazo', 'd', [
     "pm.test('Exactamente una nota por rechazo del comercio', () => { pm.expect(notas).to.have.length(1); pm.expect(notas[0].motivo).to.eql('RECHAZO_COMERCIO'); });",
@@ -316,11 +323,20 @@ agregar(
 
 agregar(
   ...crearPedido('e'),
-  cancelarCliente('[pedido e] El Cliente cancela el pedido', 'e', 200, ["pm.test('Queda CANCELADO', () => pm.expect(pm.response.json().data.estado).to.eql('CANCELADO'));"]),
+  cancelarCliente('[pedido e] El Cliente cancela el pedido', 'e', 200, [
+    "pm.test('Queda CANCELADO', () => pm.expect(pm.response.json().data.estado).to.eql('CANCELADO'));",
+    "pm.test('La respuesta de la cancelacion ya trae la nota de credito por el total, en revision manual', () => { const d = pm.response.json().data; pm.expect(d.reembolsoEstado).to.eql('PENDIENTE_REVISION_MANUAL'); pm.expect(Number(d.reembolsoMonto)).to.eql(Number(d.total)); });",
+  ]),
+  reembolsosDelAdmin('[pedido e] Una sola nota por cancelacion del Cliente', 'e', [
+    "pm.test('Exactamente una nota por cancelacion del cliente', () => { pm.expect(notas).to.have.length(1); pm.expect(notas[0].motivo).to.eql('CANCELACION_CLIENTE'); });",
+  ]),
   cancelarCliente('[pedido e] Cancelar dos veces es 409', 'e', 409, [mensajeEs('El pedido ya no se puede cancelar')]),
   aceptar('[pedido e] El Dueño no puede aceptar un pedido cancelado (409)', 'e', 409, [mensajeEs(MENSAJE_RESUELTO)]),
   rechazar('[pedido e] Ni rechazarlo (409)', 'e', 409, [mensajeEs(MENSAJE_RESUELTO)]),
-  anular('[pedido e] Ni anularlo (409)', 'e', 409, 'x', [mensajeEs(MENSAJE_NO_PREPARACION)]),
+  anular('[pedido e] Ni anularlo (409)', 'e', 409, { motivo: 'CERRADO' }, [mensajeEs(MENSAJE_NO_PREPARACION)]),
+  reembolsosDelAdmin('[pedido e] Despues de los intentos repetidos sigue habiendo una sola nota', 'e', [
+    "pm.test('Sigue habiendo una sola nota', () => pm.expect(notas).to.have.length(1));",
+  ]),
 );
 
 agregar(

@@ -21,11 +21,12 @@ comercios se encuentran en Requisitos Funcionales — Dueño.
 - El comercio debe definir al menos una franja horaria de atención al momento del alta,
   pudiendo agregar múltiples franjas que contemplen diferentes horarios por día.
 - El Dueño debe poder editar los datos, la foto de perfil y los horarios del comercio
-  desde el panel en cualquier momento posterior al alta. Un Empleado autorizado puede
-  editar los datos reducidos del comercio (nombre, descripción, teléfono, email de contacto
-  y modalidades de entrega) y su foto de perfil, sin acceso a los datos fiscales ni a los del
-  representante; la edición de horarios por parte del Empleado se habilitará cuando exista
-  esa función (hoy los horarios solo se cargan en el alta y en la corrección de un comercio
+  desde el panel en cualquier momento posterior al alta. Un Empleado autorizado edita del
+  comercio solo la descripción, el teléfono y los horarios; el nombre, la foto, la dirección,
+  el tipo de comercio, los datos fiscales, las redes sociales, MercadoPago y el equipo son
+  exclusivos del Dueño (el Empleado ve el nombre, la foto, la dirección y el tipo, pero no
+  los edita). La edición de horarios se habilitará para el Empleado cuando exista esa
+  función (hoy los horarios solo se cargan en el alta y en la corrección de un comercio
   rechazado). Ver Requisitos Funcionales — Empleado.
 - La foto de perfil del comercio es un dato propio de cada comercio, independiente de
   la foto de perfil personal de su Dueño (ver Requisitos Funcionales — Dueño). Si un
@@ -227,7 +228,9 @@ horario, también con el aviso de cuándo reabre.
   Temporalmente, Sin Delivery Disponible, Problema Técnico u Otro. Si el motivo es
   "Otro", debe ingresar obligatoriamente una descripción adicional. Para cualquier
   motivo puede agregar comentarios adicionales opcionales. El estado resultante del
-  rechazo es RECHAZADO.
+  rechazo es RECHAZADO. Si el pedido ya estaba pagado, la nota de crédito del reembolso se
+  crea en la misma operación en que el pedido pasa a RECHAZADO (si no se puede crear, el
+  pedido no cambia de estado) y la respuesta ya informa el estado del reembolso.
 - **Flujo de estados — Domicilio:** PENDIENTE_CONFIRMACION_COMERCIO → EN_PREPARACION → EN_CAMINO → ENTREGADO.
 - **Flujo de estados — Retiro:** PENDIENTE_CONFIRMACION_COMERCIO → EN_PREPARACION → LISTO_PARA_RETIRAR →
   ENTREGADO.
@@ -235,10 +238,16 @@ horario, también con el aviso de cuándo reabre.
   retiro cuando el cliente se presente a retirarlo (ENTREGADO, fuente: COMERCIO).
 - El Dueño o un Empleado autorizado debe poder marcar como ENTREGADO un pedido de
   retiro cuando el cliente no se presente a retirarlo (ENTREGADO, fuente:
-  COMERCIO_SIN_RETIRO), cerrando el pedido sin generar reembolso.
+  COMERCIO_SIN_RETIRO), cerrando el pedido sin generar reembolso. (Pendiente, no
+  implementado: hoy el comercio solo puede confirmar la entrega con la fuente COMERCIO; la
+  fuente COMERCIO_SIN_RETIRO está en la base pero ningún endpoint la usa, y el aviso al
+  Cliente por este cierre queda para el tramo E3, bloque A4.)
 - El Dueño o un Empleado autorizado debe poder anular un pedido desde estado
   EN_PREPARACION, seleccionando un **motivo predefinido** de la lista de motivos de
-  rechazo. Esta acción es irreversible y genera automáticamente la nota de crédito y el
+  rechazo (Sin Stock, Local Cerrado, Alto Volumen de Pedidos, Producto No Disponible
+  Temporalmente, Sin Delivery Disponible, Problema Técnico u Otro; con "Otro" la descripción
+  adicional es obligatoria y con los demás es opcional; un texto libre en lugar del motivo
+  se rechaza). Esta acción es irreversible y genera automáticamente la nota de crédito y el
   reembolso al cliente. No aplica desde estados posteriores. La nota de crédito se crea en
   la misma operación en que el pedido pasa a ANULADO (si no se puede crear, el pedido no
   queda anulado); si el reembolso en MercadoPago no se puede procesar, la nota queda
@@ -246,7 +255,17 @@ horario, también con el aviso de cuándo reabre.
   pedido, o anularlo cuando otra persona ya lo despachó, responde que el pedido ya no está
   en preparación y no genera una segunda nota.
 - El pedido vence automáticamente (estado EXPIRADO) si nadie responde en 30 minutos desde
-  la confirmación del pago, generando el reembolso correspondiente al cliente.
+  la confirmación del pago, generando el reembolso correspondiente al cliente. En el
+  vencimiento, en la cancelación por suspensión del comercio y en la cancelación del
+  Cliente, la nota de crédito también se crea en la misma operación que el cambio de estado;
+  si la nota no se puede escribir, el pedido queda como estaba (el vencimiento se reintenta
+  en la corrida siguiente) y solo la llamada a MercadoPago ocurre después de confirmar.
+- Las entregas de los pedidos a domicilio EN_CAMINO no las confirma el comercio: las confirma
+  el Cliente o el sistema (aviso a los 75 minutos y autoconfirmación a los 90).
+- Con el comercio Suspendido o Cerrado Temporalmente, un Empleado puede despachar, entregar
+  (también un pedido LISTO_PARA_RETIRAR) y anular los pedidos ya aceptados, pero no aceptar
+  pedidos nuevos, tocar productos ni el perfil, ni abrir o cerrar. El Dueño queda sin
+  cambios por ahora; la diferencia se resuelve en el tramo de rediseño de la suspensión.
 - Cuando dos personas actúan a la vez sobre el mismo pedido (por ejemplo, aceptar y rechazar, o anular y despachar, o el Cliente cancelando mientras el comercio acepta), el sistema las atiende de a una: gana la primera, la segunda recibe un aviso de que el pedido ya fue resuelto, y solo la acción ganadora deja historial, aviso al cliente y reembolso. Lo mismo vale para los procesos automáticos (expiración, autoconfirmación) cuando coinciden con una acción de una persona.
 - El Dueño o un Empleado autorizado ve únicamente los pedidos que llegaron al comercio con el pago aprobado (los que pasaron por PENDIENTE_CONFIRMACION_COMERCIO). Un pedido que nunca llegó pagado no aparece en la lista, en el resumen ni en el detalle de pago, y sus acciones responden como recurso inexistente.
 - La fecha de un pedido para el comercio es la de la confirmación del pago, no la de su creación, y es la que define qué pedidos cuentan como "de hoy".

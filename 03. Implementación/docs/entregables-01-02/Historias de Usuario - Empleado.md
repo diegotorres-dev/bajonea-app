@@ -53,8 +53,9 @@ Criterios de aceptación adicionales:
 
 Como Empleado activo en un comercio, quiero crear y editar productos, gestionar los
 pedidos entrantes (aceptar, rechazar, despachar, entregar y anular), ver el historial y
-las ventas, abrir y cerrar el comercio, y editar sus datos y su foto, para cumplir con mis
-tareas diarias del mismo modo que lo haría el Dueño. Recibo las notificaciones operativas
+las ventas, abrir y cerrar el comercio, y editar su descripción, su teléfono y sus
+horarios, para cumplir con mis tareas diarias del mismo modo que lo haría el Dueño. El
+nombre, la foto, la dirección y el tipo de comercio los veo, pero los cambia solo el Dueño. Recibo las notificaciones operativas
 del comercio (pedido nuevo, cancelaciones, vencimientos). En los pedidos veo lo que
 necesito para atender al cliente (ítems, subtotal, total pagado, motivo de rechazo o
 anulación y el estado del reembolso en términos simples), pero no los cargos de servicio,
@@ -64,13 +65,15 @@ la comisión ni los datos de MercadoPago.
 
 Como Empleado, entiendo que no tengo acceso a los datos fiscales del Dueño, a MercadoPago,
 a los enlaces a redes sociales, a la gestión del equipo ni a la actividad del comercio, ni
-puedo dar de alta comercios, para que quede claro qué decisiones quedan reservadas
+puedo dar de alta comercios ni cambiar el nombre, la foto, la dirección o el tipo de
+comercio, para que quede claro qué decisiones quedan reservadas
 exclusivamente al Dueño. Todo lo que no está explícitamente permitido me queda bloqueado.
 
 Criterios de aceptación adicionales:
-- Si el comercio está suspendido o cerrado temporalmente lo veo con un aviso y no puedo
-  operarlo, salvo terminar lo que ya estaba en marcha (entregar pedidos listos para retirar
-  y confirmar entregas en camino).
+- Si el comercio está suspendido o cerrado temporalmente lo veo con un aviso. Puedo
+  despachar, entregar (también un pedido listo para retirar) y anular los pedidos ya
+  aceptados; no acepto pedidos nuevos, no toco productos ni el perfil y no abro ni cierro el
+  comercio. Las entregas en camino las confirma el cliente o el sistema, no el comercio.
 - Puedo pedir en mi propio comercio como Cliente, pero no gestionar mis propios pedidos:
   los veo con la etiqueta "Tu pedido", sin botones.
 

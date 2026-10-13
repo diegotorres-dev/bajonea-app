@@ -40160,7 +40160,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"motivo\": \"Intento cruzado\"\n}",
+              "raw": "{\n  \"motivo\": \"SIN_STOCK\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -83091,7 +83091,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"motivo\": \"Se rompió el horno\"\n}",
+              "raw": "{\n  \"motivo\": \"OTRO\",\n  \"comentario\": \"Se rompió el horno\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -83108,7 +83108,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
-                  "pm.test('Queda ANULADO con el motivo', () => { pm.expect(d.estado).to.eql('ANULADO'); pm.expect(d.motivoAnulacion).to.eql('Se rompió el horno'); });",
+                  "pm.test('Queda ANULADO con el motivo', () => { pm.expect(d.estado).to.eql('ANULADO'); pm.expect(d.motivoAnulacion).to.eql('Otro. Se rompió el horno'); pm.expect(d.motivoRechazo).to.eql('OTRO'); });",
                   "pm.test('La respuesta ya trae la nota de credito por el total, en revision manual (cuenta de cobro desvinculada)', () => { pm.expect(d.reembolsoEstado).to.eql('PENDIENTE_REVISION_MANUAL'); pm.expect(Number(d.reembolsoMonto)).to.eql(Number(d.total)); });"
                 ]
               }
@@ -83258,7 +83258,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"motivo\": \"Otra vez\"\n}",
+              "raw": "{\n  \"motivo\": \"CERRADO\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -83795,7 +83795,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"motivo\": \"Todavia no lo acepte\"\n}",
+              "raw": "{\n  \"motivo\": \"CERRADO\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -83924,7 +83924,7 @@
           ]
         },
         {
-          "name": "[pedido b] Anular con un motivo en blanco es 400",
+          "name": "[pedido b] Anular con motivo OTRO y comentario en blanco es 400",
           "request": {
             "method": "PUT",
             "header": [
@@ -83955,7 +83955,60 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"motivo\": \"   \"\n}",
+              "raw": "{\n  \"motivo\": \"OTRO\",\n  \"comentario\": \"   \"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido b] Anular con un motivo que no es de la lista es 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a0_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{a0_ped_b}}/anular",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{a0_ped_b}}",
+                "anular"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Se rompió el horno\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -84169,7 +84222,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"motivo\": \"Tarde\"\n}",
+              "raw": "{\n  \"motivo\": \"CERRADO\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -84613,7 +84666,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"motivo\": \"Sin insumos\"\n}",
+              "raw": "{\n  \"motivo\": \"SIN_STOCK\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -84902,7 +84955,44 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Queda RECHAZADO', () => pm.expect(pm.response.json().data.estado).to.eql('RECHAZADO'));"
+                  "pm.test('Queda RECHAZADO', () => pm.expect(pm.response.json().data.estado).to.eql('RECHAZADO'));",
+                  "pm.test('La respuesta del rechazo ya trae la nota de credito por el total, en revision manual', () => { const d = pm.response.json().data; pm.expect(d.reembolsoEstado).to.eql('PENDIENTE_REVISION_MANUAL'); pm.expect(Number(d.reembolsoMonto)).to.eql(Number(d.total)); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido d] El aviso del rechazo dice que la devolucion esta en gestion",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a0_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notificaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const avisos = pm.response.json().data.filter((n) => n.entidadTipo === 'PEDIDO' && n.entidadId === Number(pm.environment.get('a0_ped_d')));",
+                  "const rechazo = avisos.find((a) => a.mensaje.includes('rechazado'));",
+                  "pm.test('El aviso promete la devolucion', () => { pm.expect(rechazo).to.exist; pm.expect(rechazo.mensaje).to.include('gestionando la devolución de tu pago'); });"
                 ]
               }
             }
@@ -85085,7 +85175,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"motivo\": \"x\"\n}",
+              "raw": "{\n  \"motivo\": \"CERRADO\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -85383,7 +85473,44 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Queda CANCELADO', () => pm.expect(pm.response.json().data.estado).to.eql('CANCELADO'));"
+                  "pm.test('Queda CANCELADO', () => pm.expect(pm.response.json().data.estado).to.eql('CANCELADO'));",
+                  "pm.test('La respuesta de la cancelacion ya trae la nota de credito por el total, en revision manual', () => { const d = pm.response.json().data; pm.expect(d.reembolsoEstado).to.eql('PENDIENTE_REVISION_MANUAL'); pm.expect(Number(d.reembolsoMonto)).to.eql(Number(d.total)); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido e] Una sola nota por cancelacion del Cliente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/reembolsos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "reembolsos"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const notas = pm.response.json().data.filter((n) => n.pedidoId === Number(pm.environment.get('a0_ped_e')));",
+                  "pm.test('Exactamente una nota por cancelacion del cliente', () => { pm.expect(notas).to.have.length(1); pm.expect(notas[0].motivo).to.eql('CANCELACION_CLIENTE'); });"
                 ]
               }
             }
@@ -85579,7 +85706,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"motivo\": \"x\"\n}",
+              "raw": "{\n  \"motivo\": \"CERRADO\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -85596,6 +85723,42 @@
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
                   "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido no está en preparación\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido e] Despues de los intentos repetidos sigue habiendo una sola nota",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/reembolsos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "reembolsos"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const notas = pm.response.json().data.filter((n) => n.pedidoId === Number(pm.environment.get('a0_ped_e')));",
+                  "pm.test('Sigue habiendo una sola nota', () => pm.expect(notas).to.have.length(1));"
                 ]
               }
             }

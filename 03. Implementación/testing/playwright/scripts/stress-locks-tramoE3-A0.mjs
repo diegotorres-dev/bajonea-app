@@ -147,7 +147,7 @@ const cabecera = (dueno) => ({ 'X-Comercio-Id': String(dueno.comercioId) });
 const aceptar = (dueno, id) => call('PUT', `/pedidos/comercio/${id}/aceptar`, dueno.token, undefined, cabecera(dueno));
 const rechazar = (dueno, id) => call('PUT', `/pedidos/comercio/${id}/rechazar`, dueno.token, { motivo: 'SIN_STOCK' }, cabecera(dueno));
 const despachar = (dueno, id) => call('PUT', `/pedidos/comercio/${id}/despachar`, dueno.token, undefined, cabecera(dueno));
-const anular = (dueno, id) => call('PUT', `/pedidos/comercio/${id}/anular`, dueno.token, { motivo: 'Anulacion de estres' }, cabecera(dueno));
+const anular = (dueno, id) => call('PUT', `/pedidos/comercio/${id}/anular`, dueno.token, { motivo: 'PROBLEMA_TECNICO' }, cabecera(dueno));
 const cancelarCliente = (cliente, id) => call('PUT', `/pedidos/cliente/${id}/cancelar`, cliente.token);
 const entregarCliente = (cliente, id) => call('PUT', `/pedidos/cliente/${id}/entregar`, cliente.token);
 const correrProceso = (nombre) => call('POST', `/test/jobs/pedidos/${nombre}`);
@@ -211,7 +211,14 @@ const TRANSICIONES = {
   EN_CAMINO: ['ENTREGADO'],
   LISTO_PARA_RETIRAR: ['ENTREGADO'],
 };
-const GENERAN_NOTA = new Set(['RECHAZADO', 'EXPIRADO', 'ANULADO', 'CANCELADO_POR_SISTEMA']);
+const MOTIVO_DE_NOTA = {
+  RECHAZADO: 'RECHAZO_COMERCIO',
+  EXPIRADO: 'EXPIRACION_SIN_RESPUESTA',
+  ANULADO: 'ANULACION_COMERCIO',
+  CANCELADO: 'CANCELACION_CLIENTE',
+  CANCELADO_POR_SISTEMA: 'SUSPENSION_COMERCIO',
+};
+const GENERAN_NOTA = new Set(Object.keys(MOTIVO_DE_NOTA));
 const AVISOS_POR_FILA = {
   NUEVO_PEDIDO: (filas) => filas.filter((f) => f.estado === 'PENDIENTE_CONFIRMACION_COMERCIO').length,
   PEDIDO_ACEPTADO: (filas) => filas.filter((f) => f.estado === 'EN_PREPARACION').length,
@@ -269,9 +276,10 @@ function invariantesDelPedido(pedidoId) {
   const debeTenerNota = filas.some((f) => GENERAN_NOTA.has(f.estado));
   if (debeTenerNota && notas !== 1) errores.push(`pedido ${pedidoId}: ${notas} notas de credito (se esperaba 1) en ${filas.map((f) => f.estado).join(' > ')}`);
   if (!debeTenerNota && notas !== 0) errores.push(`pedido ${pedidoId}: ${notas} notas de credito sin una transicion que las justifique (${filas.map((f) => f.estado).join(' > ')})`);
-  if (filas.some((f) => f.estado === 'ANULADO')) {
+  const terminal = filas.find((f) => GENERAN_NOTA.has(f.estado));
+  if (terminal && notas === 1) {
     const motivo = sql(`SELECT n.motivo FROM nota_credito n JOIN pago p ON p.id = n.pago_id WHERE p.pedido_id = ${pedidoId};`);
-    if (motivo !== 'ANULACION_COMERCIO') errores.push(`pedido ${pedidoId}: anulado con una nota de motivo ${motivo}`);
+    if (motivo !== MOTIVO_DE_NOTA[terminal.estado]) errores.push(`pedido ${pedidoId}: ${terminal.estado} con una nota de motivo ${motivo} (se esperaba ${MOTIVO_DE_NOTA[terminal.estado]})`);
   }
   return errores;
 }
@@ -552,6 +560,49 @@ async function escenarioSuspension(admin, categoriaId) {
   return problemas;
 }
 
+async function escenarioNotasEnLaTransaccion(admin, categoriaId) {
+  console.log('--- (9) rechazar, cancelar del Cliente, expiracion, aceptar y suspension sobre los mismos pedidos: una sola nota por pedido ---');
+  const { problemas, registrar5xx, exigir } = nuevoRegistro();
+  const resumen = new Map();
+  for (let ronda = 1; ronda <= ROUNDS; ronda++) {
+    const dueno = await duenoOperativo(admin);
+    const productoId = await crearProducto(dueno, categoriaId);
+    const cliente = await nuevoCliente();
+    const pedidos = [];
+    for (let i = 0; i < 6; i++) {
+      const id = await pedidoPagado(dueno, cliente, productoId);
+      if (i % 2 === 0) envejecer(id, 'PENDIENTE_CONFIRMACION_COMERCIO', 45);
+      pedidos.push(id);
+    }
+    const suspender = ronda % 2 === 0;
+    const tareas = [
+      correrProceso('expirar-sin-respuesta').then((r) => ({ tipo: 'proceso', r })),
+      esperar(aleatorio(30)).then(() => correrProceso('expirar-sin-respuesta')).then((r) => ({ tipo: 'proceso', r })),
+      ...pedidos.flatMap((id) => [
+        esperar(aleatorio(60)).then(() => rechazar(dueno, id)).then((r) => ({ id, tipo: 'rechazar', r })),
+        esperar(aleatorio(60)).then(() => cancelarCliente(cliente, id)).then((r) => ({ id, tipo: 'cancelar', r })),
+        esperar(aleatorio(60)).then(() => cancelarCliente(cliente, id)).then((r) => ({ id, tipo: 'cancelar', r })),
+        esperar(aleatorio(60)).then(() => aceptar(dueno, id)).then((r) => ({ id, tipo: 'aceptar', r })),
+      ]),
+      ...(suspender
+        ? [esperar(aleatorio(60)).then(() => call('PUT', `/administrador/comercios/${dueno.comercioId}/suspender`, admin, { motivo: 'Suspension de estres' })).then((r) => ({ tipo: 'suspender', r }))]
+        : []),
+    ];
+    const resultados = await Promise.all(tareas);
+    resultados.forEach(({ tipo, r }) => {
+      registrar5xx(`ronda ${ronda} ${tipo}`, r);
+      contar(resumen, `${tipo}:${r.status}`);
+    });
+    resultados.filter(({ tipo }) => tipo === 'proceso').forEach(({ r }) => exigir(r.status === 200, `ronda ${ronda}: el proceso dio ${r.status}`));
+    resultados.filter(({ tipo }) => ['rechazar', 'cancelar', 'aceptar'].includes(tipo)).forEach(({ tipo, r }) => exigir(aceptables(r), `ronda ${ronda}: ${tipo} dio ${r.status}`));
+    if (suspender) exigir(resultados.find(({ tipo }) => tipo === 'suspender').r.status === 200, `ronda ${ronda}: suspender dio ${resultados.find(({ tipo }) => tipo === 'suspender').r.status}`);
+    revisar(pedidos, problemas, `ronda ${ronda}`);
+    console.log(`ronda ${ronda}${suspender ? ' (con suspension)' : ''}: ${pedidos.map((id) => sql(`SELECT estado FROM pedido WHERE id = ${id};`)).join(', ')}`);
+  }
+  console.log('Resumen (9):', resumir(resumen));
+  return problemas;
+}
+
 function bytesDelLog() {
   return existsSync(LOG_BACKEND) ? statSync(LOG_BACKEND).size : 0;
 }
@@ -583,6 +634,7 @@ async function main() {
     escenarioAutoconfirmacionContraCliente,
     escenarioContraElLogin,
     escenarioSuspension,
+    escenarioNotasEnLaTransaccion,
   ];
   const todos = [];
   for (let i = 0; i < escenarios.length; i++) {

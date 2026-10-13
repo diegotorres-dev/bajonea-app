@@ -375,7 +375,7 @@ items.push(
   item('[pedidos] Despachar el pedido de B con header A', req('PUT', '/pedidos/comercio/{{pedido_m_b_id}}/despachar', { token: 'token_comercio_m', headers: { [HEADER]: '{{comercio_m_a_id}}' } }), [status(404)]),
   item('[pedidos] Entregar el pedido de B con header A', req('PUT', '/pedidos/comercio/{{pedido_m_b_id}}/entregar', { token: 'token_comercio_m', headers: { [HEADER]: '{{comercio_m_a_id}}' } }), [status(404)]),
   item('[pedidos] Rechazar el pedido de B con header A', req('PUT', '/pedidos/comercio/{{pedido_m_b_id}}/rechazar', { token: 'token_comercio_m', headers: { [HEADER]: '{{comercio_m_a_id}}' }, body: { motivo: 'SIN_STOCK' } }), [status(404)]),
-  item('[pedidos] Anular el pedido de B con header A', req('PUT', '/pedidos/comercio/{{pedido_m_b_id}}/anular', { token: 'token_comercio_m', headers: { [HEADER]: '{{comercio_m_a_id}}' }, body: { motivo: 'Intento cruzado' } }), [status(404)]),
+  item('[pedidos] Anular el pedido de B con header A', req('PUT', '/pedidos/comercio/{{pedido_m_b_id}}/anular', { token: 'token_comercio_m', headers: { [HEADER]: '{{comercio_m_a_id}}' }, body: { motivo: 'SIN_STOCK' } }), [status(404)]),
   item('[pedidos] Aceptar el pedido de B con header B', req('PUT', '/pedidos/comercio/{{pedido_m_b_id}}/aceptar', { token: 'token_comercio_m', headers: { [HEADER]: '{{comercio_m_b_id}}' } }), [
     status(200),
     "pm.test('Queda en preparacion', () => pm.expect(pm.response.json().data.estado).to.eql('EN_PREPARACION'));",

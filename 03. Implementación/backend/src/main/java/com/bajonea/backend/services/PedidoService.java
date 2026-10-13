@@ -78,10 +78,11 @@ import org.springframework.transaction.support.TransactionTemplate;
  * ({@code MercadoPagoPagoService}), nunca directamente el Cliente.
  * {@code HistorialEstadoPedido} es la fuente canónica de todos los timestamps y actores del
  * ciclo de vida (ver diccionario de datos); {@code Pedido} solo conserva el estado actual.
- * Los estados terminales negativos con reembolso pendiente llaman a {@link ReembolsoService}
- * ({@code RECHAZADO}, {@code EXPIRADO} y la cancelación por suspensión de comercio, con la nota después del
- * commit; {@code ANULADO}, con la nota creada en la misma transacción del cambio de estado). {@code CANCELADO}
- * (del Cliente) conserva su TODO (ver docs/DECISIONES.md).
+ * Los estados terminales negativos con reembolso pendiente ({@code RECHAZADO}, {@code EXPIRADO}, {@code ANULADO},
+ * {@code CANCELADO} y la cancelación por suspensión de comercio) crean la nota de crédito en la misma transacción
+ * del cambio de estado ({@link ReembolsoService#generarNotaYReembolsarTotal}): si la nota no se puede escribir el
+ * pedido no cambia de estado, y solo la llamada a MercadoPago va después del commit (ver docs/DECISIONES.md,
+ * bloque A0b de E3).
  *
  * <p><b>Concurrencia (bloque A0 de E3):</b> toda transición de estado de un pedido —las acciones del comercio, las
  * del Cliente, el webhook y la sincronización de pago y los procesos automáticos— toma primero las filas de los
@@ -353,10 +354,11 @@ public class PedidoService {
         pedido.setComentarioRechazo(request.getComentario());
         pedidoRepository.save(pedido);
         registrarHistorial(pedido, ActorPedido.DUENO, comercioActivo.duenoId());
-        reembolsoService.procesarReembolsoTotal(pedido, MotivoNotaCredito.RECHAZO_COMERCIO);
+        boolean devolucionEnGestion = reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.RECHAZO_COMERCIO);
 
         String mensaje = "Tu pedido #" + pedido.getId() + " a " + pedido.getComercio().getNombre()
-                + " fue rechazado por el comercio. Motivo: " + request.getMotivo().getEtiqueta() + ".";
+                + " fue rechazado por el comercio. Motivo: " + request.getMotivo().getEtiqueta() + "."
+                + (devolucionEnGestion ? " Estamos gestionando la devolución de tu pago." : "");
         if (request.getComentario() != null && !request.getComentario().isBlank()) {
             mensaje += " " + request.getComentario();
         }
@@ -431,7 +433,7 @@ public class PedidoService {
         pedido.setCanceladoPor(CanceladoPor.CLIENTE);
         pedidoRepository.save(pedido);
         registrarHistorial(pedido, ActorPedido.CLIENTE, usuarioId);
-        // TODO: genera reembolso, pendiente de NotaCredito.
+        reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.CANCELACION_CLIENTE);
 
         notificacionService.crear(pedido.getComercio().getDueno().getPersonaJuridica().getPersona().getUsuario().getId(),
                 "El cliente canceló el pedido #" + pedido.getId() + ".",
@@ -447,9 +449,18 @@ public class PedidoService {
             throw new ConflictoDeNegocioException("El pedido no está en preparación");
         }
 
+        if (request.getMotivo() == MotivoRechazo.OTRO
+                && (request.getComentario() == null || request.getComentario().isBlank())) {
+            throw new ValidacionException("Ingresá un comentario para especificar el motivo de la anulación.");
+        }
+        String comentario = request.getComentario() == null || request.getComentario().isBlank() ? null : request.getComentario().trim();
+        String motivoTexto = request.getMotivo().getEtiqueta() + (comentario == null ? "" : ". " + comentario);
+
         pedido.setEstado(EstadoPedido.ANULADO);
         pedido.setCanceladoPor(CanceladoPor.COMERCIO);
-        pedido.setMotivo(request.getMotivo());
+        pedido.setMotivoRechazo(request.getMotivo());
+        pedido.setComentarioRechazo(comentario);
+        pedido.setMotivo(motivoTexto);
         pedidoRepository.save(pedido);
         registrarHistorial(pedido, ActorPedido.DUENO, comercioActivo.duenoId());
         boolean devolucionEnGestion = reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.ANULACION_COMERCIO);
@@ -457,7 +468,7 @@ public class PedidoService {
         String mensaje = "Tu pedido #" + pedido.getId() + " a " + pedido.getComercio().getNombre()
                 + " fue anulado por el comercio"
                 + (devolucionEnGestion ? " y estamos gestionando la devolución de tu pago" : "")
-                + ". Motivo: " + request.getMotivo();
+                + ". Motivo: " + motivoTexto;
         notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(), mensaje,
                 TipoNotificacion.PEDIDO_ANULADO_COMERCIO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
 
@@ -550,7 +561,7 @@ public class PedidoService {
             pedidoRepository.save(pedido);
             registrarHistorial(pedido, ActorPedido.SISTEMA, null);
             if (pedido.getPagoEstado() == EstadoPagoPedido.PAGADO) {
-                reembolsoService.procesarReembolsoTotal(pedido, MotivoNotaCredito.SUSPENSION_COMERCIO);
+                reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.SUSPENSION_COMERCIO);
             }
             notificarCancelacionSistema(pedido, "el comercio fue suspendido");
         }
@@ -681,7 +692,7 @@ public class PedidoService {
                 pedido.setCanceladoPor(CanceladoPor.SISTEMA);
                 pedidoRepository.save(pedido);
                 registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.TIMEOUT_RESPUESTA_COMERCIO);
-                reembolsoService.procesarReembolsoTotal(pedido, MotivoNotaCredito.EXPIRACION_SIN_RESPUESTA);
+                reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.EXPIRACION_SIN_RESPUESTA);
 
                 notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
                         "El comercio no respondió en " + timeoutProperties.getRespuestaComercioMinutos() + " minutos tu pedido #" + pedido.getId()

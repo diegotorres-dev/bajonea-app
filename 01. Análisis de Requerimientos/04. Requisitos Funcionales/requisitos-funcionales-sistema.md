@@ -235,7 +235,7 @@ El sistema emite notificaciones push (y en algunos casos email) ante los siguien
 
 > **Estado de implementación:** planificado, tramo E3 (la tabla se crea en E1).
 
-- El sistema debe registrar en `ActividadComercio` quién hizo qué sobre el comercio: crear, editar, eliminar, cambiar estado, abrir y cerrar, sobre productos, imágenes, pedidos, datos del comercio, redes sociales y, cuando existan, horarios y extras. Guarda el usuario, su rol (Dueño o Empleado), el tipo y nombre de la entidad y un detalle breve, sin guardar valores anteriores.
+- El sistema debe registrar en `HistorialEdicionComercio` las altas, ediciones, bajas y cambios de estado de productos, imágenes, perfil y horarios del comercio, hechos por el Dueño o por un Empleado y, cuando existan, de grupos de extras y extras. Guarda el usuario, su rol (Dueño o Empleado), el tipo y el nombre de la entidad en ese momento y un detalle breve, sin guardar valores anteriores ni el nombre de quien actuó. Los pedidos y los cierres y aperturas no se registran ahí: ya tienen `HistorialEstadoPedido` e `HistorialCierreComercio`, y la pestaña Actividad junta las tres fuentes en una lista por fecha.
 - Se escribe desde los servicios, en la misma transacción que la escritura, y solo cuando hubo un cambio efectivo. Repite a propósito datos que ya guardan otras tablas (historial de estados del pedido, historial de cierre) para que la vista de equipo lea una sola tabla.
 - La ve el Dueño completa y el Administrador en solo lectura; el Empleado no la ve.
 

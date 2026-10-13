@@ -1,6 +1,6 @@
 # Modelo Relacional — Bajoneá (v3)
 
-Actualizado a `diccionario-de-datos.md` v1.11: 49 tablas. La v1.11 suma tres tablas **planificadas** del rol Empleado (`InvitacionEmpleado`, `HistorialEmpleadoComercio` y `ActividadComercio`, migraciones `V30` a `V32`, tramo E1), todavía inexistentes en la base, y cambia el ENUM de `EmpleadoComercio.estado` (`V29`, de `PENDIENTE`/`ACTIVO`/`DESACTIVADO` a `ACTIVO`/`INACTIVO`). Antes, en la v1.10: 46 tablas (el bloque suma `HistorialCierreComercio`, tabla del cierre manual del comercio, y `HistorialCambioComercio`, que el encabezado anterior no contaba; antes se agregaron `CodigoVinculacionMp`, `AlertaWebhookMp` y `HistorialCambioNombreUsuario`; `Usuario` suma `nombre_usuario` y `AlertaWebhookMp` suma `monto_esperado`/`monto_capturado`; los conteos de campos y relaciones no se recalcularon). Pegar el bloque en [mermaid.live](https://mermaid.live) para exportar el PNG.
+Actualizado a `diccionario-de-datos.md` v1.11: 49 tablas. La v1.11 suma tres tablas **planificadas** del rol Empleado (`InvitacionEmpleado`, `HistorialEmpleadoComercio` y `HistorialEdicionComercio` (antes propuesta como `ActividadComercio`), migraciones `V30` a `V32`, tramo E1), todavía inexistentes en la base, y cambia el ENUM de `EmpleadoComercio.estado` (`V29`, de `PENDIENTE`/`ACTIVO`/`DESACTIVADO` a `ACTIVO`/`INACTIVO`). Antes, en la v1.10: 46 tablas (el bloque suma `HistorialCierreComercio`, tabla del cierre manual del comercio, y `HistorialCambioComercio`, que el encabezado anterior no contaba; antes se agregaron `CodigoVinculacionMp`, `AlertaWebhookMp` y `HistorialCambioNombreUsuario`; `Usuario` suma `nombre_usuario` y `AlertaWebhookMp` suma `monto_esperado`/`monto_capturado`; los conteos de campos y relaciones no se recalcularon). Pegar el bloque en [mermaid.live](https://mermaid.live) para exportar el PNG.
 
 ```mermaid
 erDiagram
@@ -185,15 +185,15 @@ erDiagram
         DATETIME fecha_hora
     }
     %% PLANIFICADO (V32, tramo E1): todavía no existe en la base
-    ActividadComercio {
+    HistorialEdicionComercio {
         INT id PK
         INT comercio_id FK
         INT usuario_id FK
         ENUM_ActorActividad actor_rol
-        ENUM_TipoEntidadActividad entidad_tipo
+        ENUM_TipoEntidadEdicion entidad_tipo
         INT entidad_id
         VARCHAR150 entidad_nombre
-        ENUM_AccionActividad accion
+        ENUM_AccionEdicion accion
         VARCHAR255 detalle
         DATETIME fecha_hora
     }
@@ -486,8 +486,8 @@ erDiagram
     EmpleadoComercio }o--|| HistorialEmpleadoComercio : "empleado_comercio_id"
     InvitacionEmpleado }o--|| HistorialEmpleadoComercio : "invitacion_id"
     Usuario }o--|| HistorialEmpleadoComercio : "actor_usuario_id"
-    Comercio }o--|| ActividadComercio : "comercio_id"
-    Usuario }o--|| ActividadComercio : "usuario_id"
+    Comercio }o--|| HistorialEdicionComercio : "comercio_id"
+    Usuario }o--|| HistorialEdicionComercio : "usuario_id"
     Comercio }o--|| Producto : "comercio_id"
     Categoria }o--|| Producto : "categoria_id"
     Producto }o--|| ImagenProducto : "producto_id"

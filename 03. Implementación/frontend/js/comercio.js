@@ -945,6 +945,7 @@ function renderAccionesPendiente(container, pedido, onActualizado) {
 function mostrarModalAnularPedido(pedido, onConfirmar) {
   const backdrop = crear('div', 'modal-backdrop');
   backdrop.setAttribute('data-testid', 'modal-anular-pedido');
+  const opcionesHtml = MOTIVOS_RECHAZO.map((motivo) => `<option value="${motivo.value}">${motivo.label}</option>`).join('');
   backdrop.innerHTML = `
     <div class="product-modal-sheet">
       <div class="product-modal-sheet__handle"><span></span></div>
@@ -953,8 +954,19 @@ function mostrarModalAnularPedido(pedido, onConfirmar) {
         <form class="form" id="form-anular-pedido" novalidate>
           <div class="field">
             <label class="field__label" for="anulacion-motivo">Motivo de la anulación</label>
-            <div class="textarea-shell" id="anulacion-motivo-shell"><textarea id="anulacion-motivo" maxlength="500" placeholder="Contale al cliente por qué se anula el pedido" data-testid="input-motivo-anulacion"></textarea></div>
+            <div class="select-shell">
+              <select id="anulacion-motivo" required data-testid="select-motivo-anulacion">
+                <option value="" disabled selected>Seleccioná un motivo</option>
+                ${opcionesHtml}
+              </select>
+              <svg class="select-shell__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
             <div class="field__error" id="anulacion-error-motivo" style="display:none;" data-testid="mensaje-error-motivo-anulacion"></div>
+          </div>
+          <div class="field">
+            <label class="field__label" for="anulacion-comentario" id="anulacion-comentario-label">Comentario (opcional)</label>
+            <div class="textarea-shell" id="anulacion-comentario-shell"><textarea id="anulacion-comentario" maxlength="500" placeholder="Agregá una aclaración para el cliente" data-testid="input-comentario-anulacion"></textarea></div>
+            <div class="field__error" id="anulacion-error-comentario" style="display:none;" data-testid="mensaje-error-comentario-anulacion"></div>
           </div>
           <button class="btn btn-primary" type="submit" style="background:var(--color-error);margin-bottom:10px;" data-testid="btn-confirmar-anulacion">Anular pedido</button>
           <button class="btn btn-tertiary" type="button" id="cancelar-anulacion-btn" data-testid="btn-cancelar-anulacion">Cancelar</button>
@@ -965,13 +977,22 @@ function mostrarModalAnularPedido(pedido, onConfirmar) {
   document.body.appendChild(backdrop);
 
   const form = backdrop.querySelector('#form-anular-pedido');
-  const motivoShell = form.querySelector('#anulacion-motivo-shell');
-  const motivoTextarea = form.querySelector('#anulacion-motivo');
+  const selectMotivo = form.querySelector('#anulacion-motivo');
+  const comentarioLabel = form.querySelector('#anulacion-comentario-label');
+  const comentarioShell = form.querySelector('#anulacion-comentario-shell');
+  const comentarioTextarea = form.querySelector('#anulacion-comentario');
 
-  motivoTextarea.addEventListener('input', () => {
-    motivoShell.classList.remove('textarea-shell--error');
+  function limpiarErrorComentario() {
+    comentarioShell.classList.remove('textarea-shell--error');
+    limpiarErrorCampo('anulacion-error-comentario');
+  }
+
+  selectMotivo.addEventListener('change', () => {
+    comentarioLabel.textContent = selectMotivo.value === 'OTRO' ? 'Comentario' : 'Comentario (opcional)';
     limpiarErrorCampo('anulacion-error-motivo');
+    limpiarErrorComentario();
   });
+  comentarioTextarea.addEventListener('input', limpiarErrorComentario);
 
   backdrop.querySelector('#cancelar-anulacion-btn').addEventListener('click', () => backdrop.remove());
   backdrop.addEventListener('click', (event) => {
@@ -981,14 +1002,21 @@ function mostrarModalAnularPedido(pedido, onConfirmar) {
   });
   form.addEventListener('submit', (event) => {
     event.preventDefault();
-    const motivo = motivoTextarea.value.trim();
+    const motivo = selectMotivo.value;
     if (!motivo) {
-      motivoShell.classList.add('textarea-shell--error');
-      mostrarErrorCampo('anulacion-error-motivo', 'Ingresá el motivo de la anulación.');
+      mostrarErrorCampo('anulacion-error-motivo', 'Seleccioná un motivo de anulación.');
       return;
     }
+    limpiarErrorCampo('anulacion-error-motivo');
+    const comentario = comentarioTextarea.value.trim();
+    if (motivo === 'OTRO' && !comentario) {
+      comentarioShell.classList.add('textarea-shell--error');
+      mostrarErrorCampo('anulacion-error-comentario', 'Ingresá un comentario para especificar el motivo de la anulación.');
+      return;
+    }
+    limpiarErrorComentario();
     backdrop.remove();
-    onConfirmar({ motivo });
+    onConfirmar({ motivo, comentario });
   });
 }
 
@@ -1021,9 +1049,9 @@ function renderAccionesEnPreparacion(container, pedido, onActualizado) {
   anularBtn.setAttribute('data-testid', 'btn-anular-pedido');
   anularBtn.textContent = 'Anular pedido';
   anularBtn.addEventListener('click', () => {
-    mostrarModalAnularPedido(pedido, async ({ motivo }) => {
+    mostrarModalAnularPedido(pedido, async ({ motivo, comentario }) => {
       try {
-        const actualizado = await apiFetch(`/pedidos/comercio/${pedido.id}/anular`, { method: 'PUT', body: { motivo } });
+        const actualizado = await apiFetch(`/pedidos/comercio/${pedido.id}/anular`, { method: 'PUT', body: { motivo, comentario: comentario || null } });
         normalizarPedido(actualizado);
         showToast('Pedido anulado');
         onActualizado(actualizado);
@@ -1062,6 +1090,8 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado) {
 
   let motivoInfo = null;
   if (pedido.estado === 'RECHAZADO' && pedido.motivoRechazo) {
+    motivoInfo = { motivoLabel: MOTIVO_RECHAZO_LABEL[pedido.motivoRechazo] || pedido.motivoRechazo, comentario: pedido.comentarioRechazo };
+  } else if (pedido.estado === 'ANULADO' && pedido.motivoRechazo) {
     motivoInfo = { motivoLabel: MOTIVO_RECHAZO_LABEL[pedido.motivoRechazo] || pedido.motivoRechazo, comentario: pedido.comentarioRechazo };
   } else if (pedido.estado === 'ANULADO' && pedido.motivoAnulacion) {
     motivoInfo = { motivoLabel: pedido.motivoAnulacion, comentario: null };

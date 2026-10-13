@@ -487,7 +487,7 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
         ['PUT', '/pedidos/comercio/1/rechazar', { motivo: 'SIN_STOCK' }],
         ['PUT', '/pedidos/comercio/1/despachar'],
         ['PUT', '/pedidos/comercio/1/entregar'],
-        ['PUT', '/pedidos/comercio/1/anular', { motivo: 'x' }],
+        ['PUT', '/pedidos/comercio/1/anular', { motivo: 'SIN_STOCK' }],
       ];
       for (const [metodo, ruta, cuerpo] of intentos) {
         const respuesta = await apiConHeaders(request, metodo, ruta, empleadoToken, cabeceras, cuerpo);

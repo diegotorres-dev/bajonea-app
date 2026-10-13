@@ -232,6 +232,8 @@ Frontend: `js/catalogo.js` línea 147 (`!esContextoEmpleado()` esconde la campan
 
 ## 6. `actividad_comercio` (V32)
 
+> **Reemplazada el 2026-10-12 (Diego).** La tabla planificada pasa a ser `historial_edicion_comercio` (entidad `HistorialEdicionComercio`): registra altas, ediciones, bajas y cambios de estado de productos, imágenes, perfil y horarios, hechos por el Dueño o por un Empleado, sin valores anteriores, con `entidad_nombre` como snapshot, **sin** columna `actor_nombre` y **sin** registros de pedidos ni de cierres (esos ya tienen `historial_estado_pedido` e `historial_cierre_comercio`). La pestaña Actividad junta las tres fuentes en una lista por fecha. El DDL vigente está en `docs/diccionario-de-datos.md`, tabla `HistorialEdicionComercio`; el que sigue es el propuesto originalmente y queda solo como registro.
+
 ### 6.1 DDL propuesto
 
 `V32` está libre: el directorio de migraciones llega a `V31__crear_historial_empleado_comercio.sql` (31 archivos), `git ls-files` no tiene ninguna `V32` y ningún nombre de tabla, índice o constraint propuesto choca con los existentes (prefijo `act_`). El DDL es el aprobado el 2026-10-05 **más una columna** (`actor_nombre`):

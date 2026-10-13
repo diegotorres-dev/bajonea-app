@@ -1,6 +1,7 @@
 package com.bajonea.backend.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
+import com.bajonea.backend.enums.MotivoRechazo;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,7 +14,9 @@ import lombok.Setter;
 @AllArgsConstructor
 public class AnulacionPedidoRequestDTO {
 
-    @NotBlank
+    @NotNull
+    private MotivoRechazo motivo;
+
     @Size(max = 500)
-    private String motivo;
+    private String comentario;
 }

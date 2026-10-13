@@ -179,7 +179,7 @@ class PedidoServiceCarreraTest {
         otraTransaccionGanoLaCarrera(pedido, EstadoPedido.EN_CAMINO);
 
         assertThrows(ConflictoDeNegocioException.class,
-                () -> pedidoService.anularPedido(dueno(), 13, new AnulacionPedidoRequestDTO("x")));
+                () -> pedidoService.anularPedido(dueno(), 13, new AnulacionPedidoRequestDTO(com.bajonea.backend.enums.MotivoRechazo.OTRO, "x")));
 
         verificarQueLaPerdedoraNoEscribioNada(pedido, EstadoPedido.EN_CAMINO);
     }

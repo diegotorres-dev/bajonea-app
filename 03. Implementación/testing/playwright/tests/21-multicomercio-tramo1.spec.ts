@@ -343,7 +343,7 @@ test.describe('Multi-comercio, tramo 1: resolución del comercio activo y aislam
     });
     expect(rechazoCruzado.status).toBe(404);
     const anulacionCruzada = await apiConHeaders(request, 'PUT', `/pedidos/comercio/${pedidoB}/anular`, token, { [HEADER]: String(comercioA) }, {
-      motivo: 'Intento cruzado',
+      motivo: 'SIN_STOCK',
     });
     expect(anulacionCruzada.status).toBe(404);
 

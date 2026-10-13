@@ -47,8 +47,8 @@ erDiagram
     EmpleadoComercio ||--o{ HistorialEmpleadoComercio : "(planificada) tiene"
     InvitacionEmpleado ||--o{ HistorialEmpleadoComercio : "(planificada) origina"
     Usuario ||--o{ HistorialEmpleadoComercio : "(planificada) ejecuta"
-    Comercio ||--o{ ActividadComercio : "(planificada) bitacora"
-    Usuario ||--o{ ActividadComercio : "(planificada) realiza"
+    Comercio ||--o{ HistorialEdicionComercio : "(planificada) registra ediciones"
+    Usuario ||--o{ HistorialEdicionComercio : "(planificada) realiza"
 
     Comercio ||--o{ Producto : "ofrece"
     Categoria ||--o{ Producto : "clasifica"

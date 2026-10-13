@@ -4,7 +4,7 @@
 **Motor de base de datos:** MySQL (InnoDB)  
 **ORM / Migraciones:** Spring Data JPA + Hibernate / Flyway  
 **Versión del modelo:** 1.12  
-**Estado de la v1.12:** el modelo del rol Empleado decidido el 2026-10-05 (ver `docs/DECISIONES.md`) está **implementado en parte** (tramo E1, bloques A1 y A2, 2026-10-06): las migraciones `V29` (estado de la relación `ACTIVO`/`INACTIVO`), `V30` (`InvitacionEmpleado`) y `V31` (`HistorialEmpleadoComercio`) están aplicadas, con sus entidades, repositorios y los servicios de invitar, reenviar, cancelar y listar el equipo, pero todavía sin endpoints ni pantallas (bloques A3 a A5 y entrega B). `ActividadComercio` (`V32`) sigue **planificada**: se aplica en el tramo E3 y no existe todavía en la base. Los pasajes que describen lo que aún no existe están marcados como planificados.  
+**Estado de la v1.12:** el modelo del rol Empleado decidido el 2026-10-05 (ver `docs/DECISIONES.md`) está **implementado en parte** (tramo E1, bloques A1 y A2, 2026-10-06): las migraciones `V29` (estado de la relación `ACTIVO`/`INACTIVO`), `V30` (`InvitacionEmpleado`) y `V31` (`HistorialEmpleadoComercio`) están aplicadas, con sus entidades, repositorios y los servicios de invitar, reenviar, cancelar y listar el equipo, pero todavía sin endpoints ni pantallas (bloques A3 a A5 y entrega B). `HistorialEdicionComercio` (`V32`, que reemplaza a la `ActividadComercio` propuesta antes; ver la tabla) sigue **planificada**: se aplica en el tramo E3 y no existe todavía en la base. Los pasajes que describen lo que aún no existe están marcados como planificados.  
 
 ## 1. Tipos Enumerados (ENUMs)
 
@@ -238,35 +238,36 @@ Estado de la relación entre un Empleado y un Comercio puntual (tabla `EmpleadoC
 
 ---
 
-### ENUM: TipoEntidadActividad
+### ENUM: TipoEntidadEdicion
 
-*Planificado (migración `V32`, que se aplica en el tramo E3).* Tipo de entidad sobre la que se hizo una acción registrada en `ActividadComercio`.
+*Planificado (migración `V32`, que se aplica en el tramo E3).* Tipo de entidad sobre la que se hizo un cambio registrado en `HistorialEdicionComercio`.
 
 | Valor | Descripción |
 |-------|-------------|
 | `PRODUCTO` | Un producto del comercio. |
 | `IMAGEN_PRODUCTO` | Una imagen de la galería de un producto. |
-| `PEDIDO` | Un pedido del comercio (las transiciones se registran como `CAMBIAR_ESTADO`). |
-| `COMERCIO` | Los datos, la foto o el cierre/apertura del comercio. |
+| `COMERCIO` | Los datos del perfil del comercio (descripción, teléfono, foto y, para el Dueño, el resto de los datos editables). |
 | `HORARIO` | Una franja de horario (futuro: hoy no hay endpoint de edición). |
 | `RED_SOCIAL` | Un enlace a red social (acción exclusiva del Dueno). |
 | `GRUPO_EXTRA` | Un grupo de extras (futuro). |
 | `EXTRA` | Un extra (futuro). |
 
+No hay valor `PEDIDO`: las transiciones de un pedido ya quedan en `HistorialEstadoPedido`.
+
 ---
 
-### ENUM: AccionActividad
+### ENUM: AccionEdicion
 
-*Planificado (migración `V32`, tramo E3).* Acción registrada en `ActividadComercio`. Es un conjunto chico y estable: el detalle va en el texto de `detalle`, no en valores nuevos del ENUM.
+*Planificado (migración `V32`, tramo E3).* Acción registrada en `HistorialEdicionComercio`. Es un conjunto chico y estable: el detalle va en el texto de `detalle`, no en valores nuevos del ENUM.
 
 | Valor | Descripción |
 |-------|-------------|
 | `CREAR` | Alta de la entidad. |
 | `EDITAR` | Edición de la entidad. |
 | `ELIMINAR` | Baja de la entidad. |
-| `CAMBIAR_ESTADO` | Cambio de estado (por ejemplo, de un producto o de un pedido). |
-| `ABRIR` | Apertura manual del comercio. |
-| `CERRAR` | Cierre manual del comercio. |
+| `CAMBIAR_ESTADO` | Cambio de estado (por ejemplo, de disponibilidad de un producto). |
+
+No hay `ABRIR` ni `CERRAR`: la apertura y el cierre manual ya quedan en `HistorialCierreComercio`.
 
 ---
 
@@ -1055,31 +1056,52 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 
 ---
 
-### Tabla: ActividadComercio
+### Tabla: HistorialEdicionComercio
 
-> **Planificada — migración `V32`, que se aplica en el tramo E3** (no en E1: no existe todavía en la base ni en el código). Tabla física `actividad_comercio`.
+> **Planificada — migración `V32`, que se aplica en el tramo E3** (no existe todavía en la base ni en el código). Tabla física `historial_edicion_comercio`. Reemplaza, por decisión del 2026-10-12, a la `ActividadComercio` propuesta antes.
 
-**Descripción:** Bitácora de escrituras sobre el comercio: quién hizo qué y cuándo. No guarda valores anteriores. Repite a propósito datos que ya guardan `HistorialEstadoPedido` y `HistorialCierreComercio` para que "Ver equipo" lea una sola tabla.
+**Descripción:** Registro de solo inserción de quién hizo qué cambio sobre el catálogo y el perfil del comercio y cuándo: altas, ediciones, bajas y cambios de estado de productos, imágenes, perfil y horarios, hechos por el Dueno o por un Empleado. No guarda valores anteriores. No registra pedidos ni cierres y aperturas, porque ya tienen su propio historial (`HistorialEstadoPedido` e `HistorialCierreComercio`); la pestaña Actividad de "Ver equipo" junta las tres fuentes en una sola lista por fecha.
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
 | `id` | INT | NO | AI | PK, AI | Identificador único del registro. |
 | `comercio_id` | INT | NO | — | FK → Comercio.id, NN | Comercio sobre el que se actuó. |
-| `usuario_id` | INT | NO | — | FK → Usuario.id, NN | Usuario que hizo la acción. |
+| `usuario_id` | INT | NO | — | FK → Usuario.id, NN | Usuario que hizo el cambio. El nombre de quien actuó no se guarda en la fila: se lee de este usuario. |
 | `actor_rol` | ENUM(`DUENO`,`EMPLEADO`) | NO | — | NN | Rol con el que actuó. |
-| `entidad_tipo` | ENUM TipoEntidadActividad | NO | — | NN | Tipo de entidad tocada. |
-| `entidad_id` | INT | SÍ | NULL | — | Id de la entidad, sin FK. |
-| `entidad_nombre` | VARCHAR(150) | SÍ | NULL | — | Nombre de la entidad en el momento de la acción (el producto puede renombrarse o descontinuarse después). |
-| `accion` | ENUM AccionActividad | NO | — | NN | `CREAR`, `EDITAR`, `ELIMINAR`, `CAMBIAR_ESTADO`, `ABRIR` o `CERRAR`. |
-| `detalle` | VARCHAR(255) | SÍ | NULL | — | Texto breve (por ejemplo, "Pedido #12: aceptado"). |
-| `fecha_hora` | DATETIME | NO | `NOW()` | NN | Fecha y hora de la acción. |
+| `entidad_tipo` | ENUM TipoEntidadEdicion | NO | — | NN | Tipo de entidad tocada. |
+| `entidad_id` | INT | SÍ | NULL | — | Id de la entidad, sin FK (apunta a varias tablas). |
+| `entidad_nombre` | VARCHAR(150) | SÍ | NULL | — | Nombre de la entidad en el momento del cambio (snapshot: el producto puede renombrarse o descontinuarse después). |
+| `accion` | ENUM AccionEdicion | NO | — | NN | `CREAR`, `EDITAR`, `ELIMINAR` o `CAMBIAR_ESTADO`. |
+| `detalle` | VARCHAR(255) | SÍ | NULL | — | Texto breve con los nombres de los campos que cambiaron (por ejemplo, "Editó: descripción, teléfono"); nunca datos personales ni valores. |
+| `fecha_hora` | DATETIME | NO | `NOW()` | NN | Fecha y hora del cambio. |
 
 **Índices:** `PRIMARY KEY (id)` | `INDEX (comercio_id, fecha_hora, id)` | `INDEX (usuario_id)`
 
+**DDL propuesto (no aplicado):**
+
+```sql
+CREATE TABLE `historial_edicion_comercio` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `comercio_id` int(11) NOT NULL,
+  `usuario_id` int(11) NOT NULL,
+  `actor_rol` enum('DUENO','EMPLEADO') NOT NULL,
+  `entidad_tipo` enum('PRODUCTO','IMAGEN_PRODUCTO','COMERCIO','HORARIO','RED_SOCIAL','GRUPO_EXTRA','EXTRA') NOT NULL,
+  `entidad_id` int(11) DEFAULT NULL,
+  `entidad_nombre` varchar(150) DEFAULT NULL,
+  `accion` enum('CREAR','EDITAR','ELIMINAR','CAMBIAR_ESTADO') NOT NULL,
+  `detalle` varchar(255) DEFAULT NULL,
+  `fecha_hora` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `idx_hec_comercio_fecha` (`comercio_id`,`fecha_hora`,`id`),
+  KEY `idx_hec_usuario` (`usuario_id`),
+  CONSTRAINT `fk_hec_comercio` FOREIGN KEY (`comercio_id`) REFERENCES `comercio` (`id`),
+  CONSTRAINT `fk_hec_usuario` FOREIGN KEY (`usuario_id`) REFERENCES `usuario` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+```
+
 **Reglas de negocio:**
-- Se escribe desde los servicios, en la misma transacción de la escritura, solo cuando hubo un cambio efectivo (cerrar dos veces no escribe una segunda fila). Cubre las escrituras delegables (productos, imágenes, datos y foto del comercio, pedidos, cierre y apertura) y las del Dueno que no se delegan (redes sociales), para que la vista del Dueno sea completa.
-- Las transiciones de pedido van como `CAMBIAR_ESTADO` con el texto en `detalle`.
-- La ve el Dueno completa y el Administrador en solo lectura; el Empleado no la ve. Se pagina por `(fecha_hora, id)` descendente.
+- Se escribe desde los servicios, en la misma transacción del cambio, solo cuando hubo un cambio efectivo. Cubre las escrituras delegables de productos, imágenes y perfil y las del Dueno que no se delegan (redes sociales), para que la vista del Dueno sea completa.
+- La ve el Dueno completa (tramo E3) y el Administrador en solo lectura (tramo E4); el Empleado no la ve. Se pagina por `(fecha_hora, id)` descendente.
 
 ---
 
@@ -1526,13 +1548,13 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | `estado` | ENUM EstadoPedido | NO | `'PENDIENTE_PAGO'` | NN | Estado actual del pedido en su ciclo de vida. |
 | `pago_estado` | ENUM EstadoPagoPedido | NO | `'PENDIENTE'` | NN | Estado del pago asociado. Se actualiza al recibir el webhook de MercadoPago o la sincronización a pedido del Cliente; `RECHAZADO` no cancela el pedido. |
 | `cancelado_por` | ENUM CanceladoPor | SÍ | NULL | — | Actor que originó la cancelación. Solo se registra en estados terminales negativos. NULL en todos los demás estados. |
-| `motivo` | VARCHAR(500) | SÍ | NULL | — | Motivo libre de anulación ingresado por el comercio (estado `ANULADO`), o motivo automático de la cancelación por vencimiento del plazo de pago (`Pago no confirmado` si el pago quedó sin resolver, `Pago rechazado` si el último pago fue rechazado; estado `CANCELADO_POR_SISTEMA`). El DTO de respuesta solo lo expone cuando `estado = ANULADO`. |
+| `motivo` | VARCHAR(500) | SÍ | NULL | — | Texto legible del motivo de anulación elegido por el comercio de la lista de motivos de rechazo, con el comentario si lo hay (por ejemplo, "Problema técnico. Se cortó la luz"; estado `ANULADO`; los pedidos anulados antes del 2026-10-12 conservan el texto libre que se escribió), o motivo automático de la cancelación por vencimiento del plazo de pago (`Pago no confirmado` si el pago quedó sin resolver, `Pago rechazado` si el último pago fue rechazado; estado `CANCELADO_POR_SISTEMA`). El DTO de respuesta solo lo expone cuando `estado = ANULADO`. |
 | `fuente_entrega` | ENUM FuenteEntrega | SÍ | NULL | — | Actor que confirmó la entrega. Solo se registra cuando `estado = ENTREGADO`. NULL en todos los demás estados. |
 | `fecha_entrega` | DATETIME | SÍ | NULL | — | Fecha y hora real en que el pedido fue entregado o confirmado como entregado. |
 | `suspension_retiro_expira` | DATETIME | SÍ | NULL | — | Fecha y hora de expiración del timer de 90 minutos para pedidos `LISTO_PARA_RETIRAR` afectados por la suspensión del comercio. NULL si no aplica. |
 | `primer_aviso_emitido` | TINYINT(1) | NO | `false` | NN | Flag de idempotencia: `true` una vez emitido el aviso de los 75 minutos (T7) para pedidos en `EN_CAMINO`. Evita duplicados en reintentos del job periódico. |
-| `motivo_rechazo` | ENUM MotivoRechazo | SÍ | NULL | — | Motivo estructurado del rechazo por el comercio. Solo se registra cuando `estado = RECHAZADO`. |
-| `comentario_rechazo` | VARCHAR(500) | SÍ | NULL | — | Texto libre complementario al `motivo_rechazo`. Particularmente útil cuando `motivo_rechazo = OTRO`. |
+| `motivo_rechazo` | ENUM MotivoRechazo | SÍ | NULL | — | Motivo estructurado del rechazo o de la anulación por el comercio (la misma lista para las dos acciones). Se registra cuando `estado = RECHAZADO` o `estado = ANULADO`; NULL en los pedidos anulados antes del 2026-10-12. |
+| `comentario_rechazo` | VARCHAR(500) | SÍ | NULL | — | Texto libre complementario al `motivo_rechazo`, en el rechazo y en la anulación. Obligatorio cuando `motivo_rechazo = OTRO`. |
 | `subtotal` | DECIMAL(10,2) | NO | — | NN | Suma de todos los `DetallePedido.subtotal` al momento de confirmar el pedido. Valor congelado. |
 | `cargo_servicio_cliente` | DECIMAL(10,2) | NO | — | NN | Cargo de servicio aplicado al cliente, congelado desde la `ConfiguracionTarifa` vigente al momento del pedido. |
 | `cargo_servicio_comercio` | DECIMAL(10,2) | NO | — | NN | Comisión de plataforma del comercio, congelada desde la `ConfiguracionTarifa` vigente al momento del pedido. |
@@ -1769,8 +1791,8 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | 63 | `HistorialEmpleadoComercio` | `empleado_comercio_id` | `EmpleadoComercio` | N:1 | N eventos → 1 relación | *Implementada (`V31`).* Relación afectada (nulable: eventos de invitación). |
 | 64 | `HistorialEmpleadoComercio` | `invitacion_id` | `InvitacionEmpleado` | N:1 | N eventos → 1 invitación | *Implementada (`V31`).* Invitación afectada (nulable: eventos de la relación). |
 | 65 | `HistorialEmpleadoComercio` | `actor_usuario_id` | `Usuario` | N:1 | N eventos → 1 usuario | *Implementada (`V31`).* Quien ejecutó el evento. |
-| 66 | `ActividadComercio` | `comercio_id` | `Comercio` | N:1 | N registros → 1 comercio | *Planificada (`V32`, tramo E3).* Bitácora de escrituras del comercio. |
-| 67 | `ActividadComercio` | `usuario_id` | `Usuario` | N:1 | N registros → 1 usuario | *Planificada (`V32`, tramo E3).* Quien hizo la acción. |
+| 66 | `HistorialEdicionComercio` | `comercio_id` | `Comercio` | N:1 | N registros → 1 comercio | *Planificada (`V32`, tramo E3).* Registro de ediciones del catálogo y el perfil del comercio. |
+| 67 | `HistorialEdicionComercio` | `usuario_id` | `Usuario` | N:1 | N registros → 1 usuario | *Planificada (`V32`, tramo E3).* Quien hizo la acción. |
 
 ---
 
@@ -1806,7 +1828,7 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 
 ### Combinaciones de roles y contexto del Empleado
 
-> Decidido el 2026-10-05 (ver `docs/DECISIONES.md`). Implementado en parte en el tramo E1 (bloques A1 y A2, 2026-10-06): `InvitacionEmpleado`, `HistorialEmpleadoComercio`, el nuevo `EstadoEmpleadoComercio` y el servicio de matriz de roles (`MatrizRolesService`, que lee las capacidades de una cuenta con un `existsById` por tabla de subtipo y rechaza invitar a un Dueno o Administrador). Sigue **planificado** (A3 a A5, E2 a E4): aceptar invitaciones, endpoints, pantallas, el contexto del Empleado en cada request y `ActividadComercio`.
+> Decidido el 2026-10-05 (ver `docs/DECISIONES.md`). Implementado en parte en el tramo E1 (bloques A1 y A2, 2026-10-06): `InvitacionEmpleado`, `HistorialEmpleadoComercio`, el nuevo `EstadoEmpleadoComercio` y el servicio de matriz de roles (`MatrizRolesService`, que lee las capacidades de una cuenta con un `existsById` por tabla de subtipo y rechaza invitar a un Dueno o Administrador). Sigue **planificado** (A3 a A5, E2 a E4): aceptar invitaciones, endpoints, pantallas, el contexto del Empleado en cada request y `HistorialEdicionComercio`.
 
 - **Regla de combinaciones (regla de negocio):** un Administrador es Administrador o Cliente; un Dueno es Dueno o Cliente; un Empleado es Empleado o Cliente. Un Cliente puede sumar el rol Empleado por invitación. Un Dueno no puede ser Empleado de otro local y un Administrador no puede ser Empleado ni Dueno.
 - **Alcance:** solo se construye y se hace cumplir "Empleado + Cliente" y que un Empleado nunca sea Dueno ni Administrador. "Dueno + Cliente" y "Administrador + Cliente" quedan como regla escrita sin mecanismo: hoy ni el Dueno ni el Administrador tienen fila `Cliente` y las rutas de Cliente exigen `ROLE_CLIENTE`. Un Cliente existente tampoco puede pasar a Dueno (registrar un comercio con un email o DNI existentes responde `409`) y no se construye en este bloque.
@@ -1814,9 +1836,9 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 - **Validación de la matriz:** al invitar, si el email pertenece a un Dueno o a un Administrador, no se crea la invitación y el Dueno ve el mensaje genérico "No se puede invitar a este email" (sin revelar el tipo de cuenta); se vuelve a validar al aceptar. Se decide mirando las filas de subtipo (`Administrador`, `Dueno.persona_fisica_id`, `Empleado`, `Cliente`), no `Usuario.rol`.
 - **Ex Empleado:** quien fue Empleado (aunque la relación esté `INACTIVO`) no puede registrar un comercio con esa cuenta. Es una limitación conocida; los casos raros se resuelven por soporte.
 - **Estados de la relación:** `ACTIVO`/`INACTIVO` en la base. La fila nace al aceptar la invitación, ya `ACTIVO`, o se reactiva (misma fila). Reactivar sin código solo si lo dio de baja el Dueno; si renunció o se canceló la invitación hace falta una invitación nueva. En pantalla además se ve "Pendiente" y "Vencida", derivados de `InvitacionEmpleado`.
-- **Comercio no operativo:** un Empleado ve en su selector los comercios `SUSPENDIDO` y `CERRADO_TEMPORALMENTE` con aviso y no puede operarlos (el servidor responde `409`), salvo terminar lo que ya estaba en marcha (entregar los `LISTO_PARA_RETIRAR` y confirmar las entregas de los `EN_CAMINO`). `INACTIVO`, `RECHAZO_DEFINITIVO`, `PENDIENTE` y `RECHAZADO` no aparecen. Las relaciones no se tocan por cambios de estado del comercio.
+- **Comercio no operativo:** un Empleado ve en su selector los comercios `SUSPENDIDO` y `CERRADO_TEMPORALMENTE` con aviso. Puede despachar, entregar (también un pedido `LISTO_PARA_RETIRAR`) y anular los pedidos ya aceptados (el servidor responde `409` a todo lo demás: aceptar pedidos nuevos, tocar productos o el perfil, abrir o cerrar). Las entregas de los pedidos `EN_CAMINO` no las confirma el comercio: las confirma el Cliente o el sistema (aviso a los 75 minutos y autoconfirmación a los 90). El Dueno queda sin cambios por ahora; la diferencia se resuelve en el tramo de rediseño de la suspensión. `INACTIVO`, `RECHAZO_DEFINITIVO`, `PENDIENTE` y `RECHAZADO` no aparecen. Las relaciones no se tocan por cambios de estado del comercio.
 - **Pedido propio:** un Empleado puede pedir en su propio comercio como Cliente pero no puede gestionar sus propios pedidos (se valida por el id del usuario); no recibe la notificación de "pedido nuevo" de su propio pedido.
-- **Permisos delegables (lista blanca por ruta exacta; todo lo no clasificado queda bloqueado):** perfil, foto y datos del comercio con un DTO reducido (sin razón social, CUIT, condición de IVA, tipo de sociedad, domicilio fiscal, fecha de inicio ni representante), abrir y cerrar, productos (con imágenes y estado), historial y ventas, aceptar, rechazar, despachar, entregar y anular pedidos, y notificaciones con el encabezado del comercio. Futuros delegables: extras y grupos de extras, y edición de horarios. Exclusivo del Dueno: alta adicional y corrección o re-solicitud de comercio, redes sociales, todo lo de MercadoPago (incluido el enlace de pago de un pedido), datos fiscales, la gestión del equipo (invitar, reenviar, cancelar, desactivar, reactivar, actividad) y la futura documentación de habilitación.
+- **Permisos delegables (lista blanca por ruta exacta; todo lo no clasificado queda bloqueado):** 17 escrituras (9 de productos con sus imágenes y firmas, 3 de comercio —perfil, cerrar y abrir— y 5 de pedidos: aceptar, rechazar, despachar, entregar y anular), más las lecturas del perfil reducido (sin razón social, CUIT, condición de IVA, tipo de sociedad, domicilio fiscal, fecha de inicio ni representante), productos, pedidos y ventas, y las notificaciones con el encabezado del comercio. Del comercio el Empleado edita solo la descripción, el teléfono y los horarios; el nombre, la foto, la dirección y el tipo de comercio los ve en solo lectura. Futuros delegables: extras y grupos de extras, y edición de horarios. Exclusivo del Dueno: alta adicional y corrección o re-solicitud de comercio, nombre, foto, dirección y tipo de comercio, redes sociales, todo lo de MercadoPago (incluido el enlace de pago de un pedido), datos fiscales, la gestión del equipo (invitar, reenviar, cancelar, desactivar, reactivar, actividad) y la futura documentación de habilitación.
 - **Sesión única:** un login en otro dispositivo cierra la sesión anterior en ambos contextos (Cliente y Empleado).
 
 ### Ciclo de vida del usuario y propagación al comercio

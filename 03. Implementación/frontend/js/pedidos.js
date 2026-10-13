@@ -87,7 +87,7 @@ const ESTADO_INFO = {
     dotClass: 'pedido-estado__dot--rechazado',
     iconClass: ICON_CLASS,
     icon: ICONS.xCircle,
-    texto: () => 'Cancelaste este pedido.',
+    texto: (_nombreComercio, pedido) => (pedido && pedido.reembolsoEstado ? 'Cancelaste este pedido. Estamos gestionando la devolución de tu pago.' : 'Cancelaste este pedido.'),
   },
   ANULADO: {
     label: 'Anulado',
@@ -308,7 +308,7 @@ function renderAccionesCliente(container, pedido, onActualizado, { procesando = 
     try {
       const actualizado = await apiFetch(endpoint, { method: 'PUT' });
       normalizarPedido(actualizado);
-      showToast(mensajeExito);
+      showToast(actualizado.reembolsoEstado ? `${mensajeExito}. Estamos gestionando la devolución de tu pago.` : mensajeExito);
       onActualizado(actualizado);
     } catch (error) {
       showToast(error instanceof ApiError ? error.message : mensajeError, 'error');
@@ -450,6 +450,8 @@ export async function initPedidoDetalle() {
     let motivoInfo = null;
     if (pedido.estado === 'RECHAZADO' && pedido.motivoRechazo) {
       motivoInfo = { motivoLabel: MOTIVO_RECHAZO_LABEL[pedido.motivoRechazo] || pedido.motivoRechazo, comentario: pedido.comentarioRechazo };
+    } else if (pedido.estado === 'ANULADO' && pedido.motivoRechazo) {
+      motivoInfo = { motivoLabel: MOTIVO_RECHAZO_LABEL[pedido.motivoRechazo] || pedido.motivoRechazo, comentario: pedido.comentarioRechazo };
     } else if (pedido.estado === 'ANULADO' && pedido.motivoAnulacion) {
       motivoInfo = { motivoLabel: pedido.motivoAnulacion, comentario: null };
     }
@@ -458,7 +460,7 @@ export async function initPedidoDetalle() {
       iconClass: info.iconClass,
       icono: info.icon,
       label: info.label,
-      texto: info.texto(comercio ? comercio.nombre : 'El comercio'),
+      texto: info.texto(comercio ? comercio.nombre : 'El comercio', pedido),
       numeroTexto: `Pedido #${pedido.id} · ${formatearFecha(pedido.fechaCreacion)}`,
       motivoRechazo: motivoInfo,
       reembolsoTexto: textoReembolso(pedido),

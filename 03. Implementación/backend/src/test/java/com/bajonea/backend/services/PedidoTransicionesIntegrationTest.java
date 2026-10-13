@@ -213,7 +213,7 @@ class PedidoTransicionesIntegrationTest {
         Escenario e = escenario(true);
         int pedidoId = pedido(e, "EN_PREPARACION", true, 5);
 
-        pedidoService.anularPedido(e.comercio(), pedidoId, new AnulacionPedidoRequestDTO("Se rompio el horno"));
+        pedidoService.anularPedido(e.comercio(), pedidoId, new AnulacionPedidoRequestDTO(com.bajonea.backend.enums.MotivoRechazo.OTRO, "Se rompio el horno"));
 
         assertEquals("ANULADO", estado(pedidoId));
         assertEquals(1, notas(pedidoId));
@@ -235,7 +235,7 @@ class PedidoTransicionesIntegrationTest {
         Escenario e = escenario(false);
         int pedidoId = pedido(e, "EN_PREPARACION", true, 5);
 
-        pedidoService.anularPedido(e.comercio(), pedidoId, new AnulacionPedidoRequestDTO("Sin gas"));
+        pedidoService.anularPedido(e.comercio(), pedidoId, new AnulacionPedidoRequestDTO(com.bajonea.backend.enums.MotivoRechazo.OTRO, "Sin gas"));
 
         assertEquals("ANULADO", estado(pedidoId));
         assertEquals(1, notas(pedidoId));
@@ -251,7 +251,7 @@ class PedidoTransicionesIntegrationTest {
         when(reembolsoClient.solicitarReembolsoTotal(anyString(), anyString(), anyString()))
                 .thenReturn(ResultadoReembolsoMp.fallido("Mercado Pago respondio 400: sin fondos"));
 
-        pedidoService.anularPedido(e.comercio(), pedidoId, new AnulacionPedidoRequestDTO("Cierre imprevisto"));
+        pedidoService.anularPedido(e.comercio(), pedidoId, new AnulacionPedidoRequestDTO(com.bajonea.backend.enums.MotivoRechazo.OTRO, "Cierre imprevisto"));
 
         assertEquals("ANULADO", estado(pedidoId));
         assertEquals(1, notas(pedidoId));
@@ -265,7 +265,7 @@ class PedidoTransicionesIntegrationTest {
         Escenario e = escenario(true);
         int pedidoId = pedido(e, "EN_PREPARACION", false, 5);
 
-        pedidoService.anularPedido(e.comercio(), pedidoId, new AnulacionPedidoRequestDTO("Sin insumos"));
+        pedidoService.anularPedido(e.comercio(), pedidoId, new AnulacionPedidoRequestDTO(com.bajonea.backend.enums.MotivoRechazo.OTRO, "Sin insumos"));
 
         assertEquals("ANULADO", estado(pedidoId));
         assertEquals(0, notas(pedidoId));
@@ -282,7 +282,7 @@ class PedidoTransicionesIntegrationTest {
                 .crear(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
 
         try {
-            pedidoService.anularPedido(e.comercio(), pedidoId, new AnulacionPedidoRequestDTO("x"));
+            pedidoService.anularPedido(e.comercio(), pedidoId, new AnulacionPedidoRequestDTO(com.bajonea.backend.enums.MotivoRechazo.OTRO, "x"));
             fail("Tenía que fallar");
         } catch (IllegalStateException esperado) {
             assertEquals("falla simulada al escribir la nota", esperado.getMessage());
@@ -304,7 +304,7 @@ class PedidoTransicionesIntegrationTest {
 
         List<Callable<Object>> tareas = new ArrayList<>();
         for (int i = 0; i < 6; i++) {
-            tareas.add(() -> pedidoService.anularPedido(e.comercio(), pedidoId, new AnulacionPedidoRequestDTO("Cierre")));
+            tareas.add(() -> pedidoService.anularPedido(e.comercio(), pedidoId, new AnulacionPedidoRequestDTO(com.bajonea.backend.enums.MotivoRechazo.OTRO, "Cierre")));
         }
         List<Object> resultados = correrAlMismoTiempo(tareas);
 
@@ -352,7 +352,7 @@ class PedidoTransicionesIntegrationTest {
             int pedidoId = pedido(e, "EN_PREPARACION", true, 5);
 
             List<Object> resultados = correrAlMismoTiempo(List.of(
-                    () -> pedidoService.anularPedido(e.comercio(), pedidoId, new AnulacionPedidoRequestDTO("Cierre")),
+                    () -> pedidoService.anularPedido(e.comercio(), pedidoId, new AnulacionPedidoRequestDTO(com.bajonea.backend.enums.MotivoRechazo.OTRO, "Cierre")),
                     () -> pedidoService.avanzarAEntregaEnCurso(e.comercio(), pedidoId)));
 
             sinErroresInesperados(resultados);
@@ -486,5 +486,228 @@ class PedidoTransicionesIntegrationTest {
 
         assertEquals("EN_PREPARACION", estado(pedidoId));
         assertEquals(0, filasDeHistorial(pedidoId, "CANCELADO_POR_SISTEMA"));
+    }
+
+    private void fallarAlEscribirLaNota() {
+        doThrow(new IllegalStateException("falla simulada al escribir la nota")).when(notaCreditoService)
+                .crear(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+    private Map<String, Object> notaDe(int pedidoId) {
+        return jdbcTemplate.queryForMap("SELECT n.* FROM nota_credito n JOIN pago p ON p.id = n.pago_id WHERE p.pedido_id = ?", pedidoId);
+    }
+
+    @Test
+    void rechazarCreaLaNotaEnLaMismaTransaccionYLaRespuestaTraeElEstadoDelReembolso() {
+        Escenario e = escenario(true);
+        int pedidoId = pedido(e, "PENDIENTE_CONFIRMACION_COMERCIO", true, 5);
+
+        var respuesta = pedidoService.rechazarPedido(e.comercio(), pedidoId, new RechazoPedidoRequestDTO(MotivoRechazo.SIN_STOCK, null));
+
+        assertEquals("RECHAZADO", estado(pedidoId));
+        assertEquals(1, notas(pedidoId));
+        assertEquals("RECHAZO_COMERCIO", notaDe(pedidoId).get("motivo"));
+        assertEquals("PROCESADO", notaDe(pedidoId).get("estado"));
+        assertTrue(respuesta.getReembolsoEstado() != null, "la respuesta de rechazar trae el estado del reembolso");
+        assertEquals(0, TOTAL.valor.compareTo(respuesta.getReembolsoMonto()));
+        verify(reembolsoClient, times(1)).solicitarReembolsoTotal(eq("it-" + pedidoId), anyString(), anyString());
+        String mensaje = jdbcTemplate.queryForObject("SELECT mensaje FROM notificacion WHERE entidad_id = ? AND tipo = 'PEDIDO_RECHAZADO'",
+                String.class, pedidoId);
+        assertTrue(mensaje.contains("gestionando la devolución de tu pago"));
+    }
+
+    @Test
+    void siNoSePuedeEscribirLaNotaElRechazoNoCambiaNadaNiAvisa() {
+        Escenario e = escenario(true);
+        int pedidoId = pedido(e, "PENDIENTE_CONFIRMACION_COMERCIO", true, 5);
+        fallarAlEscribirLaNota();
+        try {
+            pedidoService.rechazarPedido(e.comercio(), pedidoId, new RechazoPedidoRequestDTO(MotivoRechazo.SIN_STOCK, null));
+            fail("Tenía que fallar");
+        } catch (IllegalStateException esperado) {
+            assertEquals("falla simulada al escribir la nota", esperado.getMessage());
+        } finally {
+            reset(notaCreditoService);
+        }
+
+        assertEquals("PENDIENTE_CONFIRMACION_COMERCIO", estado(pedidoId));
+        assertEquals(0, filasDeHistorial(pedidoId, "RECHAZADO"));
+        assertEquals(0, notas(pedidoId));
+        assertEquals(0, totalDeNotificaciones(pedidoId));
+        verify(reembolsoClient, never()).solicitarReembolsoTotal(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void rechazarConLaCuentaDesvinculadaDejaLaNotaEnRevisionManual() {
+        Escenario e = escenario(false);
+        int pedidoId = pedido(e, "PENDIENTE_CONFIRMACION_COMERCIO", true, 5);
+
+        pedidoService.rechazarPedido(e.comercio(), pedidoId, new RechazoPedidoRequestDTO(MotivoRechazo.CERRADO, null));
+
+        assertEquals("RECHAZADO", estado(pedidoId));
+        assertEquals("PENDIENTE_REVISION_MANUAL", notaDe(pedidoId).get("estado"));
+        verify(reembolsoClient, never()).solicitarReembolsoTotal(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void laExpiracionCreaLaNotaEnLaTransaccionDelPedido() {
+        Escenario e = escenario(true);
+        int pedidoId = pedido(e, "PENDIENTE_CONFIRMACION_COMERCIO", true, 45);
+
+        pedidoService.expirarPedidosSinRespuestaComercio(LocalDateTime.now());
+
+        assertEquals("EXPIRADO", estado(pedidoId));
+        assertEquals(1, notas(pedidoId));
+        assertEquals("EXPIRACION_SIN_RESPUESTA", notaDe(pedidoId).get("motivo"));
+        verify(reembolsoClient, times(1)).solicitarReembolsoTotal(eq("it-" + pedidoId), anyString(), anyString());
+    }
+
+    @Test
+    void siFallaLaNotaDeLaExpiracionElPedidoQuedaComoEstabaYLaCorridaSiguienteLoReintenta() {
+        Escenario e = escenario(true);
+        int pedidoId = pedido(e, "PENDIENTE_CONFIRMACION_COMERCIO", true, 45);
+        fallarAlEscribirLaNota();
+        try {
+            pedidoService.expirarPedidosSinRespuestaComercio(LocalDateTime.now());
+        } finally {
+            reset(notaCreditoService);
+        }
+
+        assertEquals("PENDIENTE_CONFIRMACION_COMERCIO", estado(pedidoId));
+        assertEquals(0, filasDeHistorial(pedidoId, "EXPIRADO"));
+        assertEquals(0, notas(pedidoId));
+        assertEquals(0, totalDeNotificaciones(pedidoId));
+
+        pedidoService.expirarPedidosSinRespuestaComercio(LocalDateTime.now());
+
+        assertEquals("EXPIRADO", estado(pedidoId));
+        assertEquals(1, notas(pedidoId));
+    }
+
+    @Test
+    void laSuspensionDelComercioCreaLaNotaDeLosPedidosPagados() {
+        Escenario e = escenario(true);
+        int enPreparacion = pedido(e, "EN_PREPARACION", true, 5);
+        int pendiente = pedido(e, "PENDIENTE_CONFIRMACION_COMERCIO", true, 5);
+
+        pedidoService.cancelarPedidosPorSuspensionComercio(e.dueno().comercioId());
+
+        assertEquals("CANCELADO_POR_SISTEMA", estado(enPreparacion));
+        assertEquals("CANCELADO_POR_SISTEMA", estado(pendiente));
+        assertEquals(1, notas(enPreparacion));
+        assertEquals(1, notas(pendiente));
+        assertEquals("SUSPENSION_COMERCIO", notaDe(enPreparacion).get("motivo"));
+    }
+
+    @Test
+    void siFallaLaNotaDeLaSuspensionNingunPedidoCambiaDeEstado() {
+        Escenario e = escenario(true);
+        int pedidoId = pedido(e, "EN_PREPARACION", true, 5);
+        fallarAlEscribirLaNota();
+        try {
+            pedidoService.cancelarPedidosPorSuspensionComercio(e.dueno().comercioId());
+            fail("Tenía que fallar");
+        } catch (IllegalStateException esperado) {
+            assertEquals("falla simulada al escribir la nota", esperado.getMessage());
+        } finally {
+            reset(notaCreditoService);
+        }
+
+        assertEquals("EN_PREPARACION", estado(pedidoId));
+        assertEquals(0, filasDeHistorial(pedidoId, "CANCELADO_POR_SISTEMA"));
+        assertEquals(0, notas(pedidoId));
+    }
+
+    @Test
+    void cancelarDelClienteConPagoCreaLaNotaEnLaMismaTransaccionYLaRespuestaTraeElReembolso() {
+        Escenario e = escenario(true);
+        int pedidoId = pedido(e, "EN_PREPARACION", true, 5);
+
+        var respuesta = pedidoService.cancelarPedido(e.clienteId(), pedidoId);
+
+        assertEquals("CANCELADO", estado(pedidoId));
+        assertEquals(1, notas(pedidoId));
+        assertEquals("CANCELACION_CLIENTE", notaDe(pedidoId).get("motivo"));
+        assertTrue(respuesta.getReembolsoEstado() != null);
+        assertEquals(1, notificaciones(pedidoId, "PEDIDO_CANCELADO_CLIENTE"));
+        verify(reembolsoClient, times(1)).solicitarReembolsoTotal(eq("it-" + pedidoId), anyString(), anyString());
+    }
+
+    @Test
+    void cancelarDelClienteSinPagoAprobadoNoCreaNota() {
+        Escenario e = escenario(true);
+        int pedidoId = pedido(e, "PENDIENTE_CONFIRMACION_COMERCIO", false, 5);
+
+        pedidoService.cancelarPedido(e.clienteId(), pedidoId);
+
+        assertEquals("CANCELADO", estado(pedidoId));
+        assertEquals(0, notas(pedidoId));
+        verify(reembolsoClient, never()).solicitarReembolsoTotal(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    void siNoSePuedeEscribirLaNotaLaCancelacionDelClienteNoCambiaNada() {
+        Escenario e = escenario(true);
+        int pedidoId = pedido(e, "EN_PREPARACION", true, 5);
+        fallarAlEscribirLaNota();
+        try {
+            pedidoService.cancelarPedido(e.clienteId(), pedidoId);
+            fail("Tenía que fallar");
+        } catch (IllegalStateException esperado) {
+            assertEquals("falla simulada al escribir la nota", esperado.getMessage());
+        } finally {
+            reset(notaCreditoService);
+        }
+
+        assertEquals("EN_PREPARACION", estado(pedidoId));
+        assertEquals(0, filasDeHistorial(pedidoId, "CANCELADO"));
+        assertEquals(0, notas(pedidoId));
+        assertEquals(0, notificaciones(pedidoId, "PEDIDO_CANCELADO_CLIENTE"));
+    }
+
+    @Test
+    void cancelarDelClienteContraRechazarDelComercioDejaUnaSolaNota() {
+        for (int ronda = 0; ronda < 6; ronda++) {
+            Escenario e = escenario(true);
+            int pedidoId = pedido(e, "PENDIENTE_CONFIRMACION_COMERCIO", true, 5);
+
+            List<Object> resultados = correrAlMismoTiempo(List.of(
+                    () -> pedidoService.cancelarPedido(e.clienteId(), pedidoId),
+                    () -> pedidoService.rechazarPedido(e.comercio(), pedidoId, new RechazoPedidoRequestDTO(MotivoRechazo.SIN_STOCK, null))));
+
+            sinErroresInesperados(resultados);
+            assertEquals(1, exitos(resultados), "ronda " + ronda);
+            assertEquals(1, notas(pedidoId), "una sola nota, ronda " + ronda);
+            assertEquals(estado(pedidoId), ultimoDelHistorial(pedidoId));
+        }
+    }
+
+    @Test
+    void anularConMotivoDeLaListaGuardaElEnumElComentarioYElTextoLegible() {
+        Escenario e = escenario(true);
+        int pedidoId = pedido(e, "EN_PREPARACION", true, 5);
+
+        pedidoService.anularPedido(e.comercio(), pedidoId, new AnulacionPedidoRequestDTO(MotivoRechazo.PROBLEMA_TECNICO, "Se cortó la luz"));
+
+        Map<String, Object> fila = jdbcTemplate.queryForMap("SELECT motivo, motivo_rechazo, comentario_rechazo FROM pedido WHERE id = ?", pedidoId);
+        assertEquals("PROBLEMA_TECNICO", fila.get("motivo_rechazo"));
+        assertEquals("Se cortó la luz", fila.get("comentario_rechazo"));
+        assertEquals("Problema técnico. Se cortó la luz", fila.get("motivo"));
+    }
+
+    @Test
+    void anularConMotivoOtroSinComentarioNoCambiaNada() {
+        Escenario e = escenario(true);
+        int pedidoId = pedido(e, "EN_PREPARACION", true, 5);
+
+        try {
+            pedidoService.anularPedido(e.comercio(), pedidoId, new AnulacionPedidoRequestDTO(MotivoRechazo.OTRO, null));
+            fail("Tenía que fallar");
+        } catch (com.bajonea.backend.exceptions.ValidacionException esperado) {
+            assertTrue(esperado.getMessage().contains("comentario"));
+        }
+
+        assertEquals("EN_PREPARACION", estado(pedidoId));
+        assertEquals(0, notas(pedidoId));
     }
 }

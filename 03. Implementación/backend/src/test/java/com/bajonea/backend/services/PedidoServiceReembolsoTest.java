@@ -131,7 +131,8 @@ class PedidoServiceReembolsoTest {
         pedidoService.rechazarPedido(ComercioActivo.delDueno(comercio.getId(), 5, EstadoComercio.APROBADO), 10, new RechazoPedidoRequestDTO(MotivoRechazo.SIN_STOCK, null));
 
         assertEquals(EstadoPedido.RECHAZADO, pedido.getEstado());
-        verify(reembolsoService).procesarReembolsoTotal(pedido, MotivoNotaCredito.RECHAZO_COMERCIO);
+        verify(reembolsoService).generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.RECHAZO_COMERCIO);
+        verify(reembolsoService, never()).procesarReembolsoTotal(any(), any());
     }
 
     @Test
@@ -145,7 +146,7 @@ class PedidoServiceReembolsoTest {
         pedidoService.expirarPedidosSinRespuestaComercio();
 
         assertEquals(EstadoPedido.EXPIRADO, vencido.getEstado());
-        verify(reembolsoService).procesarReembolsoTotal(vencido, MotivoNotaCredito.EXPIRACION_SIN_RESPUESTA);
+        verify(reembolsoService).generarNotaYReembolsarTotal(vencido, MotivoNotaCredito.EXPIRACION_SIN_RESPUESTA);
         verify(notificacionService).crear(anyInt(),
                 org.mockito.ArgumentMatchers.argThat(mensaje -> mensaje.contains("30 minutos") && !mensaje.contains("1 hora")
                         && !mensaje.contains("reembolso está en proceso")),
@@ -176,7 +177,7 @@ class PedidoServiceReembolsoTest {
         pedidoService.cancelarPedidosPorSuspensionComercio(40);
 
         assertEquals(EstadoPedido.CANCELADO_POR_SISTEMA, enPreparacion.getEstado());
-        verify(reembolsoService).procesarReembolsoTotal(enPreparacion, MotivoNotaCredito.SUSPENSION_COMERCIO);
+        verify(reembolsoService).generarNotaYReembolsarTotal(enPreparacion, MotivoNotaCredito.SUSPENSION_COMERCIO);
     }
 
     @Test
@@ -205,7 +206,7 @@ class PedidoServiceReembolsoTest {
     }
 
     @Test
-    void cancelarDelClienteSigueSinReembolsoHastaLaTarea2() {
+    void cancelarDelClienteConPagoGeneraLaNotaEnLaTransaccionDelCambioDeEstado() {
         Pedido pedido = pedido(40, EstadoPedido.EN_PREPARACION, EstadoPagoPedido.PAGADO);
         when(pedidoRepository.findById(40)).thenReturn(Optional.of(pedido));
         when(cliente.getId()).thenReturn(9);
@@ -213,7 +214,83 @@ class PedidoServiceReembolsoTest {
         pedidoService.cancelarPedido(9, 40);
 
         assertEquals(EstadoPedido.CANCELADO, pedido.getEstado());
+        verify(reembolsoService).generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.CANCELACION_CLIENTE);
         verify(reembolsoService, never()).procesarReembolsoTotal(any(), any());
+        verify(notificacionService).crear(anyInt(), anyString(), eq(TipoNotificacion.PEDIDO_CANCELADO_CLIENTE), any(), eq(40));
+    }
+
+    @Test
+    void siNoSePuedeEscribirLaNotaDeLaCancelacionDelClienteElErrorSubeYNoSeAvisaAlComercio() {
+        Pedido pedido = pedido(41, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, EstadoPagoPedido.PAGADO);
+        when(pedidoRepository.findById(41)).thenReturn(Optional.of(pedido));
+        when(cliente.getId()).thenReturn(9);
+        when(reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.CANCELACION_CLIENTE))
+                .thenThrow(new IllegalStateException("no se pudo escribir la nota"));
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, () -> pedidoService.cancelarPedido(9, 41));
+
+        verifyNoInteractions(notificacionService);
+    }
+
+    @Test
+    void siNoSePuedeEscribirLaNotaDelRechazoElErrorSubeYNoSeAvisaAlCliente() {
+        Pedido pedido = pedido(11, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, EstadoPagoPedido.PAGADO);
+        when(pedidoRepository.findById(11)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.llegoPagado(11)).thenReturn(true);
+        when(reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.RECHAZO_COMERCIO))
+                .thenThrow(new IllegalStateException("no se pudo escribir la nota"));
+
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class,
+                () -> pedidoService.rechazarPedido(ComercioActivo.delDueno(40, 5, EstadoComercio.APROBADO), 11,
+                        new RechazoPedidoRequestDTO(MotivoRechazo.SIN_STOCK, null)));
+
+        verifyNoInteractions(notificacionService);
+    }
+
+    @Test
+    void siFallaLaNotaDeLaExpiracionElPedidoSeSaltaYElProcesoSigueConLosDemas() {
+        Pedido malo = pedido(22, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, EstadoPagoPedido.PAGADO);
+        Pedido bueno = pedido(23, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, EstadoPagoPedido.PAGADO);
+        when(pedidoRepository.findIdsByEstado(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO)).thenReturn(List.of(22, 23));
+        when(pedidoRepository.findById(22)).thenReturn(Optional.of(malo));
+        when(pedidoRepository.findById(23)).thenReturn(Optional.of(bueno));
+        when(historialRepository.findTopByPedidoIdAndEstadoOrderByFechaHoraDesc(anyInt(), eq(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO)))
+                .thenReturn(Optional.of(entradaHaceMinutos(40)));
+        when(reembolsoService.generarNotaYReembolsarTotal(malo, MotivoNotaCredito.EXPIRACION_SIN_RESPUESTA))
+                .thenThrow(new IllegalStateException("no se pudo escribir la nota"));
+
+        pedidoService.expirarPedidosSinRespuestaComercio();
+
+        verify(reembolsoService).generarNotaYReembolsarTotal(bueno, MotivoNotaCredito.EXPIRACION_SIN_RESPUESTA);
+        assertEquals(EstadoPedido.EXPIRADO, bueno.getEstado());
+    }
+
+    @Test
+    void anularConMotivoOtroSinComentarioDa400SinNotaNiAviso() {
+        Pedido pedido = pedido(63, EstadoPedido.EN_PREPARACION, EstadoPagoPedido.PAGADO);
+        when(pedidoRepository.findById(63)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.llegoPagado(63)).thenReturn(true);
+
+        org.junit.jupiter.api.Assertions.assertThrows(com.bajonea.backend.exceptions.ValidacionException.class,
+                () -> pedidoService.anularPedido(ComercioActivo.delDueno(40, 5, EstadoComercio.APROBADO), 63,
+                        new AnulacionPedidoRequestDTO(MotivoRechazo.OTRO, "  ")));
+
+        verifyNoInteractions(reembolsoService);
+        verifyNoInteractions(notificacionService);
+    }
+
+    @Test
+    void anularConMotivoDeLaListaGuardaElEnumYElTextoLegible() {
+        Pedido pedido = pedido(64, EstadoPedido.EN_PREPARACION, EstadoPagoPedido.PAGADO);
+        when(pedidoRepository.findById(64)).thenReturn(Optional.of(pedido));
+        when(pedidoRepository.llegoPagado(64)).thenReturn(true);
+
+        pedidoService.anularPedido(ComercioActivo.delDueno(40, 5, EstadoComercio.APROBADO), 64,
+                new AnulacionPedidoRequestDTO(MotivoRechazo.SIN_STOCK, null));
+
+        assertEquals(MotivoRechazo.SIN_STOCK, pedido.getMotivoRechazo());
+        assertEquals(null, pedido.getComentarioRechazo());
+        assertEquals("Sin stock", pedido.getMotivo());
     }
 
     @Test
@@ -253,14 +330,14 @@ class PedidoServiceReembolsoTest {
         when(reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.ANULACION_COMERCIO)).thenReturn(true);
 
         pedidoService.anularPedido(ComercioActivo.delDueno(40, 5, EstadoComercio.APROBADO), 60,
-                new AnulacionPedidoRequestDTO("Se rompio la freidora"));
+                new AnulacionPedidoRequestDTO(com.bajonea.backend.enums.MotivoRechazo.OTRO, "Se rompio la freidora"));
 
         assertEquals(EstadoPedido.ANULADO, pedido.getEstado());
         verify(reembolsoService).generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.ANULACION_COMERCIO);
         verify(reembolsoService, never()).procesarReembolsoTotal(any(), any());
         verify(notificacionService).crear(anyInt(),
                 org.mockito.ArgumentMatchers.argThat(mensaje -> mensaje.contains("gestionando la devolución de tu pago")
-                        && mensaje.contains("Motivo: Se rompio la freidora")),
+                        && mensaje.contains("Motivo: Otro. Se rompio la freidora")),
                 eq(TipoNotificacion.PEDIDO_ANULADO_COMERCIO), any(), eq(60));
     }
 
@@ -272,7 +349,7 @@ class PedidoServiceReembolsoTest {
         when(reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.ANULACION_COMERCIO)).thenReturn(false);
 
         pedidoService.anularPedido(ComercioActivo.delDueno(40, 5, EstadoComercio.APROBADO), 61,
-                new AnulacionPedidoRequestDTO("Sin gas"));
+                new AnulacionPedidoRequestDTO(com.bajonea.backend.enums.MotivoRechazo.OTRO, "Sin gas"));
 
         assertEquals(EstadoPedido.ANULADO, pedido.getEstado());
         verify(notificacionService).crear(anyInt(),
@@ -288,7 +365,7 @@ class PedidoServiceReembolsoTest {
 
         org.junit.jupiter.api.Assertions.assertThrows(com.bajonea.backend.exceptions.ConflictoDeNegocioException.class,
                 () -> pedidoService.anularPedido(ComercioActivo.delDueno(40, 5, EstadoComercio.APROBADO), 62,
-                        new AnulacionPedidoRequestDTO("x")));
+                        new AnulacionPedidoRequestDTO(com.bajonea.backend.enums.MotivoRechazo.OTRO, "x")));
 
         verifyNoInteractions(reembolsoService);
         verifyNoInteractions(notificacionService);

@@ -53,8 +53,9 @@ test.describe('Anulación con reembolso y carreras de estado del pedido (API), b
   const rechazar = (request: APIRequestContext, id: number) =>
     apiPut(request, `/pedidos/comercio/${id}/rechazar`, { motivo: 'SIN_STOCK' }, dueno.token);
   const despachar = (request: APIRequestContext, id: number) => apiPut(request, `/pedidos/comercio/${id}/despachar`, {}, dueno.token);
-  const anular = (request: APIRequestContext, id: number, motivo: string | null = 'Se rompió el horno') =>
-    apiPut(request, `/pedidos/comercio/${id}/anular`, motivo === null ? {} : { motivo }, dueno.token);
+  const MOTIVO_POR_DEFECTO = { motivo: 'OTRO', comentario: 'Se rompió el horno' };
+  const anular = (request: APIRequestContext, id: number, cuerpo: Record<string, unknown> | null = MOTIVO_POR_DEFECTO) =>
+    apiPut(request, `/pedidos/comercio/${id}/anular`, cuerpo === null ? {} : cuerpo, dueno.token);
   const cancelarCliente = (request: APIRequestContext, id: number) => apiPut(request, `/pedidos/cliente/${id}/cancelar`, {}, clienteToken);
   const entregarCliente = (request: APIRequestContext, id: number) => apiPut(request, `/pedidos/cliente/${id}/entregar`, {}, clienteToken);
   const correrProceso = (request: APIRequestContext, nombre: string) => apiPost(request, `/test/jobs/pedidos/${nombre}`, {});
@@ -93,11 +94,13 @@ test.describe('Anulación con reembolso y carreras de estado del pedido (API), b
     test('anular un pedido pagado crea una nota por el total, el Cliente y el Administrador la ven y el aviso dice que la devolución está en gestión', async ({ request }) => {
       const pedidoId = await pedidoEnPreparacion(request);
 
-      const respuesta = await anular(request, pedidoId, 'Se rompió el horno');
+      const respuesta = await anular(request, pedidoId);
 
       expect(respuesta.status).toBe(200);
       expect(respuesta.body.data.estado).toBe('ANULADO');
-      expect(respuesta.body.data.motivoAnulacion).toBe('Se rompió el horno');
+      expect(respuesta.body.data.motivoAnulacion).toBe('Otro. Se rompió el horno');
+      expect(respuesta.body.data.motivoRechazo).toBe('OTRO');
+      expect(respuesta.body.data.comentarioRechazo).toBe('Se rompió el horno');
       expect(respuesta.body.data.reembolsoEstado).toBe('PENDIENTE_REVISION_MANUAL');
       expect(Number(respuesta.body.data.reembolsoMonto)).toBe(TOTAL_DEL_PEDIDO);
       expect(estado(pedidoId)).toBe('ANULADO');
@@ -136,12 +139,13 @@ test.describe('Anulación con reembolso y carreras de estado del pedido (API), b
 
       const enPreparacion = await pedidoEnPreparacion(request);
       expect((await anular(request, enPreparacion, null)).status).toBe(400);
-      expect((await anular(request, enPreparacion, '   ')).status).toBe(400);
+      expect((await anular(request, enPreparacion, { motivo: 'OTRO', comentario: '   ' })).status).toBe(400);
+      expect((await anular(request, enPreparacion, { motivo: 'Se rompió el horno' })).status).toBe(400);
       expect(estado(enPreparacion)).toBe('EN_PREPARACION');
       expect(notas(enPreparacion)).toBe(0);
 
-      expect((await anular(request, enPreparacion, 'Cierre')).status).toBe(200);
-      const segunda = await anular(request, enPreparacion, 'Cierre otra vez');
+      expect((await anular(request, enPreparacion, { motivo: 'CERRADO' })).status).toBe(200);
+      const segunda = await anular(request, enPreparacion, { motivo: 'CERRADO' });
       expect(segunda.status).toBe(409);
       expect(notas(enPreparacion)).toBe(1);
       expect(filas(enPreparacion, 'ANULADO')).toBe(1);
@@ -149,14 +153,14 @@ test.describe('Anulación con reembolso y carreras de estado del pedido (API), b
 
       const despachado = await pedidoEnPreparacion(request);
       expect((await despachar(request, despachado)).status).toBe(200);
-      expect((await anular(request, despachado, 'Tarde')).status).toBe(409);
+      expect((await anular(request, despachado, { motivo: 'SIN_STOCK' })).status).toBe(409);
       expect(notas(despachado)).toBe(0);
     });
 
     test('un pedido sin pago registrado se anula igual, sin nota y sin prometer una devolución', async ({ request }) => {
       const pedidoId = await pedidoEnPreparacion(request, false);
 
-      const respuesta = await anular(request, pedidoId, 'Sin insumos');
+      const respuesta = await anular(request, pedidoId, { motivo: 'SIN_STOCK' });
 
       expect(respuesta.status).toBe(200);
       expect(respuesta.body.data.reembolsoEstado).toBeNull();
@@ -168,7 +172,7 @@ test.describe('Anulación con reembolso y carreras de estado del pedido (API), b
     test('seis anulaciones simultáneas del mismo pedido dejan una sola nota, un solo ANULADO en el historial y un solo aviso', async ({ request }) => {
       const pedidoId = await pedidoEnPreparacion(request);
 
-      const respuestas = await Promise.all(Array.from({ length: 6 }, () => anular(request, pedidoId, 'Cierre simultáneo')));
+      const respuestas = await Promise.all(Array.from({ length: 6 }, () => anular(request, pedidoId, { motivo: 'CERRADO' })));
 
       const estados = respuestas.map((r) => r.status).sort();
       expect(estados).toEqual([200, 409, 409, 409, 409, 409]);
