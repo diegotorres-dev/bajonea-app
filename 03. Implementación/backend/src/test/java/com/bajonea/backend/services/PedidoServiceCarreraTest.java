@@ -31,6 +31,7 @@ import com.bajonea.backend.repositories.ClienteRepository;
 import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.DetallePedidoRepository;
 import com.bajonea.backend.repositories.DireccionRepository;
+import com.bajonea.backend.repositories.EmpleadoComercioRepository;
 import com.bajonea.backend.repositories.HistorialEstadoPedidoRepository;
 import com.bajonea.backend.repositories.ItemCarritoRepository;
 import com.bajonea.backend.repositories.PedidoRepository;
@@ -91,6 +92,7 @@ class PedidoServiceCarreraTest {
                 mock(DireccionRepository.class), historialRepository, usuarioRepository, notificacionService,
                 mock(CarritoService.class), mock(ComercioService.class), mock(ConfiguracionTarifaService.class), timeouts,
                 reembolsoService, mock(NotaCreditoService.class), mock(PlatformTransactionManager.class), comercioActivoService,
+                mock(EmpleadoComercioRepository.class),
                 Clock.systemDefaultZone());
         ReflectionTestUtils.setField(pedidoService, "entityManager", entityManager);
 

@@ -524,7 +524,7 @@ agregar(
     mensajeEs('Comercios obtenidos correctamente'),
     "pm.test('Cuatro comercios en orden de alta: A, B, S, I', () => pm.expect(pm.response.json().data.map((c) => c.id)).to.eql(['e2_com_d1', 'e2_com_b', 'e2_com_s', 'e2_com_i'].map((k) => Number(pm.environment.get(k)))));",
     `pm.test('La forma de mis-comercios más fechaAlta', () => pm.response.json().data.forEach((c) => pm.expect(Object.keys(c).sort()).to.eql(${JSON.stringify(CAMPOS_MIS_COMERCIOS)})));`,
-    "pm.test('Notificaciones en 0 y fechaAlta presente', () => pm.response.json().data.forEach((c) => { pm.expect(c.cantidadNotificacionesNoLeidas).to.eql(0); pm.expect(c.fechaAlta).to.be.a('string'); }));",
+    "pm.test('Notificaciones sin leer (numero, desde el bloque A4 son reales) y fechaAlta presente', () => pm.response.json().data.forEach((c) => { pm.expect(c.cantidadNotificacionesNoLeidas).to.be.a('number').and.at.least(0); pm.expect(c.fechaAlta).to.be.a('string'); }));",
     "pm.test('operativo según el estado', () => pm.expect(pm.response.json().data.map((c) => [c.estado, c.operativo])).to.eql([['APROBADO', true], ['APTO_VENTA', true], ['SUSPENDIDO', false], ['APROBADO', true]]));",
   ]),
   item('Atajo de test: la relación con I pasa a INACTIVO', req('PUT', `/test/comercios/${COM_I}/empleados/{{${v('emp_id')}}}/estado`, { body: {}, query: 'estado=INACTIVO' }), [status(200)]),

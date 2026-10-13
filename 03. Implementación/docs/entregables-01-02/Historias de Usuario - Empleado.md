@@ -56,7 +56,7 @@ pedidos entrantes (aceptar, rechazar, despachar, entregar y anular), ver el hist
 las ventas, abrir y cerrar el comercio, y editar su descripción, su teléfono y sus
 horarios, para cumplir con mis tareas diarias del mismo modo que lo haría el Dueño. El
 nombre, la foto, la dirección y el tipo de comercio los veo, pero los cambia solo el Dueño. Recibo las notificaciones operativas
-del comercio (pedido nuevo, cancelaciones, vencimientos). En los pedidos veo lo que
+del comercio (pedido nuevo, cancelaciones, vencimientos), con mi propia copia de cada una: que otra persona del equipo la lea no cambia la mía. Veo solo los avisos posteriores a mi alta, y los del comercio que tengo abierto. No recibo el aviso del equipo de un pedido que yo mismo hice como cliente. En los pedidos veo lo que
 necesito para atender al cliente (ítems, subtotal, total pagado, motivo de rechazo o
 anulación y el estado del reembolso en términos simples), pero no los cargos de servicio,
 la comisión ni los datos de MercadoPago.

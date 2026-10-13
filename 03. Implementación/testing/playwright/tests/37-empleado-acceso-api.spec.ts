@@ -633,7 +633,7 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
       expect(filas.map((fila) => fila.operativo)).toEqual([true, true, false, false]);
       for (const fila of filas) {
         expect(Object.keys(fila).sort()).toEqual(CAMPOS_MIS_COMERCIOS);
-        expect(fila.cantidadNotificacionesNoLeidas).toBe(0);
+        expect(typeof fila.cantidadNotificacionesNoLeidas).toBe('number');
         expect(fila.fechaAlta).toBeTruthy();
         expect(fila.fechaRegistro).toBeTruthy();
       }

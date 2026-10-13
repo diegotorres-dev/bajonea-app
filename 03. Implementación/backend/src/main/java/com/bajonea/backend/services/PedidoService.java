@@ -25,6 +25,7 @@ import com.bajonea.backend.enums.ActorPedido;
 import com.bajonea.backend.enums.CanceladoPor;
 import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.EstadoDetallePedido;
+import com.bajonea.backend.enums.EstadoEmpleadoComercio;
 import com.bajonea.backend.enums.EstadoPagoPedido;
 import com.bajonea.backend.enums.EstadoPedido;
 import com.bajonea.backend.enums.FuenteEntrega;
@@ -44,6 +45,9 @@ import com.bajonea.backend.repositories.ClienteRepository;
 import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.DetallePedidoRepository;
 import com.bajonea.backend.repositories.DireccionRepository;
+import com.bajonea.backend.repositories.EmpleadoComercioRepository;
+import com.bajonea.backend.repositories.EmpleadoComercioRepository.EstadoDeRelacion;
+import com.bajonea.backend.repositories.EmpleadoComercioRepository.RelacionDeEmpleado;
 import com.bajonea.backend.repositories.HistorialEstadoPedidoRepository;
 import com.bajonea.backend.repositories.ItemCarritoRepository;
 import com.bajonea.backend.repositories.PedidoRepository;
@@ -58,6 +62,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -119,6 +124,7 @@ public class PedidoService {
     private final NotaCreditoService notaCreditoService;
     private final PlatformTransactionManager transactionManager;
     private final ComercioActivoService comercioActivoService;
+    private final EmpleadoComercioRepository empleadoComercioRepository;
     private final Clock clock;
 
     private static final Logger log = LoggerFactory.getLogger(PedidoService.class);
@@ -237,7 +243,8 @@ public class PedidoService {
      * de pago) no hace nada, no reintenta la transición.
      */
     public void confirmarPagoAprobado(Integer pedidoId) {
-        Pedido pedido = bloquearParaActualizar(pedidoId);
+        PedidoBloqueado bloqueado = bloquearParaActualizarConEquipo(pedidoId, null);
+        Pedido pedido = bloqueado.pedido();
         if (pedido.getEstado() != EstadoPedido.PENDIENTE_PAGO) {
             return;
         }
@@ -253,7 +260,7 @@ public class PedidoService {
                 .filter(carrito -> carrito.getComercio() != null && carrito.getComercio().getId().equals(comercioId))
                 .ifPresent(carrito -> carritoService.vaciarCarrito(clienteId));
 
-        notificacionService.crear(pedido.getComercio().getDueno().getPersonaJuridica().getPersona().getUsuario().getId(),
+        notificacionService.crearParaEquipo(comercioId, pedido.getComercio().getDueno().getId(), bloqueado.equipo(),
                 "Nuevo pedido recibido de " + pedido.getCliente().getPersonaFisica().getNombre() + " "
                         + pedido.getCliente().getPersonaFisica().getApellido() + ".",
                 TipoNotificacion.NUEVO_PEDIDO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
@@ -306,14 +313,50 @@ public class PedidoService {
      * no toma relación ni comercio (orden de bloqueo: usuario, relación, comercio, pedido).
      */
     Pedido bloquearParaActualizar(Integer pedidoId, Integer actorUsuarioId, ComercioActivo comercioActivo, boolean aceptaPedidoNuevo) {
+        return bloquear(pedidoId, actorUsuarioId, comercioActivo, aceptaPedidoNuevo, false).pedido();
+    }
+
+    /**
+     * Igual que {@link #bloquearParaActualizar(Integer, Integer)} para las transiciones que avisan al equipo del
+     * comercio (pedido nuevo pagado, cancelación del Cliente y expiración sin respuesta). Además del Cliente, el
+     * Dueño y quien actúa, resuelve y bloquea a los destinatarios del aviso: los Empleados {@code ACTIVO} del
+     * comercio, sin el Cliente del pedido (un Empleado que compra en su propio comercio recibe solo sus avisos de
+     * comprador). Orden de bloqueo: (1) lectura simple de las relaciones activas, (2) los usuarios de todos los
+     * involucrados con {@code LOCK IN SHARE MODE} en id ascendente, (3) las relaciones por clave primaria en id
+     * ascendente con {@code LOCK IN SHARE MODE}, releyendo el estado confirmado, y (4) el pedido
+     * {@code FOR UPDATE}. Los destinatarios son los que siguen {@code ACTIVO} en (3): una desactivación (que toma la
+     * relación {@code FOR UPDATE}) espera a esta transacción o ya se confirmó y deja a esa persona afuera; quien se
+     * suma entre (1) y (3) no tiene su usuario bloqueado y queda afuera (se sumó después del hecho).
+     */
+    PedidoBloqueado bloquearParaActualizarConEquipo(Integer pedidoId, Integer actorUsuarioId) {
+        return bloquear(pedidoId, actorUsuarioId, null, false, true);
+    }
+
+    record PedidoBloqueado(Pedido pedido, List<Integer> equipo) {
+    }
+
+    private PedidoBloqueado bloquear(Integer pedidoId, Integer actorUsuarioId, ComercioActivo comercioActivo,
+            boolean aceptaPedidoNuevo, boolean conEquipo) {
         ParticipantesPedido participantes = pedidoRepository.findParticipantesById(pedidoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado"));
+        List<RelacionDeEmpleado> candidatos = new ArrayList<>();
+        if (conEquipo) {
+            for (RelacionDeEmpleado relacion : empleadoComercioRepository
+                    .findRelacionesByComercioIdAndEstado(participantes.getComercioId(), EstadoEmpleadoComercio.ACTIVO)) {
+                if (!relacion.getEmpleadoId().equals(participantes.getClienteId())) {
+                    candidatos.add(relacion);
+                }
+            }
+        }
         TreeSet<Integer> usuarios = new TreeSet<>();
         if (actorUsuarioId != null) {
             usuarios.add(actorUsuarioId);
         }
         usuarios.add(participantes.getClienteId());
         usuarios.add(participantes.getDuenoId());
+        for (RelacionDeEmpleado candidato : candidatos) {
+            usuarios.add(candidato.getEmpleadoId());
+        }
         for (Integer usuarioId : usuarios) {
             usuarioRepository.leerIdConBloqueoCompartido(usuarioId);
         }
@@ -326,10 +369,19 @@ public class PedidoService {
                 ComercioActivoService.validarComercioAceptaPedidosNuevos(estadoComercio);
             }
         }
+        List<Integer> equipo = new ArrayList<>();
+        if (!candidatos.isEmpty()) {
+            List<Integer> relacionesIds = candidatos.stream().map(RelacionDeEmpleado::getId).toList();
+            for (EstadoDeRelacion relacion : empleadoComercioRepository.leerRelacionesConBloqueoCompartido(relacionesIds)) {
+                if (EstadoEmpleadoComercio.valueOf(relacion.getEstado()) == EstadoEmpleadoComercio.ACTIVO) {
+                    equipo.add(relacion.getEmpleadoId());
+                }
+            }
+        }
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado"));
         entityManager.refresh(pedido, LockModeType.PESSIMISTIC_WRITE);
-        return pedido;
+        return new PedidoBloqueado(pedido, equipo);
     }
 
     private Pedido obtenerPedidoDelComercioParaActualizar(ComercioActivo comercioActivo, Integer pedidoId) {
@@ -380,7 +432,7 @@ public class PedidoService {
         pedidoRepository.save(pedido);
         registrarHistorial(pedido, actorDePedido(comercioActivo), comercioActivo.actorUsuarioId());
 
-        notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
+        notificacionService.crearParaCliente(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
                 "Tu pedido a " + pedido.getComercio().getNombre() + " fue aceptado y está en preparación.",
                 TipoNotificacion.PEDIDO_ACEPTADO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
 
@@ -414,7 +466,7 @@ public class PedidoService {
             mensaje += " " + request.getComentario();
         }
 
-        notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(), mensaje,
+        notificacionService.crearParaCliente(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(), mensaje,
                 TipoNotificacion.PEDIDO_RECHAZADO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
 
         return aResponseDTO(pedido);
@@ -441,7 +493,7 @@ public class PedidoService {
                 ? "Tu pedido de " + pedido.getComercio().getNombre() + " fue despachado y está en camino."
                 : "Tu pedido de " + pedido.getComercio().getNombre() + " está listo para retirar en el local.";
 
-        notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(), mensaje,
+        notificacionService.crearParaCliente(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(), mensaje,
                 tipo, TipoEntidadNotificacion.PEDIDO, pedido.getId());
 
         return aResponseDTO(pedido);
@@ -474,7 +526,9 @@ public class PedidoService {
     }
 
     public PedidoResponseDTO cancelarPedido(Integer usuarioId, Integer pedidoId) {
-        Pedido pedido = obtenerPedidoDelClienteParaActualizar(usuarioId, pedidoId);
+        obtenerPedidoDelCliente(usuarioId, pedidoId);
+        PedidoBloqueado bloqueado = bloquearParaActualizarConEquipo(pedidoId, usuarioId);
+        Pedido pedido = bloqueado.pedido();
 
         if (pedido.getEstado() != EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO && pedido.getEstado() != EstadoPedido.EN_PREPARACION) {
             throw new ConflictoDeNegocioException("El pedido ya no se puede cancelar");
@@ -486,7 +540,7 @@ public class PedidoService {
         registrarHistorial(pedido, ActorPedido.CLIENTE, usuarioId);
         reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.CANCELACION_CLIENTE);
 
-        notificacionService.crear(pedido.getComercio().getDueno().getPersonaJuridica().getPersona().getUsuario().getId(),
+        notificacionService.crearParaEquipo(pedido.getComercio().getId(), pedido.getComercio().getDueno().getId(), bloqueado.equipo(),
                 "El cliente canceló el pedido #" + pedido.getId() + ".",
                 TipoNotificacion.PEDIDO_CANCELADO_CLIENTE, TipoEntidadNotificacion.PEDIDO, pedido.getId());
 
@@ -520,7 +574,7 @@ public class PedidoService {
                 + " fue anulado por el comercio"
                 + (devolucionEnGestion ? " y estamos gestionando la devolución de tu pago" : "")
                 + ". Motivo: " + motivoTexto;
-        notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(), mensaje,
+        notificacionService.crearParaCliente(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(), mensaje,
                 TipoNotificacion.PEDIDO_ANULADO_COMERCIO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
 
         return aResponseDTO(pedido);
@@ -702,14 +756,14 @@ public class PedidoService {
                 if (minutosTranscurridos >= timeoutProperties.getAutoconfirmacionEnCaminoMinutos()) {
                     marcarEntregado(pedido, FuenteEntrega.SISTEMA);
                     registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.TIMEOUT_ENTREGA);
-                    notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
+                    notificacionService.crearParaCliente(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
                             "Tu pedido #" + pedido.getId()
                                     + " fue autoconfirmado como entregado. Si no lo recibiste, podés iniciar un reclamo o contactar al comercio.",
                             TipoNotificacion.PEDIDO_AUTOCONFIRMADO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
                 } else if (!pedido.isPrimerAvisoEmitido() && minutosTranscurridos >= timeoutProperties.getAvisoEnCaminoMinutos()) {
                     pedido.setPrimerAvisoEmitido(true);
                     pedidoRepository.save(pedido);
-                    notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
+                    notificacionService.crearParaCliente(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
                             "Tu pedido #" + pedido.getId() + " está en camino hace un buen rato. Confirmá la recepción cuando llegue.",
                             TipoNotificacion.AVISO_75MIN_SIN_CONFIRMACION, TipoEntidadNotificacion.PEDIDO, pedido.getId());
                 }
@@ -731,7 +785,8 @@ public class PedidoService {
     private void expirarPedidosSinRespuestaComercio(Supplier<LocalDateTime> reloj) {
         for (Integer pedidoId : pedidoRepository.findIdsByEstado(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO)) {
             enTransaccionPorPedido("expirarPedidosSinRespuestaComercio", pedidoId, () -> {
-                Pedido pedido = bloquearParaActualizar(pedidoId);
+                PedidoBloqueado bloqueado = bloquearParaActualizarConEquipo(pedidoId, null);
+                Pedido pedido = bloqueado.pedido();
                 if (pedido.getEstado() != EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO) {
                     return;
                 }
@@ -747,11 +802,11 @@ public class PedidoService {
                 registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.TIMEOUT_RESPUESTA_COMERCIO);
                 reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.EXPIRACION_SIN_RESPUESTA);
 
-                notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
+                notificacionService.crearParaCliente(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
                         "El comercio no respondió en " + timeoutProperties.getRespuestaComercioMinutos() + " minutos tu pedido #" + pedido.getId()
                                 + ". Se canceló y estamos gestionando la devolución de tu pago; podés ver su estado en el detalle del pedido.",
                         TipoNotificacion.PEDIDO_EXPIRADO_CLIENTE, TipoEntidadNotificacion.PEDIDO, pedido.getId());
-                notificacionService.crear(pedido.getComercio().getDueno().getPersonaJuridica().getPersona().getUsuario().getId(),
+                notificacionService.crearParaEquipo(pedido.getComercio().getId(), pedido.getComercio().getDueno().getId(), bloqueado.equipo(),
                         "El pedido #" + pedido.getId() + " expiró por falta de respuesta.",
                         TipoNotificacion.PEDIDO_EXPIRADO_COMERCIO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
             });
@@ -784,7 +839,7 @@ public class PedidoService {
                 marcarEntregado(pedido, FuenteEntrega.SISTEMA);
                 registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.TIMEOUT_RETIRO_SUSPENSION);
 
-                notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
+                notificacionService.crearParaCliente(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
                         "Tu pedido #" + pedido.getId() + " se cerró automáticamente: el comercio está suspendido y venció el plazo de retiro.",
                         TipoNotificacion.PEDIDO_CERRADO_TIMER_SUSPENSION, TipoEntidadNotificacion.PEDIDO, pedido.getId());
             });
@@ -813,7 +868,7 @@ public class PedidoService {
     }
 
     private void notificarCancelacionSistema(Pedido pedido, String motivo) {
-        notificacionService.crear(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
+        notificacionService.crearParaCliente(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
                 "Tu pedido #" + pedido.getId() + " fue cancelado automáticamente: " + motivo + ".",
                 TipoNotificacion.PEDIDO_CANCELADO_SISTEMA, TipoEntidadNotificacion.PEDIDO, pedido.getId());
     }

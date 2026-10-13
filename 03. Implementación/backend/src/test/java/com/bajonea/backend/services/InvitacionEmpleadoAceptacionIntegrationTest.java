@@ -350,6 +350,38 @@ class InvitacionEmpleadoAceptacionIntegrationTest {
         });
     }
 
+    private void insertarAviso(int usuarioId, String mensaje, String tipo, String entidadTipo, Integer entidadId, Integer comercioId) {
+        jdbcTemplate.update("INSERT INTO notificacion (usuario_id, tipo, mensaje, leida, canal, estado, entidad_tipo, entidad_id, comercio_id) "
+                + "VALUES (?, ?, ?, 0, 'PUSH', 'PENDIENTE', ?, ?, ?)", usuarioId, tipo, mensaje, entidadTipo, entidadId, comercioId);
+    }
+
+    @Test
+    void reactivarUnaRelacionBorraPorClavePrimariaSusAvisosViejosDeEseComercioYSoloEsos() {
+        enTransaccion(status -> {
+            Dueno dueno = datos.registrarDuenoAprobado();
+            Dueno otroDueno = datos.registrarDuenoAprobado();
+            int cuenta = datos.registrarCliente();
+            datos.vincularEmpleado(cuenta, dueno.comercioId(), "INACTIVO", INICIO.minusDays(30));
+            datos.vincularEmpleado(cuenta, otroDueno.comercioId(), "ACTIVO", INICIO.minusDays(30));
+            insertarAviso(cuenta, "viejo uno", "NUEVO_PEDIDO", "PEDIDO", 987001, dueno.comercioId());
+            insertarAviso(cuenta, "viejo dos", "PEDIDO_CANCELADO_CLIENTE", "PEDIDO", 987002, dueno.comercioId());
+            insertarAviso(cuenta, "de otro comercio", "NUEVO_PEDIDO", "PEDIDO", 987003, otroDueno.comercioId());
+            insertarAviso(cuenta, "personal", "PEDIDO_ACEPTADO", "PEDIDO", 987004, null);
+            sincronizar();
+            int invitacionId = invitar(dueno, datos.emailDe(cuenta));
+            String codigo = codigoDe(invitacionId);
+            sincronizar();
+
+            invitacionService.aceptar(aceptarRequest(datos.emailDe(cuenta), codigo, null, null));
+
+            assertEquals(0, filas("SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND comercio_id = ?", cuenta, dueno.comercioId()));
+            assertEquals(1, filas("SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND comercio_id = ?", cuenta, otroDueno.comercioId()));
+            assertEquals(1, filas("SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND comercio_id IS NULL AND mensaje = 'personal'", cuenta));
+            assertEquals(1, filas("SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND tipo = 'INVITACION_EMPLEADO' AND comercio_id = ?",
+                    dueno.id(), dueno.comercioId()), "el aviso al Dueño lleva el comercio");
+        });
+    }
+
     @Test
     void unaRelacionQueYaEstabaActivaNoSeDuplicaYLaInvitacionQuedaAceptada() {
         enTransaccion(status -> {

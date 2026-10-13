@@ -217,8 +217,12 @@ horario, también con el aviso de cuándo reabre.
 
 ## Gestión de Pedidos
 
-- El Dueño o un Empleado autorizado debe recibir una notificación ante cada nuevo
-  pedido entrante (estado PENDIENTE_CONFIRMACION_COMERCIO).
+- El Dueño y cada Empleado activo deben recibir una notificación propia (con su estado de
+  lectura individual) ante cada nuevo pedido entrante (estado PENDIENTE_CONFIRMACION_COMERCIO),
+  ante la cancelación del pedido por el Cliente y ante su expiración por falta de respuesta. El
+  Cliente del pedido, si es Empleado del comercio, no recibe la copia del equipo de su propio
+  pedido. Las notificaciones de administración (aprobación, rechazo, suspensión, altas del
+  equipo) van solo al Dueño.
 - El sistema debe validar que el horario de confirmación del pedido esté dentro de las
   franjas horarias del comercio. Si está cerrado, se informa al cliente el horario de
   atención disponible.

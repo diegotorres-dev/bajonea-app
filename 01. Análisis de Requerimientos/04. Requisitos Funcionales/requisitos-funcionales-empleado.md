@@ -192,9 +192,9 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
 > hoy", Productos y Pedidos sin acciones, y un Perfil con los datos operativos del comercio),
 > con el reembolso de cada pedido en términos simples ("Reembolso en proceso", "Reembolsado"
 > o "Reembolso en revisión", con el monto). Las notificaciones por comercio del Empleado
-> llegan con el aviso al equipo (bloque A4): un Cliente que manda el comercio en la
-> consulta de notificaciones ya se trata como Empleado de ese comercio (404 si no lo es),
-> pero hoy no recibe ninguna. Si en medio del uso pierde el acceso a un comercio (su relación
+> llegan con el aviso al equipo (bloque A4, implementado): un Cliente que manda el comercio en la
+> consulta de notificaciones se trata como Empleado de ese comercio (404 si no lo es) y
+> recibe una copia propia de cada aviso operativo. Si en medio del uso pierde el acceso a un comercio (su relación
 > se desactiva), la aplicación lo detecta en la próxima acción o en el sondeo de cada 15
 > segundos, le muestra una hoja inferior "Ya no tenés acceso a este comercio" (con el nombre
 > del comercio y el botón "Entendido") y, al cerrarla, lo lleva al selector, o al inicio de
@@ -314,7 +314,7 @@ bloqueado para el Empleado por defecto.
   sobre un pedido que aceptó otra persona, sin restricción por quién lo aceptó.
 - El Empleado que es el Cliente del pedido tampoco puede ver su trazabilidad: recibe el mismo
   `409` `PEDIDO_PROPIO`.
-- No recibe la notificación de "pedido nuevo" de su propio pedido (pendiente del bloque A4).
+- No recibe la notificación de "pedido nuevo" (ni las de cancelación o expiración) de su propio pedido: como comprador recibe solo los avisos de un Cliente, en su campana personal (bloque A4, implementado).
 
 ---
 
@@ -361,8 +361,13 @@ bloqueado para el Empleado por defecto.
   T1, pedido cancelado por el cliente T9, pedido expirado sin respuesta T13 y, al final del
   tramo E3, el aviso de pedido autoconfirmado T30). No recibe las administrativas (aprobación,
   rechazo, suspensión) ni las de cobro.
+- Cada Empleado tiene su propia copia de cada aviso: que otro lo lea (o el Dueño) no cambia
+  el suyo, y viceversa. Solo ve los avisos posteriores a su alta o reactivación: al activarlo
+  o reactivarlo se borran sus avisos anteriores de ese comercio. Si lo desactivan, deja de
+  recibir avisos nuevos y de ver los del comercio (recibe el mismo 404 de siempre). Si trabaja
+  en varios comercios, ve en cada uno solo los avisos de ese comercio (bloque A4, implementado).
 - El listado y el contador de notificaciones del contexto Cliente quedan separados de los
-  del comercio: el Cliente ve solo las suyas como cliente.
+  del comercio: sin comercio abierto, el Cliente ve solo las suyas como cliente.
 - **Pendiente, no implementado (tramo E3, bloque A4b):** avisar al Cliente (T36, "Tu pedido
   #12 no fue retirado y el comercio lo cerró. Como ya estaba preparado, no hay devolución
   del pago.") cuando el comercio cierra como No Retirado un pedido de retiro. Ese cierre hoy

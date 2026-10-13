@@ -2,6 +2,7 @@ package com.bajonea.backend.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -31,6 +32,7 @@ import com.bajonea.backend.repositories.ClienteRepository;
 import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.DetallePedidoRepository;
 import com.bajonea.backend.repositories.DireccionRepository;
+import com.bajonea.backend.repositories.EmpleadoComercioRepository;
 import com.bajonea.backend.repositories.HistorialEstadoPedidoRepository;
 import com.bajonea.backend.repositories.ItemCarritoRepository;
 import com.bajonea.backend.repositories.PedidoRepository;
@@ -92,6 +94,7 @@ class PedidoServiceReembolsoTest {
                 reembolsoService,
                 notaCreditoService,
                 mock(PlatformTransactionManager.class), mock(ComercioActivoService.class),
+                mock(EmpleadoComercioRepository.class),
                 Clock.systemDefaultZone());
         ReflectionTestUtils.setField(pedidoService, "entityManager", mock(jakarta.persistence.EntityManager.class));
         ParticipantesPedido participantes = mock(ParticipantesPedido.class);
@@ -147,7 +150,7 @@ class PedidoServiceReembolsoTest {
 
         assertEquals(EstadoPedido.EXPIRADO, vencido.getEstado());
         verify(reembolsoService).generarNotaYReembolsarTotal(vencido, MotivoNotaCredito.EXPIRACION_SIN_RESPUESTA);
-        verify(notificacionService).crear(anyInt(),
+        verify(notificacionService).crearParaCliente(anyInt(),
                 org.mockito.ArgumentMatchers.argThat(mensaje -> mensaje.contains("30 minutos") && !mensaje.contains("1 hora")
                         && !mensaje.contains("reembolso está en proceso")),
                 eq(TipoNotificacion.PEDIDO_EXPIRADO_CLIENTE), any(), eq(20));
@@ -215,7 +218,7 @@ class PedidoServiceReembolsoTest {
 
         assertEquals(EstadoPedido.CANCELADO, pedido.getEstado());
         verify(reembolsoService).generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.CANCELACION_CLIENTE);
-        verify(notificacionService).crear(anyInt(), anyString(), eq(TipoNotificacion.PEDIDO_CANCELADO_CLIENTE), any(), eq(40));
+        verify(notificacionService).crearParaEquipo(anyInt(), anyInt(), anyCollection(), anyString(), eq(TipoNotificacion.PEDIDO_CANCELADO_CLIENTE), any(), eq(40));
     }
 
     @Test
@@ -333,7 +336,7 @@ class PedidoServiceReembolsoTest {
 
         assertEquals(EstadoPedido.ANULADO, pedido.getEstado());
         verify(reembolsoService).generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.ANULACION_COMERCIO);
-        verify(notificacionService).crear(anyInt(),
+        verify(notificacionService).crearParaCliente(anyInt(),
                 org.mockito.ArgumentMatchers.argThat(mensaje -> mensaje.contains("gestionando la devolución de tu pago")
                         && mensaje.contains("Motivo: Otro. Se rompio la freidora")),
                 eq(TipoNotificacion.PEDIDO_ANULADO_COMERCIO), any(), eq(60));
@@ -350,7 +353,7 @@ class PedidoServiceReembolsoTest {
                 new AnulacionPedidoRequestDTO(com.bajonea.backend.enums.MotivoRechazo.OTRO, "Sin gas"));
 
         assertEquals(EstadoPedido.ANULADO, pedido.getEstado());
-        verify(notificacionService).crear(anyInt(),
+        verify(notificacionService).crearParaCliente(anyInt(),
                 org.mockito.ArgumentMatchers.argThat(mensaje -> !mensaje.contains("devolución")),
                 eq(TipoNotificacion.PEDIDO_ANULADO_COMERCIO), any(), eq(61));
     }

@@ -90,6 +90,13 @@ Lecciones operativas y de herramientas que no son decisiones de diseño (esas vi
 - Solo para comparar: nunca para guardar ni mostrar (lo guardado sigue pasando por `aTitleCase`). Ambos lados de la comparación tienen que pasar por la función (lo guardado ya está en Title Case).
 - El chequeo de comercio duplicado no tiene un `UNIQUE` en la base que lo respalde (no se puede expresar con esta normalización): lo hace la aplicación y se serializa con el bloqueo de la fila del Dueño.
 
+### El fan-out de avisos y el purgado de la activación no admiten bloqueos de rango ni una FK a `comercio` (tramo E3, bloque A4)
+
+- **Sin FK a `comercio` en `notificacion.comercio_id`.** Una FK haría que cada `INSERT` de un aviso tomara un bloqueo compartido sobre el comercio, con el pedido ya bloqueado. La suspensión del Administrador toma el comercio y después sus pedidos: se cruzan. `entidad_id` ya funcionaba así (sin FK).
+- **`UPDATE ... WHERE empleado_id AND comercio_id` bloquea a los vecinos.** En MariaDB 10.4 el optimizador usa `index_merge` con `idx_empleado_comercio_empleado` y `idx_empleado_comercio_comercio` y bloquea todas las relaciones del comercio que recorre; el `SELECT ... FOR UPDATE` con los mismos predicados usa `uq_empleado_comercio` (`const`). Se vio como 36 `Deadlock found` en el arnés del estrés (un `UPDATE` de desactivación contra tres eventos que sostenían bloqueos compartidos sobre la relación vecina). Regla: actualizar `empleado_comercio` siempre `WHERE id = ?`. E4 tiene que respetarlo.
+- **Marcar todas por ids, no por rango**, y purgar por ids: ver `docs/CONCURRENCIA-Y-TRANSACCIONES.md`.
+- **Hallazgo previo, sin corregir (fuera de A4):** dos pedidos distintos del mismo Cliente que se pagan a la vez fallan uno con `500` (`ObjectOptimisticLockingFailureException` sobre `ItemCarrito`): las dos confirmaciones de pago vacían el mismo carrito con `deleteByCarritoId`, que borra entidad por entidad, y la segunda borra filas que ya no existen. Con Mercado Pago el webhook se reintenta y la segunda vez funciona, pero conviene reemplazarlo por un `DELETE` en bloque (`@Modifying @Query`). El estrés usa un comprador distinto por cada pedido que paga en paralelo.
+
 ---
 
 ## Testing
@@ -119,6 +126,12 @@ Lecciones operativas y de herramientas que no son decisiones de diseño (esas vi
 
 - Desde el A0 `PUT /comercios/perfil/foto`, `POST /productos/{id}/imagenes` y `PATCH .../imagenes/{id}/url` exigen que la URL esté en la carpeta que firma el servidor (`comercios/{id}/perfil/` y `productos/{comercio}/{producto}/`) y en la cuenta de Cloudinary configurada. Una URL de ejemplo `res.cloudinary.com/demo/...` da `400`. Las requests de la colección piden antes la firma (`POST .../firma`), guardan `cloudName` y `folder` en el environment (`cloudinary_cloud_name` y `cloudinary_folder` en la carpeta 04, `cloudinary_foto_*` en la 13, `cloudinary_b_*` en la 14, `matriz_foto_*` y `matriz_img_*` en las matrices 38 y 40, `a0_cloud` en la 58) y arman la URL con eso. Los `400` de validación del DTO (`url` vacía, dominio ajeno, extensión) no cambian: el DTO se valida antes que la carpeta.
 - Los specs de Playwright que suben imágenes reales a Cloudinary usan la URL que devuelve la subida (`secure_url`), que ya está en la carpeta correcta; los que solo prueban la validación arman la URL con el `cloudName` de la firma y no suben ningún archivo.
+
+### `mysql.exe` desde Node devuelve a veces una salida vacía (tramo E3, bloque A4)
+
+- **Síntoma:** fallos intermitentes y no reproducibles de los estreses y de algunos specs que consultan la base con el cliente `mysql.exe` (`execFileSync`): "0 notas de crédito (se esperaba 1)", "sin historial", un estado vacío, una lista vacía. Al mirar la base un instante después, los datos estaban bien. Un `SELECT COUNT(*)` —que no puede devolver una salida vacía— la devolvió vacío en una de las corridas con el instrumento que registraba esas lecturas; repetido de inmediato, dio el valor correcto.
+- **Causa:** el cliente de línea de comandos, lanzado muchas veces por segundo desde Node en Windows, a veces termina con código `0` sin salida. No es un dato de la aplicación ni de la base.
+- **Qué se hizo:** `sql` (los estreses) y `sqlTest` (`tests/helpers/backend.ts`) repiten hasta dos veces una consulta `SELECT` cuya salida vino vacía. Con eso las corridas repetidas dejaron de fallar. Si un fallo de un estreses o de un spec dice "vacío" o "0" sobre algo que existe, repetir la corrida antes de buscar un defecto de la aplicación.
 
 ### `mvnw test` completo: dos pasadas, no una con el perfil `test` forzado
 

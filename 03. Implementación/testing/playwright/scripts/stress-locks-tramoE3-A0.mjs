@@ -7,7 +7,12 @@ const CLOUD = process.env.CLOUDINARY_CLOUD_NAME || 'demo';
 const ROUNDS = Number(process.env.ROUNDS || 8);
 const ADMIN = { nombreUsuario: 'adminbajonea', password: process.env.ADMIN_PASSWORD || 'PostmanAdmin123' };
 const LOG_BACKEND = process.env.BACKEND_LOG || `${process.env.TEMP || '/tmp'}/backend-test.log`;
-const sql = (q) => execFileSync('C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', '-B', 'bajonea_test', '-e', q]).toString().trim();
+const sqlUnaVez = (q) => execFileSync('C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', '-B', 'bajonea_test', '-e', q]).toString().trim();
+const sql = (q) => {
+  let resultado = sqlUnaVez(q);
+  for (let intento = 0; intento < 2 && resultado === '' && /^\s*SELECT/i.test(q); intento += 1) resultado = sqlUnaVez(q);
+  return resultado;
+};
 
 if (!LOC) {
   console.error('Falta LOC (id de localidad de Rio Grande)');

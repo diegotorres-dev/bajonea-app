@@ -1,0 +1,305 @@
+package com.bajonea.backend.services;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.when;
+
+import com.bajonea.backend.config.security.AuthenticatedUser;
+import com.bajonea.backend.enums.RolUsuario;
+import com.bajonea.backend.services.DatosPruebaEmpleado.Cuenta;
+import com.bajonea.backend.services.DatosPruebaEmpleado.Dueno;
+import com.bajonea.backend.services.MercadoPagoReembolsoClient.ResultadoReembolsoMp;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
+/**
+ * Carreras del fan-out de avisos al equipo (E3, bloque A4) contra {@code bajonea_test}. El caso determinista pone una
+ * desactivación (que toma la relación {@code FOR UPDATE}, como lo hará E4) en medio de un evento: el evento tiene que
+ * esperarla y dejar afuera a quien quedó {@code INACTIVO}. Si los destinatarios se resolvieran con una lectura simple
+ * (sin bloquear la relación), el evento no esperaría y el desactivado recibiría una copia. El caso concurrente mezcla
+ * eventos, altas y bajas del equipo y lecturas y marcados de avisos, y no admite errores ni interbloqueos.
+ */
+@SpringBootTest
+@ActiveProfiles("test")
+class NotificacionesEquipoConcurrenciaIntegrationTest {
+
+    @Autowired
+    private RegistroService registroService;
+
+    @Autowired
+    private PedidoService pedidoService;
+
+    @Autowired
+    private NotificacionService notificacionService;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
+    @MockitoBean
+    private EmailService emailService;
+
+    @MockitoBean
+    private MercadoPagoReembolsoClient reembolsoClient;
+
+    private DatosPruebaEmpleado datos;
+
+    @BeforeEach
+    void preparar() {
+        datos = new DatosPruebaEmpleado(registroService, objectMapper, jdbcTemplate);
+        reset(reembolsoClient);
+        when(reembolsoClient.solicitarReembolsoTotal(anyString(), anyString(), anyString()))
+                .thenReturn(ResultadoReembolsoMp.exito("refund-a4c"));
+    }
+
+    private Dueno duenoConComercio() {
+        Dueno dueno = datos.registrarDuenoAprobado();
+        datos.cambiarEstadoUsuario(dueno.id(), "ACTIVO");
+        datos.cambiarEstadoComercio(dueno.comercioId(), "APTO_VENTA");
+        return dueno;
+    }
+
+    private int pedidoPorPagar(int clienteId, int comercioId) {
+        jdbcTemplate.update("INSERT INTO pedido (cliente_id, comercio_id, modalidad_entrega, estado, pago_estado, subtotal, "
+                + "cargo_servicio_cliente, cargo_servicio_comercio, total, fecha_creacion) "
+                + "VALUES (?, ?, 'RETIRO', 'PENDIENTE_PAGO', 'PENDIENTE', 10000, 200, 100, 10200, ?)",
+                clienteId, comercioId, LocalDateTime.now().minusMinutes(2));
+        int id = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Integer.class);
+        jdbcTemplate.update("INSERT INTO historial_estado_pedido (pedido_id, estado, actor_rol, actor_usuario_id, fecha_hora) VALUES (?, ?, ?, ?, ?)",
+                id, "PENDIENTE_PAGO", "CLIENTE", clienteId, LocalDateTime.now().minusMinutes(2));
+        return id;
+    }
+
+    private int copias(int usuarioId, int pedidoId) {
+        return jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND tipo = 'NUEVO_PEDIDO' AND entidad_tipo = 'PEDIDO' AND entidad_id = ?",
+                Integer.class, usuarioId, pedidoId);
+    }
+
+    private static void esperar(CountDownLatch latch) {
+        try {
+            latch.await(15, TimeUnit.SECONDS);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    private static void pausa(long milisegundos) {
+        try {
+            Thread.sleep(milisegundos);
+        } catch (InterruptedException ex) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
+    @Test
+    void siLaDesactivacionTomaLaRelacionAntesElEventoLaEsperaYDejaAfueraAlDesactivado() throws Exception {
+        for (int ronda = 0; ronda < 3; ronda++) {
+            Dueno dueno = duenoConComercio();
+            Cuenta desactivado = datos.registrarClienteConCredenciales();
+            Cuenta quedaActivo = datos.registrarClienteConCredenciales();
+            datos.vincularEmpleado(desactivado.id(), dueno.comercioId(), "ACTIVO", LocalDateTime.now().minusDays(1));
+            datos.vincularEmpleado(quedaActivo.id(), dueno.comercioId(), "ACTIVO", LocalDateTime.now().minusDays(1));
+            int comprador = datos.registrarCliente();
+            int pedidoId = pedidoPorPagar(comprador, dueno.comercioId());
+            ExecutorService hilos = Executors.newFixedThreadPool(2);
+            CountDownLatch relacionTomada = new CountDownLatch(1);
+            CountDownLatch eventoLanzado = new CountDownLatch(1);
+            try {
+                Future<?> desactivacion = hilos.submit(() -> new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+                    Integer relacionId = jdbcTemplate.queryForObject(
+                            "SELECT id FROM empleado_comercio WHERE empleado_id = ? AND comercio_id = ? FOR UPDATE", Integer.class,
+                            desactivado.id(), dueno.comercioId());
+                    relacionTomada.countDown();
+                    esperar(eventoLanzado);
+                    pausa(900);
+                    jdbcTemplate.update("UPDATE empleado_comercio SET estado = 'INACTIVO', fecha_baja = NOW() WHERE id = ?", relacionId);
+                }));
+                assertTrue(relacionTomada.await(15, TimeUnit.SECONDS));
+
+                Future<?> evento = hilos.submit(() -> {
+                    eventoLanzado.countDown();
+                    pedidoService.confirmarPagoAprobado(pedidoId);
+                });
+
+                desactivacion.get(30, TimeUnit.SECONDS);
+                evento.get(30, TimeUnit.SECONDS);
+            } finally {
+                hilos.shutdownNow();
+            }
+
+            assertEquals(0, copias(desactivado.id(), pedidoId), "ronda " + ronda + ": quien quedó INACTIVO antes del hecho no recibe copia");
+            assertEquals(1, copias(quedaActivo.id(), pedidoId), "ronda " + ronda);
+            assertEquals(1, copias(dueno.id(), pedidoId), "ronda " + ronda);
+        }
+    }
+
+    @Test
+    void elMismoEventoDisparadoPorVariosHilosEmiteUnSoloJuegoDeCopias() throws Exception {
+        Dueno dueno = duenoConComercio();
+        List<Cuenta> equipo = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            Cuenta cuenta = datos.registrarClienteConCredenciales();
+            datos.vincularEmpleado(cuenta.id(), dueno.comercioId(), "ACTIVO", LocalDateTime.now().minusDays(1));
+            equipo.add(cuenta);
+        }
+        int comprador = datos.registrarCliente();
+        int pedidoId = pedidoPorPagar(comprador, dueno.comercioId());
+        int hilos = 6;
+        ExecutorService pool = Executors.newFixedThreadPool(hilos);
+        CyclicBarrier largada = new CyclicBarrier(hilos);
+        List<Future<Throwable>> tareas = new ArrayList<>();
+        for (int i = 0; i < hilos; i++) {
+            tareas.add(pool.submit(() -> {
+                largada.await(10, TimeUnit.SECONDS);
+                try {
+                    pedidoService.confirmarPagoAprobado(pedidoId);
+                    return null;
+                } catch (Throwable ex) {
+                    return ex;
+                }
+            }));
+        }
+        List<Throwable> fallos = new ArrayList<>();
+        for (Future<Throwable> tarea : tareas) {
+            Throwable resultado = tarea.get(60, TimeUnit.SECONDS);
+            if (resultado != null) {
+                fallos.add(resultado);
+            }
+        }
+        pool.shutdownNow();
+
+        assertTrue(fallos.isEmpty(), fallos.toString());
+        assertEquals(1, copias(dueno.id(), pedidoId));
+        for (Cuenta cuenta : equipo) {
+            assertEquals(1, copias(cuenta.id(), pedidoId));
+        }
+        assertEquals(4, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM notificacion WHERE tipo = 'NUEVO_PEDIDO' AND entidad_id = ?",
+                Integer.class, pedidoId));
+    }
+
+    @Test
+    void eventosAltasYBajasDelEquipoYLecturasConcurrentesNoDanErroresNiCopiasDuplicadas() throws Exception {
+        for (int ronda = 0; ronda < 2; ronda++) {
+            Dueno dueno = duenoConComercio();
+            Cuenta fijo = datos.registrarClienteConCredenciales();
+            Cuenta intermitente = datos.registrarClienteConCredenciales();
+            datos.vincularEmpleado(fijo.id(), dueno.comercioId(), "ACTIVO", LocalDateTime.now().minusDays(1));
+            datos.vincularEmpleado(intermitente.id(), dueno.comercioId(), "ACTIVO", LocalDateTime.now().minusDays(1));
+            int comprador = datos.registrarCliente();
+            List<Integer> pedidos = new ArrayList<>();
+            for (int i = 0; i < 10; i++) {
+                pedidos.add(pedidoPorPagar(comprador, dueno.comercioId()));
+            }
+            AuthenticatedUser comoFijo = new AuthenticatedUser(fijo.id(), 1, RolUsuario.CLIENTE);
+            AuthenticatedUser comoDueno = new AuthenticatedUser(dueno.id(), 1, RolUsuario.DUENO);
+            ExecutorService pool = Executors.newFixedThreadPool(pedidos.size() + 4);
+            AtomicBoolean seguir = new AtomicBoolean(true);
+            List<Future<Throwable>> eventos = new ArrayList<>();
+            List<Future<Throwable>> auxiliares = new ArrayList<>();
+            CyclicBarrier largada = new CyclicBarrier(pedidos.size() + 4);
+            for (int pedidoId : pedidos) {
+                eventos.add(pool.submit(() -> atrapar(() -> {
+                    largada.await(10, TimeUnit.SECONDS);
+                    pedidoService.confirmarPagoAprobado(pedidoId);
+                })));
+            }
+            auxiliares.add(pool.submit(() -> atrapar(() -> {
+                largada.await(10, TimeUnit.SECONDS);
+                boolean activo = true;
+                while (seguir.get()) {
+                    String nuevo = activo ? "INACTIVO" : "ACTIVO";
+                    new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+                        Integer relacionId = jdbcTemplate.queryForObject(
+                                "SELECT id FROM empleado_comercio WHERE empleado_id = ? AND comercio_id = ? FOR UPDATE", Integer.class,
+                                intermitente.id(), dueno.comercioId());
+                        jdbcTemplate.update("UPDATE empleado_comercio SET estado = ?, fecha_baja = NULL WHERE id = ?", nuevo, relacionId);
+                    });
+                    activo = !activo;
+                    pausa(15);
+                }
+            })));
+            for (AuthenticatedUser lector : new AuthenticatedUser[] {comoFijo, comoDueno}) {
+                auxiliares.add(pool.submit(() -> atrapar(() -> {
+                    largada.await(10, TimeUnit.SECONDS);
+                    while (seguir.get()) {
+                        notificacionService.listar(lector, String.valueOf(dueno.comercioId()));
+                        notificacionService.contarNoLeidas(lector, String.valueOf(dueno.comercioId()));
+                        notificacionService.marcarLeidasDelComercioActivo(lector, String.valueOf(dueno.comercioId()));
+                        pausa(5);
+                    }
+                })));
+            }
+            auxiliares.add(pool.submit(() -> atrapar(() -> {
+                largada.await(10, TimeUnit.SECONDS);
+                while (seguir.get()) {
+                    notificacionService.listar(comoFijo, null);
+                    pausa(5);
+                }
+            })));
+
+            List<Throwable> fallos = new ArrayList<>();
+            for (Future<Throwable> tarea : eventos) {
+                Throwable resultado = tarea.get(120, TimeUnit.SECONDS);
+                if (resultado != null) {
+                    fallos.add(resultado);
+                }
+            }
+            seguir.set(false);
+            for (Future<Throwable> tarea : auxiliares) {
+                Throwable resultado = tarea.get(60, TimeUnit.SECONDS);
+                if (resultado != null) {
+                    fallos.add(resultado);
+                }
+            }
+            pool.shutdownNow();
+
+            assertTrue(fallos.isEmpty(), "ronda " + ronda + ": " + fallos);
+            for (int pedidoId : pedidos) {
+                assertEquals(1, copias(dueno.id(), pedidoId), "ronda " + ronda + " Dueño, pedido " + pedidoId);
+                assertEquals(1, copias(fijo.id(), pedidoId), "ronda " + ronda + " fijo, pedido " + pedidoId);
+                assertTrue(copias(intermitente.id(), pedidoId) <= 1, "ronda " + ronda + " intermitente, pedido " + pedidoId);
+                assertEquals(0, copias(comprador, pedidoId));
+            }
+        }
+    }
+
+    private static Throwable atrapar(ThrowingRunnable tarea) {
+        try {
+            tarea.run();
+            return null;
+        } catch (Throwable ex) {
+            return ex;
+        }
+    }
+
+    @FunctionalInterface
+    private interface ThrowingRunnable {
+        void run() throws Exception;
+    }
+}

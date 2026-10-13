@@ -930,7 +930,7 @@ class InvitacionEmpleadoIntegrationTest {
             int cliente = datos.registrarCliente();
             sincronizar();
             AuthenticatedUser principal = new AuthenticatedUser(cliente, 1, RolUsuario.CLIENTE);
-            notificacionService.crear(cliente, "Campana visible", TipoNotificacion.PEDIDO_ACEPTADO);
+            notificacionService.crearParaCliente(cliente, "Campana visible", TipoNotificacion.PEDIDO_ACEPTADO);
             notificacionService.registrarEmailEnviado(cliente, "Aviso por email", TipoNotificacion.INVITACION_EMPLEADO, INICIO);
             notificacionService.registrarEmailEnviado(cliente, "Otro aviso por email", TipoNotificacion.INVITACION_EMPLEADO, INICIO);
             sincronizar();

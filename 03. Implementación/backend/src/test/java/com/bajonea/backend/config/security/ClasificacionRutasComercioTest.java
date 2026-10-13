@@ -37,6 +37,9 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  * <li>{@code COMPARTIDO}: ruta que usan varios roles y que cambia de comportamiento según el rol y el header
  * {@code X-Comercio-Id} (las notificaciones: el Cliente sin header ve las suyas, con header se trata como Empleado
  * de ese comercio, el Dueño exige el header y el Administrador lo ignora).</li>
+ * <li>{@code COMPARTIDO_CON_COMERCIO}: igual que la anterior pero con el comercio obligatorio para todos (marcar todas
+ * las notificaciones del comercio abierto): Dueño y Cliente sin header reciben {@code 400}, un Cliente que no es
+ * Empleado de ese comercio {@code 404} y el Administrador {@code 404}.</li>
  * <li>{@code PROPIO}: actúa sobre el usuario autenticado, no sobre un comercio.</li>
  * <li>{@code PUBLICO}: público por diseño (callback de OAuth que invoca el navegador, sin JWT).</li>
  * </ul>
@@ -50,7 +53,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 class ClasificacionRutasComercioTest {
 
     private enum Categoria {
-        DELEGABLE, EXCLUSIVO, COMPARTIDO, PROPIO, PUBLICO
+        DELEGABLE, EXCLUSIVO, COMPARTIDO, COMPARTIDO_CON_COMERCIO, PROPIO, PUBLICO
     }
 
     private static final List<String> PREFIJOS = List.of("/api/v1/comercios", "/api/v1/productos", "/api/v1/pedidos/comercio",
@@ -114,6 +117,7 @@ class ClasificacionRutasComercioTest {
         CLASIFICACION.put("GET /api/v1/notificaciones", Categoria.COMPARTIDO);
         CLASIFICACION.put("PUT /api/v1/notificaciones/{id}/leida", Categoria.PROPIO);
         CLASIFICACION.put("GET /api/v1/notificaciones/no-leidas/contador", Categoria.COMPARTIDO);
+        CLASIFICACION.put("PUT /api/v1/notificaciones/leidas", Categoria.COMPARTIDO_CON_COMERCIO);
         exclusivo("PUT /api/v1/notificaciones/comercio/{comercioId}/leidas");
 
         CLASIFICACION.put("GET /api/v1/empleados/mis-comercios", Categoria.PROPIO);
@@ -159,7 +163,7 @@ class ClasificacionRutasComercioTest {
         Set<String> sinClasificar = new TreeSet<>(mappingsReales().keySet());
         sinClasificar.removeAll(CLASIFICACION.keySet());
 
-        assertTrue(sinClasificar.isEmpty(), "Mappings sin clasificar (DELEGABLE, EXCLUSIVO, COMPARTIDO, PROPIO o PUBLICO): " + sinClasificar);
+        assertTrue(sinClasificar.isEmpty(), "Mappings sin clasificar (DELEGABLE, EXCLUSIVO, COMPARTIDO, COMPARTIDO_CON_COMERCIO, PROPIO o PUBLICO): " + sinClasificar);
     }
 
     @Test
@@ -275,6 +279,14 @@ class ClasificacionRutasComercioTest {
                     verificarConHeader(fallos, entrada.getKey(), RolUsuario.CLIENTE, metodo, ruta, "99999999", 404);
                     verificarConHeader(fallos, entrada.getKey(), RolUsuario.CLIENTE, metodo, ruta, "abc", 400);
                     verificarConHeader(fallos, entrada.getKey(), RolUsuario.ADMINISTRADOR, metodo, ruta, "abc", 200);
+                }
+                case COMPARTIDO_CON_COMERCIO -> {
+                    verificar(fallos, entrada.getKey(), RolUsuario.CLIENTE, metodo, ruta, 400);
+                    verificar(fallos, entrada.getKey(), RolUsuario.DUENO, metodo, ruta, 400);
+                    verificar(fallos, entrada.getKey(), RolUsuario.ADMINISTRADOR, metodo, ruta, 404);
+                    verificarConHeader(fallos, entrada.getKey(), RolUsuario.CLIENTE, metodo, ruta, "99999999", 404);
+                    verificarConHeader(fallos, entrada.getKey(), RolUsuario.CLIENTE, metodo, ruta, "abc", 400);
+                    verificarConHeader(fallos, entrada.getKey(), RolUsuario.ADMINISTRADOR, metodo, ruta, "abc", 404);
                 }
                 case PROPIO -> {
                     if (ruta.startsWith("/api/v1/empleados")) {

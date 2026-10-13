@@ -47,6 +47,17 @@ public class NotificacionController {
     }
 
     /**
+     * Marca como leídas todas las no leídas del usuario sobre el comercio abierto. Compartido: el Dueño y el Empleado
+     * {@code ACTIVO} (un Cliente con {@code X-Comercio-Id} se trata como Empleado de ese comercio). Header obligatorio.
+     */
+    @PutMapping("/leidas")
+    public ResponseEntity<ApiResponse<Integer>> marcarLeidasDelComercioActivo(@AuthenticationPrincipal AuthenticatedUser usuario,
+            @RequestHeader(value = ComercioActivoService.HEADER_COMERCIO_ID, required = false) String comercioId) {
+        int marcadas = notificacionService.marcarLeidasDelComercioActivo(usuario, comercioId);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Notificaciones del comercio marcadas como leídas", marcadas));
+    }
+
+    /**
      * Solo Dueño ({@code SecurityConfig}). El comercio viene en la ruta: no usa {@code X-Comercio-Id}.
      */
     @PutMapping("/comercio/{comercioId}/leidas")

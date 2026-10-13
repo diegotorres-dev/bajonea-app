@@ -431,7 +431,7 @@ public class ProductoService {
         List<ItemCarrito> items = itemCarritoRepository.findByProductoId(producto.getId());
         Set<Carrito> carritosAfectados = new HashSet<>();
         for (ItemCarrito item : items) {
-            notificacionService.crear(item.getCarrito().getCliente().getId(),
+            notificacionService.crearParaCliente(item.getCarrito().getCliente().getId(),
                     "El producto '" + producto.getNombre() + "' ya no está disponible y fue eliminado de tu carrito.",
                     TipoNotificacion.PRODUCTO_REMOVIDO_CARRITO);
             carritosAfectados.add(item.getCarrito());

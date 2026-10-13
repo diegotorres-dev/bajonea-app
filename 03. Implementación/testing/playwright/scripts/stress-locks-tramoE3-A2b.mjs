@@ -8,7 +8,12 @@ const PEDIDOS_VOLUMEN = Number(process.env.PEDIDOS_VOLUMEN || 30000);
 const PAGINA_VOLUMEN = Number(process.env.PAGINA_VOLUMEN || 100);
 const ADMIN = { nombreUsuario: process.env.ADMIN_USUARIO || 'adminbajonea', password: process.env.ADMIN_PASSWORD };
 const LOG_BACKEND = process.env.BACKEND_LOG || `${process.env.TEMP || '/tmp'}/backend-test.log`;
-const sql = (q) => execFileSync('C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', '-B', 'bajonea_test', '-e', q], { maxBuffer: 256 * 1024 * 1024 }).toString().trim();
+const sqlUnaVez = (q) => execFileSync('C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', '-B', 'bajonea_test', '-e', q], { maxBuffer: 256 * 1024 * 1024 }).toString().trim();
+const sql = (q) => {
+  let resultado = sqlUnaVez(q);
+  for (let intento = 0; intento < 2 && resultado === '' && /^\s*SELECT/i.test(q); intento += 1) resultado = sqlUnaVez(q);
+  return resultado;
+};
 
 if (!LOC || !ADMIN.password) {
   console.error('Faltan LOC (id de localidad de Rio Grande) y/o ADMIN_PASSWORD (contrasena actual del administrador)');

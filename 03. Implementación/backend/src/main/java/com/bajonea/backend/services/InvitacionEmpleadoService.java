@@ -336,7 +336,11 @@ public class InvitacionEmpleadoService {
                     EstadoEmpleadoComercio.INACTIVO, EstadoEmpleadoComercio.ACTIVO, invitado.getId(), ahora);
         }
 
-        notificacionService.crear(resolucion.duenoId(),
+        if (relacionNueva.isPresent() || reactivada) {
+            notificacionService.purgarAvisosDelComercio(invitado.getId(), comercio.getId());
+        }
+
+        notificacionService.crearParaDueno(resolucion.duenoId(), comercio.getId(),
                 personaFisica.getNombre() + " " + personaFisica.getApellido() + " aceptó tu invitación y ya es parte del equipo de "
                         + comercio.getNombre(),
                 TipoNotificacion.INVITACION_EMPLEADO, TipoEntidadNotificacion.COMERCIO, comercio.getId());

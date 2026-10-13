@@ -93,17 +93,17 @@ class NotificacionesPorComercioIntegrationTest {
             int pedidoDeA = insertarPedido(clienteId, comercioA);
             int pedidoDeB = insertarPedido(clienteId, comercioB);
 
-            notificacionService.crear(dueno.id(), "A aprobado", TipoNotificacion.COMERCIO_APROBADO, TipoEntidadNotificacion.COMERCIO, comercioA);
-            notificacionService.crear(dueno.id(), "Pedido de A", TipoNotificacion.NUEVO_PEDIDO, TipoEntidadNotificacion.PEDIDO, pedidoDeA);
-            notificacionService.crear(dueno.id(), "Pedido de B", TipoNotificacion.NUEVO_PEDIDO, TipoEntidadNotificacion.PEDIDO, pedidoDeB);
-            notificacionService.crear(dueno.id(), "C rechazado", TipoNotificacion.COMERCIO_RECHAZADO, TipoEntidadNotificacion.COMERCIO, comercioC);
-            notificacionService.crear(dueno.id(), "Sin entidad", TipoNotificacion.COMERCIO_APROBADO);
-            notificacionService.crear(dueno.id(), "A ya leida", TipoNotificacion.COMERCIO_APROBADO, TipoEntidadNotificacion.COMERCIO, comercioA);
+            notificacionService.crearParaDueno(dueno.id(), comercioA, "A aprobado", TipoNotificacion.COMERCIO_APROBADO, TipoEntidadNotificacion.COMERCIO, comercioA);
+            notificacionService.crearParaEquipo(comercioA, dueno.id(), List.of(), "Pedido de A", TipoNotificacion.NUEVO_PEDIDO, TipoEntidadNotificacion.PEDIDO, pedidoDeA);
+            notificacionService.crearParaEquipo(comercioB, dueno.id(), List.of(), "Pedido de B", TipoNotificacion.NUEVO_PEDIDO, TipoEntidadNotificacion.PEDIDO, pedidoDeB);
+            notificacionService.crearParaDueno(dueno.id(), comercioC, "C rechazado", TipoNotificacion.COMERCIO_RECHAZADO, TipoEntidadNotificacion.COMERCIO, comercioC);
+            notificacionService.crearParaCliente(dueno.id(), "Sin entidad", TipoNotificacion.PRODUCTO_REMOVIDO_CARRITO);
+            notificacionService.crearParaDueno(dueno.id(), comercioA, "A ya leida", TipoNotificacion.COMERCIO_APROBADO, TipoEntidadNotificacion.COMERCIO, comercioA);
             jdbcTemplate.update("UPDATE notificacion SET leida = 1 WHERE usuario_id = ? AND mensaje = 'A ya leida'", dueno.id());
             sincronizarContextoDePersistencia();
-            notificacionService.crear(otroDueno.id(), "Del otro Dueno sobre el comercio A", TipoNotificacion.COMERCIO_APROBADO,
+            notificacionService.crearParaDueno(otroDueno.id(), comercioA, "Del otro Dueno sobre el comercio A", TipoNotificacion.COMERCIO_APROBADO,
                     TipoEntidadNotificacion.COMERCIO, comercioA);
-            notificacionService.crear(clienteId, "Del cliente sobre el pedido de A", TipoNotificacion.PEDIDO_ACEPTADO,
+            notificacionService.crearParaCliente(clienteId, "Del cliente sobre el pedido de A", TipoNotificacion.PEDIDO_ACEPTADO,
                     TipoEntidadNotificacion.PEDIDO, pedidoDeA);
 
             listadoMisComercios(dueno, comercioA, comercioB, comercioC, comercioD);
@@ -144,7 +144,7 @@ class NotificacionesPorComercioIntegrationTest {
 
         AuthenticatedUser cliente = new AuthenticatedUser(clienteId, 1, RolUsuario.CLIENTE);
         assertEquals(List.of("Del cliente sobre el pedido de A"), mensajes(notificacionService.listar(cliente, null)),
-                "el Cliente sin header ve todas las suyas");
+                "el Cliente sin header ve las suyas personales");
         assertEquals(1, notificacionService.contarNoLeidas(cliente, null));
         assertThrows(ValidacionException.class, () -> notificacionService.listar(cliente, "abc"));
         assertThrows(ComercioNoDisponibleException.class, () -> notificacionService.listar(cliente, String.valueOf(comercioA)));
@@ -159,8 +159,8 @@ class NotificacionesPorComercioIntegrationTest {
         assertEquals(1, notificacionService.contarNoLeidas(dueno.principal(), String.valueOf(comercioC)), "C no se toca");
         assertEquals(1, noLeidasDe(otroDueno.id()), "las del otro Dueño sobre el mismo comercio no se tocan");
         assertEquals(1, jdbcTemplate.queryForObject(
-                "SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND leida = 0 AND entidad_tipo IS NULL", Integer.class, dueno.id()),
-                "las notificaciones sin entidad no pertenecen a ningún comercio y no se tocan");
+                "SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND leida = 0 AND comercio_id IS NULL", Integer.class, dueno.id()),
+                "las personales (sin comercio) no pertenecen a ningún comercio y no se tocan");
 
         assertEquals(1, notificacionService.marcarLeidasDelComercio(dueno.id(), comercioC),
                 "un comercio no operativo (RECHAZADO) también se puede marcar");

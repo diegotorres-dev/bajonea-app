@@ -84,4 +84,46 @@ public interface EmpleadoComercioRepository extends JpaRepository<EmpleadoComerc
     List<EmpleadoComercio> findAccesiblesDelEmpleado(@Param("empleadoId") Integer empleadoId,
             @Param("estadoRelacion") EstadoEmpleadoComercio estadoRelacion,
             @Param("estadosComercio") Collection<EstadoComercio> estadosComercio);
+
+    /**
+     * Relaciones del comercio en el estado dado (id de la relación e id del empleado, que es también el de su
+     * usuario), por id, en una lectura simple sin bloqueo. Es la primera mitad de la resolución de los
+     * destinatarios de un aviso del equipo: la segunda ({@link #leerRelacionesConBloqueoCompartido}) las
+     * vuelve a leer con bloqueo.
+     */
+    @Query("""
+            SELECT ec.id AS id, ec.empleado.id AS empleadoId FROM EmpleadoComercio ec
+            WHERE ec.comercio.id = :comercioId AND ec.estado = :estado
+            ORDER BY ec.id
+            """)
+    List<RelacionDeEmpleado> findRelacionesByComercioIdAndEstado(@Param("comercioId") Integer comercioId,
+            @Param("estado") EstadoEmpleadoComercio estado);
+
+    /**
+     * Lee las relaciones dadas por clave primaria, en id ascendente, con {@code LOCK IN SHARE MODE}: es el estado
+     * confirmado, y una desactivación (que toma la fila {@code FOR UPDATE}) espera a que termine la transacción de
+     * quien lee. Por clave primaria y no por comercio para no tomar bloqueos de hueco sobre el rango del comercio
+     * (que frenarían el alta de relaciones nuevas). Consulta nativa porque MariaDB 10.4 no entiende el
+     * {@code FOR SHARE} que genera Hibernate. Orden de bloqueo: después de los usuarios y antes del comercio y
+     * del pedido.
+     */
+    @Query(value = "SELECT id AS id, empleado_id AS empleadoId, estado AS estado FROM empleado_comercio "
+            + "WHERE id IN (:ids) ORDER BY id LOCK IN SHARE MODE", nativeQuery = true)
+    List<EstadoDeRelacion> leerRelacionesConBloqueoCompartido(@Param("ids") Collection<Integer> ids);
+
+    interface RelacionDeEmpleado {
+
+        Integer getId();
+
+        Integer getEmpleadoId();
+    }
+
+    interface EstadoDeRelacion {
+
+        Integer getId();
+
+        Integer getEmpleadoId();
+
+        String getEstado();
+    }
 }

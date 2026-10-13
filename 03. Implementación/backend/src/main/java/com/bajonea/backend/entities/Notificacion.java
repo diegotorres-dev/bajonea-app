@@ -81,4 +81,8 @@ public class Notificacion {
     @Setter
     @Column(name = "entidad_id")
     private Integer entidadId;
+
+    @Setter
+    @Column(name = "comercio_id")
+    private Integer comercioId;
 }

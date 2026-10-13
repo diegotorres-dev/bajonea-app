@@ -7,8 +7,11 @@ import com.bajonea.backend.entities.Horario;
 import com.bajonea.backend.enums.EstadoEmpleadoComercio;
 import com.bajonea.backend.repositories.EmpleadoComercioRepository;
 import com.bajonea.backend.repositories.HorarioRepository;
+import com.bajonea.backend.repositories.NotificacionRepository;
+import com.bajonea.backend.repositories.NotificacionRepository.ContadorNoLeidasPorComercio;
 import com.bajonea.backend.services.DisponibilidadComercioService.Disponibilidad;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -29,6 +32,7 @@ public class MisComerciosEmpleadoService {
 
     private final EmpleadoComercioRepository empleadoComercioRepository;
     private final HorarioRepository horarioRepository;
+    private final NotificacionRepository notificacionRepository;
     private final DisponibilidadComercioService disponibilidadComercioService;
 
     public List<MiComercioEmpleadoResponseDTO> listar(Integer empleadoId) {
@@ -40,6 +44,10 @@ public class MisComerciosEmpleadoService {
         Map<Integer, List<Horario>> horariosPorComercio = horarioRepository
                 .findByComercioIdIn(relaciones.stream().map(relacion -> relacion.getComercio().getId()).toList()).stream()
                 .collect(Collectors.groupingBy(horario -> horario.getComercio().getId()));
+        Map<Integer, Long> noLeidasPorComercio = new HashMap<>();
+        for (ContadorNoLeidasPorComercio contador : notificacionRepository.contarNoLeidasPorComercio(empleadoId)) {
+            noLeidasPorComercio.put(contador.getComercioId(), contador.getCantidad());
+        }
         LocalDateTime ahora = disponibilidadComercioService.ahora();
         return relaciones.stream()
                 .map(relacion -> {
@@ -53,7 +61,7 @@ public class MisComerciosEmpleadoService {
                             comercio.getEstado(),
                             comercio.getFechaRegistro(),
                             ComercioActivoService.esOperativo(comercio.getEstado()),
-                            0L,
+                            noLeidasPorComercio.getOrDefault(comercio.getId(), 0L),
                             disponibilidad.cerradoManualmente(),
                             disponibilidad.abiertoAhora(),
                             disponibilidad.puedeCambiarCierre(),

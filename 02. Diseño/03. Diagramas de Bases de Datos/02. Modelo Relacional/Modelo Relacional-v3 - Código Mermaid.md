@@ -1,6 +1,6 @@
 # Modelo Relacional — Bajoneá (v3)
 
-Actualizado a `diccionario-de-datos.md` v1.13: 49 tablas. En la v1.13 `HistorialEdicionComercio` (`V32`, tramo E3, bloque A1) deja de ser planificada y pasa a existir en la base (con los índices `idx_hed_comercio_fecha` e `idx_hed_usuario` y las claves `fk_hed_*`); el estado `NO_RETIRADO` del pedido y la notificación T36 (`V33`, bloque A4b) quedan planificados y no se reflejan todavía acá. Antes, en la v1.11: La v1.11 suma tres tablas **planificadas** del rol Empleado (`InvitacionEmpleado`, `HistorialEmpleadoComercio` y `HistorialEdicionComercio` (antes propuesta como `ActividadComercio`), migraciones `V30` a `V32`, tramo E1), todavía inexistentes en la base, y cambia el ENUM de `EmpleadoComercio.estado` (`V29`, de `PENDIENTE`/`ACTIVO`/`DESACTIVADO` a `ACTIVO`/`INACTIVO`). Antes, en la v1.10: 46 tablas (el bloque suma `HistorialCierreComercio`, tabla del cierre manual del comercio, y `HistorialCambioComercio`, que el encabezado anterior no contaba; antes se agregaron `CodigoVinculacionMp`, `AlertaWebhookMp` y `HistorialCambioNombreUsuario`; `Usuario` suma `nombre_usuario` y `AlertaWebhookMp` suma `monto_esperado`/`monto_capturado`; los conteos de campos y relaciones no se recalcularon). Pegar el bloque en [mermaid.live](https://mermaid.live) para exportar el PNG.
+Actualizado a `diccionario-de-datos.md` v1.14: 49 tablas. En la v1.14 (`V33`, tramo E3, bloque A4) `Notificacion` suma la columna `comercio_id` (sin clave foránea, a propósito) y el índice `idx_notificacion_usuario_comercio`; el diagrama muestra además `entidad_tipo` y `entidad_id`, que ya existían y faltaban. Antes, en la v1.13: 49 tablas. En la v1.13 `HistorialEdicionComercio` (`V32`, tramo E3, bloque A1) deja de ser planificada y pasa a existir en la base (con los índices `idx_hed_comercio_fecha` e `idx_hed_usuario` y las claves `fk_hed_*`); el estado `NO_RETIRADO` del pedido y la notificación T36 (`V34`, bloque A4b) quedan planificados y no se reflejan todavía acá. Antes, en la v1.11: La v1.11 suma tres tablas **planificadas** del rol Empleado (`InvitacionEmpleado`, `HistorialEmpleadoComercio` y `HistorialEdicionComercio` (antes propuesta como `ActividadComercio`), migraciones `V30` a `V32`, tramo E1), todavía inexistentes en la base, y cambia el ENUM de `EmpleadoComercio.estado` (`V29`, de `PENDIENTE`/`ACTIVO`/`DESACTIVADO` a `ACTIVO`/`INACTIVO`). Antes, en la v1.10: 46 tablas (el bloque suma `HistorialCierreComercio`, tabla del cierre manual del comercio, y `HistorialCambioComercio`, que el encabezado anterior no contaba; antes se agregaron `CodigoVinculacionMp`, `AlertaWebhookMp` y `HistorialCambioNombreUsuario`; `Usuario` suma `nombre_usuario` y `AlertaWebhookMp` suma `monto_esperado`/`monto_capturado`; los conteos de campos y relaciones no se recalcularon). Pegar el bloque en [mermaid.live](https://mermaid.live) para exportar el PNG.
 
 ```mermaid
 erDiagram
@@ -260,6 +260,9 @@ erDiagram
         ENUM_CanalNotificacion canal
         ENUM_EstadoEnvioNotificacion estado
         DATETIME fecha_envio
+        ENUM_TipoEntidadNotificacion entidad_tipo
+        INT entidad_id
+        INT comercio_id
     }
     Soporte {
         INT id PK

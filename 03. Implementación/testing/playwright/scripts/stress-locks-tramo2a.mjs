@@ -5,7 +5,12 @@ const LOC = process.env.LOC;
 const CLOUD = process.env.CLOUDINARY_CLOUD_NAME;
 const ROUNDS = Number(process.env.ROUNDS || 15);
 const ADMIN = { nombreUsuario: process.env.ADMIN_USUARIO || 'adminbajonea', password: process.env.ADMIN_PASSWORD || 'PostmanAdmin123' };
-const sql = (q) => execFileSync('C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', '-B', 'bajonea_test', '-e', q]).toString().trim();
+const sqlUnaVez = (q) => execFileSync('C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', '-B', 'bajonea_test', '-e', q]).toString().trim();
+const sql = (q) => {
+  let resultado = sqlUnaVez(q);
+  for (let intento = 0; intento < 2 && resultado === '' && /^\s*SELECT/i.test(q); intento += 1) resultado = sqlUnaVez(q);
+  return resultado;
+};
 
 if (!LOC || !CLOUD) {
   console.error('Faltan LOC (id de localidad) y/o CLOUDINARY_CLOUD_NAME');

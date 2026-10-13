@@ -32,6 +32,7 @@ import com.bajonea.backend.repositories.ClienteRepository;
 import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.DetallePedidoRepository;
 import com.bajonea.backend.repositories.DireccionRepository;
+import com.bajonea.backend.repositories.EmpleadoComercioRepository;
 import com.bajonea.backend.repositories.HistorialEstadoPedidoRepository;
 import com.bajonea.backend.repositories.ItemCarritoRepository;
 import com.bajonea.backend.repositories.PedidoRepository;
@@ -101,6 +102,7 @@ class PedidoServiceVistaEmpleadoTest {
                 mock(ReembolsoService.class),
                 notaCreditoService,
                 mock(PlatformTransactionManager.class), mock(ComercioActivoService.class),
+                mock(EmpleadoComercioRepository.class),
                 Clock.systemDefaultZone());
 
         cliente = mock(Cliente.class, Answers.RETURNS_DEEP_STUBS);

@@ -4,6 +4,7 @@ import com.bajonea.backend.entities.Notificacion;
 import com.bajonea.backend.enums.CanalNotificacion;
 import com.bajonea.backend.enums.TipoNotificacion;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -13,78 +14,81 @@ import org.springframework.data.repository.query.Param;
 public interface NotificacionRepository extends JpaRepository<Notificacion, Integer> {
 
     /**
-     * Notificaciones in-app del usuario (campana). Solo canal {@code PUSH}: las filas {@code EMAIL} son el
-     * rastro de un correo enviado (por ejemplo los avisos de regularización de invitaciones, que cuentan el
-     * tope diario) y no se muestran.
+     * Notificaciones in-app personales del usuario (campana del Cliente): canal {@code PUSH} y sin comercio. Las
+     * filas {@code EMAIL} son el rastro de un correo enviado (por ejemplo los avisos de regularización de
+     * invitaciones, que cuentan el tope diario) y las que llevan {@code comercio_id} son avisos del comercio
+     * (Dueño o Empleado) que se ven solo con el comercio abierto: ninguna de las dos se muestra acá.
      */
     @Query("""
             SELECT n FROM Notificacion n
             WHERE n.usuario.id = :usuarioId AND n.canal = com.bajonea.backend.enums.CanalNotificacion.PUSH
-            ORDER BY n.fechaCreacion DESC
+              AND n.comercioId IS NULL
+            ORDER BY n.fechaCreacion DESC, n.id DESC
             """)
-    List<Notificacion> findPushByUsuarioIdOrderByFechaCreacionDesc(@Param("usuarioId") Integer usuarioId);
+    List<Notificacion> findPersonalesPushByUsuarioId(@Param("usuarioId") Integer usuarioId);
 
     @Query("""
             SELECT COUNT(n) FROM Notificacion n
             WHERE n.usuario.id = :usuarioId AND n.leida = false
               AND n.canal = com.bajonea.backend.enums.CanalNotificacion.PUSH
+              AND n.comercioId IS NULL
             """)
-    long countPushNoLeidasByUsuarioId(@Param("usuarioId") Integer usuarioId);
+    long countPersonalesPushNoLeidasByUsuarioId(@Param("usuarioId") Integer usuarioId);
 
     long countByUsuarioIdAndTipoAndCanalAndFechaCreacionAfter(Integer usuarioId, TipoNotificacion tipo, CanalNotificacion canal,
             LocalDateTime desde);
 
     /**
-     * Notificaciones del usuario que pertenecen al comercio: las del comercio mismo
-     * ({@code entidad_tipo = COMERCIO}) y las de sus pedidos ({@code entidad_tipo = PEDIDO} con un pedido
-     * de ese comercio). Sin columna de comercio en {@code notificacion}: la pertenencia se deduce de la
-     * entidad referenciada. Misma condición en las tres consultas de abajo y en el conteo agrupado.
+     * Avisos del usuario sobre un comercio (los que el sistema le emitió con {@code comercio_id}): una búsqueda
+     * por el índice {@code (usuario_id, comercio_id, leida, fecha_creacion)}, sin deducir nada de la entidad.
      */
     @Query("""
             SELECT n FROM Notificacion n
-            WHERE n.usuario.id = :usuarioId
-              AND ((n.entidadTipo = com.bajonea.backend.enums.TipoEntidadNotificacion.COMERCIO AND n.entidadId = :comercioId)
-                OR (n.entidadTipo = com.bajonea.backend.enums.TipoEntidadNotificacion.PEDIDO
-                    AND n.entidadId IN (SELECT p.id FROM Pedido p WHERE p.comercio.id = :comercioId)))
-            ORDER BY n.fechaCreacion DESC
+            WHERE n.usuario.id = :usuarioId AND n.comercioId = :comercioId
+              AND n.canal = com.bajonea.backend.enums.CanalNotificacion.PUSH
+            ORDER BY n.fechaCreacion DESC, n.id DESC
             """)
     List<Notificacion> findByUsuarioIdAndComercioId(@Param("usuarioId") Integer usuarioId,
             @Param("comercioId") Integer comercioId);
 
     @Query("""
             SELECT COUNT(n) FROM Notificacion n
-            WHERE n.usuario.id = :usuarioId AND n.leida = false
-              AND ((n.entidadTipo = com.bajonea.backend.enums.TipoEntidadNotificacion.COMERCIO AND n.entidadId = :comercioId)
-                OR (n.entidadTipo = com.bajonea.backend.enums.TipoEntidadNotificacion.PEDIDO
-                    AND n.entidadId IN (SELECT p.id FROM Pedido p WHERE p.comercio.id = :comercioId)))
+            WHERE n.usuario.id = :usuarioId AND n.comercioId = :comercioId AND n.leida = false
+              AND n.canal = com.bajonea.backend.enums.CanalNotificacion.PUSH
             """)
     long countNoLeidasByUsuarioIdAndComercioId(@Param("usuarioId") Integer usuarioId,
             @Param("comercioId") Integer comercioId);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
-            UPDATE Notificacion n SET n.leida = true
-            WHERE n.usuario.id = :usuarioId AND n.leida = false
-              AND ((n.entidadTipo = com.bajonea.backend.enums.TipoEntidadNotificacion.COMERCIO AND n.entidadId = :comercioId)
-                OR (n.entidadTipo = com.bajonea.backend.enums.TipoEntidadNotificacion.PEDIDO
-                    AND n.entidadId IN (SELECT p.id FROM Pedido p WHERE p.comercio.id = :comercioId)))
+            SELECT n.id FROM Notificacion n
+            WHERE n.usuario.id = :usuarioId AND n.comercioId = :comercioId AND n.leida = false
+              AND n.canal = com.bajonea.backend.enums.CanalNotificacion.PUSH
+            ORDER BY n.id
             """)
-    int marcarLeidasByUsuarioIdAndComercioId(@Param("usuarioId") Integer usuarioId,
+    List<Integer> findIdsNoLeidasByUsuarioIdAndComercioId(@Param("usuarioId") Integer usuarioId,
             @Param("comercioId") Integer comercioId);
 
+    @Query("SELECT n.id FROM Notificacion n WHERE n.usuario.id = :usuarioId AND n.comercioId = :comercioId ORDER BY n.id")
+    List<Integer> findIdsByUsuarioIdAndComercioId(@Param("usuarioId") Integer usuarioId, @Param("comercioId") Integer comercioId);
+
     /**
-     * Una sola consulta para todos los comercios del Dueño (sin N+1): cada notificación no leída del
-     * usuario se atribuye a su comercio, ya sea por referencia directa o a través del pedido. Los
-     * comercios sin notificaciones no aparecen en el resultado.
+     * Marca como leídas las notificaciones dadas por clave primaria (solo registros, sin bloqueos de hueco sobre
+     * el rango de un usuario). El {@code AND leida = false} hace que el conteo devuelto sea el de las que de
+     * verdad cambiaron aunque otra request las haya marcado entre la lectura de los ids y este {@code UPDATE}.
      */
-    @Query(nativeQuery = true, value = """
-            SELECT t.comercio_id AS comercioId, COUNT(*) AS cantidad FROM (
-                SELECT n.entidad_id AS comercio_id FROM notificacion n
-                WHERE n.usuario_id = :usuarioId AND n.leida = 0 AND n.entidad_tipo = 'COMERCIO'
-                UNION ALL
-                SELECT p.comercio_id FROM notificacion n JOIN pedido p ON p.id = n.entidad_id
-                WHERE n.usuario_id = :usuarioId AND n.leida = 0 AND n.entidad_tipo = 'PEDIDO'
-            ) t GROUP BY t.comercio_id
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Notificacion n SET n.leida = true WHERE n.id IN :ids AND n.leida = false")
+    int marcarLeidasPorIds(@Param("ids") Collection<Integer> ids);
+
+    /**
+     * Una sola consulta agrupada con los avisos del comercio no leídos del usuario, por comercio (sin N+1). Los
+     * comercios sin avisos no aparecen. Sirve para el Dueño (todos sus comercios) y para el Empleado (los suyos).
+     */
+    @Query("""
+            SELECT n.comercioId AS comercioId, COUNT(n) AS cantidad FROM Notificacion n
+            WHERE n.usuario.id = :usuarioId AND n.leida = false AND n.comercioId IS NOT NULL
+              AND n.canal = com.bajonea.backend.enums.CanalNotificacion.PUSH
+            GROUP BY n.comercioId
             """)
     List<ContadorNoLeidasPorComercio> contarNoLeidasPorComercio(@Param("usuarioId") Integer usuarioId);
 

@@ -293,7 +293,7 @@ public class AdministradorService {
         }
         TipoNotificacion tipo = aprobar ? TipoNotificacion.COMERCIO_APROBADO : TipoNotificacion.COMERCIO_RECHAZADO;
 
-        notificacionService.crear(comercio.getDueno().getPersonaJuridica().getPersona().getUsuario().getId(), mensaje,
+        notificacionService.crearParaDueno(comercio.getDueno().getId(), comercio.getId(), mensaje,
                 tipo, TipoEntidadNotificacion.COMERCIO, comercio.getId());
     }
 
@@ -341,7 +341,7 @@ public class AdministradorService {
                 .build();
         historialEstadoComercioRepository.save(historial);
 
-        notificacionService.crear(comercio.getDueno().getPersonaJuridica().getPersona().getUsuario().getId(),
+        notificacionService.crearParaDueno(comercio.getDueno().getId(), comercio.getId(),
                 "Tu comercio '" + comercio.getNombre() + "' fue suspendido. Motivo: " + request.getMotivo(),
                 TipoNotificacion.COMERCIO_SUSPENDIDO, TipoEntidadNotificacion.COMERCIO, comercio.getId());
 

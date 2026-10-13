@@ -50,8 +50,8 @@ let sinOperativos: { dueno: Dueno; r: number; p: number; d: number };
 function insertarNotificaciones(duenoId: number, comercioId: number, cantidad: number, mensaje: string) {
   for (let i = 1; i <= cantidad; i += 1) {
     sql(
-      `INSERT INTO notificacion (usuario_id, tipo, mensaje, leida, fecha_creacion, canal, estado, entidad_tipo, entidad_id) ` +
-        `VALUES (${duenoId}, 'COMERCIO_APROBADO', '${mensaje} ${i}', 0, NOW(), 'PUSH', 'PENDIENTE', 'COMERCIO', ${comercioId});`,
+      `INSERT INTO notificacion (usuario_id, tipo, mensaje, leida, fecha_creacion, canal, estado, entidad_tipo, entidad_id, comercio_id) ` +
+        `VALUES (${duenoId}, 'COMERCIO_APROBADO', '${mensaje} ${i}', 0, NOW(), 'PUSH', 'PENDIENTE', 'COMERCIO', ${comercioId}, ${comercioId});`,
     );
   }
 }

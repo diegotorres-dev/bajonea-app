@@ -740,10 +740,18 @@ export async function registrarComercioAdicional(
   return { ...respuesta, payload };
 }
 
-export function sqlTest(consulta: string): string {
+function sqlTestUnaVez(consulta: string): string {
   return execFileSync('C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '--default-character-set=utf8mb4', '-N', '-B', 'bajonea_test', '-e', consulta])
     .toString()
     .trim();
+}
+
+export function sqlTest(consulta: string): string {
+  let resultado = sqlTestUnaVez(consulta);
+  for (let intento = 0; intento < 2 && resultado === '' && /^\s*SELECT/i.test(consulta); intento += 1) {
+    resultado = sqlTestUnaVez(consulta);
+  }
+  return resultado;
 }
 
 export async function suspenderComercio(request: APIRequestContext, adminToken: string, comercioId: number, motivo: string): Promise<void> {

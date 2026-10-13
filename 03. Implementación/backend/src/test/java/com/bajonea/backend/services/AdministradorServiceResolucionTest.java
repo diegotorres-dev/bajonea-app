@@ -120,7 +120,7 @@ class AdministradorServiceResolucionTest {
 
         assertEquals("El comercio ya fue resuelto, no está en estado PENDIENTE", error.getMessage());
         verify(historialRepository, never()).save(any());
-        verify(notificacionService, never()).crear(anyInt(), anyString(), any(), any(), any());
+        verify(notificacionService, never()).crearParaDueno(any(), any(), anyString(), any(), any(), any());
     }
 
     @Test
@@ -140,7 +140,7 @@ class AdministradorServiceResolucionTest {
         assertEquals(EstadoComercio.PENDIENTE, fila.getEstadoOrigen());
         assertEquals(EstadoComercio.RECHAZADO, fila.getEstadoDestino());
         assertEquals("Falta la foto", fila.getMotivo());
-        verify(notificacionService).crear(DUENO_ID, "Tu comercio Cafe fue rechazado. Motivo: Falta la foto",
+        verify(notificacionService).crearParaDueno(DUENO_ID, COMERCIO_ID, "Tu comercio Cafe fue rechazado. Motivo: Falta la foto",
                 TipoNotificacion.COMERCIO_RECHAZADO, TipoEntidadNotificacion.COMERCIO, COMERCIO_ID);
     }
 
@@ -150,7 +150,7 @@ class AdministradorServiceResolucionTest {
 
         assertEquals(EstadoComercio.RECHAZO_DEFINITIVO, comercio.getEstado());
         assertEquals(EstadoComercio.RECHAZO_DEFINITIVO, historialGuardado().getEstadoDestino());
-        verify(notificacionService).crear(DUENO_ID, "Tu comercio Cafe fue rechazado de forma definitiva. Motivo: Fraude",
+        verify(notificacionService).crearParaDueno(DUENO_ID, COMERCIO_ID, "Tu comercio Cafe fue rechazado de forma definitiva. Motivo: Fraude",
                 TipoNotificacion.COMERCIO_RECHAZADO, TipoEntidadNotificacion.COMERCIO, COMERCIO_ID);
     }
 
@@ -195,7 +195,7 @@ class AdministradorServiceResolucionTest {
 
         assertEquals(EstadoComercio.APROBADO, comercio.getEstado());
         verify(comercioService).activarAptoVenta(comercio, false, "Bloqueo de cuenta vigente al aprobar");
-        verify(notificacionService).crear(eq(DUENO_ID), eq("Tu comercio Cafe fue aprobado y ya podés vender"),
+        verify(notificacionService).crearParaDueno(eq(DUENO_ID), eq(COMERCIO_ID), eq("Tu comercio Cafe fue aprobado y ya podés vender"),
                 eq(TipoNotificacion.COMERCIO_APROBADO), eq(TipoEntidadNotificacion.COMERCIO), eq(COMERCIO_ID));
     }
 

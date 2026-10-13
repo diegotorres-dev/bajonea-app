@@ -121,6 +121,7 @@ Criterios de aceptación adicionales:
 - Puedo gestionar cualquier pedido del comercio, incluido el de un empleado que compró
   como cliente; mis empleados no pueden gestionar los suyos.
 - Recibo una notificación cuando un empleado renuncia.
+- Cada aviso de pedido (pedido nuevo, cancelación del Cliente, vencimiento sin respuesta) me llega a mí y a cada empleado activo del comercio, como una copia de cada uno: que un empleado lo lea no cambia el mío. Los avisos de administración (aprobación, suspensión, altas del equipo) me llegan solo a mí. Con varios comercios, veo en cada uno solo sus avisos.
 
 ## HU-D09: Solicitar Revisión de Solicitud Rechazada
 

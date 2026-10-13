@@ -31,7 +31,7 @@ public interface PedidoRepository extends JpaRepository<Pedido, Integer> {
 
     List<Pedido> findByComercioIdAndEstadoIn(Integer comercioId, List<EstadoPedido> estados);
 
-    @Query("select p.cliente.id as clienteId, p.comercio.dueno.id as duenoId from Pedido p where p.id = :pedidoId")
+    @Query("select p.cliente.id as clienteId, p.comercio.dueno.id as duenoId, p.comercio.id as comercioId from Pedido p where p.id = :pedidoId")
     Optional<ParticipantesPedido> findParticipantesById(@Param("pedidoId") Integer pedidoId);
 
     interface ParticipantesPedido {
@@ -39,6 +39,8 @@ public interface PedidoRepository extends JpaRepository<Pedido, Integer> {
         Integer getClienteId();
 
         Integer getDuenoId();
+
+        Integer getComercioId();
     }
 
     @Query("select p.id from Pedido p where p.estado = :estado order by p.id")
