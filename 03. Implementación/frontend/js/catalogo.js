@@ -1,4 +1,4 @@
-import { apiFetch, ApiError, esContextoComercio, esContextoDueno, esContextoEmpleado, getUsuario, mostrarModalCuentaBloqueada } from './api.js';
+import { apiFetch, ApiError, esContextoComercio, getUsuario, mostrarModalCuentaBloqueada } from './api.js';
 import { exigirContextoCliente } from './contexto.js';
 import { resolverHomePorRol, LABELS_TIPO_COMERCIO } from './auth.js';
 import { contarNotificacionesNoLeidasActivo, resolverComercioActivo, suscribirComercios } from './comercio-activo.js';
@@ -90,7 +90,7 @@ function pintarBadgeDueno(bellLink) {
 }
 
 async function cargarBadgeNotificaciones(bellLink) {
-  if (esContextoDueno()) {
+  if (esContextoComercio()) {
     suscribirComercios(() => pintarBadgeDueno(bellLink));
     resolverComercioActivo().then(() => pintarBadgeDueno(bellLink)).catch(() => {});
     return;
@@ -144,7 +144,7 @@ export function renderTopBar(container, { mostrarVolver = false, titulo = null, 
 
     const usuario = getUsuario();
     if (usuario) {
-      if ((usuario.rol === 'CLIENTE' || usuario.rol === 'DUENO') && mostrarCampana && !esContextoEmpleado()) {
+      if ((usuario.rol === 'CLIENTE' || usuario.rol === 'DUENO') && mostrarCampana) {
         const bellLink = document.createElement('a');
         bellLink.href = 'notificaciones.html';
         bellLink.setAttribute('data-testid', 'btn-notificaciones');

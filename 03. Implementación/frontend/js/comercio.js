@@ -465,7 +465,7 @@ function renderHeaderDashboard(container) {
   brand.appendChild(brandLogo);
   bar.appendChild(brand);
 
-  if (esContextoDueno()) {
+  if (esContextoComercio()) {
     const bellLink = document.createElement('a');
     bellLink.href = 'notificaciones.html';
     bellLink.className = 'top-bar__action top-bar__action--bell';

@@ -98,6 +98,11 @@ Criterios de aceptación adicionales:
 - En el detalle de un pedido veo su recorrido: quién hizo cada paso (nombre y rol), a qué
   hora y, si se rechazó o se anuló, el motivo. El sistema figura sin nombre y el Cliente con
   su nombre.
+- Veo la campana de notificaciones en el panel del comercio, con el contador de los avisos sin
+  leer de ese comercio, y la pantalla muestra solo los avisos del comercio que tengo abierto
+  (los de mis compras como cliente están en mi cuenta de Cliente, con su propia campana).
+  "Ver pedido" me lleva al detalle del pedido, y "Marcar todas" deja leídos solo mis avisos
+  del comercio, sin tocar los del Dueño ni los de mis compañeros.
 - Si otra persona del equipo ya actuó sobre un pedido y yo toco un botón que quedó viejo,
   el aviso rojo explica por qué y el detalle se actualiza solo con el estado y los botones
   que corresponden, sin borrar el aviso.

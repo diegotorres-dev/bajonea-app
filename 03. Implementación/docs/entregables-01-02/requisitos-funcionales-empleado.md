@@ -123,8 +123,9 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
   "Cliente" y cada comercio, y entra al contexto que elige (ver Requisitos Funcionales —
   Generales, sección Autenticación y selector de contexto). Dentro de un comercio ve el
   mismo panel y las mismas cuatro pestañas (Panel, Productos, Pedidos, Perfil) que el
-  Dueño, con el distintivo "Empleado" debajo del nombre del comercio, sin campana de
-  notificaciones, sin "Agregar comercio" ni avisos de cobro. Para cambiar de comercio o
+  Dueño, con el distintivo "Empleado" debajo del nombre del comercio, con la campana de
+  notificaciones del comercio abierto (con su contador), sin "Agregar comercio" ni avisos
+  de cobro. Para cambiar de comercio o
   pasar a su cuenta de Cliente usa "Cambiar de cuenta" en su perfil.
 - El selector del Empleado muestra los comercios donde su relación está Activa y el
   comercio es operativo (Aprobado o Apto para Venta), más los Suspendidos y los Cerrados
@@ -199,8 +200,9 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
 > se desactiva), la aplicación lo detecta en la próxima acción o en el sondeo de cada 15
 > segundos, le muestra una hoja inferior "Ya no tenés acceso a este comercio" (con el nombre
 > del comercio y el botón "Entendido") y, al cerrarla, lo lleva al selector, o al inicio de
-> Cliente si no le queda ningún comercio. El manejo en pantalla del 404 de las notificaciones
-> cuando pierde la relación llega con la desactivación del tramo E4. Su perfil dentro de un
+> Cliente si no le queda ningún comercio. La pantalla de notificaciones y su campana llegaron
+> en la etapa 3 de la entrega B de E3 (ver Notificaciones en Pantalla); la pérdida de acceso
+> también se detecta ahí. Su perfil dentro de un
 > comercio es una sola lista (Ver datos del comercio, Editar datos del comercio, Editar datos
 > personales, Cambiar de cuenta y Cerrar sesión): para editar sus datos personales el
 > Empleado pasa a su cuenta de Cliente (ver Edición del Comercio, Productos y Cierre en
@@ -311,6 +313,17 @@ bloqueado para el Empleado por defecto.
 - "Editar datos personales" ya no abre un formulario dentro del comercio: muestra una hoja con el título "Vas a pasar a tu cuenta personal" y los botones "Continuar" y "Cancelar". "Cancelar" cierra la hoja sin cambiar nada. "Continuar" pasa a la cuenta de Cliente y lleva al perfil de Cliente, donde el Empleado elige qué editar (datos personales, contraseña, foto). Dentro del comercio el Empleado ya no tiene "Cambiar contraseña".
 - El Empleado ve el botón "+" de la lista de productos y el menú de cada producto (editar, marcar como agotado o disponible, descontinuar), y puede abrir el formulario de producto para crear o editar, con las mismas reglas que el Dueño. Con el comercio Cerrado Temporalmente puede editar productos; con el comercio Suspendido el servidor lo rechaza y el mensaje aparece en un aviso fijo (en la lista, en el formulario y también al pedir permiso para subir una foto, sin confundirse con el aviso del máximo de imágenes por producto).
 - El panel del Empleado muestra el interruptor de cierre manual cuando el comercio está apto para vender y el servidor lo permite (dentro del horario de atención). Cerrar pide confirmación; abrir es directo; ambos quedan registrados con rol Empleado. Si el servidor rechaza el cambio por una regla de negocio, el mensaje aparece en un aviso fijo debajo del interruptor; un error de conexión sigue saliendo como aviso temporal.
+
+## Notificaciones en Pantalla
+
+> **Estado de implementación:** tramo E3, entrega B, etapa 3.
+
+- En el panel del comercio el Empleado ve la campana en el encabezado, igual que el Dueño, con el contador de avisos sin leer del comercio que tiene abierto (el mismo valor que informa el servidor para ese comercio; "9+" a partir de diez). Al tocarla abre la pantalla de notificaciones sin salir del contexto del comercio.
+- Cada contexto muestra solo lo suyo: dentro de un comercio el Empleado ve únicamente los avisos de ese comercio (los de su equipo), y en su cuenta de Cliente ve únicamente los avisos de sus propias compras, con su propia campana y contador. La campana de un contexto no cuenta los avisos del otro.
+- En cada aviso de un pedido, "Ver pedido" lleva al detalle del pedido del comercio (el Cliente, al detalle de su pedido) y marca el aviso como leído; tocar el aviso entero hace lo mismo.
+- En el encabezado de la pantalla hay un botón "Marcar todas" (también para el Dueño) que deja leídos todos los avisos del comercio abierto, solo los propios: no cambia los avisos del Dueño ni los de otros compañeros. Está apagado cuando no hay avisos sin leer y, si el servidor falla, muestra un aviso temporal y queda disponible. El Cliente, fuera de un comercio, no lo ve.
+- Sin avisos, la pantalla dice "Te vamos a avisar acá cuando haya novedades en este comercio." dentro de un comercio, y "Te vamos a avisar acá cuando haya novedades sobre tus pedidos." en la cuenta de Cliente.
+- Si el Empleado pierde la relación con el comercio, la pantalla de notificaciones muestra la hoja "Ya no tenés acceso a este comercio" en lugar de los avisos.
 
 ## Pedidos Propios
 

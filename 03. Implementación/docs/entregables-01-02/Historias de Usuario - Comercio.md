@@ -123,6 +123,10 @@ listo, sin que esto afecte el estado de la cuenta ni los pedidos ya en curso.
   interruptor y no se va solo. Un error de conexión sigue saliendo como aviso temporal.
 - Como Empleado autorizado veo el mismo interruptor en el panel, con las mismas reglas.
 
+## Nota de la etapa 3: notificaciones del comercio en pantalla
+
+Como Dueño o Empleado autorizado, veo la campana en el panel con el contador de avisos sin leer del comercio que tengo abierto, y en la pantalla de notificaciones puedo abrir cada pedido con "Ver pedido" y dejar leídos todos mis avisos del comercio con "Marcar todas". Cada persona del equipo tiene su propia copia de cada aviso, así que lo que lee una no cambia lo de las demás.
+
 ## HU-CO14: Ver Solo los Pedidos ya Pagados
 
 Como Dueño o Empleado autorizado, quiero ver únicamente los pedidos cuyo pago ya fue

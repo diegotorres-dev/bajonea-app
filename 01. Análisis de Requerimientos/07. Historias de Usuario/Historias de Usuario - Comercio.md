@@ -33,7 +33,9 @@ para armar mi menú digital.
 
 Como Dueño o Empleado autorizado, quiero editar los datos de mis productos en
 cualquier momento, para mantener mi menú actualizado ante cambios de precio,
-descripción o disponibilidad.
+descripción o disponibilidad. Si el sistema no me deja (por ejemplo, el comercio está
+suspendido), el motivo aparece en un aviso rojo fijo en la misma pantalla (lista,
+formulario o subida de fotos).
 
 ## HU-CO05: Gestionar el Estado de Disponibilidad de un Producto
 
@@ -116,6 +118,14 @@ listo, sin que esto afecte el estado de la cuenta ni los pedidos ya en curso.
   Venta; si todavía no vinculé Mercado Pago, veo mi comercio como siempre.
 - Si manejo varios comercios, en el selector veo la etiqueta "Cerrado" en los que están
   cerrados, y se actualiza sola, incluso cuando un comercio se reabre automáticamente.
+- Si el sistema rechaza el cierre o la apertura por una regla (por ejemplo, el comercio
+  pasó a estar suspendido), el motivo aparece en un aviso rojo fijo debajo del
+  interruptor y no se va solo. Un error de conexión sigue saliendo como aviso temporal.
+- Como Empleado autorizado veo el mismo interruptor en el panel, con las mismas reglas.
+
+## Nota de la etapa 3: notificaciones del comercio en pantalla
+
+Como Dueño o Empleado autorizado, veo la campana en el panel con el contador de avisos sin leer del comercio que tengo abierto, y en la pantalla de notificaciones puedo abrir cada pedido con "Ver pedido" y dejar leídos todos mis avisos del comercio con "Marcar todas". Cada persona del equipo tiene su propia copia de cada aviso, así que lo que lee una no cambia lo de las demás.
 
 ## HU-CO14: Ver Solo los Pedidos ya Pagados
 

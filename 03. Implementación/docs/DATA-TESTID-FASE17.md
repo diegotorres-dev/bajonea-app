@@ -183,3 +183,11 @@ Totales de esta entrega: 17 patrones nuevos. Sin comentarios en ningún archivo 
 | Panel, interruptor de cierre | `js/cierre-comercio.js` | `aviso-cierre-slot` (contenedor del aviso fijo, hermano del slot del interruptor) |
 
 Totales de esta entrega: 18 patrones nuevos. Se eliminó de `comercio-perfil.html` la vista duplicada de datos personales del Empleado (`view-editar-datos`) con sus testids repetidos (`input-nombre`, `input-apellido`, `input-telefono`, `input-nombre-usuario`, `input-email`, `input-dni`, `btn-guardar-datos`, `btn-volver-perfil`, `mensaje-banner` y sus errores), que siguen existiendo una sola vez en `perfil.html` y, para el Dueño, en la vista de edición del comercio. El Empleado ya no tiene `btn-cambiar-password` ni la vista de cambio de contraseña en `comercio-perfil.html`. Sin comentarios en ningún archivo tocado.
+
+## Rol Empleado, tramo E3 (entrega B, etapa 3): campana y notificaciones
+
+| Pantalla | Archivo(s) | `data-testid` |
+|---|---|---|
+| `notificaciones.html` (Dueño y Empleado) | `js/notificaciones.js` | `btn-marcar-todas-leidas` (botón de texto "Marcar todas" en el encabezado, solo en contextos de comercio) |
+
+Totales de esta entrega: 1 patrón nuevo. La campana del Empleado reutiliza `btn-notificaciones` y `contador-notificaciones` (ya existentes para el Dueño y el Cliente); "Ver pedido" y los avisos conservan `btn-ver-pedido-notificacion-{id}` y `notificacion-item-{id}`. Sin comentarios en ningún archivo tocado.

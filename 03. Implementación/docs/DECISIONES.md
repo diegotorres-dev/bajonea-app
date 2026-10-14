@@ -10244,3 +10244,36 @@ Segunda de las cuatro etapas de la entrega B. Solo frontend y pruebas: sin cambi
 1. Con el comercio `SUSPENDIDO` o `CERRADO_TEMPORALMENTE` el Empleado todavía ve el botón "+" y el menú de productos aunque el servidor rechace las escrituras (`SUSPENDIDO`); ¿se ocultan según el estado del comercio o se prefiere que el servidor decida y se muestre el aviso fijo?
 2. La foto del comercio aparece en el bloque bloqueado solo como texto ("Foto de perfil cargada" / "Sin foto de perfil"); ¿se prefiere una miniatura?
 3. "Continuar" en la hoja deja la cuenta de Cliente como último contexto recordado; ¿se prefiere volver al comercio al cerrar sesión y entrar de nuevo, o está bien que recuerde Cliente?
+
+**Respuestas de Diego (Etapa 2 aprobada):** (1) con el comercio suspendido el "+" y el menú de productos no se ocultan, decide el servidor; se revisa en la pasada de interfaz; (2) la foto bloqueada queda como texto; (3) Continuar deja Cliente como último contexto, queda así. Decisiones no previstas 1 a 7: aprobadas.
+
+## 2026-10-14 — Tramo E3, entrega B, etapa 3: campana y notificaciones del Empleado
+
+Tercera de las cuatro etapas de la entrega B. Solo frontend y pruebas: sin cambios de backend ni migraciones (el servidor ya separaba los avisos por comercio desde el bloque A4). **Pendiente de la confirmación de Diego** (E3 no se declara cerrado).
+
+### Frontend
+
+- **Campana del Empleado:** `renderTopBar` (`js/catalogo.js`) y el encabezado del panel (`renderHeaderDashboard`, `js/comercio.js`) muestran la campana en cualquier contexto de comercio (`esContextoComercio()`), no solo para el Dueño. El contador sale de la lista en memoria de `GET /empleados/mis-comercios` (`cantidadNotificacionesNoLeidas` del comercio abierto, que el servidor calcula por usuario y por comercio) con el mismo sondeo de 15 s del Dueño; el Cliente conserva `GET /notificaciones/no-leidas/contador`. Se sacaron de `catalogo.js` los imports de `esContextoDueno` y `esContextoEmpleado`, que ya no se usan.
+- **Pantalla de notificaciones (`js/notificaciones.js`):** ya no usa `exigirContextoCliente()` (que mandaba al Empleado al panel). Un Dueño entra como siempre; un Cliente resuelve el contexto de la pestaña (`resolverContextoDeLaPestania`): sin contexto va al selector, en contexto Empleado queda en la pantalla con `prepararPaginaComercio()` (la misma del Dueño, que ya aceptaba Empleado), en contexto Cliente es la pantalla de siempre. `apiFetch` manda `X-Comercio-Id` solo en contexto de comercio, así que cada contexto lista únicamente lo suyo. Cualquier contexto de comercio arranca el sondeo de verificación, que mantiene la pérdida de acceso (la hoja "Ya no tenés acceso a este comercio"); un `404 COMERCIO_NO_DISPONIBLE` al cargar la lista también la dispara.
+- **"Ver pedido":** el destino ya no depende de `rol === 'DUENO'`: en un contexto de comercio va a `comercio-pedido-detalle.html?id=N`, en el de Cliente a `pedido-detalle.html?id=N`.
+- **"Marcar todas":** botón de texto en el encabezado (`btn-marcar-todas-leidas`, clase nueva `top-bar__accion-texto`, que comparte estilo con el "Vaciar todo" del carrito) solo en contextos de comercio, porque `PUT /notificaciones/leidas` exige el header del comercio. Llama al endpoint, refresca la lista de comercios en memoria (la campana y el contador) y recarga la lista; queda apagado cuando no hay avisos sin leer o mientras trabaja; si el servidor falla muestra el toast "No pudimos marcar las notificaciones como leídas" y el botón queda disponible.
+- **Estado vacío:** "Te vamos a avisar acá cuando haya novedades en este comercio." en contextos de comercio; el del Cliente no cambia.
+
+### Pruebas
+
+- **Spec 54 nuevo** (11 tests, 375 px, login real contra `bajonea_test`): estado vacío en cada contexto y "Marcar todas" solo dentro del comercio y apagado; campana del panel con el contador igual al del servidor y al de `mis-comercios`; contador del Cliente que también es Empleado (solo personales); aislamiento entre contextos (el comercio ve los avisos del equipo y no el aviso personal de su compra; el Cliente al revés, con "Ver pedido" a su detalle); "Ver pedido" del Empleado al detalle del comercio, marcando leído; tocar el aviso entero; "Marcar todas" (todos leídos, botón y campana apagados, el Dueño y otro compañero sin cambios); error al marcar todas; pérdida de acceso en la pantalla de notificaciones; Dueño (campana, "Ver pedido", "Marcar todas") y Cliente sin comercios sin cambios; desborde horizontal.
+- Ajustes: spec 38 (el panel del Empleado ahora ve la campana; `notificaciones.html` sale de la lista de pantallas de Cliente que redirigen al panel). Los specs 09 y 27 no necesitaron cambios.
+- Corridas (backend 8081, frontend 5502, base reseteada con `entorno-test.mjs preparar`): spec 54 11/11; specs 09, 27, 38, 52, 53, 31, 33, 29 y 54 en una pasada de 217 tests con 3 fallos, dos del ajuste del spec 38 (corregidos y vueltos a correr: 38 y 54, 74/74) y el inestable conocido `27:497` (pasó 5/5 aislado). La prueba muerde: sin el destino de "Ver pedido" del comercio el test correspondiente falla. No se corrió `mvnw test` (el backend no cambió) ni Newman ni estrés (no hay endpoints ni bloqueos nuevos). La corrida completa de Playwright se hace al cerrar la etapa 4.
+
+### Decisiones no previstas
+
+1. "Marcar todas" no existe para el Cliente fuera de un comercio: el único endpoint (`PUT /notificaciones/leidas`) exige el header del comercio y no hay uno equivalente para los avisos personales.
+2. "El contador del selector (`cantidadNotificacionesNoLeidas`)" se verificó en la campana, que es donde el valor se muestra; el selector de contexto (pantalla de elegir cuenta y hoja "Cambiar de cuenta") no muestra contadores y no se agregaron. La franja del Empleado tampoco tiene el puntito de "otros comercios" (solo el Dueño).
+3. Con el Cliente en contexto Empleado, abrir `notificaciones.html` ya no redirige al panel; se ajustó el test que lo esperaba. Las demás pantallas de Cliente siguen redirigiendo.
+4. El botón "Marcar todas" reutiliza el estilo del "Vaciar todo" del carrito (selector compartido en `styles.css`) en lugar de crear uno nuevo.
+5. Marcar un aviso individual (tocarlo) no vuelve a pintar la lista, así que "Marcar todas" puede quedar habilitado con todos ya leídos hasta el siguiente sondeo; al apretarlo marca cero y se apaga.
+
+### Preguntas abiertas
+
+1. ¿El Cliente que no es Empleado debería tener también "Marcar todas" (hoy requiere un endpoint nuevo)?
+2. ¿Se quiere un punto en la franja o en la hoja "Cambiar de cuenta" que avise de avisos sin leer en el otro contexto (hoy solo existe ese aviso para el Dueño con varios comercios)?

@@ -427,7 +427,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
   });
 
   test.describe('Panel del Empleado', () => {
-    test('el panel muestra el distintivo "Empleado", "Ventas de hoy", los contadores y los pedidos activos, sin campana y con el interruptor de cierre', async ({ page, request }) => {
+    test('el panel muestra el distintivo "Empleado", "Ventas de hoy", los contadores y los pedidos activos, con la campana y el interruptor de cierre', async ({ page, request }) => {
       await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
 
       await page.goto('/comercio-dashboard.html');
@@ -439,7 +439,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await expect(metricas).toContainText('Pedidos hoy');
       await expect(metricas).toContainText('Pendientes');
       await expect(metricas).not.toContainText('Facturado hoy');
-      await expect(page.getByTestId('btn-notificaciones')).toHaveCount(0);
+      await expect(page.getByTestId('btn-notificaciones')).toBeVisible();
       await expect(page.getByTestId('tarjeta-cierre-comercio')).toBeVisible();
       await expect(page.getByTestId(`pedido-item-${idsPedido.aceptado}`)).toBeVisible();
       await expect(page.getByTestId('btn-nav-panel')).toBeVisible();
@@ -1085,7 +1085,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
     test('las pantallas de Cliente redirigen al panel del comercio cuando la pestaña está en contexto Empleado', async ({ page, request }) => {
       await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
 
-      for (const ruta of ['index.html', 'explorar.html', 'carrito.html', 'checkout.html', 'pedidos.html', 'pedido-detalle.html?id=1', 'notificaciones.html', 'perfil.html', `comercio-detalle.html?id=${duenoA.comercioId}`]) {
+      for (const ruta of ['index.html', 'explorar.html', 'carrito.html', 'checkout.html', 'pedidos.html', 'pedido-detalle.html?id=1', 'perfil.html', `comercio-detalle.html?id=${duenoA.comercioId}`]) {
         await page.goto(`/${ruta}`);
         await page.waitForURL('**/comercio-dashboard.html');
         await expect(page.getByTestId('franja-comercio-insignia-empleado'), ruta).toBeVisible();

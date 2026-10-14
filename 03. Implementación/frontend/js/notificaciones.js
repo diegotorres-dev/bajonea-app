@@ -1,7 +1,8 @@
 import { apiFetch, getUsuario } from './api.js';
-import { renderTopBar } from './catalogo.js';
+import { renderTopBar, showToast } from './catalogo.js';
 import { prepararPaginaComercio } from './selector-comercio.js';
-import { exigirContextoCliente } from './contexto.js';
+import { refrescarComercios } from './comercio-activo.js';
+import { RUTA_SELECTOR_CONTEXTO, resolverContextoDeLaPestania } from './contexto.js';
 
 const POLLING_INTERVAL_MS = 15000;
 
@@ -22,7 +23,7 @@ function formatearFecha(fechaIso) {
   return `${partes}, ${hora}`;
 }
 
-function renderEmptyState(container) {
+function renderEmptyState(container, enComercio) {
   container.innerHTML = '';
   const wrapper = crear('div', 'state-page');
   wrapper.setAttribute('data-testid', 'estado-vacio');
@@ -35,12 +36,14 @@ function renderEmptyState(container) {
   wrapper.appendChild(h1);
   const p = document.createElement('p');
   p.className = 'state-page__text';
-  p.textContent = 'Te vamos a avisar acá cuando haya novedades sobre tus pedidos.';
+  p.textContent = enComercio
+    ? 'Te vamos a avisar acá cuando haya novedades en este comercio.'
+    : 'Te vamos a avisar acá cuando haya novedades sobre tus pedidos.';
   wrapper.appendChild(p);
   container.appendChild(wrapper);
 }
 
-function renderNotificacion(notificacion, rol) {
+function renderNotificacion(notificacion, enComercio) {
   const item = crear('div', `notification-item${notificacion.leida ? ' notification-item--leida' : ''}`);
   item.dataset.id = String(notificacion.id);
   item.setAttribute('data-testid', `notificacion-item-${notificacion.id}`);
@@ -70,7 +73,7 @@ function renderNotificacion(notificacion, rol) {
 
   let href = null;
   if (notificacion.entidadTipo === 'PEDIDO') {
-    href = rol === 'DUENO'
+    href = enComercio
       ? `comercio-pedido-detalle.html?id=${notificacion.entidadId}`
       : `pedido-detalle.html?id=${notificacion.entidadId}`;
     const verPedido = document.createElement('a');
@@ -103,19 +106,60 @@ function renderNotificacion(notificacion, rol) {
   return item;
 }
 
+function crearAccionMarcarTodas(alMarcar) {
+  const boton = crear('button', 'top-bar__accion-texto');
+  boton.type = 'button';
+  boton.textContent = 'Marcar todas';
+  boton.disabled = true;
+  boton.setAttribute('data-testid', 'btn-marcar-todas-leidas');
+  boton.addEventListener('click', alMarcar);
+  return boton;
+}
+
 export async function initNotificaciones() {
-  if (!(await exigirContextoCliente())) {
-    return;
-  }
   const usuario = getUsuario();
   if (!usuario || (usuario.rol !== 'CLIENTE' && usuario.rol !== 'DUENO')) {
     window.location.href = 'login.html';
     return;
   }
+  let enComercio = usuario.rol === 'DUENO';
+  if (usuario.rol === 'CLIENTE') {
+    const contexto = await resolverContextoDeLaPestania();
+    if (!contexto) {
+      window.location.href = RUTA_SELECTOR_CONTEXTO;
+      return;
+    }
+    enComercio = contexto.tipo === 'EMPLEADO';
+  }
 
-  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Notificaciones' });
+  let botonMarcarTodas = null;
+  let marcando = false;
+  let haySinLeer = false;
+  let cargarLista = async () => {};
 
-  if (usuario.rol === 'DUENO' && !(await prepararPaginaComercio())) {
+  async function marcarTodas() {
+    if (marcando) {
+      return;
+    }
+    marcando = true;
+    botonMarcarTodas.disabled = true;
+    try {
+      await apiFetch('/notificaciones/leidas', { method: 'PUT' });
+      await Promise.allSettled([refrescarComercios(), cargarLista()]);
+    } catch {
+      showToast('No pudimos marcar las notificaciones como leídas', 'error');
+    } finally {
+      marcando = false;
+      botonMarcarTodas.disabled = !haySinLeer;
+    }
+  }
+
+  if (enComercio) {
+    botonMarcarTodas = crearAccionMarcarTodas(marcarTodas);
+  }
+  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Notificaciones', accion: botonMarcarTodas });
+
+  if (enComercio && !(await prepararPaginaComercio())) {
     return;
   }
 
@@ -123,13 +167,17 @@ export async function initNotificaciones() {
   let ultimaFirma = '';
 
   function pintar(notificaciones) {
+    haySinLeer = notificaciones.some((notificacion) => !notificacion.leida);
+    if (botonMarcarTodas) {
+      botonMarcarTodas.disabled = marcando || !haySinLeer;
+    }
     if (!notificaciones || notificaciones.length === 0) {
-      renderEmptyState(container);
+      renderEmptyState(container, enComercio);
       return;
     }
     const list = crear('div', 'notification-list');
     notificaciones.forEach((notificacion) => {
-      list.appendChild(renderNotificacion(notificacion, usuario.rol));
+      list.appendChild(renderNotificacion(notificacion, enComercio));
     });
     container.innerHTML = '';
     container.appendChild(list);
@@ -143,6 +191,7 @@ export async function initNotificaciones() {
       pintar(notificaciones);
     }
   }
+  cargarLista = cargar;
 
   await cargar();
 
