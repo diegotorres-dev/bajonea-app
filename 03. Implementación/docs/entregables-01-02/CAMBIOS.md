@@ -5,6 +5,20 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
 
+## Tramo E3, entrega B, etapa 2: edición del comercio, productos y cierre en pantalla (2026-10-14)
+
+Pantallas del Empleado para editar la descripción y el teléfono del comercio, gestionar productos y abrir o cerrar el comercio, más un ajuste de la etapa 1 (el detalle del pedido se refresca solo tras un conflicto 409). Solo frontend y pruebas: sin cambios de backend, sin migraciones, sin tablas ni columnas nuevas.
+
+**Documentos de esta carpeta que cambiaron** (Diego los copia a mano a `01.` y `02.`):
+- `requisitos-funcionales-empleado.md`: nueva sección "Edición del Comercio, Productos y Cierre en Pantalla"; el perfil del Empleado pasa a cinco filas sin "Cambiar contraseña" (los datos personales y la contraseña se editan desde la cuenta de Cliente, con una hoja de aviso); se actualizan las notas de estado de E2 y la sección "Sesiones".
+- `requisitos-funcionales-comercio.md`: el aviso fijo de los conflictos 409 en el interruptor de cierre y en la gestión de productos; el Empleado autorizado ve el mismo interruptor.
+- `Historias de Usuario - Empleado.md`: criterios nuevos en HU-E04 (detalle que se refresca tras un conflicto, edición de descripción y teléfono con campos bloqueados, hoja "Vas a pasar a tu cuenta personal", productos y cierre con aviso fijo).
+- `Historias de Usuario - Comercio.md`: HU-CO04 y HU-CO13 (aviso fijo de los rechazos del servidor; el Empleado autorizado ve el interruptor).
+
+**No cambiaron** `requisitos-funcionales-dueño.md`, `requisitos-funcionales-administrador.md`, `-cliente.md`, `-generales.md`, `-sistema.md`, `requisitos-no-funcionales.md`, `alcance-y-limitaciones.md`, `diccionario-de-datos.md`, `Historias de Usuario - Dueño.md`, `-Cliente.md` ni `-Administrador.md`, ni los diagramas Mermaid (sin cambios de esquema ni de flujo).
+
+**Pruebas:** ver `docs/DECISIONES.md`, 2026-10-14, "Tramo E3, entrega B, etapa 2".
+
 ## Tramo E3, entrega B, etapa 1: pedidos del comercio en pantalla (2026-10-14)
 
 Pantallas de la lista y el detalle de pedidos del comercio para el Dueño y el Empleado (chip "Tu pedido", recorrido del pedido, "Entregar", "Cerrar como no retirado" con espera, avisos fijos para los conflictos 409), y dos campos de solo lectura en los pedidos del comercio (`noRetiradoDisponibleDesde`, `noRetiradoMinutosRestantes`). Sin migraciones, sin tablas ni columnas nuevas.

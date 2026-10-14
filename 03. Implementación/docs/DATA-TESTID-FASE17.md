@@ -171,3 +171,15 @@ Totales de esta entrega: 8 patrones nuevos (`lista-perfil`, `btn-ver-datos-comer
 | Aviso fijo (compartido) | `js/form-utils.js` | `aviso-fijo` (el banner, con `role="alert"`), `aviso-fijo-texto` |
 
 Totales de esta entrega: 17 patrones nuevos. Sin comentarios en ningún archivo tocado.
+
+## Rol Empleado, tramo E3 (entrega B, etapa 2): edición del comercio, productos y cierre
+
+| Pantalla | Archivo(s) | `data-testid` |
+|---|---|---|
+| `comercio-perfil.html` (Empleado), fila y vista "Editar datos del comercio" | `.html` | `btn-editar-datos-comercio` (fila nueva de la lista), `btn-volver-perfil-editar-datos-comercio`, `mensaje-banner-editar-datos-comercio` (contenedor del aviso fijo), `input-empleado-descripcion`, `input-empleado-telefono`, `mensaje-error-empleado-telefono`, `btn-guardar-datos-comercio` |
+| Campos bloqueados de esa vista | `.html` | `titulo-campos-bloqueados` ("Solo el Dueño puede cambiarlos"), `campos-bloqueados` (contenedor), `campo-bloqueado-nombre`, `campo-bloqueado-foto`, `campo-bloqueado-direccion`, `campo-bloqueado-email`, `campo-bloqueado-modalidades` |
+| Hoja "Vas a pasar a tu cuenta personal" | `js/comercio.js` | `modal-cuenta-personal`, `btn-continuar-cuenta-personal`, `btn-cancelar-cuenta-personal` |
+| `comercio-productos.html` | `.html` | `aviso-productos-slot` (contenedor del aviso fijo de los 409 de la lista) |
+| Panel, interruptor de cierre | `js/cierre-comercio.js` | `aviso-cierre-slot` (contenedor del aviso fijo, hermano del slot del interruptor) |
+
+Totales de esta entrega: 18 patrones nuevos. Se eliminó de `comercio-perfil.html` la vista duplicada de datos personales del Empleado (`view-editar-datos`) con sus testids repetidos (`input-nombre`, `input-apellido`, `input-telefono`, `input-nombre-usuario`, `input-email`, `input-dni`, `btn-guardar-datos`, `btn-volver-perfil`, `mensaje-banner` y sus errores), que siguen existiendo una sola vez en `perfil.html` y, para el Dueño, en la vista de edición del comercio. El Empleado ya no tiene `btn-cambiar-password` ni la vista de cambio de contraseña en `comercio-perfil.html`. Sin comentarios en ningún archivo tocado.

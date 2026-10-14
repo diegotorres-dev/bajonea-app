@@ -187,9 +187,10 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
 > descripción y teléfono, abrir y cerrar, y las cinco acciones sobre pedidos), con la relación
 > revalidada dentro de cada operación, las reglas por estado del comercio descritas arriba y
 > el actor real (Empleado) en todos los historiales; las pantallas con esas acciones llegan en
-> la entrega B de E3. La entrega B de E2 sumó las pantallas: selector de contexto después del
-> login, "Cambiar de cuenta" en el perfil, y un panel de solo lectura (Panel con "Ventas de
-> hoy", Productos y Pedidos sin acciones, y un Perfil con los datos operativos del comercio),
+> la entrega B de E3 (las pantallas de pedidos llegaron en la etapa 1 y las de edición del
+> comercio, productos y cierre en la etapa 2). La entrega B de E2 sumó las pantallas: selector
+> de contexto después del login, "Cambiar de cuenta" en el perfil, y un panel (Panel con
+> "Ventas de hoy", Productos, Pedidos y un Perfil con los datos operativos del comercio),
 > con el reembolso de cada pedido en términos simples ("Reembolso en proceso", "Reembolsado"
 > o "Reembolso en revisión", con el monto). Las notificaciones por comercio del Empleado
 > llegan con el aviso al equipo (bloque A4, implementado): un Cliente que manda el comercio en la
@@ -200,9 +201,10 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
 > del comercio y el botón "Entendido") y, al cerrarla, lo lleva al selector, o al inicio de
 > Cliente si no le queda ningún comercio. El manejo en pantalla del 404 de las notificaciones
 > cuando pierde la relación llega con la desactivación del tramo E4. Su perfil dentro de un
-> comercio es una sola lista (Ver datos del comercio, Editar datos personales, Cambiar
-> contraseña, Cambiar de cuenta y Cerrar sesión): los datos personales y la contraseña se
-> editan dentro del mismo layout del comercio, sin pasar por las pantallas de Cliente.
+> comercio es una sola lista (Ver datos del comercio, Editar datos del comercio, Editar datos
+> personales, Cambiar de cuenta y Cerrar sesión): para editar sus datos personales el
+> Empleado pasa a su cuenta de Cliente (ver Edición del Comercio, Productos y Cierre en
+> Pantalla).
 
 ---
 
@@ -299,6 +301,16 @@ bloqueado para el Empleado por defecto.
 - En el detalle de un pedido que no es propio, el Empleado tiene las mismas acciones que el Dueño según el estado: pendiente (aceptar, rechazar), en preparación (despachar o dejar listo, anular) y listo para retirar ("Entregar" y "Cerrar como no retirado"). Debajo ve el "Recorrido del pedido": una línea de tiempo con el texto de cada paso, la hora y "nombre, rol" de quien actuó (el sistema figura solo como "Sistema").
 - "Entregar" está siempre habilitado. "Cerrar como no retirado" aparece apagado mientras no haya pasado la espera mínima, con la ayuda "Disponible en N min (desde las HH:mm)" que se actualiza sola; al cumplirse se habilita. Antes de cerrar, una confirmación avisa que no se devuelve el pago al Cliente.
 - Cuando el servidor rechaza una acción por una regla de negocio (conflicto 409), el mensaje aparece en un aviso fijo rojo sobre los botones, que se queda hasta la próxima acción. Los demás errores se muestran como avisos temporales.
+
+## Edición del Comercio, Productos y Cierre en Pantalla
+
+> **Estado de implementación:** tramo E3, entrega B, etapa 2.
+
+- En el perfil, la fila "Editar datos del comercio" abre una vista con dos campos editables, la descripción y el teléfono de contacto, y un botón "Guardar cambios". Debajo, bajo el título "Solo el Dueño puede cambiarlos", se muestran con un candado y sin posibilidad de edición el nombre, la foto, la dirección, el email de contacto y las modalidades de entrega. Al guardar solo se envían la descripción y el teléfono; si salió bien, la aplicación vuelve a la lista del perfil y avisa "Datos actualizados correctamente".
+- El teléfono se valida en la pantalla (obligatorio y con formato argentino) antes de llamar al servidor. Si el servidor rechaza la edición por una regla de negocio (por ejemplo, con el comercio Suspendido), el mensaje aparece en un aviso fijo rojo dentro de la vista, que no se va solo.
+- "Editar datos personales" ya no abre un formulario dentro del comercio: muestra una hoja con el título "Vas a pasar a tu cuenta personal" y los botones "Continuar" y "Cancelar". "Cancelar" cierra la hoja sin cambiar nada. "Continuar" pasa a la cuenta de Cliente y lleva al perfil de Cliente, donde el Empleado elige qué editar (datos personales, contraseña, foto). Dentro del comercio el Empleado ya no tiene "Cambiar contraseña".
+- El Empleado ve el botón "+" de la lista de productos y el menú de cada producto (editar, marcar como agotado o disponible, descontinuar), y puede abrir el formulario de producto para crear o editar, con las mismas reglas que el Dueño. Con el comercio Cerrado Temporalmente puede editar productos; con el comercio Suspendido el servidor lo rechaza y el mensaje aparece en un aviso fijo (en la lista, en el formulario y también al pedir permiso para subir una foto, sin confundirse con el aviso del máximo de imágenes por producto).
+- El panel del Empleado muestra el interruptor de cierre manual cuando el comercio está apto para vender y el servidor lo permite (dentro del horario de atención). Cerrar pide confirmación; abrir es directo; ambos quedan registrados con rol Empleado. Si el servidor rechaza el cambio por una regla de negocio, el mensaje aparece en un aviso fijo debajo del interruptor; un error de conexión sigue saliendo como aviso temporal.
 
 ## Pedidos Propios
 
@@ -413,9 +425,8 @@ En el detalle de su propio pedido el Empleado ve la nota "Hiciste este pedido co
   contexto lo comunica.
 - El perfil del Empleado dentro de un comercio es una sola lista de filas, sin títulos de
   sección: "Ver datos del comercio" (descripción, dirección, teléfono, horarios y estado,
-  sin datos fiscales ni legales), "Editar datos personales", "Cambiar contraseña", "Cambiar
-  de cuenta" y "Cerrar sesión". Los datos personales (nombre, apellido, teléfono y nombre de
-  usuario) y el cambio de contraseña usan las mismas reglas y mensajes que el perfil del
-  Cliente, pero se abren dentro del layout del comercio, con la barra inferior del
-  comercio. La foto de perfil personal se cambia desde la cuenta de Cliente (Cambiar de
-  cuenta).
+  sin datos fiscales ni legales), "Editar datos del comercio" (descripción y teléfono),
+  "Editar datos personales", "Cambiar de cuenta" y "Cerrar sesión". Los datos personales
+  (nombre, apellido, teléfono, nombre de usuario), el cambio de contraseña y la foto de perfil
+  personal se editan desde la cuenta de Cliente: "Editar datos personales" muestra antes una
+  hoja "Vas a pasar a tu cuenta personal" y, al continuar, lleva al perfil de Cliente.

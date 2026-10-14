@@ -98,6 +98,21 @@ Criterios de aceptación adicionales:
 - En el detalle de un pedido veo su recorrido: quién hizo cada paso (nombre y rol), a qué
   hora y, si se rechazó o se anuló, el motivo. El sistema figura sin nombre y el Cliente con
   su nombre.
+- Si otra persona del equipo ya actuó sobre un pedido y yo toco un botón que quedó viejo,
+  el aviso rojo explica por qué y el detalle se actualiza solo con el estado y los botones
+  que corresponden, sin borrar el aviso.
+- En mi perfil dentro del comercio, "Editar datos del comercio" me deja cambiar la
+  descripción y el teléfono; el nombre, la foto, la dirección, el email de contacto y las
+  modalidades de entrega aparecen con un candado, bajo el título "Solo el Dueño puede
+  cambiarlos".
+- "Editar datos personales" me avisa con una hoja ("Vas a pasar a tu cuenta personal") que
+  voy a salir del comercio y entrar a mi cuenta de Cliente; con "Continuar" llego al perfil
+  de Cliente y con "Cancelar" no pasa nada. Dentro del comercio no tengo "Cambiar
+  contraseña".
+- Veo el botón "+" y el menú de cada producto, y el interruptor de cierre del panel
+  (cuando el comercio está apto para vender y dentro del horario). Si el sistema rechaza
+  una de estas acciones (por ejemplo, con el comercio suspendido), el motivo aparece en un
+  aviso rojo fijo en la misma pantalla, no como un aviso que se va solo.
 
 ## HU-E05: Perder Acceso a un Comercio Desactivado
 

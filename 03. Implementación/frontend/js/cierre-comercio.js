@@ -1,5 +1,6 @@
 import { ApiError } from './api.js';
 import { showToast } from './catalogo.js';
+import { limpiarAvisoFijo, mostrarAvisoFijo } from './form-utils.js';
 import { getComercioActivoEnMemoria, refrescarComercios, suscribirComercios } from './comercio-activo.js';
 import { abrirComercio, cerrarComercio, modoSwitchCierre, tieneCierre } from './apertura-comercio.js';
 
@@ -90,6 +91,9 @@ function pedirConfirmacionCierre(disparador) {
 
 export function montarSwitchCierre(slot) {
   slot.replaceChildren(crearEsqueleto());
+  const avisoSlot = crear('div', 'aviso-fijo-slot');
+  avisoSlot.setAttribute('data-testid', 'aviso-cierre-slot');
+  slot.insertAdjacentElement('afterend', avisoSlot);
 
   let construido = false;
   let ocupado = false;
@@ -153,12 +157,16 @@ export function montarSwitchCierre(slot) {
   }
 
   async function ejecutar(accion) {
+    limpiarAvisoFijo(avisoSlot);
     try {
       await accion();
       await refrescarComercios();
     } catch (error) {
-      const mensaje = error instanceof ApiError && error.status === 409 && error.message ? error.message : MENSAJE_ERROR_GENERICO;
-      showToast(mensaje, 'error');
+      if (error instanceof ApiError && error.status === 409 && error.message) {
+        mostrarAvisoFijo(avisoSlot, error.message);
+      } else {
+        showToast(MENSAJE_ERROR_GENERICO, 'error');
+      }
       await refrescarComercios().catch(() => {});
     }
   }

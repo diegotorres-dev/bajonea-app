@@ -162,8 +162,12 @@ export function contextoPuedeGestionarPedidos() {
   return esContextoComercio();
 }
 
-export function contextoPuedeOperar() {
-  return esContextoDueno();
+export function contextoPuedeEditarCatalogo() {
+  return esContextoComercio();
+}
+
+export function contextoPuedeCerrarComercio() {
+  return esContextoComercio();
 }
 
 export function marcarAvisoInvitacion() {

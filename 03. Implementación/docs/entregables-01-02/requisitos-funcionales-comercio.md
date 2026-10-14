@@ -150,7 +150,10 @@ horario, también con el aviso de cuándo reabre.
 - Cerrar desde el interruptor pide una confirmación breve ("¿Dejar de recibir pedidos?",
   con el aviso de que los pedidos en curso siguen su camino); cancelarla no cambia nada.
   Abrir no pide confirmación. Mientras se procesa un cambio, el interruptor no admite un
-  segundo clic.
+  segundo clic. Si el servidor rechaza el cambio por una regla de negocio (conflicto 409),
+  el mensaje aparece en un aviso fijo debajo del interruptor, que no se va solo; un error de
+  conexión sigue saliendo como aviso temporal. El Empleado autorizado ve el mismo
+  interruptor en su panel.
 - El interruptor y las indicaciones de "Cerrado" solo se muestran para los comercios en
   estado Apto para Venta. Un comercio Aprobado sin cuenta de cobro, Pendiente, Suspendido
   u otro estado conserva su etiqueta habitual y no muestra interruptor ni indicación de
@@ -176,7 +179,11 @@ horario, también con el aviso de cuándo reabre.
   asociados (opcionales) e imágenes (entre 1 y 5; el comercio define el orden y cuál se
   muestra como principal).
 - El Dueño o un Empleado autorizado debe poder editar los datos de los productos del
-  comercio en cualquier momento.
+  comercio en cualquier momento. Cuando el servidor rechaza una escritura del catálogo por
+  una regla de negocio (conflicto 409, por ejemplo con el comercio Suspendido), el mensaje
+  aparece en un aviso fijo en la misma pantalla (lista de productos, formulario o subida
+  de fotos); el rechazo al pedir permiso de subida de una foto por esa causa no se
+  confunde con el aviso del máximo de imágenes por producto.
 - Cada producto puede encontrarse en uno de los siguientes estados:
   - **DISPONIBLE:** el producto es visible en el menú y puede ser agregado al carrito
     y pedido.

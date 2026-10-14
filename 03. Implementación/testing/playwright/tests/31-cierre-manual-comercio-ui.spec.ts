@@ -270,7 +270,7 @@ test.describe('Cierre manual del comercio (UI), tramo C1', () => {
       expect((await miComercio(request, dueno, dueno.comercioId)).cerradoManualmente).toBe(false);
     });
 
-    test('un 409 del backend se informa con un mensaje corto y el switch queda como estaba', async ({ page, request }) => {
+    test('un 409 del backend se informa en un aviso fijo que no desaparece solo y el switch queda como estaba', async ({ page, request }) => {
       const dueno = await duenoApto(request);
       await cerrarPorApi(request, dueno, dueno.comercioId);
       await page.route('**/comercios/abrir', (ruta) =>
@@ -280,7 +280,10 @@ test.describe('Cierre manual del comercio (UI), tramo C1', () => {
 
       await interruptor(page).click();
 
-      await expect(page.locator('.toast')).toContainText(MENSAJE_FUERA_DE_HORARIO);
+      const aviso = page.getByTestId('aviso-cierre-slot').getByTestId('aviso-fijo');
+      await expect(aviso.getByTestId('aviso-fijo-texto')).toHaveText(MENSAJE_FUERA_DE_HORARIO);
+      await expect(aviso).toHaveAttribute('role', 'alert');
+      await expect(page.locator('.toast')).toHaveCount(0);
       await expect(interruptor(page)).toHaveAttribute('aria-checked', 'false');
       await expect(interruptor(page)).toBeEnabled();
     });

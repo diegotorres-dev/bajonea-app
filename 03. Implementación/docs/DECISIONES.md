@@ -10197,3 +10197,50 @@ Primera de las cuatro etapas de la entrega B (pantallas de E3). Backend: dos cam
 1. Tras un `409` el detalle puede quedar con datos viejos (por ejemplo, otro compañero ya aceptó el pedido). Hoy el aviso se queda y los botones siguen; ¿se vuelve a pedir el pedido en ese caso?
 2. El recorrido muestra el día cuando el paso no es de hoy (`dd/MM HH:mm`); ¿se prefiere siempre la hora sola?
 3. Los specs de la etapa 1 siguen llamando "solo lectura" al bloque del panel del spec 38 (cambia en la etapa 2).
+
+## 2026-10-14 — Tramo E3, entrega B, etapa 2: edición del comercio, productos y cierre en pantalla (Empleado)
+
+Segunda de las cuatro etapas de la entrega B. Solo frontend y pruebas: sin cambios de backend, sin migraciones. Incluye un ajuste de la etapa 1 (pregunta abierta 1 de la entrada anterior). **Pendiente de la confirmación de Diego** (E3 no se declara cerrado).
+
+### Ajuste de la etapa 1: el detalle se refresca tras un 409
+
+- Cuando una acción del detalle de pedido (aceptar, rechazar, despachar, anular, entregar, no retirado) devuelve `409`, `mostrarErrorDeAccion` muestra el aviso fijo y llama a `avisoSlot.alConflicto(mensaje)`. `initComercioPedidoDetalle` vuelve a pedir `GET /pedidos/comercio`, reemplaza el pedido y re-dibuja el detalle pasando `avisoInicial`: el aviso se escribe en el slot recién creado, así que el refresco no lo borra. El slot del aviso se crea también cuando el estado nuevo ya no tiene acciones (por ejemplo, otro compañero rechazó el pedido).
+- Si el pedido ya no aparece en la lista o la consulta falla, el detalle queda como estaba (con el aviso). Los errores que no son `409` siguen como toast y sin refresco.
+- Caso real cubierto: dos del equipo tocan "Aceptar" a la vez y a uno le sale el `409`; ahora ve el pedido "En preparación" con "Marcar como listo…" y "Anular", y el aviso sigue visible.
+
+### Perfil del Empleado
+
+- Lista de cinco filas, sin títulos: Ver datos del comercio, Editar datos del comercio, Editar datos personales, Cambiar de cuenta y Cerrar sesión. Sin "Cambiar contraseña" (se quitan la fila y también la vista del DOM del Empleado).
+- Se borró la vista vieja `view-editar-datos` de `comercio-perfil.html`: tenía ids duplicados con `view-editar-perfil` (`editar-nombre`, `editar-telefono`, `editar-banner-slot`). La vista nueva usa ids propios (`empleado-editar-descripcion`, `empleado-editar-telefono`, `empleado-editar-banner-slot`, `error-empleado-editar-telefono`) y un test recorre todos los ids de la página, para el Empleado, para evitar repetidos. `comercio.js` ya no importa `perfil-cuenta.js` (lo sigue usando `cliente.js`).
+- **Editar datos del comercio** (`view-editar-datos-comercio`): descripción y teléfono editables, enviados únicamente a `PUT /comercios/perfil/datos-operativos` con un cuerpo de exactamente dos campos; el teléfono se valida antes de llamar (obligatorio, formato argentino); un `409` sale en un aviso fijo dentro de la vista. Cinco filas con candado (nombre, foto, dirección, email de contacto, modalidades de entrega) bajo el título "Solo el Dueño puede cambiarlos", con los valores que trae el DTO reducido. El título de ese bloque no reutiliza `.profile-section__title` (el perfil del Empleado no debe tener títulos de sección).
+- **Editar datos personales:** abre la hoja "Vas a pasar a tu cuenta personal" con Continuar y Cancelar. Cancelar solo cierra la hoja. Continuar hace `setContexto(CLIENTE, null, true)` (recuerda el contexto, como `entrarEnContexto`) y navega a `perfil.html`; `entrarEnContexto` no sirve porque navega siempre al inicio del contexto.
+
+### Productos y cierre
+
+- `contextoPuedeOperar()` se eliminó de `api.js` (sin ningún uso restante). En su lugar: `contextoPuedeEditarCatalogo()` (botón "+" y menú de la lista) y `contextoPuedeCerrarComercio()` (interruptor del panel), ambos hoy `esContextoComercio()`; si el servidor no deja, responde `409` y la pantalla lo muestra. `initComercioProductoForm` pasa a `exigirContextoComercio()`; `exigirDueno` se mantiene para el alta de comercio, la corrección de comercio y las pantallas de estado.
+- Los `409` de la lista de productos (cambiar estado, descontinuar) salen en un aviso fijo (`aviso-productos-slot`, nuevo en `comercio-productos.html`); en el formulario salen en el slot que ya existía (`mostrarErrorDeFormulario`: `409` en aviso fijo, el resto como banner de error). El aviso se limpia al abrir el menú de otro producto. Éxitos y errores genéricos o de red siguen como toast o banner.
+- Reglas del servidor que las pantallas muestran sin duplicar: con el comercio `CERRADO_TEMPORALMENTE` el Empleado edita productos; con `SUSPENDIDO` el servidor responde `409 COMERCIO_SUSPENDIDO`.
+- **Cloudinary** (`js/cloudinary.js`): el `409` de la firma ya no se convierte siempre en "máximo de imágenes". Si trae `data.codigo` (regla del comercio, por ejemplo `COMERCIO_SUSPENDIDO`) se propaga el `ApiError` con el mensaje del servidor; sin código sigue siendo el máximo de imágenes.
+- **Cierre manual:** el interruptor se monta para el Empleado (el DTO reducido del listado ya trae `abiertoAhora`, `cerradoManualmente` y `puedeCambiarCierre`; sin lógica nueva). El `409` de `cerrar`/`abrir` sale en `aviso-cierre-slot` (un hermano del slot del interruptor, para que el repintado del interruptor no lo borre); se limpia al intentar de nuevo. El error de red sigue como toast.
+
+### Pruebas
+
+- Spec 53 nuevo (21 tests, 375 px, login real contra `bajonea_test`): perfil de cinco filas e ids únicos; vista con las cinco filas con candado; un solo PUT a `datos-operativos` con solo `descripcion` y `telefono`; validación del teléfono sin llamar al servidor; `409` con el comercio suspendido; hoja de cuenta personal (Cancelar no cambia nada, Continuar llega a `perfil.html` como Cliente); perfil del Dueño sin cambios; productos (menú y cambio de estado con historial de edición del Empleado, edición por formulario, alta con foto a Cloudinary real, comercio cerrado temporalmente, `409` en la lista, en el formulario y en la firma sin "máximo", Dueño sin cambios); cierre (confirmación y apertura directa con `historial_cierre_comercio` de rol `EMPLEADO`, `409` real por suspensión, `409` simulado que se limpia al reintentar, error de red como toast, sin interruptor con el comercio suspendido, Dueño sin cambios). `sinScrollHorizontal` en los pasos con pantallas nuevas.
+- Spec 52 suma 2 tests del refresco (estado intermedio y estado final). Ajustados: spec 38 (perfil de cinco filas, productos y panel del Empleado; se eliminaron los tests de "Editar datos personales" y de cambio de contraseña dentro del comercio, el primero reescrito en el 53; usa el helper compartido `sinScrollHorizontal`), spec 31 (el `409` del interruptor sale en aviso fijo; el test del error de red conserva el toast). Los specs 06, 15 y 16 no hacían aserciones sobre toasts ni sobre estas pantallas del Empleado.
+- Corridas (backend en el 8081, frontend en el 5502, base reseteada con `entorno-test.mjs preparar`): spec 53 21/21; specs 52, 38 y 31 119/119; specs 06, 14, 15, 16, 27, 29, 33 y 36 142/143 (el único fallo, `27:497`, es un inestable conocido y pasó 5/5 aislado). Los dos tests nuevos del spec 52 fallan si se anula el refresco (probado). `mvnw test`, una sola vez por seguridad (el backend no cambió): 794/794 en la primera pasada y 6/6 en la segunda (`BUILD SUCCESS` en las dos). Tras `mvnw test` la base de test queda con cientos de comercios: hay que volver a correr `entorno-test.mjs preparar` antes de la próxima corrida de Playwright. No se corrió Newman ni estrés: no hay endpoints ni escrituras con bloqueo nuevos. La corrida completa de Playwright se hace al cerrar la etapa 4.
+
+### Decisiones no previstas
+
+1. El texto del estado vacío de la lista de productos para el Empleado ahora dice "Este comercio todavía no tiene productos cargados. Usá el botón + para crear el primero." (antes, sin la segunda frase), porque el Empleado ya puede crear.
+2. El `409` del interruptor va a un slot hermano (`aviso-cierre-slot`, insertado detrás del slot del interruptor) y no dentro de `cierre-comercio-slot`, porque el repintado del interruptor reemplaza los hijos de su slot.
+3. El pedido pidió reescribir los specs `31:283` y `31:296`; el `31:296` es el error de red, que según la regla de la etapa ("errores genéricos o de red siguen como toast") conserva el toast. Solo se reescribió el `31:283` (el `409`).
+4. En el formulario de producto, además de los dos toasts de la lista, los `409` del formulario (guardar, subir, borrar, reordenar y recortar fotos, descontinuar) también pasan al aviso fijo, para que un `COMERCIO_SUSPENDIDO` se vea igual en toda la gestión de productos. Los demás errores siguen en el banner de error.
+5. El panel del Empleado con el comercio suspendido o cerrado temporalmente no muestra el interruptor (la regla `tieneCierre` ya exigía `APTO_VENTA`); el `409` solo aparece por una carrera o por un cambio de estado entre sondeos.
+6. Los tests de "Editar datos personales" y de cambio de contraseña dentro del comercio del spec 38 se eliminaron en lugar de reescribirse: la contraseña del Empleado ya no se cambia desde el comercio (el flujo del Cliente está cubierto por su propio spec) y la edición de datos personales pasó a la hoja y al perfil de Cliente (spec 53).
+7. `sinScrollHorizontal` se extrajo solo del spec 38; el spec 36 tiene una variante propia que además espera `networkidle` y se dejó como estaba.
+
+### Preguntas abiertas
+
+1. Con el comercio `SUSPENDIDO` o `CERRADO_TEMPORALMENTE` el Empleado todavía ve el botón "+" y el menú de productos aunque el servidor rechace las escrituras (`SUSPENDIDO`); ¿se ocultan según el estado del comercio o se prefiere que el servidor decida y se muestre el aviso fijo?
+2. La foto del comercio aparece en el bloque bloqueado solo como texto ("Foto de perfil cargada" / "Sin foto de perfil"); ¿se prefiere una miniatura?
+3. "Continuar" en la hoja deja la cuenta de Cliente como último contexto recordado; ¿se prefiere volver al comercio al cerrar sesión y entrar de nuevo, o está bien que recuerde Cliente?

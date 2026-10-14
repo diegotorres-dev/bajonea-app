@@ -450,6 +450,48 @@ test.describe('Pedidos del comercio en pantalla para el Dueño y el Empleado, E3
       await sinScrollHorizontal(page);
     });
 
+    test('si otro del equipo ya aceptó el pedido, el 409 muestra el aviso fijo y el detalle se refresca con el estado y los botones nuevos sin borrar el aviso', async ({ page, request }) => {
+      const pedidoId = await nuevoPedido(request, comprador, 'PENDIENTE');
+      await abrirComoEmpleado(page, elena);
+      await page.goto(`/comercio-pedido-detalle.html?id=${pedidoId}`);
+      await expect(page.getByTestId('btn-aceptar-pedido')).toBeEnabled();
+      await expect(page.getByTestId('recorrido-paso').first()).toBeVisible();
+      expect((await accion(request, dueno.token, pedidoId, 'aceptar')).status).toBe(200);
+
+      await page.getByTestId('btn-aceptar-pedido').click();
+
+      const aviso = page.getByTestId('aviso-fijo');
+      await expect(aviso).toBeVisible();
+      await expect(aviso.getByTestId('aviso-fijo-texto')).not.toBeEmpty();
+      await expect(page.getByTestId('cabecera-estado-pedido')).toContainText('En preparación');
+      await expect(page.getByTestId('btn-despachar-pedido')).toBeVisible();
+      await expect(page.getByTestId('btn-anular-pedido')).toBeVisible();
+      await expect(page.getByTestId('btn-aceptar-pedido')).toHaveCount(0);
+      await expect(page.getByTestId('btn-rechazar-pedido')).toHaveCount(0);
+      await expect(aviso).toBeVisible();
+      await expect(page.locator('.toast')).toHaveCount(0);
+      expect(estadoDe(pedidoId)).toBe('EN_PREPARACION');
+      await sinScrollHorizontal(page);
+    });
+
+    test('si el pedido ya llegó a un estado final el 409 refresca el detalle, deja el aviso y no queda ningún botón', async ({ page, request }) => {
+      const pedidoId = await nuevoPedido(request, comprador, 'PENDIENTE');
+      await abrirComoEmpleado(page, elena);
+      await page.goto(`/comercio-pedido-detalle.html?id=${pedidoId}`);
+      await expect(page.getByTestId('btn-aceptar-pedido')).toBeEnabled();
+      await expect(page.getByTestId('recorrido-paso').first()).toBeVisible();
+      expect((await accion(request, dueno.token, pedidoId, 'rechazar', { motivo: 'SIN_STOCK', comentario: null })).status).toBe(200);
+
+      await page.getByTestId('btn-aceptar-pedido').click();
+
+      await expect(page.getByTestId('aviso-fijo')).toBeVisible();
+      await expect(page.getByTestId('cabecera-estado-pedido')).toContainText('Rechazado');
+      for (const boton of ['btn-aceptar-pedido', 'btn-rechazar-pedido', 'btn-despachar-pedido', 'btn-anular-pedido']) {
+        await expect(page.getByTestId(boton)).toHaveCount(0);
+      }
+      await expect(page.getByTestId('aviso-fijo')).toBeVisible();
+    });
+
     test('un error que no es de reglas de negocio sigue saliendo como aviso temporal', async ({ page, request }) => {
       const pedidoId = await nuevoPedido(request, comprador, 'PENDIENTE');
       await page.route('**/pedidos/comercio/*/aceptar', (ruta) =>

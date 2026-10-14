@@ -51,7 +51,7 @@ export async function subirImagenProducto(productoId, file, { orden, esPrincipal
   try {
     firma = await apiFetch(`/productos/${productoId}/cloudinary/firma`, { method: 'POST' });
   } catch (error) {
-    if (error instanceof ApiError && error.status === 409) {
+    if (error instanceof ApiError && error.status === 409 && !(error.data && error.data.codigo)) {
       throw new CloudinaryUploadError(`Ya alcanzaste el máximo de ${MAX_IMAGENES_POR_PRODUCTO} imágenes por producto.`);
     }
     throw error;

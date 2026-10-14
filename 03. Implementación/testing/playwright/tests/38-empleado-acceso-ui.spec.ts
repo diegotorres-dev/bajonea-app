@@ -18,6 +18,7 @@ import {
 } from './helpers/backend';
 import type { ClienteRegistrado, SesionApi } from './helpers/backend';
 import type { Dueno } from './helpers/multicomercio';
+import { sinScrollHorizontal } from './helpers/layout';
 import { loginUi, prepararAprobado } from './helpers/multicomercio';
 import {
   abrirComoUsuarioConContexto,
@@ -42,11 +43,6 @@ interface Empleado {
 
 function formatearPrecio(valor: number): string {
   return `$${Math.round(valor).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
-}
-
-async function sinScrollHorizontal(page: Page): Promise<void> {
-  await page.evaluate(() => document.fonts.ready);
-  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
 }
 
 async function capturar(page: Page, nombre: string): Promise<void> {
@@ -430,8 +426,8 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
     });
   });
 
-  test.describe('Panel del Empleado: solo lectura', () => {
-    test('el panel muestra el distintivo "Empleado", "Ventas de hoy", los contadores y los pedidos activos, sin campana ni interruptor de cierre', async ({ page, request }) => {
+  test.describe('Panel del Empleado', () => {
+    test('el panel muestra el distintivo "Empleado", "Ventas de hoy", los contadores y los pedidos activos, sin campana y con el interruptor de cierre', async ({ page, request }) => {
       await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
 
       await page.goto('/comercio-dashboard.html');
@@ -444,8 +440,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await expect(metricas).toContainText('Pendientes');
       await expect(metricas).not.toContainText('Facturado hoy');
       await expect(page.getByTestId('btn-notificaciones')).toHaveCount(0);
-      await expect(page.getByTestId('tarjeta-cierre-comercio')).toHaveCount(0);
-      await expect(page.getByTestId('tarjeta-cierre-comercio-cargando')).toHaveCount(0);
+      await expect(page.getByTestId('tarjeta-cierre-comercio')).toBeVisible();
       await expect(page.getByTestId(`pedido-item-${idsPedido.aceptado}`)).toBeVisible();
       await expect(page.getByTestId('btn-nav-panel')).toBeVisible();
       await expect(page.getByTestId('btn-nav-productos')).toBeVisible();
@@ -481,20 +476,24 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await expect(page.getByTestId('franja-comercio')).toContainText('Cambiar');
     });
 
-    test('la lista de productos se ve en solo lectura: sin botón para crear ni menú de acciones', async ({ page, request }) => {
+    test('la lista de productos del Empleado tiene botón para crear y menú de acciones en cada producto', async ({ page, request }) => {
       await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
 
       await page.goto('/comercio-productos.html');
 
       await expect(page.getByTestId(`producto-item-${productoA}`)).toBeVisible();
-      await expect(page.getByTestId('btn-crear-producto')).toBeHidden();
-      await expect(page.getByTestId(`btn-acciones-producto-${productoA}`)).toHaveCount(0);
+      await expect(page.getByTestId('btn-crear-producto')).toBeVisible();
+      await expect(page.getByTestId(`btn-acciones-producto-${productoA}`)).toHaveCount(1);
     });
 
-    test('el formulario de producto y las pantallas exclusivas del Dueño redirigen al panel', async ({ page, request }) => {
+    test('el formulario de producto abre para el Empleado y las pantallas exclusivas del Dueño redirigen al panel', async ({ page, request }) => {
       await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
 
-      for (const ruta of ['comercio-producto-form.html', 'agregar-comercio.html', 'comercio-pendiente.html', 'comercio-rechazado.html', 'comercio-corregir.html?id=1']) {
+      await page.goto('/comercio-producto-form.html');
+      await expect(page.getByTestId('btn-guardar-producto')).toBeVisible();
+      expect(page.url()).toContain('comercio-producto-form.html');
+
+      for (const ruta of ['agregar-comercio.html', 'comercio-pendiente.html', 'comercio-rechazado.html', 'comercio-corregir.html?id=1']) {
         await page.goto(`/${ruta}`);
         await page.waitForURL('**/comercio-dashboard.html');
         await expect(page.getByTestId('franja-comercio-insignia-empleado')).toBeVisible();
@@ -552,7 +551,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await expect(page.getByText('Cargo por servicio (1%)')).toBeVisible();
     });
 
-    test('el perfil del Empleado es una sola lista de cinco filas, en orden, sin títulos de sección', async ({ page, request }) => {
+    test('el perfil del Empleado es una sola lista de cinco filas, en orden, sin títulos de sección y sin "Cambiar contraseña"', async ({ page, request }) => {
       await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
 
       await page.goto('/comercio-perfil.html');
@@ -563,8 +562,8 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await expect(page.getByTestId('email-comercio-perfil')).toBeHidden();
       await expect(page.getByTestId('lista-perfil').locator('.profile-link')).toHaveText([
         'Ver datos del comercio',
+        'Editar datos del comercio',
         'Editar datos personales',
-        'Cambiar contraseña',
         'Cambiar de cuenta',
         'Cerrar sesión',
       ]);
@@ -572,7 +571,8 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await expect(page.getByTestId('btn-cerrar-sesion')).toHaveClass(/profile-link--danger/);
       await expect(page.getByTestId('btn-cambiar-cuenta')).toBeEnabled();
       await expect(page.getByTestId('btn-editar-datos')).toBeEnabled();
-      await expect(page.getByTestId('btn-cambiar-password')).toBeEnabled();
+      await expect(page.getByTestId('btn-editar-datos-comercio')).toBeEnabled();
+      await expect(page.getByTestId('btn-cambiar-password')).toHaveCount(0);
       for (const oculto of ['btn-editar-perfil-comercio', 'btn-ver-legales', 'btn-ver-equipo', 'btn-ir-mercadopago', 'btn-mi-cuenta']) {
         await expect(page.getByTestId(oculto), oculto).toHaveCount(0);
       }
@@ -603,88 +603,6 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await page.getByTestId('btn-volver-perfil-datos-comercio').click();
       await expect(page.getByTestId('lista-perfil')).toBeVisible();
       await expect(page.getByTestId('seccion-datos-comercio-empleado')).toBeHidden();
-    });
-
-    test('"Editar datos personales" se abre dentro del layout del comercio, valida igual que el Cliente y al guardar vuelve a la lista', async ({ page, request }) => {
-      const [comercio] = await comerciosNuevos(request, 1);
-      const empleado = await crearEmpleado(request, [comercio]);
-      const sesion = await abrirComoEmpleado(page, request, empleado, comercio);
-      await page.goto('/comercio-perfil.html');
-      await expect(page.getByTestId('btn-editar-datos')).toBeEnabled();
-
-      await page.getByTestId('btn-editar-datos').click();
-
-      expect(page.url()).toContain('comercio-perfil.html');
-      await expect(page.getByTestId('input-nombre')).toBeVisible();
-      await expect(page.getByTestId('input-nombre')).not.toHaveValue('');
-      await expect(page.getByTestId('input-email')).toBeDisabled();
-      await expect(page.getByTestId('btn-nav-perfil')).toBeVisible();
-      await expect(page.getByTestId('btn-nav-panel')).toBeVisible();
-      await expect(page.getByTestId('nombre-cliente-perfil')).toHaveCount(0);
-
-      await page.getByTestId('input-nombre').fill('');
-      await page.getByTestId('btn-guardar-datos').click();
-      await expect(page.getByTestId('mensaje-error-nombre')).toHaveText('El nombre es obligatorio.');
-      await page.getByTestId('input-nombre').fill('Nombre123');
-      await page.getByTestId('btn-guardar-datos').click();
-      await expect(page.getByTestId('mensaje-error-nombre')).toContainText('solo letras, espacios y guiones');
-
-      await page.getByTestId('input-nombre').fill('Marta Elena');
-      await page.getByTestId('btn-guardar-datos').click();
-
-      await expect(page.getByTestId('lista-perfil')).toBeVisible();
-      await expect(page.getByTestId('input-nombre')).toBeHidden();
-      await expect(page.getByText('Datos actualizados correctamente')).toBeVisible();
-      await expect(page.getByTestId('nombre-comercio-perfil')).not.toHaveText('Marta Elena');
-      expect(page.url()).toContain('comercio-perfil.html');
-      const perfil = await apiConHeaders(request, 'GET', '/clientes/perfil', sesion.token, {});
-      expect(perfil.body.data.nombre).toBe('Marta Elena');
-    });
-
-    test('"Cambiar contraseña" se abre dentro del layout del comercio, valida igual que el Cliente y no navega a perfil.html', async ({ page, request }) => {
-      await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
-      await page.goto('/comercio-perfil.html');
-      await expect(page.getByTestId('btn-cambiar-password')).toBeEnabled();
-
-      await page.getByTestId('btn-cambiar-password').click();
-
-      expect(page.url()).toContain('comercio-perfil.html');
-      await expect(page.getByTestId('input-password-actual')).toBeVisible();
-      await expect(page.getByTestId('btn-nav-perfil')).toBeVisible();
-      await expect(page.getByTestId('btn-nav-panel')).toBeVisible();
-      await page.getByTestId('btn-guardar-password').click();
-      await expect(page.getByTestId('mensaje-error-password-actual')).toHaveText('Ingresá tu contraseña actual.');
-      await page.getByTestId('input-password-actual').fill(empleadoDos.cuenta.password);
-      await page.getByTestId('input-password-nueva').fill('corta');
-      await page.getByTestId('input-password-confirmar').fill('corta');
-      await page.getByTestId('btn-guardar-password').click();
-      await expect(page.getByTestId('mensaje-error-password-nueva')).toHaveText('Debe tener mínimo 8 caracteres, una mayúscula, una minúscula y un número.');
-      await page.getByTestId('input-password-nueva').fill('NuevaClave123');
-      await page.getByTestId('input-password-confirmar').fill('OtraClave123');
-      await page.getByTestId('btn-guardar-password').click();
-      await expect(page.getByTestId('mensaje-error-password-confirmar')).toHaveText('Las contraseñas ingresadas no coinciden.');
-
-      await page.getByTestId('btn-volver-perfil-password').click();
-      await expect(page.getByTestId('lista-perfil')).toBeVisible();
-      expect(page.url()).toContain('comercio-perfil.html');
-    });
-
-    test('cambiar la contraseña desde el perfil del Empleado la actualiza y lleva al inicio de sesión', async ({ page, request }) => {
-      const [comercio] = await comerciosNuevos(request, 1);
-      const empleado = await crearEmpleado(request, [comercio]);
-      await abrirComoEmpleado(page, request, empleado, comercio);
-      await page.goto('/comercio-perfil.html');
-      await expect(page.getByTestId('btn-cambiar-password')).toBeEnabled();
-      await page.getByTestId('btn-cambiar-password').click();
-
-      await page.getByTestId('input-password-actual').fill(empleado.cuenta.password);
-      await page.getByTestId('input-password-nueva').fill('NuevaClave123');
-      await page.getByTestId('input-password-confirmar').fill('NuevaClave123');
-      await page.getByTestId('btn-guardar-password').click();
-
-      await page.waitForURL('**/login.html?passwordActualizada=1');
-      const conLaNueva = await login(request, empleado.cuenta.nombreUsuario, 'NuevaClave123');
-      expect(conLaNueva.token).toBeTruthy();
     });
 
     test('el Empleado conserva "Cerrar sesión" con confirmación en su lista', async ({ page, request }) => {
@@ -736,7 +654,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await expect(page.getByTestId('input-descripcion')).toBeVisible();
     });
 
-    test('un comercio suspendido o cerrado temporalmente entra en solo lectura con un aviso en el panel y su estado en el perfil', async ({ page, request }) => {
+    test('un comercio suspendido o cerrado temporalmente entra con un aviso en el panel y su estado en el perfil', async ({ page, request }) => {
       const suspendido = await clonarComercioTest(request, duenoA.comercioId, `Susp E2 ${sufijoUnico()}`, 'APROBADO');
       const cerrado = await clonarComercioTest(request, duenoA.comercioId, `Cerr E2 ${sufijoUnico()}`, 'APROBADO');
       const empleado = await crearEmpleado(request, [suspendido, cerrado]);
@@ -1091,7 +1009,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       expect(page.url()).toContain('comercio-dashboard.html');
     });
 
-    test('un comercio que pasa a suspendido no saca al Empleado: sigue adentro en solo lectura', async ({ page, request }) => {
+    test('un comercio que pasa a suspendido no saca al Empleado: sigue adentro', async ({ page, request }) => {
       test.setTimeout(120_000);
       const comercio = await clonarComercioTest(request, duenoA.comercioId, `Susp sondeo ${sufijoUnico()}`, 'APROBADO');
       const empleado = await crearEmpleado(request, [comercio]);
@@ -1290,17 +1208,11 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await capturar(page, 'f-ver-datos-comercio');
       await page.getByTestId('btn-volver-perfil-datos-comercio').click();
 
-      await page.getByTestId('btn-editar-datos').click();
-      await expect(page.getByTestId('input-nombre')).toBeVisible();
+      await page.getByTestId('btn-editar-datos-comercio').click();
+      await expect(page.getByTestId('input-empleado-telefono')).toBeVisible();
       await expect(page.getByTestId('btn-nav-perfil')).toBeVisible();
       await sinScrollHorizontal(page);
-      await page.getByTestId('btn-volver-perfil').click();
-
-      await page.getByTestId('btn-cambiar-password').click();
-      await expect(page.getByTestId('input-password-actual')).toBeVisible();
-      await expect(page.getByTestId('btn-nav-perfil')).toBeVisible();
-      await sinScrollHorizontal(page);
-      await page.getByTestId('btn-volver-perfil-password').click();
+      await page.getByTestId('btn-volver-perfil-editar-datos-comercio').click();
 
       await page.getByTestId('btn-cambiar-cuenta').click();
       await expect(page.getByTestId('fila-contexto-cliente')).toBeVisible();

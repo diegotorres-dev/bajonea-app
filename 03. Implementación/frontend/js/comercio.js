@@ -1,4 +1,4 @@
-import { apiFetch, ApiError, clearSesion, contextoPuedeGestionarPedidos, contextoPuedeOperar, esContextoComercio, esContextoDueno, esContextoEmpleado, getUsuario } from './api.js';
+import { apiFetch, ApiError, clearSesion, contextoPuedeCerrarComercio, contextoPuedeEditarCatalogo, contextoPuedeGestionarPedidos, esContextoComercio, esContextoDueno, esContextoEmpleado, getUsuario, setContexto, TIPO_CONTEXTO } from './api.js';
 import { exigirContextoComercio, exigirDueno } from './contexto.js';
 import { logout, construirTelefono, resolverHomePorRol, LABELS_TIPO_SOCIEDAD, LABELS_CONDICION_IVA } from './auth.js';
 import { resumenHorarioHoy, renderTopBar, showToast, pintarAvatarComercio, renderPedidoEstadoHeader, manejarBloqueoPorCambioPassword, crearBloqueMotivoRechazo } from './catalogo.js';
@@ -20,7 +20,6 @@ import {
 } from './comercio-activo.js';
 import { abrirPanelComercios, enlazarMantenerApretado, prepararPaginaComercio } from './selector-comercio.js';
 import { abrirHojaCambiarCuenta } from './selector-contexto.js';
-import { enlazarCambioPassword, enlazarEdicionDatosPersonales } from './perfil-cuenta.js';
 import { montarSwitchCierre } from './cierre-comercio.js';
 import { abrirEquipoComercio, enlazarEquipoComercio } from './equipo-comercio.js';
 import { cerrarVariosComercios, comerciosCerrables } from './apertura-comercio.js';
@@ -625,7 +624,7 @@ export async function initComercioDashboard() {
   }
   renderHeaderDashboard(document.getElementById('top-bar-slot'));
   renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'panel');
-  if (contextoPuedeOperar()) {
+  if (contextoPuedeCerrarComercio()) {
     montarSwitchCierre(document.getElementById('cierre-comercio-slot'));
   }
   const activo = await prepararPaginaComercio({ slotFranja: document.getElementById('franja-comercio-slot') });
@@ -944,6 +943,9 @@ function mostrarModalRechazarPedido(pedido, onConfirmar) {
 function mostrarErrorDeAccion(error, avisoSlot, mensajeGenerico) {
   if (error instanceof ApiError && error.status === 409) {
     mostrarAvisoFijo(avisoSlot, error.message);
+    if (typeof avisoSlot.alConflicto === 'function') {
+      avisoSlot.alConflicto(error.message);
+    }
     return;
   }
   showToast(error instanceof ApiError ? error.message : mensajeGenerico, 'error');
@@ -1337,7 +1339,7 @@ function crearPasoRecorrido(paso) {
   return fila;
 }
 
-function renderPedidoDetalleComercio(container, pedido, onActualizado) {
+function renderPedidoDetalleComercio(container, pedido, onActualizado, opciones = {}) {
   detenerTemporizadorEspera();
   const info = ESTADO_DETALLE_COMERCIO[pedido.estado] || DETALLE_COMERCIO_DESCONOCIDO;
 
@@ -1462,14 +1464,21 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado) {
     return;
   }
 
-  if (contextoPuedeGestionarPedidos() && (pedido.estado === 'PENDIENTE_CONFIRMACION_COMERCIO' || pedido.estado === 'EN_PREPARACION' || pedido.estado === 'LISTO_PARA_RETIRAR')) {
+  const tieneAcciones = pedido.estado === 'PENDIENTE_CONFIRMACION_COMERCIO' || pedido.estado === 'EN_PREPARACION' || pedido.estado === 'LISTO_PARA_RETIRAR';
+  if (contextoPuedeGestionarPedidos() && (tieneAcciones || opciones.avisoInicial)) {
     const avisoSlot = crear('div', 'aviso-fijo-slot');
     avisoSlot.setAttribute('data-testid', 'aviso-accion-slot');
+    avisoSlot.alConflicto = opciones.alConflicto;
     body.appendChild(avisoSlot);
+    if (opciones.avisoInicial) {
+      mostrarAvisoFijo(avisoSlot, opciones.avisoInicial);
+    }
     const accionesSlot = crear('div');
     accionesSlot.style.marginTop = '12px';
     body.appendChild(accionesSlot);
-    if (pedido.estado === 'PENDIENTE_CONFIRMACION_COMERCIO') {
+    if (!tieneAcciones) {
+      accionesSlot.remove();
+    } else if (pedido.estado === 'PENDIENTE_CONFIRMACION_COMERCIO') {
       renderAccionesPendiente(accionesSlot, pedido, onActualizado, avisoSlot);
     } else if (pedido.estado === 'EN_PREPARACION') {
       renderAccionesEnPreparacion(accionesSlot, pedido, onActualizado, avisoSlot);
@@ -1536,12 +1545,26 @@ export async function initComercioPedidoDetalle() {
     return;
   }
 
-  function renderActual() {
+  async function refrescarTrasConflicto(mensaje) {
+    try {
+      const recientes = await apiFetch('/pedidos/comercio');
+      recientes.forEach(normalizarPedido);
+      const vigente = recientes.find((p) => p.id === pedidoId);
+      if (!vigente) {
+        return;
+      }
+      pedido = vigente;
+      renderActual({ avisoInicial: mensaje });
+    } catch {
+    }
+  }
+
+  function renderActual(opciones = {}) {
     renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: `Pedido #${pedido.id}` });
     renderPedidoDetalleComercio(container, pedido, (actualizado) => {
       pedido = actualizado;
       renderActual();
-    });
+    }, { alConflicto: refrescarTrasConflicto, avisoInicial: opciones.avisoInicial });
   }
 
   renderActual();
@@ -1953,14 +1976,112 @@ function prepararVistasDelPerfil(esEmpleado) {
     }
   });
   if (!esEmpleado) {
-    quitar('seccion-lista-empleado', 'view-datos-comercio', 'view-editar-datos');
+    quitar('seccion-lista-empleado', 'view-datos-comercio', 'view-editar-datos-comercio');
     return;
   }
   const lista = document.getElementById('lista-perfil-empleado');
-  lista.insertBefore(document.getElementById('cambiar-password-link'), document.getElementById('cambiar-cuenta-link'));
   lista.appendChild(document.getElementById('cerrar-sesion-link'));
-  quitar('seccion-mi-comercio', 'seccion-sesion', 'view-editar-perfil', 'view-datos-legales', 'view-equipo', 'view-mercadopago');
+  quitar('seccion-mi-comercio', 'seccion-sesion', 'view-editar-perfil', 'view-datos-legales', 'view-equipo', 'view-mercadopago', 'view-cambiar-password');
   document.getElementById('seccion-lista-empleado').classList.remove('is-hidden');
+}
+
+function textoModalidadesDeEntrega(comercio) {
+  if (comercio.aceptaDelivery && comercio.aceptaRetiro) {
+    return 'Delivery a domicilio y retiro en el local';
+  }
+  return comercio.aceptaDelivery ? 'Delivery a domicilio' : 'Retiro en el local';
+}
+
+function pintarCamposBloqueadosDelEmpleado(comercio) {
+  document.getElementById('bloqueado-nombre').textContent = comercio.nombre;
+  document.getElementById('bloqueado-foto').textContent = comercio.fotoPerfilUrl ? 'Foto de perfil cargada' : 'Sin foto de perfil';
+  document.getElementById('bloqueado-direccion').textContent = formatearDireccion(comercio.direccion);
+  document.getElementById('bloqueado-email').textContent = comercio.emailContacto;
+  document.getElementById('bloqueado-modalidades').textContent = textoModalidadesDeEntrega(comercio);
+}
+
+function mostrarModalCuentaPersonal() {
+  const backdrop = crear('div', 'modal-backdrop');
+  backdrop.setAttribute('data-testid', 'modal-cuenta-personal');
+  backdrop.innerHTML = `
+    <div class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="cuenta-personal-titulo">
+      <h2 class="modal-sheet__title" id="cuenta-personal-titulo">Vas a pasar a tu cuenta personal</h2>
+      <p class="modal-sheet__text">Para editar tus datos personales vas a salir de este comercio y entrar a tu cuenta de Cliente.</p>
+      <button class="btn btn-primary" type="button" id="continuar-cuenta-personal-btn" style="margin-bottom:12px;" data-testid="btn-continuar-cuenta-personal">Continuar</button>
+      <button class="btn btn-tertiary" type="button" id="cancelar-cuenta-personal-btn" data-testid="btn-cancelar-cuenta-personal">Cancelar</button>
+    </div>
+  `;
+  document.body.appendChild(backdrop);
+  document.getElementById('cancelar-cuenta-personal-btn').addEventListener('click', () => backdrop.remove());
+  document.getElementById('continuar-cuenta-personal-btn').addEventListener('click', () => {
+    setContexto(TIPO_CONTEXTO.CLIENTE, null, true);
+    window.location.href = 'perfil.html';
+  });
+  backdrop.addEventListener('click', (event) => {
+    if (event.target === backdrop) {
+      backdrop.remove();
+    }
+  });
+}
+
+function enlazarEdicionDatosDelComercioEmpleado(comercio) {
+  const telefonoInput = document.getElementById('empleado-editar-telefono');
+  const descripcionInput = document.getElementById('empleado-editar-descripcion');
+  const bannerSlot = document.getElementById('empleado-editar-banner-slot');
+  const form = document.getElementById('form-editar-datos-comercio');
+  const submitBtn = document.getElementById('guardar-datos-comercio-btn');
+
+  telefonoInput.addEventListener('input', () => {
+    telefonoInput.value = telefonoInput.value.replace(/\D/g, '').slice(0, 10);
+  });
+
+  document.getElementById('editar-comercio-empleado-link').addEventListener('click', () => {
+    descripcionInput.value = comercio.descripcion || '';
+    telefonoInput.value = comercio.telefono.replace(/^\+549/, '');
+    limpiarErrorCampo('error-empleado-editar-telefono');
+    limpiarAvisoFijo(bannerSlot);
+    pintarCamposBloqueadosDelEmpleado(comercio);
+    mostrarVista('view-editar-datos-comercio');
+  });
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    limpiarAvisoFijo(bannerSlot);
+    const camposValidos = validarCamposRequeridosSilencioso([
+      { inputId: 'empleado-editar-telefono', errorId: 'error-empleado-editar-telefono', validador: esTelefonoValido, mensajeVacio: 'Ingresá el teléfono del comercio.', mensajeInvalido: 'Ingresá un teléfono argentino válido (código de área + número).' },
+    ]);
+    if (!camposValidos) {
+      scrollAlPrimerError();
+      return;
+    }
+    setLoading(submitBtn, 'Guardando...', true);
+    try {
+      const actualizado = await apiFetch('/comercios/perfil/datos-operativos', {
+        method: 'PUT',
+        body: {
+          descripcion: descripcionInput.value.trim() || null,
+          telefono: construirTelefono(telefonoInput.value.trim()),
+        },
+      });
+      comercio.descripcion = actualizado.descripcion;
+      comercio.telefono = actualizado.telefono;
+      pintarPerfilDelEmpleado(comercio);
+      refrescarComercios().catch(() => {});
+      mostrarVista('view-principal');
+      showToast('Datos actualizados correctamente');
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        mostrarAvisoFijo(bannerSlot, error.message);
+      } else if (!(error instanceof ApiError && error.data && mapearErroresBackend(error.data, { telefono: 'error-empleado-editar-telefono' }))) {
+        renderBanner(bannerSlot, 'error', error instanceof ApiError ? error.message : 'No pudimos guardar los cambios. Intentá nuevamente.');
+      }
+      scrollAlPrimerError();
+    } finally {
+      setLoading(submitBtn, '', false, 'Guardar cambios');
+    }
+  });
+  submitBtn.disabled = false;
+  document.getElementById('editar-comercio-empleado-link').disabled = false;
 }
 
 function pintarPerfilDelEmpleado(comercio) {
@@ -1990,20 +2111,11 @@ async function iniciarPerfilDelEmpleado(comercio) {
   cambiarCuenta.addEventListener('click', () => abrirHojaCambiarCuenta());
   cambiarCuenta.disabled = false;
 
-  enlazarCambioPassword({ mostrarVista });
-  document.getElementById('cambiar-password-link').disabled = false;
-  document.getElementById('guardar-password-btn').disabled = false;
+  const editarDatos = document.getElementById('editar-datos-link');
+  editarDatos.addEventListener('click', mostrarModalCuentaPersonal);
+  editarDatos.disabled = false;
 
-  let cliente;
-  try {
-    cliente = await apiFetch('/clientes/perfil');
-  } catch {
-    showToast('No pudimos cargar tus datos personales. Intentá nuevamente.', 'error');
-    return;
-  }
-  normalizarCampos(cliente, ['nombre', 'apellido']);
-  enlazarEdicionDatosPersonales({ cliente, mostrarVista, alActualizarDatos: () => {} });
-  document.getElementById('editar-datos-link').disabled = false;
+  enlazarEdicionDatosDelComercioEmpleado(comercio);
 }
 
 export async function initComercioPerfil() {
@@ -2552,6 +2664,15 @@ export async function initComercioProductos() {
   filtrosSlot.appendChild(chipRow);
 
   const contentEl = document.getElementById('productos-content');
+  const avisoSlot = document.getElementById('productos-aviso-slot');
+
+  function mostrarErrorDeCatalogo(error, mensajeGenerico) {
+    if (error instanceof ApiError && error.status === 409) {
+      mostrarAvisoFijo(avisoSlot, error.message);
+      return;
+    }
+    showToast(error instanceof ApiError ? error.message : mensajeGenerico, 'error');
+  }
 
   function renderLista() {
     contentEl.innerHTML = '';
@@ -2569,7 +2690,7 @@ export async function initComercioProductos() {
       empty.style.padding = '24px 0';
       empty.style.textAlign = 'center';
       empty.textContent = productos.length === 0
-        ? (contextoPuedeOperar() ? 'Todavía no cargaste ningún producto. Usá el botón + para crear el primero.' : 'Este comercio todavía no tiene productos cargados.')
+        ? (esContextoEmpleado() ? 'Este comercio todavía no tiene productos cargados. Usá el botón + para crear el primero.' : 'Todavía no cargaste ningún producto. Usá el botón + para crear el primero.')
         : 'No encontramos productos con ese filtro.';
       contentEl.appendChild(empty);
       return;
@@ -2578,7 +2699,7 @@ export async function initComercioProductos() {
     const section = crear('div', 'product-section');
     section.style.padding = '0';
     filtrados.forEach((producto) => {
-      section.appendChild(renderProductoRow(producto, contextoPuedeOperar() ? abrirMenuAccion : null));
+      section.appendChild(renderProductoRow(producto, contextoPuedeEditarCatalogo() ? abrirMenuAccion : null));
     });
     contentEl.appendChild(section);
   }
@@ -2592,6 +2713,7 @@ export async function initComercioProductos() {
   }
 
   function abrirMenuAccion(producto) {
+    limpiarAvisoFijo(avisoSlot);
     mostrarModalAccionProducto(producto, {
       onEditar: () => {
         window.location.href = `comercio-producto-form.html?id=${producto.id}`;
@@ -2606,7 +2728,7 @@ export async function initComercioProductos() {
           actualizarProducto(actualizado);
           showToast('Estado del producto actualizado');
         } catch (error) {
-          showToast(error instanceof ApiError ? error.message : 'No pudimos actualizar el estado', 'error');
+          mostrarErrorDeCatalogo(error, 'No pudimos actualizar el estado');
         }
       },
       onDescontinuar: () => {
@@ -2620,7 +2742,7 @@ export async function initComercioProductos() {
             actualizarProducto(actualizado);
             showToast('Producto descontinuado');
           } catch (error) {
-            showToast(error instanceof ApiError ? error.message : 'No pudimos descontinuar el producto', 'error');
+            mostrarErrorDeCatalogo(error, 'No pudimos descontinuar el producto');
           }
         });
       },
@@ -2633,7 +2755,7 @@ export async function initComercioProductos() {
   });
 
   const botonCrearProducto = document.getElementById('crear-producto-fab');
-  if (contextoPuedeOperar()) {
+  if (contextoPuedeEditarCatalogo()) {
     botonCrearProducto.addEventListener('click', () => {
       window.location.href = 'comercio-producto-form.html';
     });
@@ -2645,7 +2767,7 @@ export async function initComercioProductos() {
 }
 
 export async function initComercioProductoForm() {
-  if (!(await exigirDueno())) {
+  if (!(await exigirContextoComercio())) {
     return;
   }
 
@@ -2664,6 +2786,15 @@ export async function initComercioProductoForm() {
 
   const bannerSlot = document.getElementById('form-banner-slot');
   const selectCategoria = document.getElementById('producto-categoria');
+
+  function mostrarErrorDeFormulario(error, mensajeGenerico) {
+    if (error instanceof ApiError && error.status === 409) {
+      mostrarAvisoFijo(bannerSlot, error.message);
+      return;
+    }
+    const esErrorConocido = error instanceof CloudinaryUploadError || error instanceof ApiError;
+    renderBanner(bannerSlot, 'error', esErrorConocido ? error.message : mensajeGenerico);
+  }
   const chipRowTags = document.getElementById('tags-chip-row');
   const galeriaEl = document.getElementById('galeria-fotos');
   const inputFoto = document.getElementById('input-foto');
@@ -2787,7 +2918,7 @@ export async function initComercioProductoForm() {
       }
     } catch (error) {
       imagenes = anterior;
-      renderBanner(bannerSlot, 'error', error instanceof ApiError ? error.message : 'No pudimos reordenar las fotos.');
+      mostrarErrorDeFormulario(error, 'No pudimos reordenar las fotos.');
     }
     renderGaleria();
   }
@@ -2820,7 +2951,7 @@ export async function initComercioProductoForm() {
             imagenes.forEach((otra, i) => { otra.esPrincipal = i === 0; });
             renderGaleria();
           } catch (error) {
-            renderBanner(bannerSlot, 'error', error instanceof ApiError ? error.message : 'No pudimos eliminar la imagen.');
+            mostrarErrorDeFormulario(error, 'No pudimos eliminar la imagen.');
           }
         } else {
           URL.revokeObjectURL(item.previewUrl);
@@ -2848,7 +2979,7 @@ export async function initComercioProductoForm() {
                 renderGaleria();
                 renderBanner(bannerSlot, '', '');
               } catch (error) {
-                renderBanner(bannerSlot, 'error', error instanceof ApiError ? error.message : 'No pudimos actualizar la imagen.');
+                mostrarErrorDeFormulario(error, 'No pudimos actualizar la imagen.');
               }
             },
           });
@@ -2903,7 +3034,7 @@ export async function initComercioProductoForm() {
           await apiFetch(`/productos/${productoId}/estado`, { method: 'PATCH', body: { estado: 'DESCONTINUADO' } });
           window.location.href = 'comercio-productos.html';
         } catch (error) {
-          renderBanner(bannerSlot, 'error', error instanceof ApiError ? error.message : 'No pudimos descontinuar el producto.');
+          mostrarErrorDeFormulario(error, 'No pudimos descontinuar el producto.');
         }
       });
     });
@@ -2949,8 +3080,7 @@ export async function initComercioProductoForm() {
           renderGaleria();
           renderBanner(bannerSlot, '', '');
         } catch (error) {
-          const esErrorConocido = error instanceof CloudinaryUploadError || error instanceof ApiError;
-          renderBanner(bannerSlot, 'error', esErrorConocido ? error.message : 'No pudimos subir la imagen.');
+          mostrarErrorDeFormulario(error, 'No pudimos subir la imagen.');
         }
       },
     });
@@ -3027,7 +3157,7 @@ export async function initComercioProductoForm() {
         categoriaId: 'error-producto-categoria',
       };
       if (!(error instanceof ApiError && error.data && mapearErroresBackend(error.data, mapaErrores))) {
-        renderBanner(bannerSlot, 'error', error instanceof ApiError ? error.message : 'No pudimos guardar el producto.');
+        mostrarErrorDeFormulario(error, 'No pudimos guardar el producto.');
       }
       scrollAlPrimerError();
     } finally {
