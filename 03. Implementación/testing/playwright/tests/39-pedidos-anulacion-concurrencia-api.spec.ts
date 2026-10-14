@@ -304,10 +304,12 @@ test.describe('Anulación con reembolso y carreras de estado del pedido (API), b
         if (fuente === 'SISTEMA') {
           expect(c.status).toBe(409);
           expect(avisos(pedidoId, 'PEDIDO_AUTOCONFIRMADO')).toBe(1);
+          expect(avisos(pedidoId, 'PEDIDO_AUTOCONFIRMADO_COMERCIO')).toBe(1);
         } else {
           expect(fuente).toBe('CLIENTE');
           expect(c.status).toBe(200);
           expect(avisos(pedidoId, 'PEDIDO_AUTOCONFIRMADO')).toBe(0);
+          expect(avisos(pedidoId, 'PEDIDO_AUTOCONFIRMADO_COMERCIO')).toBe(0);
         }
       }
     });

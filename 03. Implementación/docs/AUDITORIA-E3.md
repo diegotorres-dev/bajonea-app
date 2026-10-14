@@ -227,6 +227,7 @@ Frontend: `js/catalogo.js` línea 147 (`!esContextoEmpleado()` esconde la campan
 - **Dónde está el proceso:** `PedidoService.avisar75MinYAutoconfirmar()` (línea 527), invocado por `PedidoSchedulerService` cada 60 segundos. Para cada pedido `EN_CAMINO` lee la fecha de entrada al estado desde `historial_estado_pedido`; a los 75 minutos manda el aviso `AVISO_75MIN_SIN_CONFIRMACION` al Cliente (una sola vez, vía `primerAvisoEmitido`) y a los `pedido.timeout.autoconfirmacion-en-camino-minutos=90` hace `marcarEntregado(pedido, FuenteEntrega.SISTEMA)`, registra el historial con `ActorPedido.SISTEMA` y `MotivoTimeoutPedido.TIMEOUT_ENTREGA` y manda `PEDIDO_AUTOCONFIRMADO` (T8) al Cliente.
 - **Cómo se enviaría el aviso:** justo después de la notificación al Cliente, un `crearParaEquipoOperativo(..., PEDIDO_AUTOCONFIRMADO_COMERCIO, PEDIDO, pedido.getId())` con el texto "El pedido #N se marcó como entregado automáticamente". Sin migración: el valor ya está en el ENUM de Java y en el de la base (`V1`). Misma exclusión del Cliente del pedido.
 - Se puede sacar sin afectar nada: no toca ninguna firma ni ningún DTO. Pertenece a la entrega A, último bloque.
+- **Estado (2026-10-14):** implementado en el bloque A6, con el bloqueo uniforme del equipo en cada pasada (`bloquearParaActualizarConEquipo`), el texto "El pedido #N se confirmó automáticamente como entregado porque el cliente no respondió en M minutos." (M de la configuración) y sin migración. Ver `docs/DECISIONES.md`, 2026-10-14, bloque A6.
 
 ---
 

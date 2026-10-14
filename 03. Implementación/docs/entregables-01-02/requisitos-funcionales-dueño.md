@@ -208,6 +208,10 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   ve y el Administrador la ve en solo lectura.
 - El Dueño recibe una notificación cuando el invitado acepta la invitación (T33) y cuando
   un Empleado renuncia (T34).
+- El Dueño recibe, igual que cada Empleado Activo, el aviso T30 cuando el sistema confirma solo
+  la entrega de un pedido a domicilio porque el Cliente no respondió en el plazo configurado
+  (90 minutos por defecto): cada uno tiene su propia copia, con el comercio, que marca como
+  leída por separado.
 - El Dueño ve el nombre de quien hizo cada cambio de estado de un pedido y cada cierre o
   reapertura del comercio, incluso si el Empleado ya está inactivo. El recorrido de un
   pedido (`GET /api/v1/pedidos/comercio/{id}/trazabilidad`) lo ven el Dueño y los Empleados

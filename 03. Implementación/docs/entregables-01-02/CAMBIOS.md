@@ -5,6 +5,24 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
 
+## Tramo E3, bloque A6: aviso T30 al equipo cuando el sistema autoconfirma la entrega (2026-10-14)
+
+Backend, pruebas y documentación; sin migraciones ni pantallas. Cuando el proceso automático confirma solo la entrega de un pedido a domicilio porque el Cliente no respondió (90 minutos por defecto, configurable), el Dueño y cada Empleado Activo del comercio reciben su propia copia del aviso T30 (sin el Cliente del pedido si es Empleado del comercio). El aviso al Cliente (T8) no cambia.
+
+**Documentos de esta carpeta que cambiaron** (Diego los copia a mano a `01.` y `02.`):
+- `diccionario-de-datos.md` (**v1.16**, cambio solo de documentación, sin esquema): T30 pasa de "no se emite a nadie" a implementado, con el texto y las reglas del aviso.
+- `Modelo Relacional-v3 - Código Mermaid.md`: solo el encabezado (versión v1.16 y la aclaración de que no cambia ninguna tabla ni columna).
+- `requisitos-funcionales-sistema.md`: la autoconfirmación a los 90 minutos emite T8 al Cliente y T30 al equipo; T30 implementado en la tabla de notificaciones y en la regla de notificaciones del Empleado.
+- `requisitos-funcionales-empleado.md`: T30 deja de ser "al final del tramo E3" y se describe.
+- `requisitos-funcionales-dueño.md`: el Dueño recibe T30 junto con los Empleados Activos.
+- `alcance-y-limitaciones.md`: T30 deja de ser "no se emite a nadie"; limitaciones conocidas (quien se suma después no lo ve; el cierre de un retiro no avisa al equipo).
+
+**Diagramas Mermaid que cambian:** ninguno. No hay migración, tablas, columnas ni claves nuevas; el diagrama entidad-relación es conceptual y los de flujo no listan avisos por tipo. El modelo relacional solo cambia su encabezado.
+
+**No cambiaron** `requisitos-funcionales-administrador.md`, `-cliente.md`, `-comercio.md`, `-generales.md`, `requisitos-no-funcionales.md` ni las Historias de Usuario (ninguna menciona T30).
+
+**Pruebas:** ver `docs/DECISIONES.md`, 2026-10-14, bloque A6. `mvnw test` 781 (778 + 3), Newman 2799 requests y 4349 assertions sin fallos (carpeta 65 nueva), Playwright 772/774 (los dos fallos son inestables sin relación con el bloque y pasaron aislados; spec 49 nuevo de 8 tests), estrés `stress-locks-tramoE3-A6.mjs` nuevo y los anteriores sin problemas, 0 `Deadlock found` y 0 `Lock wait timeout`.
+
 ## Tramo E3, bloque A4b: un retiro que el cliente no pasó a buscar se cierra como "No retirado" (V34) (2026-10-14)
 
 Backend, una migración (`V34`), pruebas, documentación y un mínimo de frontend (la etiqueta "No retirado" en las listas y los detalles de pedidos, y un estado por defecto para que un estado desconocido no rompa la pantalla); sin botón ni pantallas nuevas. En el sistema: un pedido de retiro que quedó "Listo para retirar" y el cliente no retiró se cierra como **No Retirado**, por el Dueño o un Empleado (pasados 60 minutos desde que quedó listo; la espera es configurable y no aplica a "Entregar") o por el sistema cuando el comercio está suspendido y vence el plazo de 90 minutos (antes el sistema lo marcaba "Entregado", lo cual era falso). No hay devolución: el comercio se queda el pago porque el pedido ya estaba preparado. El cliente lo ve como "No retirado" y recibe el aviso T36; el pedido cuenta en "Facturado hoy"; "Entregado" queda reservado para entregas reales.

@@ -359,8 +359,9 @@ bloqueado para el Empleado por defecto.
 ## Notificaciones
 
 - Cada Empleado Activo recibe las notificaciones operativas del comercio (pedido nuevo
-  T1, pedido cancelado por el cliente T9, pedido expirado sin respuesta T13 y, al final del
-  tramo E3, el aviso de pedido autoconfirmado T30). No recibe las administrativas (aprobación,
+  T1, pedido cancelado por el cliente T9, pedido expirado sin respuesta T13 y el aviso de
+  pedido autoconfirmado T30, cuando el sistema confirma solo la entrega de un pedido a
+  domicilio porque el Cliente no respondió en el plazo configurado, 90 minutos por defecto). No recibe las administrativas (aprobación,
   rechazo, suspensión) ni las de cobro.
 - Cada Empleado tiene su propia copia de cada aviso: que otro lo lea (o el Dueño) no cambia
   el suyo, y viceversa. Solo ve los avisos posteriores a su alta o reactivación: al activarlo

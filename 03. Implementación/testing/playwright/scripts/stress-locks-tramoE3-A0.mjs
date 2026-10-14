@@ -236,6 +236,7 @@ const AVISOS_POR_FILA = {
   PEDIDO_EXPIRADO_CLIENTE: (filas) => filas.filter((f) => f.estado === 'EXPIRADO').length,
   PEDIDO_EXPIRADO_COMERCIO: (filas) => filas.filter((f) => f.estado === 'EXPIRADO').length,
   PEDIDO_AUTOCONFIRMADO: (filas) => filas.filter((f) => f.estado === 'ENTREGADO' && f.motivo === 'TIMEOUT_ENTREGA').length,
+  PEDIDO_AUTOCONFIRMADO_COMERCIO: (filas) => filas.filter((f) => f.estado === 'ENTREGADO' && f.motivo === 'TIMEOUT_ENTREGA').length,
   PEDIDO_NO_RETIRADO: (filas) => filas.filter((f) => f.estado === 'NO_RETIRADO').length,
   PEDIDO_CERRADO_TIMER_SUSPENSION: () => 0,
 };

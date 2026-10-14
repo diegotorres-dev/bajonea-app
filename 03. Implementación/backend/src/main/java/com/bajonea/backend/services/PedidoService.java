@@ -138,6 +138,8 @@ public class PedidoService {
             EstadoPedido.EN_PREPARACION, EstadoPedido.EN_CAMINO, EstadoPedido.LISTO_PARA_RETIRAR, EstadoPedido.ENTREGADO,
             EstadoPedido.NO_RETIRADO);
     private static final DateTimeFormatter HORA_MINUTO = DateTimeFormatter.ofPattern("HH:mm");
+    private static final String MENSAJE_AUTOCONFIRMADO_COMERCIO = "El pedido #%d se confirmó automáticamente como entregado "
+            + "porque el cliente no respondió en %d minutos.";
     private static final String MENSAJE_NO_RETIRADO = "Tu pedido #%d no fue retirado y el comercio lo cerró. "
             + "Como ya estaba preparado, no hay devolución del pago.";
 
@@ -796,12 +798,16 @@ public class PedidoService {
      * Job 2: sobre pedidos {@code EN_CAMINO} — a los {@code avisoEnCaminoMinutos} dispara el
      * aviso preventivo (T7, idempotente vía {@code primerAvisoEmitido}); a los
      * {@code autoconfirmacionEnCaminoMinutos}, si nadie confirmó, autoconfirma {@code ENTREGADO}
-     * (T8). Mismo cron para las dos cosas — confirmado con Diego.
+     * (T8) y avisa al equipo del comercio (T30: el Dueño y los Empleados {@code ACTIVO}, sin el Cliente del pedido
+     * si es Empleado del comercio), todo en la misma transacción. Se toma el equipo en cada pasada (igual que la
+     * expiración sin respuesta) porque el bloqueo se toma antes de saber si el pedido ya vence. Mismo cron para las
+     * dos cosas — confirmado con Diego.
      */
     private void avisar75MinYAutoconfirmar(Supplier<LocalDateTime> reloj) {
         for (Integer pedidoId : pedidoRepository.findIdsByEstado(EstadoPedido.EN_CAMINO)) {
             enTransaccionPorPedido("avisar75MinYAutoconfirmar", pedidoId, () -> {
-                Pedido pedido = bloquearParaActualizar(pedidoId);
+                PedidoBloqueado bloqueado = bloquearParaActualizarConEquipo(pedidoId, null);
+                Pedido pedido = bloqueado.pedido();
                 if (pedido.getEstado() != EstadoPedido.EN_CAMINO) {
                     return;
                 }
@@ -818,6 +824,9 @@ public class PedidoService {
                             "Tu pedido #" + pedido.getId()
                                     + " fue autoconfirmado como entregado. Si no lo recibiste, podés iniciar un reclamo o contactar al comercio.",
                             TipoNotificacion.PEDIDO_AUTOCONFIRMADO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
+                    notificacionService.crearParaEquipo(pedido.getComercio().getId(), pedido.getComercio().getDueno().getId(), bloqueado.equipo(),
+                            String.format(MENSAJE_AUTOCONFIRMADO_COMERCIO, pedido.getId(), timeoutProperties.getAutoconfirmacionEnCaminoMinutos()),
+                            TipoNotificacion.PEDIDO_AUTOCONFIRMADO_COMERCIO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
                 } else if (!pedido.isPrimerAvisoEmitido() && minutosTranscurridos >= timeoutProperties.getAvisoEnCaminoMinutos()) {
                     pedido.setPrimerAvisoEmitido(true);
                     pedidoRepository.save(pedido);
