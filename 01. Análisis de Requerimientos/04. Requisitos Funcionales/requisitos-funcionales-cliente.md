@@ -5,6 +5,7 @@
 ## Registro y Perfil
 
 - El sistema debe permitir el registro de nuevos clientes solicitando: nombre, apellido, DNI, fecha de nacimiento, teléfono, email, nombre de usuario, contraseña y una dirección de entrega inicial (que queda registrada automáticamente como dirección principal), y exigir que el cliente acepte los Términos y Condiciones: el servidor rechaza el registro (400) si el campo `aceptaTerminos` falta o es falso. La aceptación se valida pero no se guarda (sin fecha, versión ni página de Términos); estar registrado da por aceptados los términos.
+- El cliente debe tener 14 años o más al registrarse, contados con la fecha del día del servidor: cumplir los 14 ese mismo día ya alcanza. Con menos edad el servidor rechaza el registro (400) con el mensaje "Tenés que tener al menos 14 años para registrarte" en el campo de la fecha de nacimiento. La edad es la que el cliente declara: el sistema no verifica identidad ni DNI. La regla se evalúa solo al registrarse; una cuenta ya existente no se revisa.
 - El cliente debe poder editar sus datos personales (nombre, apellido, teléfono) desde su perfil autenticado.
 - El cliente debe poder cambiar su nombre de usuario desde su perfil autenticado, hasta 3 veces cada 30 días corridos (ventana deslizante hacia atrás desde el momento del intento, no mes calendario). El sistema debe registrar cada cambio y, al alcanzar el límite, informar los días reales que faltan para volver a poder cambiarlo.
 - El cambio de nombre de usuario requiere confirmar la contraseña actual. Una contraseña incorrecta cuenta como intento fallido, con el mismo bloqueo de cuenta a los 3 intentos que el login y el cambio de contraseña, y con el mismo aviso previo ("Cuidado: si fallás una vez más, tu cuenta se bloqueará.").
@@ -52,13 +53,14 @@
   - **Retiro:** hasta el momento en que el comercio lo marca como LISTO_PARA_RETIRAR (estados cancelables: PENDIENTE_CONFIRMACION_COMERCIO y EN_PREPARACION).
 - En pedidos a domicilio en estado EN_CAMINO, el cliente debe poder confirmar la recepción del pedido. Esta confirmación cierra el pedido como ENTREGADO.
 - En pedidos de retiro, la confirmación de entrega la realiza el comercio.
+- Si el cliente no pasa a buscar un pedido de retiro que quedó listo, el comercio (o el sistema, si el comercio fue suspendido) lo cierra como NO_RETIRADO y el cliente recibe el aviso "Tu pedido #N no fue retirado y el comercio lo cerró. Como ya estaba preparado, no hay devolución del pago." El pedido se muestra como "No retirado", sin reembolso, y no se informa quién lo cerró.
 - El cliente debe poder iniciar un reclamo ante un pedido a domicilio marcado como ENTREGADO que no fue recibido. El sistema también debe ofrecer la opción de contactar directamente al comercio como vía alternativa.
 
 ---
 
 ## Seguimiento de Estado
 
-- El sistema debe notificar al cliente ante cada cambio de estado de su pedido: aceptado, en preparación, en camino o listo para retirar, entregado, rechazado, cancelado o anulado.
+- El sistema debe notificar al cliente ante cada cambio de estado de su pedido: aceptado, en preparación, en camino o listo para retirar, entregado, no retirado, rechazado, cancelado o anulado.
 - El cliente debe poder visualizar el historial completo de estados por los que pasó cada pedido, con las fechas y horas correspondientes.
 
 ---

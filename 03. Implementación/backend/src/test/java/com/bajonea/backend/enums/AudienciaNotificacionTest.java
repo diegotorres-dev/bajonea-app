@@ -42,7 +42,7 @@ class AudienciaNotificacionTest {
                 TipoNotificacion.PEDIDO_AUTOCONFIRMADO, TipoNotificacion.PEDIDO_ANULADO_COMERCIO, TipoNotificacion.PEDIDO_CANCELADO_SISTEMA,
                 TipoNotificacion.PEDIDO_EXPIRADO_CLIENTE, TipoNotificacion.PEDIDO_CERRADO_TIMER_SUSPENSION,
                 TipoNotificacion.PRODUCTO_REMOVIDO_CARRITO, TipoNotificacion.RECLAMO_APROBADO, TipoNotificacion.RECLAMO_RECHAZADO,
-                TipoNotificacion.CUENTA_INACTIVADA, TipoNotificacion.CLIENTE_SUSPENDIDO}) {
+                TipoNotificacion.CUENTA_INACTIVADA, TipoNotificacion.CLIENTE_SUSPENDIDO, TipoNotificacion.PEDIDO_NO_RETIRADO}) {
             APROBADA.put(tipo, AudienciaNotificacion.CLIENTE);
         }
     }
@@ -71,7 +71,7 @@ class AudienciaNotificacionTest {
                 TipoNotificacion.PEDIDO_EN_CAMINO, TipoNotificacion.PEDIDO_LISTO_RETIRO, TipoNotificacion.AVISO_75MIN_SIN_CONFIRMACION,
                 TipoNotificacion.PEDIDO_AUTOCONFIRMADO, TipoNotificacion.PEDIDO_ANULADO_COMERCIO, TipoNotificacion.PEDIDO_CANCELADO_SISTEMA,
                 TipoNotificacion.PEDIDO_EXPIRADO_CLIENTE, TipoNotificacion.PEDIDO_CERRADO_TIMER_SUSPENSION,
-                TipoNotificacion.PRODUCTO_REMOVIDO_CARRITO}) {
+                TipoNotificacion.PRODUCTO_REMOVIDO_CARRITO, TipoNotificacion.PEDIDO_NO_RETIRADO}) {
             assertEquals(AudienciaNotificacion.CLIENTE, tipo.getAudiencia(), tipo.name());
         }
     }

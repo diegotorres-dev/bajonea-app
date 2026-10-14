@@ -86,12 +86,12 @@ Ideas propias de Diego, no forman parte del diseño ya documentado en el diccion
 
 - Terminar todo lo de empleado
 - Extras de productos - QUITAR
-- Reclamos y soporte
-- Documentación de libreta sanitaria o carnet (PDF o imagen)
-- Preguntas frecuentes
-- Términos y condiciones
-- Estadísticas para los comercios
-- Cada dueño recibe una notificación diaria a su mail de cuánto facturó
-- Nombre único por comercio en todo el sistema
-- Facturación se hace por turno 
-- Agregar productos y cambiar precios se realiza cuando NO está dentro de su jornada de horario
+- Reclamos y soporte - HACER
+- Documentación de libreta sanitaria o carnet (PDF o imagen) - HACER
+- Preguntas frecuentes - HACER
+- Términos y condiciones - HACER
+- Estadísticas para los comercios - HACER
+- Cada dueño recibe una notificación diaria a su mail de cuánto facturó - HACER
+- Nombre único por comercio en todo el sistema - HACER
+- Facturación se hace por turno - HACER
+- Agregar productos y cambiar precios se realiza cuando NO está dentro de su jornada de horario - HACER

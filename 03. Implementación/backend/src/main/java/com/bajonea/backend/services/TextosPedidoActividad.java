@@ -57,6 +57,7 @@ final class TextosPedidoActividad {
                 case EN_CAMINO -> "Despachó " + pedido;
                 case LISTO_PARA_RETIRAR -> "Dejó " + pedido + " listo para retirar";
                 case ENTREGADO -> "Marcó " + pedido + " como entregado";
+                case NO_RETIRADO -> "Cerró " + pedido + " como no retirado";
                 case ANULADO -> "Anuló " + pedido;
                 default -> "Cambió el estado de " + pedido;
             };
@@ -71,6 +72,7 @@ final class TextosPedidoActividad {
             case ENTREGADO -> motivoTimeout == MotivoTimeoutPedido.TIMEOUT_RETIRO_SUSPENSION
                     ? "Cerró automáticamente " + pedido + " listo para retirar (comercio suspendido)"
                     : "Confirmó automáticamente la entrega de " + pedido;
+            case NO_RETIRADO -> "Cerró automáticamente " + pedido + " como no retirado (comercio suspendido)";
             default -> "Cambió el estado de " + pedido;
         };
     }

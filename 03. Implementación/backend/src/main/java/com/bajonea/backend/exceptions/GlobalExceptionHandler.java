@@ -86,7 +86,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ConflictoComercioException.class)
     public ResponseEntity<ApiResponse<?>> handleConflictoComercio(ConflictoComercioException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(new ApiResponse<>(ex.getMessage(), Map.of("codigo", ex.getCodigo())));
+                .body(new ApiResponse<>(ex.getMessage(), ex.getData()));
     }
 
     @ExceptionHandler(ConflictoDeNegocioException.class)

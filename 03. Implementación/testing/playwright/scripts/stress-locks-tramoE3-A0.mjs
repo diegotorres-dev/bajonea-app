@@ -214,7 +214,7 @@ const TRANSICIONES = {
   PENDIENTE_CONFIRMACION_COMERCIO: ['EN_PREPARACION', 'RECHAZADO', 'CANCELADO', 'EXPIRADO', 'CANCELADO_POR_SISTEMA'],
   EN_PREPARACION: ['EN_CAMINO', 'LISTO_PARA_RETIRAR', 'CANCELADO', 'ANULADO', 'CANCELADO_POR_SISTEMA'],
   EN_CAMINO: ['ENTREGADO'],
-  LISTO_PARA_RETIRAR: ['ENTREGADO'],
+  LISTO_PARA_RETIRAR: ['ENTREGADO', 'NO_RETIRADO'],
 };
 const MOTIVO_DE_NOTA = {
   RECHAZADO: 'RECHAZO_COMERCIO',
@@ -236,7 +236,8 @@ const AVISOS_POR_FILA = {
   PEDIDO_EXPIRADO_CLIENTE: (filas) => filas.filter((f) => f.estado === 'EXPIRADO').length,
   PEDIDO_EXPIRADO_COMERCIO: (filas) => filas.filter((f) => f.estado === 'EXPIRADO').length,
   PEDIDO_AUTOCONFIRMADO: (filas) => filas.filter((f) => f.estado === 'ENTREGADO' && f.motivo === 'TIMEOUT_ENTREGA').length,
-  PEDIDO_CERRADO_TIMER_SUSPENSION: (filas) => filas.filter((f) => f.estado === 'ENTREGADO' && f.motivo === 'TIMEOUT_RETIRO_SUSPENSION').length,
+  PEDIDO_NO_RETIRADO: (filas) => filas.filter((f) => f.estado === 'NO_RETIRADO').length,
+  PEDIDO_CERRADO_TIMER_SUSPENSION: () => 0,
 };
 
 function lineas(salida) {

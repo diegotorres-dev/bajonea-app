@@ -246,10 +246,11 @@ puede:
   Camino no las confirma el comercio: las confirma el Cliente, o el sistema (aviso a los 75
   minutos y autoconfirmación a los 90). Al rechazar o anular un pedido ya pagado, la nota
   de crédito de la devolución se crea en la misma operación que el cambio de estado.
-- En total son 17 escrituras delegables: 9 de productos (con imágenes y firmas de subida),
-  3 de comercio (descripción y teléfono, cerrar y abrir) y 5 de pedidos. El resto del perfil
-  (edición completa, foto y su firma) es exclusivo del Dueño y el Empleado recibe 403. Con el cierre de un pedido de
-  retiro como No Retirado (tramo E3, bloque A4b) pasan a ser 18 (6 de pedidos).
+- En total son 18 escrituras delegables: 9 de productos (con imágenes y firmas de subida),
+  3 de comercio (descripción y teléfono, cerrar y abrir) y 6 de pedidos (aceptar, rechazar,
+  despachar, entregar, anular y, desde el tramo E3 bloque A4b, cerrar un retiro como No
+  Retirado). El resto del perfil (edición completa, foto y su firma) es exclusivo del Dueño
+  y el Empleado recibe 403.
 - **Pedido no retirado.** Cuando un pedido de retiro quedó Listo para Retirar y el cliente
   no se presentó, el Empleado (y el Dueño) puede cerrarlo como No Retirado. Es un estado
   final que solo existe desde Listo para Retirar y solo en pedidos de retiro. No hay
@@ -368,11 +369,13 @@ bloqueado para el Empleado por defecto.
   en varios comercios, ve en cada uno solo los avisos de ese comercio (bloque A4, implementado).
 - El listado y el contador de notificaciones del contexto Cliente quedan separados de los
   del comercio: sin comercio abierto, el Cliente ve solo las suyas como cliente.
-- **Pendiente, no implementado (tramo E3, bloque A4b):** avisar al Cliente (T36, "Tu pedido
-  #12 no fue retirado y el comercio lo cerró. Como ya estaba preparado, no hay devolución
-  del pago.") cuando el comercio cierra como No Retirado un pedido de retiro. Ese cierre hoy
-  no existe en el código; reemplaza a la fuente de entrega `COMERCIO_SIN_RETIRO`, que deja
-  de ser necesaria.
+- Cuando el comercio cierra como No Retirado un pedido de retiro (el Dueño o un Empleado, o
+  el sistema al vencer el plazo de un comercio suspendido), el Cliente recibe la notificación
+  T36 ("Tu pedido #12 no fue retirado y el comercio lo cerró. Como ya estaba preparado, no
+  hay devolución del pago."); el equipo no recibe copia. Implementado en el tramo E3, bloque
+  A4b; reemplaza a la fuente de entrega `COMERCIO_SIN_RETIRO`, que deja de ser necesaria.
+  Si el cierre manual se intenta antes de la espera mínima, el Empleado recibe un 409 con el
+  código RETIRO_EN_ESPERA, los minutos que faltan y la hora desde la que se puede.
 - Al desactivarlo el Dueño, el Empleado recibe la notificación T32. Cuando renuncia, el
   Dueño recibe una notificación equivalente (T34). Cuando el invitado acepta, el Dueño
   recibe T33.

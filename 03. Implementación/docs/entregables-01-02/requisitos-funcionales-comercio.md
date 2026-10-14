@@ -237,7 +237,7 @@ horario, también con el aviso de cuándo reabre.
   pedido no cambia de estado) y la respuesta ya informa el estado del reembolso.
 - **Flujo de estados — Domicilio:** PENDIENTE_CONFIRMACION_COMERCIO → EN_PREPARACION → EN_CAMINO → ENTREGADO.
 - **Flujo de estados — Retiro:** PENDIENTE_CONFIRMACION_COMERCIO → EN_PREPARACION → LISTO_PARA_RETIRAR →
-  ENTREGADO, o NO_RETIRADO si el cliente no se presentó (planificado, tramo E3, bloque A4b).
+  ENTREGADO, o NO_RETIRADO si el cliente no se presentó.
 - El Dueño o un Empleado autorizado debe poder confirmar la entrega de un pedido de
   retiro cuando el cliente se presente a retirarlo (ENTREGADO, fuente: COMERCIO).
 - El Dueño o un Empleado autorizado debe poder cerrar como NO_RETIRADO un pedido de retiro
@@ -248,10 +248,14 @@ horario, también con el aviso de cuándo reabre.
   configurable); la espera aplica solo a este cierre, confirmar la entrega es inmediato.
   ENTREGADO queda reservado para entregas reales, así que la fuente de entrega
   COMERCIO_SIN_RETIRO deja de ser necesaria. El Cliente ve el pedido como "No retirado", el
-  pedido cuenta en el "facturado hoy" y el Cliente recibe la notificación T36. (Pendiente, no
-  implementado: hoy el comercio solo puede confirmar la entrega con la fuente COMERCIO;
-  llega en el tramo E3, bloque A4b, con una migración que suma el estado, y pasa a ser la
-  sexta acción de pedido delegable.)
+  pedido cuenta en el "facturado hoy" y el Cliente recibe la notificación T36 ("Tu pedido #12
+  no fue retirado y el comercio lo cerró. Como ya estaba preparado, no hay devolución del
+  pago."). Implementado en el tramo E3, bloque A4b (`PUT /api/v1/pedidos/comercio/{id}/no-retirado`,
+  sexta acción de pedido delegable al Empleado): antes de la espera responde 409 con los
+  minutos que faltan y desde qué hora se puede; sirve también con el comercio suspendido o
+  cerrado temporalmente. Cuando un comercio suspendido tiene pedidos listos para retirar, el
+  sistema los cierra como NO_RETIRADO (y no como ENTREGADO) al vencer el plazo de 90 minutos,
+  sin la espera de 60 y con el mismo aviso T36.
 - El Dueño o un Empleado autorizado debe poder anular un pedido desde estado
   EN_PREPARACION, seleccionando un **motivo predefinido** de la lista de motivos de
   rechazo (Sin Stock, Local Cerrado, Alto Volumen de Pedidos, Producto No Disponible

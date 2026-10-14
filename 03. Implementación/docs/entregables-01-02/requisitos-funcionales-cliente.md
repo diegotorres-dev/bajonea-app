@@ -53,13 +53,14 @@
   - **Retiro:** hasta el momento en que el comercio lo marca como LISTO_PARA_RETIRAR (estados cancelables: PENDIENTE_CONFIRMACION_COMERCIO y EN_PREPARACION).
 - En pedidos a domicilio en estado EN_CAMINO, el cliente debe poder confirmar la recepción del pedido. Esta confirmación cierra el pedido como ENTREGADO.
 - En pedidos de retiro, la confirmación de entrega la realiza el comercio.
+- Si el cliente no pasa a buscar un pedido de retiro que quedó listo, el comercio (o el sistema, si el comercio fue suspendido) lo cierra como NO_RETIRADO y el cliente recibe el aviso "Tu pedido #N no fue retirado y el comercio lo cerró. Como ya estaba preparado, no hay devolución del pago." El pedido se muestra como "No retirado", sin reembolso, y no se informa quién lo cerró.
 - El cliente debe poder iniciar un reclamo ante un pedido a domicilio marcado como ENTREGADO que no fue recibido. El sistema también debe ofrecer la opción de contactar directamente al comercio como vía alternativa.
 
 ---
 
 ## Seguimiento de Estado
 
-- El sistema debe notificar al cliente ante cada cambio de estado de su pedido: aceptado, en preparación, en camino o listo para retirar, entregado, rechazado, cancelado o anulado.
+- El sistema debe notificar al cliente ante cada cambio de estado de su pedido: aceptado, en preparación, en camino o listo para retirar, entregado, no retirado, rechazado, cancelado o anulado.
 - El cliente debe poder visualizar el historial completo de estados por los que pasó cada pedido, con las fechas y horas correspondientes.
 
 ---

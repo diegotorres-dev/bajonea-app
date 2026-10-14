@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -67,6 +68,7 @@ public class TestSupportService {
     private final InvitacionEmpleadoRepository invitacionEmpleadoRepository;
     private final EmpleadoComercioRepository empleadoComercioRepository;
     private final NotificacionRepository notificacionRepository;
+    private final JdbcTemplate jdbcTemplate;
     private final Clock clock;
 
     public String obtenerTokenVerificacionPendiente(String email) {
@@ -125,6 +127,20 @@ public class TestSupportService {
         Pago pago = pagoService.buscarPorPedido(pedidoId)
                 .orElseGet(() -> pagoService.crearPreferencia(pedido, "sintetica-" + pedidoId, null, null));
         pagoService.registrarResultado(pago, "sintetico-" + pedidoId, "approved", "account_money", true);
+    }
+
+    /**
+     * Atajo de entorno de test: retrocede {@code minutos} la fecha de la última fila {@code LISTO_PARA_RETIRAR} del
+     * historial del pedido, para probar el cierre como no retirado sin esperar la espera mínima real.
+     */
+    @Transactional
+    public void envejecerListoParaRetirar(Integer pedidoId, long minutos) {
+        int filas = jdbcTemplate.update("UPDATE historial_estado_pedido SET fecha_hora = DATE_SUB(fecha_hora, INTERVAL ? MINUTE) "
+                + "WHERE id = (SELECT id FROM (SELECT id FROM historial_estado_pedido WHERE pedido_id = ? "
+                + "AND estado = 'LISTO_PARA_RETIRAR' ORDER BY fecha_hora DESC, id DESC LIMIT 1) ultimo)", minutos, pedidoId);
+        if (filas == 0) {
+            throw new RecursoNoEncontradoException("El pedido no tiene una fila LISTO_PARA_RETIRAR en el historial");
+        }
     }
 
     /**

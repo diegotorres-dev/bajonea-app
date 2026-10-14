@@ -64,5 +64,6 @@ class AtajosDeTestFueraDelPerfilTest {
             mockMvc.perform(post("/api/v1/test/jobs/pedidos/" + nombre)).andExpect(status().isNotFound());
         }
         mockMvc.perform(put("/api/v1/test/pedidos/1/pago-aprobado").param("registrarPago", "true")).andExpect(status().isNotFound());
+        mockMvc.perform(put("/api/v1/test/pedidos/1/envejecer-listo").param("minutos", "61")).andExpect(status().isNotFound());
     }
 }

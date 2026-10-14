@@ -110,7 +110,26 @@ const ESTADO_INFO = {
     icon: ICONS.clock,
     texto: () => 'El comercio no respondió a tiempo y el pedido se canceló.',
   },
+  NO_RETIRADO: {
+    label: 'No retirado',
+    dotClass: 'pedido-estado__dot--vencido',
+    iconClass: ICON_CLASS,
+    icon: ICONS.xCircle,
+    texto: (nombreComercio) => `${nombreComercio} cerró tu pedido como no retirado. Como ya estaba preparado, no hay devolución del pago.`,
+  },
 };
+
+const ESTADO_INFO_DESCONOCIDO = {
+  label: 'Estado no disponible',
+  dotClass: 'pedido-estado__dot--vencido',
+  iconClass: ICON_CLASS,
+  icon: ICONS.clock,
+  texto: () => 'Estamos actualizando el estado de este pedido.',
+};
+
+function infoDeEstadoPedido(estado) {
+  return ESTADO_INFO[estado] || ESTADO_INFO_DESCONOCIDO;
+}
 
 const ESTADOS_CON_REEMBOLSO = ['RECHAZADO', 'CANCELADO', 'ANULADO', 'CANCELADO_POR_SISTEMA', 'EXPIRADO'];
 
@@ -169,7 +188,7 @@ function formatearResumen(detalles) {
 }
 
 function renderEstadoDot(estado) {
-  const info = ESTADO_INFO[estado];
+  const info = infoDeEstadoPedido(estado);
   const span = crear('span', 'pedido-estado');
   span.setAttribute('data-testid', 'estado-pedido');
   const dot = crear('span', `pedido-estado__dot ${info.dotClass}`);
@@ -445,7 +464,7 @@ export async function initPedidoDetalle() {
   }
 
   function renderDetalle() {
-    const info = ESTADO_INFO[pedido.estado];
+    const info = infoDeEstadoPedido(pedido.estado);
 
     let motivoInfo = null;
     if (pedido.estado === 'RECHAZADO' && pedido.motivoRechazo) {

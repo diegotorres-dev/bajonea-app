@@ -52,7 +52,8 @@ Los pedidos pueden encontrarse en los siguientes estados:
 - **EN_PREPARACION**: pedido aceptado por el comercio, en proceso de preparación.
 - **EN_CAMINO**: pedido despachado. Aplica solo a modalidad domicilio.
 - **LISTO_PARA_RETIRAR**: pedido listo. Aplica solo a modalidad retiro.
-- **ENTREGADO**: pedido completado, ya sea por confirmación del cliente, del comercio o por el sistema.
+- **ENTREGADO**: pedido completado, ya sea por confirmación del cliente, del comercio o por el sistema (autoconfirmación de un envío a los 90 minutos). Es un estado reservado para entregas reales.
+- **NO_RETIRADO**: pedido de retiro que quedó LISTO_PARA_RETIRAR y el cliente no pasó a buscar. Lo alcanza el cierre manual del Dueño o de un Empleado (tras una espera mínima de 60 minutos configurable) o el sistema al vencer el plazo de un comercio suspendido. Estado terminal, sin reembolso: el comercio se queda el pago porque el pedido ya estaba preparado.
 - **RECHAZADO**: el comercio rechazó el pedido estando en estado PENDIENTE_CONFIRMACION_COMERCIO. Genera reembolso automático.
 - **CANCELADO**: cancelado por el cliente antes del despacho (domicilio) o antes de estar listo (retiro). Genera reembolso automático.
 - **ANULADO**: anulado por el comercio desde estado EN_PREPARACION. Genera reembolso automático.
@@ -112,7 +113,7 @@ Al suspenderse un comercio por el Administrador, el sistema debe procesar los pe
 
 - **PENDIENTE_CONFIRMACION_COMERCIO y EN_PREPARACION:** cancelar con estado CANCELADO_POR_SISTEMA (motivo: comercio suspendido, cancelado_por: SISTEMA), generar nota de crédito y reembolso para cada pedido abonado, y notificar a cada cliente afectado con el motivo de la cancelación.
 - **EN_CAMINO:** marcar automáticamente como ENTREGADO (fuente_entrega: SISTEMA). El envío ya estaba en curso y el comercio había cumplido su parte. Sin reembolso.
-- **LISTO_PARA_RETIRAR:** iniciar un timer de 90 minutos para cada pedido en este estado. Si el cliente se presenta y el comercio (o el sistema) confirma el retiro antes del vencimiento, el pedido se marca ENTREGADO normalmente. Si vencen los 90 minutos sin retiro confirmado, el sistema marca el pedido como ENTREGADO automáticamente (fuente_entrega: SISTEMA, sin reembolso). El cliente es notificado de la situación al momento de la suspensión.
+- **LISTO_PARA_RETIRAR:** iniciar un timer de 90 minutos para cada pedido en este estado. Si el cliente se presenta y el comercio (o el sistema) confirma el retiro antes del vencimiento, el pedido se marca ENTREGADO normalmente. Si vencen los 90 minutos sin retiro confirmado, el sistema marca el pedido como NO_RETIRADO automáticamente (actor Sistema, motivo de timeout de retiro por suspensión, sin reembolso y sin la espera mínima de 60 minutos del cierre manual). El cliente es notificado de la situación al momento de la suspensión.
 
 ### Inactivación de Comercio — Gestión de Pedidos Activos
 
@@ -164,7 +165,7 @@ El sistema emite notificaciones push (y en algunos casos email) ante los siguien
 | T23 | Producto removido del carrito por agotado o descontinuado | Cliente | Push + Panel |
 | T24 | Cuenta inactivada por inactividad | Usuario (Cliente, Dueño o Empleado) | Email |
 | T25 | Comercio inactivado automáticamente | Dueño | Email |
-| T26 | Pedido LISTO_PARA_RETIRAR cerrado automáticamente por vencimiento del timer de suspensión del comercio (sin reembolso) | Cliente | Push + Panel |
+| T26 | (Sin emisor desde el tramo E3 bloque A4b: el cierre automático por vencimiento del timer de suspensión del comercio ahora cierra como NO_RETIRADO y avisa con T36) | Cliente | Push + Panel |
 | T27 | Reembolso fallido definitivamente tras 5 intentos — requiere intervención manual | Administrador | Push + Panel + Email |
 | T28 | Cliente suspendido (con motivo) | Cliente | Push + Panel + Email |
 | T29 | Suspensión levantada (comercio o cliente) | Cliente o Dueño | Push + Panel + Email |
@@ -174,7 +175,7 @@ El sistema emite notificaciones push (y en algunos casos email) ante los siguien
 | T33 | Invitación de Empleado aceptada | Dueño | Push + Panel |
 | T34 | Empleado renunció a un comercio | Dueño | Push + Panel |
 | T35 | Aviso de regularización: se intentó invitar a una cuenta bloqueada, suspendida, inactiva o sin verificar | Persona con esa cuenta | Email |
-| T36 | Pedido de retiro cerrado como No Retirado por el comercio (planificado: tramo E3, bloque A4b; "Tu pedido #12 no fue retirado y el comercio lo cerró. Como ya estaba preparado, no hay devolución del pago.") | Cliente | Push + Panel |
+| T36 | Pedido de retiro cerrado como No Retirado, por el Dueño, por un Empleado o por el sistema al vencer el plazo de un comercio suspendido ("Tu pedido #12 no fue retirado y el comercio lo cerró. Como ya estaba preparado, no hay devolución del pago.") | Cliente | Push + Panel |
 
 - Al auto-confirmar la entrega (T8), la notificación incluye botones para iniciar reclamo o contactar al comercio directamente.
 - T2 y T4 corresponden al mismo evento: cuando el comercio acepta un pedido, este pasa directamente a EN_PREPARACION. La notificación al cliente unifica ambos conceptos en un único mensaje ("Tu pedido fue aceptado y ya está en preparación").

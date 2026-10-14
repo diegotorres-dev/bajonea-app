@@ -76,8 +76,9 @@ informado en cada etapa del proceso de entrega.
 ## HU-CO11: Confirmar Entrega de Retiro
 
 Como Dueño o Empleado autorizado, quiero confirmar la entrega de un pedido de retiro
-tanto si el cliente se presenta como si no, para registrar el cierre del pedido en
-ambos casos.
+cuando el cliente se presenta, o cerrarlo como "no retirado" cuando no vino (pasados 60
+minutos desde que quedó listo), para registrar el cierre del pedido en ambos casos sin
+marcar como entregado un pedido que nadie retiró.
 
 ## HU-CO12: Anular un Pedido
 

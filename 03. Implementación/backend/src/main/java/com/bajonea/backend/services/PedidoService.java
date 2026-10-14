@@ -61,6 +61,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -134,7 +135,11 @@ public class PedidoService {
 
     private static final BigDecimal SUBTOTAL_MAXIMO = new BigDecimal("99999999");
     private static final List<EstadoPedido> ESTADOS_FACTURADOS = List.of(
-            EstadoPedido.EN_PREPARACION, EstadoPedido.EN_CAMINO, EstadoPedido.LISTO_PARA_RETIRAR, EstadoPedido.ENTREGADO);
+            EstadoPedido.EN_PREPARACION, EstadoPedido.EN_CAMINO, EstadoPedido.LISTO_PARA_RETIRAR, EstadoPedido.ENTREGADO,
+            EstadoPedido.NO_RETIRADO);
+    private static final DateTimeFormatter HORA_MINUTO = DateTimeFormatter.ofPattern("HH:mm");
+    private static final String MENSAJE_NO_RETIRADO = "Tu pedido #%d no fue retirado y el comercio lo cerró. "
+            + "Como ya estaba preparado, no hay devolución del pago.";
 
     public PedidoResponseDTO confirmarPedido(Integer usuarioId, PedidoRequestDTO request) {
         usuarioRepository.leerIdConBloqueoCompartido(usuarioId);
@@ -525,6 +530,59 @@ public class PedidoService {
         return aResponseDTO(pedido);
     }
 
+    /**
+     * Cierra como {@code NO_RETIRADO} un pedido de retiro que el Cliente no pasó a buscar. Mismo camino de bloqueo
+     * que {@link #confirmarEntregaComercio} (usuarios, relación del Empleado, pedido {@code FOR UPDATE}, pedido
+     * propio), y recién entonces valida estado, modalidad y la espera mínima desde que el pedido quedó
+     * {@code LISTO_PARA_RETIRAR}, con la hora calculada después del bloqueo. No mira el estado del comercio, no
+     * genera nota de crédito ni reembolso (el comercio se queda el pago porque el pedido ya estaba preparado) y
+     * avisa solo al Cliente (T36), en la misma transacción.
+     */
+    public PedidoResponseDTO cerrarComoNoRetirado(ComercioActivo comercioActivo, Integer pedidoId) {
+        Pedido pedido = obtenerPedidoDelComercioParaActualizar(comercioActivo, pedidoId);
+
+        if (pedido.getEstado() != EstadoPedido.LISTO_PARA_RETIRAR) {
+            throw new ConflictoDeNegocioException("El pedido no está listo para retirar");
+        }
+        if (pedido.getTipoEntrega() != TipoEntrega.RETIRO) {
+            throw new ConflictoDeNegocioException("Solo se puede cerrar como no retirado un pedido de retiro");
+        }
+        exigirEsperaMinimaDeRetiro(pedido, LocalDateTime.now(clock));
+
+        pedido.setEstado(EstadoPedido.NO_RETIRADO);
+        pedidoRepository.save(pedido);
+        registrarHistorial(pedido, actorDePedido(comercioActivo), comercioActivo.actorUsuarioId());
+        avisarPedidoNoRetirado(pedido);
+
+        return aResponseDTO(pedido);
+    }
+
+    private void exigirEsperaMinimaDeRetiro(Pedido pedido, LocalDateTime ahora) {
+        LocalDateTime listoDesde = obtenerFechaEntradaAEstado(pedido, EstadoPedido.LISTO_PARA_RETIRAR);
+        if (listoDesde == null) {
+            throw new ConflictoDeNegocioException(
+                    "No se puede cerrar como no retirado: no se encontró cuándo quedó listo para retirar");
+        }
+        LocalDateTime disponibleDesde = listoDesde.plusMinutes(timeoutProperties.getNoRetiradoEsperaMinutos());
+        if (ahora.isBefore(disponibleDesde)) {
+            long minutosRestantes = (Duration.between(ahora, disponibleDesde).getSeconds() + 59) / 60;
+            Map<String, Object> datos = new HashMap<>();
+            datos.put("minutosRestantes", minutosRestantes);
+            datos.put("disponibleDesde", disponibleDesde.toString());
+            throw new ConflictoComercioException(ConflictoComercioException.RETIRO_EN_ESPERA,
+                    "Todavía no podés cerrar este pedido como no retirado. Esperá " + minutosRestantes
+                            + (minutosRestantes == 1 ? " minuto más" : " minutos más") + " (desde las "
+                            + disponibleDesde.format(HORA_MINUTO) + ").",
+                    datos);
+        }
+    }
+
+    private void avisarPedidoNoRetirado(Pedido pedido) {
+        notificacionService.crearParaCliente(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
+                String.format(MENSAJE_NO_RETIRADO, pedido.getId()),
+                TipoNotificacion.PEDIDO_NO_RETIRADO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
+    }
+
     public PedidoResponseDTO cancelarPedido(Integer usuarioId, Integer pedidoId) {
         obtenerPedidoDelCliente(usuarioId, pedidoId);
         PedidoBloqueado bloqueado = bloquearParaActualizarConEquipo(pedidoId, usuarioId);
@@ -824,8 +882,9 @@ public class PedidoService {
     }
 
     /**
-     * Job 4: {@code LISTO_PARA_RETIRAR} cuyo timer de suspensión venció -> autoconfirma
-     * {@code ENTREGADO}, sin reembolso (ver diccionario: {@code fuente_entrega = SISTEMA}).
+     * Job 4: {@code LISTO_PARA_RETIRAR} cuyo timer de suspensión venció -> cierra como {@code NO_RETIRADO} (nadie
+     * confirmó el retiro, así que no corresponde {@code ENTREGADO}), sin reembolso y sin la espera mínima del
+     * cierre manual. Avisa al Cliente con el mismo T36 que el cierre manual.
      */
     private void autoconfirmarRetirosPorSuspension(Supplier<LocalDateTime> reloj) {
         for (Integer pedidoId : pedidoRepository.findIdsByEstadoAndSuspensionRetiroExpiraLessThan(
@@ -836,12 +895,10 @@ public class PedidoService {
                         || !pedido.getSuspensionRetiroExpira().isBefore(reloj.get())) {
                     return;
                 }
-                marcarEntregado(pedido, FuenteEntrega.SISTEMA);
+                pedido.setEstado(EstadoPedido.NO_RETIRADO);
+                pedidoRepository.save(pedido);
                 registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.TIMEOUT_RETIRO_SUSPENSION);
-
-                notificacionService.crearParaCliente(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
-                        "Tu pedido #" + pedido.getId() + " se cerró automáticamente: el comercio está suspendido y venció el plazo de retiro.",
-                        TipoNotificacion.PEDIDO_CERRADO_TIMER_SUSPENSION, TipoEntidadNotificacion.PEDIDO, pedido.getId());
+                avisarPedidoNoRetirado(pedido);
             });
         }
     }

@@ -159,6 +159,12 @@ public class PedidoController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Entrega confirmada correctamente", paraActor(comercio, response)));
     }
 
+    @PutMapping("/comercio/{id}/no-retirado")
+    public ResponseEntity<ApiResponse<?>> cerrarComoNoRetirado(ComercioActivo comercio, @PathVariable Integer id) {
+        PedidoResponseDTO response = pedidoService.cerrarComoNoRetirado(comercio, id);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pedido cerrado como no retirado", paraActor(comercio, response)));
+    }
+
     @PutMapping("/comercio/{id}/anular")
     public ResponseEntity<ApiResponse<?>> anularPedido(ComercioActivo comercio, @PathVariable Integer id,
             @Valid @RequestBody AnulacionPedidoRequestDTO request) {

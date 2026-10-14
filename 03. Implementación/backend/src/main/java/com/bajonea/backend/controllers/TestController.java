@@ -105,6 +105,12 @@ public class TestController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pago del pedido confirmado", null));
     }
 
+    @PutMapping("/pedidos/{id}/envejecer-listo")
+    public ResponseEntity<ApiResponse<Void>> envejecerListoParaRetirar(@PathVariable Integer id, @RequestParam long minutos) {
+        testSupportService.envejecerListoParaRetirar(id, minutos);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Historial del pedido retrocedido", null));
+    }
+
     @PostMapping("/jobs/pedidos/{nombre}")
     public ResponseEntity<ApiResponse<Void>> ejecutarProcesoDePedidos(@PathVariable String nombre,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime ahora) {

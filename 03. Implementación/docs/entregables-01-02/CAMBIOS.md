@@ -5,6 +5,27 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
 
+## Tramo E3, bloque A4b: un retiro que el cliente no pasó a buscar se cierra como "No retirado" (V34) (2026-10-14)
+
+Backend, una migración (`V34`), pruebas, documentación y un mínimo de frontend (la etiqueta "No retirado" en las listas y los detalles de pedidos, y un estado por defecto para que un estado desconocido no rompa la pantalla); sin botón ni pantallas nuevas. En el sistema: un pedido de retiro que quedó "Listo para retirar" y el cliente no retiró se cierra como **No Retirado**, por el Dueño o un Empleado (pasados 60 minutos desde que quedó listo; la espera es configurable y no aplica a "Entregar") o por el sistema cuando el comercio está suspendido y vence el plazo de 90 minutos (antes el sistema lo marcaba "Entregado", lo cual era falso). No hay devolución: el comercio se queda el pago porque el pedido ya estaba preparado. El cliente lo ve como "No retirado" y recibe el aviso T36; el pedido cuenta en "Facturado hoy"; "Entregado" queda reservado para entregas reales.
+
+**Documentos de esta carpeta que cambiaron** (Diego los copia a mano a `01.` y `02.`):
+- `diccionario-de-datos.md` (**v1.15**): `NO_RETIRADO` y T36 pasan de planificados a implementados; `TIMEOUT_RETIRO_SUSPENSION` ahora termina en `NO_RETIRADO`; T26 queda sin emisor; `COMERCIO_SIN_RETIRO` sin uso (sale del enum Java, queda en el ENUM físico); el ciclo de vida del pedido suma las dos vías hacia `NO_RETIRADO`.
+- `Modelo Relacional-v3 - Código Mermaid.md`: solo el encabezado (versión v1.15 y la aclaración de que no cambia ninguna tabla ni columna).
+- `requisitos-funcionales-comercio.md`: el cierre como No Retirado deja de ser "pendiente, no implementado" (espera, 409 con minutos, comercio suspendido, cierre automático).
+- `requisitos-funcionales-empleado.md`: 18 escrituras delegables (6 de pedidos) y la notificación T36 implementada.
+- `requisitos-funcionales-sistema.md`: el estado `NO_RETIRADO`, el cierre automático del retiro de un comercio suspendido (ya no `ENTREGADO`), T26 sin emisor y T36 implementada.
+- `requisitos-funcionales-dueño.md`: la lista de actividad suma "cerrar como no retirado" y el cierre automático como no retirado.
+- `requisitos-funcionales-cliente.md`: el aviso y la etiqueta "No retirado", sin reembolso.
+- `requisitos-no-funcionales.md`: la espera mínima configurable.
+- `Historias de Usuario - Comercio.md` (HU-CO11): confirmar la entrega o cerrar como "no retirado".
+
+**Diagramas Mermaid que cambian:** ninguno. `V34` solo agrega valores a tres ENUM (`pedido.estado`, `historial_estado_pedido.estado` y `notificacion.tipo`): no hay tablas, columnas ni claves nuevas, el diagrama entidad-relación es conceptual y los de flujo no listan estados. **No hay que regenerar ningún PNG.** Si en `01.` o `02.` existe un diagrama de estados del pedido o un caso de uso "Confirmar entrega de retiro", convendría sumarle `NO_RETIRADO` / "Cerrar pedido como no retirado".
+
+**No cambiaron** `requisitos-funcionales-administrador.md`, `-generales.md`, `alcance-y-limitaciones.md`, `Historias de Usuario - Cliente/Dueño/Empleado/Administrador.md` (las del Empleado ya describían el cierre con la espera de 60 minutos), ni los DFD.
+
+**Pruebas:** ver `docs/DECISIONES.md`, 2026-10-14, bloque A4b. `mvnw test` 766 (763 + 3), Newman 2713 requests y 4235 assertions sin fallos (carpeta 64 nueva), Playwright 765/766 (specs 47 y 48 nuevos; el único fallo es el inestable conocido `36:578`, 10/10 aislado), estrés `stress-locks-tramoE3-A4b.mjs` nuevo y los demás sin problemas, y 0 `Deadlock found` y 0 `Lock wait timeout` en los logs del backend.
+
 ## Mini-tramo del carrito (E3): el pago, las bajas y los cambios del carrito no fallan cuando se cruzan (2026-10-14)
 
 Backend, pruebas y documentación; sin migraciones y sin pantallas. En el sistema: confirmar un pago nunca falla ni queda a medias porque el cliente esté editando su carrito, porque otro pedido suyo se esté pagando o porque el comercio esté agotando un producto en ese momento; el carrito se vacía solo si sigue siendo del comercio del pedido pagado, y nunca queda con ítems y sin comercio ni con comercio y sin ítems; un producto agotado no queda en ningún carrito, y solo se avisa a quien realmente perdió un ítem. Repetir una baja o cambiar la cantidad de un ítem que ya no está responde "Ítem no encontrado" (404).

@@ -3,7 +3,8 @@
 **Proyecto:** Bajoneá — Plataforma de pedidos gastronómicos en línea  
 **Motor de base de datos:** MySQL (InnoDB)  
 **ORM / Migraciones:** Spring Data JPA + Hibernate / Flyway  
-**Versión del modelo:** 1.14  
+**Versión del modelo:** 1.15  
+**Cambios de la v1.15 (tramo E3, bloque A4b, 2026-10-14):** nuevo estado de pedido `NO_RETIRADO` y nuevo tipo de aviso `PEDIDO_NO_RETIRADO` (T36), ambos por la migración `V34`, que agrega el valor al final de los ENUM `pedido.estado`, `historial_estado_pedido.estado` y `notificacion.tipo` (cambio de metadatos, sin tocar filas). El estado lo alcanza el cierre manual del Dueño o de un Empleado (`PUT /api/v1/pedidos/comercio/{id}/no-retirado`, con una espera mínima de 60 minutos configurable en `pedido.timeout.no-retirado-espera-minutos`) y el proceso automático del comercio suspendido, que antes marcaba `ENTREGADO` y ahora marca `NO_RETIRADO` (motivo `TIMEOUT_RETIRO_SUSPENSION` conservado). `ENTREGADO` queda reservado para entregas reales. `FuenteEntrega.COMERCIO_SIN_RETIRO` sale del enum Java y queda en el ENUM físico de `pedido.fuente_entrega` como valor sin uso; `PEDIDO_CERRADO_TIMER_SUSPENSION` (T26) queda sin emisor y se conserva en el ENUM por las filas históricas.  
 **Cambios de la v1.14 (tramo E3, bloque A4, 2026-10-13):** `Notificacion` suma la columna `comercio_id` (migración `V33`, sin clave foránea) con el índice `idx_notificacion_usuario_comercio`, y cada `TipoNotificacion` pasa a tener una audiencia fija (cliente, equipo del comercio, solo Dueno, cliente o Dueno, administrador). Los avisos operativos del comercio (T1, T9, T13 y, cuando se implemente, T30) se emiten ahora como una copia por destinatario —el Dueno y cada Empleado `ACTIVO`, sin el Cliente del pedido—, cada una con su propio estado de lectura; los de administración (T14, T15, T16, T33, T25, T29 y T34) siguen yendo solo al Dueno y llevan el comercio. El estado `NO_RETIRADO` y la notificación T36 pasan a la migración `V34`. Ver la tabla `Notificacion` (sección 6) y la nota debajo de la tabla de tipos.  
 **Estado de la v1.12:** el modelo del rol Empleado decidido el 2026-10-05 (ver `docs/DECISIONES.md`) está **implementado en parte** (tramo E1, bloques A1 y A2, 2026-10-06): las migraciones `V29` (estado de la relación `ACTIVO`/`INACTIVO`), `V30` (`InvitacionEmpleado`) y `V31` (`HistorialEmpleadoComercio`) están aplicadas, con sus entidades, repositorios y los servicios de invitar, reenviar, cancelar y listar el equipo, pero todavía sin endpoints ni pantallas (bloques A3 a A5 y entrega B). `HistorialEdicionComercio` (`V32`, que reemplaza a la `ActividadComercio` propuesta antes; ver la tabla) está **implementada** desde el tramo E3, bloque A1 (2026-10-12): la tabla, su entidad y el registro de las escrituras del Dueño existen; el registro de las escrituras de un Empleado llega con los bloques A2 y A3. El estado `NO_RETIRADO` del pedido y la notificación T36 (migración `V34`, tramo E3, bloque A4b) siguen **planificados**. Los pasajes que describen lo que aún no existe están marcados como planificados.  
 
@@ -346,13 +347,13 @@ Estados del ciclo de vida de un pedido.
 | `EN_PREPARACION` | Pedido aceptado por el comercio; en proceso de elaboración. | No |
 | `EN_CAMINO` | Pedido despachado. Solo aplica a modalidad `DOMICILIO`. | No |
 | `LISTO_PARA_RETIRAR` | Pedido listo para que el cliente lo retire. Solo aplica a modalidad `RETIRO`. | No |
-| `ENTREGADO` | Pedido completado. Confirmado por cliente, comercio o sistema. Estado terminal positivo. | No |
+| `ENTREGADO` | Pedido completado. Confirmado por cliente, comercio o sistema (autoconfirmación de los 90 minutos de un envío a domicilio). Estado terminal positivo, reservado para entregas reales. | No |
 | `RECHAZADO` | El comercio rechazó el pedido estando en `PENDIENTE_CONFIRMACION_COMERCIO`. | Sí |
 | `CANCELADO` | Cancelado por el cliente antes del despacho (domicilio) o antes de estar listo (retiro). | Sí |
 | `ANULADO` | Anulado por el comercio desde estado `EN_PREPARACION`. | Sí |
 | `CANCELADO_POR_SISTEMA` | Cancelado automáticamente por el sistema (vencimiento del plazo de pago, con el pago sin resolver o rechazado; suspensión o inactivación del comercio). El reembolso se genera **solo** si el pago ya había sido confirmado previamente. | Condicional |
 | `EXPIRADO` | El comercio no respondió dentro de 30 minutos (`pedido.timeout.respuesta-comercio-minutos`) tras la confirmación del pago. | Sí |
-| `NO_RETIRADO` | *(Planificado: migración `V34`, tramo E3, bloque A4b.)* El comercio cerró un pedido de retiro que estaba en `LISTO_PARA_RETIRAR` porque el cliente no se presentó. Estado terminal; solo se alcanza desde `LISTO_PARA_RETIRAR` y solo en modalidad `RETIRO`, y solo después de una espera mínima de 60 minutos desde que el pedido quedó listo (configurable; la espera no aplica a confirmar la entrega, que es inmediata). El comercio conserva el pago: el pedido estaba preparado. El Cliente lo ve como "No retirado"; cuenta en el "facturado hoy". | No |
+| `NO_RETIRADO` | El comercio cerró un pedido de retiro que estaba en `LISTO_PARA_RETIRAR` porque el cliente no se presentó (migración `V34`, tramo E3, bloque A4b). Estado terminal; solo se alcanza desde `LISTO_PARA_RETIRAR` y solo en modalidad `RETIRO`, por dos vías: el cierre manual del Dueño o de un Empleado, solo después de una espera mínima de 60 minutos desde que el pedido quedó listo (configurable; la espera no aplica a confirmar la entrega, que es inmediata), y el proceso automático del comercio suspendido, sin esa espera. El comercio conserva el pago: el pedido estaba preparado. No genera nota de crédito ni reembolso. No tiene `fuente_entrega` ni `fecha_entrega`. El Cliente lo ve como "No retirado"; cuenta en el "facturado hoy". | No |
 
 > **Valor `PENDIENTE` residual:** la migración `V6` renombró el estado histórico `PENDIENTE` a `PENDIENTE_CONFIRMACION_COMERCIO`, pero conservó el literal `PENDIENTE` en el ENUM físico de MySQL de `pedido.estado` e `historial_estado_pedido.estado` para no invalidar pedidos de prueba ya guardados con ese valor. El enum Java `EstadoPedido` no lo contempla; ningún código lo escribe.
 
@@ -406,7 +407,7 @@ Timeout automático que disparó una transición. Se registra en `HistorialEstad
 | `TIMEOUT_PAGO` | Venció el plazo de pago (30 minutos, configurable) con el pedido en `PENDIENTE_PAGO`. |
 | `TIMEOUT_ENTREGA` | Autoconfirmación de entrega a los 90 minutos en `EN_CAMINO`. |
 | `TIMEOUT_RESPUESTA_COMERCIO` | El comercio no respondió en 30 minutos (configurable) desde `PENDIENTE_CONFIRMACION_COMERCIO`. |
-| `TIMEOUT_RETIRO_SUSPENSION` | Venció el timer de 90 minutos de un pedido `LISTO_PARA_RETIRAR` de un comercio suspendido. |
+| `TIMEOUT_RETIRO_SUSPENSION` | Venció el timer de 90 minutos de un pedido `LISTO_PARA_RETIRAR` de un comercio suspendido; el pedido pasa a `NO_RETIRADO` (hasta la v1.14 pasaba a `ENTREGADO`, y esas filas históricas conservan ese estado). |
 
 ---
 
@@ -445,8 +446,8 @@ Actor que confirmó o cerró la entrega del pedido. Campo discriminador en `Pedi
 |-------|-------------|
 | `CLIENTE` | El cliente confirmó haber recibido el pedido a domicilio. |
 | `COMERCIO` | El comercio confirmó la entrega del pedido de retiro en el local. |
-| `COMERCIO_SIN_RETIRO` | Sin uso. Estaba previsto para cerrar un pedido de retiro por no presentarse el cliente; ese cierre pasa a ser el estado `NO_RETIRADO` (planificado, `V34`) y `ENTREGADO` queda reservado para entregas reales. |
-| `SISTEMA` | El sistema confirmó la entrega automáticamente (timer de 90 min en `EN_CAMINO` o timer de suspensión en `LISTO_PARA_RETIRAR`). |
+| `COMERCIO_SIN_RETIRO` | Sin uso. Estaba previsto para cerrar un pedido de retiro por no presentarse el cliente; ese cierre es el estado `NO_RETIRADO` (`V34`) y `ENTREGADO` queda reservado para entregas reales. El valor salió del enum Java `FuenteEntrega` y queda en el ENUM físico de `pedido.fuente_entrega`, sin filas que lo usen. |
+| `SISTEMA` | El sistema confirmó la entrega automáticamente (timer de 90 min en `EN_CAMINO`). |
 
 > Se registra **únicamente** cuando `estado = ENTREGADO`. Es `NULL` en todos los demás estados.
 
@@ -558,14 +559,14 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 | `PRODUCTO_REMOVIDO_CARRITO` | T23 | Cliente | Push | Un producto fue eliminado del carrito activo por pasar a `AGOTADO` o `DESCONTINUADO`. |
 | `CUENTA_INACTIVADA` | T24 | Cliente, Dueno o Empleado | Email | Cuenta inactivada automáticamente por 3 meses sin actividad. |
 | `COMERCIO_INACTIVADO` | T25 | Dueno | Email | Comercio inactivado automáticamente por inactividad del Dueno titular. |
-| `PEDIDO_CERRADO_TIMER_SUSPENSION` | T26 | Cliente | Push | Pedido `LISTO_PARA_RETIRAR` cerrado automáticamente por vencimiento del timer de 90 min durante la suspensión del comercio, sin reembolso. |
+| `PEDIDO_CERRADO_TIMER_SUSPENSION` | T26 | Cliente | Push | **Sin emisor desde la v1.15:** el proceso que vence el timer de 90 min durante la suspensión del comercio ahora cierra el pedido como `NO_RETIRADO` y avisa con T36. Se conserva en el ENUM por las filas históricas. |
 | `REEMBOLSO_FALLIDO_DEFINITIVO` | T27 | Administrador | Push + Email | Reembolso fallido tras 5 intentos; requiere intervención manual. |
 | `CLIENTE_SUSPENDIDO` | T28 | Cliente | Push + Email | Cliente suspendido por el Administrador con motivo. |
 | `SUSPENSION_LEVANTADA` | T29 | Cliente o Dueno | Push + Email | Suspensión levantada por el Administrador. |
 | `PEDIDO_AUTOCONFIRMADO_COMERCIO` | T30 | Dueno y Empleados activos del comercio | Push | El sistema autoconfirmó la entrega del pedido (timer 90 min). Hoy no se emite a nadie; planificado como último ítem del tramo E3. |
 | `INVITACION_EMPLEADO` | T31 | Persona invitada | Email | Invitación para operar un comercio como Empleado. El email lleva el código en el texto y un enlace genérico a `{app.frontend-base-url}/invitacion-empleado.html` (sin código, sin email y sin `#` en la URL); no genera una fila de notificación in-app. |
 | `EMPLEADO_DESACTIVADO` | T32 | Empleado | Push | El Dueno desactivó al empleado de un comercio puntual. |
-| `PEDIDO_NO_RETIRADO` | T36 | Cliente | Push | *(Planificado: migración `V34`, tramo E3, bloque A4b.)* El comercio cerró como `NO_RETIRADO` un pedido de retiro: "Tu pedido #12 no fue retirado y el comercio lo cerró. Como ya estaba preparado, no hay devolución del pago." |
+| `PEDIDO_NO_RETIRADO` | T36 | Cliente | Push | El comercio (Dueño o Empleado) o el proceso automático del comercio suspendido cerró como `NO_RETIRADO` un pedido de retiro: "Tu pedido #12 no fue retirado y el comercio lo cerró. Como ya estaba preparado, no hay devolución del pago." Una sola fila, personal del Cliente (sin copias al equipo), escrita en la misma transacción que el cambio de estado (migración `V34`). |
 
 > **Reutilización de tipos para el Empleado (sin valores nuevos de ENUM; T35 implementado en el bloque A2 de E1, el resto planificado en E1 a E4):** T33 (invitación aceptada) usa `INVITACION_EMPLEADO` dirigido al Dueno, con `entidad_tipo = COMERCIO`; T34 (el empleado renunció) usa `EMPLEADO_DESACTIVADO` dirigido al Dueno con otro texto; T35 (aviso de regularización a una cuenta que no se pudo invitar) usa `INVITACION_EMPLEADO` con `canal = EMAIL` y `estado = ENVIADO`, dirigido al `usuario_id` de la persona, y sirve para contar el tope de 3 por día por destinatario (24 horas corridas; la fila se escribe aunque falle el envío, porque significa "se intentó"). Los listados y el contador de la campana del Cliente filtran `canal = PUSH` para no mostrar estas filas. Las operativas (T1, T9, T13 y T30) se emiten una vez por cada Empleado `ACTIVO` además del Dueno (T1, T9 y T13 implementadas en el bloque A4 de E3; T30, planificada).
 >
@@ -1575,7 +1576,7 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 **Índices:** `PRIMARY KEY (id)` | `INDEX (cliente_id)` | `INDEX (comercio_id)` | `INDEX (estado)` | `INDEX (fecha_creacion)`
 
 **Reglas de negocio:**
-- `cancelado_por` y `fuente_entrega` son mutuamente excluyentes: en un pedido terminal solo puede estar poblado uno de los dos.
+- `cancelado_por` y `fuente_entrega` son mutuamente excluyentes: en un pedido terminal solo puede estar poblado uno de los dos. Un pedido `NO_RETIRADO` no tiene ninguno de los dos ni `fecha_entrega`.
 - Diseño pendiente de implementar: si llega un pago aprobado y el pedido ya está en `CANCELADO_POR_SISTEMA` (por timeout procesado primero), el sistema debe generar el reembolso inmediatamente. Implementado hoy: se registra una alerta `PAGO_APROBADO_SOBRE_PEDIDO_CANCELADO` en `AlertaWebhookMp` y no se modifica el pedido ni se reembolsa.
 - Un pedido llegó pagado al comercio si existe una fila de `HistorialEstadoPedido` con `estado = PENDIENTE_CONFIRMACION_COMERCIO`. El comercio solo ve esos pedidos, y la fecha de esa fila es la fecha de pago que ve el comercio y con la que se cuenta el día de hoy en su panel.
 - Los valores de `subtotal`, `cargo_servicio_cliente`, `cargo_servicio_comercio` y `total` son inmutables una vez registrados.
@@ -1886,6 +1887,7 @@ PENDIENTE_PAGO ──[webhook aprobado]──→ PENDIENTE_CONFIRMACION_COMERCIO
                                                                               │
                                                           DOMICILIO: ──→ EN_CAMINO ──→ ENTREGADO
                                                           RETIRO:    ──→ LISTO_PARA_RETIRAR ──→ ENTREGADO
+                                                                                              └─→ NO_RETIRADO
 
 PENDIENTE_PAGO ──[timeout 30 min]──────────────────────→ CANCELADO_POR_SISTEMA (sin reembolso)
 PENDIENTE_PAGO ──[pago rechazado por MP]───────────────→ sin cambio de estado (queda en PENDIENTE_PAGO con pago_estado RECHAZADO; se puede reintentar hasta el timeout)
@@ -1894,7 +1896,8 @@ PENDIENTE_CONFIRMACION_COMERCIO ──[comercio rechaza]───→ RECHAZADO (
 EN_PREPARACION ──[comercio anula]──────────────────────→ ANULADO (con reembolso)
 PENDIENTE_CONFIRMACION_COMERCIO / EN_PREPARACION ──[suspensión comercio]─────→ CANCELADO_POR_SISTEMA (con reembolso)
 EN_CAMINO      ──[90 min sin confirmación]─────────────→ ENTREGADO (fuente_entrega: SISTEMA)
-LISTO_PARA_RETIRAR ──[90 min durante suspensión]───────→ ENTREGADO (fuente_entrega: SISTEMA, sin reembolso)
+LISTO_PARA_RETIRAR ──[90 min durante suspensión]───────→ NO_RETIRADO (actor SISTEMA, motivo TIMEOUT_RETIRO_SUSPENSION, sin reembolso)
+LISTO_PARA_RETIRAR ──[Dueño o Empleado, tras 60 min listo]─→ NO_RETIRADO (sin reembolso)
 ```
 
 > **Caso borde pago tardío:** si llega un pago aprobado y el pedido ya está en `CANCELADO_POR_SISTEMA` (timeout procesado antes del webhook), el diseño prevé generar el reembolso inmediatamente, ya que el cobro efectivamente ocurrió. Implementado hoy: solo se registra una alerta `PAGO_APROBADO_SOBRE_PEDIDO_CANCELADO` en `AlertaWebhookMp`; el pedido no se modifica y no se reembolsa (flujo de `NotaCredito` pendiente). Un segundo pago aprobado con otro id sobre un pedido ya pagado registra `PAGO_APROBADO_DUPLICADO`.

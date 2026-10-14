@@ -363,6 +363,20 @@ La desactivación real del Empleado llega en E4. Para probar hoy que las escritu
 - Java: `CarritoVaciadoWebhookIntegrationTest` levanta un `com.sun.net.httpserver.HttpServer` y lo registra con `@DynamicPropertySource`. Estrés: `stress-locks-tramoE3-carrito.mjs` levanta su servidor Node en `MP_STUB_PORT` (9099) y el backend de test se arranca con `MERCADOPAGO_API_BASE_URL=http://localhost:9099`. Newman y Playwright usan el atajo de test `PUT /test/pedidos/{id}/pago-aprobado`, que recorre `confirmarPagoAprobado` pero no la lectura inicial ni la llamada a Mercado Pago.
 - **No definir esa variable en el servidor final** (ver "Lista de despliegue").
 
+### Armar el `ALTER ... MODIFY` de un ENUM a partir del esquema real, no de `V1`, y comprobarlo con una prueba (tramo E3, bloque A4b)
+
+- Un `MODIFY COLUMN ... enum(...)` reemplaza la lista entera: si se copia de `V1` se pierden los valores que sumaron las migraciones posteriores. `V34` se armó con `SHOW CREATE TABLE` sobre `bajonea_test` con todas las migraciones aplicadas (en `notificacion.tipo` coincidía con `V1`, pero en `pedido.estado` y `historial_estado_pedido.estado` hay un literal `PENDIENTE` heredado de `V6`). El valor nuevo va al final: es un cambio de metadatos, no reescribe la tabla.
+- `EnumsContraBaseDeDatosIntegrationTest` compara, contra el esquema real que deja Flyway, los valores del enum Java con el ENUM de `pedido.estado`, `historial_estado_pedido.estado`, `notificacion.tipo` y `historial_estado_pedido.motivo_timeout`: cada valor de Java tiene que estar en la columna y la columna no puede tener otros salvo los heredados que se declaran en la prueba. Sin ella, un valor que falta aparece recién en tiempo de ejecución como un error de datos truncados.
+
+### Una carpeta de Newman sola no tiene el estado de las anteriores; y la colección inyecta `X-Comercio-Id` por su cuenta (tramo E3, bloque A4b)
+
+- `newman run ... --folder "<carpeta>"` corre sin las variables que dejan las carpetas anteriores (`localidad_id`, por ejemplo): los registros dan `400`. Se pasa con `--env-var localidad_id=<id de Río Grande>` (se obtiene de `GET /geografia/localidades`).
+- El pre-request script de la colección agrega el header `X-Comercio-Id` a toda request con `Authorization` de un Dueño a las rutas de operación si conoce su comercio. Por eso un request "Dueño sin header" no puede probarse en Newman (responde `200`, no `400`); esa regla la cubren las pruebas Java y Playwright.
+
+### `mysql.exe` en Windows devuelve texto con acentos mal decodificado si no se le pide UTF-8 (tramo E3, bloque A4b)
+
+- Un script de Node que lee un texto con acentos con `mysql.exe -N -B` (por ejemplo el mensaje de un aviso) lo recibe con caracteres de reemplazo y falla al compararlo con el texto esperado. Se pasa `--default-character-set=utf8mb4`.
+
 ## Lista de despliegue
 
 Pendientes que no son código y hay que revisar en cada entorno antes de contar con la función:

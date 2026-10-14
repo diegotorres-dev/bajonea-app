@@ -196,10 +196,10 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   estado, abrir y cerrar). La actividad es una sola lista, de la más nueva a la más vieja,
   que junta las ediciones del catálogo y el perfil (productos, imágenes, datos del comercio y
   redes sociales), todo lo que le pasó a sus pedidos desde que el comercio los ve (aceptar,
-  rechazar, despachar, entregar y anular, hechos por el Dueño o un Empleado; cancelar y
+  rechazar, despachar, entregar, anular y cerrar como no retirado, hechos por el Dueño o un Empleado; cancelar y
   confirmar la recepción, hechos por el Cliente; y las acciones del sistema: "Pedido recibido"
   cuando llega un pedido ya pagado, el vencimiento sin respuesta, la autoconfirmación de la
-  entrega, el cierre automático de un retiro con el comercio suspendido y la cancelación por
+  entrega, el cierre automático como no retirado de un retiro con el comercio suspendido y la cancelación por
   la suspensión del comercio) y los cierres y reaperturas del comercio; el pedido que todavía
   no se pagó, o que venció por falta de pago, no aparece porque el comercio nunca lo vio;
   cada línea trae el nombre y el rol (Dueño, Empleado o Cliente) de quien actuó, y en las

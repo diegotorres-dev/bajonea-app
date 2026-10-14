@@ -515,7 +515,10 @@ const ESTADO_BADGE_COMERCIO = {
   CANCELADO: { label: 'Cancelado', dotClass: 'pedido-estado__dot--rechazado' },
   CANCELADO_POR_SISTEMA: { label: 'Cancelado', dotClass: 'pedido-estado__dot--rechazado' },
   EXPIRADO: { label: 'Expirado', dotClass: 'pedido-estado__dot--rechazado' },
+  NO_RETIRADO: { label: 'No retirado', dotClass: 'pedido-estado__dot--vencido' },
 };
+
+const BADGE_COMERCIO_DESCONOCIDO = { label: 'Estado no disponible', dotClass: 'pedido-estado__dot--vencido' };
 
 function renderPedidoActivoCard(pedido) {
   const card = document.createElement('a');
@@ -535,7 +538,7 @@ function renderPedidoActivoCard(pedido) {
   info.appendChild(fechaEl);
   top.appendChild(info);
 
-  const badgeInfo = ESTADO_BADGE_COMERCIO[pedido.estado];
+  const badgeInfo = ESTADO_BADGE_COMERCIO[pedido.estado] || BADGE_COMERCIO_DESCONOCIDO;
   const badge = crear('span', 'pedido-estado');
   badge.setAttribute('data-testid', 'estado-pedido');
   const dot = crear('span', `pedido-estado__dot ${badgeInfo.dotClass}`);
@@ -684,8 +687,13 @@ const PRIORIDAD_ESTADO_PEDIDO = {
   CANCELADO: 4,
   CANCELADO_POR_SISTEMA: 4,
   EXPIRADO: 4,
+  NO_RETIRADO: 4,
   PENDIENTE_PAGO: 5,
 };
+
+function prioridadDeEstadoPedido(estado) {
+  return PRIORIDAD_ESTADO_PEDIDO[estado] ?? 6;
+}
 
 export async function initComercioPedidos() {
   if (!(await exigirContextoComercio())) {
@@ -728,7 +736,7 @@ export async function initComercioPedidos() {
     const filtrados = pedidos
       .filter((pedido) => filtroEstado === null || pedido.estado === filtroEstado)
       .sort((a, b) => {
-        const diferenciaPrioridad = PRIORIDAD_ESTADO_PEDIDO[a.estado] - PRIORIDAD_ESTADO_PEDIDO[b.estado];
+        const diferenciaPrioridad = prioridadDeEstadoPedido(a.estado) - prioridadDeEstadoPedido(b.estado);
         return diferenciaPrioridad !== 0 ? diferenciaPrioridad : new Date(b.fechaPagoAprobado) - new Date(a.fechaPagoAprobado);
       });
 
@@ -817,6 +825,19 @@ const ESTADO_DETALLE_COMERCIO = {
     icon: ICONS.clock,
     texto: 'Este pedido expiró por falta de respuesta a tiempo.',
   },
+  NO_RETIRADO: {
+    label: 'No retirado',
+    iconClass: 'pedido-detail__icon--pendiente',
+    icon: ICONS.xCircle,
+    texto: 'Este pedido se cerró como no retirado: el cliente no pasó a buscarlo.',
+  },
+};
+
+const DETALLE_COMERCIO_DESCONOCIDO = {
+  label: 'Estado no disponible',
+  iconClass: 'pedido-detail__icon--pendiente',
+  icon: ICONS.clock,
+  texto: 'Estamos actualizando el estado de este pedido.',
 };
 
 function mostrarModalRechazarPedido(pedido, onConfirmar) {
@@ -1086,7 +1107,7 @@ function renderAccionesListoParaRetirar(container, pedido, onActualizado) {
 }
 
 function renderPedidoDetalleComercio(container, pedido, onActualizado) {
-  const info = ESTADO_DETALLE_COMERCIO[pedido.estado];
+  const info = ESTADO_DETALLE_COMERCIO[pedido.estado] || DETALLE_COMERCIO_DESCONOCIDO;
 
   let motivoInfo = null;
   if (pedido.estado === 'RECHAZADO' && pedido.motivoRechazo) {
