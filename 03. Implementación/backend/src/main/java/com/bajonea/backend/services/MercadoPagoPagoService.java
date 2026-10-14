@@ -70,9 +70,9 @@ public class MercadoPagoPagoService {
 
     private static final Logger log = LoggerFactory.getLogger(MercadoPagoPagoService.class);
 
-    private static final String URL_CREAR_PREFERENCIA = "https://api.mercadopago.com/checkout/preferences";
-    private static final String URL_OBTENER_PAGO = "https://api.mercadopago.com/v1/payments/";
-    private static final String URL_BUSCAR_PAGOS = "https://api.mercadopago.com/v1/payments/search";
+    private static final String PATH_CREAR_PREFERENCIA = "/checkout/preferences";
+    private static final String PATH_OBTENER_PAGO = "/v1/payments/";
+    private static final String PATH_BUSCAR_PAGOS = "/v1/payments/search";
     private static final String MONEDA = "ARS";
     private static final String ESTADO_APROBADO = "approved";
     private static final List<String> ESTADOS_RECHAZO = List.of("rejected", "cancelled");
@@ -103,6 +103,14 @@ public class MercadoPagoPagoService {
 
     @Value("${app.frontend-base-url}")
     private String frontendBaseUrl;
+
+    /**
+     * Base de la API de Mercado Pago. Solo las pruebas la cambian (variable de entorno
+     * {@code MERCADOPAGO_API_BASE_URL}, hacia un servidor local que simula la API); en el servidor final no debe estar
+     * definida. El valor por defecto vive acá y no en {@code application.properties}.
+     */
+    @Value("${MERCADOPAGO_API_BASE_URL:https://api.mercadopago.com}")
+    private String apiBaseUrl;
 
     @Value("${app.backend-base-url}")
     private String backendBaseUrl;
@@ -351,7 +359,7 @@ public class MercadoPagoPagoService {
 
     private PagoMpResponse elegirMejorPago(Integer pedidoId, String accessToken) {
         PagoMpBusquedaResponse busqueda = restClient.get()
-                .uri(URL_BUSCAR_PAGOS + "?external_reference={ref}&sort=date_created&criteria=desc&limit=20", pedidoId.toString())
+                .uri(apiBaseUrl + PATH_BUSCAR_PAGOS + "?external_reference={ref}&sort=date_created&criteria=desc&limit=20", pedidoId.toString())
                 .header("Authorization", "Bearer " + accessToken)
                 .retrieve()
                 .body(PagoMpBusquedaResponse.class);
@@ -420,7 +428,7 @@ public class MercadoPagoPagoService {
 
         try {
             PreferenciaResponse respuesta = restClient.post()
-                    .uri(URL_CREAR_PREFERENCIA)
+                    .uri(apiBaseUrl + PATH_CREAR_PREFERENCIA)
                     .header("Authorization", "Bearer " + cuenta.getAccessToken())
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(request)
@@ -440,7 +448,7 @@ public class MercadoPagoPagoService {
     private PagoMpResponse obtenerPagoEnMercadoPago(String paymentId, String accessToken) {
         try {
             PagoMpResponse respuesta = restClient.get()
-                    .uri(URL_OBTENER_PAGO + paymentId)
+                    .uri(apiBaseUrl + PATH_OBTENER_PAGO + paymentId)
                     .header("Authorization", "Bearer " + accessToken)
                     .retrieve()
                     .body(PagoMpResponse.class);

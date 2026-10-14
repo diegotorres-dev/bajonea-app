@@ -256,14 +256,14 @@ public class PedidoService {
 
         Integer clienteId = pedido.getCliente().getId();
         Integer comercioId = pedido.getComercio().getId();
-        carritoRepository.findByClienteId(clienteId)
-                .filter(carrito -> carrito.getComercio() != null && carrito.getComercio().getId().equals(comercioId))
-                .ifPresent(carrito -> carritoService.vaciarCarrito(clienteId));
 
         notificacionService.crearParaEquipo(comercioId, pedido.getComercio().getDueno().getId(), bloqueado.equipo(),
                 "Nuevo pedido recibido de " + pedido.getCliente().getPersonaFisica().getNombre() + " "
                         + pedido.getCliente().getPersonaFisica().getApellido() + ".",
                 TipoNotificacion.NUEVO_PEDIDO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
+
+        // El carrito es la última hoja del orden de bloqueos: va después de todo lo demás de esta transacción.
+        carritoService.vaciarSiEsDelComercio(clienteId, comercioId);
     }
 
     /**

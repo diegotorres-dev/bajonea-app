@@ -68,6 +68,7 @@ La tabla Pedido incluye el campo `cancelado_por` (enum nullable: CLIENTE, COMERC
 - El sistema crea el pedido en estado PENDIENTE_PAGO antes de redirigir al cliente a MercadoPago. El carrito no se limpia en este momento.
 - El sistema limpia el carrito del cliente únicamente al recibir la confirmación exitosa de pago vía webhook de MP (transición a PENDIENTE_CONFIRMACION_COMERCIO), y solo si el carrito actual del cliente es del mismo comercio del pedido pagado.
 - Ante un pago rechazado o el vencimiento del plazo de PENDIENTE_PAGO, el carrito permanece intacto para que el cliente pueda reintentar.
+- La confirmación de un pago nunca debe fallar ni quedar a medias porque el cliente esté modificando su carrito, porque otro pedido del mismo cliente se esté pagando o porque el comercio esté marcando un producto como agotado en ese mismo momento. El carrito se evalúa y se vacía sobre su estado más reciente: si el cliente lo vació, le quitó ítems o lo cambió a otro comercio mientras tanto, el pago se confirma igual, y solo se vacía el carrito si sigue siendo del comercio del pedido pagado. Un carrito nunca queda con ítems y sin comercio, ni con comercio y sin ítems.
 
 ### Pago con MercadoPago (Checkout Pro)
 
@@ -190,6 +191,7 @@ El sistema emite notificaciones push (y en algunos casos email) ante los siguien
 ## Gestión de Productos
 
 - Al marcar un producto como AGOTADO, el sistema debe eliminar ese ítem de los carritos activos que lo contengan y notificar a los clientes afectados (T23), del mismo modo que con DESCONTINUADO.
+- Un producto AGOTADO o DESCONTINUADO no puede quedar en ningún carrito, aunque un cliente lo esté agregando en el mismo momento: o el cliente lo agrega antes y el sistema lo elimina y lo avisa, o lo intenta después y recibe que el producto no está disponible. Se avisa (T23) únicamente a los clientes a los que realmente se les quitó un ítem, y el carrito que queda vacío queda sin comercio.
 - Al descontinuar un producto que se encuentre en carritos activos, el sistema debe eliminar ese ítem de los carritos afectados y notificar a los clientes (T23).
 - Al visualizarse un carrito, si algún ítem hace referencia a un producto en estado AGOTADO o DESCONTINUADO (por desfase entre la notificación y la vista del carrito), el sistema debe eliminar ese ítem del carrito y notificar al cliente.
 

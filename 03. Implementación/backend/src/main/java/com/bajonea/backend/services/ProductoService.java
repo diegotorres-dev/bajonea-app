@@ -10,11 +10,9 @@ import com.bajonea.backend.dto.response.ImagenProductoResponseDTO;
 import com.bajonea.backend.dto.response.ProductoResponseDTO;
 import com.bajonea.backend.dto.response.ProductosPaginadosResponseDTO;
 import com.bajonea.backend.dto.response.TagFiltroResponseDTO;
-import com.bajonea.backend.entities.Carrito;
 import com.bajonea.backend.entities.Categoria;
 import com.bajonea.backend.entities.Comercio;
 import com.bajonea.backend.entities.ImagenProducto;
-import com.bajonea.backend.entities.ItemCarrito;
 import com.bajonea.backend.entities.Producto;
 import com.bajonea.backend.entities.ProductoTag;
 import com.bajonea.backend.entities.ProductoTagId;
@@ -23,15 +21,13 @@ import com.bajonea.backend.enums.AccionEdicion;
 import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.EstadoProducto;
 import com.bajonea.backend.enums.TipoEntidadEdicion;
-import com.bajonea.backend.enums.TipoNotificacion;
 import com.bajonea.backend.exceptions.ComercioNoDisponibleException;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
-import com.bajonea.backend.repositories.CarritoRepository;
 import com.bajonea.backend.repositories.CategoriaRepository;
 import com.bajonea.backend.repositories.ComercioRepository;
+import com.bajonea.backend.repositories.ItemCarritoRepository.CarritoAfectado;
 import com.bajonea.backend.repositories.ImagenProductoRepository;
-import com.bajonea.backend.repositories.ItemCarritoRepository;
 import com.bajonea.backend.repositories.ProductoRepository;
 import com.bajonea.backend.repositories.ProductoTagRepository;
 import com.bajonea.backend.repositories.TagRepository;
@@ -40,7 +36,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -73,9 +68,7 @@ public class ProductoService {
     private final TagRepository tagRepository;
     private final ProductoTagRepository productoTagRepository;
     private final ImagenProductoRepository imagenProductoRepository;
-    private final ItemCarritoRepository itemCarritoRepository;
-    private final CarritoRepository carritoRepository;
-    private final NotificacionService notificacionService;
+    private final CarritoService carritoService;
     private final CloudinaryService cloudinaryService;
     private final HistorialEdicionComercioService historialEdicionComercioService;
 
@@ -273,9 +266,21 @@ public class ProductoService {
         return new FiltrosCatalogoResponseDTO(categorias, tags);
     }
 
+    /**
+     * Cambio de estado del producto. Orden de bloqueo: el usuario que actúa (y su relación si es Empleado), el
+     * producto {@code FOR UPDATE} como primera lectura de la transacción, los usuarios de los Clientes cuyos carritos
+     * lo contienen, el historial de la edición y, al final, esos carritos (última hoja del orden global). Con el
+     * producto bloqueado nadie puede agregarlo a un carrito, así que los carritos que lo contienen solo pueden perder
+     * ítems; no se hace ninguna lectura común antes del bloqueo para que la foto de la transacción incluya todo lo que
+     * se confirmó antes de él. Ver {@link CarritoService}.
+     */
     public ProductoResponseDTO cambiarEstado(ComercioActivo actor, Integer productoId, EstadoProducto nuevoEstado) {
-        Comercio comercio = iniciarEscrituraDeCatalogo(actor);
-        Producto producto = obtenerProductoDelComercio(productoId, comercio);
+        iniciarEscrituraDeCatalogoSinLeerComercio(actor);
+        Producto producto = productoRepository.findByIdConBloqueo(productoId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Producto no encontrado"));
+        if (!producto.getComercio().getId().equals(actor.comercioId())) {
+            throw new RecursoNoEncontradoException("Producto no encontrado");
+        }
 
         EstadoProducto estadoActual = producto.getEstado();
         if (!TRANSICIONES_VALIDAS.getOrDefault(estadoActual, Set.of()).contains(nuevoEstado)) {
@@ -290,11 +295,13 @@ public class ProductoService {
         }
         productoRepository.save(producto);
 
-        if (nuevoEstado == EstadoProducto.AGOTADO || nuevoEstado == EstadoProducto.DESCONTINUADO) {
-            limpiarCarritosActivos(producto);
-        }
+        boolean quitaDeCarritos = nuevoEstado == EstadoProducto.AGOTADO || nuevoEstado == EstadoProducto.DESCONTINUADO;
+        List<CarritoAfectado> afectados = quitaDeCarritos ? carritoService.prepararQuitarProducto(producto.getId()) : List.of();
         historialEdicionComercioService.registrar(actor, TipoEntidadEdicion.PRODUCTO, producto.getId(), producto.getNombre(),
                 AccionEdicion.CAMBIAR_ESTADO, "Pasó a " + textoDeEstado(nuevoEstado));
+        if (quitaDeCarritos) {
+            carritoService.quitarProductoDeLosCarritos(producto.getId(), producto.getNombre(), afectados);
+        }
 
         return aResponseDTO(producto);
     }
@@ -427,25 +434,6 @@ public class ProductoService {
         return imagen;
     }
 
-    private void limpiarCarritosActivos(Producto producto) {
-        List<ItemCarrito> items = itemCarritoRepository.findByProductoId(producto.getId());
-        Set<Carrito> carritosAfectados = new HashSet<>();
-        for (ItemCarrito item : items) {
-            notificacionService.crearParaCliente(item.getCarrito().getCliente().getId(),
-                    "El producto '" + producto.getNombre() + "' ya no está disponible y fue eliminado de tu carrito.",
-                    TipoNotificacion.PRODUCTO_REMOVIDO_CARRITO);
-            carritosAfectados.add(item.getCarrito());
-        }
-        itemCarritoRepository.deleteAll(items);
-
-        for (Carrito carrito : carritosAfectados) {
-            if (itemCarritoRepository.findByCarritoId(carrito.getId()).isEmpty()) {
-                carrito.setComercio(null);
-                carritoRepository.save(carrito);
-            }
-        }
-    }
-
     private void asignarTags(Producto producto, List<Integer> tagIds) {
         if (tagIds == null || tagIds.isEmpty()) {
             return;
@@ -471,6 +459,16 @@ public class ProductoService {
      * bloqueo compartido no se mejora a exclusivo más adelante.
      */
     private Comercio iniciarEscrituraDeCatalogo(ComercioActivo actor) {
+        iniciarEscrituraDeCatalogoSinLeerComercio(actor);
+        return obtenerComercio(actor.comercioId());
+    }
+
+    /**
+     * Las mismas lecturas con bloqueo de {@link #iniciarEscrituraDeCatalogo}, sin la lectura común del comercio: las
+     * operaciones que necesitan que su foto de la transacción se fije después de un bloqueo propio (el cambio de
+     * estado, que bloquea el producto) no pueden hacer ninguna lectura común antes.
+     */
+    private void iniciarEscrituraDeCatalogoSinLeerComercio(ComercioActivo actor) {
         historialEdicionComercioService.iniciarEscritura(actor);
         if (actor.esEmpleado()) {
             EstadoComercio estado = comercioRepository.leerEstadoConBloqueoCompartido(actor.comercioId())
@@ -478,7 +476,6 @@ public class ProductoService {
                     .orElseThrow(ComercioNoDisponibleException::new);
             ComercioActivoService.validarComercioModificable(actor, estado);
         }
-        return obtenerComercio(actor.comercioId());
     }
 
     private Categoria obtenerCategoria(Integer categoriaId) {

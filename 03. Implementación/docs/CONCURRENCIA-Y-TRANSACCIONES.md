@@ -60,6 +60,23 @@ Este documento se escribe **antes** de construir los Services de la Fase 8 en ad
 
 ---
 
+### Actualización del 2026-10-14 (mini-tramo del carrito de E3): el carrito pasó de "No" a "Sí"
+
+Las filas de arriba (el "No" por bajo volumen) **quedaron reemplazadas**. Un pago aprobado que vacía el carrito, el Cliente que lo modifica desde otra pestaña y el Dueño que pasa un producto a agotado no son un evaluador secuencial: se cruzan en el uso normal, y sin tratamiento el pago —no el carrito— es el que falla (`500` con `ObjectOptimisticLockingFailureException`, el pedido pagado queda `PENDIENTE_PAGO` y, si no llega un reintento antes de los 30 minutos, el job de pago vencido lo cancela y deja la alerta `PAGO_APROBADO_SOBRE_PEDIDO_CANCELADO` sin reembolso). Reproducido: 12 de cada 18 pagos simultáneos del mismo Cliente, y todos los pagos que competían con un vaciado, una baja de ítem o un producto agotado.
+
+**Regla.** Toda operación que modifica el carrito toma primero la fila `carrito` con `SELECT ... FOR UPDATE` (`CarritoService`): agregar, cambiar cantidad, quitar un ítem, vaciar, el vaciado por pago aprobado (`vaciarSiEsDelComercio`) y la baja de un producto del Dueño (`prepararQuitarProducto` + `quitarProductoDeLosCarritos`). Y todas las bajas y el cambio de cantidad son **sentencias `DELETE`/`UPDATE` en bloque** (`ItemCarritoRepository`), nunca borrados derivados ni `delete(entidad)`.
+
+**Por qué las dos cosas, y no una.** El bloqueo serializa y hace que lo que se decide (por ejemplo "¿el carrito sigue siendo del comercio de este pedido?") se decida sobre lo último confirmado y no sobre la foto de la transacción: sin él, el pago vacía el carrito de otro comercio que el Cliente armó después, y `agregar` puede dejar un ítem en un carrito que quedó sin comercio (`confirmarPedido` daría `NullPointerException`). Pero el bloqueo solo no alcanza: una lectura común posterior al bloqueo sigue siendo la foto de la transacción, y el webhook fija esa foto al principio (`buscarPorPedido`, antes de llamar a Mercado Pago), así que un `deleteAll` de entidades cargadas de esa foto emite `DELETE` por id de filas que otra transacción ya borró: 0 filas y `StaleObjectStateException`. La sentencia en bloque es una lectura actual y con 0 filas devuelve 0. Probado quitando una de las dos mitades (ver `docs/DECISIONES.md`, 2026-10-14).
+
+**Las otras decisiones del tramo.**
+- *Creación del carrito:* `INSERT ... ON DUPLICATE KEY UPDATE cliente_id = cliente_id` (`CarritoInsercionRepository`), no un `SELECT ... FOR UPDATE` sobre una clave ausente (bloqueo de intervalo: dos primeras visitas del mismo Cliente se interbloquean al insertar) ni un `save` (clave duplicada). Sobre una fila existente toma un bloqueo exclusivo y no uno compartido, así que las llamadas simultáneas se encolan. Se hace como primera sentencia de la transacción, porque no lee y no fija la foto.
+- *Vacuidad:* "el carrito quedó vacío" se decide con una lectura actual (`SELECT ... LIMIT 1 FOR UPDATE` sobre `item_carrito`, solo con el carrito ya bloqueado: ningún otro escritor de ítems puede estar esperando), no con la foto.
+- *Agregar* lee el producto con `LOCK IN SHARE MODE` antes de bloquear el carrito; el Dueño bloquea el producto `FOR UPDATE` como primera lectura de su transacción. O el Cliente ve el producto como lo dejó el Dueño, o el Dueño espera y encuentra el ítem recién agregado: un producto agotado nunca queda en un carrito.
+- *Bloqueo previo de los usuarios de la baja de un producto:* los avisos (`PRODUCTO_REMOVIDO_CARRITO`) tienen clave foránea al usuario de cada Cliente afectado; se toman con `LOCK IN SHARE MODE` en id ascendente antes de bloquear los carritos, que también se toman en id ascendente (`SELECT ... WHERE id IN (...) ORDER BY id FOR UPDATE`).
+- *Futuro bloque de Extras:* `fk_item_carrito_extra_item` **no** tiene `ON DELETE CASCADE`. Cuando exista la entidad `ItemCarritoExtra`, cada `DELETE` en bloque de ítems (`borrarPorCarritoId`, `borrarDelCarrito`, `borrarPorCarritoIdYProductoId`) tendrá que borrar antes los extras de esos ítems, con otra sentencia en bloque y bajo el mismo bloqueo del carrito.
+
+---
+
 ## 5. Módulo Pedido / DetallePedido — Fase 8/9, a construir
 
 | Escenario | Riesgo si no se trata | Estrategia elegida | Justificación | ¿Se implementa en este MVP? |
@@ -150,6 +167,17 @@ Toda transacción que toma más de un bloqueo los toma en este orden, y ninguna 
 3. **`comercio`** (cerrar y abrir, aprobar, vincular, desvincular, suspender, bloqueo de cuenta). Las acciones de pedido **no** bloquean el comercio: leen su estado sin lock.
 4. **`pedido`** (`FOR UPDATE`). La desvinculación de Mercado Pago los lee con bloqueo compartido y la suspensión los toma uno por uno, siempre después del comercio.
 5. **`pago`** (`FOR UPDATE`, para reembolsar) y recién después los inserts: **`nota_credito`**, **`historial_estado_pedido`**, **`notificacion`**.
+6. **`carrito`** (`FOR UPDATE`; si son varios, en id ascendente), **la última hoja** (mini-tramo del carrito, 2026-10-14). Después de tomarlo no se pide ningún bloqueo de usuario, comercio, producto ni pedido: solo filas de `item_carrito` del propio carrito, y `INSERT`s cuyas claves foráneas ya están tomadas (el aviso de producto removido, con el usuario del Cliente ya compartido).
+
+**El nivel 4 incluye también `producto`** (compartido en agregar al carrito, exclusivo en el cambio de estado del Dueño). `producto` y `pedido` no se ordenan entre sí porque ningún flujo con contención toma los dos: el pago toma pedido y nunca producto; agregar y el cambio de estado toman producto y nunca pedido; `confirmarPedido` solo inserta un pedido nuevo que nadie más puede estar esperando y después el detalle toma el producto compartido.
+
+**Verificación de que nadie toma el carrito y después pide otra cosa** (recorrido de todos los flujos que lo tocan, 2026-10-14):
+- *Pago aprobado* (webhook, sincronización, "Ir a pagar", atajo de test): usuarios, pedido, historial, aviso al equipo y, **al final**, `vaciarSiEsDelComercio`. Se movió al final de `confirmarPagoAprobado` (antes iba antes del aviso al equipo) para cumplir la regla. El atajo `confirmarPagoAprobadoConRegistro` escribe después la fila de `pago` (clave foránea a un pedido ya tomado): solo pruebas.
+- *Agregar un ítem:* producto compartido, carrito, y después el `INSERT` del ítem, cuyas claves foráneas (carrito, producto) ya están tomadas. Cambiar cantidad, quitar y vaciar: carrito y filas de sus ítems.
+- *Cambio de estado del producto (Dueño/Empleado):* usuario que actúa, relación del Empleado, producto, usuarios de los Clientes afectados, historial de la edición (comparte el comercio; se registra **antes** del carrito, antes iba después de la limpieza), carritos, y los avisos al final. Se reordenó el método para eso.
+- *Creación del carrito* (`ON DUPLICATE KEY UPDATE`): el `INSERT` toma un bloqueo compartido sobre `cliente` (clave foránea) después de tener la fila; nadie escribe `cliente` mientras tiene un carrito ni pide un carrito teniendo `cliente`. Solo en el primer acceso de cada Cliente.
+- *`confirmarPedido`* lee ítems y carrito con lecturas comunes: no toma el carrito. Un pedido puede nacer de una foto del carrito que un pago acaba de vaciar; es el pedido legítimo de lo que el Cliente confirmó.
+
 
 Por qué los usuarios van antes que el pedido: en InnoDB un pedido de bloqueo compartido que llega detrás de un `FOR UPDATE` ya en espera se encola. Si una acción del comercio tuviera el pedido y pidiera después el usuario del Cliente, y el Cliente estuviera haciendo login (`FOR UPDATE` sobre su usuario, esperando que otra transacción suelte el compartido) mientras esa otra transacción —la cancelación del mismo Cliente— espera el pedido, el ciclo se cierra sin que nadie haya hecho nada incorrecto (razonado sobre el orden de la cola de InnoDB, no reproducido: se evitó). Con los usuarios tomados primero, quien tiene el pedido ya no necesita esperar nada más. Cuando el destinatario de un aviso no se conoce antes de entrar a la transacción (el fan-out a los Empleados del tramo E3, bloque A4), esos usuarios también se toman antes del pedido, en el mismo orden ascendente.
 
