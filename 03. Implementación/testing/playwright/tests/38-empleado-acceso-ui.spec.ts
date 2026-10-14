@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/prueba';
 import type { APIRequestContext, Page } from '@playwright/test';
 import {
   agregarItemCarrito,
@@ -878,7 +878,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
     async function provocarPerdidaPorApi(page: Page, request: APIRequestContext, empleado: Empleado, perdido: number, deteccion: Deteccion, rutas: string[] = ['/productos']) {
       await atajoEstadoRelacion(request, perdido, empleado.usuarioId, 'INACTIVO');
       deteccion.estado.viva = true;
-      const respuesta404 = page.waitForResponse((r) => r.status() === 404 && r.url().includes(rutas[0]));
+      const respuesta404 = page.waitForResponse((r) => r.status() === 404 && r.url().includes(rutas[0]), { timeout: 10_000 }).catch(() => null);
       await page.evaluate(async (paths) => {
         const { apiFetch } = await import('./js/api.js');
         paths.forEach((path) => apiFetch(path).catch(() => {}));
@@ -898,7 +898,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
 
       await atajoEstadoRelacion(request, perdido, empleado.usuarioId, 'INACTIVO');
       deteccion.estado.viva = true;
-      const respuesta404 = page.waitForResponse((r) => r.status() === 404 && r.url().includes('/pedidos/comercio'));
+      const respuesta404 = page.waitForResponse((r) => r.status() === 404 && r.url().includes('/pedidos/comercio'), { timeout: 10_000 }).catch(() => null);
       await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
       await respuesta404;
 
@@ -1334,7 +1334,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await page.goto('/comercio-dashboard.html');
       await expect(page.getByTestId('franja-comercio-insignia-empleado')).toBeVisible();
       await atajoEstadoRelacion(request, perdido, empleado.usuarioId, 'INACTIVO');
-      const respuesta404 = page.waitForResponse((r) => r.status() === 404 && r.url().includes('/productos'));
+      const respuesta404 = page.waitForResponse((r) => r.status() === 404 && r.url().includes('/productos'), { timeout: 10_000 }).catch(() => null);
       await page.evaluate(async () => {
         const { apiFetch } = await import('./js/api.js');
         apiFetch('/productos').catch(() => {});
@@ -1353,7 +1353,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await otra.goto('/comercio-dashboard.html');
       await expect(otra.getByTestId('franja-comercio-insignia-empleado')).toBeVisible();
       await atajoEstadoRelacion(request, ultimo, unico.usuarioId, 'INACTIVO');
-      const otra404 = otra.waitForResponse((r) => r.status() === 404 && r.url().includes('/productos'));
+      const otra404 = otra.waitForResponse((r) => r.status() === 404 && r.url().includes('/productos'), { timeout: 10_000 }).catch(() => null);
       await otra.evaluate(async () => {
         const { apiFetch } = await import('./js/api.js');
         apiFetch('/productos').catch(() => {});

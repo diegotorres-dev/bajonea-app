@@ -7,7 +7,7 @@ const LOC = process.env.LOC;
 const ROUNDS = Number(process.env.ROUNDS || 8);
 const PUERTO_MP = Number(process.env.MP_STUB_PORT || 9099);
 const LOG_BACKEND = process.env.BACKEND_LOG || `${process.env.TEMP || '/tmp'}/backend-test.log`;
-const sqlUnaVez = (q) => execFileSync('C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', '-B', 'bajonea_test', '-e', q]).toString().trim();
+const sqlUnaVez = (q) => execFileSync(process.env.MYSQL_BIN || 'C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', '-B', 'bajonea_test', '-e', q]).toString().trim();
 const sql = (q) => {
   let resultado = sqlUnaVez(q);
   for (let intento = 0; intento < 2 && resultado === '' && /^\s*SELECT/i.test(q); intento += 1) resultado = sqlUnaVez(q);

@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { haceMinutosEnZona } from './lib/zona.mjs';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 
 const B = process.env.E2E_API_BASE_URL || 'http://localhost:8080/api/v1';
@@ -8,7 +9,7 @@ const PEDIDOS_VOLUMEN = Number(process.env.PEDIDOS_VOLUMEN || 30000);
 const PAGINA_VOLUMEN = Number(process.env.PAGINA_VOLUMEN || 100);
 const ADMIN = { nombreUsuario: process.env.ADMIN_USUARIO || 'adminbajonea', password: process.env.ADMIN_PASSWORD };
 const LOG_BACKEND = process.env.BACKEND_LOG || `${process.env.TEMP || '/tmp'}/backend-test.log`;
-const sqlUnaVez = (q) => execFileSync('C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', '-B', 'bajonea_test', '-e', q], { maxBuffer: 256 * 1024 * 1024 }).toString().trim();
+const sqlUnaVez = (q) => execFileSync(process.env.MYSQL_BIN || 'C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', '-B', 'bajonea_test', '-e', q], { maxBuffer: 256 * 1024 * 1024 }).toString().trim();
 const sql = (q) => {
   let resultado = sqlUnaVez(q);
   for (let intento = 0; intento < 2 && resultado === '' && /^\s*SELECT/i.test(q); intento += 1) resultado = sqlUnaVez(q);
@@ -221,11 +222,7 @@ const contar = (resumen, clave) => {
 };
 const resumir = (resumen) => Object.entries(resumen).sort().map(([k, n]) => `${k}=${n}`).join(' ');
 
-const haceMinutos = (minutos) => {
-  const m = new Date(Date.now() - minutos * 60_000);
-  const dos = (n) => String(n).padStart(2, '0');
-  return `${m.getFullYear()}-${dos(m.getMonth() + 1)}-${dos(m.getDate())} ${dos(m.getHours())}:${dos(m.getMinutes())}:${dos(m.getSeconds())}`;
-};
+const haceMinutos = haceMinutosEnZona;
 
 async function pedidoPagado(cliente, d) {
   await call('DELETE', '/carrito', cliente.token);

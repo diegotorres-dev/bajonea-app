@@ -1,0 +1,39 @@
+package com.bajonea.backend.config.security;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
+
+/**
+ * Contracara de {@code AtajosDeTestFueraDelPerfilTest}: con el perfil {@code test} activo, {@code /api/v1/test/**}
+ * es público (el matcher condicionado de {@link SecurityConfig} se registra) y el atajo responde sin token. El
+ * resto de las rutas siguen protegidas igual.
+ */
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("test")
+class AtajosDeTestEnElPerfilTestTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    void conElPerfilTestLosAtajosSonPublicosYUnParametroFaltanteDa400() throws Exception {
+        int estado = mockMvc.perform(get("/api/v1/test/token-verificacion")).andReturn().getResponse().getStatus();
+        assertEquals(400, estado);
+    }
+
+    @Test
+    void conElPerfilTestElRestoDeLasRutasSigueProtegido() throws Exception {
+        int estado = mockMvc.perform(get("/api/v1/comercios/perfil")).andReturn().getResponse().getStatus();
+        assertEquals(401, estado);
+        assertNotEquals(400, estado);
+    }
+}

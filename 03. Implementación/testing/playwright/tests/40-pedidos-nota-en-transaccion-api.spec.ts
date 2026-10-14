@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/prueba';
+import { haceMinutosEnZona } from './helpers/zona';
 import type { APIRequestContext } from '@playwright/test';
 import {
   agregarItemCarrito,
@@ -23,11 +24,7 @@ import { prepararAprobado } from './helpers/multicomercio';
 
 const TOTAL_DEL_PEDIDO = 10200;
 
-function haceMinutos(minutos: number): string {
-  const momento = new Date(Date.now() - minutos * 60_000);
-  const dos = (n: number) => String(n).padStart(2, '0');
-  return `${momento.getFullYear()}-${dos(momento.getMonth() + 1)}-${dos(momento.getDate())} ${dos(momento.getHours())}:${dos(momento.getMinutes())}:${dos(momento.getSeconds())}`;
-}
+const haceMinutos = haceMinutosEnZona;
 
 const estado = (pedidoId: number): string => sql(`SELECT estado FROM pedido WHERE id = ${pedidoId};`);
 const notas = (pedidoId: number): number =>

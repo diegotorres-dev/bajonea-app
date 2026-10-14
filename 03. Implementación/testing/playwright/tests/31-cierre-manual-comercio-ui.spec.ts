@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/prueba';
 import type { APIRequestContext, Locator, Page, Request } from '@playwright/test';
 import {
   agregarItemCarrito,

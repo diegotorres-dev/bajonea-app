@@ -4,8 +4,12 @@ const B = process.env.E2E_API_BASE_URL || 'http://localhost:8080/api/v1';
 const LOC = process.env.LOC;
 const CLOUD = process.env.CLOUDINARY_CLOUD_NAME;
 const ROUNDS = Number(process.env.ROUNDS || 12);
-const ADMIN = { nombreUsuario: 'adminbajonea', password: process.env.ADMIN_PASSWORD || 'PostmanAdmin123' };
-const sqlUnaVez = (q) => execFileSync('C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', '-B', 'bajonea_test', '-e', q]).toString().trim();
+const ADMIN = { nombreUsuario: 'adminbajonea', password: process.env.ADMIN_PASSWORD };
+if (!ADMIN.password) {
+  console.error('Falta ADMIN_PASSWORD (contraseña de admin@bajonea.ar en bajonea_test; ver testing/playwright/README.md)');
+  process.exit(1);
+}
+const sqlUnaVez = (q) => execFileSync(process.env.MYSQL_BIN || 'C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', '-B', 'bajonea_test', '-e', q]).toString().trim();
 const sql = (q) => {
   let resultado = sqlUnaVez(q);
   for (let intento = 0; intento < 2 && resultado === '' && /^\s*SELECT/i.test(q); intento += 1) resultado = sqlUnaVez(q);

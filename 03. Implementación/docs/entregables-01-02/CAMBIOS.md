@@ -5,6 +5,16 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
 
+## Tramo E3, bloque A5: cierre y verificación del backend de E3 (2026-10-14)
+
+Solo pruebas, scripts y documentación interna; una excepción de seguridad en el backend (el matcher público de `/api/v1/test/**` de `SecurityConfig` solo se registra con el perfil `test`). Sin migraciones, sin tablas ni columnas nuevas y sin cambios de reglas de negocio ni de pantallas.
+
+**Documentos de esta carpeta que cambiaron:** ninguno. No hay nada que copiar a `01. Análisis de Requerimientos` ni a `02. Diseño`.
+
+**Diagramas Mermaid que cambian:** ninguno.
+
+**Documentos internos que sí cambiaron** (fuera de esta carpeta): `docs/LISTA-DE-DESPLIEGUE.md` (nuevo), `docs/AUDITORIA-E3.md` (banner de histórico), `docs/CONCURRENCIA-Y-TRANSACCIONES.md` (punto 3 del orden global), `docs/APRENDIZAJES-TECNICOS.md`, `docs/DECISIONES.md`, `CLAUDE.md` (correcciones factuales) y `testing/playwright/README.md`.
+
 ## Tramo E3, bloque A6: aviso T30 al equipo cuando el sistema autoconfirma la entrega (2026-10-14)
 
 Backend, pruebas y documentación; sin migraciones ni pantallas. Cuando el proceso automático confirma solo la entrega de un pedido a domicilio porque el Cliente no respondió (90 minutos por defecto, configurable), el Dueño y cada Empleado Activo del comercio reciben su propia copia del aviso T30 (sin el Cliente del pedido si es Empleado del comercio). El aviso al Cliente (T8) no cambia.

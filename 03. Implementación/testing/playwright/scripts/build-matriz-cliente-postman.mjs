@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SNIPPET_FECHA_RELATIVA, fechaRelativaEnZona } from './lib/zona.mjs';
 
 import crypto from 'node:crypto';
 
@@ -122,20 +123,12 @@ function urlDeLongitud(total) {
   return prefix + 'a'.repeat(Math.max(fillerLen, 0)) + suffix;
 }
 
-function aFechaLocal(d) {
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${mm}-${dd}`;
-}
-
 function fechaHaceAnios(anios) {
-  const d = new Date();
-  d.setFullYear(d.getFullYear() - anios);
-  return aFechaLocal(d);
+  return fechaRelativaEnZona(anios);
 }
 
 function hoy() {
-  return aFechaLocal(new Date());
+  return fechaRelativaEnZona(0);
 }
 
 function cuitValido(base10) {
@@ -192,11 +185,8 @@ function registroClienteConEdadRelativa(name, sufijo, anios, dias, execLines) {
     script: {
       type: 'text/javascript',
       exec: [
-        'const d = new Date();',
-        `d.setFullYear(d.getFullYear() - ${anios});`,
-        `d.setDate(d.getDate() + ${dias});`,
-        'const dos = (n) => String(n).padStart(2, "0");',
-        "pm.variables.set('fechaNacimientoEdad', `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`);",
+        ...SNIPPET_FECHA_RELATIVA(anios, dias, 'fechaCalculada'),
+        "pm.variables.set('fechaNacimientoEdad', fechaCalculada);",
       ],
     },
   });

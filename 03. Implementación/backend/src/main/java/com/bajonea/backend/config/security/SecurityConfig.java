@@ -4,6 +4,8 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -32,6 +34,7 @@ public class SecurityConfig {
     private final RateLimitPublicoFilter rateLimitPublicoFilter;
     private final CustomAuthenticationEntryPoint authenticationEntryPoint;
     private final CustomAccessDeniedHandler accessDeniedHandler;
+    private final Environment environment;
 
     /**
      * {@code /error} tiene que ser público sin importar qué endpoint haya fallado: cualquier
@@ -51,11 +54,11 @@ public class SecurityConfig {
      * al arrancar) devolvía {@code 401} en vez de redirigir (bug real encontrado probando
      * Fase 13, ver docs/DECISIONES.md, 2026-07-19).
      * <p>
-     * {@code /api/v1/test/**} (Fase 14, bypass de verificación para Postman) es público acá,
-     * pero la protección real es estructural, no esta lista: {@code TestController}/
-     * {@code TestSupportService} llevan {@code @Profile("test")}, así que fuera de ese perfil
-     * Spring nunca registra el bean ni la ruta — permitirla acá no la hace alcanzable en el
-     * perfil normal/producción, donde ni siquiera existe un handler que responda.
+     * {@code /api/v1/test/**} (Fase 14, bypass de verificación para Postman) solo es público si el perfil
+     * {@code test} está activo ({@link #TEST_PROFILE}). Fuera de ese perfil no figura en ninguna lista: cae en
+     * {@code anyRequest().authenticated()} y responde {@code 401} sin token, y además {@code TestController}/
+     * {@code TestSupportService} llevan {@code @Profile("test")}, así que tampoco existe un handler que responda
+     * (con token, {@code 404}). Son dos protecciones independientes (tramo E3, bloque A5).
      * <p>
      * {@code /api/v1/oauth/mercadopago/callback} (tramo MercadoPago 02, vinculación OAuth) es
      * público porque lo invoca el navegador del Dueño por redirect de MercadoPago, nunca un
@@ -82,6 +85,8 @@ public class SecurityConfig {
      * ahí la autorización real es el resolver de comercio activo. El Administrador sigue recibiendo {@code 403}.
      * {@code GET /api/v1/empleados/mis-comercios} es del Cliente: lo consulta quien ya tiene sesión de Cliente.
      */
+    private static final String TEST_PROFILE = "test";
+
     private static final String[] RUTAS_PUBLICAS = {
             "/api/v1/auth/registro/**",
             "/api/v1/auth/login",
@@ -103,7 +108,6 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/error",
-            "/api/v1/test/**",
             "/api/v1/oauth/mercadopago/callback",
             "/api/v1/webhooks/mercadopago"
     };
@@ -119,6 +123,9 @@ public class SecurityConfig {
                         .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers(RUTAS_PUBLICAS).permitAll();
+                    if (environment.acceptsProfiles(Profiles.of(TEST_PROFILE))) {
+                        auth.requestMatchers("/api/v1/test/**").permitAll();
+                    }
                     auth.requestMatchers(HttpMethod.GET, "/api/v1/empleados/mis-comercios").hasRole("CLIENTE");
                     for (DelegacionEmpleado.RutaDelegable ruta : DelegacionEmpleado.RUTAS) {
                         auth.requestMatchers(ruta.metodo(), ruta.patron()).hasAnyRole("DUENO", "CLIENTE");

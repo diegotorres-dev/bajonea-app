@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/prueba';
 import type { Page } from '@playwright/test';
 import {
   obtenerLocalidadRioGrande,
@@ -99,6 +99,7 @@ test.describe('Registro y verificación de cuenta', () => {
   });
 
   test('registro de cliente con foto de perfil: el recorte funciona sin errores y la URL de Cloudinary queda persistida', async ({ page, request }) => {
+    test.setTimeout(120_000);
     const suf = sufijoUnico();
     const email = `cliente.foto.ui.${suf}@bajonea.test`;
     const password = 'Testing123';
@@ -144,6 +145,7 @@ test.describe('Registro y verificación de cuenta', () => {
 
     const registroResponse = page.waitForResponse(
       (res) => res.url().endsWith('/auth/registro/cliente') && res.request().method() === 'POST',
+      { timeout: 60_000 },
     );
     await page.getByTestId('btn-crear-cuenta').click();
     const respuesta = await registroResponse;

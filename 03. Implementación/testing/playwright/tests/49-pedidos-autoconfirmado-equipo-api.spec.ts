@@ -1,4 +1,5 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/prueba';
+import { haceMinutosEnZona } from './helpers/zona';
 import type { APIRequestContext } from '@playwright/test';
 import {
   agregarItemCarrito,
@@ -27,11 +28,7 @@ const T30 = 'PEDIDO_AUTOCONFIRMADO_COMERCIO';
 const T8 = 'PEDIDO_AUTOCONFIRMADO';
 const todoElDia = () => [{ diaSemana: diaDeHoy(), horaApertura: '00:00', horaCierre: '23:59' }];
 
-function haceMinutos(minutos: number): string {
-  const momento = new Date(Date.now() - minutos * 60_000);
-  const dos = (n: number) => String(n).padStart(2, '0');
-  return `${momento.getFullYear()}-${dos(momento.getMonth() + 1)}-${dos(momento.getDate())} ${dos(momento.getHours())}:${dos(momento.getMinutes())}:${dos(momento.getSeconds())}`;
-}
+const haceMinutos = haceMinutosEnZona;
 
 interface Aviso {
   id: number;

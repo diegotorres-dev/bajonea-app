@@ -1,5 +1,7 @@
 # Auditoría previa del tramo E3 — Rol Empleado: operación delegada
 
+> **DOCUMENTO HISTÓRICO (2026-10-14, bloque A5).** Esta es la auditoría de solo lectura previa al tramo E3, escrita el 2026-10-12 y **no se reescribió**: refleja lo que se sabía antes de implementar. Varias cosas cambiaron al implementar y la fuente vigente es `docs/DECISIONES.md` (entradas de E3, bloques A0 a A6 y A5), `CLAUDE.md` (§1bis, §7.2) y `docs/CONCURRENCIA-Y-TRANSACCIONES.md`. Diferencias principales: son **18 escrituras delegables** (no 19; el cierre como no retirado sumó una y el perfil se partió en `datos-operativos`), `DelegacionEmpleado` tiene **23 rutas**; las migraciones llegan a **`V34`** (`V32` es `historial_edicion_comercio`, no `actividad_comercio`); el servicio de autorización explícito `ActorComercioService` no existe (lo hacen `ComercioActivoService.exigirRelacionActiva` y los guards estáticos); las acciones de pedido sí toman el lock del pedido (A0); `anular` y toda devolución generan la nota de crédito en la misma transacción (A0 y A0b); y las preguntas abiertas del final ya están resueltas.
+
 Fecha: 2026-10-12. Auditoría de **solo lectura**: no se modificó código, tests ni migraciones, no se levantó el backend, no se corrió nada contra `bajonea_practicas3` y no se leyeron contraseñas de prueba ni el environment de Postman. El único archivo creado es este.
 
 **Regla para todas las entregas futuras del tramo (E3 y siguientes): ningún archivo `.html`, `.css` ni `.js` puede llevar comentarios en el código.**

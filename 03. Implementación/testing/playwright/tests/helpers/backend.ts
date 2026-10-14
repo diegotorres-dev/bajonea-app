@@ -3,11 +3,22 @@ import { readFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { expect } from '@playwright/test';
 import type { APIRequestContext, APIResponse, Page } from '@playwright/test';
+import { diaDeLaSemanaEnZona, fechaRelativaEnZona } from './zona';
 
 export const API_BASE_URL = process.env.E2E_API_BASE_URL || 'http://localhost:8080/api/v1';
 export const ADMIN_EMAIL = 'admin@bajonea.ar';
 export const ADMIN_USUARIO = 'adminbajonea';
-export const ADMIN_PASSWORD_CONOCIDA = 'AdminE2E123';
+function leerAdminPassword(): string {
+  const valor = process.env.ADMIN_PASSWORD;
+  if (!valor) {
+    throw new Error(
+      'Falta la variable de entorno ADMIN_PASSWORD (contraseña de admin@bajonea.ar en bajonea_test; ver testing/playwright/README.md)',
+    );
+  }
+  return valor;
+}
+
+export const ADMIN_PASSWORD_CONOCIDA = leerAdminPassword();
 
 const FIXTURE_PATH = path.resolve(__dirname, '../../fixtures/bajonea-e2e-producto.png');
 const FIXTURE_BUFFER = readFileSync(FIXTURE_PATH);
@@ -29,19 +40,15 @@ export function nombreUsuarioUnico(prefijo: string): string {
 }
 
 export function fechaNacimientoRelativa(anios: number, dias = 0): string {
-  const fecha = new Date();
-  fecha.setFullYear(fecha.getFullYear() - anios);
-  fecha.setDate(fecha.getDate() + dias);
-  const dos = (n: number): string => String(n).padStart(2, '0');
-  return `${fecha.getFullYear()}-${dos(fecha.getMonth() + 1)}-${dos(fecha.getDate())}`;
+  return fechaRelativaEnZona(anios, dias);
 }
 
 export function diaDeHoy(): string {
-  return DIA_POR_INDICE[new Date().getDay()];
+  return DIA_POR_INDICE[diaDeLaSemanaEnZona()];
 }
 
 export function diaDistintoDeHoy(): string {
-  const otro = (new Date().getDay() + 1) % 7;
+  const otro = (diaDeLaSemanaEnZona() + 1) % 7;
   return DIA_POR_INDICE[otro];
 }
 

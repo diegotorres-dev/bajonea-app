@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/prueba';
 import type { APIRequestContext, Page } from '@playwright/test';
 import {
   MENSAJE_CODIGO_INVALIDO,

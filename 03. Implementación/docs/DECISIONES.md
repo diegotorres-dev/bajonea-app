@@ -10011,3 +10011,82 @@ Endurecimiento previo a delegar escrituras al Empleado. Los tres puntos **cambia
 **Preguntas abiertas**
 1. **Reintentos si T30 falla:** como todo el pedido se revierte y se reintenta, un error persistente al escribir T30 frenaría la autoconfirmación de ese pedido cada minuto (el log muestra "falló para el pedidoId"). ¿Alcanza con eso o se prefiere que T30 nunca bloquee la autoconfirmación (escribirlo aparte, con la posibilidad de perder el aviso)? Hoy se eligió consistencia, igual que en los demás avisos al equipo.
 2. **Empleados que ven T30 con el comercio inactivo:** si el comercio pasa a un estado que `ESTADOS_ACCESIBLES_EMPLEADO` no incluye, la copia existe pero el Empleado recibe `404` al leer; igual que con T1, T9 y T13. ¿Se deja así?
+
+---
+
+## 2026-10-14 — Tramo E3, bloque A5: cierre y verificación del backend de E3
+
+**Pendiente de la confirmación de Diego. No se declara cerrado E3.** El bloque no agrega negocio: verifica que todo lo decidido en E3 (A0 a A6, carrito, A4b) esté probado de punta a punta, ordena lo que quedó suelto y deja el entorno de pruebas determinista. La Fase 1 (auditoría de solo lectura) y la Fase 2 (implementación) se hicieron en la misma sesión; este es el registro de la Fase 2, con las decisiones de Diego del OK de la Fase 1.
+
+### Código de producción tocado
+
+Solo `backend/src/main/java/com/bajonea/backend/config/security/SecurityConfig.java` (excepción puntual aprobada por Diego, de seguridad y no de negocio): el matcher público de `/api/v1/test/**` se registra únicamente si el perfil `test` está activo (`Environment.acceptsProfiles`). Fuera de ese perfil la ruta cae en `anyRequest().authenticated()`: anónimo `401`, autenticado `404` (no hay bean). Es una protección independiente de `@Profile("test")`. El guard de arranque que proponía la auditoría quedó descartado. Verificado con `git diff --stat -- backend/src/main` al final de cada prueba de que muerde y al cierre: solo ese archivo (más el `application.properties` modificado que ya estaba así antes del bloque, con diff vacío).
+
+### Qué se hizo
+
+1. **Matriz de las 23 rutas delegables** (los huecos H1 a H5 de la Fase 1): spec `50-empleado-matriz-delegable-api` (6 tests: pertenencia cruzada del Empleado y del Dueño sobre 19 recursos de otro comercio —producto, imagen, imagen de otro producto, pedido y trazabilidad— con el mensaje y sin cambios; sin token `401`, Administrador `403`, Cliente sin relación `404` y `400`, y relación inactiva `404` en las 23); carpeta **66** de Newman (`build-empleado-tramoE3-A5-postman.mjs`, 191 requests, 279 assertions, identidades y contraseñas generadas por request, la última de la colección); tests Java `PertenenciaCruzadaDelegablesIntegrationTest` (2) y `AtajosDeTestEnElPerfilTestTest` (2); estrés `stress-locks-tramoE3-A5.mjs` (desactivación retenida contra las 18 escrituras, con `ESCENARIO=2` las 18 del Empleado y del Dueño a la vez).
+2. **`AtajosDeTestFueraDelPerfilTest` reflexivo** (6 tests): recorre las anotaciones de `TestController` (14 atajos, mínimo exigido), exige `401` sin token y `404` con sesión de cada rol, ningún mapping registrado bajo `/api/v1/test` y que solo `TestController` y `TestSupportService` lleven `@Profile`.
+3. **Flakes.** Causa raíz *probada*: `38:921`, `38:1003` y `38:1330` (y la forma de `38:901` y `38:1337`) son una carrera del propio test: espera con `waitForResponse` el `404` de una llamada que él provoca, pero el sondeo del panel ya detectó la pérdida de acceso y mostró la hoja (captura de la falla en `test-results`), así que su `apiFetch` ya no sale con el header y la espera dura los 240 s del tope. Arreglado: la espera pasa a 10 s y no falla (`.catch(() => null)`); lo que se aserta es la hoja. 130 de 130 repeticiones (`--repeat-each=10` de todo el bloque de pérdida de acceso y del test de 375 px). Causa raíz *probable* de `36:578`, `36:276`, `36:314`, `18:184` y `19:271`: Google Fonts por internet (ver 5). Causa de `06:227` y `01:100`: subidas reales a Cloudinary con el tope de 5 s de `expect` y 30 s de test; `test.setTimeout(120_000)` y `{ timeout: 30_000 }` en esas aserciones.
+4. **Zona horaria (F1 y F2).** `mvnw test` fija `-Duser.timezone=America/Argentina/Ushuaia` (surefire en `pom.xml`); `helpers/zona.ts` y `scripts/lib/zona.mjs` calculan el día y la hora en esa zona (`E2E_ZONA_HORARIA`) y se usan en `diaDeHoy`, `fechaNacimientoRelativa`, los `haceMinutos` de los specs 39, 40, 43 y 49 y de los estreses A0, A2b y E1; los pre-request de Newman de la carpeta 22 y de la 56 usan `toLocaleDateString('sv-SE', { timeZone })`.
+5. **Fuentes.** Fixture `tests/helpers/prueba.ts` (todos los specs importan `test` y `expect` de ahí) que bloquea Google Fonts en cada contexto; `BLOQUEAR_FUENTES=0` lo apaga. **Validación (a pedido):** 30 repeticiones de los tests inestables de los specs 36, 19, 18 (150 de 150), 01 y 06 (60 de 60), y una pasada completa de los cinco specs con y sin bloqueo: 103 de 103 en las dos, **ningún test de 375 px cambió de resultado con la fuente de respaldo**, y con las fuentes bloqueadas es más rápida (2,7 min contra 3,3). Empaquetar las fuentes en `frontend/` queda anotado como mejora de producción pendiente (`CLAUDE.md` §9, lista de pulido, punto 7).
+6. **Contraseña del administrador de test.** Fuente única `ADMIN_PASSWORD`. Se sacaron los literales de los 6 estreses, de `preparar-entorno-test.sh`, de `helpers/backend.ts` y del README; faltando la variable, falla con un mensaje claro. Detalle que cambia el comportamiento: antes Playwright fijaba una contraseña (`AdminE2E123` en el helper) y Newman y los estreses esperaban otra, así que correr Playwright dejaba al administrador inutilizable para los otros; ahora es la misma. Los runners `correr-newman.mjs` y `correr-estreses.mjs` toman la variable o, si falta, `admin_password` del environment de Postman en memoria, sin imprimirla ni escribirla.
+7. **`preparar-entorno-test.sh` y `entorno-test.mjs`.** El script mataba lo que escuchara en el 8080. Ahora delega en `entorno-test.mjs` (`preparar`, `levantar`, `detener`, `fijar-admin`): puertos configurables (`PUERTO_BACKEND`, `PUERTO_FRONT`), PID propios en `%TEMP%/bajonea-entorno-test.json`, aborta si el puerto está ocupado por otro proceso y sirve una copia temporal del frontend con el puerto de `js/api.js` cambiado si el backend no es el 8080. Hallazgo en el camino: lanzar Maven desde Node en Windows con `detached` y `windowsHide` pierde toda la salida (el log quedaba en 0 bytes y los estreses habrían dicho "sin problemas" sin leer nada); el script usa `--logging.file.name` (ver `docs/APRENDIZAJES-TECNICOS.md`).
+8. **Instrumentación de Playwright.** `trace`, video y captura `retain-on-failure`, reporter JSON con la duración de cada test (`reportes/resultados.json`, ignorado por git), HTML con `open: 'never'` y `scripts/analizar-duraciones.mjs` (specs y tests más lentos, mayor hueco entre tests, tests de más de 120 s).
+9. **Newman sin reset (F4).** Las carpetas 58 a 66 corridas dos veces seguidas sobre la misma base: 1092 requests y 1595 assertions cada vez, 0 fallas. `scripts/correr-newman.mjs` corre carpetas o la colección completa contra otro puerto.
+10. **Runner de estreses.** `scripts/correr-estreses.mjs`: 17 scripts en secuencia, `--lista`, `--solo`, `--sin`; verifica antes que el backend tenga el perfil `test` (si no, no corre nada), resuelve la localidad, pasa las credenciales por entorno, cuenta una sola vez `Deadlock found` y `Lock wait timeout` del log de toda la corrida y sale distinto de 0 si algo falla.
+11. **Documentación.** `CLAUDE.md` (solo las correcciones factuales: `V32` a `V34`, la frase de "sin Dueño ni pantallas", el cuadro de §7.2 y el encabezado de las líneas, más el punto 7 de la lista de pulido pedido), banner de histórico en `docs/AUDITORIA-E3.md` sin reescribirlo, punto 3 del orden global de `docs/CONCURRENCIA-Y-TRANSACCIONES.md`, `docs/LISTA-DE-DESPLIEGUE.md` (nuevo; la zona horaria como primer ítem con la recomendación de `-Duser.timezone=America/Argentina/Ushuaia`; el environment de Postman versionado con 44 passwords y la contraseña del administrador de producción distinta), `docs/APRENDIZAJES-TECNICOS.md` (una entrada nueva y la corrección del hallazgo del carrito) y `testing/playwright/README.md`. `docs/entregables-01-02/`: solo `CAMBIOS.md`; no hay nada que copiar a `01.` ni a `02.`.
+
+### Hallazgos de producción abiertos (sin tocar, esperan la decisión de Diego)
+
+- **A5-1 (baja).** Las dos firmas de Cloudinary no revalidan la relación del Empleado dentro de la transacción (las otras 16 escrituras sí). Con la desactivación retenida, `firma-imagen` y `firma-recorte` dieron `200` en 5 de 6 intentos de 3 rondas. Arreglo propuesto: `iniciarEscrituraDeCatalogo(actor)` al principio de `generarFirmaImagen` y `generarFirmaRecorteImagen`. El estrés A5 los acepta explícitamente (`200` o `404`) hasta que se decida.
+- **A5-2 (media-baja).** `eliminarImagen` da `500` (`StaleObjectStateException` en `recalcularImagenPrincipal`, línea 417) cuando dos operadores borran la misma imagen: reproducido en las rondas 1 y 4 del escenario 2 (Dueño más Empleado). Arreglo propuesto: leer la imagen con `PESSIMISTIC_WRITE` para que el segundo espere y reciba `404`.
+- **A5-3 (media).** `Deadlock found` y `500` en `cerrar` (y `datos-operativos`) con las 18 escrituras de dos operadores a la vez: 3 deadlocks en 4 rondas del escenario 2. Hipótesis fundada en el último deadlock de InnoDB (`cerrar` con el exclusivo del comercio contra un `INSERT` de imagen que tiene el compartido del comercio y espera el compartido del producto) y en el código: el `cambiarEstado` del Dueño toma el producto `FOR UPDATE` antes de cualquier lectura del comercio mientras que el Empleado toma primero el comercio compartido; un `cerrar` en el medio cierra un ciclo de tres. Arreglo propuesto: que el `cambiarEstado` del Dueño lea el comercio con `LOCK IN SHARE MODE` antes del producto. No probado con el arreglo.
+
+El escenario 2 del estrés A5 reproduce A5-2 y A5-3; por eso no corre por defecto (`ESCENARIO=2` o `HALLAZGOS=1`): el runner de estreses corre solo el escenario 1 y queda verde. **Cuando se aprueben los arreglos, el escenario 2 debe pasar a correr por defecto.**
+
+### Las pruebas muerden
+
+Mutaciones temporales de producción, con copia de respaldo en el scratchpad, probadas y restauradas (comparadas byte a byte con el respaldo; `git diff --stat -- backend/src/main` al final de cada una mostró solo `SecurityConfig.java`):
+- *Quitar la comprobación de comercio de `obtenerPedidoDelComercio` y de producto de `obtenerImagenDelProducto`:* fallan los 2 tests Java de pertenencia cruzada, 2 de los 6 del spec 50 y 28 assertions de la carpeta 66.
+- *Revalidación de la relación siempre verdadera* (`exigirRelacionActiva`): falla el escenario 1 del estrés A5 (`201` y `200` de las escrituras del Empleado ya desactivado en lugar de `404`); el spec 50 y la carpeta 66 no la detectan (con la relación ya desactivada antes, el resolver ya da `404`: la carrera solo la ve el estrés y el test con latch de `EscriturasEmpleadoIntegrationTest`).
+- *Quitar `no-retirado` de `DelegacionEmpleado`:* fallan al menos 3 de los 6 tests del spec 50 (`403` en vez de `404`; la salida se cortó en 3 fallas y no se contó el resto).
+- *Matcher de `/api/v1/test/**` siempre registrado:* falla `cadaAtajoSinTokenRespondeNoAutenticado...` de `AtajosDeTestFueraDelPerfilTest` (14 atajos con `404` en lugar de `401`).
+- *El test de `@Profile` de ese mismo archivo* tuvo un defecto propio, que se encontró al correrlo: el escáner de Spring evalúa las condiciones de perfil y no veía las clases que busca; se le dio un entorno con el perfil `test`.
+
+### Pruebas
+
+Todo contra `bajonea_test`, con el backend de test en el 8081 y el frontend en el 5502 (nunca el 8080 ni el 5501), `workers: 1`.
+
+| Suite | Resultado | Tiempo |
+|---|---|---|
+| `mvnw test`, pasada 1 (`-Dspring.profiles.active=test`, sin `AtajosDeTestFueraDelPerfilTest`) | **782 de 782** (778 + 4 nuevos; el surefire ya fija `-Duser.timezone`) | 4,7 min |
+| `mvnw test`, pasada 2 (`AtajosDeTestFueraDelPerfilTest`, reflexivo) | **6 de 6** | 0,5 min |
+| Playwright completo, instrumentado, base reseteada (final) | **779 de 780**; el fallo es `27-multicomercio-tramo4-selector:497` (inestable nuevo, ver abajo) | 24,8 min |
+| Playwright completo, primera corrida (antes de arreglar la carrera del spec 38) | 778 de 780; fallaron `38:1003` y `38:1330` por `waitForResponse` de 240 s | 29,6 min |
+| Newman completo, base reseteada (final) | **2991 requests, 4628 assertions, 0 fallas** | 8,1 min |
+| Newman, carpetas 58 a 66 dos veces seguidas sin reset | 1092 requests y 1595 assertions cada vez, 0 fallas | 2 x 2,9 min |
+| Estreses, los 17 por `correr-estreses.mjs` | **17 de 17 sin problemas** | 31,8 min |
+
+Logs del backend: **0 `Deadlock found` y 0 `Lock wait timeout`** en la salida de `mvnw test` (pasada 1), en el log de la corrida final de Playwright, en el de la corrida final de Newman y en el de toda la corrida de estreses (17 scripts). Más 150 de 150 repeticiones de los tests inestables de los specs 36, 19 y 18, 60 de 60 de los de 01 y 06, 103 de 103 de los cinco specs con y sin bloqueo de fuentes y 130 de 130 repeticiones del bloque de pérdida de acceso del spec 38.
+
+**Playwright instrumentado, corrida lenta.** La primera corrida duró 29,6 min (contra 17 a 25 de las anteriores): 8,4 min son los dos tests de 250 s del spec 38, el resto los 6 tests nuevos y la máquina; el mayor hueco entre dos tests fue de 6,6 s (sin suspensión) y la final bajó a 24,8 min. Los specs más lentos de la final: `38` (185 s), `24` (112 s), `31` (96 s), `36` (90 s), `27` (89 s).
+
+**Inestables conocidos después de A5:** `27-multicomercio-tramo4-selector:497` ("una sola consulta de polling por ciclo", nuevo: falló en la corrida final con `Expected 3, Received 2` y en 1 de 70 repeticiones aisladas; el segundo `fastForward` de 15 s no produce una segunda consulta; se probó esperar `networkidle` entre los dos y no lo eliminó, se revirtió; causa sin identificar). Los demás de la lista anterior (`01:100`, `06:227`, `14:124`, `18:184`, `19:271`, `36:276`, `36:314`, `36:578`, `38:921`) no fallaron en ninguna de las pasadas de A5.
+
+
+### Decisiones no previstas
+
+1. Las 30 repeticiones pedidas sobre los cinco specs se hicieron sobre los **tests inestables** de cada uno (150 de 150 para 36, 19 y 18; 60 de 60 para 01 y 06) y no sobre todos los tests de cada archivo (el `beforeAll` de cada repetición haría la corrida de varias horas); además se corrió una pasada completa de los cinco con y sin bloqueo (103 de 103 cada una), que es la que mide el cambio de layout.
+2. Restauré tres archivos de producción con `cp` desde la copia de respaldo en lugar de con `Edit` (lo equivalente y verificado: `cmp` y `git diff --stat`), y dos con `Edit`.
+3. Un `taskkill` por patrón de línea de comandos para detener una corrida de Playwright mal lanzada terminó también con el `bash.exe` de mi propia llamada anterior (mismo texto en su línea de comandos); no afectó a ningún proceso ajeno. Después de eso detuve solo por PID guardado.
+4. `ROUNDS=6` por defecto en el estrés A5 (el escenario 1 es corto) y el escenario 2 fuera de la corrida por defecto (arriba).
+5. El runner de estreses exige el perfil `test` en el backend de destino mediante un atajo (`/test/emails-regularizacion/cantidad`) en lugar de comprobar la base: es la forma de no escribir nada en una base ajena.
+6. La suspensión de la máquina que sospechaba la Fase 1 para la corrida de 2,3 horas **no se pudo confirmar**: en la corrida instrumentada el mayor hueco entre dos tests fue de 6,6 s y los 29,6 minutos se explican por los dos tests de 250 s de la carrera del spec 38 (8,4 minutos) más los 6 tests nuevos. La causa de las 2,3 horas sigue sin explicación; si volviera a pasar, `analizar-duraciones.mjs` lo dirá.
+
+### Qué falta decidir (decisiones de Diego)
+
+1. Los arreglos de A5-1, A5-2 y A5-3 (código de producción).
+2. La zona horaria del servidor (primer ítem de `docs/LISTA-DE-DESPLIEGUE.md`).
+3. Si la entrega B de E3 empieza ya o antes hay que cerrar los hallazgos.
+4. Si se corre el escenario 2 del estrés A5 por defecto una vez arreglados.
+5. Que Diego verifique `practicas3` (filas con `fuente_entrega = 'COMERCIO_SIN_RETIRO'`), pendiente de A4b.

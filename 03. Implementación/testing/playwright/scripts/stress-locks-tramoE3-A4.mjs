@@ -4,7 +4,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 const B = process.env.E2E_API_BASE_URL || 'http://localhost:8080/api/v1';
 const ROUNDS = Number(process.env.ROUNDS || 10);
 const ADMIN = { nombreUsuario: 'adminbajonea', password: process.env.ADMIN_PASSWORD };
-const sqlUnaVez = (q) => execFileSync('C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', '-B', 'bajonea_test', '-e', q]).toString().trim();
+const sqlUnaVez = (q) => execFileSync(process.env.MYSQL_BIN || 'C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', '-B', 'bajonea_test', '-e', q]).toString().trim();
 const sql = (q) => {
   let resultado = sqlUnaVez(q);
   for (let intento = 0; intento < 2 && resultado === '' && /^\s*SELECT/i.test(q); intento += 1) resultado = sqlUnaVez(q);
@@ -169,7 +169,7 @@ const LOG_BACKEND = process.env.BACKEND_LOG || `${process.env.TEMP || '/tmp'}/ba
 const NO_DISPONIBLE = JSON.stringify({ mensaje: 'Comercio no encontrado', data: { codigo: 'COMERCIO_NO_DISPONIBLE' } });
 const BASE_CATEGORIA = `StressA4 ${uniq()}`;
 
-const mysql = 'C:/xampp/mysql/bin/mysql.exe';
+const mysql = process.env.MYSQL_BIN || 'C:/xampp/mysql/bin/mysql.exe';
 
 function desactivarMientrasOpera(comercioId, empleadoId, milisegundos) {
   const consulta = `START TRANSACTION; SELECT id INTO @relacion FROM empleado_comercio WHERE empleado_id = ${empleadoId} AND comercio_id = ${comercioId} FOR UPDATE; ` +

@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { SNIPPET_FECHA_RELATIVA } from './lib/zona.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const collectionPath = path.resolve(__dirname, '../../../postman/Bajonea-MVP.postman_collection.json');
@@ -682,11 +683,8 @@ const MSG_EDAD_CUENTA_NUEVA = 'Tenés que tener 18 años o más para trabajar en
 const MSG_EDAD_CUENTA_EXISTENTE = 'Tenés que tener 18 años o más para sumarte a un equipo';
 
 const fechaRelativa = (clave, anios, dias = 0) => [
-  'const f = new Date();',
-  `f.setFullYear(f.getFullYear() - ${anios});`,
-  `f.setDate(f.getDate() + ${dias});`,
-  'const dos = (n) => String(n).padStart(2, "0");',
-  guardar(v(`fecha_${clave}`), "f.getFullYear() + '-' + dos(f.getMonth() + 1) + '-' + dos(f.getDate())"),
+  ...SNIPPET_FECHA_RELATIVA(anios, dias, 'fechaCalculada'),
+  guardar(v(`fecha_${clave}`), 'fechaCalculada'),
 ];
 
 const fechaVar = (clave) => `{{${v(`fecha_${clave}`)}}}`;

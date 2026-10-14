@@ -1,9 +1,10 @@
 import { execFileSync } from 'node:child_process';
+import { isoEnZona } from './lib/zona.mjs';
 
 const B = process.env.E2E_API_BASE_URL || 'http://localhost:8080/api/v1';
 const ROUNDS = Number(process.env.ROUNDS || 10);
 const ADMIN = { nombreUsuario: 'adminbajonea', password: process.env.ADMIN_PASSWORD };
-const sqlUnaVez = (q) => execFileSync('C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', '-B', 'bajonea_test', '-e', q]).toString().trim();
+const sqlUnaVez = (q) => execFileSync(process.env.MYSQL_BIN || 'C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', '-B', 'bajonea_test', '-e', q]).toString().trim();
 const sql = (q) => {
   let resultado = sqlUnaVez(q);
   for (let intento = 0; intento < 2 && resultado === '' && /^\s*SELECT/i.test(q); intento += 1) resultado = sqlUnaVez(q);
@@ -672,11 +673,7 @@ async function escenario12(admin) {
   return problemas;
 }
 
-const isoLocal = (ms) => {
-  const f = new Date(ms);
-  const dos = (n) => String(n).padStart(2, '0');
-  return `${f.getFullYear()}-${dos(f.getMonth() + 1)}-${dos(f.getDate())}T${dos(f.getHours())}:${dos(f.getMinutes())}:${dos(f.getSeconds())}`;
-};
+const isoLocal = isoEnZona;
 const vencimientoJob = (ahoraMs) => call('POST', `/test/jobs/vencimiento-invitaciones?ahora=${encodeURIComponent(isoLocal(ahoraMs))}`);
 
 async function escenario13(admin) {

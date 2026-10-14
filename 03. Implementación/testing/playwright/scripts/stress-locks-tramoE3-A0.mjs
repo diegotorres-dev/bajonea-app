@@ -1,13 +1,18 @@
 import { execFileSync } from 'node:child_process';
+import { haceMinutosEnZona } from './lib/zona.mjs';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 
 const B = process.env.E2E_API_BASE_URL || 'http://localhost:8080/api/v1';
 const LOC = process.env.LOC;
 const CLOUD = process.env.CLOUDINARY_CLOUD_NAME || 'demo';
 const ROUNDS = Number(process.env.ROUNDS || 8);
-const ADMIN = { nombreUsuario: 'adminbajonea', password: process.env.ADMIN_PASSWORD || 'PostmanAdmin123' };
+const ADMIN = { nombreUsuario: 'adminbajonea', password: process.env.ADMIN_PASSWORD };
+if (!ADMIN.password) {
+  console.error('Falta ADMIN_PASSWORD (contraseña de admin@bajonea.ar en bajonea_test; ver testing/playwright/README.md)');
+  process.exit(1);
+}
 const LOG_BACKEND = process.env.BACKEND_LOG || `${process.env.TEMP || '/tmp'}/backend-test.log`;
-const sqlUnaVez = (q) => execFileSync('C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', '-B', 'bajonea_test', '-e', q]).toString().trim();
+const sqlUnaVez = (q) => execFileSync(process.env.MYSQL_BIN || 'C:/xampp/mysql/bin/mysql.exe', ['-u', 'root', '-N', '-B', 'bajonea_test', '-e', q]).toString().trim();
 const sql = (q) => {
   let resultado = sqlUnaVez(q);
   for (let intento = 0; intento < 2 && resultado === '' && /^\s*SELECT/i.test(q); intento += 1) resultado = sqlUnaVez(q);
@@ -59,11 +64,7 @@ const horariosTodosLosDias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES
   horaCierre: '23:59',
 }));
 
-function haceMinutos(minutos) {
-  const momento = new Date(Date.now() - minutos * 60_000);
-  const dos = (n) => String(n).padStart(2, '0');
-  return `${momento.getFullYear()}-${dos(momento.getMonth() + 1)}-${dos(momento.getDate())} ${dos(momento.getHours())}:${dos(momento.getMinutes())}:${dos(momento.getSeconds())}`;
-}
+const haceMinutos = haceMinutosEnZona;
 
 async function verificarYLoguear(email, nombreUsuario, password) {
   const codigo = (await call('GET', `/test/token-verificacion?email=${email}`)).json.data;

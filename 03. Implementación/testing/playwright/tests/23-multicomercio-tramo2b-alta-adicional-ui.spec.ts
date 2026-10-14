@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/prueba';
 import type { APIRequestContext, Page } from '@playwright/test';
 import {
   ADMIN_PASSWORD_CONOCIDA,

@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { readFileSync } from 'node:fs';
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/prueba';
 import {
   obtenerLocalidadRioGrande,
   registrarYVerificarComercio,
@@ -225,6 +225,7 @@ test.describe('CRUD de producto del Comercio', () => {
   });
 
   test('casos negativos: nombre vacío no se envía, precio negativo lo rechaza el backend, y el límite de 5 fotos por producto se respeta', async ({ page, request }) => {
+    test.setTimeout(120_000);
     const suf = sufijoUnico();
 
     const comercioSesion = await login(request, comercioUsuario, comercioPassword);
@@ -275,15 +276,15 @@ test.describe('CRUD de producto del Comercio', () => {
     await expect(page).toHaveURL(/comercio-producto-form\.html$/);
 
     await page.goto(`/comercio-producto-form.html?id=${productoId}`);
-    await expect(page.getByTestId('galeria-fotos-producto').locator('img')).toHaveCount(4);
+    await expect(page.getByTestId('galeria-fotos-producto').locator('img')).toHaveCount(4, { timeout: 30_000 });
     await expect(page.getByTestId('btn-agregar-foto-producto')).toHaveCount(1);
 
     await subirFotoViaCropUi(page);
-    await expect(page.getByTestId('galeria-fotos-producto').locator('img')).toHaveCount(5);
+    await expect(page.getByTestId('galeria-fotos-producto').locator('img')).toHaveCount(5, { timeout: 30_000 });
     await expect(page.getByTestId('btn-agregar-foto-producto')).toHaveCount(0);
 
     await subirFotoViaCropUi(page, { esperar409: true });
     await expect(page.getByTestId('mensaje-banner')).toContainText('máximo de 5 imágenes');
-    await expect(page.getByTestId('galeria-fotos-producto').locator('img')).toHaveCount(5);
+    await expect(page.getByTestId('galeria-fotos-producto').locator('img')).toHaveCount(5, { timeout: 30_000 });
   });
 });

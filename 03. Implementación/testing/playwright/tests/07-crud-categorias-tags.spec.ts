@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './helpers/prueba';
 import { fijarPasswordAdminYLoguear, sufijoUnico, ADMIN_EMAIL, ADMIN_USUARIO, ADMIN_PASSWORD_CONOCIDA } from './helpers/backend';
 
 async function loginAdminUi(page: import('@playwright/test').Page) {
