@@ -160,3 +160,14 @@ Totales de esta entrega: 31 patrones de `data-testid` nuevos (4 en `seleccionar-
 | Hoja de pérdida de acceso | `js/api.js` | `aviso-acceso-perdido` (el fondo de la hoja), `titulo-acceso-perdido`, `texto-acceso-perdido-1`, `texto-acceso-perdido-2`, `btn-entendido-acceso-perdido` |
 
 Totales de esta entrega: 8 patrones nuevos (`lista-perfil`, `btn-ver-datos-comercio`, `btn-volver-perfil-datos-comercio` y los cinco de la hoja); se eliminaron 2 (`btn-mi-cuenta`, `seccion-cuenta-empleado`). Sin comentarios en ningún archivo tocado.
+
+## Rol Empleado, tramo E3 (entrega B, etapa 1): pedidos del comercio
+
+| Pantalla | Archivo(s) | `data-testid` |
+|---|---|---|
+| `comercio-pedidos.html` y panel | `js/comercio.js` | `aviso-comercio-no-operativo` (aviso del Empleado con el comercio suspendido o cerrado temporalmente), `chip-tu-pedido` (dentro de `pedido-item-{id}`) |
+| `comercio-pedido-detalle.html` | `js/comercio.js` | `nota-pedido-propio`, `aviso-accion-slot` (contenedor del aviso fijo), `btn-cerrar-no-retirado`, `ayuda-no-retirado`, `recorrido-pedido`, `recorrido-lista`, `recorrido-paso`, `recorrido-texto`, `recorrido-meta`, `recorrido-motivo`, `recorrido-error`; `btn-confirmar-retiro` ahora dice "Entregar" |
+| Confirmación de no retirado | `js/comercio.js` | `modal-no-retirado`, `texto-modal-no-retirado`, `btn-confirmar-no-retirado`, `btn-cancelar-no-retirado` |
+| Aviso fijo (compartido) | `js/form-utils.js` | `aviso-fijo` (el banner, con `role="alert"`), `aviso-fijo-texto` |
+
+Totales de esta entrega: 17 patrones nuevos. Sin comentarios en ningún archivo tocado.

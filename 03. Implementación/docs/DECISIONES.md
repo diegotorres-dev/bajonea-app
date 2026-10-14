@@ -10153,3 +10153,47 @@ Parches temporales sobre `ProductoService.java` con copia de respaldo en el scra
 1. ¿Se unifica el conteo del log (log activo más `.gz`) en los otros 16 scripts de estrés? Hoy un estrés largo que rote el log podría ocultar un deadlock; el runner ya lo cuenta bien.
 2. Las escrituras de producto e imagen del **Dueño** ahora esperan el exclusivo del comercio de un `cerrar` en curso. Es milisegundos, pero es un cambio de latencia del Dueño; ¿alcanza o se prefiere medirlo con carga?
 3. El hueco anotado sigue: el Dueño puede editar productos y perfil con el comercio `SUSPENDIDO` (tramo de rediseño de la suspensión).
+
+## 2026-10-14 — Tramo E3, entrega B, etapa 1: pedidos del comercio en pantalla (Dueño y Empleado)
+
+Primera de las cuatro etapas de la entrega B (pantallas de E3). Backend: dos campos nuevos de solo lectura; frontend: lista y detalle de pedidos del comercio; herramientas de test: `refrescar-front`. Sin migraciones. **Pendiente de la confirmación de Diego** (E3 no se declara cerrado).
+
+### Backend (aprobado por Diego al abrir la Fase 2)
+
+- `PedidoResponseDTO` y `PedidoEmpleadoResponseDTO` suman `noRetiradoDisponibleDesde` (hora del comercio, sin zona) y `noRetiradoMinutosRestantes` (redondeado hacia arriba con el reloj del servidor; `0` si la espera ya se cumplió). Valen `null` salvo en un pedido de retiro en `LISTO_PARA_RETIRAR`, y siempre `null` para el Cliente: solo los construyen las respuestas del lado del comercio (`PedidoService.aResponseDTOParaComercio` y `listarPedidosComercio`); las del Cliente pasan `null`.
+- La lista del comercio calcula la espera con una sola consulta agrupada (`HistorialEstadoPedidoRepository.findUltimaEntradaAEstadoPorPedido`, último `LISTO_PARA_RETIRAR` por pedido), no una por pedido. La cuenta de minutos reutiliza la misma fórmula que el `409 RETIRO_EN_ESPERA` (`minutosHasta`).
+- Tests: 3 en `PedidoNoRetiradoHttpIntegrationTest` (lista del Dueño y del Empleado con 45, 61 y otro estado; respuesta de `despachar` con 60 minutos y el Cliente en `null`; el redondeo hacia arriba y el cero), la lista blanca de `PedidoServiceVistaEmpleadoTest` (25 campos del Dueño, 22 del Empleado), un test nuevo en el spec 47 y los ajustes de las listas de campos de los specs 37 y 44. Newman: la carpeta 64 suma 3 requests (136) y el constructor ahora reemplaza la carpeta en su lugar en vez de moverla al final.
+
+### Frontend
+
+- **Fila de pedido** (`renderPedidoActivoCard`, compartida por la lista y el panel): sin cambios en la información, suma el chip "Tu pedido" (`chip-tu-pedido`) junto al número cuando `esPedidoPropio` es `true`, y el chevron reemplaza al texto "Ver pedido". Las filas no tienen botones.
+- **Aviso de comercio no operativo** (solo para el Empleado): "Comercio suspendido. No se aceptan pedidos nuevos." / "Comercio cerrado temporalmente. No se aceptan pedidos nuevos.", arriba de la lista y en el panel (mismo texto, `AVISO_COMERCIO_NO_OPERATIVO`, que reemplaza al de "podés consultar pero no operar").
+- **Detalle de un pedido propio:** nota "Hiciste este pedido como cliente. No podés gestionarlo desde acá.", sin botones y sin recorrido (ni siquiera se pide la trazabilidad, que el servidor negaría con `409`).
+- **Detalle de los demás pedidos:** acciones para el Dueño y el Empleado (`contextoPuedeGestionarPedidos()`), aviso fijo y "Recorrido del pedido" (línea de tiempo con el texto, la hora y "nombre, rol"; el sistema solo como "Sistema"; el motivo en el rechazo y la anulación). La hora se corta del texto del servidor, sin `Date`; si el paso no es de hoy (zona del comercio) lleva el día.
+- **"Entregar"** reemplaza a "Confirmar retiro" (mismo `data-testid`, `btn-confirmar-retiro`). **"Cerrar como no retirado"** (`btn-cerrar-no-retirado`) solo en retiro: apagado mientras falte tiempo, con la ayuda "Disponible en N min (desde las HH:mm)"; la cuenta regresiva parte de `noRetiradoMinutosRestantes` y avanza con el reloj local (se actualiza cada 15 s, nunca habilita antes que el servidor). La confirmación (`modal-no-retirado`) dice que no se devuelve el pago.
+- **Errores `409` de reglas de negocio en las cinco acciones y en no retirado:** aviso fijo (banner rojo con ícono, `role="alert"`, `aviso-fijo`) sobre los botones, con el mensaje del servidor; no se va solo y se limpia al empezar otra acción o al volver a dibujar el detalle. Los demás errores siguen como toast. El aviso fijo es un helper compartido (`mostrarAvisoFijo` / `limpiarAvisoFijo` en `js/form-utils.js`).
+- **Gate escalonado:** nuevo `contextoPuedeGestionarPedidos()` (`esContextoComercio()`) para pedidos; `contextoPuedeOperar()` (solo Dueño) sigue gobernando productos y cierre hasta la etapa 2.
+- **`js/fechas.js`** (nuevo): `ZONA_COMERCIO` como única constante de zona del frontend, más `horaMinutoDe`, `horaConDiaDe`, `diaDeHoyEnZonaComercio` y `diaDeAyerEnZonaComercio` (estas dos para la etapa 4). Anotada en `docs/LISTA-DE-DESPLIEGUE.md`.
+
+### Herramientas de test
+
+- `entorno-test.mjs refrescar-front`: regenera la copia temporal del frontend (la que se sirve con un backend distinto del 8080) y vuelve a parchear el puerto de `js/api.js`, sin tocar el servidor ni el backend (solo por los datos del archivo de PID). Se usa con `PUERTO_BACKEND` y `PUERTO_FRONT` iguales a los del entorno. Sin ese paso, los cambios de `frontend/` no llegan a las pruebas.
+- `tests/helpers/layout.ts`: `sinScrollHorizontal` extraída para los specs nuevos (el 38 conserva la suya).
+
+### Pruebas
+
+- Spec 52 nuevo (24 tests, 375 px, login real contra `bajonea_test`): lista (chip solo en el pedido propio, chevron y sin botones, Dueño sin marca, panel), aviso por estado del comercio, detalle propio (nota, sin botones, sin recorrido, sin pedir la trazabilidad), recorrido (orden, textos, hora, "Sistema", motivo, Dueño, Cliente sin él), acciones del Empleado, no retirado (apagado con ayuda, cuenta regresiva con `page.clock`, confirmación, Dueño, comercio suspendido), avisos fijos (real: `COMERCIO_SIN_OPERACION` y `RETIRO_EN_ESPERA` por una carrera; el toast para un `400`) y desborde.
+- Specs ajustados: 38 (L504: ahora ve aceptar y rechazar; L736: textos nuevos del aviso), 37 y 44 (lista de campos). Repetidos 3 veces: 52 y 48, 84/84. Los 13 specs afectados (52, 38, 41, 48, 05, 16, 09, 47, 37, 44, 31, 27 y 33), 258/258 desde una base reseteada. `mvnw test` en las dos pasadas: 794/794 y 6/6. Newman, carpeta 64: 137 requests, 196 assertions, 0 fallos. No se corrió estrés: las respuestas nuevas son de solo lectura y no toman bloqueos. Nota de entorno: tras `mvnw test` la base de test queda con cientos de comercios y la pantalla de inicio del Cliente tarda 4 a 5 s en dibujarse (393 comercios medidos), lo que hizo fallar `38:243`, `05` y `48:55` por su tope de 5 s; pasan desde una base reseteada, no tienen relación con esta etapa.
+
+### Decisiones no previstas
+
+1. El aviso de la lista y el del panel comparten constante y testid (`aviso-comercio-no-operativo`); el panel conserva además el testid de su contenedor (`mensaje-estado-comercio`).
+2. La cuenta regresiva se calcula con minutos restantes más el tiempo local transcurrido, en vez de comparar `noRetiradoDisponibleDesde` con la hora del navegador, para no depender de la zona del navegador.
+3. Para probar la carrera real de `RETIRO_EN_ESPERA` se rejuvenece el historial por SQL con el atajo `envejecer-listo` con minutos negativos (no hay otra forma de que el botón esté habilitado y el servidor lo rechace).
+4. Al reordenar la carpeta 64 de Newman se cambió el constructor para reemplazar en el lugar: volver a correrlo ya no mueve la carpeta detrás de las 65 a 67.
+
+### Preguntas abiertas
+
+1. Tras un `409` el detalle puede quedar con datos viejos (por ejemplo, otro compañero ya aceptó el pedido). Hoy el aviso se queda y los botones siguen; ¿se vuelve a pedir el pedido en ese caso?
+2. El recorrido muestra el día cuando el paso no es de hoy (`dd/MM HH:mm`); ¿se prefiere siempre la hora sola?
+3. Los specs de la etapa 1 siguen llamando "solo lectura" al bloque del panel del spec 38 (cambia en la etapa 2).

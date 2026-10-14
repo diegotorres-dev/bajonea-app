@@ -61,7 +61,7 @@ class PedidoServiceVistaEmpleadoTest {
 
     private static final Set<String> CAMPOS_EMPLEADO = Set.of("id", "nombreCliente", "comercioId", "estado", "tipoEntrega",
             "direccion", "motivoRechazo", "comentarioRechazo", "canceladoPor", "fuenteEntrega", "motivoAnulacion", "fechaCreacion",
-            "fechaPagoAprobado", "fechaEntrega", "detalles", "subtotal", "total", "reembolsoEstado", "reembolsoMonto", "esPedidoPropio");
+            "fechaPagoAprobado", "fechaEntrega", "detalles", "subtotal", "total", "reembolsoEstado", "reembolsoMonto", "esPedidoPropio", "noRetiradoDisponibleDesde", "noRetiradoMinutosRestantes");
     private static final Set<String> CAMPOS_EXCLUIDOS = Set.of("clienteId", "pagoEstado", "cargoServicioCliente",
             "cargoServicioComercio");
 
@@ -202,7 +202,7 @@ class PedidoServiceVistaEmpleadoTest {
         assertEquals(new BigDecimal("100"), lista.get(0).getCargoServicioComercio());
         assertEquals(77, lista.get(0).getClienteId());
         assertEquals(EstadoPagoPedido.PAGADO, lista.get(0).getPagoEstado());
-        assertEquals(23, campos.size());
+        assertEquals(25, campos.size());
     }
 
     @Test

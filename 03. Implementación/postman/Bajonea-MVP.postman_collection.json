@@ -115292,7 +115292,84 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const p = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('nr_ped_espera')));",
-                  "pm.test('Sigue en LISTO_PARA_RETIRAR', () => pm.expect(p.estado).to.eql('LISTO_PARA_RETIRAR'));"
+                  "pm.test('Sigue en LISTO_PARA_RETIRAR', () => pm.expect(p.estado).to.eql('LISTO_PARA_RETIRAR'));",
+                  "pm.test('Informa cuando se habilita el cierre: 14 o 15 minutos y la hora', () => { pm.expect(p.noRetiradoMinutosRestantes).to.be.within(14, 15); pm.expect(p.noRetiradoDisponibleDesde).to.be.a('string'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Espera: la lista de la Empleada trae la misma espera",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{nr_e_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{nr_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const p = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('nr_ped_espera')));",
+                  "pm.test('La Empleada ve 14 o 15 minutos y la hora', () => { pm.expect(p.noRetiradoMinutosRestantes).to.be.within(14, 15); pm.expect(p.noRetiradoDisponibleDesde).to.be.a('string'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Espera: el Cliente nunca recibe los campos de la espera",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{nr_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const p = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('nr_ped_espera')));",
+                  "pm.test('Los campos de la espera vienen en null para el Cliente', () => { pm.expect(p.noRetiradoMinutosRestantes === undefined || p.noRetiradoMinutosRestantes === null).to.eql(true); pm.expect(p.noRetiradoDisponibleDesde === undefined || p.noRetiradoDisponibleDesde === null).to.eql(true); });"
                 ]
               }
             }
@@ -115461,6 +115538,46 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Espera cumplida: la lista informa 0 minutos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{nr_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{nr_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const p = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('nr_ped_espera')));",
+                  "pm.test('Faltan 0 minutos y sigue la hora de habilitacion', () => { pm.expect(p.noRetiradoMinutosRestantes).to.eql(0); pm.expect(p.noRetiradoDisponibleDesde).to.be.a('string'); });"
                 ]
               }
             }

@@ -5,6 +5,19 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
 
+## Tramo E3, entrega B, etapa 1: pedidos del comercio en pantalla (2026-10-14)
+
+Pantallas de la lista y el detalle de pedidos del comercio para el Dueño y el Empleado (chip "Tu pedido", recorrido del pedido, "Entregar", "Cerrar como no retirado" con espera, avisos fijos para los conflictos 409), y dos campos de solo lectura en los pedidos del comercio (`noRetiradoDisponibleDesde`, `noRetiradoMinutosRestantes`). Sin migraciones, sin tablas ni columnas nuevas.
+
+**Documentos de esta carpeta que cambiaron** (Diego los copia a mano a `01.` y `02.`):
+- `requisitos-funcionales-empleado.md`: nueva sección "Pedidos en Pantalla"; "Pedidos Propios" describe la nota del detalle; la trazabilidad ya tiene pantalla.
+- `requisitos-funcionales-comercio.md`: la lista y las acciones del comercio traen la espera del cierre como no retirado.
+- `Historias de Usuario - Empleado.md` y `Historias de Usuario - Comercio.md`: criterios de la fila "Tu pedido", los avisos, el botón apagado y el recorrido.
+
+**No cambiaron** `requisitos-funcionales-dueño.md` (la pestaña Actividad es de la etapa 4), `requisitos-funcionales-administrador.md`, `-cliente.md`, `-generales.md`, `-sistema.md`, `requisitos-no-funcionales.md`, `alcance-y-limitaciones.md`, `diccionario-de-datos.md` ni los diagramas Mermaid (sin cambios de esquema ni de flujo).
+
+**Pruebas:** ver `docs/DECISIONES.md`, 2026-10-14, "Tramo E3, entrega B, etapa 1".
+
 ## Tramo E3, bloque A5: cierre y verificación del backend de E3 (2026-10-14)
 
 Solo pruebas, scripts y documentación interna; una excepción de seguridad en el backend (el matcher público de `/api/v1/test/**` de `SecurityConfig` solo se registra con el perfil `test`). Sin migraciones, sin tablas ni columnas nuevas y sin cambios de reglas de negocio ni de pantallas.

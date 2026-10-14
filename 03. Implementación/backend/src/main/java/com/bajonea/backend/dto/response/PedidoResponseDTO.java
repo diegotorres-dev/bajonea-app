@@ -27,7 +27,11 @@ import lombok.Getter;
  * separado para mostrar la línea "Cargo por servicio" (Cliente) y "Cargo por servicio (1%)"
  * (Comercio). {@code reembolsoEstado}/{@code reembolsoMonto} reflejan la nota de crédito más
  * reciente del pago del pedido (nulos si nunca se generó ninguna) — el frontend los usa para
- * no afirmar un reembolso que todavía no ocurrió.
+ * no afirmar un reembolso que todavía no ocurrió. {@code noRetiradoDisponibleDesde} y
+ * {@code noRetiradoMinutosRestantes} solo van en las respuestas del lado del comercio, para un retiro en
+ * {@code LISTO_PARA_RETIRAR}: cuándo se habilita "Cerrar como no retirado" (hora del comercio) y cuántos minutos
+ * faltan según el reloj del servidor, redondeado hacia arriba (0 si ya se puede). En cualquier otro caso, y en
+ * las respuestas del Cliente, valen {@code null}.
  */
 @Getter
 public class PedidoResponseDTO {
@@ -55,6 +59,8 @@ public class PedidoResponseDTO {
     private final BigDecimal total;
     private final EstadoNotaCredito reembolsoEstado;
     private final BigDecimal reembolsoMonto;
+    private final LocalDateTime noRetiradoDisponibleDesde;
+    private final Long noRetiradoMinutosRestantes;
 
     public PedidoResponseDTO(
             Integer id,
@@ -79,7 +85,9 @@ public class PedidoResponseDTO {
             BigDecimal cargoServicioComercio,
             BigDecimal total,
             EstadoNotaCredito reembolsoEstado,
-            BigDecimal reembolsoMonto) {
+            BigDecimal reembolsoMonto,
+            LocalDateTime noRetiradoDisponibleDesde,
+            Long noRetiradoMinutosRestantes) {
         this.id = id;
         this.clienteId = clienteId;
         this.nombreCliente = nombreCliente;
@@ -103,5 +111,7 @@ public class PedidoResponseDTO {
         this.total = total;
         this.reembolsoEstado = reembolsoEstado;
         this.reembolsoMonto = reembolsoMonto;
+        this.noRetiradoDisponibleDesde = noRetiradoDisponibleDesde;
+        this.noRetiradoMinutosRestantes = noRetiradoMinutosRestantes;
     }
 }

@@ -298,11 +298,27 @@ agregar(
     status(200),
     `const p = pm.response.json().data.find((x) => x.id === Number(${entorno(v('ped_espera'))}));`,
     "pm.test('Sigue en LISTO_PARA_RETIRAR', () => pm.expect(p.estado).to.eql('LISTO_PARA_RETIRAR'));",
+    "pm.test('Informa cuando se habilita el cierre: 14 o 15 minutos y la hora', () => { pm.expect(p.noRetiradoMinutosRestantes).to.be.within(14, 15); pm.expect(p.noRetiradoDisponibleDesde).to.be.a('string'); });",
+  ]),
+  item('Espera: la lista de la Empleada trae la misma espera', req('GET', '/pedidos/comercio', { token: TOKEN_EMPLEADO, comercio: COM }), [
+    status(200),
+    `const p = pm.response.json().data.find((x) => x.id === Number(${entorno(v('ped_espera'))}));`,
+    "pm.test('La Empleada ve 14 o 15 minutos y la hora', () => { pm.expect(p.noRetiradoMinutosRestantes).to.be.within(14, 15); pm.expect(p.noRetiradoDisponibleDesde).to.be.a('string'); });",
+  ]),
+  item('Espera: el Cliente nunca recibe los campos de la espera', req('GET', '/pedidos/cliente', { token: TOKEN_COMPRADOR }), [
+    status(200),
+    `const p = pm.response.json().data.find((x) => x.id === Number(${entorno(v('ped_espera'))}));`,
+    "pm.test('Los campos de la espera vienen en null para el Cliente', () => { pm.expect(p.noRetiradoMinutosRestantes === undefined || p.noRetiradoMinutosRestantes === null).to.eql(true); pm.expect(p.noRetiradoDisponibleDesde === undefined || p.noRetiradoDisponibleDesde === null).to.eql(true); });",
   ]),
   avisosDelCliente('Espera: el Cliente no recibio ningun aviso de no retirado', 'espera', 0),
   resumen('Facturado: lo que ve el Dueño antes de cerrar', TOKEN_DUENO, 'fact_dueno_antes'),
   resumen('Facturado: lo que ve la Empleada antes de cerrar', TOKEN_EMPLEADO, 'fact_emp_antes'),
   envejecer('espera', 20),
+  item('Espera cumplida: la lista informa 0 minutos', req('GET', '/pedidos/comercio', { token: TOKEN_DUENO, comercio: COM }), [
+    status(200),
+    `const p = pm.response.json().data.find((x) => x.id === Number(${entorno(v('ped_espera'))}));`,
+    "pm.test('Faltan 0 minutos y sigue la hora de habilitacion', () => { pm.expect(p.noRetiradoMinutosRestantes).to.eql(0); pm.expect(p.noRetiradoDisponibleDesde).to.be.a('string'); });",
+  ]),
   cerrar('Cierre del Dueño: pasados los 60 minutos cierra el pedido como no retirado', TOKEN_DUENO, 'espera', 200, [
     "pm.test('Mensaje y estado', () => { const r = pm.response.json(); pm.expect(r.mensaje).to.eql('Pedido cerrado como no retirado'); pm.expect(r.data.estado).to.eql('NO_RETIRADO'); });",
     "pm.test('Sin fuente de entrega ni fecha de entrega', () => { const d = pm.response.json().data; pm.expect(d.fuenteEntrega === undefined || d.fuenteEntrega === null).to.eql(true); pm.expect(d.fechaEntrega === undefined || d.fechaEntrega === null).to.eql(true); });",
@@ -443,9 +459,10 @@ const carpeta = { name: NOMBRE_CARPETA, item: items };
 const collection = JSON.parse(fs.readFileSync(collectionPath, 'utf8'));
 const idx = collection.item.findIndex((f) => f.name.startsWith(PREFIJO_CARPETA));
 if (idx >= 0) {
-  collection.item.splice(idx, 1);
+  collection.item.splice(idx, 1, carpeta);
+} else {
+  collection.item.push(carpeta);
 }
-collection.item.push(carpeta);
 fs.writeFileSync(collectionPath, JSON.stringify(collection, null, 2) + '\n', 'utf8');
 
 const environment = JSON.parse(fs.readFileSync(environmentPath, 'utf8'));

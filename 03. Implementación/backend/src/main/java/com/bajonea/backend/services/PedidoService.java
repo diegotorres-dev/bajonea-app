@@ -443,7 +443,7 @@ public class PedidoService {
                 "Tu pedido a " + pedido.getComercio().getNombre() + " fue aceptado y está en preparación.",
                 TipoNotificacion.PEDIDO_ACEPTADO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
 
-        return aResponseDTO(pedido);
+        return aResponseDTOParaComercio(pedido);
     }
 
     public PedidoResponseDTO rechazarPedido(ComercioActivo comercioActivo, Integer pedidoId, RechazoPedidoRequestDTO request) {
@@ -476,7 +476,7 @@ public class PedidoService {
         notificacionService.crearParaCliente(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(), mensaje,
                 TipoNotificacion.PEDIDO_RECHAZADO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
 
-        return aResponseDTO(pedido);
+        return aResponseDTOParaComercio(pedido);
     }
 
     public PedidoResponseDTO avanzarAEntregaEnCurso(ComercioActivo comercioActivo, Integer pedidoId) {
@@ -503,7 +503,7 @@ public class PedidoService {
         notificacionService.crearParaCliente(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(), mensaje,
                 tipo, TipoEntidadNotificacion.PEDIDO, pedido.getId());
 
-        return aResponseDTO(pedido);
+        return aResponseDTOParaComercio(pedido);
     }
 
     public PedidoResponseDTO confirmarEntregaCliente(Integer usuarioId, Integer pedidoId) {
@@ -529,7 +529,7 @@ public class PedidoService {
         marcarEntregado(pedido, FuenteEntrega.COMERCIO);
         registrarHistorial(pedido, actorDePedido(comercioActivo), comercioActivo.actorUsuarioId());
 
-        return aResponseDTO(pedido);
+        return aResponseDTOParaComercio(pedido);
     }
 
     /**
@@ -556,7 +556,7 @@ public class PedidoService {
         registrarHistorial(pedido, actorDePedido(comercioActivo), comercioActivo.actorUsuarioId());
         avisarPedidoNoRetirado(pedido);
 
-        return aResponseDTO(pedido);
+        return aResponseDTOParaComercio(pedido);
     }
 
     private void exigirEsperaMinimaDeRetiro(Pedido pedido, LocalDateTime ahora) {
@@ -567,7 +567,7 @@ public class PedidoService {
         }
         LocalDateTime disponibleDesde = listoDesde.plusMinutes(timeoutProperties.getNoRetiradoEsperaMinutos());
         if (ahora.isBefore(disponibleDesde)) {
-            long minutosRestantes = (Duration.between(ahora, disponibleDesde).getSeconds() + 59) / 60;
+            long minutosRestantes = minutosHasta(ahora, disponibleDesde);
             Map<String, Object> datos = new HashMap<>();
             datos.put("minutosRestantes", minutosRestantes);
             datos.put("disponibleDesde", disponibleDesde.toString());
@@ -577,6 +577,37 @@ public class PedidoService {
                             + disponibleDesde.format(HORA_MINUTO) + ").",
                     datos);
         }
+    }
+
+    private long minutosHasta(LocalDateTime ahora, LocalDateTime disponibleDesde) {
+        return (Duration.between(ahora, disponibleDesde).getSeconds() + 59) / 60;
+    }
+
+    private EsperaNoRetirado esperaNoRetirado(Pedido pedido, LocalDateTime listoDesde, LocalDateTime ahora) {
+        if (pedido.getEstado() != EstadoPedido.LISTO_PARA_RETIRAR || pedido.getTipoEntrega() != TipoEntrega.RETIRO || listoDesde == null) {
+            return null;
+        }
+        LocalDateTime disponibleDesde = listoDesde.plusMinutes(timeoutProperties.getNoRetiradoEsperaMinutos());
+        long minutosRestantes = ahora.isBefore(disponibleDesde) ? minutosHasta(ahora, disponibleDesde) : 0;
+        return new EsperaNoRetirado(disponibleDesde, minutosRestantes);
+    }
+
+    private Map<Integer, LocalDateTime> fechasListoParaRetirar(List<Pedido> pedidos) {
+        List<Integer> ids = pedidos.stream()
+                .filter(pedido -> pedido.getEstado() == EstadoPedido.LISTO_PARA_RETIRAR)
+                .map(Pedido::getId)
+                .toList();
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        Map<Integer, LocalDateTime> fechas = new HashMap<>();
+        for (Object[] fila : historialEstadoPedidoRepository.findUltimaEntradaAEstadoPorPedido(ids, EstadoPedido.LISTO_PARA_RETIRAR)) {
+            fechas.put((Integer) fila[0], (LocalDateTime) fila[1]);
+        }
+        return fechas;
+    }
+
+    private record EsperaNoRetirado(LocalDateTime disponibleDesde, long minutosRestantes) {
     }
 
     private void avisarPedidoNoRetirado(Pedido pedido) {
@@ -637,7 +668,7 @@ public class PedidoService {
         notificacionService.crearParaCliente(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(), mensaje,
                 TipoNotificacion.PEDIDO_ANULADO_COMERCIO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
 
-        return aResponseDTO(pedido);
+        return aResponseDTOParaComercio(pedido);
     }
 
     public List<PedidoResponseDTO> listarPedidosCliente(Integer usuarioId) {
@@ -645,7 +676,7 @@ public class PedidoService {
         Map<Integer, LocalDateTime> fechasPago = fechasPagoAprobado(pedidos);
         Map<Integer, NotaCredito> notas = ultimasNotasCredito(pedidos);
         return pedidos.stream()
-                .map(pedido -> aResponseDTO(pedido, fechasPago.get(pedido.getId()), notas.get(pedido.getId())))
+                .map(pedido -> aResponseDTO(pedido, fechasPago.get(pedido.getId()), notas.get(pedido.getId()), null))
                 .toList();
     }
 
@@ -658,8 +689,11 @@ public class PedidoService {
         List<Pedido> pedidos = pedidoRepository.findLlegadosPagadosByComercioId(comercioId);
         Map<Integer, LocalDateTime> fechasPago = fechasPagoAprobado(pedidos);
         Map<Integer, NotaCredito> notas = ultimasNotasCredito(pedidos);
+        Map<Integer, LocalDateTime> listoDesde = fechasListoParaRetirar(pedidos);
+        LocalDateTime ahora = LocalDateTime.now(clock);
         return pedidos.stream()
-                .map(pedido -> aResponseDTO(pedido, fechasPago.get(pedido.getId()), notas.get(pedido.getId())))
+                .map(pedido -> aResponseDTO(pedido, fechasPago.get(pedido.getId()), notas.get(pedido.getId()),
+                        esperaNoRetirado(pedido, listoDesde.get(pedido.getId()), ahora)))
                 .toList();
     }
 
@@ -998,10 +1032,17 @@ public class PedidoService {
 
     private PedidoResponseDTO aResponseDTO(Pedido pedido) {
         return aResponseDTO(pedido, fechasPagoAprobado(List.of(pedido)).get(pedido.getId()),
-                ultimasNotasCredito(List.of(pedido)).get(pedido.getId()));
+                ultimasNotasCredito(List.of(pedido)).get(pedido.getId()), null);
     }
 
-    private PedidoResponseDTO aResponseDTO(Pedido pedido, LocalDateTime fechaPagoAprobado, NotaCredito notaCredito) {
+    private PedidoResponseDTO aResponseDTOParaComercio(Pedido pedido) {
+        return aResponseDTO(pedido, fechasPagoAprobado(List.of(pedido)).get(pedido.getId()),
+                ultimasNotasCredito(List.of(pedido)).get(pedido.getId()),
+                esperaNoRetirado(pedido, obtenerFechaEntradaAEstado(pedido, EstadoPedido.LISTO_PARA_RETIRAR), LocalDateTime.now(clock)));
+    }
+
+    private PedidoResponseDTO aResponseDTO(Pedido pedido, LocalDateTime fechaPagoAprobado, NotaCredito notaCredito,
+            EsperaNoRetirado espera) {
         List<DetallePedidoResponseDTO> detalles = detallePedidoRepository.findByPedidoId(pedido.getId()).stream()
                 .map(this::aResponseDTO)
                 .toList();
@@ -1040,7 +1081,9 @@ public class PedidoService {
                 pedido.getCargoServicioComercio(),
                 pedido.getTotal(),
                 notaCredito == null ? null : notaCredito.getEstado(),
-                notaCredito == null ? null : notaCredito.getMonto());
+                notaCredito == null ? null : notaCredito.getMonto(),
+                espera == null ? null : espera.disponibleDesde(),
+                espera == null ? null : espera.minutosRestantes());
     }
 
     private DetallePedidoResponseDTO aResponseDTO(DetallePedido detalle) {

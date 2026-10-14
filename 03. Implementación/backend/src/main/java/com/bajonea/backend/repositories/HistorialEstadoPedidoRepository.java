@@ -20,6 +20,10 @@ public interface HistorialEstadoPedidoRepository extends JpaRepository<Historial
             + "where h.pedido.id in :pedidoIds and h.estado = :estado group by h.pedido.id")
     List<Object[]> findPrimeraEntradaAEstadoPorPedido(@Param("pedidoIds") List<Integer> pedidoIds, @Param("estado") EstadoPedido estado);
 
+    @Query("select h.pedido.id, max(h.fechaHora) from HistorialEstadoPedido h "
+            + "where h.pedido.id in :pedidoIds and h.estado = :estado group by h.pedido.id")
+    List<Object[]> findUltimaEntradaAEstadoPorPedido(@Param("pedidoIds") List<Integer> pedidoIds, @Param("estado") EstadoPedido estado);
+
     /**
      * Transiciones de los pedidos del comercio que el comercio llegó a ver, de cualquier actor, para la actividad,
      * de la más nueva a la más vieja desde el cursor ({@code fecha < F} o {@code fecha = F} con {@code id <= M}).

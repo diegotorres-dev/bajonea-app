@@ -52,6 +52,19 @@ export function renderBannerTexto(slot, kind, texto) {
   slot.appendChild(h('div', { class: `banner banner-${kind}`, style: 'margin-bottom:20px;' }, [icono, contenido]));
 }
 
+export function mostrarAvisoFijo(slot, texto) {
+  slot.replaceChildren();
+  if (!texto) return;
+  const icono = new DOMParser().parseFromString(ICONS.error, 'text/html').body.firstElementChild;
+  const contenido = h('div', { 'data-testid': 'aviso-fijo-texto' });
+  contenido.textContent = texto;
+  slot.appendChild(h('div', { class: 'banner banner-error aviso-fijo', role: 'alert', 'data-testid': 'aviso-fijo' }, [icono, contenido]));
+}
+
+export function limpiarAvisoFijo(slot) {
+  slot.replaceChildren();
+}
+
 export function bindPasswordToggle(toggleBtn, input) {
   toggleBtn.addEventListener('click', () => {
     const isHidden = input.type === 'password';

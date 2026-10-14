@@ -9,6 +9,7 @@ Todo lo que hay que revisar antes de subir Bajoneá al servidor final y que no e
 - **Por qué:** desde el bloque A2b de E3 el reloj de la aplicación (`ClockConfig`) usa `America/Argentina/Ushuaia`, pero quedan unos 100 `LocalDateTime.now()` que usan la zona de la JVM (altas y modificaciones, sesiones, tokens, `historial_estado_comercio`, notificaciones, notas de crédito, pagos). Con la JVM en UTC (lo normal en un contenedor Linux) las dos zonas difieren en tres horas y las comparaciones entre fechas de uno y otro grupo dan resultados incorrectos entre las 21:00 y las 24:00. Hoy anda solo porque la máquina de desarrollo está en UTC-3.
 - **Pruebas:** desde el bloque A5, `mvnw test` fija `-Duser.timezone=America/Argentina/Ushuaia` en el surefire (`pom.xml`) y los tests de Playwright, Newman y los estreses calculan "hoy" y "hace N minutos" en esa zona (variable `E2E_ZONA_HORARIA` para cambiarla), así que ya no dependen de la zona de la máquina.
 - **Detalle:** `docs/DECISIONES.md` (E3, bloque A2b) y la "Lista de pulido" de `CLAUDE.md` §9, punto 5.
+- **El frontend tiene la zona escrita una vez:** `ZONA_COMERCIO` en `frontend/js/fechas.js` (`America/Argentina/Ushuaia`). Se usa para decidir qué día es "hoy" y "ayer" al mostrar horas de pedidos y de la actividad (las fechas del servidor llegan sin zona, en hora del comercio). Si se cambia `app.zona-horaria`, hay que cambiar también esa constante: no se lee del servidor.
 
 ## 2. Perfil de Spring y atajos de test
 

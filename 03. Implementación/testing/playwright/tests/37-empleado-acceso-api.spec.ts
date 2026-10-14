@@ -74,6 +74,8 @@ const CAMPOS_PEDIDO_EMPLEADO = [
   'id',
   'motivoAnulacion',
   'motivoRechazo',
+  'noRetiradoDisponibleDesde',
+  'noRetiradoMinutosRestantes',
   'nombreCliente',
   'reembolsoEstado',
   'reembolsoMonto',

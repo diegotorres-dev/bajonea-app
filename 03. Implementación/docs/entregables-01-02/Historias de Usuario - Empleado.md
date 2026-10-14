@@ -88,6 +88,13 @@ Criterios de aceptación adicionales:
   mis compañeros sí pueden gestionarlos.
 - Puedo actuar sobre cualquier otro pedido del comercio, aunque lo haya aceptado otra
   persona del equipo.
+- En la lista de pedidos veo mis propios pedidos con el chip "Tu pedido"; al abrirlos veo la
+  nota "Hiciste este pedido como cliente. No podés gestionarlo desde acá.", sin botones.
+- Si el comercio está suspendido o cerrado temporalmente, veo arriba de la lista un aviso corto
+  ("Comercio suspendido. No se aceptan pedidos nuevos."). Si intento algo que el sistema no
+  permite, el motivo aparece en un aviso rojo fijo sobre los botones.
+- En un retiro listo, "Cerrar como no retirado" aparece apagado con "Disponible en N min (desde
+  las HH:mm)" hasta que pasa la espera; "Entregar" no espera.
 - En el detalle de un pedido veo su recorrido: quién hizo cada paso (nombre y rol), a qué
   hora y, si se rechazó o se anuló, el motivo. El sistema figura sin nombre y el Cliente con
   su nombre.

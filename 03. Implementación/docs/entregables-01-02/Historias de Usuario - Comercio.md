@@ -137,4 +137,7 @@ quién atendió cada pedido y resolver dudas con el cliente.
 - No veo el pedido todavía no pagado ni su vencimiento por falta de pago.
 - El cliente no ve qué empleado atendió su pedido.
 - Si soy Empleado y el pedido es uno que yo mismo hice como cliente, no puedo ver su
-  recorrido ni gestionarlo ("No podés gestionar tus propios pedidos").
+  recorrido ni gestionarlo ("No podés gestionar tus propios pedidos"); en el detalle veo una nota
+  que lo explica.
+- El recorrido es una línea de tiempo: texto de cada paso, hora y "nombre, rol"; el sistema
+  figura solo como "Sistema".

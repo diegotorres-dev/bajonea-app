@@ -347,4 +347,89 @@ class PedidoNoRetiradoHttpIntegrationTest {
 
         assertEquals("LISTO_PARA_RETIRAR", estadoDe(pedidoId));
     }
+
+    private static boolean esNulo(JsonNode nodo) {
+        return nodo.isNull() || nodo.isMissingNode();
+    }
+
+    private JsonNode pedidoDeLaLista(JsonNode lista, int pedidoId) {
+        for (JsonNode pedido : lista) {
+            if (pedido.path("id").asInt() == pedidoId) {
+                return pedido;
+            }
+        }
+        throw new AssertionError("El pedido " + pedidoId + " no está en la lista");
+    }
+
+    @Test
+    void laListaDelComercioInformaCuandoSeHabilitaElCierreDeUnRetiroListo() throws Exception {
+        Escenario e = escenario();
+        int enEspera = listo(e.cliente().id(), e.comercioId(), "RETIRO", 45);
+        int cumplido = listo(e.cliente().id(), e.comercioId(), "RETIRO", 61);
+        int domicilio = listo(e.cliente().id(), e.comercioId(), "DOMICILIO", 45);
+        int entregado = listo(e.cliente().id(), e.comercioId(), "RETIRO", 45);
+        jdbcTemplate.update("UPDATE pedido SET estado = 'ENTREGADO' WHERE id = ?", entregado);
+
+        for (String token : new String[] {e.tokenDueno(), e.tokenEmpleado()}) {
+            JsonNode lista = cuerpo(mockMvc.perform(con(get(BASE.substring(0, BASE.length() - 1)), token, e.comercioId()))
+                    .andExpect(status().isOk())).path("data");
+
+            JsonNode espera = pedidoDeLaLista(lista, enEspera);
+            long minutos = espera.path("noRetiradoMinutosRestantes").asLong(-1);
+            assertTrue(minutos >= 14 && minutos <= 15, "noRetiradoMinutosRestantes = " + minutos);
+            assertNotNull(espera.path("noRetiradoDisponibleDesde").asText(null));
+            LocalDateTime disponibleDesde = LocalDateTime.parse(espera.path("noRetiradoDisponibleDesde").asText());
+            assertTrue(Math.abs(java.time.Duration.between(LocalDateTime.now().plusMinutes(15), disponibleDesde).toSeconds()) < 90);
+
+            JsonNode habilitado = pedidoDeLaLista(lista, cumplido);
+            assertEquals(0, habilitado.path("noRetiradoMinutosRestantes").asLong(-1));
+            assertNotNull(habilitado.path("noRetiradoDisponibleDesde").asText(null));
+
+            for (int sinEspera : new int[] {domicilio, entregado}) {
+                JsonNode otro = pedidoDeLaLista(lista, sinEspera);
+                assertTrue(esNulo(otro.path("noRetiradoMinutosRestantes")));
+                assertTrue(esNulo(otro.path("noRetiradoDisponibleDesde")));
+            }
+        }
+    }
+
+    @Test
+    void despacharUnRetiroDevuelveLaEsperaCompletaYElClienteNuncaLaRecibe() throws Exception {
+        Escenario e = escenario();
+        int pedidoId = listo(e.cliente().id(), e.comercioId(), "RETIRO", 5);
+        jdbcTemplate.update("UPDATE pedido SET estado = 'EN_PREPARACION' WHERE id = ?", pedidoId);
+        jdbcTemplate.update("DELETE FROM historial_estado_pedido WHERE pedido_id = ? AND estado = 'LISTO_PARA_RETIRAR'", pedidoId);
+
+        JsonNode porEmpleado = cuerpo(mockMvc.perform(con(put(BASE + pedidoId + "/despachar"), e.tokenEmpleado(), e.comercioId()))
+                .andExpect(status().isOk())).path("data");
+
+        assertEquals("LISTO_PARA_RETIRAR", porEmpleado.path("estado").asText());
+        assertEquals(60, porEmpleado.path("noRetiradoMinutosRestantes").asLong(-1));
+        assertNotNull(porEmpleado.path("noRetiradoDisponibleDesde").asText(null));
+
+        JsonNode pedidosCliente = cuerpo(mockMvc.perform(con(get("/api/v1/pedidos/cliente"), e.tokenCliente(), null))
+                .andExpect(status().isOk())).path("data");
+        JsonNode delCliente = pedidoDeLaLista(pedidosCliente, pedidoId);
+        assertEquals("LISTO_PARA_RETIRAR", delCliente.path("estado").asText());
+        assertTrue(esNulo(delCliente.path("noRetiradoMinutosRestantes")));
+        assertTrue(esNulo(delCliente.path("noRetiradoDisponibleDesde")));
+    }
+
+    @Test
+    void elMinutoRestanteSeRedondeaHaciaArribaYLlegaACeroAlCumplirse() throws Exception {
+        Escenario e = escenario();
+        int pedidoId = listo(e.cliente().id(), e.comercioId(), "RETIRO", 59);
+        jdbcTemplate.update("UPDATE historial_estado_pedido SET fecha_hora = ? WHERE pedido_id = ? AND estado = 'LISTO_PARA_RETIRAR'",
+                LocalDateTime.now().minusSeconds(59 * 60 + 20), pedidoId);
+
+        JsonNode antes = pedidoDeLaLista(cuerpo(mockMvc.perform(con(get(BASE.substring(0, BASE.length() - 1)), e.tokenDueno(), e.comercioId()))
+                .andExpect(status().isOk())).path("data"), pedidoId);
+        assertEquals(1, antes.path("noRetiradoMinutosRestantes").asLong(-1));
+
+        jdbcTemplate.update("UPDATE historial_estado_pedido SET fecha_hora = ? WHERE pedido_id = ? AND estado = 'LISTO_PARA_RETIRAR'",
+                LocalDateTime.now().minusMinutes(61), pedidoId);
+        JsonNode despues = pedidoDeLaLista(cuerpo(mockMvc.perform(con(get(BASE.substring(0, BASE.length() - 1)), e.tokenDueno(), e.comercioId()))
+                .andExpect(status().isOk())).path("data"), pedidoId);
+        assertEquals(0, despues.path("noRetiradoMinutosRestantes").asLong(-1));
+    }
 }

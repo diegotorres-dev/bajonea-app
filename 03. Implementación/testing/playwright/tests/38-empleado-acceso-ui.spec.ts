@@ -501,14 +501,17 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       }
     });
 
-    test('en el detalle de un pedido pendiente el Empleado no ve ninguna acción ni la línea de cargo de servicio', async ({ page, request }) => {
+    test('en el detalle de un pedido pendiente el Empleado ve aceptar y rechazar, y no la línea de cargo de servicio', async ({ page, request }) => {
       await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
 
       await page.goto(`/comercio-pedido-detalle.html?id=${idsPedido.pendiente}`);
 
       await expect(page.getByTestId('nombre-cliente-pedido')).toBeVisible();
       await expect(page.getByText('Este pedido está esperando la confirmación del comercio.')).toBeVisible();
-      for (const boton of ['btn-aceptar-pedido', 'btn-rechazar-pedido', 'btn-despachar-pedido', 'btn-anular-pedido']) {
+      for (const boton of ['btn-aceptar-pedido', 'btn-rechazar-pedido']) {
+        await expect(page.getByTestId(boton)).toBeVisible();
+      }
+      for (const boton of ['btn-despachar-pedido', 'btn-anular-pedido']) {
         await expect(page.getByTestId(boton)).toHaveCount(0);
       }
       await expect(page.getByText('Cargo por servicio')).toHaveCount(0);
@@ -742,7 +745,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
 
       await abrirComoEmpleado(page, request, empleado, suspendido);
       await page.goto('/comercio-dashboard.html');
-      await expect(page.getByTestId('mensaje-estado-comercio')).toContainText('Este comercio está suspendido');
+      await expect(page.getByTestId('mensaje-estado-comercio')).toContainText('Comercio suspendido. No se aceptan pedidos nuevos.');
       await page.goto('/comercio-perfil.html');
       await expect(page.getByTestId('empleado-estado')).toHaveText('Suspendido');
 
@@ -750,7 +753,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
         sessionStorage.setItem(clave as string, JSON.stringify({ usuarioId, tipo: 'EMPLEADO', comercioId }));
       }, ['bajonea_contexto', empleado.usuarioId, cerrado] as const);
       await page.goto('/comercio-dashboard.html');
-      await expect(page.getByTestId('mensaje-estado-comercio')).toContainText('cerrado temporalmente');
+      await expect(page.getByTestId('mensaje-estado-comercio')).toContainText('Comercio cerrado temporalmente. No se aceptan pedidos nuevos.');
       await page.goto('/comercio-perfil.html');
       await expect(page.getByTestId('empleado-estado')).toHaveText('Cerrado temporalmente');
     });

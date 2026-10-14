@@ -290,9 +290,21 @@ bloqueado para el Empleado por defecto.
 
 ---
 
+## Pedidos en Pantalla
+
+> **Estado de implementación:** tramo E3, entrega B, etapa 1.
+
+- La lista de pedidos del comercio (y los "Pedidos activos" del panel) muestra cada pedido en una fila sin botones, con el cliente, el número, la cantidad de productos, la hora, el estado, el total y un chevron. Un pedido que el Empleado hizo como Cliente lleva además el chip "Tu pedido". Todas las acciones están dentro del detalle.
+- Con el comercio Suspendido o Cerrado Temporalmente el Empleado ve arriba de la lista (y en el panel) el aviso "Comercio suspendido. No se aceptan pedidos nuevos." o "Comercio cerrado temporalmente. No se aceptan pedidos nuevos." El botón "Aceptar pedido" sigue habilitado: si el servidor lo rechaza, el motivo aparece en un aviso fijo.
+- En el detalle de un pedido que no es propio, el Empleado tiene las mismas acciones que el Dueño según el estado: pendiente (aceptar, rechazar), en preparación (despachar o dejar listo, anular) y listo para retirar ("Entregar" y "Cerrar como no retirado"). Debajo ve el "Recorrido del pedido": una línea de tiempo con el texto de cada paso, la hora y "nombre, rol" de quien actuó (el sistema figura solo como "Sistema").
+- "Entregar" está siempre habilitado. "Cerrar como no retirado" aparece apagado mientras no haya pasado la espera mínima, con la ayuda "Disponible en N min (desde las HH:mm)" que se actualiza sola; al cumplirse se habilita. Antes de cerrar, una confirmación avisa que no se devuelve el pago al Cliente.
+- Cuando el servidor rechaza una acción por una regla de negocio (conflicto 409), el mensaje aparece en un aviso fijo rojo sobre los botones, que se queda hasta la próxima acción. Los demás errores se muestran como avisos temporales.
+
 ## Pedidos Propios
 
-> **Estado de implementación:** la regla, la marca de la lista y la trazabilidad están implementadas (tramo E3, bloque A3). Lo único que falta de esta sección es que el Empleado no reciba el aviso de "pedido nuevo" de su propio pedido: llega con el aviso al equipo del bloque A4.
+> **Estado de implementación:** la regla, la marca de la lista, la nota del detalle y la trazabilidad están implementadas (backend en el tramo E3, bloque A3; pantallas en la entrega B, etapa 1). Lo único que falta de esta sección es que el Empleado no reciba el aviso de "pedido nuevo" de su propio pedido: llega con el aviso al equipo del bloque A4.
+
+En el detalle de su propio pedido el Empleado ve la nota "Hiciste este pedido como cliente. No podés gestionarlo desde acá.", sin botones y sin recorrido.
 
 "Pedido propio" y "Tu pedido" significan siempre lo mismo: un pedido del que la persona que consulta es el Cliente. No tiene nada que ver con quién lo aceptó.
 
@@ -325,7 +337,7 @@ bloqueado para el Empleado por defecto.
   se muestra en el detalle del panel del comercio (Dueño y Empleados), incluso si el
   Empleado ya está inactivo. El Cliente no ve qué empleado atendió su pedido.
 - **Recorrido del pedido ("Atendido por").** El servidor ofrece `GET /api/v1/pedidos/comercio/{id}/trazabilidad`
-  (bloque A3 del tramo E3; la pantalla llega en la entrega B), que devuelve, de la primera a
+  (bloque A3 del tramo E3; la pantalla se implementó en la entrega B, etapa 1), que devuelve, de la primera a
   la última, cada transición del pedido con su estado, la hora, un texto legible ("Aceptó el
   pedido"), el rol y el nombre y apellido de quien actuó y, en el rechazo y la anulación, el
   motivo. Lo ven el Dueño y todos los Empleados activos del comercio (con el comercio

@@ -1,8 +1,10 @@
-import { apiFetch, ApiError, clearSesion, contextoPuedeOperar, esContextoComercio, esContextoDueno, esContextoEmpleado, getUsuario } from './api.js';
+import { apiFetch, ApiError, clearSesion, contextoPuedeGestionarPedidos, contextoPuedeOperar, esContextoComercio, esContextoDueno, esContextoEmpleado, getUsuario } from './api.js';
 import { exigirContextoComercio, exigirDueno } from './contexto.js';
 import { logout, construirTelefono, resolverHomePorRol, LABELS_TIPO_SOCIEDAD, LABELS_CONDICION_IVA } from './auth.js';
 import { resumenHorarioHoy, renderTopBar, showToast, pintarAvatarComercio, renderPedidoEstadoHeader, manejarBloqueoPorCambioPassword, crearBloqueMotivoRechazo } from './catalogo.js';
 import { SOPORTE_CONTACTO_URL } from './config.js';
+import { horaConDiaDe, horaMinutoDe } from './fechas.js';
+import { limpiarAvisoFijo, mostrarAvisoFijo } from './form-utils.js';
 import {
   activarComercio,
   contarNotificacionesNoLeidasActivo,
@@ -68,6 +70,7 @@ const TEXTO_REEMBOLSO = {
 
 function normalizarPedido(pedido) {
   normalizarCampos(pedido, ['nombreCliente']);
+  pedido.esPedidoPropio = pedido.esPedidoPropio === true;
   normalizarCampos(pedido.direccion, ['calle']);
   (pedido.detalles || []).forEach((detalle) => normalizarCampos(detalle, ['nombreProducto']));
   const vistaReducida = !Object.hasOwn(pedido, 'cargoServicioComercio');
@@ -500,9 +503,19 @@ function renderMetricas(container, resumen) {
 }
 
 const AVISO_COMERCIO_NO_OPERATIVO = {
-  SUSPENDIDO: 'Este comercio está suspendido. Podés consultar su información, pero no operar.',
-  CERRADO_TEMPORALMENTE: 'Este comercio está cerrado temporalmente. Podés consultar su información, pero no operar.',
+  SUSPENDIDO: 'Comercio suspendido. No se aceptan pedidos nuevos.',
+  CERRADO_TEMPORALMENTE: 'Comercio cerrado temporalmente. No se aceptan pedidos nuevos.',
 };
+
+function pintarAvisoComercioNoOperativo(slot) {
+  const activo = getComercioActivoEnMemoria();
+  const texto = esContextoEmpleado() && activo ? AVISO_COMERCIO_NO_OPERATIVO[activo.estado] : null;
+  renderBanner(slot, 'warning', texto || '');
+  if (slot.firstElementChild) {
+    slot.firstElementChild.setAttribute('data-testid', 'aviso-comercio-no-operativo');
+  }
+  return Boolean(texto);
+}
 
 const ESTADO_BADGE_COMERCIO = {
   PENDIENTE_CONFIRMACION_COMERCIO: { label: 'Nuevo', dotClass: 'pedido-estado__dot--pendiente' },
@@ -534,7 +547,14 @@ function renderPedidoActivoCard(pedido) {
   info.appendChild(clienteEl);
   const cantidadProductos = pedido.detalles.reduce((total, detalle) => total + detalle.cantidad, 0);
   const fechaEl = crear('p', 'pedido-card__fecha');
-  fechaEl.textContent = `Pedido #${pedido.id} · ${cantidadProductos} producto${cantidadProductos === 1 ? '' : 's'} · ${formatearFechaHoraCorta(pedido.fechaPagoAprobado)}`;
+  fechaEl.appendChild(document.createTextNode(`Pedido #${pedido.id}`));
+  if (pedido.esPedidoPropio) {
+    const chipPropio = crear('span', 'chip-propio');
+    chipPropio.setAttribute('data-testid', 'chip-tu-pedido');
+    chipPropio.textContent = 'Tu pedido';
+    fechaEl.appendChild(chipPropio);
+  }
+  fechaEl.appendChild(document.createTextNode(` · ${cantidadProductos} producto${cantidadProductos === 1 ? '' : 's'} · ${formatearFechaHoraCorta(pedido.fechaPagoAprobado)}`));
   info.appendChild(fechaEl);
   top.appendChild(info);
 
@@ -560,9 +580,10 @@ function renderPedidoActivoCard(pedido) {
   total.setAttribute('data-testid', 'total-pedido');
   total.textContent = formatearPrecio(pedido.total);
   bottom.appendChild(total);
-  const verMas = crear('span', 'link');
-  verMas.textContent = 'Ver pedido';
-  bottom.appendChild(verMas);
+  const chevron = crear('span', 'pedido-card__chevron');
+  chevron.setAttribute('aria-hidden', 'true');
+  chevron.innerHTML = ICONS.chevronRight;
+  bottom.appendChild(chevron);
   card.appendChild(bottom);
 
   return card;
@@ -620,8 +641,7 @@ export async function initComercioDashboard() {
     if (!enMemoria) {
       return;
     }
-    if (esContextoEmpleado() && AVISO_COMERCIO_NO_OPERATIVO[enMemoria.estado]) {
-      renderBanner(document.getElementById('banner-estado-slot'), 'warning', AVISO_COMERCIO_NO_OPERATIVO[enMemoria.estado]);
+    if (pintarAvisoComercioNoOperativo(document.getElementById('banner-estado-slot'))) {
       return;
     }
     const abierto = enMemoria.abiertoAhora;
@@ -705,6 +725,10 @@ export async function initComercioPedidos() {
   if (!(await prepararPaginaComercio({ slotFranja: document.getElementById('franja-comercio-slot') }))) {
     return;
   }
+
+  const avisoComercioSlot = document.getElementById('aviso-comercio-slot');
+  pintarAvisoComercioNoOperativo(avisoComercioSlot);
+  suscribirComercios(() => pintarAvisoComercioNoOperativo(avisoComercioSlot));
 
   const pedidos = await apiFetch('/pedidos/comercio');
   pedidos.forEach(normalizarPedido);
@@ -917,7 +941,15 @@ function mostrarModalRechazarPedido(pedido, onConfirmar) {
   });
 }
 
-function renderAccionesPendiente(container, pedido, onActualizado) {
+function mostrarErrorDeAccion(error, avisoSlot, mensajeGenerico) {
+  if (error instanceof ApiError && error.status === 409) {
+    mostrarAvisoFijo(avisoSlot, error.message);
+    return;
+  }
+  showToast(error instanceof ApiError ? error.message : mensajeGenerico, 'error');
+}
+
+function renderAccionesPendiente(container, pedido, onActualizado, avisoSlot) {
   container.innerHTML = '';
 
   const aceptarBtn = crear('button', 'btn btn-primary');
@@ -926,6 +958,7 @@ function renderAccionesPendiente(container, pedido, onActualizado) {
   aceptarBtn.setAttribute('data-testid', 'btn-aceptar-pedido');
   aceptarBtn.textContent = 'Aceptar pedido';
   aceptarBtn.addEventListener('click', async () => {
+    limpiarAvisoFijo(avisoSlot);
     setLoading(aceptarBtn, 'Aceptando...', true);
     try {
       const actualizado = await apiFetch(`/pedidos/comercio/${pedido.id}/aceptar`, { method: 'PUT' });
@@ -933,7 +966,7 @@ function renderAccionesPendiente(container, pedido, onActualizado) {
       showToast('Pedido aceptado');
       onActualizado(actualizado);
     } catch (error) {
-      showToast(error instanceof ApiError ? error.message : 'No pudimos aceptar el pedido', 'error');
+      mostrarErrorDeAccion(error, avisoSlot, 'No pudimos aceptar el pedido');
       setLoading(aceptarBtn, '', false, 'Aceptar pedido');
     }
   });
@@ -946,6 +979,7 @@ function renderAccionesPendiente(container, pedido, onActualizado) {
   rechazarBtn.setAttribute('data-testid', 'btn-rechazar-pedido');
   rechazarBtn.textContent = 'Rechazar pedido';
   rechazarBtn.addEventListener('click', () => {
+    limpiarAvisoFijo(avisoSlot);
     mostrarModalRechazarPedido(pedido, async ({ motivo, comentario }) => {
       try {
         const actualizado = await apiFetch(`/pedidos/comercio/${pedido.id}/rechazar`, {
@@ -956,7 +990,7 @@ function renderAccionesPendiente(container, pedido, onActualizado) {
         showToast('Pedido rechazado');
         onActualizado(actualizado);
       } catch (error) {
-        showToast(error instanceof ApiError ? error.message : 'No pudimos rechazar el pedido', 'error');
+        mostrarErrorDeAccion(error, avisoSlot, 'No pudimos rechazar el pedido');
       }
     });
   });
@@ -1041,15 +1075,17 @@ function mostrarModalAnularPedido(pedido, onConfirmar) {
   });
 }
 
-function renderAccionesEnPreparacion(container, pedido, onActualizado) {
+function renderAccionesEnPreparacion(container, pedido, onActualizado, avisoSlot) {
   container.innerHTML = '';
 
+  const textoDespachar = pedido.tipoEntrega === 'DOMICILIO' ? 'Marcar como despachado' : 'Marcar como listo para retirar';
   const despacharBtn = crear('button', 'btn btn-primary');
   despacharBtn.type = 'button';
   despacharBtn.style.marginBottom = '10px';
   despacharBtn.setAttribute('data-testid', 'btn-despachar-pedido');
-  despacharBtn.textContent = pedido.tipoEntrega === 'DOMICILIO' ? 'Marcar como despachado' : 'Marcar como listo para retirar';
+  despacharBtn.textContent = textoDespachar;
   despacharBtn.addEventListener('click', async () => {
+    limpiarAvisoFijo(avisoSlot);
     setLoading(despacharBtn, 'Actualizando...', true);
     try {
       const actualizado = await apiFetch(`/pedidos/comercio/${pedido.id}/despachar`, { method: 'PUT' });
@@ -1057,8 +1093,8 @@ function renderAccionesEnPreparacion(container, pedido, onActualizado) {
       showToast('Pedido actualizado');
       onActualizado(actualizado);
     } catch (error) {
-      showToast(error instanceof ApiError ? error.message : 'No pudimos actualizar el pedido', 'error');
-      setLoading(despacharBtn, '', false, pedido.tipoEntrega === 'DOMICILIO' ? 'Marcar como despachado' : 'Marcar como listo para retirar');
+      mostrarErrorDeAccion(error, avisoSlot, 'No pudimos actualizar el pedido');
+      setLoading(despacharBtn, '', false, textoDespachar);
     }
   });
   container.appendChild(despacharBtn);
@@ -1070,6 +1106,7 @@ function renderAccionesEnPreparacion(container, pedido, onActualizado) {
   anularBtn.setAttribute('data-testid', 'btn-anular-pedido');
   anularBtn.textContent = 'Anular pedido';
   anularBtn.addEventListener('click', () => {
+    limpiarAvisoFijo(avisoSlot);
     mostrarModalAnularPedido(pedido, async ({ motivo, comentario }) => {
       try {
         const actualizado = await apiFetch(`/pedidos/comercio/${pedido.id}/anular`, { method: 'PUT', body: { motivo, comentario: comentario || null } });
@@ -1077,36 +1114,231 @@ function renderAccionesEnPreparacion(container, pedido, onActualizado) {
         showToast('Pedido anulado');
         onActualizado(actualizado);
       } catch (error) {
-        showToast(error instanceof ApiError ? error.message : 'No pudimos anular el pedido', 'error');
+        mostrarErrorDeAccion(error, avisoSlot, 'No pudimos anular el pedido');
       }
     });
   });
   container.appendChild(anularBtn);
 }
 
-function renderAccionesListoParaRetirar(container, pedido, onActualizado) {
+function mostrarModalNoRetirado(pedido, onConfirmar) {
+  const backdrop = crear('div', 'modal-backdrop');
+  backdrop.setAttribute('data-testid', 'modal-no-retirado');
+  const hoja = crear('div', 'modal-sheet');
+  hoja.setAttribute('role', 'dialog');
+  hoja.setAttribute('aria-modal', 'true');
+  hoja.setAttribute('aria-labelledby', 'modal-no-retirado-titulo');
+
+  const titulo = crear('h2', 'modal-sheet__title');
+  titulo.id = 'modal-no-retirado-titulo';
+  titulo.textContent = `¿Cerrar el pedido #${pedido.id} como no retirado?`;
+  const texto = crear('p', 'modal-sheet__text');
+  texto.setAttribute('data-testid', 'texto-modal-no-retirado');
+  texto.textContent = 'El cliente no pasó a buscarlo y no se le devuelve el pago, porque el pedido ya estaba preparado.';
+  const confirmar = crear('button', 'btn btn-primary');
+  confirmar.type = 'button';
+  confirmar.style.background = 'var(--color-error)';
+  confirmar.style.marginBottom = '10px';
+  confirmar.setAttribute('data-testid', 'btn-confirmar-no-retirado');
+  confirmar.textContent = 'Cerrar como no retirado';
+  const cancelar = crear('button', 'btn btn-tertiary');
+  cancelar.type = 'button';
+  cancelar.setAttribute('data-testid', 'btn-cancelar-no-retirado');
+  cancelar.textContent = 'Cancelar';
+
+  hoja.append(titulo, texto, confirmar, cancelar);
+  backdrop.appendChild(hoja);
+  document.body.appendChild(backdrop);
+  cancelar.focus();
+
+  function cerrar() {
+    document.removeEventListener('keydown', alTeclear);
+    backdrop.remove();
+  }
+
+  function alTeclear(evento) {
+    if (evento.key === 'Escape') {
+      cerrar();
+    }
+  }
+
+  document.addEventListener('keydown', alTeclear);
+  backdrop.addEventListener('click', (evento) => {
+    if (evento.target === backdrop) {
+      cerrar();
+    }
+  });
+  cancelar.addEventListener('click', cerrar);
+  confirmar.addEventListener('click', () => {
+    cerrar();
+    onConfirmar();
+  });
+}
+
+let temporizadorEspera = null;
+
+function detenerTemporizadorEspera() {
+  if (temporizadorEspera !== null) {
+    window.clearInterval(temporizadorEspera);
+    temporizadorEspera = null;
+  }
+}
+
+function renderAccionesListoParaRetirar(container, pedido, onActualizado, avisoSlot) {
   container.innerHTML = '';
 
   const entregarBtn = crear('button', 'btn btn-primary');
   entregarBtn.type = 'button';
   entregarBtn.setAttribute('data-testid', 'btn-confirmar-retiro');
-  entregarBtn.textContent = 'Confirmar retiro';
+  entregarBtn.textContent = 'Entregar';
   entregarBtn.addEventListener('click', async () => {
-    setLoading(entregarBtn, 'Confirmando...', true);
+    limpiarAvisoFijo(avisoSlot);
+    setLoading(entregarBtn, 'Entregando...', true);
     try {
       const actualizado = await apiFetch(`/pedidos/comercio/${pedido.id}/entregar`, { method: 'PUT' });
       normalizarPedido(actualizado);
-      showToast('Retiro confirmado');
+      showToast('Pedido entregado');
       onActualizado(actualizado);
     } catch (error) {
-      showToast(error instanceof ApiError ? error.message : 'No pudimos confirmar el retiro', 'error');
-      setLoading(entregarBtn, '', false, 'Confirmar retiro');
+      mostrarErrorDeAccion(error, avisoSlot, 'No pudimos entregar el pedido');
+      setLoading(entregarBtn, '', false, 'Entregar');
     }
   });
   container.appendChild(entregarBtn);
+
+  if (pedido.tipoEntrega !== 'RETIRO') {
+    return;
+  }
+
+  const noRetiradoBtn = crear('button', 'btn btn-secondary');
+  noRetiradoBtn.type = 'button';
+  noRetiradoBtn.style.marginTop = '10px';
+  noRetiradoBtn.style.borderColor = 'var(--color-error)';
+  noRetiradoBtn.style.color = 'var(--color-error)';
+  noRetiradoBtn.setAttribute('data-testid', 'btn-cerrar-no-retirado');
+  noRetiradoBtn.textContent = 'Cerrar como no retirado';
+  container.appendChild(noRetiradoBtn);
+
+  const ayuda = crear('p', 'field__hint accion-ayuda');
+  ayuda.setAttribute('data-testid', 'ayuda-no-retirado');
+  ayuda.hidden = true;
+  container.appendChild(ayuda);
+
+  const recibidoEn = Date.now();
+  const minutosAlRecibir = pedido.noRetiradoMinutosRestantes;
+
+  function minutosPendientes() {
+    if (minutosAlRecibir === null || minutosAlRecibir === undefined) {
+      return 0;
+    }
+    const transcurridos = (Date.now() - recibidoEn) / 1000;
+    return Math.max(0, Math.ceil((minutosAlRecibir * 60 - transcurridos) / 60));
+  }
+
+  function pintarEspera() {
+    const pendientes = minutosPendientes();
+    noRetiradoBtn.disabled = pendientes > 0;
+    ayuda.hidden = pendientes === 0;
+    if (pendientes > 0) {
+      ayuda.textContent = `Disponible en ${pendientes} min (desde las ${horaMinutoDe(pedido.noRetiradoDisponibleDesde)})`;
+    } else {
+      ayuda.textContent = '';
+      detenerTemporizadorEspera();
+    }
+  }
+
+  pintarEspera();
+  if (minutosPendientes() > 0) {
+    temporizadorEspera = window.setInterval(pintarEspera, 15000);
+  }
+
+  noRetiradoBtn.addEventListener('click', () => {
+    limpiarAvisoFijo(avisoSlot);
+    mostrarModalNoRetirado(pedido, async () => {
+      setLoading(noRetiradoBtn, 'Cerrando...', true);
+      try {
+        const actualizado = await apiFetch(`/pedidos/comercio/${pedido.id}/no-retirado`, { method: 'PUT' });
+        normalizarPedido(actualizado);
+        showToast('Pedido cerrado como no retirado');
+        onActualizado(actualizado);
+      } catch (error) {
+        mostrarErrorDeAccion(error, avisoSlot, 'No pudimos cerrar el pedido');
+        setLoading(noRetiradoBtn, '', false, 'Cerrar como no retirado');
+        pintarEspera();
+      }
+    });
+  });
+}
+
+function crearNotaPedidoPropio() {
+  const nota = crear('div', 'nota-pedido-propio');
+  nota.setAttribute('data-testid', 'nota-pedido-propio');
+  nota.textContent = 'Hiciste este pedido como cliente. No podés gestionarlo desde acá.';
+  return nota;
+}
+
+let pedidoDelRecorrido = 0;
+
+function crearSeccionRecorrido(pedido) {
+  const seccion = crear('section', 'recorrido');
+  seccion.setAttribute('data-testid', 'recorrido-pedido');
+  const titulo = crear('div', 'section-heading');
+  titulo.textContent = 'Recorrido del pedido';
+  seccion.appendChild(titulo);
+  const lista = crear('ol', 'recorrido__lista');
+  lista.setAttribute('data-testid', 'recorrido-lista');
+  lista.setAttribute('aria-busy', 'true');
+  seccion.appendChild(lista);
+
+  const solicitud = ++pedidoDelRecorrido;
+  apiFetch(`/pedidos/comercio/${pedido.id}/trazabilidad`)
+    .then((traza) => {
+      if (solicitud !== pedidoDelRecorrido) {
+        return;
+      }
+      lista.removeAttribute('aria-busy');
+      lista.replaceChildren();
+      traza.pasos.forEach((paso) => lista.appendChild(crearPasoRecorrido(paso)));
+    })
+    .catch(() => {
+      if (solicitud !== pedidoDelRecorrido) {
+        return;
+      }
+      lista.removeAttribute('aria-busy');
+      const error = crear('li', 'recorrido__error');
+      error.setAttribute('data-testid', 'recorrido-error');
+      error.textContent = 'No pudimos cargar el recorrido del pedido.';
+      lista.replaceChildren(error);
+    });
+  return seccion;
+}
+
+function crearPasoRecorrido(paso) {
+  const fila = crear('li', 'recorrido__paso');
+  fila.setAttribute('data-testid', 'recorrido-paso');
+  fila.appendChild(crear('span', 'recorrido__punto'));
+  const cuerpo = crear('div', 'recorrido__cuerpo');
+  const texto = crear('p', 'recorrido__texto');
+  texto.setAttribute('data-testid', 'recorrido-texto');
+  texto.textContent = paso.accionTexto;
+  cuerpo.appendChild(texto);
+  const meta = crear('p', 'recorrido__meta');
+  meta.setAttribute('data-testid', 'recorrido-meta');
+  const quien = paso.actorRol === 'SISTEMA' || !paso.actorNombre ? 'Sistema' : `${paso.actorNombre}, ${paso.actorRolTexto}`;
+  meta.textContent = `${horaConDiaDe(paso.fechaHora)} · ${quien}`;
+  cuerpo.appendChild(meta);
+  if (paso.motivo) {
+    const motivo = crear('p', 'recorrido__motivo');
+    motivo.setAttribute('data-testid', 'recorrido-motivo');
+    motivo.textContent = `Motivo: ${paso.motivo}`;
+    cuerpo.appendChild(motivo);
+  }
+  fila.appendChild(cuerpo);
+  return fila;
 }
 
 function renderPedidoDetalleComercio(container, pedido, onActualizado) {
+  detenerTemporizadorEspera();
   const info = ESTADO_DETALLE_COMERCIO[pedido.estado] || DETALLE_COMERCIO_DESCONOCIDO;
 
   let motivoInfo = null;
@@ -1224,18 +1456,29 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado) {
   totalLine.appendChild(totalValue);
   body.appendChild(totalLine);
 
-  if (contextoPuedeOperar() && (pedido.estado === 'PENDIENTE_CONFIRMACION_COMERCIO' || pedido.estado === 'EN_PREPARACION' || pedido.estado === 'LISTO_PARA_RETIRAR')) {
+  if (pedido.esPedidoPropio) {
+    body.appendChild(crearNotaPedidoPropio());
+    container.appendChild(body);
+    return;
+  }
+
+  if (contextoPuedeGestionarPedidos() && (pedido.estado === 'PENDIENTE_CONFIRMACION_COMERCIO' || pedido.estado === 'EN_PREPARACION' || pedido.estado === 'LISTO_PARA_RETIRAR')) {
+    const avisoSlot = crear('div', 'aviso-fijo-slot');
+    avisoSlot.setAttribute('data-testid', 'aviso-accion-slot');
+    body.appendChild(avisoSlot);
     const accionesSlot = crear('div');
-    accionesSlot.style.marginTop = '24px';
+    accionesSlot.style.marginTop = '12px';
     body.appendChild(accionesSlot);
     if (pedido.estado === 'PENDIENTE_CONFIRMACION_COMERCIO') {
-      renderAccionesPendiente(accionesSlot, pedido, onActualizado);
+      renderAccionesPendiente(accionesSlot, pedido, onActualizado, avisoSlot);
     } else if (pedido.estado === 'EN_PREPARACION') {
-      renderAccionesEnPreparacion(accionesSlot, pedido, onActualizado);
+      renderAccionesEnPreparacion(accionesSlot, pedido, onActualizado, avisoSlot);
     } else {
-      renderAccionesListoParaRetirar(accionesSlot, pedido, onActualizado);
+      renderAccionesListoParaRetirar(accionesSlot, pedido, onActualizado, avisoSlot);
     }
   }
+
+  body.appendChild(crearSeccionRecorrido(pedido));
 
   container.appendChild(body);
 }

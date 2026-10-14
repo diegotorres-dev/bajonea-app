@@ -3,6 +3,7 @@ import type { APIRequestContext } from '@playwright/test';
 import {
   agregarItemCarrito,
   apiConHeaders,
+  apiGet,
   confirmarPagoTest,
   crearCategoria,
   crearPedido,
@@ -288,6 +289,42 @@ test.describe('Cerrar un retiro como no retirado (API), bloque A4b de E3', () =>
     expect(sql(`SELECT fuente_entrega IS NULL AND fecha_entrega IS NULL FROM pedido WHERE id = ${automatico};`)).toBe('1');
 
     ponerEstadoComercio(dueno.comercioId, 'APTO_VENTA');
+  });
+
+  test('la lista del comercio informa cuándo se habilita el cierre (minutos hacia arriba, 0 al cumplirse) y el Cliente nunca lo recibe', async ({ request }) => {
+    const retiro = await pedidoListo(request, comprador, 0);
+    const domicilio = await pedidoListo(request, comprador, 0);
+    sql(`UPDATE pedido SET modalidad_entrega = 'DOMICILIO' WHERE id = ${domicilio};`);
+    const delPedido = (cuerpo: any[], id: number) => cuerpo.find((pedido) => pedido.id === id);
+    const listar = (token: string) => apiConHeaders(request, 'GET', '/pedidos/comercio', token, conComercio(dueno.comercioId));
+
+    for (const token of [dueno.token, elena.token]) {
+      const lista = (await listar(token)).body.data;
+      expect(delPedido(lista, retiro).noRetiradoMinutosRestantes).toBe(60);
+      expect(typeof delPedido(lista, retiro).noRetiradoDisponibleDesde).toBe('string');
+      expect(delPedido(lista, domicilio).noRetiradoMinutosRestantes ?? null).toBeNull();
+      expect(delPedido(lista, domicilio).noRetiradoDisponibleDesde ?? null).toBeNull();
+    }
+
+    expect((await envejecer(request, retiro, 45)).status).toBe(200);
+    const aMitad = delPedido((await listar(dueno.token)).body.data, retiro);
+    expect(aMitad.noRetiradoMinutosRestantes).toBeGreaterThanOrEqual(14);
+    expect(aMitad.noRetiradoMinutosRestantes).toBeLessThanOrEqual(15);
+
+    expect((await envejecer(request, retiro, 20)).status).toBe(200);
+    const cumplido = delPedido((await listar(elena.token)).body.data, retiro);
+    expect(cumplido.noRetiradoMinutosRestantes).toBe(0);
+    expect(typeof cumplido.noRetiradoDisponibleDesde).toBe('string');
+
+    const delCliente = delPedido((await apiGet(request, '/pedidos/cliente', comprador.token)).body.data, retiro);
+    expect(delCliente.estado).toBe('LISTO_PARA_RETIRAR');
+    expect(delCliente.noRetiradoMinutosRestantes ?? null).toBeNull();
+    expect(delCliente.noRetiradoDisponibleDesde ?? null).toBeNull();
+
+    expect((await cerrar(request, dueno.token, retiro)).status).toBe(200);
+    const cerrado = delPedido((await listar(dueno.token)).body.data, retiro);
+    expect(cerrado.estado).toBe('NO_RETIRADO');
+    expect(cerrado.noRetiradoMinutosRestantes ?? null).toBeNull();
   });
 
   test('seis cierres simultáneos del mismo pedido dejan un solo ganador, un solo historial y un solo aviso', async ({ request }) => {

@@ -158,6 +158,10 @@ export function esContextoComercio() {
   return esContextoDueno() || esContextoEmpleado();
 }
 
+export function contextoPuedeGestionarPedidos() {
+  return esContextoComercio();
+}
+
 export function contextoPuedeOperar() {
   return esContextoDueno();
 }

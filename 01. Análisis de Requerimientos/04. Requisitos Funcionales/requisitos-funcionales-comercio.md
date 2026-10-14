@@ -252,7 +252,10 @@ horario, también con el aviso de cuándo reabre.
   no fue retirado y el comercio lo cerró. Como ya estaba preparado, no hay devolución del
   pago."). Implementado en el tramo E3, bloque A4b (`PUT /api/v1/pedidos/comercio/{id}/no-retirado`,
   sexta acción de pedido delegable al Empleado): antes de la espera responde 409 con los
-  minutos que faltan y desde qué hora se puede; sirve también con el comercio suspendido o
+  minutos que faltan y desde qué hora se puede; además, la lista y las respuestas de las acciones del
+  comercio traen `noRetiradoDisponibleDesde` y `noRetiradoMinutosRestantes` (nulos fuera de un retiro
+  listo para retirar y siempre nulos para el Cliente) para que la pantalla muestre el botón apagado con
+  "Disponible en N min (desde las HH:mm)"; sirve también con el comercio suspendido o
   cerrado temporalmente. Cuando un comercio suspendido tiene pedidos listos para retirar, el
   sistema los cierra como NO_RETIRADO (y no como ENTREGADO) al vencer el plazo de 90 minutos,
   sin la espera de 60 y con el mismo aviso T36.

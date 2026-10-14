@@ -5411,3 +5411,119 @@ button.panel-comercios__fila:focus-visible {
 .reembolso-chip--reembolsado {
   background: var(--color-border);
 }
+
+.chip-propio {
+  display: inline-block;
+  margin: 0 2px 0 6px;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+  vertical-align: 1px;
+}
+
+.pedido-card__chevron {
+  display: inline-flex;
+  color: var(--color-text-muted);
+}
+
+.pedido-card__chevron svg {
+  width: 18px;
+  height: 18px;
+}
+
+.aviso-comercio-slot:not(:empty) {
+  padding: 12px 20px 0;
+}
+
+.aviso-fijo-slot:not(:empty) {
+  margin-top: 24px;
+}
+
+.aviso-fijo {
+  margin-bottom: 4px;
+}
+
+.accion-ayuda {
+  margin: 8px 0 0;
+  text-align: center;
+}
+
+.btn-secondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.nota-pedido-propio {
+  margin-top: 24px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.recorrido {
+  margin-top: 28px;
+}
+
+.recorrido__lista {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.recorrido__paso {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  padding-bottom: 18px;
+}
+
+.recorrido__paso:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 14px;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-border);
+}
+
+.recorrido__punto {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
+.recorrido__cuerpo {
+  min-width: 0;
+}
+
+.recorrido__texto {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  line-height: 1.4;
+}
+
+.recorrido__meta,
+.recorrido__motivo {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.recorrido__error {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}

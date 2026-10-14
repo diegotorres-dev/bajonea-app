@@ -45,6 +45,8 @@ public class PedidoEmpleadoResponseDTO {
     private final BigDecimal total;
     private final EstadoReembolsoEmpleado reembolsoEstado;
     private final BigDecimal reembolsoMonto;
+    private final LocalDateTime noRetiradoDisponibleDesde;
+    private final Long noRetiradoMinutosRestantes;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final Boolean esPedidoPropio;
@@ -70,6 +72,8 @@ public class PedidoEmpleadoResponseDTO {
         this.total = pedido.getTotal();
         this.reembolsoEstado = EstadoReembolsoEmpleado.desde(pedido.getReembolsoEstado());
         this.reembolsoMonto = pedido.getReembolsoMonto();
+        this.noRetiradoDisponibleDesde = pedido.getNoRetiradoDisponibleDesde();
+        this.noRetiradoMinutosRestantes = pedido.getNoRetiradoMinutosRestantes();
     }
 
     public static PedidoEmpleadoResponseDTO desde(PedidoResponseDTO pedido, Integer empleadoUsuarioId) {

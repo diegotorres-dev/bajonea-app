@@ -84,6 +84,31 @@ function detener() {
   console.log(`Procesos propios detenidos: ${detenidos}`);
 }
 
+function copiarFrontend(frontDir, limpiar = true) {
+  if (limpiar) rmSync(frontDir, { recursive: true, force: true });
+  mkdirSync(frontDir, { recursive: true });
+  cpSync(path.join(raiz, 'frontend'), frontDir, { recursive: true, force: true });
+  const archivoApi = path.join(frontDir, 'js', 'api.js');
+  const contenido = readFileSync(archivoApi, 'utf8');
+  const reemplazado = contenido.replace(`localhost:${PUERTO_BACKEND_POR_DEFECTO_DEL_FRONT}`, `localhost:${PUERTO_BACKEND}`);
+  if (reemplazado === contenido) throw new Error('No se encontró el puerto del backend en js/api.js de la copia');
+  writeFileSync(archivoApi, reemplazado);
+}
+
+function refrescarFront() {
+  const estado = leerEstado();
+  if (!estado.frontDirTemporal) {
+    console.log('No hay copia temporal del frontend registrada (el frontend se sirve directo de frontend/): nada que refrescar');
+    return;
+  }
+  if (!estado.frontPid) {
+    console.error('No hay un frontend propio registrado: corré "levantar" primero');
+    process.exit(1);
+  }
+  copiarFrontend(estado.frontDirTemporal, false);
+  console.log(`Copia temporal del frontend regenerada en ${estado.frontDirTemporal} (frontPid ${estado.frontPid} sin tocar)`);
+}
+
 async function levantar() {
   const previo = leerEstado();
   if (previo.backendPid || previo.frontPid) {
@@ -111,14 +136,7 @@ async function levantar() {
   let frontDir = path.join(raiz, 'frontend');
   if (PUERTO_BACKEND !== PUERTO_BACKEND_POR_DEFECTO_DEL_FRONT) {
     frontDir = path.join(temp, `bajonea-frontend-${PUERTO_BACKEND}`);
-    rmSync(frontDir, { recursive: true, force: true });
-    mkdirSync(frontDir, { recursive: true });
-    cpSync(path.join(raiz, 'frontend'), frontDir, { recursive: true });
-    const archivoApi = path.join(frontDir, 'js', 'api.js');
-    const contenido = readFileSync(archivoApi, 'utf8');
-    const reemplazado = contenido.replace(`localhost:${PUERTO_BACKEND_POR_DEFECTO_DEL_FRONT}`, `localhost:${PUERTO_BACKEND}`);
-    if (reemplazado === contenido) throw new Error('No se encontró el puerto del backend en js/api.js de la copia');
-    writeFileSync(archivoApi, reemplazado);
+    copiarFrontend(frontDir);
     estado.frontDirTemporal = frontDir;
   }
   const front = spawn(
@@ -182,9 +200,9 @@ async function preparar() {
 }
 
 const comando = process.argv[2];
-const acciones = { levantar, detener: async () => detener(), preparar, 'fijar-admin': fijarPasswordAdmin };
+const acciones = { levantar, detener: async () => detener(), preparar, 'fijar-admin': fijarPasswordAdmin, 'refrescar-front': async () => refrescarFront() };
 if (!acciones[comando]) {
-  console.error('Uso: node scripts/entorno-test.mjs <preparar | levantar | detener | fijar-admin>  (PUERTO_BACKEND, PUERTO_FRONT, BACKEND_LOG, ADMIN_PASSWORD)');
+  console.error('Uso: node scripts/entorno-test.mjs <preparar | levantar | detener | fijar-admin | refrescar-front>  (PUERTO_BACKEND, PUERTO_FRONT, BACKEND_LOG, ADMIN_PASSWORD)');
   process.exit(2);
 }
 acciones[comando]().catch((error) => {
