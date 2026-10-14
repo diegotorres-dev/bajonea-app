@@ -10036,13 +10036,13 @@ Solo `backend/src/main/java/com/bajonea/backend/config/security/SecurityConfig.j
 10. **Runner de estreses.** `scripts/correr-estreses.mjs`: 17 scripts en secuencia, `--lista`, `--solo`, `--sin`; verifica antes que el backend tenga el perfil `test` (si no, no corre nada), resuelve la localidad, pasa las credenciales por entorno, cuenta una sola vez `Deadlock found` y `Lock wait timeout` del log de toda la corrida y sale distinto de 0 si algo falla.
 11. **Documentación.** `CLAUDE.md` (solo las correcciones factuales: `V32` a `V34`, la frase de "sin Dueño ni pantallas", el cuadro de §7.2 y el encabezado de las líneas, más el punto 7 de la lista de pulido pedido), banner de histórico en `docs/AUDITORIA-E3.md` sin reescribirlo, punto 3 del orden global de `docs/CONCURRENCIA-Y-TRANSACCIONES.md`, `docs/LISTA-DE-DESPLIEGUE.md` (nuevo; la zona horaria como primer ítem con la recomendación de `-Duser.timezone=America/Argentina/Ushuaia`; el environment de Postman versionado con 44 passwords y la contraseña del administrador de producción distinta), `docs/APRENDIZAJES-TECNICOS.md` (una entrada nueva y la corrección del hallazgo del carrito) y `testing/playwright/README.md`. `docs/entregables-01-02/`: solo `CAMBIOS.md`; no hay nada que copiar a `01.` ni a `02.`.
 
-### Hallazgos de producción abiertos (sin tocar, esperan la decisión de Diego)
+### Hallazgos de producción del bloque A5 (texto de ese momento; **resueltos en el bloque A5b**, ver la entrada "Tramo E3, bloque A5b" más abajo; la causa de A5-2 resultó más amplia que la descrita acá)
 
 - **A5-1 (baja).** Las dos firmas de Cloudinary no revalidan la relación del Empleado dentro de la transacción (las otras 16 escrituras sí). Con la desactivación retenida, `firma-imagen` y `firma-recorte` dieron `200` en 5 de 6 intentos de 3 rondas. Arreglo propuesto: `iniciarEscrituraDeCatalogo(actor)` al principio de `generarFirmaImagen` y `generarFirmaRecorteImagen`. El estrés A5 los acepta explícitamente (`200` o `404`) hasta que se decida.
 - **A5-2 (media-baja).** `eliminarImagen` da `500` (`StaleObjectStateException` en `recalcularImagenPrincipal`, línea 417) cuando dos operadores borran la misma imagen: reproducido en las rondas 1 y 4 del escenario 2 (Dueño más Empleado). Arreglo propuesto: leer la imagen con `PESSIMISTIC_WRITE` para que el segundo espere y reciba `404`.
 - **A5-3 (media).** `Deadlock found` y `500` en `cerrar` (y `datos-operativos`) con las 18 escrituras de dos operadores a la vez: 3 deadlocks en 4 rondas del escenario 2. Hipótesis fundada en el último deadlock de InnoDB (`cerrar` con el exclusivo del comercio contra un `INSERT` de imagen que tiene el compartido del comercio y espera el compartido del producto) y en el código: el `cambiarEstado` del Dueño toma el producto `FOR UPDATE` antes de cualquier lectura del comercio mientras que el Empleado toma primero el comercio compartido; un `cerrar` en el medio cierra un ciclo de tres. Arreglo propuesto: que el `cambiarEstado` del Dueño lea el comercio con `LOCK IN SHARE MODE` antes del producto. No probado con el arreglo.
 
-El escenario 2 del estrés A5 reproduce A5-2 y A5-3; por eso no corre por defecto (`ESCENARIO=2` o `HALLAZGOS=1`): el runner de estreses corre solo el escenario 1 y queda verde. **Cuando se aprueben los arreglos, el escenario 2 debe pasar a correr por defecto.**
+El escenario 2 del estrés A5 reproduce A5-2 y A5-3; por eso no corre por defecto (`ESCENARIO=2` o `HALLAZGOS=1`): el runner de estreses corre solo el escenario 1 y queda verde. **Cuando se aprueben los arreglos, el escenario 2 debe pasar a correr por defecto.** *(Hecho en el bloque A5b: corren los escenarios 1 a 4 y `HALLAZGOS` ya no existe.)*
 
 ### Las pruebas muerden
 
@@ -10090,3 +10090,66 @@ Logs del backend: **0 `Deadlock found` y 0 `Lock wait timeout`** en la salida de
 3. Si la entrega B de E3 empieza ya o antes hay que cerrar los hallazgos.
 4. Si se corre el escenario 2 del estrés A5 por defecto una vez arreglados.
 5. Que Diego verifique `practicas3` (filas con `fuente_entrega = 'COMERCIO_SIN_RETIRO'`), pendiente de A4b.
+
+
+---
+
+## 2026-10-14 — Tramo E3, bloque A5b: orden único de bloqueo del catálogo (A5-1, A5-2 y A5-3)
+
+**Pendiente de la confirmación de Diego. No se declara cerrado E3.** Resuelve los tres hallazgos de producción que dejó el estrés de A5. La Fase 1 (confirmación con evidencia, sin tocar código) y la Fase 2 (implementación) se hicieron en la misma sesión. La aclaración obligatoria del OK de la Fase 1 —un orden único para todas las escrituras de producto e imagen— reemplazó a la opción B tal como yo la había escrito ("producto primero, comercio después"), que habría dejado el orden invertido.
+
+### Código de producción tocado
+
+Solo `backend/src/main/java/com/bajonea/backend/services/ProductoService.java` (`git diff --stat -- backend/src/main` al final: ese archivo, 45 inserciones y 39 borrados, más el `application.properties` que ya estaba modificado antes del bloque). Sin migraciones, sin pantallas, sin cambios de contrato salvo los códigos de estado de abajo.
+
+- `iniciarEscrituraDeCatalogo(actor)` ahora es `void` y toma, para **todo** actor, la relación del Empleado y el comercio con `LOCK IN SHARE MODE` (antes el comercio solo lo leía el Empleado). Desapareció `iniciarEscrituraDeCatalogoSinLeerComercio`.
+- Nuevo `bloquearProductoDelComercio(actor, productoId)`: el producto `FOR UPDATE` como primera lectura del producto. Lo usan `editarProducto`, `cambiarEstado`, `agregarImagen`, `eliminarImagen`, `reordenarImagen` y `actualizarUrlImagen`; después vienen las lecturas comunes.
+- `crearProducto` y las dos firmas de Cloudinary llaman a `iniciarEscrituraDeCatalogo` y no toman el producto.
+
+Orden único: usuario `S` → relación `S` (Empleado) → comercio `S` → producto `X` → lecturas comunes → escrituras. Tabla de cada método en `docs/CONCURRENCIA-Y-TRANSACCIONES.md`, "Bloque A5b de E3".
+
+### Qué se confirmó en la Fase 1 (con evidencia, sin tocar código)
+
+- **A5-3.** Reproducido con el escenario 2 (12 `Deadlock found` y `500` en `cerrar`, `abrir` y `datos-operativos` en 6 rondas). Matriz de 25 ráfagas: solo Empleado o solo Dueño, 0 deadlocks; mezclados, 150 a 222 por combinación donde intervenían `estado`, `editar` o `agregar` del Dueño; `orden`, `url` y `crear` del Dueño, 0. Reproducido de forma determinista en SQL con tres sesiones (ERROR 1213 con el orden viejo del Dueño, nada con el nuevo). La hipótesis era correcta y más general que `cambiarEstado`.
+- **A5-2.** La causa no era solo `eliminarImagen`: cualquier escritura de imagen (`eliminar`, `reordenar`, `actualizarUrl` y el `recalcularImagenPrincipal` de otro borrado) fijaba su foto con la lectura común del comercio antes de bloquear nada, veía filas que otro ya había borrado sin confirmar y fallaba al escribirlas (`StaleObjectStateException`, `500`). 70 `Stale` en 20 rondas de 5 operaciones a la vez, sin deadlocks. No hay pérdida de datos: cada imagen tiene una sola fila de historial `ELIMINAR`, ninguna sigue existiendo y cada producto conserva una principal. Por eso la propuesta literal (bloquear solo la imagen en `eliminarImagen`) no alcanzaba.
+- **A5-1.** Confirmado: las firmas solo usaban el estado que dejó el resolver.
+
+### Cambios de comportamiento visibles
+
+- Un Empleado con la relación desactivada, o con el comercio `SUSPENDIDO`, recibe `404` `COMERCIO_NO_DISPONIBLE` / `409` `COMERCIO_SUSPENDIDO` también al pedir las firmas (antes, `200` si su request ya había pasado el resolver, o si el comercio se había suspendido dentro de la transacción). El Dueño con el comercio suspendido sigue obteniendo las firmas (hueco anotado del tramo de suspensión).
+- Escribir sobre una imagen que otro acaba de eliminar da `404` "Imagen no encontrada" en vez de `500`.
+- Las escrituras de producto e imagen del Dueño leen ahora el comercio con bloqueo compartido: esperan a un `cerrar`/`abrir`/`datos-operativos` en curso (milisegundos).
+
+### Pruebas
+
+- `mvnw test` en las dos pasadas: **791 + 6 = 797** (la clase de los atajos pasó de 3 a 6 tests por el A5; 9 nuevos en `EscriturasCatalogoOrdenDeBloqueoIntegrationTest`: tres con el ciclo de tres armado con latches —Dueño detenido justo antes de insertar el historial, Empleado editando el mismo producto, un `FOR UPDATE` del comercio en el medio— para `cambiarEstado`, `editarProducto` y `agregarImagen`; tres de carrera sobre la misma imagen —`eliminar`, `reordenar`, `actualizarUrl`— que exigen `RecursoNoEncontrado` y una sola fila de historial; y tres de firmas: relación inactiva, desactivación ganando la carrera y comercio suspendido). El punto de detención es la hora que `registrar` pide justo antes del `INSERT` (espía de `DisponibilidadComercioService.ahora()`; espiar `registrar` falla por su `MANDATORY`).
+- Playwright: spec **51** nuevo (6 tests). Corrida completa **784/786** en 19,0 min desde una base reseteada (backend 8081, front 5502): fallaron `01:101` (Cloudinary real) y `27:497` (inestable conocido); repetidos 5 veces cada uno, 9 de 10 pasaron.
+- Newman: carpeta **67** nueva (`build-catalogo-orden-tramoE3-A5b-postman.mjs`, 44 requests, 56 assertions; se corre después del constructor de la 66). Colección completa: **3036 requests, 4684 assertions, 0 fallas**. Es secuencial: verifica el contrato (borrar dos veces, firmas con relación inactiva, reactivada y comercio suspendido) y no muerde por sí sola.
+- Estrés `stress-locks-tramoE3-A5.mjs`: los escenarios 1 a 4 corren por defecto. El 1 espera `404` también en las firmas. El 2 (las 18 del Empleado y del Dueño a la vez) ya no reproduce nada. **El 3 es la matriz completa: las 7 escrituras de producto e imagen del Empleado por las 7 del Dueño (49 combinaciones, 6 ráfagas de ~20 solicitudes cada una), contra cerrar, abrir y datos operativos de ambos y las dos firmas: 4116 solicitudes, 0 deadlocks, 0 `5xx` en todas las combinaciones, sin ninguna que siga fallando.** El 4: 20 rondas de 8 escrituras de imagen en paralelo sobre las mismas imágenes: sin `5xx`, una sola baja por imagen, una sola principal. Runner de los 17 estreses (con el del carrito contra el stub de Mercado Pago): todos OK, **0 `Deadlock found` y 0 `Lock wait timeout` en el log de toda la corrida** (43,8 min).
+
+### Las pruebas muerden
+
+Parches temporales sobre `ProductoService.java` con copia de respaldo en el scratchpad, restauración verificada con `sha256sum` contra la copia y con `git diff --stat` idéntico al de antes del parche:
+- *A5-3, el Dueño no lee el comercio antes del producto:* fallan los 3 tests Java del ciclo de tres (deadlock en el hilo del `cerrar`).
+- *A5-2, `findById` en vez de `findByIdConBloqueo`:* fallan 4 tests Java (los 3 de carrera de imagen y, además, el del ciclo de `cambiarEstado`).
+- *A5-1, las firmas con el viejo `validarComercioModificable(actor, actor.estadoComercio())`:* fallan los 3 tests Java de firmas.
+- *Todo el original (`ProductoService` anterior), con el backend reiniciado:* el spec 51 falla 3 de 6 (eliminar a la vez, reordenar o cambiar la URL contra eliminar, y la ráfaga mixta); el escenario 4 del estrés da `500` en 4 a 5 de las 8 operaciones por ronda; el escenario 3 da deadlocks y `500` en 24 de las 49 combinaciones (con 2 ráfagas); el escenario 1 da `200` en las dos firmas en las 3 rondas. La carpeta 67 pasa igual (es secuencial). Los tests de firmas del spec 51 son de contrato: el resolver ya rechaza una relación inactiva antes de la transacción.
+
+### Hallazgos nuevos
+
+1. **Con el código original, `orden`/`url` contra `orden`/`url` y `eliminar` contra `eliminar` también se interbloqueaban** (matriz de 2 ráfagas: `E.orden x D.url`, `E.url x D.orden`, `E.eliminar x D.eliminar`, 18 a 27 deadlocks), entre filas de imágenes del mismo producto (`recalcularImagenPrincipal`). No estaba en el informe de A5. Lo resuelve la misma serialización por producto; el escenario 3 lo cubre.
+2. **El conteo de `Deadlock found` por bytes desde el inicio del log no sirve si el log rota** (a los 10 MB): un estrés largo dio `-888`. `stress-locks-tramoE3-A5.mjs` y `correr-estreses.mjs` ahora suman el log activo y los `.gz` rotados. Los otros 16 scripts individuales siguen contando por bytes: alcanzan si no rotan (ver `docs/APRENDIZAJES-TECNICOS.md`).
+
+### Decisiones no previstas
+
+1. Escribí un test Java por cada uno de los tres métodos del Dueño con el ciclo de tres, no uno solo, porque cada uno toma un tipo de bloqueo distinto sobre el producto (`X` por el volcado, `X` por `findByIdConBloqueo`, `S` por la clave foránea).
+2. El gancho del test Java vuelca el `EntityManager` para que el hilo tenga tomado en el motor lo mismo que tendrá al insertar (sin eso `editarProducto` no habría tomado todavía el `X` del producto).
+3. La matriz del escenario 3 usa un producto nuevo por ráfaga (con 3 imágenes) porque una galería tiene un máximo de 5 imágenes y `eliminar` necesita imágenes que todavía existan.
+4. Cambié `correr-estreses.mjs` (conteo del log) además del script A5; es un cambio de herramientas, no de producción.
+5. En el spec 51 reforcé la ráfaga mixta (3 repeticiones de estado, editar y agregar por actor, 12 rondas) hasta que mordiera contra el código original; la primera versión no mordía.
+
+### Preguntas abiertas
+
+1. ¿Se unifica el conteo del log (log activo más `.gz`) en los otros 16 scripts de estrés? Hoy un estrés largo que rote el log podría ocultar un deadlock; el runner ya lo cuenta bien.
+2. Las escrituras de producto e imagen del **Dueño** ahora esperan el exclusivo del comercio de un `cerrar` en curso. Es milisegundos, pero es un cambio de latencia del Dueño; ¿alcanza o se prefiere medirlo con carga?
+3. El hueco anotado sigue: el Dueño puede editar productos y perfil con el comercio `SUSPENDIDO` (tramo de rediseño de la suspensión).

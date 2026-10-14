@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -27,7 +28,7 @@ const ESTRESES = [
   { id: 'carrito', archivo: 'stress-locks-tramoE3-carrito.mjs', descripcion: 'E3 carrito (necesita el backend con MERCADOPAGO_API_BASE_URL apuntando al stub)', requiereStubMp: true },
   { id: 'a4b', archivo: 'stress-locks-tramoE3-A4b.mjs', descripcion: 'E3 A4b: no retirado' },
   { id: 'a6', archivo: 'stress-locks-tramoE3-A6.mjs', descripcion: 'E3 A6: T30 al equipo' },
-  { id: 'a5', archivo: 'stress-locks-tramoE3-A5.mjs', descripcion: 'E3 A5: desactivación contra las 18 escrituras' },
+  { id: 'a5', archivo: 'stress-locks-tramoE3-A5.mjs', descripcion: 'E3 A5 y A5b: desactivación contra las 18 escrituras, Dueño y Empleado a la vez, matriz de 49 combinaciones de producto e imagen y escrituras de imagen' },
 ];
 
 const argumentos = process.argv.slice(2);
@@ -82,11 +83,22 @@ function ejecutar(estres, env) {
   });
 }
 
-const bytesDelLog = () => (existsSync(LOG_BACKEND) ? statSync(LOG_BACKEND).size : 0);
+function contarEnElLog(patron) {
+  if (!existsSync(LOG_BACKEND)) return 0;
+  let total = (readFileSync(LOG_BACKEND).toString('utf8').match(patron) || []).length;
+  const carpeta = path.dirname(LOG_BACKEND);
+  const prefijo = `${path.basename(LOG_BACKEND)}.`;
+  for (const archivo of readdirSync(carpeta)) {
+    if (archivo.startsWith(prefijo) && archivo.endsWith('.gz')) {
+      total += (gunzipSync(readFileSync(path.join(carpeta, archivo))).toString('utf8').match(patron) || []).length;
+    }
+  }
+  return total;
+}
 
 const loc = await verificarEntorno();
 const nube = process.env.CLOUDINARY_CLOUD_NAME || 'demo';
-const inicioLog = bytesDelLog();
+const inicioLog = { deadlocks: contarEnElLog(/Deadlock found/g), timeouts: contarEnElLog(/Lock wait timeout/g) };
 console.log(`Estreses contra ${BASE} (localidad ${loc}, log del backend ${LOG_BACKEND}, ${elegidos.length} scripts)\n`);
 
 const resultados = [];
@@ -108,9 +120,8 @@ for (const estres of elegidos) {
   if (problemas.length) problemas.forEach((l) => console.log(`    ${l.slice(0, 260)}`));
 }
 
-const texto = existsSync(LOG_BACKEND) ? readFileSync(LOG_BACKEND).subarray(inicioLog).toString('utf8') : '';
-const deadlocks = (texto.match(/Deadlock found/g) || []).length;
-const timeouts = (texto.match(/Lock wait timeout/g) || []).length;
+const deadlocks = contarEnElLog(/Deadlock found/g) - inicioLog.deadlocks;
+const timeouts = contarEnElLog(/Lock wait timeout/g) - inicioLog.timeouts;
 console.log('\nResumen');
 for (const r of resultados) console.log(`${r.id.padEnd(8)} ${r.problemas.length === 0 ? 'OK ' : 'MAL'} ${r.segundos.toFixed(0).padStart(5)} s  ${r.archivo}`);
 console.log(`Log del backend durante toda la corrida: ${deadlocks} "Deadlock found", ${timeouts} "Lock wait timeout"`);

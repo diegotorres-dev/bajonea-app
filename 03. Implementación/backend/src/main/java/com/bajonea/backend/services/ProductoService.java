@@ -73,7 +73,8 @@ public class ProductoService {
     private final HistorialEdicionComercioService historialEdicionComercioService;
 
     public ProductoResponseDTO crearProducto(ComercioActivo actor, ProductoRequestDTO request) {
-        Comercio comercio = iniciarEscrituraDeCatalogo(actor);
+        iniciarEscrituraDeCatalogo(actor);
+        Comercio comercio = obtenerComercio(actor.comercioId());
         Categoria categoria = obtenerCategoria(request.getCategoriaId());
 
         Producto producto = Producto.builder()
@@ -95,8 +96,8 @@ public class ProductoService {
     }
 
     public ProductoResponseDTO editarProducto(ComercioActivo actor, Integer productoId, ProductoRequestDTO request) {
-        Comercio comercio = iniciarEscrituraDeCatalogo(actor);
-        Producto producto = obtenerProductoDelComercio(productoId, comercio);
+        iniciarEscrituraDeCatalogo(actor);
+        Producto producto = bloquearProductoDelComercio(actor, productoId);
 
         if (producto.getEstado() == EstadoProducto.DESCONTINUADO) {
             throw new ConflictoDeNegocioException("No se puede editar un producto descontinuado");
@@ -268,19 +269,16 @@ public class ProductoService {
 
     /**
      * Cambio de estado del producto. Orden de bloqueo: el usuario que actúa (y su relación si es Empleado), el
-     * producto {@code FOR UPDATE} como primera lectura de la transacción, los usuarios de los Clientes cuyos carritos
+     * comercio {@code LOCK IN SHARE MODE} (ver {@link #iniciarEscrituraDeCatalogo}), el
+     * producto {@code FOR UPDATE} como primera lectura común de la transacción, los usuarios de los Clientes cuyos carritos
      * lo contienen, el historial de la edición y, al final, esos carritos (última hoja del orden global). Con el
      * producto bloqueado nadie puede agregarlo a un carrito, así que los carritos que lo contienen solo pueden perder
      * ítems; no se hace ninguna lectura común antes del bloqueo para que la foto de la transacción incluya todo lo que
      * se confirmó antes de él. Ver {@link CarritoService}.
      */
     public ProductoResponseDTO cambiarEstado(ComercioActivo actor, Integer productoId, EstadoProducto nuevoEstado) {
-        iniciarEscrituraDeCatalogoSinLeerComercio(actor);
-        Producto producto = productoRepository.findByIdConBloqueo(productoId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Producto no encontrado"));
-        if (!producto.getComercio().getId().equals(actor.comercioId())) {
-            throw new RecursoNoEncontradoException("Producto no encontrado");
-        }
+        iniciarEscrituraDeCatalogo(actor);
+        Producto producto = bloquearProductoDelComercio(actor, productoId);
 
         EstadoProducto estadoActual = producto.getEstado();
         if (!TRANSICIONES_VALIDAS.getOrDefault(estadoActual, Set.of()).contains(nuevoEstado)) {
@@ -307,14 +305,14 @@ public class ProductoService {
     }
 
     public CloudinarySignatureResponseDTO generarFirmaImagen(ComercioActivo actor, Integer productoId) {
-        ComercioActivoService.validarComercioModificable(actor, actor.estadoComercio());
+        iniciarEscrituraDeCatalogo(actor);
         Comercio comercio = obtenerComercio(actor.comercioId());
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
         return cloudinaryService.generarFirmaImagenProducto(comercio.getId(), producto.getId());
     }
 
     public CloudinarySignatureResponseDTO generarFirmaRecorteImagen(ComercioActivo actor, Integer productoId, Integer imagenId) {
-        ComercioActivoService.validarComercioModificable(actor, actor.estadoComercio());
+        iniciarEscrituraDeCatalogo(actor);
         Comercio comercio = obtenerComercio(actor.comercioId());
         Producto producto = obtenerProductoDelComercio(productoId, comercio);
         obtenerImagenDelProducto(imagenId, producto);
@@ -322,10 +320,10 @@ public class ProductoService {
     }
 
     public ImagenProductoResponseDTO agregarImagen(ComercioActivo actor, Integer productoId, ImagenProductoRequestDTO request) {
-        Comercio comercio = iniciarEscrituraDeCatalogo(actor);
-        Producto producto = obtenerProductoDelComercio(productoId, comercio);
+        iniciarEscrituraDeCatalogo(actor);
+        Producto producto = bloquearProductoDelComercio(actor, productoId);
 
-        cloudinaryService.validarImagenProducto(comercio.getId(), producto.getId(), request.getUrl());
+        cloudinaryService.validarImagenProducto(actor.comercioId(), producto.getId(), request.getUrl());
 
         long existentes = imagenProductoRepository.countByProductoId(productoId);
         if (existentes >= MAX_IMAGENES_POR_PRODUCTO) {
@@ -352,8 +350,8 @@ public class ProductoService {
     }
 
     public void eliminarImagen(ComercioActivo actor, Integer productoId, Integer imagenId) {
-        Comercio comercio = iniciarEscrituraDeCatalogo(actor);
-        Producto producto = obtenerProductoDelComercio(productoId, comercio);
+        iniciarEscrituraDeCatalogo(actor);
+        Producto producto = bloquearProductoDelComercio(actor, productoId);
         ImagenProducto imagen = obtenerImagenDelProducto(imagenId, producto);
         imagenProductoRepository.delete(imagen);
         recalcularImagenPrincipal(productoId);
@@ -362,8 +360,8 @@ public class ProductoService {
     }
 
     public ImagenProductoResponseDTO reordenarImagen(ComercioActivo actor, Integer productoId, Integer imagenId, Integer nuevoOrden) {
-        Comercio comercio = iniciarEscrituraDeCatalogo(actor);
-        Producto producto = obtenerProductoDelComercio(productoId, comercio);
+        iniciarEscrituraDeCatalogo(actor);
+        Producto producto = bloquearProductoDelComercio(actor, productoId);
         ImagenProducto imagen = obtenerImagenDelProducto(imagenId, producto);
 
         boolean cambioElOrden = !Objects.equals(imagen.getOrden(), nuevoOrden);
@@ -380,11 +378,11 @@ public class ProductoService {
     }
 
     public ImagenProductoResponseDTO actualizarUrlImagen(ComercioActivo actor, Integer productoId, Integer imagenId, String nuevaUrl) {
-        Comercio comercio = iniciarEscrituraDeCatalogo(actor);
-        Producto producto = obtenerProductoDelComercio(productoId, comercio);
+        iniciarEscrituraDeCatalogo(actor);
+        Producto producto = bloquearProductoDelComercio(actor, productoId);
         ImagenProducto imagen = obtenerImagenDelProducto(imagenId, producto);
 
-        cloudinaryService.validarImagenProducto(comercio.getId(), producto.getId(), nuevaUrl);
+        cloudinaryService.validarImagenProducto(actor.comercioId(), producto.getId(), nuevaUrl);
         boolean cambioLaUrl = !Objects.equals(imagen.getUrl(), nuevaUrl);
         imagen.setUrl(nuevaUrl);
         imagenProductoRepository.save(imagen);
@@ -453,29 +451,37 @@ public class ProductoService {
     }
 
     /**
-     * Arranque común de las escrituras del catálogo: el usuario que actúa y, si es Empleado, su relación (ver
-     * {@link HistorialEdicionComercioService#iniciarEscritura}); después, solo para el Empleado, el estado del
-     * comercio leído con bloqueo compartido para aplicar el guard de suspensión. No escribe el comercio, así que el
-     * bloqueo compartido no se mejora a exclusivo más adelante.
+     * Arranque común de toda escritura del catálogo (producto, imágenes y las dos firmas de Cloudinary), para el Dueño
+     * y para el Empleado. Orden único de bloqueo: el usuario que actúa y, si es Empleado, su relación (ver
+     * {@link HistorialEdicionComercioService#iniciarEscritura}); después el comercio, con una lectura bloqueante
+     * ({@code LOCK IN SHARE MODE}) del estado, que también aplica el guard de suspensión del Empleado. Nunca sube a
+     * exclusivo. Quien después toma un producto lo hace con {@link #bloquearProductoDelComercio}, así que el comercio
+     * siempre se toma antes que el producto: con el producto primero, una escritura del Dueño se cruzaba con una del
+     * Empleado y con un {@code FOR UPDATE} del comercio ({@code cerrar}, {@code abrir}, datos operativos) encolado en
+     * medio, y esa se interbloqueaba. Esta operación no hace ninguna lectura común, para que la foto de la
+     * transacción se fije después de los bloqueos que siguen.
      */
-    private Comercio iniciarEscrituraDeCatalogo(ComercioActivo actor) {
-        iniciarEscrituraDeCatalogoSinLeerComercio(actor);
-        return obtenerComercio(actor.comercioId());
+    private void iniciarEscrituraDeCatalogo(ComercioActivo actor) {
+        historialEdicionComercioService.iniciarEscritura(actor);
+        EstadoComercio estado = comercioRepository.leerEstadoConBloqueoCompartido(actor.comercioId())
+                .map(lectura -> EstadoComercio.valueOf(lectura.getEstado()))
+                .orElseThrow(ComercioNoDisponibleException::new);
+        ComercioActivoService.validarComercioModificable(actor, estado);
     }
 
     /**
-     * Las mismas lecturas con bloqueo de {@link #iniciarEscrituraDeCatalogo}, sin la lectura común del comercio: las
-     * operaciones que necesitan que su foto de la transacción se fije después de un bloqueo propio (el cambio de
-     * estado, que bloquea el producto) no pueden hacer ninguna lectura común antes.
+     * Toma el producto del comercio {@code FOR UPDATE}, siempre después de {@link #iniciarEscrituraDeCatalogo} y como
+     * primera lectura del producto. Serializa las escrituras de un mismo producto y de su galería: quien llega
+     * segundo espera, y como su foto de la transacción se fija recién después, ve lo último confirmado (una imagen ya
+     * borrada da 404, no un error al escribir sobre una fila que ya no existe).
      */
-    private void iniciarEscrituraDeCatalogoSinLeerComercio(ComercioActivo actor) {
-        historialEdicionComercioService.iniciarEscritura(actor);
-        if (actor.esEmpleado()) {
-            EstadoComercio estado = comercioRepository.leerEstadoConBloqueoCompartido(actor.comercioId())
-                    .map(lectura -> EstadoComercio.valueOf(lectura.getEstado()))
-                    .orElseThrow(ComercioNoDisponibleException::new);
-            ComercioActivoService.validarComercioModificable(actor, estado);
+    private Producto bloquearProductoDelComercio(ComercioActivo actor, Integer productoId) {
+        Producto producto = productoRepository.findByIdConBloqueo(productoId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Producto no encontrado"));
+        if (!producto.getComercio().getId().equals(actor.comercioId())) {
+            throw new RecursoNoEncontradoException("Producto no encontrado");
         }
+        return producto;
     }
 
     private Categoria obtenerCategoria(Integer categoriaId) {

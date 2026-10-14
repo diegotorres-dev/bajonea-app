@@ -539,3 +539,7 @@ Backend y pruebas; sin migraciones ni pantallas. Implementa la decisión 28 ("pe
 
 No cambian el diccionario de datos ni los diagramas (sin migración). Otros documentos del repositorio: `docs/DECISIONES.md` (entrada del bloque A3 y la decisión 28 marcada como implementada), `docs/CONCURRENCIA-Y-TRANSACCIONES.md` (nota del bloque A3 en 5bis), `docs/AUDITORIA-E3.md` (`esPropio` renombrado a `esPedidoPropio`) y `CLAUDE.md`.
 
+
+## Tramo E3, bloque A5b: orden único de bloqueo del catálogo (2026-10-14)
+
+Corrige tres hallazgos de producción del estrés de A5 (deadlock de tres entre escrituras de producto del Dueño y del Empleado y `cerrar`/`abrir`/`datos-operativos`; `500` al escribir sobre una imagen que otro acababa de borrar; las dos firmas de Cloudinary sin revalidar la relación). **No cambia ningún documento de `01.` ni de `02.`: no hay nada que copiar.** Lo único visible para quien opera es que un Empleado desactivado o con el comercio suspendido recibe `404`/`409` también al pedir una firma de subida, y que la segunda persona que toca una imagen ya borrada recibe `404` "Imagen no encontrada" en vez de un error genérico. Sin migraciones, sin cambios en el diccionario de datos ni en los diagramas. Detalle en `docs/DECISIONES.md`, `docs/CONCURRENCIA-Y-TRANSACCIONES.md` (con la tabla de cada método de `ProductoService`) y `docs/APRENDIZAJES-TECNICOS.md`.

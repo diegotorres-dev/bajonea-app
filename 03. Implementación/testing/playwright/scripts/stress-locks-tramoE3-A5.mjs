@@ -1,5 +1,7 @@
 import { execFileSync, spawn } from 'node:child_process';
-import { existsSync, readFileSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+import { gunzipSync } from 'node:zlib';
 
 const B = process.env.E2E_API_BASE_URL || 'http://localhost:8080/api/v1';
 const ROUNDS = Number(process.env.ROUNDS || 6);
@@ -318,7 +320,6 @@ function las18Escrituras(actor, d, p) {
 }
 
 const estadosDe = (p) => [p.aceptar, p.rechazar, p.despachar, p.anular, p.entregar, p.noRetirado].map((id) => sql(`SELECT estado FROM pedido WHERE id = ${id};`)).join(',');
-const SIN_REVALIDACION = new Set(['firma-imagen', 'firma-recorte']);
 
 async function escenario1(admin) {
   const { problemas, registrar } = nuevoRegistro();
@@ -338,7 +339,7 @@ async function escenario1(admin) {
     await retenida;
     for (const { nombre, r } of resultados) {
       contar(resumen, `${nombre}:${r.status}`);
-      registrar(`ronda ${ronda} ${nombre}`, r, SIN_REVALIDACION.has(nombre) ? [200, 404] : [404]);
+      registrar(`ronda ${ronda} ${nombre}`, r, [404]);
     }
     if (filasDeEdicion(d.comercioId, empleado.id) !== filasAntes) problemas.push(`ronda ${ronda}: el Empleado desactivado dejo filas de edicion`);
     if (estadosDe(p) !== estadosAntes) problemas.push(`ronda ${ronda}: algun pedido cambio de estado con el Empleado desactivado (${estadosAntes} -> ${estadosDe(p)})`);
@@ -346,7 +347,7 @@ async function escenario1(admin) {
     const historialDespues = Number(sql(`SELECT COUNT(*) FROM historial_estado_pedido WHERE pedido_id IN (${p.aceptar},${p.rechazar},${p.despachar},${p.anular},${p.entregar},${p.noRetirado});`));
     if (historialDespues !== historialAntes) problemas.push(`ronda ${ronda}: aparecieron filas de historial de pedidos con el Empleado desactivado`);
   }
-  console.log('Resumen (1, desactivacion retenida contra las 18 escrituras: todo 404; las dos firmas de Cloudinary pueden dar 200, hallazgo abierto A5-1):', resumir(resumen));
+  console.log('Resumen (1, desactivacion retenida contra las 18 escrituras, las dos firmas de Cloudinary incluidas: todo 404):', resumir(resumen));
   return problemas;
 }
 
@@ -373,32 +374,174 @@ async function escenario2(admin) {
       if (filas !== distintos) problemas.push(`ronda ${ronda}: el pedido ${id} tiene transiciones repetidas (${filas} filas, ${distintos} estados distintos)`);
     }
   }
-  console.log('Resumen (2, las 18 escrituras del Empleado y del Dueño a la vez; reproduce los hallazgos abiertos A5-2 y A5-3 hasta que se decida el arreglo; se corre con ESCENARIO=2 o HALLAZGOS=1):', resumir(resumen));
+  console.log('Resumen (2, las 18 escrituras del Empleado y del Dueño a la vez; ninguna puede dar 5xx):', resumir(resumen));
   return problemas;
 }
 
-const bytesDelLog = () => (existsSync(LOG_BACKEND) ? statSync(LOG_BACKEND).size : 0);
+const PERMITIDOS_CONCURRENCIA = [200, 201, 400, 404, 409];
+function contarEnElLog(patron) {
+  if (!existsSync(LOG_BACKEND)) return 0;
+  let total = (readFileSync(LOG_BACKEND).toString('utf8').match(patron) || []).length;
+  const carpeta = path.dirname(LOG_BACKEND);
+  const prefijo = `${path.basename(LOG_BACKEND)}.`;
+  for (const archivo of readdirSync(carpeta)) {
+    if (archivo.startsWith(prefijo) && archivo.endsWith('.gz')) {
+      total += (gunzipSync(readFileSync(path.join(carpeta, archivo))).toString('utf8').match(patron) || []).length;
+    }
+  }
+  return total;
+}
+const cuentaDeadlocksDelLog = () => contarEnElLog(/Deadlock found/g);
 
-function revisarElLog(desde) {
-  if (!existsSync(LOG_BACKEND)) return [`no se encontro el log del backend en ${LOG_BACKEND}: revisar a mano que no tenga "Deadlock found" ni "Lock wait timeout"`];
-  const texto = readFileSync(LOG_BACKEND).subarray(desde).toString('utf8');
+async function productoConImagenes(d, actor) {
+  const h = cabecera(d.comercioId);
+  const producto = await call('POST', '/productos', actor.token, { nombre: `Producto ${uniq()}`, precio: 1500, categoriaId }, h);
+  if (producto.status !== 201) throw new Error('producto de la rafaga ' + JSON.stringify(producto));
+  const productoId = producto.json.data.id;
+  const url = (sufijo) => `https://res.cloudinary.com/${d.nube}/image/upload/v1/productos/${d.comercioId}/${productoId}/${sufijo}-${uniq()}.png`;
+  const ids = [];
+  for (let i = 0; i < 3; i++) {
+    const imagen = await call('POST', `/productos/${productoId}/imagenes`, actor.token, { url: url(`s${i}`), orden: i, esPrincipal: i === 0 }, h);
+    if (imagen.status !== 201) throw new Error('imagen de la rafaga ' + JSON.stringify(imagen));
+    ids.push(imagen.json.data.id);
+  }
+  return { productoId, base: ids[0], sobrantes: ids.slice(1), url };
+}
+
+const escriturasDeProductoEImagen = (actor, d, p) => {
+  const h = cabecera(d.comercioId);
+  const sobrante = (i) => p.sobrantes[i % p.sobrantes.length];
+  return {
+    estado: (i) => call('PATCH', `/productos/${p.productoId}/estado`, actor.token, { estado: i % 2 ? 'DISPONIBLE' : 'AGOTADO' }, h),
+    editar: () => call('PUT', `/productos/${p.productoId}`, actor.token, { nombre: `Producto ${uniq()}`, precio: 1000 + aleatorio(9000), categoriaId }, h),
+    crear: () => call('POST', '/productos', actor.token, { nombre: `Producto ${uniq()}`, precio: 1200, categoriaId }, h),
+    agregar: () => call('POST', `/productos/${p.productoId}/imagenes`, actor.token, { url: p.url('agregada'), orden: 3, esPrincipal: false }, h),
+    eliminar: (i) => call('DELETE', `/productos/${p.productoId}/imagenes/${sobrante(i)}`, actor.token, undefined, h),
+    orden: () => call('PATCH', `/productos/${p.productoId}/imagenes/${p.base}/orden`, actor.token, { orden: aleatorio(3) }, h),
+    url: () => call('PATCH', `/productos/${p.productoId}/imagenes/${p.base}/url`, actor.token, { url: p.url('recorte') }, h),
+  };
+};
+const NOMBRES_DE_ESCRITURA = ['estado', 'editar', 'crear', 'agregar', 'eliminar', 'orden', 'url'];
+
+async function escenario3(admin) {
   const problemas = [];
-  const deadlocks = (texto.match(/Deadlock found/g) || []).length;
-  const timeouts = (texto.match(/Lock wait timeout/g) || []).length;
-  if (deadlocks) problemas.push(`el log del backend tiene ${deadlocks} "Deadlock found"`);
-  if (timeouts) problemas.push(`el log del backend tiene ${timeouts} "Lock wait timeout"`);
+  const RAFAGAS = Number(process.env.RAFAGAS || 6);
+  const d = await comercioListo(admin);
+  const empleado = await empleadoDe(d, [d.comercioId]);
+  const dueno = { token: d.token };
+  const h = cabecera(d.comercioId);
+  let totalSolicitudes = 0;
+  let deadlocksTotales = 0;
+  for (const opEmpleado of NOMBRES_DE_ESCRITURA) {
+    for (const opDueno of NOMBRES_DE_ESCRITURA) {
+      const deadlocksAntes = cuentaDeadlocksDelLog();
+      let cincoXX = 0;
+      for (let rafaga = 0; rafaga < RAFAGAS; rafaga++) {
+        const p = await productoConImagenes(d, dueno);
+        const delEmpleado = escriturasDeProductoEImagen(empleado, d, p);
+        const delDueno = escriturasDeProductoEImagen(dueno, d, p);
+        const lote = [];
+        const agregar = (etiqueta, hacer) => lote.push(hacer().then((r) => {
+          totalSolicitudes++;
+          if (r.status >= 500) {
+            cincoXX++;
+            problemas.push(`E:${opEmpleado} x D:${opDueno} rafaga ${rafaga} ${etiqueta}: ${r.status} ${JSON.stringify(r.json)}`);
+          } else if (!PERMITIDOS_CONCURRENCIA.includes(r.status)) {
+            problemas.push(`E:${opEmpleado} x D:${opDueno} rafaga ${rafaga} ${etiqueta}: estado inesperado ${r.status}`);
+          }
+        }));
+        for (let i = 0; i < 3; i++) {
+          agregar(`E.${opEmpleado}`, () => delEmpleado[opEmpleado](i));
+          agregar(`D.${opDueno}`, () => delDueno[opDueno](i));
+        }
+        agregar('E.cerrar', () => call('PUT', '/comercios/cerrar', empleado.token, {}, h));
+        agregar('D.cerrar', () => call('PUT', '/comercios/cerrar', dueno.token, {}, h));
+        agregar('E.abrir', () => call('PUT', '/comercios/abrir', empleado.token, {}, h));
+        agregar('D.abrir', () => call('PUT', '/comercios/abrir', dueno.token, {}, h));
+        agregar('E.datos', () => call('PUT', '/comercios/perfil/datos-operativos', empleado.token, { descripcion: `S ${uniq()}`, telefono: tel() }, h));
+        agregar('D.datos', () => call('PUT', '/comercios/perfil/datos-operativos', dueno.token, { descripcion: `S ${uniq()}`, telefono: tel() }, h));
+        agregar('E.firma', () => call('POST', `/productos/${p.productoId}/cloudinary/firma`, empleado.token, {}, h));
+        agregar('D.firma-recorte', () => call('POST', `/productos/${p.productoId}/imagenes/${p.base}/recorte/firma`, dueno.token, {}, h));
+        await Promise.all(lote);
+      }
+      const deadlocks = cuentaDeadlocksDelLog() - deadlocksAntes;
+      deadlocksTotales += deadlocks;
+      if (deadlocks) problemas.push(`E:${opEmpleado} x D:${opDueno}: ${deadlocks} "Deadlock found" en el log`);
+      console.log(`  E.${opEmpleado.padEnd(8)} x D.${opDueno.padEnd(8)} deadlocks=${deadlocks} 5xx=${cincoXX}`);
+    }
+  }
+  console.log(`Resumen (3, matriz completa: 7 escrituras de producto e imagen del Empleado x 7 del Dueño, mas cerrar, abrir, datos operativos y las firmas de ambos, ${RAFAGAS} rafagas por combinacion): ${totalSolicitudes} solicitudes, ${deadlocksTotales} deadlocks`);
+  return problemas;
+}
+
+async function escenario4(admin) {
+  const { problemas, registrar } = nuevoRegistro();
+  const resumen = {};
+  const RONDAS = Number(process.env.RONDAS_IMAGENES || 20);
+  const d = await comercioListo(admin);
+  const empleado = await empleadoDe(d, [d.comercioId]);
+  const dueno = { token: d.token };
+  const h = cabecera(d.comercioId);
+  for (let ronda = 1; ronda <= RONDAS; ronda++) {
+    const producto = await call('POST', '/productos', d.token, { nombre: `Producto ${uniq()}`, precio: 1500, categoriaId }, h);
+    const productoId = producto.json.data.id;
+    const base = `https://res.cloudinary.com/${d.nube}/image/upload/v1/productos/${d.comercioId}/${productoId}/`;
+    const ids = [];
+    for (let i = 0; i < 4; i++) {
+      const imagen = await call('POST', `/productos/${productoId}/imagenes`, d.token, { url: `${base}i${i}-${uniq()}.png`, orden: i, esPrincipal: i === 0 }, h);
+      if (imagen.status !== 201) throw new Error('imagen ' + JSON.stringify(imagen));
+      ids.push(imagen.json.data.id);
+    }
+    const [a, b, c] = ids;
+    const tareas = [
+      ['dueno-eliminar-b', () => call('DELETE', `/productos/${productoId}/imagenes/${b}`, dueno.token, undefined, h)],
+      ['empleado-orden-b', () => call('PATCH', `/productos/${productoId}/imagenes/${b}/orden`, empleado.token, { orden: 5 }, h)],
+      ['empleado-url-b', () => call('PATCH', `/productos/${productoId}/imagenes/${b}/url`, empleado.token, { url: `${base}n-${uniq()}.png` }, h)],
+      ['empleado-eliminar-a', () => call('DELETE', `/productos/${productoId}/imagenes/${a}`, empleado.token, undefined, h)],
+      ['dueno-orden-a', () => call('PATCH', `/productos/${productoId}/imagenes/${a}/orden`, dueno.token, { orden: 4 }, h)],
+      ['dueno-eliminar-b-otra-vez', () => call('DELETE', `/productos/${productoId}/imagenes/${b}`, dueno.token, undefined, h)],
+      ['empleado-eliminar-c', () => call('DELETE', `/productos/${productoId}/imagenes/${c}`, empleado.token, undefined, h)],
+      ['dueno-agregar', () => call('POST', `/productos/${productoId}/imagenes`, dueno.token, { url: `${base}nueva-${uniq()}.png`, orden: 6, esPrincipal: false }, h)],
+    ];
+    const resultados = await Promise.all(tareas.map(([nombre, hacer]) => hacer().then((r) => ({ nombre, r }))));
+    for (const { nombre, r } of resultados) {
+      contar(resumen, `${nombre}:${r.status}`);
+      registrar(`ronda ${ronda} ${nombre}`, r, PERMITIDOS_CONCURRENCIA);
+    }
+    for (const id of [a, b, c]) {
+      const eliminaciones = Number(sql(`SELECT COUNT(*) FROM historial_edicion_comercio WHERE entidad_tipo = 'IMAGEN_PRODUCTO' AND accion = 'ELIMINAR' AND entidad_id = ${id};`));
+      const existe = Number(sql(`SELECT COUNT(*) FROM imagen_producto WHERE id = ${id};`));
+      if (eliminaciones > 1) problemas.push(`ronda ${ronda}: la imagen ${id} tiene ${eliminaciones} filas de historial ELIMINAR`);
+      if (existe + eliminaciones !== 1) problemas.push(`ronda ${ronda}: la imagen ${id} existe=${existe} eliminaciones=${eliminaciones} (tiene que ser una cosa o la otra)`);
+    }
+    const restantes = Number(sql(`SELECT COUNT(*) FROM imagen_producto WHERE producto_id = ${productoId};`));
+    const principales = Number(sql(`SELECT COUNT(*) FROM imagen_producto WHERE producto_id = ${productoId} AND es_principal = 1;`));
+    if (restantes > 0 && principales !== 1) problemas.push(`ronda ${ronda}: el producto ${productoId} quedo con ${principales} imagenes principales de ${restantes}`);
+  }
+  console.log('Resumen (4, escrituras de imagen del Dueño y del Empleado en paralelo sobre las mismas imagenes: nada de 5xx, una sola baja por imagen, una sola principal):', resumir(resumen));
+  return problemas;
+}
+
+const cuentasDelLog = () => ({ deadlocks: contarEnElLog(/Deadlock found/g), timeouts: contarEnElLog(/Lock wait timeout/g) });
+
+function revisarElLog(antes) {
+  if (!existsSync(LOG_BACKEND)) return [`no se encontro el log del backend en ${LOG_BACKEND}: revisar a mano que no tenga "Deadlock found" ni "Lock wait timeout"`];
+  const despues = cuentasDelLog();
+  const problemas = [];
+  if (despues.deadlocks - antes.deadlocks) problemas.push(`el log del backend tiene ${despues.deadlocks - antes.deadlocks} "Deadlock found" (el log y sus archivos rotados .gz se cuentan juntos)`);
+  if (despues.timeouts - antes.timeouts) problemas.push(`el log del backend tiene ${despues.timeouts - antes.timeouts} "Lock wait timeout"`);
   return problemas;
 }
 
 async function main() {
-  const inicioLog = bytesDelLog();
+  const inicioLog = cuentasDelLog();
   LOC = await resolverLocalidad();
   const admin = (await call('POST', '/auth/login', null, ADMIN)).json.data.token;
   const categoria = await call('POST', '/categorias', admin, { nombre: BASE_CATEGORIA });
   if (categoria.status !== 201) throw new Error('categoria ' + JSON.stringify(categoria));
   categoriaId = categoria.json.data.id;
   const solo = process.env.ESCENARIO;
-  const escenarios = solo ? [escenario1, escenario2] : process.env.HALLAZGOS === '1' ? [escenario1, escenario2] : [escenario1];
+  const escenarios = [escenario1, escenario2, escenario3, escenario4];
   const todos = [];
   for (let i = 0; i < escenarios.length; i++) {
     if (!solo || solo === String(i + 1)) todos.push(...(await escenarios[i](admin)));

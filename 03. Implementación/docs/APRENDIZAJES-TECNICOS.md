@@ -99,7 +99,32 @@ Lecciones operativas y de herramientas que no son decisiones de diseño (esas vi
 
 ---
 
+### Dos operadores del mismo comercio: si no todos toman el comercio y el producto en el mismo orden, un `FOR UPDATE` del comercio cierra un ciclo de tres (tramo E3, bloque A5b)
+
+- **Síntoma:** `500` (`Deadlock found`) en `cerrar`, `abrir` y `datos-operativos` solo cuando el **Dueño y un Empleado** escribían productos a la vez. Un solo tipo de operador, con los mismos pedidos, nunca fallaba (0 deadlocks en 175 solicitudes de cada lado; 150 a 222 en 250 con los dos).
+- **Causa:** el Dueño tomaba el producto (`UPDATE`, o compartido por la clave foránea de la imagen) y recién en el `INSERT` del historial el comercio compartido; el Empleado tomaba el comercio compartido (guard de estado) y después el producto. Un `FOR UPDATE` del comercio se encola detrás del compartido del Empleado, y el compartido que el Dueño pide después **se encola detrás de ese exclusivo** (InnoDB no deja pasar a un compartido nuevo si hay un exclusivo esperando adelante). Los tres se esperan en círculo. `SHOW ENGINE INNODB STATUS` solo imprime dos de los tres: la víctima (el exclusivo) y la que tiene el compartido; el tercero hay que deducirlo.
+- **Qué hacer:** un orden único para todos los actores (usuario, relación, comercio compartido, producto exclusivo, lecturas comunes); no condicionar la lectura del comercio al rol. Ver `docs/CONCURRENCIA-Y-TRANSACCIONES.md`, "Bloque A5b de E3", con la tabla de cada método.
+- **Cómo se confirmó sin tocar el código:** tres sesiones de `mysql.exe` con `SLEEP` (A: comercio compartido y después producto; B: producto y después comercio compartido; C: comercio exclusivo, 0,5 y 1 s después). Con B en el orden viejo, C muere con el error 1213; con B en el orden nuevo, nadie.
+
+### Una lectura común antes del bloqueo fija la foto y el que llega segundo escribe sobre filas que ya no existen (tramo E3, bloque A5b)
+
+- **Síntoma:** `500` (`StaleObjectStateException` sobre `ImagenProducto`) en `eliminarImagen`, `reordenarImagen` y `actualizarUrlImagen` cuando dos operadores tocan la misma imagen, o cuando uno borra otra imagen del mismo producto (`recalcularImagenPrincipal` actualiza filas que el otro ya borró). Sin pérdida de datos: la transacción perdedora se revierte entera.
+- **Causa:** bajo REPEATABLE READ la foto se fija en la primera lectura **común** (aquí la del comercio, por `findById`). Esa transacción veía la imagen aunque la otra ya la hubiera borrado (sin confirmar), y su `DELETE`/`UPDATE` con `WHERE id = ?` devolvía 0 filas. Bloquear solo la imagen no alcanza: `recalcularImagenPrincipal` lee todas las imágenes del producto.
+- **Qué hacer:** serializar por producto: el producto `FOR UPDATE` como primera lectura del producto y **ninguna lectura común antes** (las lecturas `LOCK IN SHARE MODE` y `FOR UPDATE` no fijan la foto). El que llega segundo espera, y su primera lectura común ya ve lo confirmado: una imagen borrada es `404`. Es el mismo patrón que `cambiarEstado`.
+- **Descartado:** bloquear todas las imágenes del producto por `producto_id`: toma bloqueos de siguiente clave sobre el índice de la clave foránea y puede interbloquear inserts de imágenes de productos vecinos.
+
 ## Testing
+
+### Contar `Deadlock found` en el log: el archivo rota a los 10 MB (tramo E3, bloque A5b)
+
+- **Síntoma:** un estrés largo informó `-888 deadlocks` en una combinación: el contador "después menos antes" del log dio negativo.
+- **Causa:** `--logging.file.name` rota el log (`backend-test.log.AAAA-MM-DD.N.gz`) al llegar a 10 MB; el conteo sobre el archivo activo pierde lo rotado, y cortar por `bytes` desde el inicio pierde líneas. Un estrés con muchas solicitudes puede rotar varias veces.
+- **Qué hacer:** `stress-locks-tramoE3-A5.mjs` suma el archivo activo y los `.gz` rotados (`contarEnElLog`). Los demás estreses y `correr-estreses.mjs` todavía cortan por bytes desde el inicio: con corridas que no llegan a rotar alcanza; si algún día un estrés largo muestra números raros, revisar esto primero.
+
+### Detener una transacción de un `@Service` en un test: espiar un colaborador que no sea transaccional-obligatorio (tramo E3, bloque A5b)
+
+- **Qué pasó:** para armar una carrera determinista hay que detener un hilo justo antes de que su transacción inserte en el historial. Espiar `HistorialEdicionComercioService.registrar` con `@MockitoSpyBean` falla (`doAnswer(...).when(spy).registrar(...)` ejecuta la llamada a través del proxy y su `@Transactional(MANDATORY)` exige una transacción que el test no tiene).
+- **Qué hacer:** espiar `DisponibilidadComercioService.ahora()` (`@Transactional(readOnly = true)`, no obligatoria), que `registrar` pide justo después de volcar las escrituras pendientes y antes del `INSERT`; un `ThreadLocal<Runnable>` con el gancho hace que solo se detenga el hilo que lo puso. El gancho puede llamar a `entityManager.flush()` para que el hilo tenga tomado en el motor lo mismo que tendrá al insertar. Ver `EscriturasCatalogoOrdenDeBloqueoIntegrationTest`.
 
 ### Precondición de Newman: la contraseña de `admin@bajonea.ar` tras un reset
 
