@@ -43,12 +43,14 @@ public class EquipoComercioController {
     /**
      * Actividad del comercio (ediciones, acciones sobre pedidos y cierres), de la más nueva a la más vieja, de a
      * {@code limite} filas (30 por defecto, 100 como máximo). Para pedir la página siguiente se manda el
-     * {@code siguienteCursor} de la anterior como {@code cursor}. Solo el Dueño.
+     * {@code siguienteCursor} de la anterior como {@code cursor}. {@code fuente} (opcional: PEDIDO, EDICION o CIERRE)
+     * limita la lista a una de las tres. Solo el Dueño.
      */
     @GetMapping("/actividad")
     public ResponseEntity<ApiResponse<ActividadComercioResponseDTO>> verActividad(ComercioActivo comercio,
-            @RequestParam(required = false) Integer limite, @RequestParam(required = false) String cursor) {
-        ActividadComercioResponseDTO response = actividadComercioService.listar(comercio, limite, cursor);
+            @RequestParam(required = false) Integer limite, @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) String fuente) {
+        ActividadComercioResponseDTO response = actividadComercioService.listar(comercio, limite, cursor, fuente);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Actividad obtenida correctamente", response));
     }
 

@@ -5129,11 +5129,72 @@ button.panel-comercios__fila:focus-visible {
 }
 
 .equipo-tabs .segmented-control__btn {
+  flex: 1 1 auto;
   min-width: 0;
   padding: 0 6px;
+  font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.equipo-filtros {
+  padding: 4px 0 12px;
+}
+
+.actividad-dia {
+  padding: 16px 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.actividad-dia:first-child {
+  padding-top: 4px;
+}
+
+.actividad-fila {
+  align-items: flex-start;
+}
+
+.actividad-fila__encabezado {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
+.actividad-rol {
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-alt);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.actividad-fila__accion {
+  font-size: 14px;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.actividad-fila__referencia {
+  overflow-wrap: anywhere;
+}
+
+.actividad-fila__hora {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.actividad-ver-mas {
+  width: 100%;
+  margin-top: 12px;
 }
 
 .equipo-filas {

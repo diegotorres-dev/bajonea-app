@@ -45,3 +45,15 @@ export function horaConDiaDe(fechaHoraDelServidor) {
   }
   return `${fechaCortaDe(fechaHoraDelServidor)} ${horaMinutoDe(fechaHoraDelServidor)}`;
 }
+
+export function etiquetaDeDia(fechaHoraDelServidor) {
+  const dia = diaDe(fechaHoraDelServidor);
+  if (dia === diaDeHoyEnZonaComercio()) {
+    return 'Hoy';
+  }
+  if (dia === diaDeAyerEnZonaComercio()) {
+    return 'Ayer';
+  }
+  const [anio, mes, diaDelMes] = dia.split('-');
+  return `${diaDelMes}/${mes}/${anio}`;
+}

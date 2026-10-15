@@ -3,6 +3,7 @@ import { showToast, renderEmptyState } from './catalogo.js';
 import { getComercioActivoEnMemoria, INTERVALO_POLLING_COMERCIOS_MS } from './comercio-activo.js';
 import { iniciales } from './selector-comercio.js';
 import { h, crearSvg, renderBanner } from './form-utils.js';
+import { diaDe, etiquetaDeDia, horaMinutoDe } from './fechas.js';
 import { mostrarErrorCampo, limpiarErrorCampo, mapearErroresBackend } from './validators.js';
 
 const RUTA_EQUIPO = '/comercios/equipo';
@@ -10,6 +11,8 @@ const MS_POR_DIA = 24 * 60 * 60 * 1000;
 const OPCIONES_RED = { handle5xxGlobally: false, handleRedGlobally: false, conMensaje: true };
 const MENSAJE_SIN_CONEXION = 'No pudimos conectar. Probá de nuevo.';
 const MENSAJE_ERROR_CARGA = 'No pudimos cargar el equipo.';
+const MENSAJE_ERROR_ACTIVIDAD = 'No pudimos cargar la actividad.';
+const MENSAJE_ERROR_VER_MAS = 'No pudimos cargar más actividad. Probá de nuevo.';
 
 const MENSAJE_SERVIDOR_NO_SE_PUEDE_INVITAR = 'No se puede invitar a este email';
 const TITULO_NO_SE_PUEDE_INVITAR = 'No pudimos invitar a este email.';
@@ -18,7 +21,24 @@ const CUERPO_NO_SE_PUEDE_INVITAR = 'Por privacidad no podemos contarte el motivo
 const PESTANAS = [
   { id: 'equipo', texto: 'Mi equipo' },
   { id: 'solicitudes', texto: 'Solicitudes' },
+  { id: 'actividad', texto: 'Actividad' },
 ];
+
+const PESTANA_ACTIVIDAD = 'actividad';
+
+const FILTROS_ACTIVIDAD = [
+  { id: 'todo', texto: 'Todo', fuente: null },
+  { id: 'pedidos', texto: 'Pedidos', fuente: 'PEDIDO' },
+  { id: 'ediciones', texto: 'Ediciones', fuente: 'EDICION' },
+  { id: 'cierres', texto: 'Cierres', fuente: 'CIERRE' },
+];
+
+const TEXTO_VACIO_ACTIVIDAD = {
+  todo: 'Todavía no hay actividad',
+  pedidos: 'No hay actividad de pedidos',
+  ediciones: 'No hay ediciones',
+  cierres: 'No hay cierres ni reaperturas',
+};
 
 const ESTADO_MIEMBRO = {
   ACTIVO: { texto: 'Activo', punto: 'positivo' },
@@ -34,6 +54,10 @@ const ESTADO_INVITACION = {
 const FIGURAS_SOBRE = [
   ['rect', { x: '2', y: '4', width: '20', height: '16', rx: '2' }],
   ['path', { d: 'm22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7' }],
+];
+const FIGURAS_ENGRANAJE = [
+  ['circle', { cx: '12', cy: '12', r: '3' }],
+  ['path', { d: 'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z' }],
 ];
 const FIGURAS_PUNTITOS = [
   ['circle', { cx: '12', cy: '12', r: '1' }],
@@ -58,6 +82,7 @@ let firmaPintada = null;
 let intervalo = null;
 let pestanaActiva = PESTANAS[0].id;
 let equipoActual = null;
+const actividad = { filtro: FILTROS_ACTIVIDAD[0], items: [], siguienteCursor: null, hayMas: false, pedido: 0 };
 
 function elemento(id) {
   return document.getElementById(id);
@@ -165,13 +190,8 @@ function crearFilaInvitacion(invitacion, alAbrirMenu) {
   return fila;
 }
 
-function pintarEsqueleto() {
-  equipoActual = null;
-  pintarPestanas();
-  const lista = elemento('equipo-lista');
-  lista.replaceChildren();
-  lista.setAttribute('aria-busy', 'true');
-  const contenedor = h('div', { class: 'equipo-esqueleto', 'data-testid': 'equipo-cargando' });
+function crearEsqueleto(testid) {
+  const contenedor = h('div', { class: 'equipo-esqueleto', 'data-testid': testid });
   for (let i = 0; i < 3; i += 1) {
     const fila = h('div', { class: 'equipo-esqueleto__fila' });
     const lineas = h('div', { class: 'equipo-esqueleto__lineas' });
@@ -179,7 +199,16 @@ function pintarEsqueleto() {
     fila.append(h('div', { class: 'skeleton equipo-esqueleto__avatar' }), lineas);
     contenedor.append(fila);
   }
-  lista.append(contenedor);
+  return contenedor;
+}
+
+function pintarEsqueleto() {
+  equipoActual = null;
+  pintarPestanas();
+  const lista = elemento('equipo-lista');
+  lista.replaceChildren();
+  lista.setAttribute('aria-busy', 'true');
+  lista.append(crearEsqueleto('equipo-cargando'));
   firmaPintada = null;
 }
 
@@ -204,7 +233,7 @@ function miembrosActivos(equipo) {
 }
 
 function contadorDe(equipo, pestana) {
-  if (!equipo) {
+  if (!equipo || pestana === PESTANA_ACTIVIDAD) {
     return null;
   }
   return pestana === 'equipo' ? miembrosActivos(equipo).length : (equipo.invitaciones || []).length;
@@ -233,14 +262,29 @@ function ocultarPestanas() {
   elemento('equipo-tabs').classList.add('is-hidden');
 }
 
+function actualizarPie() {
+  elemento('equipo-footer').classList.toggle('is-hidden', pestanaActiva === PESTANA_ACTIVIDAD);
+}
+
 function seleccionarPestana(id) {
   if (id === pestanaActiva) {
     return;
   }
+  const veniaDeActividad = pestanaActiva === PESTANA_ACTIVIDAD;
   pestanaActiva = id;
+  if (veniaDeActividad) {
+    actividad.pedido += 1;
+  }
+  actualizarPie();
   pintarPestanas();
+  if (id === PESTANA_ACTIVIDAD) {
+    iniciarActividad();
+    return;
+  }
   if (equipoActual !== null) {
     pintarLista(equipoActual);
+  } else if (veniaDeActividad) {
+    cargar({ conEsqueleto: true });
   }
 }
 
@@ -270,6 +314,9 @@ const PINTORES_DE_PESTANA = {
 };
 
 function pintarLista(equipo) {
+  if (pestanaActiva === PESTANA_ACTIVIDAD) {
+    return;
+  }
   const lista = elemento('equipo-lista');
   lista.removeAttribute('aria-busy');
   const filas = h('div', { class: 'equipo-filas', 'data-testid': 'equipo-filas' });
@@ -308,7 +355,7 @@ async function cargar({ conEsqueleto }) {
   const comercioId = getComercioActivoId();
   const cambioElComercio = comercioId !== comercioPintado;
   actualizarTitulo();
-  if (conEsqueleto || cambioElComercio) {
+  if ((conEsqueleto || cambioElComercio) && pestanaActiva !== PESTANA_ACTIVIDAD) {
     pintarEsqueleto();
   }
   try {
@@ -327,12 +374,201 @@ async function cargar({ conEsqueleto }) {
     if (pedido !== secuencia) {
       return;
     }
-    if (firmaPintada !== null) {
+    if (firmaPintada !== null || pestanaActiva === PESTANA_ACTIVIDAD) {
       return;
     }
     const mensaje = error instanceof ApiError && error.status !== 0 && error.status < 500 ? error.message : MENSAJE_ERROR_CARGA;
     pintarError(mensaje || MENSAJE_ERROR_CARGA, () => cargar({ conEsqueleto: true }));
   }
+}
+
+function crearAvatarActividad(item) {
+  if (!item.actorNombre) {
+    const avatar = h('span', { class: 'selector-avatar selector-avatar--panel equipo-avatar', 'data-testid': 'actividad-avatar-sistema' });
+    avatar.append(crearSvg(FIGURAS_ENGRANAJE));
+    return avatar;
+  }
+  const avatar = h('span', { class: 'selector-avatar selector-avatar--panel equipo-avatar', 'data-testid': 'actividad-avatar' });
+  const texto = h('span', { class: 'selector-avatar__iniciales' });
+  texto.textContent = iniciales(item.actorNombre);
+  avatar.append(texto);
+  return avatar;
+}
+
+function crearFilaActividad(item) {
+  const fila = h('div', { class: 'equipo-fila actividad-fila', 'data-testid': 'actividad-fila', 'data-fuente': item.fuente, 'data-rol': item.actorRol });
+  const datos = h('div', { class: 'equipo-fila__datos' });
+  const encabezado = h('div', { class: 'actividad-fila__encabezado' });
+  if (item.actorNombre) {
+    const nombre = crearLinea('equipo-fila__nombre', item.actorNombre);
+    nombre.setAttribute('data-testid', 'actividad-nombre');
+    encabezado.append(nombre);
+  }
+  const rol = crearLinea('actividad-rol', item.actorRolTexto || item.actorRol);
+  rol.setAttribute('data-testid', 'actividad-rol');
+  encabezado.append(rol);
+  const accion = crearLinea('actividad-fila__accion', item.accionTexto);
+  accion.setAttribute('data-testid', 'actividad-accion');
+  datos.append(encabezado, accion);
+  const referencia = [item.entidadNombre, item.detalle].filter(Boolean).join(' · ');
+  if (referencia) {
+    const complemento = crearLinea('equipo-fila__detalle actividad-fila__referencia', referencia);
+    complemento.setAttribute('data-testid', 'actividad-referencia');
+    datos.append(complemento);
+  }
+  const hora = crearLinea('actividad-fila__hora', horaMinutoDe(item.fechaHora));
+  hora.setAttribute('data-testid', 'actividad-hora');
+  fila.append(crearAvatarActividad(item), datos, hora);
+  return fila;
+}
+
+function crearSeparadorDeDia(fechaHora) {
+  const separador = h('div', { class: 'actividad-dia', role: 'heading', 'aria-level': '3', 'data-testid': 'actividad-dia' });
+  separador.textContent = etiquetaDeDia(fechaHora);
+  return separador;
+}
+
+function actividadVisible() {
+  return pestanaActiva === PESTANA_ACTIVIDAD;
+}
+
+function armarArmazonActividad() {
+  const lista = elemento('equipo-lista');
+  lista.removeAttribute('aria-busy');
+  const filtros = h('div', { class: 'chip-row equipo-filtros', role: 'group', 'aria-label': 'Filtrar actividad', 'data-testid': 'actividad-filtros' });
+  FILTROS_ACTIVIDAD.forEach((filtro) => {
+    const chip = h('button', {
+      type: 'button',
+      class: 'chip',
+      'aria-pressed': String(filtro.id === actividad.filtro.id),
+      'data-testid': `chip-actividad-${filtro.id}`,
+    });
+    chip.textContent = filtro.texto;
+    chip.addEventListener('click', () => seleccionarFiltroActividad(filtro));
+    filtros.append(chip);
+  });
+  const contenido = h('div', { id: 'actividad-contenido', 'data-testid': 'actividad-contenido' });
+  lista.replaceChildren(filtros, contenido);
+}
+
+function marcarFiltroActivo() {
+  FILTROS_ACTIVIDAD.forEach((filtro) => {
+    const chip = document.querySelector(`[data-testid="chip-actividad-${filtro.id}"]`);
+    if (chip) {
+      chip.setAttribute('aria-pressed', String(filtro.id === actividad.filtro.id));
+    }
+  });
+}
+
+function pintarActividadCargando() {
+  const contenido = elemento('actividad-contenido');
+  contenido.setAttribute('aria-busy', 'true');
+  contenido.replaceChildren(crearEsqueleto('actividad-cargando'));
+}
+
+function pintarActividadError(mensaje) {
+  const contenido = elemento('actividad-contenido');
+  contenido.removeAttribute('aria-busy');
+  const slot = h('div', { 'data-testid': 'actividad-error' });
+  renderBanner(slot, 'error', mensaje);
+  const reintentar = h('button', { class: 'btn btn-secondary banner__accion', type: 'button', 'data-testid': 'btn-reintentar-actividad' });
+  reintentar.textContent = 'Reintentar';
+  reintentar.addEventListener('click', () => cargarActividad({ reiniciar: true }));
+  slot.firstElementChild.lastElementChild.append(h('br'), reintentar);
+  contenido.replaceChildren(slot);
+}
+
+function pintarActividad() {
+  const contenido = elemento('actividad-contenido');
+  contenido.removeAttribute('aria-busy');
+  if (actividad.items.length === 0) {
+    renderEmptyState(contenido, TEXTO_VACIO_ACTIVIDAD[actividad.filtro.id], null, { inline: true });
+    return;
+  }
+  const filas = h('div', { class: 'equipo-filas', 'data-testid': 'actividad-filas' });
+  let diaAnterior = null;
+  actividad.items.forEach((item) => {
+    const dia = diaDe(item.fechaHora);
+    if (dia !== diaAnterior) {
+      filas.append(crearSeparadorDeDia(item.fechaHora));
+      diaAnterior = dia;
+    }
+    filas.append(crearFilaActividad(item));
+  });
+  contenido.replaceChildren(filas);
+  if (actividad.hayMas) {
+    const verMas = h('button', { class: 'btn btn-secondary actividad-ver-mas', type: 'button', 'data-testid': 'btn-actividad-ver-mas' });
+    verMas.textContent = 'Ver más';
+    verMas.addEventListener('click', () => {
+      verMas.disabled = true;
+      cargarActividad({ reiniciar: false, alFallar: () => { verMas.disabled = false; } });
+    });
+    contenido.append(verMas);
+  }
+}
+
+async function cargarActividad({ reiniciar, alFallar }) {
+  const pedido = ++actividad.pedido;
+  if (reiniciar) {
+    actividad.items = [];
+    actividad.siguienteCursor = null;
+    actividad.hayMas = false;
+    pintarActividadCargando();
+  }
+  const parametros = new URLSearchParams();
+  if (actividad.filtro.fuente) {
+    parametros.set('fuente', actividad.filtro.fuente);
+  }
+  if (!reiniciar && actividad.siguienteCursor) {
+    parametros.set('cursor', actividad.siguienteCursor);
+  }
+  const consulta = parametros.toString();
+  try {
+    const { data } = await apiFetch(`${RUTA_EQUIPO}/actividad${consulta ? `?${consulta}` : ''}`, OPCIONES_RED);
+    if (pedido !== actividad.pedido || !actividadVisible()) {
+      return;
+    }
+    actividad.items = actividad.items.concat(data.items || []);
+    actividad.siguienteCursor = data.siguienteCursor || null;
+    actividad.hayMas = Boolean(data.hayMas);
+    pintarActividad();
+  } catch (error) {
+    if (pedido !== actividad.pedido || !actividadVisible()) {
+      return;
+    }
+    if (reiniciar) {
+      const mensaje = error instanceof ApiError && error.status !== 0 && error.status < 500 ? error.message : MENSAJE_ERROR_ACTIVIDAD;
+      pintarActividadError(mensaje || MENSAJE_ERROR_ACTIVIDAD);
+      return;
+    }
+    if (alFallar) {
+      alFallar();
+    }
+    showToast(mensajeDeError(error, MENSAJE_ERROR_VER_MAS), 'error');
+  }
+}
+
+function seleccionarFiltroActividad(filtro) {
+  if (filtro.id === actividad.filtro.id) {
+    return;
+  }
+  actividad.filtro = filtro;
+  marcarFiltroActivo();
+  cargarActividad({ reiniciar: true });
+}
+
+function iniciarActividad() {
+  actividad.filtro = FILTROS_ACTIVIDAD[0];
+  armarArmazonActividad();
+  cargarActividad({ reiniciar: true });
+}
+
+function reiniciarActividad() {
+  actividad.pedido += 1;
+  actividad.filtro = FILTROS_ACTIVIDAD[0];
+  actividad.items = [];
+  actividad.siguienteCursor = null;
+  actividad.hayMas = false;
 }
 
 function detenerActualizacion() {
@@ -574,6 +810,8 @@ export function abrirEquipoComercio() {
   firmaPintada = null;
   comercioPintado = null;
   pestanaActiva = PESTANAS[0].id;
+  reiniciarActividad();
+  actualizarPie();
   cargar({ conEsqueleto: true });
   iniciarActualizacion();
 }

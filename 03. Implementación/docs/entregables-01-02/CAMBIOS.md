@@ -5,6 +5,21 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
 
+## Tramo E3, entrega B, etapa 4: pestaña Actividad del Dueño (2026-10-14)
+
+Última etapa de la entrega B. La vista "Ver equipo" del Dueño suma una tercera pestaña, "Actividad", con la lista de actividad del comercio (quién hizo qué) y filtros "Todo", "Pedidos", "Ediciones" y "Cierres". Backend: `GET /api/v1/comercios/equipo/actividad` suma el parámetro opcional `fuente` (`PEDIDO`, `EDICION` o `CIERRE`), compatible hacia atrás.
+
+**Documentos de esta carpeta que cambiaron** (Diego los copia a mano a `01.` y `02.`):
+- `requisitos-funcionales-dueño.md`: "Ver equipo" tiene tres pestañas; la actividad se agrupa por día, tiene los cuatro filtros y el parámetro `fuente`; la actualización automática no pisa la lista.
+- `Historias de Usuario - Dueño.md`: criterios nuevos de la pestaña Actividad (tres pestañas, botón "Invitar" solo en las dos primeras, filas, filtros, "Ver más", vacío y error).
+- `requisitos-funcionales-sistema.md`: la lista de actividad acepta el filtro opcional `fuente` (valor inválido: 400).
+- `diccionario-de-datos.md`: nota del filtro `fuente` en la tabla `HistorialEdicionComercio` (también cambió `docs/diccionario-de-datos.md`; no hay migración ni cambio de tablas).
+- `requisitos-funcionales-empleado.md`: una frase (la pestaña ya no "llega en la entrega B"; el Empleado no ve la pantalla de equipo).
+
+**No cambiaron** `requisitos-funcionales-comercio.md`, `requisitos-funcionales-administrador.md`, `-cliente.md`, `-generales.md`, `requisitos-no-funcionales.md`, `alcance-y-limitaciones.md`, `Historias de Usuario - Administrador.md`, `- Cliente.md`, `- Comercio.md` ni `- Empleado.md`, ni los diagramas.
+
+**Pruebas:** ver `docs/DECISIONES.md`, 2026-10-14, "Tramo E3, entrega B, etapa 4".
+
 ## Tramo E3, entrega B, etapa 3: campana y notificaciones del Empleado (2026-10-14)
 
 Pantallas: la campana con contador en el panel del comercio para el Empleado, la pantalla de notificaciones dentro del contexto del comercio, "Ver pedido" hacia el detalle del comercio y el botón "Marcar todas". Solo frontend y pruebas: sin cambios de backend, sin migraciones, sin tablas ni columnas nuevas.

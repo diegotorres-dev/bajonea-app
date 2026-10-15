@@ -179,11 +179,11 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   minuto (Vencida es un estado guardado en la base). Se puede reenviar y cancelar una
   invitación Pendiente, Vencida o con el código bloqueado; una aceptada, cancelada o
   reemplazada ya no. Una invitación invalidada por cinco intentos fallidos se muestra como
-  "Código bloqueado". En el tramo E1 esta vista
-  ("Ver equipo") no tiene pestaña Actividad en pantalla (la barra de pestañas está pensada para
-  sumarla): el servidor ya registra las ediciones del catálogo y el perfil y ya ofrece la lista
-  de actividad (`GET /api/v1/comercios/equipo/actividad`, tramo E3, bloque A1); la pestaña
-  llega en la entrega de pantallas de E3.
+  "Código bloqueado". Desde la etapa 4 de la entrega B de E3 esta vista
+  ("Ver equipo") tiene una tercera pestaña, "Actividad" (sin contador), que muestra la lista de
+  actividad del comercio (`GET /api/v1/comercios/equipo/actividad`) con filtros "Todo",
+  "Pedidos", "Ediciones" y "Cierres". En esa pestaña el botón "Invitar" no se muestra, porque
+  no corresponde.
 - El Dueño debe poder desactivar la relación de un Empleado con un comercio puntual en
   cualquier momento (queda Inactiva con motivo `BAJA_DUENO`), sin afectar las relaciones
   de ese Empleado con otros comercios, propios o de otros Dueños. El Empleado desactivado
@@ -203,9 +203,14 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   la suspensión del comercio) y los cierres y reaperturas del comercio; el pedido que todavía
   no se pagó, o que venció por falta de pago, no aparece porque el comercio nunca lo vio;
   cada línea trae el nombre y el rol (Dueño, Empleado o Cliente) de quien actuó, y en las
-  acciones del sistema solo el rol "Sistema", qué hizo y cuándo, y se pide de a 30 líneas con
-  "ver más". La actividad la ve el Dueño completa; el Empleado no la
-  ve y el Administrador la ve en solo lectura.
+  acciones del sistema solo el rol "Sistema" (con un engranaje en lugar de las iniciales), qué hizo y cuándo
+  (la hora, con separadores por día: "Hoy", "Ayer" o la fecha), y se pide de a 30 líneas con
+  "ver más". Los filtros "Pedidos", "Ediciones" y "Cierres" le piden al servidor solo esa fuente
+  (parámetro opcional `fuente`: `PEDIDO`, `EDICION` o `CIERRE`; un valor distinto es un error
+  400; sin parámetro se ve todo, igual que antes); cambiar de filtro o de pestaña vuelve a
+  empezar la lista, y la actualización automática del equipo no toca la lista de actividad.
+  La actividad la ve el Dueño completa; el Empleado no la
+  ve (ni la pestaña ni la pantalla de equipo) y el Administrador la ve en solo lectura.
 - El Dueño recibe una notificación cuando el invitado acepta la invitación (T33) y cuando
   un Empleado renuncia (T34).
 - El Dueño recibe, igual que cada Empleado Activo, el aviso T30 cuando el sistema confirma solo

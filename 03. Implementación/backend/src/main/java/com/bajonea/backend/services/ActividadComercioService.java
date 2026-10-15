@@ -36,6 +36,9 @@ import org.springframework.transaction.annotation.Transactional;
  * automáticas del sistema). Las tres fuentes escriben la hora con el reloj de la aplicación, así que el orden
  * entre ellas es el real.
  * <p>
+ * Con el filtro opcional {@code fuente} se consulta una sola de las tres y se saltean las otras dos; el cursor es el
+ * mismo y vale con o sin filtro, porque todas las filas que quedan son de la fuente pedida.
+ * <p>
  * Paginación por cursor sobre el orden total {@code (fecha_hora desc, fuente asc, id desc)}: el cursor es la
  * posición de la última fila entregada, así que una fila nueva no corre las páginas ni repite ni saltea filas.
  * Cada fuente se consulta con su propio tope ({@code limite + 1}): las primeras {@code limite + 1} filas del total
@@ -65,29 +68,44 @@ public class ActividadComercioService {
     private final HistorialCierreComercioRepository historialCierreComercioRepository;
 
     public ActividadComercioResponseDTO listar(ComercioActivo comercio, Integer limite, String cursor) {
+        return listar(comercio, limite, cursor, null);
+    }
+
+    public ActividadComercioResponseDTO listar(ComercioActivo comercio, Integer limite, String cursor, String fuente) {
         if (comercio.esEmpleado()) {
             throw new ComercioNoDisponibleException();
         }
-        return listar(comercio.comercioId(), limite, cursor);
+        return listar(comercio.comercioId(), limite, cursor, fuente);
     }
 
     public ActividadComercioResponseDTO listar(Integer comercioId, Integer limite, String cursor) {
+        return listar(comercioId, limite, cursor, null);
+    }
+
+    public ActividadComercioResponseDTO listar(Integer comercioId, Integer limite, String cursor, String fuente) {
         int tamanio = tamanioDePagina(limite);
+        FuenteActividad filtro = interpretarFuente(fuente);
         Cursor desde = Cursor.interpretar(cursor);
         PageRequest pagina = PageRequest.of(0, tamanio + 1);
 
         List<Fila> filas = new ArrayList<>();
-        for (FilaActividadPedido fila : historialEstadoPedidoRepository.actividadDelComercio(comercioId, ESTADOS_VISIBLES,
-                desde.fecha(), desde.idMaximoDe(FuenteActividad.PEDIDO), pagina)) {
-            filas.add(desdePedido(fila));
+        if (filtro == null || filtro == FuenteActividad.PEDIDO) {
+            for (FilaActividadPedido fila : historialEstadoPedidoRepository.actividadDelComercio(comercioId, ESTADOS_VISIBLES,
+                    desde.fecha(), desde.idMaximoDe(FuenteActividad.PEDIDO), pagina)) {
+                filas.add(desdePedido(fila));
+            }
         }
-        for (FilaActividadEdicion fila : historialEdicionComercioRepository.actividadDelComercio(comercioId, desde.fecha(),
-                desde.idMaximoDe(FuenteActividad.EDICION), pagina)) {
-            filas.add(desdeEdicion(fila));
+        if (filtro == null || filtro == FuenteActividad.EDICION) {
+            for (FilaActividadEdicion fila : historialEdicionComercioRepository.actividadDelComercio(comercioId, desde.fecha(),
+                    desde.idMaximoDe(FuenteActividad.EDICION), pagina)) {
+                filas.add(desdeEdicion(fila));
+            }
         }
-        for (FilaActividadCierre fila : historialCierreComercioRepository.actividadDelComercio(comercioId, desde.fecha(),
-                desde.idMaximoDe(FuenteActividad.CIERRE), pagina)) {
-            filas.add(desdeCierre(fila));
+        if (filtro == null || filtro == FuenteActividad.CIERRE) {
+            for (FilaActividadCierre fila : historialCierreComercioRepository.actividadDelComercio(comercioId, desde.fecha(),
+                    desde.idMaximoDe(FuenteActividad.CIERRE), pagina)) {
+                filas.add(desdeCierre(fila));
+            }
         }
 
         filas.sort(ORDEN_DE_LA_LISTA);
@@ -97,6 +115,17 @@ public class ActividadComercioService {
         String siguiente = hayMas ? Cursor.de(pagina1.get(pagina1.size() - 1)) : null;
         List<ActividadComercioItemResponseDTO> items = pagina1.stream().map(Fila::item).toList();
         return new ActividadComercioResponseDTO(items, siguiente, hayMas);
+    }
+
+    private static FuenteActividad interpretarFuente(String texto) {
+        if (texto == null || texto.isBlank()) {
+            return null;
+        }
+        try {
+            return FuenteActividad.valueOf(texto.trim());
+        } catch (IllegalArgumentException e) {
+            throw new ValidacionException("La fuente tiene que ser PEDIDO, EDICION o CIERRE");
+        }
     }
 
     private static int tamanioDePagina(Integer limite) {

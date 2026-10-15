@@ -389,7 +389,7 @@ En el detalle de su propio pedido el Empleado ve la nota "Hiciste este pedido co
   solo lectura (tramo E4). El servidor ya registra las ediciones del Dueño y ya ofrece la
   lista (`GET /api/v1/comercios/equipo/actividad`, solo Dueño; bloque A1 del tramo E3); las
   ediciones de un Empleado se registran con el rol Empleado cuando se habiliten sus
-  escrituras (bloques A2 y A3), y la pestaña en pantalla llega en la entrega B.
+  escrituras (bloques A2 y A3), y la pestaña en pantalla es la tercera de "Ver equipo" desde la etapa 4 de la entrega B (solo la ve el Dueño; el Empleado no ve ni la pantalla de equipo).
 
 ---
 

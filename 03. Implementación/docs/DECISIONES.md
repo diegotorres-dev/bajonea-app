@@ -10277,3 +10277,42 @@ Tercera de las cuatro etapas de la entrega B. Solo frontend y pruebas: sin cambi
 
 1. ¿El Cliente que no es Empleado debería tener también "Marcar todas" (hoy requiere un endpoint nuevo)?
 2. ¿Se quiere un punto en la franja o en la hoja "Cambiar de cuenta" que avise de avisos sin leer en el otro contexto (hoy solo existe ese aviso para el Dueño con varios comercios)?
+
+## 2026-10-14 — Tramo E3, entrega B, etapa 4: pestaña Actividad del Dueño
+
+Última etapa de la entrega B. Backend mínimo (un parámetro opcional, solo lectura) y frontend. Sin migraciones, sin estrés (no hay escrituras ni bloqueos). **Pendiente de la confirmación de Diego** (E3 no se declara cerrado).
+
+### Backend
+
+- `GET /api/v1/comercios/equipo/actividad` suma el parámetro opcional `fuente` (`PEDIDO`, `EDICION` o `CIERRE`). `ActividadComercioService.listar` ganó una sobrecarga con `fuente` (las firmas anteriores siguen y delegan con `null`); con filtro consulta solo esa fuente y saltea las otras dos consultas. Vacío o en blanco equivale a no filtrar; cualquier otro valor (incluido minúsculas, `TODO` o dos fuentes juntas) responde `400` con el formato de error actual ("La fuente tiene que ser PEDIDO, EDICION o CIERRE").
+- **El cursor no cambió:** es la posición `(fecha, fuente, id)` de la última fila entregada y, con una sola fuente, `idMaximoDe` sigue siendo correcto porque las otras fuentes ni se consultan. Un cursor tomado sin filtro también sirve con filtro (sigue en el mismo punto de la lista y no repite ni saltea filas de esa fuente); está probado.
+- Tests Java (`ActividadComercioIntegrationTest`, +4): filtro por cada fuente en el mismo orden que la lista completa y sin filtro (o en blanco) igual que antes; paginación por cursor con filtro (límites 1 a 3, cada fila una vez); valor inválido (`400` por servicio); y por HTTP (filtro, `fuente=basura` con su mensaje, `fuente=` vacío). Newman: la carpeta 60 (Actividad) pasa de 87 a 97 requests (filtro por cada fuente, vacío, inválido, paginación con filtro y cursor cruzado, más un cierre y una reapertura del comercio para que haya filas `CIERRE`); el constructor ahora reemplaza la carpeta en su lugar en vez de moverla al final de la colección.
+
+### Frontend
+
+- **Tres pestañas** en "Ver equipo": "Mi equipo · N", "Solicitudes · N" y "Actividad" (sin contador; `contadorDe` devuelve `null` para ella, un defecto que atrapó el primer test: mostraba la cantidad de invitaciones). Para que entren en 375 px las pestañas pasaron a `flex: 1 1 auto` con letra de 13 px; con "Mi equipo · 12" y "Solicitudes · 12" no se recorta nada (prueba con el DOM; ojo: se midió con la tipografía de reemplazo porque el fixture bloquea Google Fonts).
+- **Actividad** (`js/equipo-comercio.js`): fila de chips Todo, Pedidos, Ediciones y Cierres (`.chip-row` y `.chip` del catálogo con `aria-pressed`), cada uno pide al servidor su `fuente` (Todo, ninguna). Cada fila: avatar con iniciales (el Sistema con un engranaje), nombre, chip de rol (Dueño, Empleado, Cliente o Sistema; el Sistema sin nombre), `accionTexto`, la hora y, debajo, `entidadNombre` y `detalle` si hay; separadores "Hoy", "Ayer" o `DD/MM/AAAA` armados con `js/fechas.js` (`etiquetaDeDia` nueva, zona del comercio) y botón "Ver más" con el cursor. Estados: esqueleto, vacío (un texto por filtro), error con "Reintentar" (los chips quedan a la vista) y error de "Ver más" con toast y botón rehabilitado.
+- **Estado y polling:** cada carga lleva un número de pedido: una respuesta tardía de otra pestaña o filtro se descarta. Cambiar de pestaña, de filtro o volver a abrir la vista reinicia lista y cursor. El sondeo de 15 s sigue refrescando solo el equipo (pestañas y contadores) y `pintarLista` no repinta nada si la pestaña activa es Actividad. El pie con "Invitar" (`equipo-footer`) se esconde en Actividad.
+- Estilos nuevos en `styles.css` (filtros, separador de día, chip de rol, fila, hora, "Ver más"). Sin comentarios en ningún archivo.
+
+### Pruebas
+
+- **Spec 55 nuevo** (16 tests, 375 px, login real contra `bajonea_test`): tres pestañas y pie; pestañas con contadores de dos cifras sin recorte ni desborde; el Empleado no ve la pantalla ni las pestañas (y el endpoint le da `403`); contenido de las filas igual a la respuesta del servidor (roles, nombre, iniciales, engranaje del Sistema, hora); separadores Hoy, Ayer y fecha; cada chip pide su fuente y la lista muestra solo esa; vacíos por filtro y general; "Ver más" (30 + 6 sin repetir, con una referencia de 110 caracteres sin espacios y sin desborde); reinicio por filtro y por pestaña; esqueleto; error con reintento; error de "Ver más"; respuesta tardía que no pisa otra pestaña; sondeo (con `page.clock`) que actualiza contadores sin tocar la lista ni el "Ver más"; reapertura de la vista. Los datos se siembran por SQL en comercios clonados (aislamiento por test) y en ASCII, porque el cliente `mysql` de las pruebas pierde las tildes.
+- **Las pruebas muerden:** sin mandar `fuente` falla el test de los chips; con la lista del equipo repintándose en la pestaña Actividad falla el del sondeo (la primera variante de ese cambio, solo quitar el `return`, no la atrapaba porque el pintor inexistente lanzaba una excepción silenciosa; se probó con un pintor por defecto); en Java, con la consulta de ediciones sin filtrar fallan 3 tests.
+- **Corridas** (backend 8081, frontend 5502, base reseteada con `entorno-test.mjs preparar`): `mvnw test` en las dos pasadas, **798/798 + 6/6** (794 + 4 nuevos); Newman carpeta 60, 98 requests ejecutados, 147 assertions, 0 fallos; Playwright completo (858 tests, `workers: 1`, 31 min): **843 pasaron, 5 fallaron y 10 no corrieron** (los 10 son los siguientes a un fallo en specs en serie). Los cinco: `06:123` y `53:304` (subida a Cloudinary real), `17:398`, `51:151` (`400` "La imagen no es válida" en la ronda 5) y el inestable conocido `27:497`; ninguno toca el código de esta etapa. Reseteando la base y repitiendo los 5 archivos (06, 17, 27, 51 y 53, 97 tests): 96 pasaron y falló solo `27:497`, que aislado pasó 5/5. Una primera repetición sin resetear dio además fallos en `17:198` y `53:364` por el volumen de datos que deja la corrida larga (la lista de comercios del Administrador tarda más del tope de 5 s); con la base reseteada pasan. Una corrida anterior se cortó sola en el test 97 (el proceso se lanzó mal desde un subshell) y se repitió.
+
+### Decisiones no previstas
+
+1. Las filas muestran también `entidadNombre` y `detalle` bajo la acción (por ejemplo "Pedido #12" o "Producto Alfa · Cambio de precio"): sin eso "Aceptó un pedido" no dice cuál.
+2. La fecha de los separadores viejos es `DD/MM/AAAA` (con año) y no `DD/MM`.
+3. Se agregó un `id` y un `data-testid` (`equipo-footer`) al pie de la vista para poder esconderlo.
+4. El Empleado ve `403` (no `404`) si llama al endpoint: es un Cliente y la ruta es de Dueño; no hay una pantalla de equipo para él, así que no se probó de otra forma.
+5. En `docs/diccionario-de-datos.md` (y su copia) se agregó la nota del filtro; la frase vieja de esa misma nota ("solo las filas de los actores Dueno y Empleado de los pedidos") quedó desactualizada desde el bloque A2b y no se tocó.
+6. El constructor de Newman de la carpeta 60 ahora reemplaza en su lugar; antes la movía al final de la colección cada vez que se corría.
+7. No se miró el resultado a ojo en un navegador (solo DOM y medidas); conviene una pasada visual de Diego en 375 px y con la tipografía real.
+
+### Preguntas abiertas
+
+1. ¿"Marcar todas" para el Cliente fuera de un comercio? Requiere un endpoint nuevo (pulido pendiente, sin implementar).
+2. ¿Un punto de aviso por contexto en la franja o en la hoja "Cambiar de cuenta" (avisos sin leer en el otro contexto)? Va a la pasada de interfaz (pulido pendiente, sin implementar).
+3. ¿Se quiere una cuenta de resultados ("N actividades") o un buscador por persona en la pestaña? No se hizo.

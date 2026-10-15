@@ -99613,6 +99613,108 @@
           ]
         },
         {
+          "name": "Cierre: el Dueño cierra el comercio a mano (aparece una fila de cierre en la actividad)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/cerrar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "cerrar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cierre: el Dueño vuelve a abrir el comercio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/abrir",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "abrir"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Orden: la lista completa viene del mas nuevo al mas viejo, sin repetidos",
           "request": {
             "method": "GET",
@@ -99808,6 +99910,440 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filtro: fuente=PEDIDO devuelve solo esa fuente, en el mismo orden que la lista completa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=100&fuente=PEDIDO",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "100"
+                },
+                {
+                  "key": "fuente",
+                  "value": "PEDIDO"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const items = pm.response.json().data.items;",
+                  "const completa = JSON.parse(pm.environment.get('ab_ids')).filter((id) => id.startsWith('PEDIDO-'));",
+                  "pm.test('Todas son PEDIDO', () => pm.expect(items.every((i) => i.fuente === 'PEDIDO')).to.eql(true));",
+                  "pm.test('Mismos identificadores y mismo orden que la lista completa filtrada', () => pm.expect(items.map((i) => i.id)).to.eql(completa));",
+                  "pm.test('Hay al menos una fila de PEDIDO', () => pm.expect(items.length).to.be.above(0));",
+                  "pm.test('No hay mas paginas', () => pm.expect(pm.response.json().data.hayMas).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filtro: fuente=EDICION devuelve solo esa fuente, en el mismo orden que la lista completa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=100&fuente=EDICION",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "100"
+                },
+                {
+                  "key": "fuente",
+                  "value": "EDICION"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const items = pm.response.json().data.items;",
+                  "const completa = JSON.parse(pm.environment.get('ab_ids')).filter((id) => id.startsWith('EDICION-'));",
+                  "pm.test('Todas son EDICION', () => pm.expect(items.every((i) => i.fuente === 'EDICION')).to.eql(true));",
+                  "pm.test('Mismos identificadores y mismo orden que la lista completa filtrada', () => pm.expect(items.map((i) => i.id)).to.eql(completa));",
+                  "pm.test('Hay al menos una fila de EDICION', () => pm.expect(items.length).to.be.above(0));",
+                  "pm.test('No hay mas paginas', () => pm.expect(pm.response.json().data.hayMas).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filtro: fuente=CIERRE devuelve solo esa fuente, en el mismo orden que la lista completa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=100&fuente=CIERRE",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "100"
+                },
+                {
+                  "key": "fuente",
+                  "value": "CIERRE"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const items = pm.response.json().data.items;",
+                  "const completa = JSON.parse(pm.environment.get('ab_ids')).filter((id) => id.startsWith('CIERRE-'));",
+                  "pm.test('Todas son CIERRE', () => pm.expect(items.every((i) => i.fuente === 'CIERRE')).to.eql(true));",
+                  "pm.test('Mismos identificadores y mismo orden que la lista completa filtrada', () => pm.expect(items.map((i) => i.id)).to.eql(completa));",
+                  "pm.test('Hay al menos una fila de CIERRE', () => pm.expect(items.length).to.be.above(0));",
+                  "pm.test('No hay mas paginas', () => pm.expect(pm.response.json().data.hayMas).to.eql(false));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filtro: fuente vacia equivale a no filtrar",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=100&fuente=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "100"
+                },
+                {
+                  "key": "fuente",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Misma lista que sin filtro', () => pm.expect(pm.response.json().data.items.map((i) => i.id)).to.eql(JSON.parse(pm.environment.get('ab_ids'))));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filtro: una fuente que no es de la lista es 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=10&fuente=basura",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "10"
+                },
+                {
+                  "key": "fuente",
+                  "value": "basura"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Dice cuales son las fuentes validas', () => pm.expect(pm.response.json().mensaje).to.eql('La fuente tiene que ser PEDIDO, EDICION o CIERRE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filtro: paginacion con fuente, primera pagina de 2",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=2&fuente=PEDIDO",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "2"
+                },
+                {
+                  "key": "fuente",
+                  "value": "PEDIDO"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test('Trae 2 pedidos y hay mas', () => { pm.expect(d.items).to.have.length(2); pm.expect(d.hayMas).to.eql(true); pm.expect(d.items.every((i) => i.fuente === 'PEDIDO')).to.eql(true); });",
+                  "pm.environment.set('ab_cursorF', d.siguienteCursor);",
+                  "pm.environment.set('ab_pagF', JSON.stringify(d.items.map((i) => i.id)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filtro: la segunda pagina con fuente sigue donde terminó la primera, sin repetir ni mezclar fuentes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=2&fuente=PEDIDO&cursor={{ab_cursorF}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "2"
+                },
+                {
+                  "key": "fuente",
+                  "value": "PEDIDO"
+                },
+                {
+                  "key": "cursor",
+                  "value": "{{ab_cursorF}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const primera = JSON.parse(pm.environment.get('ab_pagF'));",
+                  "const items = pm.response.json().data.items;",
+                  "const completa = JSON.parse(pm.environment.get('ab_ids')).filter((id) => id.startsWith('PEDIDO-'));",
+                  "pm.test('Todas son PEDIDO', () => pm.expect(items.every((i) => i.fuente === 'PEDIDO')).to.eql(true));",
+                  "pm.test('Continua la lista filtrada', () => pm.expect(primera.concat(items.map((i) => i.id))).to.eql(completa.slice(0, primera.length + items.length)));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Filtro: un cursor tomado sin filtro tambien sirve con filtro (no se repite ni se salta ningun pedido)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ab_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ab_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?limite=100&fuente=PEDIDO&cursor={{ab_cursor}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "100"
+                },
+                {
+                  "key": "fuente",
+                  "value": "PEDIDO"
+                },
+                {
+                  "key": "cursor",
+                  "value": "{{ab_cursor}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const completa = JSON.parse(pm.environment.get('ab_ids'));",
+                  "const primera = JSON.parse(pm.environment.get('ab_pag'));",
+                  "const ultimo = primera[primera.length - 1];",
+                  "const esperado = completa.slice(completa.indexOf(ultimo) + 1).filter((id) => id.startsWith('PEDIDO-'));",
+                  "pm.test('Son los pedidos que vienen despues de la primera pagina', () => pm.expect(pm.response.json().data.items.map((i) => i.id)).to.eql(esperado));"
                 ]
               }
             }

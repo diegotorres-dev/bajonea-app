@@ -334,6 +334,8 @@ agregar(
 );
 
 agregar(
+  item('Cierre: el Dueño cierra el comercio a mano (aparece una fila de cierre en la actividad)', req('PUT', '/comercios/cerrar', { token: TOKEN_DUENO, comercio: COM, body: {} }), [status(200)]),
+  item('Cierre: el Dueño vuelve a abrir el comercio', req('PUT', '/comercios/abrir', { token: TOKEN_DUENO, comercio: COM, body: {} }), [status(200)]),
   item('Orden: la lista completa viene del mas nuevo al mas viejo, sin repetidos', req('GET', '/comercios/equipo/actividad', { token: TOKEN_DUENO, comercio: COM, query: 'limite=100' }), [
     status(200),
     "const items = pm.response.json().data.items;",
@@ -357,6 +359,48 @@ agregar(
     "pm.test('Primera y segunda pagina son las primeras 8 de la lista completa', () => pm.expect(primera.concat(segunda)).to.eql(completa.slice(0, primera.length + segunda.length)));",
   ]),
   item('Paginacion: un cursor que no se entiende es 400', req('GET', '/comercios/equipo/actividad', { token: TOKEN_DUENO, comercio: COM, query: 'limite=4&cursor=basura' }), [status(400)]),
+  ...['PEDIDO', 'EDICION', 'CIERRE'].map((fuente) =>
+    item(`Filtro: fuente=${fuente} devuelve solo esa fuente, en el mismo orden que la lista completa`, req('GET', '/comercios/equipo/actividad', { token: TOKEN_DUENO, comercio: COM, query: `limite=100&fuente=${fuente}` }), [
+      status(200),
+      "const items = pm.response.json().data.items;",
+      `const completa = JSON.parse(pm.environment.get('ab_ids')).filter((id) => id.startsWith('${fuente}-'));`,
+      `pm.test('Todas son ${fuente}', () => pm.expect(items.every((i) => i.fuente === '${fuente}')).to.eql(true));`,
+      "pm.test('Mismos identificadores y mismo orden que la lista completa filtrada', () => pm.expect(items.map((i) => i.id)).to.eql(completa));",
+      `pm.test('Hay al menos una fila de ${fuente}', () => pm.expect(items.length).to.be.above(0));`,
+      "pm.test('No hay mas paginas', () => pm.expect(pm.response.json().data.hayMas).to.eql(false));",
+    ]),
+  ),
+  item('Filtro: fuente vacia equivale a no filtrar', req('GET', '/comercios/equipo/actividad', { token: TOKEN_DUENO, comercio: COM, query: 'limite=100&fuente=' }), [
+    status(200),
+    "pm.test('Misma lista que sin filtro', () => pm.expect(pm.response.json().data.items.map((i) => i.id)).to.eql(JSON.parse(pm.environment.get('ab_ids'))));",
+  ]),
+  item('Filtro: una fuente que no es de la lista es 400', req('GET', '/comercios/equipo/actividad', { token: TOKEN_DUENO, comercio: COM, query: 'limite=10&fuente=basura' }), [
+    status(400),
+    "pm.test('Dice cuales son las fuentes validas', () => pm.expect(pm.response.json().mensaje).to.eql('La fuente tiene que ser PEDIDO, EDICION o CIERRE'));",
+  ]),
+  item('Filtro: paginacion con fuente, primera pagina de 2', req('GET', '/comercios/equipo/actividad', { token: TOKEN_DUENO, comercio: COM, query: 'limite=2&fuente=PEDIDO' }), [
+    status(200),
+    "const d = pm.response.json().data;",
+    "pm.test('Trae 2 pedidos y hay mas', () => { pm.expect(d.items).to.have.length(2); pm.expect(d.hayMas).to.eql(true); pm.expect(d.items.every((i) => i.fuente === 'PEDIDO')).to.eql(true); });",
+    guardar(v('cursorF'), 'd.siguienteCursor'),
+    guardar(v('pagF'), 'JSON.stringify(d.items.map((i) => i.id))'),
+  ]),
+  item('Filtro: la segunda pagina con fuente sigue donde terminó la primera, sin repetir ni mezclar fuentes', req('GET', '/comercios/equipo/actividad', { token: TOKEN_DUENO, comercio: COM, query: 'limite=2&fuente=PEDIDO&cursor={{ab_cursorF}}' }), [
+    status(200),
+    "const primera = JSON.parse(pm.environment.get('ab_pagF'));",
+    "const items = pm.response.json().data.items;",
+    "const completa = JSON.parse(pm.environment.get('ab_ids')).filter((id) => id.startsWith('PEDIDO-'));",
+    "pm.test('Todas son PEDIDO', () => pm.expect(items.every((i) => i.fuente === 'PEDIDO')).to.eql(true));",
+    "pm.test('Continua la lista filtrada', () => pm.expect(primera.concat(items.map((i) => i.id))).to.eql(completa.slice(0, primera.length + items.length)));",
+  ]),
+  item('Filtro: un cursor tomado sin filtro tambien sirve con filtro (no se repite ni se salta ningun pedido)', req('GET', '/comercios/equipo/actividad', { token: TOKEN_DUENO, comercio: COM, query: 'limite=100&fuente=PEDIDO&cursor={{ab_cursor}}' }), [
+    status(200),
+    "const completa = JSON.parse(pm.environment.get('ab_ids'));",
+    "const primera = JSON.parse(pm.environment.get('ab_pag'));",
+    "const ultimo = primera[primera.length - 1];",
+    "const esperado = completa.slice(completa.indexOf(ultimo) + 1).filter((id) => id.startsWith('PEDIDO-'));",
+    "pm.test('Son los pedidos que vienen despues de la primera pagina', () => pm.expect(pm.response.json().data.items.map((i) => i.id)).to.eql(esperado));",
+  ]),
   item('Autorizacion: la Empleada sigue sin ver la actividad', req('GET', '/comercios/equipo/actividad', { token: TOKEN_EMPLEADO, comercio: COM, query: 'limite=10' }), [status(403)]),
   item('Autorizacion: la Compradora tampoco', req('GET', '/comercios/equipo/actividad', { token: TOKEN_COMPRADOR, comercio: COM, query: 'limite=10' }), [status(403)]),
   item('Autorizacion: sin token es 401', req('GET', '/comercios/equipo/actividad', { comercio: COM, query: 'limite=10' }), [status(401)]),
@@ -366,13 +410,14 @@ const carpeta = { name: NOMBRE_CARPETA, item: items };
 const collection = JSON.parse(fs.readFileSync(collectionPath, 'utf8'));
 const idx = collection.item.findIndex((f) => f.name.startsWith(PREFIJO_CARPETA));
 if (idx >= 0) {
-  collection.item.splice(idx, 1);
+  collection.item[idx] = carpeta;
+} else {
+  collection.item.push(carpeta);
 }
-collection.item.push(carpeta);
 fs.writeFileSync(collectionPath, JSON.stringify(collection, null, 2) + '\n', 'utf8');
 
 const environment = JSON.parse(fs.readFileSync(environmentPath, 'utf8'));
-const claves = ['com', 'clon', 'cat', 'cat_nombre', 'prodD', 'prodClon', 'inv_codigo', 'cuit_tmp', 'dni_rep_tmp', 'ahora', 'total', 'ids', 'cursor', 'pag',
+const claves = ['com', 'clon', 'cat', 'cat_nombre', 'prodD', 'prodClon', 'inv_codigo', 'cuit_tmp', 'dni_rep_tmp', 'ahora', 'total', 'ids', 'cursor', 'pag', 'cursorF', 'pagF',
   'd_email', 'd_usuario', 'd_password', 'd_dni', 'd_codigo', 'd_token', 'd_id',
   'e_email', 'e_usuario', 'e_password', 'e_dni', 'e_codigo', 'e_token', 'e_id',
   'c_email', 'c_usuario', 'c_password', 'c_dni', 'c_codigo', 'c_token', 'c_id', 'c_dir', 'c_nombre_completo',

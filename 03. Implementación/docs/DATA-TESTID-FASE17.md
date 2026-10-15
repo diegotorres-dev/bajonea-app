@@ -191,3 +191,15 @@ Totales de esta entrega: 18 patrones nuevos. Se eliminó de `comercio-perfil.htm
 | `notificaciones.html` (Dueño y Empleado) | `js/notificaciones.js` | `btn-marcar-todas-leidas` (botón de texto "Marcar todas" en el encabezado, solo en contextos de comercio) |
 
 Totales de esta entrega: 1 patrón nuevo. La campana del Empleado reutiliza `btn-notificaciones` y `contador-notificaciones` (ya existentes para el Dueño y el Cliente); "Ver pedido" y los avisos conservan `btn-ver-pedido-notificacion-{id}` y `notificacion-item-{id}`. Sin comentarios en ningún archivo tocado.
+
+## Rol Empleado, tramo E3 (entrega B, etapa 4): pestaña Actividad del Dueño
+
+| Pantalla | Archivo(s) | `data-testid` |
+|---|---|---|
+| `comercio-perfil.html`, vista "Ver equipo" | `.html`, `js/equipo-comercio.js` | `tab-equipo-actividad` (tercera pestaña, sin contador), `equipo-footer` (pie con el botón "Invitar", que se esconde en Actividad) |
+| Filtros de la pestaña | `js/equipo-comercio.js` | `actividad-filtros` (grupo de chips), `chip-actividad-todo`, `chip-actividad-pedidos`, `chip-actividad-ediciones`, `chip-actividad-cierres` (todos con `aria-pressed`) |
+| Estados de la lista | `js/equipo-comercio.js` | `actividad-contenido` (contenedor, con `aria-busy` mientras carga), `actividad-cargando` (esqueleto), `actividad-error`, `btn-reintentar-actividad`; el estado vacío reutiliza `estado-vacio` |
+| Filas | `js/equipo-comercio.js` | `actividad-filas` (contenedor), `actividad-dia` (separador: Hoy, Ayer o fecha), `actividad-fila` (con `data-fuente` y `data-rol`), `actividad-nombre` (no existe en las acciones del Sistema), `actividad-rol` (chip), `actividad-accion`, `actividad-referencia` (entidad y detalle), `actividad-hora`, `actividad-avatar` (iniciales), `actividad-avatar-sistema` (engranaje) |
+| Paginación | `js/equipo-comercio.js` | `btn-actividad-ver-mas` |
+
+Totales de esta entrega: 22 patrones nuevos. Las pestañas anteriores conservan `tab-equipo-equipo` y `tab-equipo-solicitudes`. Sin comentarios en ningún archivo tocado.

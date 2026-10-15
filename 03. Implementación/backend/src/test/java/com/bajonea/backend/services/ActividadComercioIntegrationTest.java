@@ -388,4 +388,66 @@ class ActividadComercioIntegrationTest {
         actividad(token, dueno.comercioId(), "limite=abc").andExpect(status().isBadRequest());
         actividad(token, dueno.comercioId(), "cursor=basura").andExpect(status().isBadRequest());
     }
+
+    @Test
+    void elFiltroPorFuenteDevuelveSoloEsaFuenteEnElMismoOrdenYSinFiltroEsIgualQueAntes() {
+        for (String fuente : new String[] {"PEDIDO", "EDICION", "CIERRE"}) {
+            List<String> filtrados = esperados.stream().filter(id -> id.startsWith(fuente + "-")).toList();
+            assertFalse(filtrados.isEmpty(), fuente);
+            ActividadComercioResponseDTO pagina = actividadService.listar(dueno.comercioId(), 100, null, fuente);
+            assertEquals(filtrados, ids(pagina), fuente);
+            assertFalse(pagina.isHayMas());
+            assertTrue(pagina.getItems().stream().allMatch(item -> item.getFuente().name().equals(fuente)), fuente);
+        }
+        assertEquals(esperados, ids(actividadService.listar(dueno.comercioId(), 100, null, null)));
+        assertEquals(esperados, ids(actividadService.listar(dueno.comercioId(), 100, null, "  ")));
+        assertEquals(esperados, ids(actividadService.listar(dueno.comercioId(), 100, null)));
+    }
+
+    @Test
+    void paginarPorCursorConFiltroEntregaCadaFilaDeEsaFuenteUnaSolaVez() {
+        for (String fuente : new String[] {"PEDIDO", "EDICION", "CIERRE"}) {
+            List<String> filtrados = esperados.stream().filter(id -> id.startsWith(fuente + "-")).toList();
+            for (int limite = 1; limite <= 3; limite++) {
+                List<String> recorridas = new ArrayList<>();
+                String cursor = null;
+                int paginas = 0;
+                do {
+                    ActividadComercioResponseDTO pagina = actividadService.listar(dueno.comercioId(), limite, cursor, fuente);
+                    assertTrue(pagina.getItems().size() <= limite);
+                    recorridas.addAll(ids(pagina));
+                    assertEquals(pagina.isHayMas(), pagina.getSiguienteCursor() != null);
+                    cursor = pagina.getSiguienteCursor();
+                    paginas++;
+                    assertTrue(paginas <= filtrados.size() + 1, "El recorrido no termina");
+                } while (cursor != null);
+                assertEquals(filtrados, recorridas, fuente + " con límite " + limite);
+            }
+        }
+    }
+
+    @Test
+    void unaFuenteQueNoEsDeLaListaEsUnErrorDeValidacion() {
+        for (String fuente : new String[] {"basura", "pedido", "TODO", "PEDIDO,CIERRE"}) {
+            assertThrows(ValidacionException.class, () -> actividadService.listar(dueno.comercioId(), 10, null, fuente), fuente);
+        }
+    }
+
+    @Test
+    void elFiltroPorFuenteFuncionaPorHttpYUnaFuenteInvalidaEs400() throws Exception {
+        String token = tokenDe(dueno.nombreUsuario(), dueno.clave());
+        List<String> cierres = esperados.stream().filter(id -> id.startsWith("CIERRE-")).toList();
+
+        actividad(token, dueno.comercioId(), "fuente=CIERRE")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items.length()").value(cierres.size()))
+                .andExpect(jsonPath("$.data.items[0].id").value(cierres.get(0)))
+                .andExpect(jsonPath("$.data.items[0].fuente").value("CIERRE"));
+        actividad(token, dueno.comercioId(), "fuente=basura")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.mensaje").value("La fuente tiene que ser PEDIDO, EDICION o CIERRE"));
+        actividad(token, dueno.comercioId(), "fuente=")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.items.length()").value(esperados.size()));
+    }
 }
