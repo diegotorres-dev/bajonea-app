@@ -18,6 +18,10 @@ import java.util.Map;
  * es el Cliente.</li>
  * <li>{@link #RETIRO_EN_ESPERA}: se intenta cerrar como no retirado un pedido que todavía no cumplió la espera
  * mínima; {@code data} suma {@code minutosRestantes} y {@code disponibleDesde}.</li>
+ * <li>{@link #EMPLEADO_NO_REACTIVABLE}: el Dueño intenta reactivar directamente a un miembro inactivo que no dio
+ * de baja él (renunció, o no hay registro de la baja); para que vuelva hace falta una invitación nueva.</li>
+ * <li>{@link #INVITACION_PENDIENTE}: el Dueño intenta reactivar directamente a un miembro inactivo que tiene una
+ * invitación pendiente y vigente en ese comercio.</li>
  * </ul>
  */
 public class ConflictoComercioException extends ConflictoDeNegocioException {
@@ -30,6 +34,8 @@ public class ConflictoComercioException extends ConflictoDeNegocioException {
     public static final String NO_OPERATIVO = "COMERCIO_NO_OPERATIVO";
     public static final String FUERA_DE_HORARIO = "FUERA_DE_HORARIO";
     public static final String RETIRO_EN_ESPERA = "RETIRO_EN_ESPERA";
+    public static final String EMPLEADO_NO_REACTIVABLE = "EMPLEADO_NO_REACTIVABLE";
+    public static final String INVITACION_PENDIENTE = "INVITACION_PENDIENTE";
 
     private final String codigo;
     private final Map<String, Object> datosAdicionales;

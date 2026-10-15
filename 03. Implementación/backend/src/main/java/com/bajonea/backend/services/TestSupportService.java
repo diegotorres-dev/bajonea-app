@@ -11,6 +11,7 @@ import com.bajonea.backend.entities.Usuario;
 import com.bajonea.backend.enums.CanalNotificacion;
 import com.bajonea.backend.enums.EstadoInvitacionEmpleado;
 import com.bajonea.backend.enums.EstadoToken;
+import com.bajonea.backend.enums.MotivoHistorialEmpleado;
 import com.bajonea.backend.enums.TipoNotificacion;
 import com.bajonea.backend.enums.TipoToken;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
@@ -258,16 +259,39 @@ public class TestSupportService {
     }
 
     /**
-     * Atajo de entorno de test: cambia el estado de la relación de un empleado con un comercio (el endpoint real
-     * para desactivar y reactivar llega en el tramo E4). Al pasar a {@code INACTIVO} fija {@code fecha_baja}; al
-     * volver a {@code ACTIVO} la limpia. Toma la relación con {@code FOR UPDATE}, como lo hará la desactivación real de
-     * E4, para que las pruebas de concurrencia representen el caso real. No toca historial ni avisos.
+     * Atajo de entorno de test: cambia el estado de la relación de un empleado con un comercio sin pasar por los
+     * endpoints reales de desactivar, reactivar y renunciar. Al pasar a {@code INACTIVO} fija {@code fecha_baja}; al
+     * volver a {@code ACTIVO} la limpia. Toma la relación con {@code FOR UPDATE}, como la desactivación real, para que
+     * las pruebas de concurrencia representen el caso real. Sin {@code motivo} no toca historial ni avisos (la
+     * relación queda inactiva "sin registro de la baja" y no es reactivable directamente). Con {@code motivo}
+     * ({@code BAJA_DUENO} o {@code RENUNCIA}, solo al pasar a {@code INACTIVO}) escribe además la fila de historial de
+     * esa baja, con el Dueño del comercio o el propio Empleado como actor, para armar relaciones reactivables o no.
      */
     @Transactional
-    public void cambiarEstadoRelacionEmpleado(Integer comercioId, Integer empleadoId, EstadoEmpleadoComercio estado) {
+    public void cambiarEstadoRelacionEmpleado(Integer comercioId, Integer empleadoId, EstadoEmpleadoComercio estado,
+            MotivoHistorialEmpleado motivo) {
+        if (motivo != null && (estado != EstadoEmpleadoComercio.INACTIVO
+                || (motivo != MotivoHistorialEmpleado.BAJA_DUENO && motivo != MotivoHistorialEmpleado.RENUNCIA))) {
+            throw new ConflictoDeNegocioException("El motivo solo vale al pasar a INACTIVO y es BAJA_DUENO o RENUNCIA");
+        }
         EmpleadoComercio relacion = empleadoComercioRepository.findByEmpleadoIdAndComercioIdConBloqueo(empleadoId, comercioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Relación de empleado no encontrada"));
+        LocalDateTime ahora = LocalDateTime.now(clock);
+        EstadoEmpleadoComercio origen = relacion.getEstado();
         relacion.setEstado(estado);
-        relacion.setFechaBaja(estado == EstadoEmpleadoComercio.INACTIVO ? LocalDateTime.now(clock) : null);
+        relacion.setFechaBaja(estado == EstadoEmpleadoComercio.INACTIVO ? ahora : null);
+        if (motivo != null) {
+            Integer duenoId = comercioRepository.findById(comercioId)
+                    .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado")).getDueno().getId();
+            Integer actorId = motivo == MotivoHistorialEmpleado.BAJA_DUENO ? duenoId : empleadoId;
+            jdbcTemplate.update("INSERT INTO historial_empleado_comercio (comercio_id, empleado_comercio_id, estado_origen, "
+                    + "estado_destino, motivo, actor_usuario_id, fecha_hora) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    comercioId, relacion.getId(), origen.name(), estado.name(), motivo.name(), actorId, ahora);
+        }
+    }
+
+    @Transactional
+    public void cambiarEstadoRelacionEmpleado(Integer comercioId, Integer empleadoId, EstadoEmpleadoComercio estado) {
+        cambiarEstadoRelacionEmpleado(comercioId, empleadoId, estado, null);
     }
 }

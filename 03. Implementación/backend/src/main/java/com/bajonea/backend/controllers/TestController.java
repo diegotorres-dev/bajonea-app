@@ -15,6 +15,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import com.bajonea.backend.enums.EstadoEmpleadoComercio;
+import com.bajonea.backend.enums.MotivoHistorialEmpleado;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -133,8 +134,9 @@ public class TestController {
 
     @PutMapping("/comercios/{comercioId}/empleados/{empleadoId}/estado")
     public ResponseEntity<ApiResponse<Void>> cambiarEstadoRelacionEmpleado(@PathVariable Integer comercioId,
-            @PathVariable Integer empleadoId, @RequestParam EstadoEmpleadoComercio estado) {
-        testSupportService.cambiarEstadoRelacionEmpleado(comercioId, empleadoId, estado);
+            @PathVariable Integer empleadoId, @RequestParam EstadoEmpleadoComercio estado,
+            @RequestParam(required = false) MotivoHistorialEmpleado motivo) {
+        testSupportService.cambiarEstadoRelacionEmpleado(comercioId, empleadoId, estado, motivo);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Estado de la relación actualizado", null));
     }
 

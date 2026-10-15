@@ -83,7 +83,10 @@ public class SecurityConfig {
      * operación del Comercio siguen cerrados al Dueño por los matchers {@code hasRole("DUENO")} de más abajo; solo
      * las rutas exactas de {@link DelegacionEmpleado} se abren por delante a {@code DUENO} y {@code CLIENTE}, y
      * ahí la autorización real es el resolver de comercio activo. El Administrador sigue recibiendo {@code 403}.
-     * {@code GET /api/v1/empleados/mis-comercios} es del Cliente: lo consulta quien ya tiene sesión de Cliente.
+     * {@code GET /api/v1/empleados/mis-comercios} es del Cliente: lo consulta quien ya tiene sesión de Cliente. Lo
+     * mismo {@code PUT /api/v1/empleados/comercios/{comercioId}/renunciar} y
+     * {@code GET /api/v1/empleados/comercios/{comercioId}/acceso} (tramo E4): rutas exactas solo para {@code CLIENTE}, así
+     * un Dueño o un Administrador reciben {@code 403} de la seguridad y no llegan al servicio.
      */
     private static final String TEST_PROFILE = "test";
 
@@ -127,6 +130,8 @@ public class SecurityConfig {
                         auth.requestMatchers("/api/v1/test/**").permitAll();
                     }
                     auth.requestMatchers(HttpMethod.GET, "/api/v1/empleados/mis-comercios").hasRole("CLIENTE");
+                    auth.requestMatchers(HttpMethod.PUT, "/api/v1/empleados/comercios/{comercioId}/renunciar").hasRole("CLIENTE");
+                    auth.requestMatchers(HttpMethod.GET, "/api/v1/empleados/comercios/{comercioId}/acceso").hasRole("CLIENTE");
                     for (DelegacionEmpleado.RutaDelegable ruta : DelegacionEmpleado.RUTAS) {
                         auth.requestMatchers(ruta.metodo(), ruta.patron()).hasAnyRole("DUENO", "CLIENTE");
                     }

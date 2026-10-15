@@ -89,7 +89,7 @@ class InvitacionEmpleadoServiceCodigoTest {
         service = new InvitacionEmpleadoService(invitacionRepository, insercionRepository, mock(HistorialEmpleadoComercioRepository.class),
                 mock(EmpleadoComercioRepository.class), usuarioRepository, comercioRepository, duenoRepository,
                 mock(PersonaFisicaRepository.class), mock(EmpleadoInsercionRepository.class), mock(RegistroService.class),
-                mock(NotificacionService.class), mock(MatrizRolesService.class), mock(InvitacionRegularizacionService.class), generador, mock(EmailService.class), reloj, 3);
+                mock(NotificacionService.class), mock(AptitudCuentaEmpleadoService.class), mock(InvitacionRegularizacionService.class), generador, mock(EmailService.class), reloj, 3);
     }
 
     private InvitacionEmpleadoResponseDTO invitar() {

@@ -26,8 +26,15 @@ export async function sumarAlEquipo(
   expect(aceptada.status, JSON.stringify(aceptada.body)).toBe(200);
 }
 
-export function atajoEstadoRelacion(request: APIRequestContext, comercioId: number, empleadoId: number, estado: 'ACTIVO' | 'INACTIVO') {
-  return apiPut(request, `/test/comercios/${comercioId}/empleados/${empleadoId}/estado?estado=${estado}`, {});
+export function atajoEstadoRelacion(
+  request: APIRequestContext,
+  comercioId: number,
+  empleadoId: number,
+  estado: 'ACTIVO' | 'INACTIVO',
+  motivo?: 'BAJA_DUENO' | 'RENUNCIA',
+) {
+  const sufijo = motivo ? `&motivo=${motivo}` : '';
+  return apiPut(request, `/test/comercios/${comercioId}/empleados/${empleadoId}/estado?estado=${estado}${sufijo}`, {});
 }
 
 export function ponerEstadoComercio(comercioId: number, estado: string): void {

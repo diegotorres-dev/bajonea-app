@@ -101,6 +101,8 @@ class ClasificacionRutasComercioTest {
         exclusivo("POST /api/v1/comercios/equipo/invitaciones");
         exclusivo("POST /api/v1/comercios/equipo/invitaciones/{invitacionId}/reenviar");
         exclusivo("PUT /api/v1/comercios/equipo/invitaciones/{invitacionId}/cancelar");
+        exclusivo("PUT /api/v1/comercios/equipo/miembros/{empleadoId}/desactivar");
+        exclusivo("PUT /api/v1/comercios/equipo/miembros/{empleadoId}/reactivar");
         exclusivo("GET /api/v1/comercios/redes-sociales");
         exclusivo("POST /api/v1/comercios/redes-sociales");
         exclusivo("PUT /api/v1/comercios/redes-sociales/{id}");
@@ -122,6 +124,8 @@ class ClasificacionRutasComercioTest {
         exclusivo("PUT /api/v1/notificaciones/comercio/{comercioId}/leidas");
 
         CLASIFICACION.put("GET /api/v1/empleados/mis-comercios", Categoria.PROPIO);
+        CLASIFICACION.put("PUT /api/v1/empleados/comercios/{comercioId}/renunciar", Categoria.PROPIO);
+        CLASIFICACION.put("GET /api/v1/empleados/comercios/{comercioId}/acceso", Categoria.PROPIO);
     }
 
     private static void delegable(String clave) {
@@ -291,7 +295,8 @@ class ClasificacionRutasComercioTest {
                 }
                 case PROPIO -> {
                     if (ruta.startsWith("/api/v1/empleados")) {
-                        verificar(fallos, entrada.getKey(), RolUsuario.CLIENTE, metodo, ruta, 200);
+                        int respuestaDelCliente = ruta.startsWith("/api/v1/empleados/comercios/") ? 404 : 200;
+                        verificar(fallos, entrada.getKey(), RolUsuario.CLIENTE, metodo, ruta, respuestaDelCliente);
                         verificar(fallos, entrada.getKey(), RolUsuario.DUENO, metodo, ruta, 403);
                         verificar(fallos, entrada.getKey(), RolUsuario.ADMINISTRADOR, metodo, ruta, 403);
                     }

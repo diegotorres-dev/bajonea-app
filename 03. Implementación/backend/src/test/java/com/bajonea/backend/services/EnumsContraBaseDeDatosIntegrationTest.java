@@ -72,6 +72,14 @@ class EnumsContraBaseDeDatosIntegrationTest {
     }
 
     @Test
+    void losTiposDeAvisoDeBajaYReactivacionDelEmpleadoEstanEnLaBase() {
+        Set<String> enBase = valoresDeLaColumna("notificacion", "tipo");
+        assertEquals(Set.of("EMPLEADO_DESACTIVADO", "EMPLEADO_REACTIVADO"),
+                Set.of("EMPLEADO_DESACTIVADO", "EMPLEADO_REACTIVADO").stream().filter(enBase::contains).collect(java.util.stream.Collectors.toSet()),
+                "V35 tiene que haber agregado EMPLEADO_REACTIVADO al ENUM de notificacion.tipo");
+    }
+
+    @Test
     void elMotivoDeTimeoutDelHistorialCoincideConElEnumDeJava() {
         compararConLaColumna("historial_estado_pedido", "motivo_timeout", MotivoTimeoutPedido.values(), Set.of());
     }
