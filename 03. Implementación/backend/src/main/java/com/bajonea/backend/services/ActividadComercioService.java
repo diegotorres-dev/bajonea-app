@@ -8,14 +8,17 @@ import com.bajonea.backend.enums.AccionEdicion;
 import com.bajonea.backend.enums.ActorPedido;
 import com.bajonea.backend.enums.EstadoPedido;
 import com.bajonea.backend.enums.FuenteActividad;
+import com.bajonea.backend.enums.MotivoHistorialEmpleado;
 import com.bajonea.backend.enums.TipoEntidadEdicion;
 import com.bajonea.backend.exceptions.ComercioNoDisponibleException;
 import com.bajonea.backend.exceptions.ValidacionException;
 import com.bajonea.backend.repositories.FilaActividadCierre;
 import com.bajonea.backend.repositories.FilaActividadEdicion;
+import com.bajonea.backend.repositories.FilaActividadEquipo;
 import com.bajonea.backend.repositories.FilaActividadPedido;
 import com.bajonea.backend.repositories.HistorialCierreComercioRepository;
 import com.bajonea.backend.repositories.HistorialEdicionComercioRepository;
+import com.bajonea.backend.repositories.HistorialEmpleadoComercioRepository;
 import com.bajonea.backend.repositories.HistorialEstadoPedidoRepository;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
@@ -28,24 +31,29 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Actividad de un comercio: una sola lista, de la más nueva a la más vieja, que mezcla tres historiales que ya
+ * Actividad de un comercio: una sola lista, de la más nueva a la más vieja, que mezcla cuatro historiales que ya
  * existen: las ediciones del catálogo y el perfil ({@code historial_edicion_comercio}), todo lo que le pasó a sus
  * pedidos desde que el comercio los ve ({@code historial_estado_pedido}: acciones del Dueño y los Empleados, del
  * Cliente y del sistema, incluida la llegada del pedido pagado; no el nacimiento en {@code PENDIENTE_PAGO} ni su
  * vencimiento por falta de pago) y los cierres y reaperturas ({@code historial_cierre_comercio}, también las
- * automáticas del sistema). Las tres fuentes escriben la hora con el reloj de la aplicación, así que el orden
- * entre ellas es el real.
+ * automáticas del sistema) y el equipo ({@code historial_empleado_comercio}: invitaciones enviadas y canceladas,
+ * aceptaciones, bajas, renuncias y reactivaciones). Las cuatro fuentes escriben la hora con el reloj de la
+ * aplicación, así que el orden entre ellas es el real.
  * <p>
- * Con el filtro opcional {@code fuente} se consulta una sola de las tres y se saltean las otras dos; el cursor es el
- * mismo y vale con o sin filtro, porque todas las filas que quedan son de la fuente pedida.
+ * Con el filtro opcional {@code fuente} se consulta una sola de las cuatro y se saltean las otras tres; el cursor es
+ * el mismo y vale con o sin filtro, porque todas las filas que quedan son de la fuente pedida. {@code EQUIPO} va al
+ * final de {@link FuenteActividad}: el cursor lleva el ordinal de la fuente y los cursores anteriores siguen siendo
+ * válidos.
  * <p>
  * Paginación por cursor sobre el orden total {@code (fecha_hora desc, fuente asc, id desc)}: el cursor es la
  * posición de la última fila entregada, así que una fila nueva no corre las páginas ni repite ni saltea filas.
  * Cada fuente se consulta con su propio tope ({@code limite + 1}): las primeras {@code limite + 1} filas del total
- * están siempre entre las primeras {@code limite + 1} de alguna fuente. Tres consultas en total por página, con el
- * nombre del actor ya resuelto en cada una (join a {@code persona_fisica}), sin consultas por fila.
+ * están siempre entre las primeras {@code limite + 1} de alguna fuente. Cuatro consultas en total por página (una
+ * sola con el filtro), con el nombre del actor ya resuelto en cada una (join a {@code persona_fisica}), sin
+ * consultas por fila.
  * <p>
- * La ve el Dueño; el Administrador la va a leer en solo lectura con {@link #listar(Integer, Integer, String)}.
+ * La ve el Dueño de su comercio activo y el Administrador, en solo lectura y de cualquier comercio, con
+ * {@link #listar(Integer, Integer, String, String)}. Son lecturas puras: no toman ningún bloqueo.
  */
 @Service
 @RequiredArgsConstructor
@@ -66,6 +74,7 @@ public class ActividadComercioService {
     private final HistorialEdicionComercioRepository historialEdicionComercioRepository;
     private final HistorialEstadoPedidoRepository historialEstadoPedidoRepository;
     private final HistorialCierreComercioRepository historialCierreComercioRepository;
+    private final HistorialEmpleadoComercioRepository historialEmpleadoComercioRepository;
 
     public ActividadComercioResponseDTO listar(ComercioActivo comercio, Integer limite, String cursor) {
         return listar(comercio, limite, cursor, null);
@@ -108,6 +117,13 @@ public class ActividadComercioService {
             }
         }
 
+        if (filtro == null || filtro == FuenteActividad.EQUIPO) {
+            for (FilaActividadEquipo fila : historialEmpleadoComercioRepository.actividadDelComercio(comercioId, desde.fecha(),
+                    desde.idMaximoDe(FuenteActividad.EQUIPO), pagina)) {
+                filas.add(desdeEquipo(fila));
+            }
+        }
+
         filas.sort(ORDEN_DE_LA_LISTA);
 
         boolean hayMas = filas.size() > tamanio;
@@ -124,7 +140,7 @@ public class ActividadComercioService {
         try {
             return FuenteActividad.valueOf(texto.trim());
         } catch (IllegalArgumentException e) {
-            throw new ValidacionException("La fuente tiene que ser PEDIDO, EDICION o CIERRE");
+            throw new ValidacionException("La fuente tiene que ser PEDIDO, EDICION, CIERRE o EQUIPO");
         }
     }
 
@@ -212,6 +228,39 @@ public class ActividadComercioService {
                 fila.fechaHora(), fila.usuarioId(), nombre, rol, TextosPedidoActividad.textoDeRol(rol), fila.accion().name(), texto, "COMERCIO", null,
                 null, null);
         return new Fila(FuenteActividad.CIERRE, fila.id(), fila.fechaHora(), item);
+    }
+
+    /**
+     * Una fila del historial del equipo. El actor es el Dueño si coincide con el Dueño del comercio, el Empleado si
+     * es cualquier otro usuario y el sistema (sin nombre ni usuario) si la fila no tiene actor. La entidad es el
+     * Empleado cuando la fila tiene relación (alta, baja, renuncia, reactivación, aceptación) y la invitación
+     * (su email) cuando solo tiene invitación (envío y cancelación). Cada envío o reenvío es una fila
+     * {@code INVITACION} y se lee "Invitó a ...".
+     */
+    private static Fila desdeEquipo(FilaActividadEquipo fila) {
+        boolean sinActor = fila.actorUsuarioId() == null;
+        String rol = sinActor ? "SISTEMA" : fila.actorUsuarioId().equals(fila.duenoId()) ? "DUENO" : "EMPLEADO";
+        String nombreActor = sinActor ? null : TextosPedidoActividad.nombreDe(fila.actorNombre(), fila.actorApellido());
+        boolean esEmpleado = fila.empleadoId() != null;
+        String entidadTipo = esEmpleado ? "EMPLEADO" : "INVITACION";
+        Integer entidadId = esEmpleado ? fila.empleadoId() : fila.invitacionId();
+        String entidadNombre = esEmpleado ? TextosPedidoActividad.nombreDe(fila.empleadoNombre(), fila.empleadoApellido())
+                : fila.invitacionEmail();
+        ActividadComercioItemResponseDTO item = new ActividadComercioItemResponseDTO("EQUIPO-" + fila.id(), FuenteActividad.EQUIPO,
+                fila.fechaHora(), fila.actorUsuarioId(), nombreActor, rol, TextosPedidoActividad.textoDeRol(rol), fila.motivo().name(),
+                textoDeEquipo(fila.motivo(), entidadNombre), entidadTipo, entidadId, entidadNombre, null);
+        return new Fila(FuenteActividad.EQUIPO, fila.id(), fila.fechaHora(), item);
+    }
+
+    private static String textoDeEquipo(MotivoHistorialEmpleado motivo, String entidadNombre) {
+        return switch (motivo) {
+            case INVITACION -> "Invitó a " + entidadNombre;
+            case INVITACION_CANCELADA -> "Canceló la invitación a " + entidadNombre;
+            case ACEPTACION -> "Aceptó la invitación";
+            case BAJA_DUENO -> "Dio de baja a " + entidadNombre;
+            case RENUNCIA -> "Dejó de trabajar en el comercio";
+            case REACTIVACION -> "Reactivó a " + entidadNombre;
+        };
     }
 
     private static String textoDeEdicion(AccionEdicion accion, TipoEntidadEdicion tipo) {

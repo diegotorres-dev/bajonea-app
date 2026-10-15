@@ -5,6 +5,39 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
 
+## Tramo E4, bloque A3: historial del equipo en la Actividad y lectura del Administrador (2026-10-15)
+
+Tercer bloque de backend de E4 (sin pantallas ni migraciones): la actividad del comercio suma una cuarta fuente, `EQUIPO`, con lo que pasó en el equipo (invitaciones, aceptaciones, bajas, renuncias y reactivaciones); el Administrador puede leer el equipo y la actividad de cualquier comercio; las invitaciones traen `diasRestantes` calculado por el servidor. Aparte, dos arreglos de frontend (Paso 0): el botón "Guardar" del formulario de producto y el desborde de etiquetas con nombre muy largo.
+
+**Documentos de esta carpeta que cambiaron** (Diego los copia a mano a `01.` y `02.`):
+- `diccionario-de-datos.md`: **pasa de la v1.19 a la v1.20** (también cambió `docs/diccionario-de-datos.md`, que es idéntico). Copiar a `02. Diseño/03. Diagramas de Bases de Datos/03. Diccionario de Datos/diccionario-de-datos.md`. Solo comportamiento, sin tablas ni columnas: fuente `EQUIPO` de la actividad con el texto de cada motivo, la regla de que la `REACTIVACION` de una aceptación no se muestra, los dos endpoints del Administrador y `diasRestantes`.
+
+**No cambiaron todavía** los requisitos funcionales (`-dueño`, `-empleado`, `-sistema`, `-administrador`), las historias de usuario ni `alcance-y-limitaciones.md`: se actualizan junto con las pantallas (bloques B1 a B3), cuando los textos estén definidos en los mockups. Los textos de la fuente `EQUIPO` son provisorios.
+
+**Pruebas:** ver `docs/DECISIONES.md`, 2026-10-15, "Tramo E4, bloque A3".
+
+## Tramo E4, bloque A2: renuncia del Empleado y acceso propio (2026-10-15)
+
+Segundo bloque de backend de E4 (sin pantallas): el propio Empleado puede dejar un comercio, y un endpoint de solo lectura le dice al frontend por qué perdió el acceso. Sin migraciones.
+
+**Documentos de esta carpeta que cambiaron** (Diego los copia a mano a `01.` y `02.`):
+- `diccionario-de-datos.md`: **pasa de la v1.18 a la v1.19** (también cambió `docs/diccionario-de-datos.md`, que es idéntico). Solo comportamiento, sin tablas ni columnas: la renuncia (`PUT /api/v1/empleados/comercios/{comercioId}/renunciar`) escribe la fila `RENUNCIA` de `HistorialEmpleadoComercio` y el aviso T34 al Dueno; nuevo `GET /api/v1/empleados/comercios/{comercioId}/acceso`; las notas de `MotivoHistorialEmpleado`, `EMPLEADO_DESACTIVADO`, el purgado de avisos y la regla de la relación indican que la renuncia ya está implementada.
+
+**No cambiaron todavía** los requisitos funcionales (`-dueño`, `-empleado`, `-sistema`, `-administrador`), las historias de usuario ni `alcance-y-limitaciones.md`: se actualizan junto con las pantallas (bloques B1 a B3), cuando los textos y los flujos estén definidos en los mockups. El texto de T34 es provisorio.
+
+**Pruebas:** ver `docs/DECISIONES.md`, 2026-10-15, "Tramo E4, bloque A2".
+
+## Tramo E4, bloque A1: desactivar y reactivar al miembro del equipo (2026-10-14)
+
+Primer bloque de backend de E4 (sin pantallas): el Dueño da de baja y reactiva directamente a un miembro del equipo, con historial, avisos y reglas de reactivación. Una migración (`V35`: tipo de aviso `EMPLEADO_REACTIVADO`, T37).
+
+**Documentos de esta carpeta que cambiaron** (Diego los copia a mano a `01.` y `02.`):
+- `diccionario-de-datos.md`: **pasa de la v1.17 a la v1.18** (también cambió `docs/diccionario-de-datos.md`, que es idéntico). Nuevo tipo de aviso `EMPLEADO_REACTIVADO` (T37) con su audiencia; `MotivoHistorialEmpleado` indica qué motivos escribe el código hoy; la fila `REACTIVACION` puede ser directa (sin invitación) o por invitación; nota sobre `motivoBaja` y `puedeReactivar` del listado del equipo, calculados de la última baja del historial; T32 aclarado.
+
+**No cambiaron todavía** los requisitos funcionales (`-dueño`, `-empleado`, `-sistema`, `-administrador`), las historias de usuario ni `alcance-y-limitaciones.md`: se actualizan junto con las pantallas (bloques B1 a B3), cuando los textos y los flujos estén definidos en los mockups. Los textos de T32, T34 y T37 son provisorios.
+
+**Pruebas:** ver `docs/DECISIONES.md`, 2026-10-14, "Tramo E4, bloque A1".
+
 ## Tramo E3, entrega B, etapa 4: pestaña Actividad del Dueño (2026-10-14)
 
 Última etapa de la entrega B. La vista "Ver equipo" del Dueño suma una tercera pestaña, "Actividad", con la lista de actividad del comercio (quién hizo qué) y filtros "Todo", "Pedidos", "Ediciones" y "Cierres". Backend: `GET /api/v1/comercios/equipo/actividad` suma el parámetro opcional `fuente` (`PEDIDO`, `EDICION` o `CIERRE`), compatible hacia atrás.

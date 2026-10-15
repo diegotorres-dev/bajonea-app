@@ -376,7 +376,7 @@ agregar(
   ]),
   item('Filtro: una fuente que no es de la lista es 400', req('GET', '/comercios/equipo/actividad', { token: TOKEN_DUENO, comercio: COM, query: 'limite=10&fuente=basura' }), [
     status(400),
-    "pm.test('Dice cuales son las fuentes validas', () => pm.expect(pm.response.json().mensaje).to.eql('La fuente tiene que ser PEDIDO, EDICION o CIERRE'));",
+    "pm.test('Dice cuales son las fuentes validas', () => pm.expect(pm.response.json().mensaje).to.eql('La fuente tiene que ser PEDIDO, EDICION, CIERRE o EQUIPO'));",
   ]),
   item('Filtro: paginacion con fuente, primera pagina de 2', req('GET', '/comercios/equipo/actividad', { token: TOKEN_DUENO, comercio: COM, query: 'limite=2&fuente=PEDIDO' }), [
     status(200),

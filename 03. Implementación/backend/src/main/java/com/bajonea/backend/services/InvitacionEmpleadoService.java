@@ -44,9 +44,11 @@ import com.bajonea.backend.repositories.UsuarioRepository;
 import com.bajonea.backend.util.EdadUtils;
 import com.bajonea.backend.util.EjecucionPostCommit;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -90,7 +92,7 @@ public class InvitacionEmpleadoService {
     public static final int TOPE_POR_HORA = 5;
     public static final int VIGENCIA_DIAS = 7;
     public static final int MAX_INTENTOS_CODIGO = 5;
-    public static final int EDAD_MINIMA_EMPLEADO = 18;
+    public static final int EDAD_MINIMA_EMPLEADO = AptitudCuentaEmpleadoService.EDAD_MINIMA_EMPLEADO;
 
     private static final Logger log = LoggerFactory.getLogger(InvitacionEmpleadoService.class);
 
@@ -100,6 +102,8 @@ public class InvitacionEmpleadoService {
     private static final Set<EstadoInvitacionEmpleado> ESTADOS_CANCELABLES = ESTADOS_REENVIABLES;
     private static final List<EstadoInvitacionEmpleado> ESTADOS_LISTADOS = List.of(
             EstadoInvitacionEmpleado.PENDIENTE, EstadoInvitacionEmpleado.VENCIDA, EstadoInvitacionEmpleado.INVALIDADA);
+
+    private static final long MILISEGUNDOS_POR_DIA = Duration.ofDays(1).toMillis();
 
     static final String MENSAJE_COMERCIO_NO_OPERATIVO = "Este comercio no puede invitar empleados en este momento";
     static final String MENSAJE_YA_ES_DEL_EQUIPO = "Esa persona ya es parte de tu equipo";
@@ -130,7 +134,7 @@ public class InvitacionEmpleadoService {
     private final EmpleadoInsercionRepository empleadoInsercionRepository;
     private final RegistroService registroService;
     private final NotificacionService notificacionService;
-    private final MatrizRolesService matrizRolesService;
+    private final AptitudCuentaEmpleadoService aptitud;
     private final InvitacionRegularizacionService regularizacionService;
     private final CodigoTokenGenerador codigoGenerador;
     private final EmailService emailService;
@@ -142,7 +146,7 @@ public class InvitacionEmpleadoService {
             EmpleadoComercioRepository empleadoComercioRepository, UsuarioRepository usuarioRepository,
             ComercioRepository comercioRepository, DuenoRepository duenoRepository, PersonaFisicaRepository personaFisicaRepository,
             EmpleadoInsercionRepository empleadoInsercionRepository, RegistroService registroService,
-            NotificacionService notificacionService, MatrizRolesService matrizRolesService,
+            NotificacionService notificacionService, AptitudCuentaEmpleadoService aptitud,
             InvitacionRegularizacionService regularizacionService, CodigoTokenGenerador codigoGenerador,
             EmailService emailService, Clock clock, @Value("${token.generacion.max-intentos:20}") int maxIntentosCodigo) {
         this.invitacionRepository = invitacionRepository;
@@ -156,7 +160,7 @@ public class InvitacionEmpleadoService {
         this.empleadoInsercionRepository = empleadoInsercionRepository;
         this.registroService = registroService;
         this.notificacionService = notificacionService;
-        this.matrizRolesService = matrizRolesService;
+        this.aptitud = aptitud;
         this.regularizacionService = regularizacionService;
         this.codigoGenerador = codigoGenerador;
         this.emailService = emailService;
@@ -227,13 +231,23 @@ public class InvitacionEmpleadoService {
     }
 
     @Transactional(readOnly = true)
-    public EquipoComercioResponseDTO listarEquipo(ComercioActivo activo) {
+    public EquipoComercioResponseDTO listarEquipo(Integer comercioId) {
         LocalDateTime ahora = LocalDateTime.now(clock);
-        List<MiembroEquipoResponseDTO> miembros = empleadoComercioRepository.findEquipoByComercioId(activo.comercioId()).stream()
-                .map(this::aMiembroDto)
+        List<EmpleadoComercio> relaciones = empleadoComercioRepository.findEquipoByComercioId(comercioId);
+        List<Integer> inactivas = relaciones.stream()
+                .filter(relacion -> relacion.getEstado() == EstadoEmpleadoComercio.INACTIVO)
+                .map(EmpleadoComercio::getId)
+                .toList();
+        Map<Integer, MotivoHistorialEmpleado> motivosDeBaja = new HashMap<>();
+        if (!inactivas.isEmpty()) {
+            historialRepository.findUltimaBaja(inactivas)
+                    .forEach(baja -> motivosDeBaja.put(baja.getRelacionId(), baja.getMotivo()));
+        }
+        List<MiembroEquipoResponseDTO> miembros = relaciones.stream()
+                .map(relacion -> MiembroEquipoResponseDTO.de(relacion, motivosDeBaja.get(relacion.getId())))
                 .toList();
         List<InvitacionEmpleadoResponseDTO> invitaciones = invitacionRepository
-                .findUltimaPorEmailEnEstados(activo.comercioId(), ESTADOS_LISTADOS).stream()
+                .findUltimaPorEmailEnEstados(comercioId, ESTADOS_LISTADOS).stream()
                 .map(invitacion -> aDto(invitacion, ahora))
                 .toList();
         return new EquipoComercioResponseDTO(miembros, invitaciones);
@@ -459,27 +473,13 @@ public class InvitacionEmpleadoService {
      * conflicto del login. Quien llegó hasta acá ya probó el código, así que se le puede decir el motivo.
      */
     private void validarCuentaExistente(Usuario existente) {
-        if (!matrizRolesService.puedeSerEmpleado(existente.getId())) {
-            throw new InvitacionNoAptaException(MENSAJE_NO_SE_PUEDE_ACEPTAR);
+        switch (aptitud.evaluar(existente.getId(), existente.getEstado())) {
+            case ROL_INCOMPATIBLE -> throw new InvitacionNoAptaException(MENSAJE_NO_SE_PUEDE_ACEPTAR);
+            case CUENTA_NO_ACTIVA -> throw new InvitacionNoAptaException(MensajesEstadoCuenta.conflictoDeLogin(existente.getEstado()));
+            case MENOR_DE_EDAD -> throw new InvitacionNoAptaException(MENSAJE_EDAD_CUENTA_EXISTENTE);
+            case APTA -> {
+            }
         }
-        String conflicto = MensajesEstadoCuenta.conflictoDeLogin(existente.getEstado());
-        if (conflicto != null) {
-            throw new InvitacionNoAptaException(conflicto);
-        }
-        if (!tieneEdadParaEquipo(existente.getId())) {
-            throw new InvitacionNoAptaException(MENSAJE_EDAD_CUENTA_EXISTENTE);
-        }
-    }
-
-    /**
-     * Aptitud por edad de una cuenta existente para ser empleado: la comparten invitar, reenviar, validar y
-     * aceptar, para que no diverjan. La edad es la declarada en la persona física, calculada con el reloj del
-     * sistema.
-     */
-    private boolean tieneEdadParaEquipo(Integer usuarioId) {
-        PersonaFisica persona = personaFisicaRepository.findById(usuarioId)
-                .orElseThrow(() -> new IllegalStateException("La cuenta usuarioId=" + usuarioId + " no tiene persona física"));
-        return EdadUtils.cumpleEdadMinima(persona.getFechaNacimiento(), LocalDate.now(clock), EDAD_MINIMA_EMPLEADO);
     }
 
     private void validarDatosDeCuentaNueva(AceptarInvitacionEmpleadoRequestDTO request) {
@@ -552,7 +552,7 @@ public class InvitacionEmpleadoService {
         if (existente == null) {
             return;
         }
-        if (!matrizRolesService.puedeSerEmpleado(existente.getId())) {
+        if (!aptitud.puedeSerEmpleado(existente.getId())) {
             throw new InvitacionNoAptaException(MENSAJE_NO_SE_PUEDE_INVITAR);
         }
         if (empleadoComercioRepository.existsByEmpleadoIdAndComercioIdAndEstado(
@@ -564,7 +564,7 @@ public class InvitacionEmpleadoService {
                     MotivoRegularizacionInvitacion.de(existente.getEstado()));
             throw new InvitacionNoAptaException(MENSAJE_NO_SE_PUEDE_INVITAR);
         }
-        if (!tieneEdadParaEquipo(existente.getId())) {
+        if (!aptitud.tieneEdadParaEquipo(existente.getId())) {
             throw new InvitacionNoAptaException(MENSAJE_NO_SE_PUEDE_INVITAR);
         }
     }
@@ -683,19 +683,17 @@ public class InvitacionEmpleadoService {
         return email.trim().toLowerCase(Locale.ROOT);
     }
 
-    private MiembroEquipoResponseDTO aMiembroDto(EmpleadoComercio relacion) {
-        PersonaFisica persona = relacion.getEmpleado().getPersonaFisica();
-        Usuario usuario = persona.getPersona().getUsuario();
-        return new MiembroEquipoResponseDTO(relacion.getEmpleado().getId(), persona.getNombre(), persona.getApellido(),
-                usuario.getEmail(), usuario.getFotoPerfilUrl(), relacion.getEstado(), relacion.getFechaAlta(), relacion.getFechaBaja());
-    }
-
     private InvitacionEmpleadoResponseDTO aDto(InvitacionEmpleado invitacion, LocalDateTime ahora) {
         EstadoInvitacionEmpleado visible = invitacion.getEstado();
         if (visible == EstadoInvitacionEmpleado.PENDIENTE && !invitacion.getFechaVencimiento().isAfter(ahora)) {
             visible = EstadoInvitacionEmpleado.VENCIDA;
         }
+        Integer diasRestantes = null;
+        if (visible == EstadoInvitacionEmpleado.PENDIENTE) {
+            long milisegundos = Duration.between(ahora, invitacion.getFechaVencimiento()).toMillis();
+            diasRestantes = (int) Math.max(1, Math.ceilDiv(milisegundos, MILISEGUNDOS_POR_DIA));
+        }
         return new InvitacionEmpleadoResponseDTO(invitacion.getId(), invitacion.getEmail(), visible,
-                invitacion.getFechaCreacion(), invitacion.getFechaVencimiento());
+                invitacion.getFechaCreacion(), invitacion.getFechaVencimiento(), diasRestantes);
     }
 }

@@ -836,7 +836,7 @@ class InvitacionEmpleadoIntegrationTest {
             jdbcTemplate.update("UPDATE invitacion_empleado SET fecha_vencimiento = ? WHERE id = ?", INICIO.plusDays(3).minusMinutes(1), vencida.getId());
             sincronizar();
 
-            EquipoComercioResponseDTO equipo = invitacionService.listarEquipo(activo(dueno));
+            EquipoComercioResponseDTO equipo = invitacionService.listarEquipo(dueno.comercioId());
 
             assertEquals(List.of(antiguo, reciente), equipo.getMiembros().stream().map(m -> m.getEmpleadoId()).toList(), "por fecha de alta");
             assertEquals(List.of(EstadoEmpleadoComercio.INACTIVO, EstadoEmpleadoComercio.ACTIVO),
@@ -886,7 +886,7 @@ class InvitacionEmpleadoIntegrationTest {
             InvitacionEmpleadoResponseDTO nuevaReenviada = invitacionService.reenviar(activo(dueno), bloqueadaOriginal.getId());
             sincronizar();
 
-            List<InvitacionEmpleadoResponseDTO> invitaciones = invitacionService.listarEquipo(activo(dueno)).getInvitaciones();
+            List<InvitacionEmpleadoResponseDTO> invitaciones = invitacionService.listarEquipo(dueno.comercioId()).getInvitaciones();
 
             assertEquals("VENCIDA", estadoDe(viejaReinvitada.getId()), "invitar de nuevo materializa la vencida");
             assertEquals("INVALIDADA", estadoDe(bloqueadaOriginal.getId()), "reenviar no pisa el código bloqueado");

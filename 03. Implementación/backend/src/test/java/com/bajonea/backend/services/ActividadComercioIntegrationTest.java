@@ -45,7 +45,7 @@ import org.springframework.test.web.servlet.ResultActions;
  * Actividad del comercio (bloque A1 de E3) contra {@code bajonea_test}: la mezcla de las tres fuentes en un solo
  * orden total (fecha descendente, y en un empate pedidos, ediciones y cierres, cada uno por id descendente), la
  * paginación por cursor sin repetir ni saltear filas aun con filas de la misma fecha en el límite de una página, el
- * nombre del actor resuelto en las mismas consultas (tres por página, sin consultas por fila), lo que no
+ * nombre del actor resuelto en las mismas consultas (cuatro por página, sin consultas por fila; el equipo tiene su propio test), lo que no
  * aparece (otro comercio, el nacimiento del pedido y su vencimiento por falta de pago) y la autorización del
  * endpoint. Las acciones del Cliente y del sistema sobre los pedidos sí aparecen (bloque A2b).
  */
@@ -282,7 +282,7 @@ class ActividadComercioIntegrationTest {
     }
 
     @Test
-    void cadaPaginaEsTresConsultasSinConsultasPorFila() {
+    void cadaPaginaEsCuatroConsultasSinConsultasPorFila() {
         Statistics estadisticas = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
         estadisticas.setStatisticsEnabled(true);
         estadisticas.clear();
@@ -290,7 +290,7 @@ class ActividadComercioIntegrationTest {
         ActividadComercioResponseDTO pagina = actividadService.listar(dueno.comercioId(), 100, null);
 
         assertEquals(esperados.size(), pagina.getItems().size());
-        assertEquals(3, estadisticas.getPrepareStatementCount());
+        assertEquals(4, estadisticas.getPrepareStatementCount());
     }
 
     @Test
@@ -445,7 +445,7 @@ class ActividadComercioIntegrationTest {
                 .andExpect(jsonPath("$.data.items[0].fuente").value("CIERRE"));
         actividad(token, dueno.comercioId(), "fuente=basura")
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.mensaje").value("La fuente tiene que ser PEDIDO, EDICION o CIERRE"));
+                .andExpect(jsonPath("$.mensaje").value("La fuente tiene que ser PEDIDO, EDICION, CIERRE o EQUIPO"));
         actividad(token, dueno.comercioId(), "fuente=")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.items.length()").value(esperados.size()));

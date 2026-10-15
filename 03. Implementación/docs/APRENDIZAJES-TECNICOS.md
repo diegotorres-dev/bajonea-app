@@ -439,3 +439,77 @@ Pendientes que no son código y hay que revisar en cada entorno antes de contar 
 ### Newman: re-ejecución sin reset
 
 - Las carpetas 56 a 66 se pueden correr dos veces seguidas sobre la misma base sin reiniciarla (verificado en A5: dos vueltas de 58 a 66, 1092 requests y 1595 assertions cada una, 0 fallas). Los constructores viejos de identidades fijas (matriz de Cliente y de Comercio, multi-comercio 2a a 8a) no se probaron así: siguen necesitando base reseteada. `scripts/correr-newman.mjs <prefijos> [--repeticiones N]` corre carpetas contra otro puerto (`E2E_API_BASE_URL`), resuelve la localidad y toma `admin_password` de `ADMIN_PASSWORD` o del environment sin imprimirla.
+
+## E4, bloque A1 (2026-10-14)
+
+### La primera lectura simple de la transacción fija la foto: decidir con la relación bloqueada y antes de cualquier otra lectura
+
+- En InnoDB con `REPEATABLE READ` la foto de la transacción se fija en la **primera lectura simple** (un `SELECT` sin `FOR UPDATE` ni `LOCK IN SHARE MODE`), no al empezar. Una lectura con bloqueo siempre ve lo último confirmado, pero una lectura simple posterior ve la foto vieja. `GestionMiembroEquipoService.reactivar` decide con el motivo de la última baja, la invitación pendiente y la aptitud de la cuenta: si cualquiera de esas lecturas simples corre **antes** de esperar el bloqueo de la relación, puede no ver una renuncia (o una baja) que se confirmó mientras esperaba, y reactivar a quien acaba de renunciar. Por eso el orden es: usuarios (lecturas con bloqueo), relación `FOR UPDATE`, estado del comercio (lectura con bloqueo) y recién después las lecturas simples. La mutación M8 (leer el historial antes de los bloqueos) lo reproduce en el estrés y en un test con latches.
+- Cargar la entidad antes del bloqueo tiene el mismo problema en otro nivel: una consulta con bloqueo que devuelve una entidad que el contexto de persistencia ya tiene no refresca su estado (por eso `findByEmpleadoIdAndComercioIdConBloqueo` tiene que ser la primera lectura de esa fila; el resolver del Dueño no la carga antes, y por eso con `open-in-view` activo no hay una entidad vieja esperando en el contexto).
+
+### Probar el orden de fechas con un reloj de segundos
+
+- Las filas de los historiales llevan fecha sin fracciones. Para demostrar que una baja se fecha **después** de una escritura que ya estaba en curso, un estrés con escrituras rápidas casi nunca cruza un segundo. La prueba que muerde es determinista: una sesión de `mysql.exe` toma la relación en modo compartido (lo que hace una escritura delegada al revalidar), duerme 1,5 segundos y escribe una fila marcada con `NOW()`; el endpoint real de desactivar se lanza a los 400 ms. Con el bloqueo exclusivo la baja espera y se fecha después de la marca; sin él se fecha antes (la diferencia de un segundo se ve aunque el reloj no tenga fracciones). En Java se hace con un `TransactionTemplate` que llama a `ComercioActivoService.exigirRelacionActiva` y duerme.
+
+### Node en Windows: `mysql.exe` devuelve `\r\n`
+
+- Al leer varias filas de `mysql.exe -N -B` desde un script de Node hay que cortar con `/\r?\n/`; cortar por `'\n'` deja un `'\r'` al final de cada valor menos el último y las comparaciones con strings fallan de a una (un invariante que "contaba una baja de más" fue en realidad `'BAJA_DUENO\r' !== 'BAJA_DUENO'`).
+
+### `mvnw test`: dos precondiciones de la base que no son defectos
+
+- Sobre una base recién reseteada (`entorno-test.mjs preparar`) fallan los 15 tests de `CarritoVaciado*`: `CarritoIntegrationBase.producto` toma `SELECT id FROM categoria ORDER BY id LIMIT 1` y ningún test anterior creó una categoría (el resto de la suite crea categorías con nombres propios, pero según el orden de las clases ninguna corrió antes). Sobre una base con restos de varias corridas falla `TokenEspacioLlenoIntegrationTest` (el relleno de códigos pares queda por debajo de 499000 porque ya hay códigos ocupados). La receta que da la suite completa verde es: `preparar`, `detener`, sembrar una categoría (`INSERT INTO categoria (nombre, activo) VALUES ('Cat base mvn', 1)`) y correr las dos pasadas. Pendiente (no es de este bloque): que `CarritoIntegrationBase` cree su propia categoría.
+
+### Comandos largos en segundo plano desde Bash
+
+- Un `A && ( B ) &` pierde el trabajo cuando la herramienta termina el comando; una sola orden en segundo plano que invoca un script (`bash script.sh`) sí queda viva. Para corridas largas (Playwright completo, Newman, estreses) se escribe un script en el directorio temporal de la sesión y se lanza con `run_in_background`.
+
+## E4, bloque A2 (2026-10-15)
+
+### Cuando hay que conocer algo antes del bloqueo, leerlo en una transacción aparte (la renuncia y el `dueno_id`)
+
+- La renuncia necesita el id del Dueño para bloquear su usuario junto al del Empleado en id ascendente, pero quien llama es el Empleado y no tiene el comercio abierto. Leerlo dentro de la transacción de la renuncia (aunque sea un `SELECT c.dueno.id`) es una lectura simple y fija la foto de la transacción **antes** de esperar la relación `FOR UPDATE`: el purgado de avisos que viene después (una lectura simple de los ids) podría no ver un aviso que un fan-out confirmó mientras se esperaba. Tomar el comercio con `LOCK IN SHARE MODE` para evitarlo no sirve: queda antes que la relación en el orden y se interbloquea con una escritura delegada (relación compartida, después comercio `FOR UPDATE`).
+- Lo que se hizo: `GestionMiembroEquipoService.renunciar` **no** es `@Transactional`; lee el id con `ComercioRepository.findDuenoIdById` (una consulta escalar con su propia transacción, ya cerrada) y ejecuta todo el resto en un `TransactionTemplate`. Sirve porque el Dueño de un comercio no cambia. Es el mismo criterio por el que el resolver de comercio activo (transacción de solo lectura) no estorba a la baja del Dueño.
+
+### Un 404 idéntico incluye al propio cuerpo: lanzar siempre la misma excepción
+
+- `ComercioNoDisponibleException` (con el código `COMERCIO_NO_DISPONIBLE` en `data`) es la única excepción que produce ese cuerpo; una `RecursoNoEncontradoException("Comercio no encontrado")` tiene el mismo mensaje pero `data` nulo y se distingue. Por eso `bloquearUsuarios` del servicio de gestión del equipo recibe ahora quién lanzar cuando falta un usuario: la baja del Dueño sigue con "Miembro no encontrado" y la renuncia con `ComercioNoDisponibleException`. Las pruebas comparan los cuerpos completos (sin relación, comercio ajeno y comercio inexistente).
+
+### La seguridad por rol de una ruta con variable de ruta se declara con la variable, no con un comodín
+
+- `requestMatchers(HttpMethod.PUT, "/api/v1/empleados/comercios/{comercioId}/renunciar").hasRole("CLIENTE")`: una ruta exacta con su variable. Un `/**` en `/api/v1/empleados/**` habría abierto cualquier ruta futura del prefijo a `CLIENTE`. `ClasificacionRutasComercioTest` falla si el mapping no está clasificado; sus rutas `PROPIO` bajo `/api/v1/empleados/comercios/` esperan `404` del `CLIENTE` de la prueba (no tiene relación) y `403` del Dueño y del Administrador: el rechazo es de la seguridad y no llega al servicio.
+
+### Archivos con finales de línea mezclados al parchearlos desde Node
+
+- Varios archivos de `testing/` y `docs/` tienen líneas `LF` y `CRLF` mezcladas. Un parche en Node que busca un texto de varias líneas con `\n` no encuentra nada en un archivo `CRLF` (el síntoma fue una función duplicada: el reemplazo del encabezado no corrió y el segundo reemplazo sí). Se normaliza a `LF`, se parchea y se vuelve a `CRLF` si el archivo lo usaba en su mayoría. `file` informa "with CRLF line terminators" aunque haya líneas `LF`; contar con `(texto.match(/\r\n/g) || []).length`.
+- Los pegados de código con muchas comillas dentro de un `cat <<'EOF'` en la terminal de la herramienta pueden cortarse con "unexpected EOF"; se escriben con la herramienta de escritura de archivos y se anexan con `cat >>`.
+
+### Un test de Java con DNI aleatorio puede chocar con un DNI ya cargado (flake de datos de prueba, preexistente)
+
+- `DatosPruebaEmpleado.dniAleatorio()` sortea un número de ocho cifras sin comprobar que no esté en `bajonea_test`; en una corrida con la base llena de restos puede salir `Ya existe una cuenta registrada con ese DNI` (se vio una vez, durante una mutación). La probabilidad por alta es chica y crece con los datos acumulados. Pendiente de endurecer el helper (reintentar con otro DNI), sin urgencia.
+
+## E4, bloque A3 (2026-10-15)
+
+### Una mutación que no muerde con una tormenta aleatoria se demuestra reteniendo un bloqueo en otra sesión
+
+- M5 (el fan-out lee a sus destinatarios sin bloquear las relaciones) pasó 6 rondas de pagos y bajas simultáneos sin un solo problema: la ventana entre "leer los candidatos" y "escribir las copias" es de milisegundos. La prueba que muerde es determinista y reutiliza la técnica del bloque A2: una sesión `mysql.exe` toma el pedido `FOR UPDATE` y lo retiene 1,8 s; se lanza el pago (el fan-out lee que el miembro está activo, toma sus usuarios y espera el pedido), y a los 500 ms se da de baja al miembro con el endpoint real. Con el código real la baja espera (el fan-out ya tiene la relación compartida); con la mutación la baja gana, purga, y el fan-out inserta una copia para alguien ya inactivo. Para cada escenario de estrés conviene preguntarse qué bloqueo hay que retener para que el orden malo sea el único posible, y no confiar en que la carrera aparezca sola.
+
+### Una mutación de orden tiene que respetar *quién* toma qué antes: M6 no es "tomar el comercio", es tomarlo antes que la relación
+
+- La auditoría suponía que `desactivar` con el comercio `FOR UPDATE` se interbloqueaba con la suspensión del Administrador y con el bloqueo de cuenta del Dueño. No es así: la suspensión cancela los pedidos con `bloquearParaActualizar` (sin los destinatarios del equipo), así que nunca pide una relación. El ciclo real es contra la escritura delegada del propio miembro, que toma la relación compartida y después el comercio `FOR UPDATE`; para provocarlo hay que tomar el comercio **antes** que la relación y hacer que el miembro al que se da de baja también esté escribiendo (cerrar, abrir, datos operativos). Con el comercio después de la relación (la forma ingenua de agregar un bloqueo) no hay ciclo. Resultado: 42 `Deadlock found` en 6 rondas.
+
+### `DELETE ... WHERE usuario_id AND comercio_id` solo muerde contra otro escritor de las mismas filas
+
+- Mientras la relación del miembro está tomada, ningún fan-out inserta copias para él: el bloqueo de hueco del `DELETE` por rango no estorba a los pedidos. Lo que sí se interbloquea con él es el marcado de avisos como leídos (`UPDATE ... WHERE id IN (...)` por clave primaria) de esos mismos avisos: dos transacciones que recorren las mismas filas con distinto orden de índice. Con 400 avisos sembrados y el miembro, el Dueño y un Empleado marcando todas como leídas mientras se purga: 3 `Deadlock found` y un `500` en `PUT /notificaciones/leidas`. La regla "purgar por clave primaria" se mantiene, pero la razón no es el fan-out sino el marcado de leídas.
+- Una mutación con `@Modifying(clearAutomatically = true)` rompe `aceptar` con un `LazyInitializationException` (el contexto de persistencia limpiado deja proxies sin sesión): para mutar sin ruido se usa `flushAutomatically` solo.
+
+### El valor por defecto de un parámetro de TypeScript se aplica también a `undefined`
+
+- En un helper de Playwright con `token: string | undefined = adminToken`, pasar `undefined` para probar el caso "sin sesión" usa el token del Administrador (y devuelve `200`, no `401`). Para el anónimo se pasa `''` (la cabecera `Authorization` solo se manda con un valor verdadero).
+
+### Un chip de etiqueta con un nombre larguísimo desbordaba la pantalla (dato de la base cargada)
+
+- `.chip` tiene `white-space: nowrap` y `flex-shrink: 0`; en `.chip-row--wrap` (la fila de etiquetas del formulario de producto) una etiqueta de 100 caracteres, que los tests de validación de etiquetas crean, ensanchaba el documento a 857 px y rompía `sinScrollHorizontal` (el `53:364` mostraba además la carrera del botón "Guardar", que tapaba este defecto: el test nunca llegaba al final). Con la base chica no aparece. Se corrigió con `max-width: 100%`, `overflow: hidden` y `text-overflow: ellipsis` en `.chip-row--wrap .chip`.
+
+### `diasRestantes` de una invitación lo calcula el servidor
+
+- `Math.max(1, Math.ceilDiv(milisegundos hasta fecha_vencimiento, 86 400 000))`, con `ahora` del reloj único (zona `America/Argentina/Ushuaia`). Es el mismo cálculo que hacía la pantalla (`Math.ceil` con un mínimo de 1) pero ya no depende de la zona del navegador (`Date.parse` de un `LocalDateTime` sin zona lo interpretaba en la zona de quien miraba). Solo tiene valor en una `PENDIENTE` vigente: una `PENDIENTE` cuya fecha pasó se informa `VENCIDA` y no lleva el campo.

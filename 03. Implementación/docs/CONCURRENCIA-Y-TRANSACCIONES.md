@@ -225,3 +225,74 @@ Riesgo nuevo y por qué no hay ciclo. Todas las escrituras de producto y galerí
 **Contrato para E4 (desactivar y renunciar):** tomar la relación `FOR UPDATE` por clave primaria y **actualizarla por clave primaria**. En MariaDB 10.4, un `UPDATE empleado_comercio ... WHERE empleado_id = ? AND comercio_id = ?` usa `index_merge` (intersección de los dos índices no únicos) y bloquea también las relaciones vecinas del mismo comercio: se interbloquea con el fan-out, que sostiene bloqueos compartidos sobre esas filas (36 `Deadlock found` reproducidos con el escenario 6 del estrés cuando el arnés actualizaba por `empleado_id` y `comercio_id`). El `SELECT ... FOR UPDATE` con el mismo predicado sí usa la clave única (`const`). Además, desactivar y renunciar tienen que borrar los avisos del comercio de esa persona (`NotificacionService.purgarAvisosDelComercio`), igual que la activación.
 
 **Lecturas y marcado de avisos:** la lista y el contador son búsquedas por el índice `idx_notificacion_usuario_comercio` sin bloqueos. "Marcar todas" lee los ids no leídos y actualiza `WHERE id IN (...)` por clave primaria, en lotes de 500: un `UPDATE` por rango toma bloqueos de hueco sobre las notificaciones del usuario y puede cruzarse con el `INSERT` de una copia nueva. El purgado de la reactivación borra también por clave primaria, dentro de la transacción de aceptar la invitación (que tiene la relación `FOR UPDATE`): mientras la relación está inactiva, ningún fan-out inserta copias para esa persona. `notificacion.comercio_id` no tiene clave foránea: cada `INSERT` con una FK a `comercio` tomaría un bloqueo compartido sobre el comercio *después* de tomado el pedido, al revés del orden global (la suspensión toma el comercio y luego sus pedidos).
+
+
+---
+
+## Gestión del equipo — tramo E4, bloque A1 (2026-10-14), implementado
+
+`GestionMiembroEquipoService.desactivar` y `reactivar` (rutas `PUT /api/v1/comercios/equipo/miembros/{empleadoId}/desactivar` y `/reactivar`), del Dueño sobre un miembro del comercio activo. Encajan en el orden global sin posiciones nuevas.
+
+| Paso | Desactivar | Reactivar |
+|---|---|---|
+| 1. `usuario` del Dueño y del Empleado, **en id ascendente** | los dos `LOCK IN SHARE MODE` | el del Dueño **exclusivo** (`FOR UPDATE`, la misma fila que toma invitar y reenviar, para serializar con ellos), el del Empleado compartido (se lee su estado: lo último confirmado) |
+| 2. `empleado_comercio` por `(empleado_id, comercio_id)` | `FOR UPDATE`, **primera lectura de esa fila** (por la clave única: `const`) | ídem |
+| 3. `comercio` | solo el compartido que toma la clave foránea del historial | lectura compartida del estado (`LOCK IN SHARE MODE`), para exigir comercio operativo |
+| 4. Lecturas simples | motivo de la baja (solo al responder una repetición), comercio (nombre) | motivo de la última baja, invitación pendiente del email, aptitud de la cuenta: **recién acá**, con la relación bloqueada |
+| 5. Escrituras | `UPDATE` de la relación por clave primaria (entidad cargada), `INSERT` del historial, borrado de avisos del comercio por clave primaria, `INSERT` de T32 | ídem, con T37 |
+
+**Por qué cada decisión:**
+- **Relación `FOR UPDATE` primero:** leerla con `LOCK IN SHARE MODE` y escribirla después mejora el bloqueo (de compartido a exclusivo); dos desactivaciones a la vez se interbloquean (mutación M2: `Deadlock found` y `500` en el estrés, y fallan los tests de Java con latches). Tampoco sirve leerla simple y escribirla: la baja se fecharía antes de esperar a una escritura delegada ya validada (M1).
+- **Dueño exclusivo al reactivar:** invitar y reenviar toman esa fila exclusiva; con ella reactivar y invitar de nuevo a la misma persona no pueden solaparse, y "no hay invitación pendiente vigente" se comprueba sin que nadie pueda crear una (`InvitacionEmpleadoRepository.findFirstByComercioIdAndEmailOrderByIdDesc`, que ya documenta ese supuesto). Aceptar toma el Dueño compartido y espera a reactivar, o reactivar espera a aceptar. Desactivar toma al Dueño compartido: puede correr junto a otras desactivaciones y se ordena por la relación.
+- **Sin ciclo con el resto:** el fan-out de los avisos toma usuarios (compartidos, id ascendente), después las relaciones (compartidas, por clave primaria) y recién el pedido; desactivar toma los mismos usuarios compartidos y la relación exclusiva, así que espera al fan-out que ya tiene la relación o lo hace esperar. Una escritura delegada toma usuario → relación compartida → comercio: espera a la desactivación y después ve `INACTIVO` (`404`). Reactivar toma el Dueño exclusivo: espera a quien tenga al Dueño compartido y hace esperar al login, que toma el usuario `FOR UPDATE`. Probado con S1, S2, S4, S5 y S10 (ver `docs/DECISIONES.md`) y con los 17 estreses anteriores.
+- **Decidir con la relación bloqueada y antes de cualquier lectura simple:** la primera lectura simple de la transacción fija la foto. Si "es reactivable" se decidiera con una lectura anterior al bloqueo, podría ignorar una renuncia confirmada mientras se esperaba (M8).
+- **El purgado de avisos** borra por clave primaria (`purgarAvisosDelComercio`); T32 y T37 son personales (sin `comercio_id`) y no se purgan.
+- **Idempotencia:** repetir sobre una relación ya inactiva (desactivar) o activa (reactivar) devuelve el estado actual sin escribir; el estado se revalida después del bloqueo (M3: sin eso, seis desactivaciones simultáneas escriben seis bajas y seis avisos).
+
+
+---
+
+## Renuncia del Empleado — tramo E4, bloque A2 (2026-10-15), implementado
+
+`GestionMiembroEquipoService.renunciar` (ruta `PUT /api/v1/empleados/comercios/{comercioId}/renunciar`, solo `CLIENTE`): el propio Empleado deja de trabajar en un comercio. Es la misma baja que `desactivar` con el actor invertido, y el orden de bloqueo es el global, sin posiciones nuevas.
+
+| Paso | Renunciar |
+|---|---|
+| 0. Fuera de la transacción | `comercio.dueno_id` por una consulta escalar en su propia transacción ya cerrada (`ComercioRepository.findDuenoIdById`). El Dueño de un comercio no cambia; leerlo antes es lo que permite el paso 1 sin fijar la foto de la transacción de la renuncia |
+| 1. `usuario` del Dueño y del Empleado, **en id ascendente** | los dos `LOCK IN SHARE MODE` (el Empleado es quien llama; no toma su fila exclusiva) |
+| 2. `empleado_comercio` por `(empleado_id, comercio_id)` | `FOR UPDATE`, **primera lectura de esa fila** (clave única, `const`) |
+| 3. Revalidar | el estado se lee de la fila ya bloqueada: si ya es `INACTIVO` responde `200` sin escribir nada |
+| 4. Lecturas simples | el comercio (nombre), **recién acá** |
+| 5. Escrituras | `UPDATE` de la relación por clave primaria (entidad cargada), `INSERT` de la fila `RENUNCIA` (actor: el Empleado), borrado de los avisos del comercio del Empleado por clave primaria, `INSERT` de T34 para el Dueño (con `comercio_id`) |
+
+**Por qué cada decisión:**
+- **El `dueno_id` se lee antes y fuera de la transacción.** La renuncia no tiene el comercio abierto como la baja del Dueño (que lo recibe del resolver, que corre en su propia transacción de solo lectura ya cerrada), así que tiene que averiguar quién es el Dueño para bloquear su usuario en id ascendente. Una lectura simple dentro de la transacción fijaría la foto antes de esperar el bloqueo de la relación, y el purgado de avisos (una lectura simple de los ids) podría no ver un aviso que un fan-out confirmó mientras se esperaba. `GestionMiembroEquipoService.renunciar` no es `@Transactional`: lee el id y ejecuta el resto en un `TransactionTemplate`. Un bloqueo compartido del comercio para obtener el id no sirve: iría antes que la relación y se interbloquea con una escritura delegada que toma la relación compartida y después el comercio `FOR UPDATE`.
+- **Sin ciclo con el resto.** Renunciar toma usuarios compartidos y la relación exclusiva, igual que desactivar: contra el fan-out, contra una escritura delegada y contra el Dueño (que al reactivar toma su usuario exclusivo antes que la relación) valen los mismos argumentos que en el bloque A1. Renunciar y desactivar a la vez se encolan detrás de la relación: el segundo la lee `INACTIVO` y responde `200` sin escribir (S3).
+- **Un solo ganador, un solo aviso.** Quien gana la relación escribe la fila de baja (`BAJA_DUENO` o `RENUNCIA`) y avisa a la otra parte (T32 al Empleado o T34 al Dueño); el que perdió ve `INACTIVO` y no escribe ni avisa.
+- **`GET /api/v1/empleados/comercios/{comercioId}/acceso`** (`AccesoEmpleadoService`) es de solo lectura y sin bloqueos: lee la relación propia y, si está inactiva, el motivo de la última baja (`findUltimaBaja`, una consulta). Sin relación responde el mismo `404 COMERCIO_NO_DISPONIBLE`.
+
+**Mutaciones (probadas):** M3, no revalidar el estado después del bloqueo (`renunciar` escribe una segunda baja y un segundo aviso: fallan 3 de los 4 tests de Java con latches y el escenario S3 del estrés, en las dos variantes de la carrera); M1, leer la relación sin `FOR UPDATE` (la renuncia se fecha un segundo antes de la escritura que estaba en curso y aparecen `Deadlock found` y `500`: fallan 3 de los 4 tests de Java, incluido el de la escritura en vuelo, y los escenarios S7 y S3 del estrés).
+
+---
+
+## Historial del equipo y lectura del Administrador — tramo E4, bloque A3 (2026-10-15), implementado
+
+**Lecturas puras: sin posiciones nuevas en el orden de bloqueo.** La fuente `EQUIPO` de la actividad (`ActividadComercioService`) y los dos endpoints del Administrador (`GET /api/v1/administrador/comercios/{id}/equipo` y `/actividad`, en `EquipoComercioAdminService`) son transacciones de solo lectura que no toman ningún bloqueo (`SELECT` simples con `JOIN` a `persona_fisica`, `empleado_comercio` e `invitacion_empleado` para resolver nombres y emails en la misma consulta). Ni el historial ni la relación se escriben desde ahí, así que no pueden cerrar un ciclo con el fan-out, la baja, la renuncia, la suspensión ni el bloqueo de cuenta. El comercio inexistente se detecta con un `existsById` previo (`404`); el equipo y la actividad se leen en la misma transacción de solo lectura.
+
+**Una consulta más por página:** sin filtro son cuatro consultas por página (pedidos, ediciones, cierres y equipo; una con `fuente`). El costo de la fuente nueva es el de las otras: recorre por `idx_hec2_comercio_fecha (comercio_id, fecha_hora)`.
+
+### Las tres mutaciones de este bloque (probadas con el estrés `e4`)
+
+Cada una se aplicó a una copia del código, se corrió el escenario y se restauró el archivo (sha1 idéntico al original antes y después de cada una):
+
+| Mutación | Qué cambia | Escenario | Qué se vio |
+|---|---|---|---|
+| **M5** | el fan-out de los avisos (`PedidoService.bloquear`) usa a los candidatos leídos sin bloqueo y no relee ni bloquea las relaciones | S6 (con un pedido detenido en su `FOR UPDATE` en otra sesión mientras el Dueño da de baja al miembro) | el miembro dado de baja se queda con 1 aviso del comercio que el purgado no vio: falla en 3 de 3 rondas |
+| **M6** | `desactivar` toma el comercio `FOR UPDATE` antes que la relación | S8 (el miembro alternado también escribe como Empleado: cerrar, abrir y datos operativos) | 42 `Deadlock found` y `500` en 6 rondas: el Empleado tiene la relación compartida y espera el comercio, la baja tiene el comercio y espera la relación |
+| **M7** | purgar los avisos con `DELETE ... WHERE usuario_id = ? AND comercio_id = ?` en vez de por clave primaria | S9 (cientos de avisos sembrados; mientras tanto el miembro, el Dueño y un Empleado marcan "todas" como leídas) | 3 `Deadlock found` y un `500` en `PUT /notificaciones/leidas` en 4 rondas |
+
+**Notas honestas sobre lo que muerde y lo que no:**
+- **M5 no muerde con la tormenta aleatoria de pagos y bajas** (ocho pedidos y cinco bajas por ronda, 6 rondas, 0 problemas): la ventana entre "leer los candidatos" y "escribir las copias" es de milisegundos. Se demostró de forma determinista: una sesión `mysql` retiene el pedido `FOR UPDATE`, el fan-out ya leyó que el miembro estaba activo y espera ahí, y entonces se da de baja al miembro. Con la relación bloqueada compartida (el código real) la baja espera al fan-out; sin ella (M5) la baja gana y el fan-out inserta la copia después del purgado.
+- **M6 no muerde con la suspensión ni con el bloqueo de cuenta**, como suponía la auditoría: la suspensión cancela los pedidos con `bloquearParaActualizar` (sin los destinatarios del equipo), así que nunca pide una relación. El ciclo real es contra la escritura delegada del propio miembro (relación compartida, después comercio `FOR UPDATE`), y por eso S8 hace escribir al miembro que se alterna.
+- **M7 no muerde solo con el fan-out:** mientras la relación del miembro está tomada por la baja, ningún fan-out inserta copias para él (necesita la relación compartida antes de insertar), así que el bloqueo de hueco del `DELETE` por rango no estorba. Muerde con el marcado de leídas (`UPDATE ... WHERE id IN`) de los propios avisos: dos transacciones que recorren las mismas filas de la tabla en distinto orden de índice.
+- Una mutación anterior de `M7` con `clearAutomatically = true` en el `DELETE` rompía `aceptar` con un `LazyInitializationException` (el contexto de persistencia limpiado dejaba proxies sueltos): no es un hallazgo del bloque, solo de la forma de armar esa mutación.

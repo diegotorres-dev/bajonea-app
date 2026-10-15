@@ -5,8 +5,8 @@ import java.time.LocalDateTime;
 import lombok.Getter;
 
 /**
- * Una línea de la actividad del comercio. {@code id} es único entre las tres fuentes (por ejemplo
- * {@code EDICION-12}). {@code accion} y {@code entidadTipo} son códigos estables; {@code accionTexto} y
+ * Una línea de la actividad del comercio. {@code id} es único entre las fuentes (por ejemplo
+ * {@code EDICION-12} o {@code EQUIPO-7}). {@code accion} y {@code entidadTipo} son códigos estables; {@code accionTexto} y
  * {@code actorRolTexto} ya vienen en texto legible. En las acciones del sistema ({@code actorRol = SISTEMA}) tanto
  * {@code actorUsuarioId} como {@code actorNombre} son nulos: la pantalla escribe "Sistema". Las del Cliente traen su
  * nombre completo.

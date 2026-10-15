@@ -9,6 +9,11 @@ import lombok.Getter;
  * intervalo en que el proceso de vencimiento todavía no corrió: una invitación {@code PENDIENTE} cuya fecha de
  * vencimiento ya pasó se informa como {@code VENCIDA} (red de seguridad al armar la respuesta). No incluye el
  * código.
+ * <p>
+ * {@code diasRestantes} solo tiene valor en una invitación {@code PENDIENTE} vigente (nulo en el resto) y lo calcula
+ * el servidor con la hora y la zona de la aplicación: los días que faltan para el vencimiento redondeados hacia
+ * arriba, con un mínimo de 1 (una invitación que vence dentro de las próximas 24 horas dice 1; una que vence en
+ * 6 días y medio dice 7). Es el mismo cálculo que hacía la pantalla, sin depender de la zona del navegador.
  */
 @Getter
 public class InvitacionEmpleadoResponseDTO {
@@ -18,13 +23,15 @@ public class InvitacionEmpleadoResponseDTO {
     private final EstadoInvitacionEmpleado estado;
     private final LocalDateTime fechaCreacion;
     private final LocalDateTime fechaVencimiento;
+    private final Integer diasRestantes;
 
     public InvitacionEmpleadoResponseDTO(Integer id, String email, EstadoInvitacionEmpleado estado, LocalDateTime fechaCreacion,
-            LocalDateTime fechaVencimiento) {
+            LocalDateTime fechaVencimiento, Integer diasRestantes) {
         this.id = id;
         this.email = email;
         this.estado = estado;
         this.fechaCreacion = fechaCreacion;
         this.fechaVencimiento = fechaVencimiento;
+        this.diasRestantes = diasRestantes;
     }
 }

@@ -243,7 +243,7 @@ class InvitacionVencimientoIntegrationTest {
             vencimientoJob.vencerInvitaciones(INICIO.plusHours(2));
             reloj.fijar(INICIO.plusHours(2));
 
-            EquipoComercioResponseDTO equipo = invitacionService.listarEquipo(activo(dueno));
+            EquipoComercioResponseDTO equipo = invitacionService.listarEquipo(dueno.comercioId());
             assertEquals(1, equipo.getInvitaciones().size());
             assertEquals(EstadoInvitacionEmpleado.VENCIDA, equipo.getInvitaciones().get(0).getEstado());
 
@@ -293,7 +293,7 @@ class InvitacionVencimientoIntegrationTest {
                 assertEquals(1, filas("SELECT COUNT(*) FROM historial_empleado_comercio WHERE invitacion_id = ? AND actor_usuario_id = ? "
                         + "AND motivo = 'INVITACION_CANCELADA'", id, dueno.id()));
             }
-            assertEquals(0, invitacionService.listarEquipo(activo(dueno)).getInvitaciones().size(), "canceladas no se listan");
+            assertEquals(0, invitacionService.listarEquipo(dueno.comercioId()).getInvitaciones().size(), "canceladas no se listan");
         });
     }
 

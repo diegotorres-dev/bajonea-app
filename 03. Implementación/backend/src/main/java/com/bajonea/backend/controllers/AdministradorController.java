@@ -4,17 +4,20 @@ import com.bajonea.backend.config.security.AuthenticatedUser;
 import com.bajonea.backend.dto.request.AprobacionComercioRequestDTO;
 import com.bajonea.backend.dto.request.ConfiguracionTarifaRequestDTO;
 import com.bajonea.backend.dto.request.SuspensionComercioRequestDTO;
+import com.bajonea.backend.dto.response.ActividadComercioResponseDTO;
 import com.bajonea.backend.dto.response.AdministradorResponseDTO;
 import com.bajonea.backend.dto.response.ApiResponse;
 import com.bajonea.backend.dto.response.ClienteAdminResponseDTO;
 import com.bajonea.backend.dto.response.ComercioAdminResponseDTO;
 import com.bajonea.backend.dto.response.ConfiguracionTarifaResponseDTO;
+import com.bajonea.backend.dto.response.EquipoComercioResponseDTO;
 import com.bajonea.backend.dto.response.MetricasAdminResponseDTO;
 import com.bajonea.backend.dto.response.NotaCreditoAdminResponseDTO;
 import com.bajonea.backend.dto.response.ReSolicitudComercioAdminResponseDTO;
 import com.bajonea.backend.enums.EstadoNotaCredito;
 import com.bajonea.backend.services.AdministradorService;
 import com.bajonea.backend.services.ConfiguracionTarifaService;
+import com.bajonea.backend.services.EquipoComercioAdminService;
 import com.bajonea.backend.services.NotaCreditoAdminService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -28,6 +31,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -42,6 +46,7 @@ public class AdministradorController {
     private final AdministradorService administradorService;
     private final ConfiguracionTarifaService configuracionTarifaService;
     private final NotaCreditoAdminService notaCreditoAdminService;
+    private final EquipoComercioAdminService equipoComercioAdminService;
 
     @GetMapping("/comercios/pendientes")
     public ResponseEntity<ApiResponse<List<ComercioAdminResponseDTO>>> listarComerciosPendientes() {
@@ -77,6 +82,28 @@ public class AdministradorController {
     public ResponseEntity<ApiResponse<MetricasAdminResponseDTO>> obtenerMetricas() {
         MetricasAdminResponseDTO metricas = administradorService.obtenerMetricas();
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Métricas obtenidas correctamente", metricas));
+    }
+
+    /**
+     * Equipo de cualquier comercio, en solo lectura: miembros (activos e inactivos, con el motivo de la baja) e
+     * invitaciones, con la misma forma que ve el Dueño. No usa {@code X-Comercio-Id}.
+     */
+    @GetMapping("/comercios/{comercioId}/equipo")
+    public ResponseEntity<ApiResponse<EquipoComercioResponseDTO>> verEquipoDeComercio(@PathVariable Integer comercioId) {
+        EquipoComercioResponseDTO response = equipoComercioAdminService.verEquipo(comercioId);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Equipo obtenido correctamente", response));
+    }
+
+    /**
+     * Actividad de cualquier comercio, en solo lectura, con los mismos parámetros y la misma forma que ve el Dueño
+     * ({@code limite}, {@code cursor} y {@code fuente}).
+     */
+    @GetMapping("/comercios/{comercioId}/actividad")
+    public ResponseEntity<ApiResponse<ActividadComercioResponseDTO>> verActividadDeComercio(@PathVariable Integer comercioId,
+            @RequestParam(required = false) Integer limite, @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) String fuente) {
+        ActividadComercioResponseDTO response = equipoComercioAdminService.verActividad(comercioId, limite, cursor, fuente);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Actividad obtenida correctamente", response));
     }
 
     @PutMapping("/comercios/{comercioId}/resolver")
