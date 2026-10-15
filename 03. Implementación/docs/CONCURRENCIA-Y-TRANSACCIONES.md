@@ -296,3 +296,39 @@ Cada una se aplicó a una copia del código, se corrió el escenario y se restau
 - **M6 no muerde con la suspensión ni con el bloqueo de cuenta**, como suponía la auditoría: la suspensión cancela los pedidos con `bloquearParaActualizar` (sin los destinatarios del equipo), así que nunca pide una relación. El ciclo real es contra la escritura delegada del propio miembro (relación compartida, después comercio `FOR UPDATE`), y por eso S8 hace escribir al miembro que se alterna.
 - **M7 no muerde solo con el fan-out:** mientras la relación del miembro está tomada por la baja, ningún fan-out inserta copias para él (necesita la relación compartida antes de insertar), así que el bloqueo de hueco del `DELETE` por rango no estorba. Muerde con el marcado de leídas (`UPDATE ... WHERE id IN`) de los propios avisos: dos transacciones que recorren las mismas filas de la tabla en distinto orden de índice.
 - Una mutación anterior de `M7` con `clearAutomatically = true` en el `DELETE` rompía `aceptar` con un `LazyInitializationException` (el contexto de persistencia limpiado dejaba proxies sueltos): no es un hallazgo del bloque, solo de la forma de armar esa mutación.
+
+
+---
+
+## Cierre de E4 — bloque A4 (2026-10-15): resumen y verificación final
+
+Sin código nuevo de concurrencia: el cierre vuelve a probar, sobre el código final, todo lo que E4 agregó al orden global. Las operaciones de E4 no ocupan posiciones nuevas.
+
+| Operación (E4) | Bloqueos, en orden | Escenarios del estrés `e4` |
+|---|---|---|
+| `desactivar` (Dueño) | `usuario` del Dueño y del Empleado (compartidos, id ascendente) → `empleado_comercio` `FOR UPDATE` (primera lectura de esa fila) → solo el compartido del comercio por la clave foránea del historial; escrituras por clave primaria | S1, S2, S4, S6, S8, S9 |
+| `reactivar` (Dueño) | `usuario` del Dueño (**exclusivo**) y del Empleado (compartido), id ascendente → relación `FOR UPDATE` → estado del comercio (compartido) → lecturas simples (motivo de la baja, invitación pendiente, aptitud) → escrituras por clave primaria | S2, S5, S10 |
+| `renunciar` (Empleado) | id del Dueño fuera de la transacción → `usuario` del Dueño y del Empleado (compartidos, id ascendente) → relación `FOR UPDATE` → lecturas simples → escrituras por clave primaria | S3, S7 |
+| Fan-out de avisos (E3, A4/A6) | usuarios (compartidos, id ascendente) → relaciones candidatas por clave primaria (compartidas) → pedido `FOR UPDATE` | S6 |
+| Actividad (`EQUIPO`), `acceso` y lecturas del Administrador | solo lectura, sin bloqueos | — |
+
+### Mutaciones sobre el código final (2026-10-15)
+
+Cada una se aplicó a una copia del código, se levantó el backend, se corrió el escenario de `stress-locks-empleado-e4.mjs`, se restauró el archivo y se verificó con `sha1sum` que quedó idéntico al original (antes y después de cada una).
+
+| Mutación | Qué cambia | Escenario | Qué se vio |
+|---|---|---|---|
+| **M1** | `desactivar`, `reactivar` y `renunciar` leen la relación sin `FOR UPDATE` | S1 y S7 (4 rondas) | la baja se fecha un segundo antes de la escritura confirmada en las 4 rondas, `500` en `datos-operativos`, 18 y 21 `Deadlock found` |
+| **M2** | leer la relación con `LOCK IN SHARE MODE` y escribirla después | S4 y S2 (4 rondas) | `500` en las desactivaciones simultáneas, 48 y 27 `Deadlock found` |
+| **M3** | no revalidar el estado después del bloqueo | S4 y S3 (4 rondas) | seis bajas, seis filas de historial y seis avisos T32 en lugar de uno; dos filas de baja (`BAJA_DUENO` y `RENUNCIA`) y avisos duplicados |
+| **M4** | reactivar sin comprobar la invitación pendiente | S5 | relación `ACTIVA` con una invitación pendiente vigente |
+| **M8** | decidir "reactivable" con una lectura del historial anterior a los bloqueos | S10 (4 rondas) | el Dueño reactiva a quien acababa de renunciar en las 4 rondas |
+| **M5** | el fan-out usa los candidatos sin bloquear ni releer las relaciones | S6 (4 rondas) | el miembro dado de baja queda con un aviso del comercio en las 4 rondas |
+| **M6** | `desactivar` toma el comercio `FOR UPDATE` antes que la relación | S8 (4 rondas) | `500` y 6 `Deadlock found` en 2 de 4 rondas |
+| **M7** | purgar los avisos con `DELETE ... WHERE usuario_id AND comercio_id` | S9 | **intermitente**: dos corridas (4 y 12 rondas) sin problemas y una tercera (12 rondas) con dos `500` en `PUT /notificaciones/leidas` y 6 `Deadlock found` |
+
+**Sobre M7.** Es la única que no muerde siempre: el cruce es entre el `DELETE` por rango del purgado y el marcado de leídas por clave primaria de las mismas filas, y depende del orden en que cada transacción recorre el índice. No debilita la regla ("purgar siempre por clave primaria"), pero la prueba que la cubre es probabilística: si hace falta una demostración determinista hay que armarla con una sesión que retenga las filas, como se hizo con M5 en el bloque A3.
+
+### Regresión
+
+Los 18 estreses del runner (`correr-estreses.mjs`, incluidos `carrito` con el backend apuntando al stub de Mercado Pago y `e4` con S1 a S10) terminaron OK en 37,2 minutos, con 0 `Deadlock found` y 0 `Lock wait timeout` en el log del backend durante toda la corrida.

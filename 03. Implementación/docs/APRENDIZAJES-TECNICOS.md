@@ -513,3 +513,15 @@ Pendientes que no son código y hay que revisar en cada entorno antes de contar 
 ### `diasRestantes` de una invitación lo calcula el servidor
 
 - `Math.max(1, Math.ceilDiv(milisegundos hasta fecha_vencimiento, 86 400 000))`, con `ahora` del reloj único (zona `America/Argentina/Ushuaia`). Es el mismo cálculo que hacía la pantalla (`Math.ceil` con un mínimo de 1) pero ya no depende de la zona del navegador (`Date.parse` de un `LocalDateTime` sin zona lo interpretaba en la zona de quien miraba). Solo tiene valor en una `PENDIENTE` vigente: una `PENDIENTE` cuya fecha pasó se informa `VENCIDA` y no lleva el campo.
+
+## E4, cierre — bloque A4 (2026-10-15)
+
+### Una mutación probabilística hay que repetirla antes de decir que no muerde (M7)
+
+- `DELETE ... WHERE usuario_id AND comercio_id` (mutación M7) volvió a interbloquearse contra el marcado de leídas solo en una de tres corridas del escenario S9 (cuatro rondas sin problemas, doce rondas sin problemas, doce rondas con dos `500` y 6 `Deadlock found`). El cruce depende de qué transacción recorre primero las filas del índice, y eso cambia con el tamaño de la tabla. Regla: una mutación que no falla en una corrida no demuestra que el código sobra; se repite con más rondas y, si sigue siendo intermitente, se anota como tal en vez de omitirla.
+- Si una mutación tiene que ser determinista, se arma con una sesión de `mysql.exe` que retiene las filas (técnica de M5 en el bloque A3), no con una tormenta aleatoria.
+
+### `27:497` falla corriendo el spec 27 completo y pasa solo
+
+- En el cierre de E4, `27-multicomercio-tramo4-selector.spec.ts:497` ("una sola consulta de polling por ciclo…") falló en la corrida completa y otra vez al correr el spec 27 entero sobre una base recién reseteada, y pasó 3 de 3 corriéndolo solo. No tiene relación con E4. Sigue en la lista de inestables conocidos.
+

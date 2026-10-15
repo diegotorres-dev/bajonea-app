@@ -10524,3 +10524,56 @@ Solo frontend y pruebas, sin migraciones ni cambios de backend (los dos endpoint
 **Corrida completa de Playwright** (`workers: 1`, base reseteada con `entorno-test.mjs preparar`, 26,5 min): 961 pasaron y 1 falló, el inestable conocido `51:151` (pasa aislado). `27:497`, el otro inestable conocido, pasó. Una corrida anterior (28,8 min) dio 955 y 6 fallos: los dos inestables conocidos y cuatro tests míos por la búsqueda del nombre en la lista (decisión 1). No se corrieron `mvnw` ni Newman (sin cambios de backend).
 
 **Deuda:** iPhone / WebKit sin probar.
+
+## 2026-10-15 — Tramo E4, bloque A4: cierre y verificación
+
+Cierre del tramo E4 (rol Empleado: gestión del equipo). **Sin código nuevo de la aplicación ni migraciones**: se volvió a probar todo sobre el código final de los bloques A1 a A3 y las entregas B1 a B3, se repitieron las mutaciones y se limpiaron los documentos que seguían desfasados. **Pendiente de la confirmación de Diego** (E4 no se declara cerrado hasta entonces). Detalle de qué copiar a `01.` y `02.` en `docs/entregables-01-02/CAMBIOS.md`.
+
+### Pruebas (backend de test en el 8081 y copia del frontend en el 5502, base `bajonea_test` reseteada con `entorno-test.mjs preparar`, `workers: 1`)
+
+- **Newman, colección completa:** 3176 requests, 4989 assertions, **0 fallos** (562 s). La carpeta 68 (126 requests) pasa dentro de la corrida completa. Sin cambios en la colección.
+- **Playwright, suite completa (962 tests, 30,8 min):** **950 pasaron, 2 fallaron, 10 no corrieron.** Fallos: `27:497` (inestable conocido) y `53:304` (subida real a Cloudinary con tope de 5 s, conocido); los 10 que no corrieron son los siguientes de `53`, que es serial. Con la base reseteada se repitió el spec 53 completo: **21/21**. `27:497` volvió a fallar al correr el spec 27 entero (72 de 73 junto con el 53) y **pasó 3/3 corriéndolo solo**. Una primera tanda se descartó porque se lanzó sin `ADMIN_PASSWORD` (todos los specs que importan `helpers/backend.ts` fallan al cargar: "Falta la variable de entorno ADMIN_PASSWORD"; no es un defecto, está documentado en el README).
+- **`mvnw test`** (base reseteada y una categoría sembrada, backend detenido): pasada 1 (`-Dspring.profiles.active=test -Dtest='!AtajosDeTestFueraDelPerfilTest'`) **854/854**; pasada 2 (`-Dtest=AtajosDeTestFueraDelPerfilTest`) **6/6**.
+- **Estreses, los 18 del runner** (`correr-estreses.mjs`, con el backend levantado con `MERCADOPAGO_API_BASE_URL=http://localhost:9099` para incluir `carrito`; `e4` con S1 a S10): **todos OK, 0 `Deadlock found` y 0 `Lock wait timeout`** en el log durante toda la corrida (37,2 min). Es la primera vez que corren los 18 juntos, con `carrito` incluido, desde que E4 empezó.
+
+### Mutaciones sobre el código final
+
+Ocho mutaciones, cada una aplicada a una copia del código, con el backend reiniciado y el escenario del estrés `e4` correspondiente, y el archivo restaurado y verificado con `sha1sum` (idéntico antes y después de cada ciclo):
+
+| Mutación | Escenario | Resultado |
+|---|---|---|
+| M1: leer la relación sin `FOR UPDATE` | S1 y S7 | falla: baja fechada antes de la escritura en curso, `500`, 18 y 21 `Deadlock found` |
+| M2: leerla con `LOCK IN SHARE MODE` y escribirla después | S4 y S2 | falla: `500`, 48 y 27 `Deadlock found` |
+| M3: no revalidar el estado tras el bloqueo | S4 y S3 | falla: seis bajas y seis avisos en lugar de uno; dos filas de baja |
+| M4: reactivar sin comprobar la invitación pendiente | S5 | falla: relación `ACTIVA` con invitación pendiente vigente |
+| M8: decidir "reactivable" con una lectura anterior a los bloqueos | S10 | falla: el Dueño reactiva a quien acababa de renunciar |
+| M5: fan-out sin bloquear las relaciones | S6 | falla: el miembro dado de baja queda con un aviso del comercio |
+| M6: `desactivar` toma el comercio `FOR UPDATE` antes que la relación | S8 | falla: `500` y 6 `Deadlock found` |
+| M7: purgar avisos con `DELETE` por rango | S9 | **intermitente**: 2 corridas (4 y 12 rondas) sin problemas y una tercera (12 rondas) con dos `500` y 6 `Deadlock found` |
+
+Cuadro completo en `docs/CONCURRENCIA-Y-TRANSACCIONES.md` ("Cierre de E4").
+
+### Hallazgos
+
+1. **M7 no muerde siempre.** El purgado por rango contra el marcado de leídas se interbloquea solo a veces. La regla ("purgar por clave primaria") no cambia; lo que queda es una prueba probabilística. No se la hizo determinista en este bloque (anotado en `docs/APRENDIZAJES-TECNICOS.md`).
+2. **Documentos de requisitos desfasados** (corregidos en `docs/entregables-01-02/`): `requisitos-funcionales-sistema.md` decía "planificado, tramo E1" para invitaciones e historial, "no hay un job de vencimiento" (desde A8 hay un proceso automático), la actividad con tres fuentes y "el Administrador la va a leer"; `requisitos-funcionales-empleado.md` decía que todo el rol estaba planificado y que "Vencida" se calcula sin proceso automático; `alcance-y-limitaciones.md` decía "hoy no existe ningún código del rol", "Ver equipo sin actividad en pantalla" y "no retirado planificado"; las historias del Empleado decían "planificadas".
+3. **`data-testid` heredados de E1 sin documentar** (hoja de invitar, "no se pudo invitar", menú y cancelación de invitaciones, `equipo-detalle`): agregados a `docs/DATA-TESTID-FASE17.md`. Los de E4 ya estaban.
+4. **Cero comentarios** verificado con `grep` en los 15 archivos de `frontend/` que E4 tocó: ninguno.
+5. **Lista de despliegue** (`docs/LISTA-DE-DESPLIEGUE.md`): el último Flyway pasa a `V35` (el enum Java `TipoNotificacion` tiene que salir en el mismo release) y se anota que `historial_empleado_comercio` no se borra.
+6. **Archivos sin commitear que no son de E4** y que quedan fuera del commit: `backend/src/main/resources/application.properties` (modificado en tu máquina), `backend/run-local.ps1` y `testing/playwright/tmp-capturas/`.
+
+### Decisiones tomadas por mi cuenta (a confirmar)
+
+1. No se regeneró ni se tocó la colección de Newman ni los specs: el cierre solo ejecuta lo existente.
+2. Las correcciones a documentos se limitaron a lo que contradecía el código actual; no se reescribió nada más.
+3. Se repitió `27:497` y `53` en lugar de dar por pasada la suite con "950 de 962".
+
+### Qué no se hizo
+
+Nombre del comercio en los endpoints del equipo, íconos por tipo de aviso en la campana, mover la sección "Mi lugar en el equipo", email de reactivación y WebKit/iPhone (deudas anotadas, fuera de alcance). La mutación M7 determinista. Investigar la causa raíz de `27:497` y de `53:304`.
+
+### Preguntas abiertas
+
+1. ¿Confirmás E4 como cerrado? (Hasta entonces la fila E4 de `CLAUDE.md` §6 queda como implementada, pendiente de tu confirmación.)
+2. ¿Querés que `27:497` (falla corriendo todo el spec 27, pasa solo) se investigue en un mini-tramo de pulido?
+3. ¿Hacemos determinista la mutación M7 con una sesión que retenga las filas?

@@ -28,7 +28,7 @@ Todo lo que hay que revisar antes de subir Bajoneá al servidor final y que no e
 
 - **IP real detrás del proxy.** Sin `server.forward-headers-strategy` en `application-production.properties`, `request.getRemoteAddr()` es la IP del proxy: todos los clientes comparten el contador de `RateLimitPublicoFilter` (firma de fotos del registro y validar o aceptar invitaciones) y `Sesion.ip_origen` guarda la IP del proxy. Verificarlo en el entorno real antes de contar con el límite por IP.
 - **`sql_mode`** del servidor de producción en modo estricto (ver `docs/APRENDIZAJES-TECNICOS.md`).
-- **Migraciones:** el último Flyway es `V34`. `V29` (estado `ACTIVO`/`INACTIVO` de `empleado_comercio`) tiene que salir en el mismo release que el enum Java `EstadoEmpleadoComercio`; antes de aplicarla en un entorno con datos, correr las consultas de la sección 13 de `docs/entregables-01-02/AUDITORIA-EMPLEADO-FASE1.md`. `V34` agrega `NO_RETIRADO` y `PEDIDO_NO_RETIRADO` a los ENUM (cambio de metadatos). En `bajonea_practicas3`, Diego verifica que no queden filas con `fuente_entrega = 'COMERCIO_SIN_RETIRO'`.
+- **Migraciones:** el último Flyway es `V35`. `V29` (estado `ACTIVO`/`INACTIVO` de `empleado_comercio`) tiene que salir en el mismo release que el enum Java `EstadoEmpleadoComercio`; antes de aplicarla en un entorno con datos, correr las consultas de la sección 13 de `docs/entregables-01-02/AUDITORIA-EMPLEADO-FASE1.md`. `V34` agrega `NO_RETIRADO` y `PEDIDO_NO_RETIRADO` a los ENUM y `V35` agrega `EMPLEADO_REACTIVADO` al ENUM de `notificacion.tipo` (ambos, cambios de metadatos que no reescriben filas; el valor nuevo va al final y el enum Java `TipoNotificacion` tiene que salir en el mismo release). En `bajonea_practicas3`, Diego verifica que no queden filas con `fuente_entrega = 'COMERCIO_SIN_RETIRO'`.
 - **Datos existentes:** las filas anteriores al reloj único (A2b) no se migraron; las fechas viejas quedaron en la zona con la que se escribieron.
 
 ## 5. Variables de entorno del servidor
@@ -47,8 +47,9 @@ Todo lo que hay que revisar antes de subir Bajoneá al servidor final y que no e
 
 - **Tope de 3 emails de regularización por destinatario:** el conteo y la escritura no están serializados entre Dueños distintos que inviten a la misma cuenta a la vez; el tope puede excederse en uno o dos envíos (escenario S10 del estrés de E1).
 - **Retención de `notificacion`:** cada evento operativo genera `1 + N` filas (N = Empleados activos) y no hay proceso que borre avisos viejos. Política pendiente (por ejemplo, borrar las leídas con más de 90 días).
+- **Retención de `historial_empleado_comercio`:** sin borrado (solo inserción); una fila por invitación, aceptación, baja, renuncia o reactivación, volumen bajo.
 - **Retención de `historial_edicion_comercio`:** sin borrado. Estimación: menos de 10 MB por comercio y año.
-- **El costo de cada página de la actividad crece con el historial del comercio** (recorre las tres fuentes): 256 ms por página con 30000 pedidos. Si hiciera falta, sumar `comercio_id` a `historial_estado_pedido` con un índice `(comercio_id, fecha_hora, id)`.
+- **El costo de cada página de la actividad crece con el historial del comercio** (recorre las cuatro fuentes, con la del equipo desde E4): 256 ms por página con 30000 pedidos. Si hiciera falta, sumar `comercio_id` a `historial_estado_pedido` con un índice `(comercio_id, fecha_hora, id)`.
 - **El Dueño puede editar productos y perfil con el comercio `SUSPENDIDO`** (hueco conocido; se resuelve en el tramo de rediseño de la suspensión).
 
 ## 8. Hallazgos del bloque A5 (resueltos en el bloque A5b, ver `docs/DECISIONES.md`)

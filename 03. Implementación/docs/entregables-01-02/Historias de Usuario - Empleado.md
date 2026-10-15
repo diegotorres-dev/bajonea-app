@@ -6,8 +6,8 @@ a la que se le suma el rol por invitación (ver Requisitos Funcionales — Emple
 historias operativas que el Empleado ejecuta sobre un comercio (productos, pedidos) están
 detalladas en Historias de Usuario — Comercio, compartidas con el rol Dueño.
 
-> **Estado de implementación (2026-10-05):** todas estas historias están planificadas, se
-> implementan en los tramos E1 a E4.
+> **Estado de implementación (2026-10-15):** todas estas historias están implementadas en los
+> tramos E1 a E4, pendientes de la confirmación final del dueño del proyecto.
 
 ## HU-E01: Aceptar una Invitación para Operar un Comercio
 

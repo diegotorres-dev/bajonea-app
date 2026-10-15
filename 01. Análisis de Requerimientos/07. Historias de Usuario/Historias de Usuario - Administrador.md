@@ -96,6 +96,18 @@ o mantenerla, notificando al usuario con la decisión tomada.
 ## HU-A17: Ver el Equipo de un Comercio
 
 Como administrador, quiero ver desde el detalle de un comercio su equipo de empleados (con
-el estado de cada relación y de cada invitación), el historial del equipo y la actividad
-del comercio, en modo de solo lectura, para tener contexto de quién opera cada negocio al
-revisar un comercio. Entiendo que desde esa vista no puedo modificar cuentas de usuario.
+el estado de cada relación y de cada invitación) y la actividad del comercio, en modo de
+solo lectura, para tener contexto de quién opera cada negocio al revisar un comercio.
+Entiendo que desde esa vista no puedo modificar cuentas de usuario.
+
+**Criterios de aceptación:**
+
+- Desde el detalle de un comercio veo un resumen del equipo ("N activos · N inactivos") y un botón "Ver equipo" que se destaca por encima de "Suspender" y "Cerrar".
+- En la pestaña "Miembros" veo los miembros activos por defecto y puedo pasar a los inactivos; cada filtro muestra su cantidad. Cada miembro muestra su nombre, su email y desde cuándo está en el equipo.
+- Cada miembro inactivo dice por qué dejó el equipo y cuándo: dado de baja por el dueño o porque dejó de trabajar en el comercio.
+- En la pestaña "Solicitudes" veo las invitaciones que el dueño envió y que todavía no se respondieron, con la fecha de envío y cuándo vencen.
+- Si una lista está vacía, la pantalla me lo dice con un mensaje claro.
+- Puedo ver el equipo de un comercio aunque esté suspendido o cerrado temporalmente.
+- Desde el botón "Actividad" veo lo que pasó en el comercio (pedidos, ediciones, cierres y equipo), y puedo filtrar por cada tipo.
+- Ninguna de estas pantallas tiene botones para invitar, desactivar, reactivar, cancelar ni reenviar: solo puedo mirar.
+- Si el comercio no existe o hay un problema de conexión, la pantalla me avisa y, cuando tiene sentido, me deja reintentar.

@@ -5,6 +5,24 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
 
+## Tramo E4, bloque A4: cierre y verificación (2026-10-15)
+
+Cierre de E4 (sin código nuevo de la aplicación): se volvió a probar todo y se limpiaron los documentos de requisitos que seguían diciendo "planificado" o "no existe código". Cambios de contenido en esta carpeta:
+
+- `requisitos-funcionales-sistema.md`: las secciones "Invitaciones de Empleado" e "Historial del Equipo de un Comercio" pasan de "planificado" a implementado; el vencimiento de invitaciones deja de decir "no hay un job" (es un proceso automático desde el tramo E1, bloque A8); se agregan la gestión directa del miembro (desactivar y reactivar con sus reglas), la renuncia y la lectura del Administrador; la lista de actividad pasa de tres a cuatro fuentes (con `EQUIPO` y el parámetro `fuente`) y el Administrador "la lee" en lugar de "la va a leer".
+- `requisitos-funcionales-empleado.md`: el encabezado deja de decir que todo está planificado; "Vencida" ya no es "calculada sin un proceso automático".
+- `alcance-y-limitaciones.md`: el rol Empleado pasa de "planificado, hoy no existe código" a implementado; se agregan las limitaciones de E4 (reactivación directa solo tras la baja del Dueño, sin email de reactivación, cuenta de Empleado bloqueada que no cambia la relación, Administrador de solo lectura, sin nombre del comercio en las respuestas del equipo); se actualizan "no retirado", "Actividad" y la regla de nombre de usuario por invitación.
+- `Historias de Usuario - Empleado.md`: el encabezado pasa a "implementadas".
+
+**Qué copiar a mano a `01.` y `02.`** (comparado con las copias actuales; los demás ya están iguales):
+- `requisitos-funcionales-administrador.md`, `requisitos-funcionales-empleado.md`, `requisitos-funcionales-sistema.md` y `requisitos-funcionales-generales.md`: copiar a `01. Análisis de Requerimientos/04. Requisitos Funcionales/`.
+- `Historias de Usuario - Administrador.md` y `Historias de Usuario - Empleado.md`: copiar a `01. Análisis de Requerimientos/07. Historias de Usuario/`.
+- `alcance-y-limitaciones.md`: copiar a `01. Análisis de Requerimientos/03. Alcance y Limitaciones/`.
+
+**No cambiaron en este bloque** (y ya están iguales en `01.` y `02.`): `diccionario-de-datos.md` (sigue en la v1.20), `requisitos-no-funcionales.md`, `requisitos-funcionales-dueño.md`, `requisitos-funcionales-comercio.md`, `requisitos-funcionales-cliente.md` y `Historias de Usuario - Dueño.md`.
+
+**Pruebas:** ver `docs/DECISIONES.md`, 2026-10-15, "Tramo E4, bloque A4".
+
 ## Tramo E4, entrega B3: pantallas del Administrador (2026-10-15)
 
 Tercera y última entrega de pantallas de E4 (solo frontend y pruebas, sin cambios de backend ni de datos): el Administrador ve el equipo y la actividad de cualquier comercio, en solo lectura. El modal de detalle del comercio suma el resumen "N activos · N inactivos" y el botón "Ver equipo"; hay una página del equipo (Miembros con Activos e Inactivos, y Solicitudes) y una página de la Actividad con los filtros Todo, Pedidos, Ediciones, Cierres y Equipo.

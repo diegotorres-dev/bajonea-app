@@ -238,3 +238,14 @@ Totales de esta entrega: 13 patrones nuevos (sin contar el atributo `data-causa`
 | `admin-comercio-actividad.html` | `.html`, `js/admin-equipo.js`, `js/equipo-vistas.js` | `btn-volver`, `titulo-actividad`, `equipo-comercio-nombre`, `equipo-lista`; el resto son los de la Actividad del Dueño, que ahora salen de `js/equipo-vistas.js` y no cambian: `actividad-filtros`, `chip-actividad-{todo,pedidos,ediciones,cierres,equipo}`, `actividad-contenido`, `actividad-filas`, `actividad-fila` (con `data-fuente` y `data-rol`), `actividad-dia`, `actividad-nombre`, `actividad-rol`, `actividad-accion`, `actividad-referencia`, `actividad-hora`, `actividad-avatar`, `actividad-avatar-sistema`, `actividad-icono-{MOTIVO}`, `actividad-cargando`, `actividad-error`, `btn-reintentar-actividad`, `btn-actividad-ver-mas` |
 
 Totales de esta entrega: 13 patrones nuevos (`seccion-equipo-comercio`, `resumen-equipo-comercio`, `btn-ver-equipo-comercio`, `btn-actividad-equipo`, `tab-equipo-miembros`, `tab-equipo-solicitudes`, `titulo-actividad`, `equipo-solo-lectura`, `equipo-desde`, `equipo-motivo-baja`, `equipo-solicitudes-texto`, `equipo-solicitudes-contenido` y `equipo-invitada`); el resto se reutiliza de la pantalla del Dueño con el mismo nombre. Sin comentarios en ningún archivo tocado.
+
+## Cierre de E4: `data-testid` del bloque de invitar al equipo (E1) que no figuraban
+
+Hueco heredado de la entrega B3 de E1, detectado al cierre de E4 comparando los `data-testid` de `js/equipo-comercio.js` y `js/equipo-vistas.js` con este documento. No hay cambios de código.
+
+| Pantalla | Archivo(s) | `data-testid` |
+|---|---|---|
+| Hoja "Invitar al equipo" | `js/equipo-comercio.js` | `hoja-invitar-equipo`, `titulo-invitar-equipo`, `input-email-invitar`, `error-email-invitar` (error bajo el campo), `rechazo-invitar-equipo` con `rechazo-invitar-titulo` y `rechazo-invitar-cuerpo` (aviso fijo del rechazo genérico), `ayuda-invitar-equipo` ("Le llega un código que vale 7 días"), `btn-enviar-invitacion` |
+| Hoja "No se pudo invitar" | `js/equipo-comercio.js` | `aviso-no-se-pudo-invitar`, `aviso-no-se-pudo-invitar-titulo`, `aviso-no-se-pudo-invitar-cuerpo`, `btn-cerrar-aviso-no-se-pudo-invitar` |
+| Menú y cancelación de una invitación | `js/equipo-comercio.js` | `btn-menu-invitacion-{invitacionId}` (tres puntitos de la fila), `menu-invitacion-equipo` (hoja del menú), `btn-cerrar-menu-invitacion`, `titulo-cancelar-invitacion`, `btn-confirmar-cancelar-invitacion`, `btn-volver-cancelar-invitacion` |
+| Detalle de una fila del equipo | `js/equipo-vistas.js` | `equipo-detalle` (segunda línea de la fila: "vence en N días", "En el equipo desde…", etc.) |

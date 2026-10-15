@@ -3,13 +3,14 @@
 Requisitos del rol Empleado: una persona invitada por un Dueño que opera, con permisos
 acotados, uno o varios comercios en representación de sus respectivos Dueños.
 
-> **Estado de implementación (2026-10-05):** todo lo descrito en este documento está
-> **planificado**. Se implementa en los tramos E1 a E4 (ver Alcance y Limitaciones y
-> `docs/DECISIONES.md`, entrada del 2026-10-05). Hoy no existe código, tablas ni pantallas
-> de Empleado: el modelo de datos tiene las tablas `Empleado` y `EmpleadoComercio` sin
-> uso, y las demás estructuras mencionadas acá (`InvitacionEmpleado`,
-> `HistorialEmpleadoComercio`, `HistorialEdicionComercio`) se crean en las migraciones `V29` a
-> `V32`.
+> **Estado de implementación (2026-10-15):** lo descrito en este documento está
+> **implementado** en los tramos E1 (invitaciones), E2 (acceso), E3 (operación delegada) y
+> E4 (gestión del equipo, renuncia y pérdida de acceso), que quedan pendientes de la
+> confirmación final del dueño del proyecto. Las estructuras (`Empleado`,
+> `EmpleadoComercio`, `InvitacionEmpleado`, `HistorialEmpleadoComercio`,
+> `HistorialEdicionComercio`) están en las migraciones `V29` a `V35`. Lo que sigue
+> pendiente se lista en Alcance y Limitaciones (por ejemplo, la edición de horarios, que
+> todavía no existe para nadie, y el rediseño de la suspensión de comercios).
 
 ---
 
@@ -103,7 +104,9 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
   "pendiente" de la relación: la fila no existe hasta que la invitación se acepta.
 - Para el Dueño y para el Administrador la pantalla muestra además dos estados derivados
   de las invitaciones: **Pendiente** (invitación vigente) y **Vencida** (invitación
-  pendiente con más de 7 días, calculada al consultar, sin un proceso automático).
+  pendiente con más de 7 días). **Vencida** es un estado guardado: un proceso automático
+  (cada minuto) pasa a Vencida las invitaciones pendientes cuya fecha ya pasó, y hasta la
+  corrida siguiente el listado ya las informa como Vencidas.
 - Pasa a Inactivo por baja del Dueño o por renuncia del propio Empleado; se registra el
   motivo (`BAJA_DUENO` o `RENUNCIA`), quién lo hizo y cuándo en el historial de la
   relación (`HistorialEmpleadoComercio`), sin motivo escrito.
