@@ -5143,6 +5143,20 @@ button.panel-comercios__fila:focus-visible {
 
 .equipo-filtros {
   padding: 4px 0 12px;
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+
+.equipo-chips .chip {
+  height: 44px;
+  min-height: 44px;
+  padding: 0 20px;
+}
+
+.equipo-chips .chip[aria-pressed='true'] {
+  background: var(--color-text);
+  border-color: var(--color-text);
+  color: #ffffff;
 }
 
 .actividad-dia {
@@ -5183,6 +5197,20 @@ button.panel-comercios__fila:focus-visible {
   font-size: 14px;
   color: var(--color-text);
   overflow-wrap: anywhere;
+}
+
+.actividad-fila__accion--con-icono {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.actividad-fila__icono {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
 }
 
 .actividad-fila__referencia {
@@ -5349,6 +5377,46 @@ button.panel-comercios__fila:focus-visible {
 
 .equipo-menu__cerrar {
   margin-top: 16px;
+}
+
+.equipo-menu__subtitulo {
+  margin: -8px 0 12px;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.equipo-menu__nota {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+.equipo-menu__aviso:empty {
+  display: none;
+}
+
+.equipo-menu__aviso .banner {
+  margin-bottom: 12px !important;
+}
+
+.equipo-accion__leyenda {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.profile-link.profile-link--peligro-solido,
+.profile-link.profile-link--peligro-solido svg:first-child {
+  background: var(--color-error);
+  color: #ffffff;
+}
+
+.profile-link.profile-link--peligro-solido {
+  border-radius: var(--radius-md, 12px);
+  border-bottom: none;
 }
 
 .equipo-confirmar__titulo {

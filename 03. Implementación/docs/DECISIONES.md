@@ -10442,3 +10442,25 @@ Tercer bloque de backend de E4, precedido por un Paso 0 de frontend (la carrera 
 
 1. ¿"Dejó de trabajar en el comercio" sin el nombre, o con él como en la propuesta original? (A definir en los mockups.)
 2. ¿Se quiere distinguir "Aceptó la invitación" de "Aceptó la invitación y volvió al equipo"?
+
+
+## 2026-10-15 — Tramo E4, entrega B1: pantallas del Dueño (equipo con activos e inactivos)
+
+Solo frontend y pruebas, sin migraciones ni cambios de backend (el backend de E4, bloques A1 a A3, quedó como estaba). Detalle de archivos en `docs/MAPEO-ARCHIVOS-TRAMO-E4-B1.md`.
+
+**Qué se hizo.** "Mi equipo" tiene dos chips ("Activos · N", el por defecto, e "Inactivos · N"); cada integrante lleva un menú de tres puntos. Activo: una sola acción, "Desactivar" (rojo sólido), con una única hoja de confirmación. Inactivo: dado de baja por el Dueño y reactivable → "Reactivar" sin confirmación; renunció → nota y "Invitar de nuevo" (abre la hoja de invitar con el email precargado); sin registro de la baja → solo "Invitar de nuevo". Los cuatro `409` de reactivar se muestran dentro de la hoja con el texto del servidor. Tras un `200` la lista y los contadores se actualizan al instante con el miembro devuelto. Actividad suma el filtro "Equipo" (`fuente=EQUIPO`) con ícono por motivo, y los cinco chips pasan a dos filas a 375 px.
+
+**Decisiones tomadas por mi cuenta (a confirmar):**
+1. **Colores:** la paleta de los mockups no existe en `styles.css`; se usaron los tokens de la aplicación (`--color-text` para el chip seleccionado, `--color-error` para el rojo de peligro). Ningún color nuevo.
+2. **Textos de la Actividad:** se muestran los del servidor ("Dio de baja a {Nombre}", "Reactivó a {Nombre}", "Dejó de trabajar en el comercio", "Aceptó la invitación", "Invitó a {email}"), con el nombre y el rol (chip) de quien actuó en el encabezado. No se usó "El dueño lo dio de baja / lo reactivó" porque obligaría a tocar el backend; cierra la pregunta abierta 1 del bloque A3 en el sentido de no cambiar el servidor.
+3. **Fecha de la baja:** se usa `fechaBaja` del miembro (que es la fecha de la última baja), no una consulta aparte al historial.
+4. **Sin registro de la baja:** "Inactivo desde el DD/MM" (el pedido de diseño no cubría el texto de esa fila).
+5. **Toasts:** muestran el mensaje del servidor ("Miembro dado de baja", "Miembro reactivado", "El miembro ya estaba inactivo").
+
+**Specs.** Nuevo `58-equipo-gestion-dueno-ui` (21 tests). Ajustados: `36` (dos tests que suponían filas sin botón y sin inactivos visibles) y `55` (el chip "Equipo" en la lista de chips). El `38` no se tocó: sus textos "te sacó del equipo" dependen de la entrega B2.
+
+**Pruebas de mutación** (cada una se rompió a propósito, se vio fallar y se restauró; sha1 de `equipo-comercio.js` y `styles.css` verificado igual al de antes): (1) menú de renuncia ofreciendo "Reactivar" → fallan 2 tests; (2) confirmar sin que el usuario lo pida → fallan 3; (3) filtro por defecto Inactivos → fallan los de los chips y de la confirmación; (4) botón de confirmar sin el rojo de peligro → falla el del mismo rojo.
+
+**Corrida completa de Playwright** (`workers: 1`, base reseteada con `entorno-test.mjs preparar`): 914 de 915 en 21,2 min. El único fallo es el inestable conocido `27:497`, que pasa aislado. No se corrieron `mvnw` ni Newman (sin cambios de backend).
+
+**Deuda:** iPhone / WebKit sin probar.

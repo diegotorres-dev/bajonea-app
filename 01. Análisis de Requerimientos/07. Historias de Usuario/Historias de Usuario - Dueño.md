@@ -105,11 +105,17 @@ Criterios de aceptación adicionales:
 - "Ver equipo" tiene tres pestañas: "Mi equipo · N" (los integrantes activos) y
   "Solicitudes · N" (las invitaciones), cada una con su contador, y "Actividad", sin contador. El botón
   "Invitar" se ve en las dos primeras y no en "Actividad".
+- En "Mi equipo" elijo entre "Activos · N" (se ve por defecto) e "Inactivos · N". Cada integrante tiene un
+  menú de tres puntos: en un activo, "Desactivar", que pide una sola confirmación antes de dar de baja
+  ("¿Desactivar a {Nombre}?"); en uno inactivo que di de baja yo, "Reactivar", que lo devuelve al equipo
+  al instante, sin invitación y sin otra confirmación; en uno que renunció, "Invitar de nuevo" (abre la
+  hoja de invitar con su email); y en uno sin registro de la baja, solo "Invitar de nuevo". Si no se
+  puede reactivar, la misma hoja me dice por qué.
 - "Actividad" muestra una línea por cada cosa que pasó en el comercio, de la más nueva a la más vieja,
   agrupadas por día ("Hoy", "Ayer" o la fecha): el avatar con las iniciales de quien actuó (un engranaje
   si fue el sistema), su nombre, su rol (Dueño, Empleado, Cliente o Sistema; el sistema sin nombre), qué
-  hizo y a qué hora. Muestra 30 líneas y un botón "Ver más" trae las siguientes. Arriba hay cuatro filtros
-  ("Todo", "Pedidos", "Ediciones", "Cierres"); al elegir uno la lista vuelve a empezar solo con esa
+  hizo y a qué hora. Muestra 30 líneas y un botón "Ver más" trae las siguientes. Arriba hay cinco filtros
+  ("Todo", "Pedidos", "Ediciones", "Cierres", "Equipo"); al elegir uno la lista vuelve a empezar solo con esa
   clase de cosas. Si todavía no hay nada, o no hay nada de lo filtrado, lo dice; si falla la carga,
   muestra el error con "Reintentar" y los filtros siguen a la vista. Mientras miro la actividad, la
   actualización automática del equipo no me mueve ni me borra la lista.

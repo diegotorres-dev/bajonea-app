@@ -5,6 +5,18 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
 
+## Tramo E4, entrega B1: pantallas del Dueño (2026-10-15)
+
+Primera entrega de pantallas de E4 (solo frontend y pruebas, sin cambios de backend ni de datos): "Mi equipo" con Activos e Inactivos, menú de tres puntos por integrante, desactivar con confirmación única, reactivar directo, "Invitar de nuevo" y el filtro "Equipo" en la Actividad.
+
+**Documentos de esta carpeta que cambiaron** (Diego los copia a mano a `01.` y `02.`):
+- `requisitos-funcionales-dueño.md`: copiar a `01. Análisis de Requerimientos/` (carpeta de requisitos funcionales, junto a los demás `requisitos-funcionales-*.md`). Cambia el estado de implementación de "Gestión de Empleados", los filtros Activos e Inactivos de "Mi equipo", el filtro "Equipo" de Actividad y el comportamiento en pantalla de desactivar, reactivar e "Invitar de nuevo".
+- `Historias de Usuario - Dueño.md`: copiar a `01. Análisis de Requerimientos/` (carpeta de historias de usuario). HU-D08 suma los criterios de Activos/Inactivos y de los menús, y pasa de cuatro a cinco filtros de Actividad.
+
+**No cambiaron:** el diccionario de datos (sigue en la v1.20), los requisitos de Empleado, Sistema y Administrador, ni `alcance-y-limitaciones.md`; se actualizan con B2 y B3.
+
+**Pruebas:** ver `docs/DECISIONES.md`, 2026-10-15, "Tramo E4, entrega B1".
+
 ## Tramo E4, bloque A3: historial del equipo en la Actividad y lectura del Administrador (2026-10-15)
 
 Tercer bloque de backend de E4 (sin pantallas ni migraciones): la actividad del comercio suma una cuarta fuente, `EQUIPO`, con lo que pasó en el equipo (invitaciones, aceptaciones, bajas, renuncias y reactivaciones); el Administrador puede leer el equipo y la actividad de cualquier comercio; las invitaciones traen `diasRestantes` calculado por el servidor. Aparte, dos arreglos de frontend (Paso 0): el botón "Guardar" del formulario de producto y el desborde de etiquetas con nombre muy largo.

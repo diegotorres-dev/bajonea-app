@@ -203,3 +203,15 @@ Totales de esta entrega: 1 patrón nuevo. La campana del Empleado reutiliza `btn
 | Paginación | `js/equipo-comercio.js` | `btn-actividad-ver-mas` |
 
 Totales de esta entrega: 22 patrones nuevos. Las pestañas anteriores conservan `tab-equipo-equipo` y `tab-equipo-solicitudes`. Sin comentarios en ningún archivo tocado.
+
+## Rol Empleado, tramo E4 (entrega B1): equipo del Dueño con activos e inactivos
+
+| Pantalla | Archivo(s) | `data-testid` |
+|---|---|---|
+| `comercio-perfil.html`, vista "Ver equipo", pestaña "Mi equipo" | `js/equipo-comercio.js` | `equipo-chips` (grupo de chips), `chip-miembros-activos`, `chip-miembros-inactivos` (ambos con `aria-pressed` y el contador en el texto: "Activos · N", "Inactivos · N"), `equipo-miembros-contenido` (contenedor de la lista o del vacío) |
+| Fila de miembro (activo o inactivo) | `js/equipo-comercio.js` | `btn-menu-miembro-{empleadoId}` (botón de tres puntitos, `aria-label` "Más acciones de {Nombre}"); la fila conserva `equipo-miembro-{empleadoId}` (con `data-estado`), `equipo-nombre`, `equipo-email` y `equipo-estado` (en un inactivo dice "Dado de baja el DD/MM", "Renunció el DD/MM" o "Inactivo desde el DD/MM") |
+| Menú de un miembro (hoja inferior) | `js/equipo-comercio.js` | `menu-miembro-equipo` (hoja), `menu-miembro-titulo`, `menu-miembro-subtitulo` (solo inactivos), `menu-miembro-nota` (solo quien renunció), `btn-desactivar-miembro`, `btn-reactivar-miembro`, `btn-invitar-de-nuevo`, `btn-cerrar-menu-miembro`, `aviso-reactivar-slot` (contenedor del error), `aviso-reactivar` (el aviso, con `role="alert"`) |
+| Confirmación de desactivar | `js/equipo-comercio.js` | `hoja-desactivar-miembro`, `titulo-desactivar-miembro`, `texto-desactivar-miembro`, `btn-confirmar-desactivar-miembro`, `btn-volver-desactivar-miembro` |
+| Pestaña Actividad, fuente Equipo | `js/equipo-comercio.js` | `chip-actividad-equipo` (quinto chip del grupo `actividad-filtros`), `actividad-icono-{MOTIVO}` (ícono de la línea: `INVITACION`, `INVITACION_CANCELADA`, `ACEPTACION`, `BAJA_DUENO`, `RENUNCIA`, `REACTIVACION`) |
+
+Totales de esta entrega: 22 patrones nuevos. Los toasts de éxito y de error siguen sin `data-testid` (`.toast`, como en el resto de la aplicación). Sin comentarios en ningún archivo tocado.

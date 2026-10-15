@@ -121,9 +121,11 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
 
 ## Gestión de Empleados
 
-> **Estado de implementación (2026-10-05):** planificado, se implementa en los tramos E1
-> (invitar, reenviar, cancelar, vista básica del equipo) y E4 (desactivar, reactivar,
-> historial). Hoy el Dueño no tiene ninguna sección de equipo.
+> **Estado de implementación (2026-10-15):** invitar, reenviar, cancelar, la vista del equipo y la
+> pestaña Actividad están implementados (tramos E1 y E3). Desactivar, reactivar y el historial del equipo
+> tienen el backend hecho (E4, bloques A1 a A3) y las pantallas del Dueño hechas en E4, entrega B1
+> (Activos e Inactivos, menú de tres puntos, desactivar con confirmación, reactivar directo, filtro
+> "Equipo" en Actividad); los textos son los de esa entrega.
 
 - El Dueño, desde el panel de un comercio puntual, debe poder acceder a una sección
   "Mi equipo" para invitar personas a operar ese comercio como Empleado, ingresando su
@@ -169,8 +171,10 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   Máximo 3 emails de regularización por día por destinatario, contados sobre la tabla de
   notificaciones con canal Email. No se envía a Dueños ni a Administradores.
 - El Dueño debe poder ver el equipo de cada comercio en dos pestañas con su contador:
-  "Mi equipo · N" (los integrantes con la relación Activa; los inactivos quedan para el
-  tramo E4) y "Solicitudes · N" (las invitaciones, una línea por email con la más reciente:
+  "Mi equipo · N" (el contador cuenta solo los integrantes con la relación Activa; debajo
+  hay dos filtros, "Activos · N" —el que se ve por defecto— e "Inactivos · N", donde cada integrante muestra
+  el motivo: "Dado de baja el DD/MM", "Renunció el DD/MM" o "Inactivo desde el DD/MM" si no hay registro
+  de la baja; cada fila lleva un menú de tres puntos) y "Solicitudes · N" (las invitaciones, una línea por email con la más reciente:
   Pendiente con "vence en N días", Vencida con "Vencida hace N días" y "Código bloqueado";
   todas las líneas llevan un menú de tres puntos con "Reenviar" y "Cancelar"; las aceptadas
   pasan a "Mi equipo" y las canceladas y reemplazadas no se muestran). Una invitación
@@ -182,7 +186,8 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   "Código bloqueado". Desde la etapa 4 de la entrega B de E3 esta vista
   ("Ver equipo") tiene una tercera pestaña, "Actividad" (sin contador), que muestra la lista de
   actividad del comercio (`GET /api/v1/comercios/equipo/actividad`) con filtros "Todo",
-  "Pedidos", "Ediciones" y "Cierres". En esa pestaña el botón "Invitar" no se muestra, porque
+  "Pedidos", "Ediciones", "Cierres" y "Equipo" (lo que pasó con el equipo: invitaciones, aceptaciones,
+  bajas, renuncias y reactivaciones). En esa pestaña el botón "Invitar" no se muestra, porque
   no corresponde.
 - El Dueño debe poder desactivar la relación de un Empleado con un comercio puntual en
   cualquier momento (queda Inactiva con motivo `BAJA_DUENO`), sin afectar las relaciones
@@ -190,6 +195,14 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   recibe una notificación. Puede reactivarlo directamente, sin código, solo si lo dio de
   baja el propio Dueño; si el Empleado renunció, o si la invitación se canceló, hace falta
   una invitación nueva.
+  En pantalla: el menú de tres puntos de un integrante activo tiene una sola acción, "Desactivar", que
+  pide una única confirmación ("¿Desactivar a {Nombre}?", con el aviso de que pierde el acceso y se le
+  avisa, y se puede reactivar desde Inactivos); el menú de uno inactivo dado de baja por el Dueño ofrece
+  "Reactivar" ("Vuelve al equipo ahora, sin invitación"), que actúa sin confirmación; el de quien renunció
+  explica que dejó el equipo por su cuenta y ofrece "Invitar de nuevo", que abre la hoja de invitar con su
+  email; y el de un inactivo sin registro de la baja ofrece solo "Invitar de nuevo". Si reactivar falla
+  (invitación pendiente, renuncia, comercio fuera de servicio o cuenta no apta) el motivo se ve dentro de la
+  misma hoja y no se revela el estado de la cuenta.
 - El Dueño debe poder ver el historial del equipo de cada comercio (invitación,
   aceptación, invitación cancelada, baja, renuncia y reactivación, con quién lo hizo y
   cuándo) y la actividad del comercio (quién hizo qué: crear, editar, eliminar, cambiar

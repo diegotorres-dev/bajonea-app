@@ -1101,7 +1101,7 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
     expect(estadoInvitacion(id)).toBe('CANCELADA');
   });
 
-  test('cuando la persona acepta, la solicitud sale de Solicitudes y pasa a Mi equipo como Activo sin recargar a mano; los miembros no tienen menú', async ({ page, request }) => {
+  test('cuando la persona acepta, la solicitud sale de Solicitudes y pasa a Mi equipo como Activo sin recargar a mano; cada miembro tiene su menú de acciones', async ({ page, request }) => {
     const comercio = await comercioNuevo(request);
     const { email } = await invitar(request, comercio.id);
     await abrirSolicitudes(page, comercio.id);
@@ -1120,7 +1120,8 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
     await expect(miembro).toBeVisible();
     await expect(miembro.getByTestId('equipo-estado')).toHaveText('Activo');
     await expect(miembro.getByTestId('equipo-nombre')).toHaveText('Empleada Invitada');
-    await expect(miembro.getByRole('button')).toHaveCount(0);
+    await expect(miembro.getByRole('button')).toHaveCount(1);
+    await expect(miembro.getByRole('button')).toHaveAttribute('aria-label', 'Más acciones de Empleada Invitada');
   });
 
   test('Mi equipo muestra solo a los integrantes activos y Solicitudes cada estado con su puntito, su texto y su acción', async ({ page, request }) => {
@@ -1148,9 +1149,17 @@ test.describe('Ver equipo del Dueño (UI), tramo E1 B3', () => {
     await expect(punto(filaMiembro(page, activo))).toHaveClass(/pedido-estado__dot--positivo/);
     await expect(page.locator('[data-testid^="equipo-miembro-"]')).toHaveCount(1);
     await expect(filaMiembro(page, inactivo)).toHaveCount(0);
-    await expect(page.locator('[data-testid^="equipo-miembro-"] button')).toHaveCount(0);
+    await expect(page.locator('[data-testid^="equipo-miembro-"] button')).toHaveCount(1);
+    await expect(page.getByTestId('chip-miembros-activos')).toHaveText('Activos · 1');
+    await expect(page.getByTestId('chip-miembros-inactivos')).toHaveText('Inactivos · 1');
+    await expect(page.getByTestId('chip-miembros-activos')).toHaveAttribute('aria-pressed', 'true');
     await sinScrollHorizontal(page);
     await capturarEquipo(page, 'mi-equipo');
+
+    await page.getByTestId('chip-miembros-inactivos').click();
+    await expect(filaMiembro(page, inactivo).getByTestId('equipo-estado')).toHaveText(/^Inactivo/);
+    await expect(filaMiembro(page, activo)).toHaveCount(0);
+    await page.getByTestId('chip-miembros-activos').click();
 
     await irAPestana(page, 'solicitudes');
     await expect(filaInvitacion(page, pendiente).getByTestId('equipo-estado')).toHaveText('Pendiente');

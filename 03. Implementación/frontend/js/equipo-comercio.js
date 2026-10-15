@@ -3,7 +3,7 @@ import { showToast, renderEmptyState } from './catalogo.js';
 import { getComercioActivoEnMemoria, INTERVALO_POLLING_COMERCIOS_MS } from './comercio-activo.js';
 import { iniciales } from './selector-comercio.js';
 import { h, crearSvg, renderBanner } from './form-utils.js';
-import { diaDe, etiquetaDeDia, horaMinutoDe } from './fechas.js';
+import { diaDe, etiquetaDeDia, fechaCortaDe, horaMinutoDe } from './fechas.js';
 import { mostrarErrorCampo, limpiarErrorCampo, mapearErroresBackend } from './validators.js';
 
 const RUTA_EQUIPO = '/comercios/equipo';
@@ -31,6 +31,7 @@ const FILTROS_ACTIVIDAD = [
   { id: 'pedidos', texto: 'Pedidos', fuente: 'PEDIDO' },
   { id: 'ediciones', texto: 'Ediciones', fuente: 'EDICION' },
   { id: 'cierres', texto: 'Cierres', fuente: 'CIERRE' },
+  { id: 'equipo', texto: 'Equipo', fuente: 'EQUIPO' },
 ];
 
 const TEXTO_VACIO_ACTIVIDAD = {
@@ -38,7 +39,26 @@ const TEXTO_VACIO_ACTIVIDAD = {
   pedidos: 'No hay actividad de pedidos',
   ediciones: 'No hay ediciones',
   cierres: 'No hay cierres ni reaperturas',
+  equipo: 'No hay actividad del equipo',
 };
+
+const FILTROS_MIEMBROS = [
+  { id: 'activos', texto: 'Activos' },
+  { id: 'inactivos', texto: 'Inactivos' },
+];
+
+const TEXTO_VACIO_MIEMBROS = {
+  activos: 'Todavía no tenés equipo',
+  inactivos: 'No hay miembros inactivos',
+};
+
+const MOTIVO_BAJA_DUENO = 'BAJA_DUENO';
+const MOTIVO_RENUNCIA = 'RENUNCIA';
+const NOTA_RENUNCIA = 'Dejó el equipo por su cuenta. Para que vuelva, tiene que aceptar una invitación nueva.';
+const LEYENDA_REACTIVAR = 'Vuelve al equipo ahora, sin invitación';
+const LEYENDA_INVITAR_DE_NUEVO = 'Le llega un código por email y tiene que aceptar';
+const MENSAJE_ERROR_DESACTIVAR = 'No pudimos desactivar a esta persona. Probá de nuevo.';
+const MENSAJE_ERROR_REACTIVAR = 'No pudimos reactivar a esta persona. Probá de nuevo.';
 
 const ESTADO_MIEMBRO = {
   ACTIVO: { texto: 'Activo', punto: 'positivo' },
@@ -58,6 +78,26 @@ const FIGURAS_SOBRE = [
 const FIGURAS_ENGRANAJE = [
   ['circle', { cx: '12', cy: '12', r: '3' }],
   ['path', { d: 'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z' }],
+];
+const FIGURAS_DESACTIVAR = [
+  ['path', { d: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' }],
+  ['circle', { cx: '9', cy: '7', r: '4' }],
+  ['line', { x1: '17', y1: '11', x2: '22', y2: '11' }],
+];
+const FIGURAS_REACTIVAR = [
+  ['path', { d: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' }],
+  ['circle', { cx: '9', cy: '7', r: '4' }],
+  ['line', { x1: '19', y1: '8', x2: '19', y2: '14' }],
+  ['line', { x1: '16', y1: '11', x2: '22', y2: '11' }],
+];
+const FIGURAS_SALIDA = [
+  ['path', { d: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4' }],
+  ['polyline', { points: '16 17 21 12 16 7' }],
+  ['line', { x1: '21', y1: '12', x2: '9', y2: '12' }],
+];
+const FIGURAS_CHECK = [
+  ['circle', { cx: '12', cy: '12', r: '10' }],
+  ['path', { d: 'm9 12 2 2 4-4' }],
 ];
 const FIGURAS_PUNTITOS = [
   ['circle', { cx: '12', cy: '12', r: '1' }],
@@ -81,6 +121,7 @@ let comercioPintado = null;
 let firmaPintada = null;
 let intervalo = null;
 let pestanaActiva = PESTANAS[0].id;
+let filtroMiembros = FILTROS_MIEMBROS[0].id;
 let equipoActual = null;
 const actividad = { filtro: FILTROS_ACTIVIDAD[0], items: [], siguienteCursor: null, hayMas: false, pedido: 0 };
 
@@ -152,16 +193,44 @@ function crearLinea(clase, texto) {
   return linea;
 }
 
-function crearFilaMiembro(miembro) {
+function nombreCompleto(miembro) {
+  return `${miembro.nombre} ${miembro.apellido}`;
+}
+
+function textoDeBaja(miembro) {
+  const fecha = miembro.fechaBaja ? ` el ${fechaCortaDe(miembro.fechaBaja)}` : '';
+  if (miembro.motivoBaja === MOTIVO_BAJA_DUENO) {
+    return `Dado de baja${fecha}`;
+  }
+  if (miembro.motivoBaja === MOTIVO_RENUNCIA) {
+    return `Renunció${fecha}`;
+  }
+  return miembro.fechaBaja ? `Inactivo desde el ${fechaCortaDe(miembro.fechaBaja)}` : 'Inactivo';
+}
+
+function crearBotonMenuMiembro(miembro, alAbrirMenu) {
+  const menu = h('button', {
+    class: 'product-row__kebab',
+    type: 'button',
+    'aria-label': `Más acciones de ${nombreCompleto(miembro)}`,
+    'data-testid': `btn-menu-miembro-${miembro.empleadoId}`,
+  });
+  menu.append(crearSvg(FIGURAS_PUNTITOS));
+  menu.addEventListener('click', () => alAbrirMenu(miembro));
+  return menu;
+}
+
+function crearFilaMiembro(miembro, alAbrirMenu) {
   const info = ESTADO_MIEMBRO[miembro.estado] || { texto: miembro.estado, punto: 'inactivo' };
+  const inactivo = miembro.estado === 'INACTIVO';
   const fila = h('div', { class: 'equipo-fila', 'data-testid': `equipo-miembro-${miembro.empleadoId}`, 'data-estado': miembro.estado });
   const datos = h('div', { class: 'equipo-fila__datos' });
-  const nombre = crearLinea('equipo-fila__nombre', `${miembro.nombre} ${miembro.apellido}`);
+  const nombre = crearLinea('equipo-fila__nombre', nombreCompleto(miembro));
   nombre.setAttribute('data-testid', 'equipo-nombre');
   const email = crearLinea('equipo-fila__email', miembro.email);
   email.setAttribute('data-testid', 'equipo-email');
-  datos.append(nombre, email, crearEstado(info, ''));
-  fila.append(crearAvatarIniciales(miembro), datos);
+  datos.append(nombre, email, crearEstado(info, '', inactivo ? textoDeBaja(miembro) : info.texto));
+  fila.append(crearAvatarIniciales(miembro), datos, crearBotonMenuMiembro(miembro, alAbrirMenu));
   return fila;
 }
 
@@ -232,6 +301,10 @@ function miembrosActivos(equipo) {
   return (equipo.miembros || []).filter((miembro) => miembro.estado === 'ACTIVO');
 }
 
+function miembrosInactivos(equipo) {
+  return (equipo.miembros || []).filter((miembro) => miembro.estado === 'INACTIVO');
+}
+
 function contadorDe(equipo, pestana) {
   if (!equipo || pestana === PESTANA_ACTIVIDAD) {
     return null;
@@ -288,24 +361,56 @@ function seleccionarPestana(id) {
   }
 }
 
-function pintarMiembros(equipo, filas, lista) {
-  const miembros = miembrosActivos(equipo);
-  if (miembros.length === 0) {
-    renderEmptyState(lista, 'Todavía no tenés equipo', null, { inline: true });
-    return false;
+function seleccionarFiltroMiembros(id) {
+  if (id === filtroMiembros) {
+    return;
   }
-  miembros.forEach((miembro) => filas.append(crearFilaMiembro(miembro)));
-  return true;
+  filtroMiembros = id;
+  if (equipoActual !== null && pestanaActiva === 'equipo') {
+    pintarLista(equipoActual);
+  }
 }
 
-function pintarSolicitudes(equipo, filas, lista) {
+function crearChipsMiembros(equipo) {
+  const chips = h('div', { class: 'chip-row equipo-filtros equipo-chips', role: 'group', 'aria-label': 'Filtrar miembros', 'data-testid': 'equipo-chips' });
+  FILTROS_MIEMBROS.forEach((filtro) => {
+    const cantidad = filtro.id === 'activos' ? miembrosActivos(equipo).length : miembrosInactivos(equipo).length;
+    const chip = h('button', {
+      type: 'button',
+      class: 'chip',
+      'aria-pressed': String(filtro.id === filtroMiembros),
+      'data-testid': `chip-miembros-${filtro.id}`,
+    });
+    chip.textContent = `${filtro.texto} · ${cantidad}`;
+    chip.addEventListener('click', () => seleccionarFiltroMiembros(filtro.id));
+    chips.append(chip);
+  });
+  return chips;
+}
+
+function pintarMiembros(equipo, lista) {
+  const chips = crearChipsMiembros(equipo);
+  const miembros = filtroMiembros === 'activos' ? miembrosActivos(equipo) : miembrosInactivos(equipo);
+  const contenido = h('div', { 'data-testid': 'equipo-miembros-contenido' });
+  if (miembros.length === 0) {
+    renderEmptyState(contenido, TEXTO_VACIO_MIEMBROS[filtroMiembros], null, { inline: true });
+  } else {
+    const filas = h('div', { class: 'equipo-filas', 'data-testid': 'equipo-filas' });
+    miembros.forEach((miembro) => filas.append(crearFilaMiembro(miembro, abrirMenuMiembro)));
+    contenido.append(filas);
+  }
+  lista.replaceChildren(chips, contenido);
+}
+
+function pintarSolicitudes(equipo, lista) {
   const invitaciones = equipo.invitaciones || [];
   if (invitaciones.length === 0) {
     renderEmptyState(lista, 'No hay solicitudes', null, { inline: true });
-    return false;
+    return;
   }
+  const filas = h('div', { class: 'equipo-filas', 'data-testid': 'equipo-filas' });
   invitaciones.forEach((invitacion) => filas.append(crearFilaInvitacion(invitacion, abrirMenuInvitacion)));
-  return true;
+  lista.replaceChildren(filas);
 }
 
 const PINTORES_DE_PESTANA = {
@@ -319,10 +424,7 @@ function pintarLista(equipo) {
   }
   const lista = elemento('equipo-lista');
   lista.removeAttribute('aria-busy');
-  const filas = h('div', { class: 'equipo-filas', 'data-testid': 'equipo-filas' });
-  if (PINTORES_DE_PESTANA[pestanaActiva](equipo, filas, lista)) {
-    lista.replaceChildren(filas);
-  }
+  PINTORES_DE_PESTANA[pestanaActiva](equipo, lista);
 }
 
 function pintarEquipo(equipo) {
@@ -395,6 +497,23 @@ function crearAvatarActividad(item) {
   return avatar;
 }
 
+const ICONO_DE_EQUIPO = {
+  INVITACION: FIGURAS_SOBRE,
+  INVITACION_CANCELADA: FIGURAS_CANCELAR,
+  ACEPTACION: FIGURAS_CHECK,
+  BAJA_DUENO: FIGURAS_DESACTIVAR,
+  RENUNCIA: FIGURAS_SALIDA,
+  REACTIVACION: FIGURAS_REACTIVAR,
+};
+
+function crearIconoDeEquipo(accion) {
+  const icono = crearSvg(ICONO_DE_EQUIPO[accion] || FIGURAS_CHECK);
+  icono.setAttribute('class', 'actividad-fila__icono');
+  icono.setAttribute('aria-hidden', 'true');
+  icono.setAttribute('data-testid', `actividad-icono-${accion}`);
+  return icono;
+}
+
 function crearFilaActividad(item) {
   const fila = h('div', { class: 'equipo-fila actividad-fila', 'data-testid': 'actividad-fila', 'data-fuente': item.fuente, 'data-rol': item.actorRol });
   const datos = h('div', { class: 'equipo-fila__datos' });
@@ -409,8 +528,12 @@ function crearFilaActividad(item) {
   encabezado.append(rol);
   const accion = crearLinea('actividad-fila__accion', item.accionTexto);
   accion.setAttribute('data-testid', 'actividad-accion');
+  if (item.fuente === 'EQUIPO') {
+    accion.classList.add('actividad-fila__accion--con-icono');
+    accion.prepend(crearIconoDeEquipo(item.accion));
+  }
   datos.append(encabezado, accion);
-  const referencia = [item.entidadNombre, item.detalle].filter(Boolean).join(' · ');
+  const referencia = item.fuente === 'EQUIPO' ? '' : [item.entidadNombre, item.detalle].filter(Boolean).join(' · ');
   if (referencia) {
     const complemento = crearLinea('equipo-fila__detalle actividad-fila__referencia', referencia);
     complemento.setAttribute('data-testid', 'actividad-referencia');
@@ -640,7 +763,7 @@ function abrirAvisoNoSePudoInvitar() {
   hoja.append(titulo, cuerpo, cerrar);
 }
 
-function abrirHojaInvitar() {
+function abrirHojaInvitar(emailInicial = '') {
   if (document.querySelector('[data-testid="hoja-invitar-equipo"]')) {
     return;
   }
@@ -676,6 +799,7 @@ function abrirHojaInvitar() {
   enviar.textContent = 'Enviar invitación';
   formulario.append(campo, enviar);
   hoja.append(titulo, formulario);
+  entrada.value = emailInicial;
   entrada.focus();
 
   let emailRechazado = null;
@@ -797,8 +921,166 @@ function abrirMenuInvitacion(invitacion) {
   hoja.append(asa, cuerpo);
 }
 
+function crearAccionDeHoja(testid, figuras, texto, leyenda, clase) {
+  const boton = h('button', { class: `profile-link ${clase}`.trim(), type: 'button', 'data-testid': testid });
+  const etiqueta = h('span');
+  etiqueta.append(texto);
+  if (leyenda) {
+    const complemento = h('small', { class: 'equipo-accion__leyenda' });
+    complemento.textContent = leyenda;
+    etiqueta.append(complemento);
+  }
+  boton.append(crearSvg(figuras), etiqueta);
+  return boton;
+}
+
+function reemplazarMiembro(actualizado) {
+  if (equipoActual === null) {
+    return;
+  }
+  const miembros = (equipoActual.miembros || []).map((miembro) => (miembro.empleadoId === actualizado.empleadoId ? actualizado : miembro));
+  equipoActual = { ...equipoActual, miembros };
+  firmaPintada = firmaDe(equipoActual);
+  pintarEquipo(equipoActual);
+}
+
+function crearEncabezadoDeMenu(miembro, conSubtitulo) {
+  const asa = h('div', { class: 'product-modal-sheet__handle' });
+  asa.append(h('span'));
+  const cuerpo = h('div', { class: 'product-modal-sheet__body' });
+  const titulo = h('h2', { class: 'equipo-menu__titulo', 'data-testid': 'menu-miembro-titulo' });
+  titulo.textContent = nombreCompleto(miembro);
+  cuerpo.append(titulo);
+  if (conSubtitulo) {
+    const subtitulo = h('p', { class: 'equipo-menu__subtitulo', 'data-testid': 'menu-miembro-subtitulo' });
+    subtitulo.textContent = textoDeBaja(miembro);
+    cuerpo.append(subtitulo);
+  }
+  return { asa, cuerpo };
+}
+
+function crearBotonCerrarMenu(backdrop) {
+  const cerrar = h('button', { class: 'btn btn-tertiary equipo-menu__cerrar', type: 'button', 'data-testid': 'btn-cerrar-menu-miembro' });
+  cerrar.textContent = 'Cerrar';
+  cerrar.addEventListener('click', () => backdrop.remove());
+  return cerrar;
+}
+
+function abrirConfirmacionDesactivar(miembro) {
+  const { backdrop, hoja } = crearHoja('hoja-desactivar-miembro');
+  const titulo = h('h2', { class: 'modal-sheet__title equipo-confirmar__titulo', 'data-testid': 'titulo-desactivar-miembro' });
+  titulo.textContent = `¿Desactivar a ${nombreCompleto(miembro)}?`;
+  const texto = h('p', { class: 'equipo-aviso__cuerpo', 'data-testid': 'texto-desactivar-miembro' });
+  texto.textContent = `${nombreCompleto(miembro)} va a dejar de tener acceso a ${nombreDelComercioActivo() || 'este comercio'} y se le avisa. Si cambiás de idea, la podés reactivar desde Inactivos.`;
+  const confirmar = h('button', { class: 'btn btn-primary equipo-hoja__peligro', type: 'button', 'data-testid': 'btn-confirmar-desactivar-miembro' });
+  confirmar.textContent = 'Desactivar';
+  const volver = h('button', { class: 'btn btn-tertiary', type: 'button', 'data-testid': 'btn-volver-desactivar-miembro' });
+  volver.textContent = 'Volver';
+  hoja.append(titulo, texto, confirmar, volver);
+  volver.addEventListener('click', () => backdrop.remove());
+  confirmar.addEventListener('click', async () => {
+    if (confirmar.disabled) {
+      return;
+    }
+    ocupar(backdrop, confirmar, 'Desactivando...', true, 'Desactivar');
+    volver.disabled = true;
+    try {
+      const { mensaje, data } = await apiFetch(`${RUTA_EQUIPO}/miembros/${miembro.empleadoId}/desactivar`, { ...OPCIONES_RED, method: 'PUT' });
+      backdrop.remove();
+      reemplazarMiembro(data);
+      showToast(mensaje);
+    } catch (error) {
+      backdrop.remove();
+      showToast(mensajeDeError(error, MENSAJE_ERROR_DESACTIVAR), 'error');
+      cargar({ conEsqueleto: false });
+    }
+  });
+}
+
+function abrirMenuMiembroActivo(miembro) {
+  const { backdrop, hoja } = crearHoja('menu-miembro-equipo', 'product-modal-sheet');
+  const { asa, cuerpo } = crearEncabezadoDeMenu(miembro, false);
+  const acciones = h('div', { class: 'profile-link-list' });
+  const desactivar = crearAccionDeHoja('btn-desactivar-miembro', FIGURAS_DESACTIVAR, 'Desactivar', '', 'profile-link--peligro-solido');
+  desactivar.addEventListener('click', () => {
+    backdrop.remove();
+    abrirConfirmacionDesactivar(miembro);
+  });
+  acciones.append(desactivar);
+  cuerpo.append(acciones, crearBotonCerrarMenu(backdrop));
+  hoja.append(asa, cuerpo);
+}
+
+function mensajeDeReactivar(error) {
+  if (error instanceof ApiError && error.status === 409 && error.message) {
+    return error.message;
+  }
+  return mensajeDeError(error, MENSAJE_ERROR_REACTIVAR);
+}
+
+function crearAccionReactivar(miembro, backdrop, aviso) {
+  const reactivar = crearAccionDeHoja('btn-reactivar-miembro', FIGURAS_REACTIVAR, 'Reactivar', LEYENDA_REACTIVAR, '');
+  reactivar.addEventListener('click', async () => {
+    if (reactivar.disabled) {
+      return;
+    }
+    reactivar.disabled = true;
+    backdrop.dataset.ocupado = '1';
+    aviso.replaceChildren();
+    try {
+      const { mensaje, data } = await apiFetch(`${RUTA_EQUIPO}/miembros/${miembro.empleadoId}/reactivar`, { ...OPCIONES_RED, method: 'PUT' });
+      backdrop.remove();
+      reemplazarMiembro(data);
+      showToast(mensaje);
+    } catch (error) {
+      reactivar.disabled = false;
+      backdrop.dataset.ocupado = '0';
+      renderBanner(aviso, 'error', mensajeDeReactivar(error));
+      aviso.firstElementChild.setAttribute('role', 'alert');
+      aviso.firstElementChild.setAttribute('data-testid', 'aviso-reactivar');
+      cargar({ conEsqueleto: false });
+    }
+  });
+  return reactivar;
+}
+
+function abrirMenuMiembroInactivo(miembro) {
+  const { backdrop, hoja } = crearHoja('menu-miembro-equipo', 'product-modal-sheet');
+  const { asa, cuerpo } = crearEncabezadoDeMenu(miembro, true);
+  if (miembro.motivoBaja === MOTIVO_RENUNCIA) {
+    const nota = h('p', { class: 'equipo-menu__nota', 'data-testid': 'menu-miembro-nota' });
+    nota.textContent = NOTA_RENUNCIA;
+    cuerpo.append(nota);
+  }
+  const aviso = h('div', { class: 'equipo-menu__aviso', 'data-testid': 'aviso-reactivar-slot' });
+  const acciones = h('div', { class: 'profile-link-list' });
+  if (miembro.puedeReactivar) {
+    acciones.append(crearAccionReactivar(miembro, backdrop, aviso));
+  } else {
+    const invitar = crearAccionDeHoja('btn-invitar-de-nuevo', FIGURAS_REENVIAR, 'Invitar de nuevo', LEYENDA_INVITAR_DE_NUEVO, '');
+    invitar.addEventListener('click', () => {
+      backdrop.remove();
+      abrirHojaInvitar(miembro.email);
+    });
+    acciones.append(invitar);
+  }
+  cuerpo.append(aviso, acciones, crearBotonCerrarMenu(backdrop));
+  hoja.append(asa, cuerpo);
+}
+
+function abrirMenuMiembro(miembro) {
+  if (document.querySelector('[data-testid="menu-miembro-equipo"]')) {
+    return;
+  }
+  if (miembro.estado === 'ACTIVO') {
+    abrirMenuMiembroActivo(miembro);
+  } else {
+    abrirMenuMiembroInactivo(miembro);
+  }
+}
+
 export function enlazarEquipoComercio() {
-  elemento('btn-invitar-equipo').addEventListener('click', abrirHojaInvitar);
+  elemento('btn-invitar-equipo').addEventListener('click', () => abrirHojaInvitar());
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && vistaAbierta()) {
       cargar({ conEsqueleto: false });
@@ -810,6 +1092,7 @@ export function abrirEquipoComercio() {
   firmaPintada = null;
   comercioPintado = null;
   pestanaActiva = PESTANAS[0].id;
+  filtroMiembros = FILTROS_MIEMBROS[0].id;
   reiniciarActividad();
   actualizarPie();
   cargar({ conEsqueleto: true });

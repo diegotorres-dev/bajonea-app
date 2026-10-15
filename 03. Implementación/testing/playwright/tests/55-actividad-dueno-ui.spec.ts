@@ -300,7 +300,7 @@ test.describe('Pestaña Actividad del Dueño en pantalla, E3 entrega B etapa 4',
       await esperarFilas(page, 7);
 
       await expect(page.getByTestId('chip-actividad-todo')).toHaveAttribute('aria-pressed', 'true');
-      await expect(page.getByTestId('actividad-filtros').getByRole('button')).toHaveText(['Todo', 'Pedidos', 'Ediciones', 'Cierres']);
+      await expect(page.getByTestId('actividad-filtros').getByRole('button')).toHaveText(['Todo', 'Pedidos', 'Ediciones', 'Cierres', 'Equipo']);
 
       const esperadas: Array<[string, string, number]> = [
         ['pedidos', 'PEDIDO', 3],
