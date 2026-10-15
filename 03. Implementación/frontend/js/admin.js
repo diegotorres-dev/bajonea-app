@@ -2,6 +2,7 @@ import { apiFetch, ApiError, getUsuario } from './api.js';
 import { showToast, renderTopBar, pintarAvatarComercio, pintarAvatarUsuario, crearBloqueMotivoRechazo } from './catalogo.js';
 import { logout, LABELS_TIPO_COMERCIO, LABELS_TIPO_RED_SOCIAL, LABELS_TIPO_SOCIEDAD } from './auth.js';
 import { normalizarCampos } from './validators.js';
+import { recordarNombreDelComercio } from './admin-comercio-nombre.js';
 
 function normalizarComercioAdmin(comercio) {
   normalizarCampos(comercio, ['nombre', 'razonSocial']);
@@ -140,7 +141,7 @@ function labelTipoComercio(tipo) {
   return LABELS_TIPO_COMERCIO[tipo] || tipo;
 }
 
-function requireAdmin() {
+export function requireAdmin() {
   const usuario = getUsuario();
   if (!usuario || usuario.rol !== 'ADMINISTRADOR') {
     window.location.href = 'login.html';
@@ -808,6 +809,25 @@ function mostrarModalSuspenderComercio(comercio, onConfirmar) {
   });
 }
 
+function textoResumenEquipo(activos, inactivos) {
+  const textoActivos = `${activos} ${activos === 1 ? 'activo' : 'activos'}`;
+  const textoInactivos = `${inactivos} ${inactivos === 1 ? 'inactivo' : 'inactivos'}`;
+  return `${textoActivos} · ${textoInactivos}`;
+}
+
+async function cargarResumenEquipo(seccion, comercioId) {
+  try {
+    const equipo = await apiFetch(`/administrador/comercios/${comercioId}/equipo`, { handle5xxGlobally: false, handleRedGlobally: false });
+    const miembros = equipo.miembros || [];
+    const activos = miembros.filter((miembro) => miembro.estado === 'ACTIVO').length;
+    const fila = detailRow('Miembros', textoResumenEquipo(activos, miembros.length - activos));
+    fila.setAttribute('data-testid', 'resumen-equipo-comercio');
+    seccion.lastElementChild.replaceWith(fila);
+  } catch {
+    seccion.remove();
+  }
+}
+
 function mostrarModalDetalleComercio(comercio, onSuspendido) {
   const backdrop = crear('div', 'modal-backdrop');
   backdrop.setAttribute('data-testid', 'modal-detalle-comercio');
@@ -825,10 +845,27 @@ function mostrarModalDetalleComercio(comercio, onSuspendido) {
 
   renderComercioDetailSections(body, comercio);
 
+  const equipoSection = crear('div', 'detail-section');
+  equipoSection.setAttribute('data-testid', 'seccion-equipo-comercio');
+  const equipoTitulo = crear('p', 'detail-section__title');
+  equipoTitulo.textContent = 'Equipo';
+  equipoSection.appendChild(equipoTitulo);
+  equipoSection.appendChild(crear('div', 'skeleton equipo-resumen__esqueleto'));
+  body.appendChild(equipoSection);
+  cargarResumenEquipo(equipoSection, comercio.id);
+
+  const verEquipoBtn = crear('a', 'btn btn-primary comercio-modal-equipo');
+  verEquipoBtn.href = `admin-comercio-equipo.html?id=${comercio.id}`;
+  verEquipoBtn.setAttribute('data-testid', 'btn-ver-equipo-comercio');
+  verEquipoBtn.innerHTML = `${ICONS.users}<span>Ver equipo</span>`;
+  verEquipoBtn.addEventListener('click', () => recordarNombreDelComercio(comercio.id, comercio.nombre));
+  body.appendChild(verEquipoBtn);
+
+  const accionesModal = crear('div', 'comercio-modal-acciones');
+
   if (comercio.estado === 'APROBADO' || comercio.estado === 'APTO_VENTA') {
     const suspenderBtn = crear('button', 'btn btn-secondary');
     suspenderBtn.type = 'button';
-    suspenderBtn.style.marginTop = '4px';
     suspenderBtn.style.borderColor = 'var(--color-error)';
     suspenderBtn.style.color = 'var(--color-error)';
     suspenderBtn.setAttribute('data-testid', 'btn-suspender-comercio');
@@ -850,16 +887,16 @@ function mostrarModalDetalleComercio(comercio, onSuspendido) {
         }
       });
     });
-    body.appendChild(suspenderBtn);
+    accionesModal.appendChild(suspenderBtn);
   }
 
   const cerrarBtn = crear('button', 'btn btn-tertiary');
   cerrarBtn.type = 'button';
-  cerrarBtn.style.marginTop = '4px';
   cerrarBtn.setAttribute('data-testid', 'btn-cerrar-modal-detalle-comercio');
   cerrarBtn.textContent = 'Cerrar';
   cerrarBtn.addEventListener('click', () => backdrop.remove());
-  body.appendChild(cerrarBtn);
+  accionesModal.appendChild(cerrarBtn);
+  body.appendChild(accionesModal);
 
   sheet.appendChild(body);
   backdrop.appendChild(sheet);

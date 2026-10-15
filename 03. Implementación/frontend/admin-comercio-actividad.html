@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Actividad del comercio — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header">
+    <a class="app-header__back" id="btn-volver-actividad" href="admin-comercios.html" aria-label="Volver" data-testid="btn-volver">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </a>
+    <div class="equipo-header__titulos">
+      <span class="equipo-header__titulo" data-testid="titulo-actividad">Actividad</span>
+      <span class="equipo-header__comercio is-hidden" id="equipo-comercio-nombre" data-testid="equipo-comercio-nombre"></span>
+    </div>
+  </header>
+  <main class="app-main">
+    <div class="screen-body equipo-body">
+      <div id="equipo-lista" data-testid="equipo-lista"></div>
+    </div>
+  </main>
+</div>
+<script type="module">
+import { initAdminComercioActividad } from './js/admin-equipo.js';
+initAdminComercioActividad();
+</script>
+</body>
+</html>

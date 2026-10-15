@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Equipo del comercio — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header">
+    <a class="app-header__back" href="admin-comercios.html" aria-label="Volver" data-testid="btn-volver">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </a>
+    <div class="equipo-header__titulos equipo-header__titulos--con-accion">
+      <span class="equipo-header__titulo" data-testid="titulo-equipo">Equipo</span>
+      <span class="equipo-header__comercio is-hidden" id="equipo-comercio-nombre" data-testid="equipo-comercio-nombre"></span>
+    </div>
+    <a class="equipo-header__accion" id="btn-actividad-equipo" href="#" data-testid="btn-actividad-equipo">Actividad</a>
+  </header>
+  <main class="app-main">
+    <div class="screen-body equipo-body">
+      <div class="equipo-tabs-linea is-hidden" id="equipo-tabs" role="tablist" data-testid="equipo-tabs"></div>
+      <div id="equipo-lista" data-testid="equipo-lista"></div>
+    </div>
+  </main>
+</div>
+<script type="module">
+import { initAdminComercioEquipo } from './js/admin-equipo.js';
+initAdminComercioEquipo();
+</script>
+</body>
+</html>

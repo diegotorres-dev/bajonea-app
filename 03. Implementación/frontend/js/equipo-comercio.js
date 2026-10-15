@@ -1,18 +1,33 @@
 import { apiFetch, ApiError, getComercioActivoId } from './api.js';
 import { showToast, renderEmptyState } from './catalogo.js';
 import { getComercioActivoEnMemoria, INTERVALO_POLLING_COMERCIOS_MS } from './comercio-activo.js';
-import { iniciales } from './selector-comercio.js';
 import { h, crearSvg, renderBanner } from './form-utils.js';
-import { diaDe, etiquetaDeDia, fechaCortaDe, horaMinutoDe } from './fechas.js';
+import { fechaCortaDe } from './fechas.js';
 import { mostrarErrorCampo, limpiarErrorCampo, mapearErroresBackend } from './validators.js';
+import {
+  ESTADO_INVITACION,
+  ESTADO_MIEMBRO,
+  FIGURAS_CANCELAR,
+  FIGURAS_DESACTIVAR,
+  FIGURAS_REACTIVAR,
+  FILTROS_MIEMBROS,
+  OPCIONES_RED,
+  crearActividad,
+  crearAvatarSobre,
+  crearEsqueleto,
+  crearEstado,
+  crearFilaMiembro,
+  crearLinea,
+  mensajeDeError,
+  miembrosActivos,
+  miembrosInactivos,
+  nombreCompleto,
+  textoVencida,
+} from './equipo-vistas.js';
 
 const RUTA_EQUIPO = '/comercios/equipo';
 const MS_POR_DIA = 24 * 60 * 60 * 1000;
-const OPCIONES_RED = { handle5xxGlobally: false, handleRedGlobally: false, conMensaje: true };
-const MENSAJE_SIN_CONEXION = 'No pudimos conectar. Probá de nuevo.';
 const MENSAJE_ERROR_CARGA = 'No pudimos cargar el equipo.';
-const MENSAJE_ERROR_ACTIVIDAD = 'No pudimos cargar la actividad.';
-const MENSAJE_ERROR_VER_MAS = 'No pudimos cargar más actividad. Probá de nuevo.';
 
 const MENSAJE_SERVIDOR_NO_SE_PUEDE_INVITAR = 'No se puede invitar a este email';
 const TITULO_NO_SE_PUEDE_INVITAR = 'No pudimos invitar a este email.';
@@ -25,27 +40,6 @@ const PESTANAS = [
 ];
 
 const PESTANA_ACTIVIDAD = 'actividad';
-
-const FILTROS_ACTIVIDAD = [
-  { id: 'todo', texto: 'Todo', fuente: null },
-  { id: 'pedidos', texto: 'Pedidos', fuente: 'PEDIDO' },
-  { id: 'ediciones', texto: 'Ediciones', fuente: 'EDICION' },
-  { id: 'cierres', texto: 'Cierres', fuente: 'CIERRE' },
-  { id: 'equipo', texto: 'Equipo', fuente: 'EQUIPO' },
-];
-
-const TEXTO_VACIO_ACTIVIDAD = {
-  todo: 'Todavía no hay actividad',
-  pedidos: 'No hay actividad de pedidos',
-  ediciones: 'No hay ediciones',
-  cierres: 'No hay cierres ni reaperturas',
-  equipo: 'No hay actividad del equipo',
-};
-
-const FILTROS_MIEMBROS = [
-  { id: 'activos', texto: 'Activos' },
-  { id: 'inactivos', texto: 'Inactivos' },
-];
 
 const TEXTO_VACIO_MIEMBROS = {
   activos: 'Todavía no tenés equipo',
@@ -60,45 +54,6 @@ const LEYENDA_INVITAR_DE_NUEVO = 'Le llega un código por email y tiene que acep
 const MENSAJE_ERROR_DESACTIVAR = 'No pudimos desactivar a esta persona. Probá de nuevo.';
 const MENSAJE_ERROR_REACTIVAR = 'No pudimos reactivar a esta persona. Probá de nuevo.';
 
-const ESTADO_MIEMBRO = {
-  ACTIVO: { texto: 'Activo', punto: 'positivo' },
-  INACTIVO: { texto: 'Inactivo', punto: 'inactivo' },
-};
-
-const ESTADO_INVITACION = {
-  PENDIENTE: { texto: 'Pendiente', punto: 'pendiente' },
-  VENCIDA: { texto: 'Vencida', punto: 'vencido' },
-  INVALIDADA: { texto: 'Código bloqueado', punto: 'rechazado' },
-};
-
-const FIGURAS_SOBRE = [
-  ['rect', { x: '2', y: '4', width: '20', height: '16', rx: '2' }],
-  ['path', { d: 'm22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7' }],
-];
-const FIGURAS_ENGRANAJE = [
-  ['circle', { cx: '12', cy: '12', r: '3' }],
-  ['path', { d: 'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z' }],
-];
-const FIGURAS_DESACTIVAR = [
-  ['path', { d: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' }],
-  ['circle', { cx: '9', cy: '7', r: '4' }],
-  ['line', { x1: '17', y1: '11', x2: '22', y2: '11' }],
-];
-const FIGURAS_REACTIVAR = [
-  ['path', { d: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' }],
-  ['circle', { cx: '9', cy: '7', r: '4' }],
-  ['line', { x1: '19', y1: '8', x2: '19', y2: '14' }],
-  ['line', { x1: '16', y1: '11', x2: '22', y2: '11' }],
-];
-const FIGURAS_SALIDA = [
-  ['path', { d: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4' }],
-  ['polyline', { points: '16 17 21 12 16 7' }],
-  ['line', { x1: '21', y1: '12', x2: '9', y2: '12' }],
-];
-const FIGURAS_CHECK = [
-  ['circle', { cx: '12', cy: '12', r: '10' }],
-  ['path', { d: 'm9 12 2 2 4-4' }],
-];
 const FIGURAS_PUNTITOS = [
   ['circle', { cx: '12', cy: '12', r: '1' }],
   ['circle', { cx: '12', cy: '5', r: '1' }],
@@ -110,12 +65,6 @@ const FIGURAS_REENVIAR = [
   ['path', { d: 'M21 12a9 9 0 0 1-15.5 6.2L3 16' }],
   ['path', { d: 'M3 21v-5h5' }],
 ];
-const FIGURAS_CANCELAR = [
-  ['circle', { cx: '12', cy: '12', r: '10' }],
-  ['line', { x1: '15', y1: '9', x2: '9', y2: '15' }],
-  ['line', { x1: '9', y1: '9', x2: '15', y2: '15' }],
-];
-
 let secuencia = 0;
 let comercioPintado = null;
 let firmaPintada = null;
@@ -123,7 +72,7 @@ let intervalo = null;
 let pestanaActiva = PESTANAS[0].id;
 let filtroMiembros = FILTROS_MIEMBROS[0].id;
 let equipoActual = null;
-const actividad = { filtro: FILTROS_ACTIVIDAD[0], items: [], siguienteCursor: null, hayMas: false, pedido: 0 };
+const actividad = crearActividad({ contenedor: () => elemento('equipo-lista'), ruta: `${RUTA_EQUIPO}/actividad`, estaVisible: () => pestanaActiva === PESTANA_ACTIVIDAD });
 
 function elemento(id) {
   return document.getElementById(id);
@@ -146,55 +95,6 @@ function textoVencimiento(fechaVencimiento) {
   }
   const dias = Math.max(1, Math.ceil((marca - Date.now()) / MS_POR_DIA));
   return dias === 1 ? 'vence en 1 día' : `vence en ${dias} días`;
-}
-
-function textoVencida(fechaVencimiento) {
-  const marca = Date.parse(String(fechaVencimiento).replace(/(\.\d{3})\d+/, '$1'));
-  if (Number.isNaN(marca)) {
-    return 'Vencida';
-  }
-  const dias = Math.floor((Date.now() - marca) / MS_POR_DIA);
-  if (dias < 1) {
-    return 'Vencida hoy';
-  }
-  return dias === 1 ? 'Vencida hace 1 día' : `Vencida hace ${dias} días`;
-}
-
-function crearEstado(info, detalle, textoEtiqueta = info.texto) {
-  const estado = h('span', { class: 'equipo-fila__estado' });
-  const etiqueta = h('span', { class: 'pedido-estado', 'data-testid': 'equipo-estado' });
-  etiqueta.append(h('span', { class: `pedido-estado__dot pedido-estado__dot--${info.punto}` }), textoEtiqueta);
-  estado.append(etiqueta);
-  if (detalle) {
-    const complemento = h('span', { class: 'equipo-fila__detalle', 'data-testid': 'equipo-detalle' });
-    complemento.textContent = detalle;
-    estado.append(complemento);
-  }
-  return estado;
-}
-
-function crearAvatarIniciales(miembro) {
-  const avatar = h('span', { class: 'selector-avatar selector-avatar--panel equipo-avatar' });
-  const texto = h('span', { class: 'selector-avatar__iniciales' });
-  texto.textContent = iniciales(`${miembro.nombre} ${miembro.apellido}`);
-  avatar.append(texto);
-  return avatar;
-}
-
-function crearAvatarSobre() {
-  const avatar = h('span', { class: 'selector-avatar selector-avatar--panel equipo-avatar' });
-  avatar.append(crearSvg(FIGURAS_SOBRE));
-  return avatar;
-}
-
-function crearLinea(clase, texto) {
-  const linea = h('span', { class: clase });
-  linea.textContent = texto;
-  return linea;
-}
-
-function nombreCompleto(miembro) {
-  return `${miembro.nombre} ${miembro.apellido}`;
 }
 
 function textoDeBaja(miembro) {
@@ -220,18 +120,13 @@ function crearBotonMenuMiembro(miembro, alAbrirMenu) {
   return menu;
 }
 
-function crearFilaMiembro(miembro, alAbrirMenu) {
+function crearFilaDeEquipo(miembro, alAbrirMenu) {
   const info = ESTADO_MIEMBRO[miembro.estado] || { texto: miembro.estado, punto: 'inactivo' };
   const inactivo = miembro.estado === 'INACTIVO';
-  const fila = h('div', { class: 'equipo-fila', 'data-testid': `equipo-miembro-${miembro.empleadoId}`, 'data-estado': miembro.estado });
-  const datos = h('div', { class: 'equipo-fila__datos' });
-  const nombre = crearLinea('equipo-fila__nombre', nombreCompleto(miembro));
-  nombre.setAttribute('data-testid', 'equipo-nombre');
-  const email = crearLinea('equipo-fila__email', miembro.email);
-  email.setAttribute('data-testid', 'equipo-email');
-  datos.append(nombre, email, crearEstado(info, '', inactivo ? textoDeBaja(miembro) : info.texto));
-  fila.append(crearAvatarIniciales(miembro), datos, crearBotonMenuMiembro(miembro, alAbrirMenu));
-  return fila;
+  return crearFilaMiembro(miembro, {
+    estado: { info, texto: inactivo ? textoDeBaja(miembro) : info.texto },
+    accion: crearBotonMenuMiembro(miembro, alAbrirMenu),
+  });
 }
 
 function crearAccionMenuFila(invitacion, alAbrirMenu) {
@@ -259,18 +154,6 @@ function crearFilaInvitacion(invitacion, alAbrirMenu) {
   return fila;
 }
 
-function crearEsqueleto(testid) {
-  const contenedor = h('div', { class: 'equipo-esqueleto', 'data-testid': testid });
-  for (let i = 0; i < 3; i += 1) {
-    const fila = h('div', { class: 'equipo-esqueleto__fila' });
-    const lineas = h('div', { class: 'equipo-esqueleto__lineas' });
-    lineas.append(h('div', { class: 'skeleton equipo-esqueleto__linea' }), h('div', { class: 'skeleton equipo-esqueleto__linea equipo-esqueleto__linea--corta' }));
-    fila.append(h('div', { class: 'skeleton equipo-esqueleto__avatar' }), lineas);
-    contenedor.append(fila);
-  }
-  return contenedor;
-}
-
 function pintarEsqueleto() {
   equipoActual = null;
   pintarPestanas();
@@ -295,14 +178,6 @@ function pintarError(mensaje, alReintentar) {
   banner.lastElementChild.append(h('br'), reintentar);
   lista.append(slot);
   firmaPintada = null;
-}
-
-function miembrosActivos(equipo) {
-  return (equipo.miembros || []).filter((miembro) => miembro.estado === 'ACTIVO');
-}
-
-function miembrosInactivos(equipo) {
-  return (equipo.miembros || []).filter((miembro) => miembro.estado === 'INACTIVO');
 }
 
 function contadorDe(equipo, pestana) {
@@ -346,12 +221,12 @@ function seleccionarPestana(id) {
   const veniaDeActividad = pestanaActiva === PESTANA_ACTIVIDAD;
   pestanaActiva = id;
   if (veniaDeActividad) {
-    actividad.pedido += 1;
+    actividad.invalidar();
   }
   actualizarPie();
   pintarPestanas();
   if (id === PESTANA_ACTIVIDAD) {
-    iniciarActividad();
+    actividad.iniciar();
     return;
   }
   if (equipoActual !== null) {
@@ -396,7 +271,7 @@ function pintarMiembros(equipo, lista) {
     renderEmptyState(contenido, TEXTO_VACIO_MIEMBROS[filtroMiembros], null, { inline: true });
   } else {
     const filas = h('div', { class: 'equipo-filas', 'data-testid': 'equipo-filas' });
-    miembros.forEach((miembro) => filas.append(crearFilaMiembro(miembro, abrirMenuMiembro)));
+    miembros.forEach((miembro) => filas.append(crearFilaDeEquipo(miembro, abrirMenuMiembro)));
     contenido.append(filas);
   }
   lista.replaceChildren(chips, contenido);
@@ -484,216 +359,6 @@ async function cargar({ conEsqueleto }) {
   }
 }
 
-function crearAvatarActividad(item) {
-  if (!item.actorNombre) {
-    const avatar = h('span', { class: 'selector-avatar selector-avatar--panel equipo-avatar', 'data-testid': 'actividad-avatar-sistema' });
-    avatar.append(crearSvg(FIGURAS_ENGRANAJE));
-    return avatar;
-  }
-  const avatar = h('span', { class: 'selector-avatar selector-avatar--panel equipo-avatar', 'data-testid': 'actividad-avatar' });
-  const texto = h('span', { class: 'selector-avatar__iniciales' });
-  texto.textContent = iniciales(item.actorNombre);
-  avatar.append(texto);
-  return avatar;
-}
-
-const ICONO_DE_EQUIPO = {
-  INVITACION: FIGURAS_SOBRE,
-  INVITACION_CANCELADA: FIGURAS_CANCELAR,
-  ACEPTACION: FIGURAS_CHECK,
-  BAJA_DUENO: FIGURAS_DESACTIVAR,
-  RENUNCIA: FIGURAS_SALIDA,
-  REACTIVACION: FIGURAS_REACTIVAR,
-};
-
-function crearIconoDeEquipo(accion) {
-  const icono = crearSvg(ICONO_DE_EQUIPO[accion] || FIGURAS_CHECK);
-  icono.setAttribute('class', 'actividad-fila__icono');
-  icono.setAttribute('aria-hidden', 'true');
-  icono.setAttribute('data-testid', `actividad-icono-${accion}`);
-  return icono;
-}
-
-function crearFilaActividad(item) {
-  const fila = h('div', { class: 'equipo-fila actividad-fila', 'data-testid': 'actividad-fila', 'data-fuente': item.fuente, 'data-rol': item.actorRol });
-  const datos = h('div', { class: 'equipo-fila__datos' });
-  const encabezado = h('div', { class: 'actividad-fila__encabezado' });
-  if (item.actorNombre) {
-    const nombre = crearLinea('equipo-fila__nombre', item.actorNombre);
-    nombre.setAttribute('data-testid', 'actividad-nombre');
-    encabezado.append(nombre);
-  }
-  const rol = crearLinea('actividad-rol', item.actorRolTexto || item.actorRol);
-  rol.setAttribute('data-testid', 'actividad-rol');
-  encabezado.append(rol);
-  const accion = crearLinea('actividad-fila__accion', item.accionTexto);
-  accion.setAttribute('data-testid', 'actividad-accion');
-  if (item.fuente === 'EQUIPO') {
-    accion.classList.add('actividad-fila__accion--con-icono');
-    accion.prepend(crearIconoDeEquipo(item.accion));
-  }
-  datos.append(encabezado, accion);
-  const referencia = item.fuente === 'EQUIPO' ? '' : [item.entidadNombre, item.detalle].filter(Boolean).join(' · ');
-  if (referencia) {
-    const complemento = crearLinea('equipo-fila__detalle actividad-fila__referencia', referencia);
-    complemento.setAttribute('data-testid', 'actividad-referencia');
-    datos.append(complemento);
-  }
-  const hora = crearLinea('actividad-fila__hora', horaMinutoDe(item.fechaHora));
-  hora.setAttribute('data-testid', 'actividad-hora');
-  fila.append(crearAvatarActividad(item), datos, hora);
-  return fila;
-}
-
-function crearSeparadorDeDia(fechaHora) {
-  const separador = h('div', { class: 'actividad-dia', role: 'heading', 'aria-level': '3', 'data-testid': 'actividad-dia' });
-  separador.textContent = etiquetaDeDia(fechaHora);
-  return separador;
-}
-
-function actividadVisible() {
-  return pestanaActiva === PESTANA_ACTIVIDAD;
-}
-
-function armarArmazonActividad() {
-  const lista = elemento('equipo-lista');
-  lista.removeAttribute('aria-busy');
-  const filtros = h('div', { class: 'chip-row equipo-filtros', role: 'group', 'aria-label': 'Filtrar actividad', 'data-testid': 'actividad-filtros' });
-  FILTROS_ACTIVIDAD.forEach((filtro) => {
-    const chip = h('button', {
-      type: 'button',
-      class: 'chip',
-      'aria-pressed': String(filtro.id === actividad.filtro.id),
-      'data-testid': `chip-actividad-${filtro.id}`,
-    });
-    chip.textContent = filtro.texto;
-    chip.addEventListener('click', () => seleccionarFiltroActividad(filtro));
-    filtros.append(chip);
-  });
-  const contenido = h('div', { id: 'actividad-contenido', 'data-testid': 'actividad-contenido' });
-  lista.replaceChildren(filtros, contenido);
-}
-
-function marcarFiltroActivo() {
-  FILTROS_ACTIVIDAD.forEach((filtro) => {
-    const chip = document.querySelector(`[data-testid="chip-actividad-${filtro.id}"]`);
-    if (chip) {
-      chip.setAttribute('aria-pressed', String(filtro.id === actividad.filtro.id));
-    }
-  });
-}
-
-function pintarActividadCargando() {
-  const contenido = elemento('actividad-contenido');
-  contenido.setAttribute('aria-busy', 'true');
-  contenido.replaceChildren(crearEsqueleto('actividad-cargando'));
-}
-
-function pintarActividadError(mensaje) {
-  const contenido = elemento('actividad-contenido');
-  contenido.removeAttribute('aria-busy');
-  const slot = h('div', { 'data-testid': 'actividad-error' });
-  renderBanner(slot, 'error', mensaje);
-  const reintentar = h('button', { class: 'btn btn-secondary banner__accion', type: 'button', 'data-testid': 'btn-reintentar-actividad' });
-  reintentar.textContent = 'Reintentar';
-  reintentar.addEventListener('click', () => cargarActividad({ reiniciar: true }));
-  slot.firstElementChild.lastElementChild.append(h('br'), reintentar);
-  contenido.replaceChildren(slot);
-}
-
-function pintarActividad() {
-  const contenido = elemento('actividad-contenido');
-  contenido.removeAttribute('aria-busy');
-  if (actividad.items.length === 0) {
-    renderEmptyState(contenido, TEXTO_VACIO_ACTIVIDAD[actividad.filtro.id], null, { inline: true });
-    return;
-  }
-  const filas = h('div', { class: 'equipo-filas', 'data-testid': 'actividad-filas' });
-  let diaAnterior = null;
-  actividad.items.forEach((item) => {
-    const dia = diaDe(item.fechaHora);
-    if (dia !== diaAnterior) {
-      filas.append(crearSeparadorDeDia(item.fechaHora));
-      diaAnterior = dia;
-    }
-    filas.append(crearFilaActividad(item));
-  });
-  contenido.replaceChildren(filas);
-  if (actividad.hayMas) {
-    const verMas = h('button', { class: 'btn btn-secondary actividad-ver-mas', type: 'button', 'data-testid': 'btn-actividad-ver-mas' });
-    verMas.textContent = 'Ver más';
-    verMas.addEventListener('click', () => {
-      verMas.disabled = true;
-      cargarActividad({ reiniciar: false, alFallar: () => { verMas.disabled = false; } });
-    });
-    contenido.append(verMas);
-  }
-}
-
-async function cargarActividad({ reiniciar, alFallar }) {
-  const pedido = ++actividad.pedido;
-  if (reiniciar) {
-    actividad.items = [];
-    actividad.siguienteCursor = null;
-    actividad.hayMas = false;
-    pintarActividadCargando();
-  }
-  const parametros = new URLSearchParams();
-  if (actividad.filtro.fuente) {
-    parametros.set('fuente', actividad.filtro.fuente);
-  }
-  if (!reiniciar && actividad.siguienteCursor) {
-    parametros.set('cursor', actividad.siguienteCursor);
-  }
-  const consulta = parametros.toString();
-  try {
-    const { data } = await apiFetch(`${RUTA_EQUIPO}/actividad${consulta ? `?${consulta}` : ''}`, OPCIONES_RED);
-    if (pedido !== actividad.pedido || !actividadVisible()) {
-      return;
-    }
-    actividad.items = actividad.items.concat(data.items || []);
-    actividad.siguienteCursor = data.siguienteCursor || null;
-    actividad.hayMas = Boolean(data.hayMas);
-    pintarActividad();
-  } catch (error) {
-    if (pedido !== actividad.pedido || !actividadVisible()) {
-      return;
-    }
-    if (reiniciar) {
-      const mensaje = error instanceof ApiError && error.status !== 0 && error.status < 500 ? error.message : MENSAJE_ERROR_ACTIVIDAD;
-      pintarActividadError(mensaje || MENSAJE_ERROR_ACTIVIDAD);
-      return;
-    }
-    if (alFallar) {
-      alFallar();
-    }
-    showToast(mensajeDeError(error, MENSAJE_ERROR_VER_MAS), 'error');
-  }
-}
-
-function seleccionarFiltroActividad(filtro) {
-  if (filtro.id === actividad.filtro.id) {
-    return;
-  }
-  actividad.filtro = filtro;
-  marcarFiltroActivo();
-  cargarActividad({ reiniciar: true });
-}
-
-function iniciarActividad() {
-  actividad.filtro = FILTROS_ACTIVIDAD[0];
-  armarArmazonActividad();
-  cargarActividad({ reiniciar: true });
-}
-
-function reiniciarActividad() {
-  actividad.pedido += 1;
-  actividad.filtro = FILTROS_ACTIVIDAD[0];
-  actividad.items = [];
-  actividad.siguienteCursor = null;
-  actividad.hayMas = false;
-}
-
 function detenerActualizacion() {
   if (intervalo !== null) {
     window.clearInterval(intervalo);
@@ -732,16 +397,6 @@ function ocupar(backdrop, boton, textoOcupado, ocupado, textoNormal) {
   backdrop.dataset.ocupado = ocupado ? '1' : '0';
   boton.disabled = ocupado;
   boton.textContent = ocupado ? textoOcupado : textoNormal;
-}
-
-function mensajeDeError(error, porDefecto) {
-  if (!(error instanceof ApiError)) {
-    return porDefecto;
-  }
-  if (error.status === 0) {
-    return MENSAJE_SIN_CONEXION;
-  }
-  return error.status >= 500 || !error.message ? porDefecto : error.message;
 }
 
 function esRechazoGenerico(error) {
@@ -1093,7 +748,7 @@ export function abrirEquipoComercio() {
   comercioPintado = null;
   pestanaActiva = PESTANAS[0].id;
   filtroMiembros = FILTROS_MIEMBROS[0].id;
-  reiniciarActividad();
+  actividad.reiniciar();
   actualizarPie();
   cargar({ conEsqueleto: true });
   iniciarActualizacion();

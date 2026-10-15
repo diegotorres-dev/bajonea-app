@@ -39,6 +39,11 @@ export function fechaCortaDe(fechaHoraDelServidor) {
   return `${dia}/${mes}`;
 }
 
+export function fechaCompletaDe(fechaHoraDelServidor) {
+  const [anio, mes, dia] = diaDe(fechaHoraDelServidor).split('-');
+  return `${dia}/${mes}/${anio}`;
+}
+
 export function horaConDiaDe(fechaHoraDelServidor) {
   if (diaDe(fechaHoraDelServidor) === diaDeHoyEnZonaComercio()) {
     return horaMinutoDe(fechaHoraDelServidor);

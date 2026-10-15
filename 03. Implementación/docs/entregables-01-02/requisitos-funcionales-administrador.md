@@ -15,14 +15,14 @@
 
 ## Ver Equipo de un Comercio
 
-> **Estado de implementación:** planificado, tramo E4 (ver `docs/DECISIONES.md`, 2026-10-05).
+> **Estado de implementación:** implementado, tramo E4 (backend en el bloque A3, pantallas en la entrega B3). Ver `docs/DECISIONES.md`, 2026-10-15.
 
-- El administrador debe poder ver el equipo de un comercio desde el modal de detalle del
-  comercio en el listado de comercios, mediante un botón "Ver equipo". La vista es de solo
-  lectura: muestra los empleados con el estado de cada relación (Activo, Inactivo), las
-  invitaciones (Pendiente, Vencida), el historial del equipo y la actividad del comercio.
-- El administrador no tiene controles sobre las cuentas de usuario desde esa vista: no
-  invita, no desactiva ni reactiva empleados.
+- El administrador debe poder ver el equipo de cualquier comercio, en cualquier estado del comercio, desde el modal de detalle del comercio en el listado de comercios, mediante un botón "Ver equipo" que se muestra arriba de "Suspender" y "Cerrar". El modal muestra además un resumen del equipo ("N activos · N inactivos").
+- La vista del equipo es de solo lectura y tiene dos pestañas:
+  - **Miembros:** los filtros "Activos" (por defecto) e "Inactivos", cada uno con su cantidad. Cada miembro muestra su nombre, su email y desde cuándo está en el equipo. Un miembro inactivo muestra el motivo de su baja y la fecha: "Dado de baja por el dueño" o "Dejó de trabajar en el comercio"; si no hay registro de la baja, solo "Inactivo".
+  - **Solicitudes:** las invitaciones que el dueño envió y que todavía no se respondieron, con el email, la fecha de envío y cuándo vencen ("Vence en N días", "Vence hoy"); también se muestran las vencidas y las que tienen el código bloqueado.
+- El administrador puede abrir la actividad del comercio desde el botón "Actividad" de esa vista: la lista cronológica de lo que pasó en el comercio, con los filtros Todo, Pedidos, Ediciones, Cierres y Equipo (invitaciones, aceptaciones, bajas, renuncias y reactivaciones), con quién actuó y su rol.
+- El administrador no tiene controles sobre las cuentas de usuario desde esas pantallas: no invita, no desactiva ni reactiva empleados, ni cancela o reenvía invitaciones. Cualquier otro rol que intente abrir estas pantallas o consultar estos datos es rechazado.
 
 ---
 

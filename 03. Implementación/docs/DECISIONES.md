@@ -10493,3 +10493,34 @@ Solo frontend y pruebas, sin migraciones ni cambios de backend (el backend de E4
 **Corrida completa de Playwright** (`workers: 1`, base reseteada con `entorno-test.mjs preparar`, 28,2 min): 917 pasaron, 4 fallaron y 20 no corrieron. Los dos inestables conocidos, `27:497` y `51:151`, fallaron y pasan 2/2 aislados. Los otros dos eran míos: `38:554` y `53:94` esperaban que el perfil del Empleado no tuviera ningún título de sección y la sección nueva tiene uno; el `53` es serial, así que sus otros 20 tests no corrieron. Corregidos los dos tests, se repitieron los specs 38, 53, 58 y 59 sobre una base reseteada: 131/131. No se corrieron `mvnw` ni Newman (sin cambios de backend).
 
 **Deuda:** iPhone / WebKit sin probar.
+
+## 2026-10-15 — Tramo E4, entrega B3: pantallas del Administrador (Ver equipo, solo lectura)
+
+Solo frontend y pruebas, sin migraciones ni cambios de backend (los dos endpoints del Administrador del bloque A3 quedaron como estaban). Detalle de archivos en `docs/MAPEO-ARCHIVOS-TRAMO-E4-B3.md`. **Pendiente de la confirmación de Diego** (E4 no se declara cerrado; falta el bloque A4).
+
+**Cómo era la pantalla real.** El "detalle del comercio" del Administrador es el modal `modal-detalle-comercio` de `admin-comercios.html` (`js/admin.js`), no una página. Tenía las secciones de datos y, al pie, "Suspender" (solo con el comercio `APROBADO` o `APTO_VENTA`) y "Cerrar" apilados a ancho completo. No mostraba nada del equipo. El listado trae solo `APROBADO`, `APTO_VENTA` y `SUSPENDIDO`.
+
+**Qué se hizo.**
+1. **Modal.** Sección "Equipo" con "N activos · N inactivos" (esqueleto mientras carga; si la lectura falla la sección desaparece), botón primario "Ver equipo" (ícono de personas, 52 px) y debajo "Suspender" y "Cerrar" lado a lado (con el comercio suspendido, "Cerrar" a ancho completo). El resumen no necesitó backend: usa el mismo `GET /administrador/comercios/{id}/equipo`.
+2. **`admin-comercio-equipo.html?id=N`.** Encabezado con volver (a `admin-comercios.html`), "Equipo", nombre del comercio y "Actividad" a la derecha; dos pestañas con subrayado, "Miembros" y "Solicitudes N"; Miembros con los chips "Activos N" (por defecto) e "Inactivos N" (mismo estilo que B1, 44 px), "Solo lectura", filas con avatar de iniciales, nombre, email y "En el equipo desde DD/MM/AAAA"; los inactivos con el avatar apagado y una etiqueta con el motivo ("Dado de baja por el dueño · DD/MM" rojiza, "Dejó de trabajar en el comercio · DD/MM" neutra, "Inactivo" sin registro); Solicitudes con la leyenda, el email, "Invitada el DD/MM/AAAA" y "Vence en N días" (singular "Vence en 1 día", "Vence hoy" con 0). Vacíos por lista, error con "Reintentar" (sin él en el 404 "Comercio no encontrado" ni con un id inválido).
+3. **`admin-comercio-actividad.html?id=N`.** Título "Actividad", chips Todo, Pedidos, Ediciones, Cierres y Equipo en dos filas a 375 px, filas con quien actuó y su rol, textos del servidor ("Dio de baja a {Nombre}", "Aceptó la invitación"), "Ver más" por cursor. Volver lleva a la página del equipo.
+4. **Extracción compartida.** `js/equipo-vistas.js` recibe del Dueño los dibujos de filas, estados, avatares, esqueleto y la Actividad (como la fábrica `crearActividad`); `js/equipo-comercio.js` pasó de 1101 a 755 líneas sin cambiar su comportamiento ni sus testids (los specs 36, 55, 58, 59, 38 y 53 siguen verdes).
+5. **Solo lectura.** Ninguna de las tres pantallas tiene botones de escritura (verificado por test en miembros, inactivos y solicitudes). Quien no es Administrador va a `login.html`; el Dueño y el Cliente reciben `403` en los dos endpoints.
+
+**Decisiones tomadas por mi cuenta (a confirmar):**
+1. **El nombre del comercio se pasa por `sessionStorage` desde el modal.** Ningún endpoint del equipo lo trae y no hay uno del Administrador por id. La primera versión buscaba el nombre en `GET /administrador/comercios`; en la corrida completa (base grande) esa lista tardaba varios segundos, competía con la carga del equipo y hacía fallar cuatro tests míos (pasaban aislados). La descarté: el botón "Ver equipo" guarda `{id, nombre}` (`js/admin-comercio-nombre.js`) y las dos páginas lo leen; por dirección directa, o con otro comercio guardado, el subtítulo se omite y todo lo demás funciona. **Recomendación:** si querés el nombre siempre, sumar `nombreComercio` a las respuestas de equipo y actividad (un cambio chico de backend, fuera de esta entrega).
+2. **Singular en el resumen y en los chips:** "1 activo · 1 inactivo" (el pedido decía "N activos · N inactivos").
+3. **Solicitudes vencidas y con el código bloqueado también se muestran** (como las ve el Dueño), con "Vencida…" y "Código bloqueado" en lugar de "Vence en N días". El backend las devuelve así y ocultarlas desinformaría.
+4. **Pestañas con subrayado:** no existía el componente (el del Dueño es segmentado); se creó `.equipo-tabs-linea`. El contador de Solicitudes es una cápsula, no parte del texto del botón.
+5. **Colores:** solo tokens existentes (el chip seleccionado `--color-text` con texto blanco, la etiqueta de baja `--color-error-bg` y `--color-error`, la de renuncia `--color-surface-alt` y `--color-text-muted`).
+6. **Etiqueta de la baja como cápsula** y no como punto de color (el punto es el lenguaje de los estados de pedido).
+7. **"Vence hoy"** solo aparece si el servidor manda `diasRestantes` 0; el servidor hoy nunca lo hace (mínimo 1), así que el test lo prueba modificando la respuesta con `page.route`.
+8. **El botón "Actividad" y el volver son enlaces** (`<a>`), no botones: la navegación es por dirección y no depende del historial.
+
+**Specs.** Nuevo `60-equipo-administrador-ui` (21 tests). Sin cambios en los demás specs: el modal conserva `btn-suspender-comercio` y `btn-cerrar-modal-detalle-comercio` (specs 08 y 17).
+
+**Pruebas de mutación** (cada una se rompió a propósito, se vio fallar y se restauró; sha1 verificado igual al de antes): (M1) el filtro por defecto es Inactivos → fallan 5 tests; (M2) las solicitudes se muestran en Miembros → falla el test de las filas sin acciones; (M3) aparece un botón de acción en cada miembro → falla ese mismo test; (M4) el modal no guarda el nombre → falla el test del modal.
+
+**Corrida completa de Playwright** (`workers: 1`, base reseteada con `entorno-test.mjs preparar`, 26,5 min): 961 pasaron y 1 falló, el inestable conocido `51:151` (pasa aislado). `27:497`, el otro inestable conocido, pasó. Una corrida anterior (28,8 min) dio 955 y 6 fallos: los dos inestables conocidos y cuatro tests míos por la búsqueda del nombre en la lista (decisión 1). No se corrieron `mvnw` ni Newman (sin cambios de backend).
+
+**Deuda:** iPhone / WebKit sin probar.
