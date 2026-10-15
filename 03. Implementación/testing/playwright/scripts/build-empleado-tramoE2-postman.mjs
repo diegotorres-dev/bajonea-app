@@ -448,6 +448,8 @@ const CAMPOS_PEDIDO = [
   'id',
   'motivoAnulacion',
   'motivoRechazo',
+  'noRetiradoDisponibleDesde',
+  'noRetiradoMinutosRestantes',
   'nombreCliente',
   'reembolsoEstado',
   'reembolsoMonto',
@@ -487,7 +489,7 @@ agregar(
   get('Pedidos: el Dueño recibe el DTO completo (referencia)', '/pedidos/comercio', TOKEN_D1, COM_B, [
     status(200),
     "pm.test('Tres pedidos', () => pm.expect(pm.response.json().data.length).to.eql(3));",
-    `pm.test('Con los cargos de servicio, el id del cliente y el estado del pago', () => pm.response.json().data.forEach((p) => { ${JSON.stringify(CAMPOS_PEDIDO_EXCLUIDOS)}.forEach((c) => pm.expect(p).to.have.property(c)); ${JSON.stringify(CAMPOS_PEDIDO)}.forEach((c) => pm.expect(p).to.have.property(c)); }));`,
+    `pm.test('Con los cargos de servicio, el id del cliente y el estado del pago', () => pm.response.json().data.forEach((p) => { ${JSON.stringify(CAMPOS_PEDIDO_EXCLUIDOS)}.forEach((c) => pm.expect(p).to.have.property(c)); ${JSON.stringify(CAMPOS_PEDIDO.filter((c) => c !== 'esPedidoPropio'))}.forEach((c) => pm.expect(p).to.have.property(c)); pm.expect(p).to.not.have.property('esPedidoPropio'); }));`,
     guardar(v('pedidos_dueno'), 'JSON.stringify(pm.response.json().data)'),
   ]),
   get('Pedidos: el Empleado recibe el DTO reducido, solo con los campos de la lista blanca', '/pedidos/comercio', TOKEN_EMP, COM_B, [
