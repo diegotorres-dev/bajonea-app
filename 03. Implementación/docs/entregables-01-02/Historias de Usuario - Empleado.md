@@ -124,14 +124,33 @@ Criterios de aceptación adicionales:
 Como Empleado, cuando el Dueño desactiva mi relación con un comercio puntual, quiero
 perder el acceso a ese comercio sin que se vean afectadas mis relaciones activas con otros
 comercios, y recibir una hoja de aviso con el nombre del comercio y un botón "Entendido"
-que me lleva al selector (o a mi cuenta de Cliente si no me queda ninguno, sin una pantalla
-dedicada), para seguir operando con normalidad en los demás
+que me lleva al selector de cuenta (y de ahí a mi cuenta de Cliente si no me queda ningún
+comercio, sin una pantalla dedicada), para seguir operando con normalidad en los demás
 lugares donde trabajo o usar la plataforma como Cliente. Recibo una notificación de la
 desactivación y mi sesión no se cierra.
+
+Criterios de aceptación:
+- La hoja dice la causa real: si me dio de baja el dueño ("{comercio} te dio de baja del
+  equipo. Si creés que fue un error, comunicate con el dueño."), si renuncié en otro
+  dispositivo ("Ya no sos parte del equipo de {comercio}. Si querés volver, el dueño te tiene
+  que invitar de nuevo."), si el comercio no está disponible ("{comercio} no está disponible
+  en este momento. Intentá más tarde o comunicate con el dueño.") o, en cualquier otro caso,
+  un texto neutro sin atribuir una causa.
+- La pantalla en la que estaba queda detrás, oscurecida, y la hoja aparece una sola vez
+  aunque fallen varias llamadas a la vez.
 
 ## HU-E06: Renunciar a un Comercio
 
 Como Empleado, quiero dejar de trabajar en un comercio con un botón "Dejar de trabajar en
-este comercio" y una doble confirmación, para terminar mi relación sin tener que pedírselo
-al Dueño. Entiendo que para volver a ese comercio hace falta una invitación nueva. El Dueño
-recibe una notificación y la renuncia queda en el historial del equipo.
+este comercio" y una hoja de confirmación con una casilla, para terminar mi relación sin
+tener que pedírselo al Dueño. Entiendo que para volver a ese comercio hace falta una
+invitación nueva. El Dueño recibe una notificación y la renuncia queda en el historial del
+equipo.
+
+Criterios de aceptación:
+- El botón está en la sección "Mi lugar en el equipo" de mi perfil dentro del comercio, con
+  el texto "Dejás de formar parte del equipo de {comercio}. Tu cuenta sigue funcionando."
+- La hoja pide tildar "Entiendo que para volver el dueño me tiene que invitar de nuevo." antes
+  de habilitar el botón rojo "Dejar de trabajar"; con "Volver" no pasa nada.
+- Al terminar voy al selector de cuenta y veo el aviso "Dejaste de trabajar en {comercio}".
+  Si algo falla, el mensaje aparece dentro de la hoja y puedo reintentar.

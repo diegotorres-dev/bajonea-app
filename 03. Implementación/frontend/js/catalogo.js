@@ -1,4 +1,4 @@
-import { apiFetch, ApiError, esContextoComercio, getUsuario, mostrarModalCuentaBloqueada } from './api.js';
+import { apiFetch, ApiError, consumirToastPendiente, esContextoComercio, getUsuario, mostrarModalCuentaBloqueada } from './api.js';
 import { exigirContextoCliente } from './contexto.js';
 import { resolverHomePorRol, LABELS_TIPO_COMERCIO } from './auth.js';
 import { contarNotificacionesNoLeidasActivo, resolverComercioActivo, suscribirComercios } from './comercio-activo.js';
@@ -40,6 +40,13 @@ export function showToast(mensaje, kind = 'success') {
   toast.appendChild(banner);
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 2200);
+}
+
+export function mostrarToastPendiente() {
+  const mensaje = consumirToastPendiente();
+  if (mensaje) {
+    showToast(mensaje);
+  }
 }
 
 export function manejarBloqueoPorCambioPassword(error) {
@@ -473,6 +480,7 @@ export async function initCatalogo() {
   if (!(await exigirContextoCliente())) {
     return;
   }
+  mostrarToastPendiente();
   const usuario = getUsuario();
   if (usuario && usuario.rol !== 'CLIENTE') {
     const destino = await resolverHomePorRol(usuario).catch(() => null);

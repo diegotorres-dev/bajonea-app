@@ -173,7 +173,7 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
 - El Dueño debe poder ver el equipo de cada comercio en dos pestañas con su contador:
   "Mi equipo · N" (el contador cuenta solo los integrantes con la relación Activa; debajo
   hay dos filtros, "Activos · N" —el que se ve por defecto— e "Inactivos · N", donde cada integrante muestra
-  el motivo: "Dado de baja el DD/MM", "Renunció el DD/MM" o "Inactivo desde el DD/MM" si no hay registro
+  el motivo: "Dado de baja el DD/MM" o "Renunció el DD/MM", o solo "Inactivo" (sin fecha) si no hay registro
   de la baja; cada fila lleva un menú de tres puntos) y "Solicitudes · N" (las invitaciones, una línea por email con la más reciente:
   Pendiente con "vence en N días", Vencida con "Vencida hace N días" y "Código bloqueado";
   todas las líneas llevan un menú de tres puntos con "Reenviar" y "Cancelar"; las aceptadas
@@ -202,7 +202,8 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   explica que dejó el equipo por su cuenta y ofrece "Invitar de nuevo", que abre la hoja de invitar con su
   email; y el de un inactivo sin registro de la baja ofrece solo "Invitar de nuevo". Si reactivar falla
   (invitación pendiente, renuncia, comercio fuera de servicio o cuenta no apta) el motivo se ve dentro de la
-  misma hoja y no se revela el estado de la cuenta.
+  misma hoja y no se revela el estado de la cuenta. Al desactivar o reactivar con éxito se muestra un aviso con el
+  nombre: "Desactivaste a {Nombre}" o "Reactivaste a {Nombre}".
 - El Dueño debe poder ver el historial del equipo de cada comercio (invitación,
   aceptación, invitación cancelada, baja, renuncia y reactivación, con quién lo hizo y
   cuándo) y la actividad del comercio (quién hizo qué: crear, editar, eliminar, cambiar

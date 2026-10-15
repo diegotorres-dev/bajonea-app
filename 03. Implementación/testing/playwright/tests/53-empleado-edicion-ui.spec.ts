@@ -91,7 +91,7 @@ test.describe('Edición del comercio, productos y cierre para el Empleado, E3 en
   });
 
   test.describe('Perfil del Empleado', () => {
-    test('es una lista plana de cinco filas, sin "Cambiar contraseña" ni su vista, y sin ids repetidos en la página', async ({ page }) => {
+    test('es una lista plana de cinco filas, con la única sección "Mi lugar en el equipo", sin "Cambiar contraseña" ni su vista, y sin ids repetidos en la página', async ({ page }) => {
       await abrirComoEmpleado(page);
       await page.goto('/comercio-perfil.html');
       await expect(page.getByTestId('btn-ver-datos-comercio')).toBeEnabled();
@@ -103,7 +103,7 @@ test.describe('Edición del comercio, productos y cierre para el Empleado, E3 en
         'Cambiar de cuenta',
         'Cerrar sesión',
       ]);
-      await expect(page.locator('.profile-section__title')).toHaveCount(0);
+      await expect(page.locator('.profile-section__title')).toHaveText(['Mi lugar en el equipo']);
       await expect(page.getByTestId('btn-cambiar-password')).toHaveCount(0);
       await expect(page.locator('#cambiar-password-link, #view-cambiar-password, #view-editar-datos')).toHaveCount(0);
       const repetidos = await page.evaluate(() => {

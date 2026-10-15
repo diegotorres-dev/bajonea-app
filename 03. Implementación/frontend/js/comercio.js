@@ -1,4 +1,4 @@
-import { apiFetch, ApiError, clearSesion, contextoPuedeCerrarComercio, contextoPuedeEditarCatalogo, contextoPuedeGestionarPedidos, esContextoComercio, esContextoDueno, esContextoEmpleado, getUsuario, setContexto, TIPO_CONTEXTO } from './api.js';
+import { apiFetch, ApiError, clearSesion, contextoPuedeCerrarComercio, contextoPuedeEditarCatalogo, contextoPuedeGestionarPedidos, esContextoComercio, esContextoDueno, esContextoEmpleado, getComercioActivoId, getUsuario, setContexto, TIPO_CONTEXTO } from './api.js';
 import { exigirContextoComercio, exigirDueno } from './contexto.js';
 import { logout, construirTelefono, resolverHomePorRol, LABELS_TIPO_SOCIEDAD, LABELS_CONDICION_IVA } from './auth.js';
 import { resumenHorarioHoy, renderTopBar, showToast, pintarAvatarComercio, renderPedidoEstadoHeader, manejarBloqueoPorCambioPassword, crearBloqueMotivoRechazo } from './catalogo.js';
@@ -20,6 +20,7 @@ import {
 } from './comercio-activo.js';
 import { abrirPanelComercios, enlazarMantenerApretado, prepararPaginaComercio } from './selector-comercio.js';
 import { abrirHojaCambiarCuenta } from './selector-contexto.js';
+import { abrirHojaRenuncia } from './renuncia-empleado.js';
 import { montarSwitchCierre } from './cierre-comercio.js';
 import { abrirEquipoComercio, enlazarEquipoComercio } from './equipo-comercio.js';
 import { cerrarVariosComercios, comerciosCerrables } from './apertura-comercio.js';
@@ -1976,13 +1977,14 @@ function prepararVistasDelPerfil(esEmpleado) {
     }
   });
   if (!esEmpleado) {
-    quitar('seccion-lista-empleado', 'view-datos-comercio', 'view-editar-datos-comercio');
+    quitar('seccion-lista-empleado', 'seccion-mi-lugar-equipo', 'view-datos-comercio', 'view-editar-datos-comercio');
     return;
   }
   const lista = document.getElementById('lista-perfil-empleado');
   lista.appendChild(document.getElementById('cerrar-sesion-link'));
   quitar('seccion-mi-comercio', 'seccion-sesion', 'view-editar-perfil', 'view-datos-legales', 'view-equipo', 'view-mercadopago', 'view-cambiar-password');
   document.getElementById('seccion-lista-empleado').classList.remove('is-hidden');
+  document.getElementById('seccion-mi-lugar-equipo').classList.remove('is-hidden');
 }
 
 function textoModalidadesDeEntrega(comercio) {
@@ -2116,6 +2118,11 @@ async function iniciarPerfilDelEmpleado(comercio) {
   editarDatos.disabled = false;
 
   enlazarEdicionDatosDelComercioEmpleado(comercio);
+
+  document.getElementById('renuncia-ayuda-comercio').textContent = comercio.nombre;
+  const renunciar = document.getElementById('btn-renunciar-equipo');
+  renunciar.addEventListener('click', () => abrirHojaRenuncia({ id: getComercioActivoId(), nombre: comercio.nombre }));
+  renunciar.disabled = false;
 }
 
 export async function initComercioPerfil() {

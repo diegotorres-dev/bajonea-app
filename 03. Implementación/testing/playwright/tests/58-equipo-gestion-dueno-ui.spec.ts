@@ -151,7 +151,7 @@ test.describe('Equipo del Dueño en pantalla, E4 entrega B1', () => {
       await expect(filaMiembro(page, activoUno.cuenta.email)).toHaveCount(0);
       await expect(filaMiembro(page, dadoDeBaja.cuenta.email).getByTestId('equipo-estado')).toHaveText(/^Dado de baja el \d{2}\/\d{2}$/);
       await expect(filaMiembro(page, renuncio.cuenta.email).getByTestId('equipo-estado')).toHaveText(/^Renunció el \d{2}\/\d{2}$/);
-      await expect(filaMiembro(page, sinHistorial.cuenta.email).getByTestId('equipo-estado')).toHaveText(/^Inactivo desde el \d{2}\/\d{2}$/);
+      await expect(filaMiembro(page, sinHistorial.cuenta.email).getByTestId('equipo-estado')).toHaveText('Inactivo');
       await expect(page.getByTestId('chip-miembros-inactivos')).toHaveCSS('background-color', OSCURO);
       await expect(page.getByTestId('tab-equipo-equipo')).toHaveText('Mi equipo · 2');
       await sinScrollHorizontal(page);
@@ -283,7 +283,7 @@ test.describe('Equipo del Dueño en pantalla, E4 entrega B1', () => {
       await expect(page.getByTestId('chip-miembros-activos')).toHaveText('Activos · 1');
       await expect(page.getByTestId('chip-miembros-inactivos')).toHaveText('Inactivos · 1');
       await expect(page.getByTestId('tab-equipo-equipo')).toHaveText('Mi equipo · 1');
-      await expect(toast(page)).toContainText('Miembro dado de baja');
+      await expect(toast(page)).toHaveText(`Desactivaste a ${NOMBRE}`);
       expect(estadoRelacion(miembro.id, comercio.id)).toBe('INACTIVO');
       expect(motivos(miembro.id, comercio.id)).toEqual(['ACEPTACION', 'BAJA_DUENO']);
 
@@ -346,7 +346,7 @@ test.describe('Equipo del Dueño en pantalla, E4 entrega B1', () => {
       await expect(page.getByTestId('chip-miembros-activos')).toHaveText('Activos · 1');
       await expect(page.getByTestId('chip-miembros-inactivos')).toHaveText('Inactivos · 0');
       await expect(page.getByTestId('tab-equipo-equipo')).toHaveText('Mi equipo · 1');
-      await expect(toast(page)).toContainText('Miembro reactivado');
+      await expect(toast(page)).toHaveText(`Reactivaste a ${NOMBRE}`);
       expect(estadoRelacion(miembro.id, comercio.id)).toBe('ACTIVO');
       expect(motivos(miembro.id, comercio.id)).toEqual(['ACEPTACION', 'BAJA_DUENO', 'REACTIVACION']);
 
@@ -389,7 +389,7 @@ test.describe('Equipo del Dueño en pantalla, E4 entrega B1', () => {
       await irAInactivos(page);
 
       await menuDe(page, miembro).click();
-      await expect(page.getByTestId('menu-miembro-subtitulo')).toHaveText(/^Inactivo desde el \d{2}\/\d{2}$/);
+      await expect(page.getByTestId('menu-miembro-subtitulo')).toHaveText('Inactivo');
       await expect(page.getByTestId('menu-miembro-nota')).toHaveCount(0);
       await expect(page.getByTestId('btn-reactivar-miembro')).toHaveCount(0);
       await expect(page.getByTestId('btn-invitar-de-nuevo')).toBeVisible();

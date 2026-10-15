@@ -12,6 +12,7 @@ import {
   RUTA_LOGIN,
 } from './contexto.js';
 import { crearAvatar } from './selector-comercio.js';
+import { mostrarToastPendiente } from './catalogo.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const ID_HOJA = 'hoja-cambiar-cuenta';
@@ -277,6 +278,7 @@ export async function initSeleccionarContexto() {
     }
     pintarOpciones(lista, comercios, { actual: null, ultimo: getUltimoContexto(), mostrarUltimo: true });
     contenido.classList.remove('is-hidden');
+    mostrarToastPendiente();
   }
 
   await cargar();

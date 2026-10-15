@@ -9,7 +9,6 @@ const ULTIMO_COMERCIO_PREFIX = 'bajonea_ultimo_comercio_';
 const ULTIMO_CONTEXTO_PREFIX = 'bajonea_ultimo_contexto_';
 const CODIGO_COMERCIO_NO_DISPONIBLE = 'COMERCIO_NO_DISPONIBLE';
 const RUTA_SELECTOR_CONTEXTO = 'seleccionar-contexto.html';
-const RUTA_INICIO_CLIENTE = 'index.html';
 const ESPERA_MAXIMA_COMERCIOS_MS = 4000;
 const RUTAS_DE_COMERCIO = /^\/(comercios|productos|pedidos\/comercio|notificaciones|oauth)(?=[/?]|$)/;
 export const TIPO_CONTEXTO = Object.freeze({
@@ -302,6 +301,13 @@ async function parseBody(response) {
 }
 
 const ICONO_ACCESO_PERDIDO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
+const ICONO_PERSONA_BAJA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="8" x2="22" y2="13"/><line x1="22" y1="8" x2="17" y2="13"/></svg>';
+const ICONO_PERSONA_SALIDA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="17" y1="11" x2="23" y2="11"/></svg>';
+const ICONO_COMERCIO_NO_DISPONIBLE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
+const TOAST_PENDIENTE_KEY = 'bajonea_toast_pendiente';
+const MOTIVO_BAJA_DUENO = 'BAJA_DUENO';
+const MOTIVO_RENUNCIA = 'RENUNCIA';
+const TEXTO_ELEGIR_CUENTA = 'Elegí con qué cuenta seguir.';
 
 let accesoPerdido = false;
 
@@ -309,25 +315,95 @@ export function hayAccesoPerdido() {
   return accesoPerdido;
 }
 
-function consultarSiQuedanOtrosComercios() {
-  const consulta = apiFetch('/empleados/mis-comercios', { handle5xxGlobally: false, handleRedGlobally: false })
-    .then((comercios) => Array.isArray(comercios) && comercios.length > 0)
-    .catch(() => false);
+export function guardarToastPendiente(mensaje) {
+  try {
+    sessionStorage.setItem(TOAST_PENDIENTE_KEY, mensaje);
+  } catch {
+    return;
+  }
+}
+
+export function consumirToastPendiente() {
+  try {
+    const mensaje = sessionStorage.getItem(TOAST_PENDIENTE_KEY);
+    sessionStorage.removeItem(TOAST_PENDIENTE_KEY);
+    return mensaje || null;
+  } catch {
+    return null;
+  }
+}
+
+export function completarRenuncia(comercioId, comercioNombre) {
+  accesoPerdido = true;
+  const ultimo = getUltimoContexto();
+  clearContexto();
+  if (ultimo && ultimo.tipo === TIPO_CONTEXTO.EMPLEADO && ultimo.comercioId === comercioId) {
+    olvidarUltimoContexto();
+  }
+  guardarToastPendiente(`Dejaste de trabajar en ${comercioNombre || 'el comercio'}`);
+  redirectTo(RUTA_SELECTOR_CONTEXTO);
+}
+
+function consultarAcceso(comercioId) {
+  if (!Number.isInteger(comercioId)) {
+    return Promise.resolve(null);
+  }
+  const consulta = apiFetch(`/empleados/comercios/${comercioId}/acceso`, { handle5xxGlobally: false, handleRedGlobally: false })
+    .catch(() => null);
   const espera = new Promise((resolve) => {
-    window.setTimeout(() => resolve(false), ESPERA_MAXIMA_COMERCIOS_MS);
+    window.setTimeout(() => resolve(null), ESPERA_MAXIMA_COMERCIOS_MS);
   });
   return Promise.race([consulta, espera]);
 }
 
-function mostrarAvisoAccesoPerdido({ nombre, quedanOtros }) {
+function textosDeAccesoPerdido(acceso, nombre) {
+  if (acceso && acceso.estado === 'INACTIVO' && acceso.motivoBaja === MOTIVO_BAJA_DUENO) {
+    return {
+      causa: MOTIVO_BAJA_DUENO,
+      icono: ICONO_PERSONA_BAJA,
+      iconoPeligro: true,
+      titulo: 'Ya no tenés acceso a este comercio',
+      texto: `${nombre || 'El comercio'} te dio de baja del equipo. Si creés que fue un error, comunicate con el dueño.`,
+    };
+  }
+  if (acceso && acceso.estado === 'INACTIVO' && acceso.motivoBaja === MOTIVO_RENUNCIA) {
+    return {
+      causa: MOTIVO_RENUNCIA,
+      icono: ICONO_PERSONA_SALIDA,
+      iconoPeligro: false,
+      titulo: 'Dejaste de trabajar en este comercio',
+      texto: `Ya no sos parte del equipo de ${nombre || 'este comercio'}. Si querés volver, el dueño te tiene que invitar de nuevo.`,
+    };
+  }
+  if (acceso && acceso.estado === 'ACTIVO' && acceso.comercioAccesible === false) {
+    return {
+      causa: CODIGO_COMERCIO_NO_DISPONIBLE,
+      icono: ICONO_COMERCIO_NO_DISPONIBLE,
+      iconoPeligro: false,
+      titulo: 'Este comercio no está disponible',
+      texto: `${nombre || 'Este comercio'} no está disponible en este momento. Intentá más tarde o comunicate con el dueño.`,
+    };
+  }
+  return {
+    causa: 'SIN_CAUSA',
+    icono: ICONO_ACCESO_PERDIDO,
+    iconoPeligro: false,
+    titulo: 'Ya no tenés acceso a este comercio',
+    texto: 'Ya no tenés acceso a este comercio.',
+  };
+}
+
+function mostrarAvisoAccesoPerdido({ nombre, acceso }) {
   if (document.getElementById('aviso-acceso-perdido')) {
     return;
   }
+  const textos = textosDeAccesoPerdido(acceso, nombre);
   const overflowPrevio = document.body.style.overflow;
   const backdrop = document.createElement('div');
   backdrop.id = 'aviso-acceso-perdido';
   backdrop.className = 'modal-backdrop';
   backdrop.setAttribute('data-testid', 'aviso-acceso-perdido');
+  backdrop.setAttribute('data-causa', textos.causa);
   const hoja = document.createElement('div');
   hoja.className = 'modal-sheet';
   hoja.setAttribute('role', 'dialog');
@@ -335,15 +411,16 @@ function mostrarAvisoAccesoPerdido({ nombre, quedanOtros }) {
   hoja.setAttribute('aria-labelledby', 'aviso-acceso-perdido-titulo');
 
   const icono = document.createElement('div');
-  icono.className = 'modal-sheet__icon';
-  icono.innerHTML = ICONO_ACCESO_PERDIDO;
+  icono.className = textos.iconoPeligro ? 'modal-sheet__icon modal-sheet__icon--danger' : 'modal-sheet__icon';
+  icono.setAttribute('data-testid', 'icono-acceso-perdido');
+  icono.innerHTML = textos.icono;
   hoja.appendChild(icono);
 
   const titulo = document.createElement('h2');
   titulo.id = 'aviso-acceso-perdido-titulo';
   titulo.className = 'modal-sheet__title';
   titulo.setAttribute('data-testid', 'titulo-acceso-perdido');
-  titulo.textContent = 'Ya no tenés acceso a este comercio';
+  titulo.textContent = textos.titulo;
   hoja.appendChild(titulo);
 
   const texto = document.createElement('p');
@@ -351,11 +428,11 @@ function mostrarAvisoAccesoPerdido({ nombre, quedanOtros }) {
   const primera = document.createElement('span');
   primera.style.display = 'block';
   primera.setAttribute('data-testid', 'texto-acceso-perdido-1');
-  primera.textContent = `${nombre || 'El comercio'} te sacó del equipo.`;
+  primera.textContent = textos.texto;
   const segunda = document.createElement('span');
   segunda.style.display = 'block';
   segunda.setAttribute('data-testid', 'texto-acceso-perdido-2');
-  segunda.textContent = quedanOtros ? 'Elegí con qué cuenta seguir.' : 'Se te redirigirá a tu cuenta de Cliente.';
+  segunda.textContent = TEXTO_ELEGIR_CUENTA;
   texto.append(primera, segunda);
   hoja.appendChild(texto);
 
@@ -379,12 +456,8 @@ function mostrarAvisoAccesoPerdido({ nombre, quedanOtros }) {
     continuado = true;
     document.removeEventListener('keydown', alTeclear);
     document.body.style.overflow = overflowPrevio;
-    if (quedanOtros) {
-      redirectTo(RUTA_SELECTOR_CONTEXTO);
-      return;
-    }
-    setContexto(TIPO_CONTEXTO.CLIENTE, null, false);
-    redirectTo(RUTA_INICIO_CLIENTE);
+    clearContexto();
+    redirectTo(RUTA_SELECTOR_CONTEXTO);
   }
   function alTeclear(evento) {
     if (evento.key === 'Escape') {
@@ -408,11 +481,12 @@ export function perderAccesoAlComercio() {
   const contexto = getContextoGuardado();
   const ultimo = getUltimoContexto();
   const nombre = contexto ? contexto.comercioNombre : null;
+  const comercioId = contexto ? contexto.comercioId : null;
   clearContexto();
   if (contexto && ultimo && ultimo.tipo === TIPO_CONTEXTO.EMPLEADO && ultimo.comercioId === contexto.comercioId) {
     olvidarUltimoContexto();
   }
-  consultarSiQuedanOtrosComercios().then((quedanOtros) => mostrarAvisoAccesoPerdido({ nombre, quedanOtros }));
+  consultarAcceso(comercioId).then((acceso) => mostrarAvisoAccesoPerdido({ nombre, acceso }));
 }
 
 export async function apiFetch(path, { method = 'GET', body, auth = true, handle401Globally = true, handle5xxGlobally = true, comercioId, sinComercio = false, conMensaje = false, handleRedGlobally = true } = {}) {

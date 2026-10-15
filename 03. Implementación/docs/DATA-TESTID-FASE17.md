@@ -215,3 +215,13 @@ Totales de esta entrega: 22 patrones nuevos. Las pestañas anteriores conservan 
 | Pestaña Actividad, fuente Equipo | `js/equipo-comercio.js` | `chip-actividad-equipo` (quinto chip del grupo `actividad-filtros`), `actividad-icono-{MOTIVO}` (ícono de la línea: `INVITACION`, `INVITACION_CANCELADA`, `ACEPTACION`, `BAJA_DUENO`, `RENUNCIA`, `REACTIVACION`) |
 
 Totales de esta entrega: 22 patrones nuevos. Los toasts de éxito y de error siguen sin `data-testid` (`.toast`, como en el resto de la aplicación). Sin comentarios en ningún archivo tocado.
+
+## Rol Empleado, tramo E4 (entrega B2): renuncia, pérdida de acceso según la causa
+
+| Pantalla | Archivo(s) | `data-testid` |
+|---|---|---|
+| `comercio-perfil.html` (Empleado), sección "Mi lugar en el equipo" | `.html`, `js/comercio.js` | `seccion-mi-lugar-equipo` (la sección; se quita del DOM para el Dueño), `btn-renunciar-equipo` (botón de texto rojo; nace `disabled`), `texto-ayuda-renuncia` (párrafo de ayuda), `renuncia-ayuda-comercio` (el nombre del comercio dentro del párrafo) |
+| Hoja de renuncia | `js/renuncia-empleado.js` | `hoja-renuncia-empleado` (el fondo oscuro), `titulo-renuncia`, `texto-renuncia`, `check-renuncia-entiendo` (casilla), `error-renuncia` (mensaje de error con `role="alert"`, oculto si no hay error), `btn-confirmar-renuncia`, `btn-volver-renuncia` |
+| Hoja de pérdida de acceso (en cualquier pantalla de comercio del Empleado) | `js/api.js` | `aviso-acceso-perdido` (el fondo; **suma el atributo `data-causa`** con `BAJA_DUENO`, `RENUNCIA`, `COMERCIO_NO_DISPONIBLE` o `SIN_CAUSA`), `icono-acceso-perdido` (círculo del ícono; con la clase `modal-sheet__icon--danger` solo en la baja del dueño), `titulo-acceso-perdido`, `texto-acceso-perdido-1` (el texto de la causa), `texto-acceso-perdido-2` ("Elegí con qué cuenta seguir."), `btn-entendido-acceso-perdido` |
+
+Totales de esta entrega: 13 patrones nuevos (sin contar el atributo `data-causa` ni los testids que ya existían en la hoja, `aviso-acceso-perdido`, `titulo-acceso-perdido`, `texto-acceso-perdido-1`, `texto-acceso-perdido-2` y `btn-entendido-acceso-perdido`, que se conservan). El aviso "Dejaste de trabajar en {comercio}" es un toast (`.toast`) sin `data-testid`, como el resto. Sin comentarios en ningún archivo tocado.

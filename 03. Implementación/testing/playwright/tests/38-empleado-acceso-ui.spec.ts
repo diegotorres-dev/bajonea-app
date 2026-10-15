@@ -551,7 +551,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await expect(page.getByText('Cargo por servicio (1%)')).toBeVisible();
     });
 
-    test('el perfil del Empleado es una sola lista de cinco filas, en orden, sin títulos de sección y sin "Cambiar contraseña"', async ({ page, request }) => {
+    test('el perfil del Empleado es una sola lista de cinco filas, en orden, con la única sección "Mi lugar en el equipo" debajo y sin "Cambiar contraseña"', async ({ page, request }) => {
       await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
 
       await page.goto('/comercio-perfil.html');
@@ -567,7 +567,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
         'Cambiar de cuenta',
         'Cerrar sesión',
       ]);
-      await expect(page.locator('.profile-section__title')).toHaveCount(0);
+      await expect(page.locator('.profile-section__title')).toHaveText(['Mi lugar en el equipo']);
       await expect(page.getByTestId('btn-cerrar-sesion')).toHaveClass(/profile-link--danger/);
       await expect(page.getByTestId('btn-cambiar-cuenta')).toBeEnabled();
       await expect(page.getByTestId('btn-editar-datos')).toBeEnabled();
@@ -796,8 +796,8 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       return { sesion, nombrePerdido, estado };
     }
 
-    async function provocarPerdidaPorApi(page: Page, request: APIRequestContext, empleado: Empleado, perdido: number, deteccion: Deteccion, rutas: string[] = ['/productos']) {
-      await atajoEstadoRelacion(request, perdido, empleado.usuarioId, 'INACTIVO');
+    async function provocarPerdidaPorApi(page: Page, request: APIRequestContext, empleado: Empleado, perdido: number, deteccion: Deteccion, rutas: string[] = ['/productos'], motivo?: 'BAJA_DUENO' | 'RENUNCIA') {
+      await atajoEstadoRelacion(request, perdido, empleado.usuarioId, 'INACTIVO', motivo);
       deteccion.estado.viva = true;
       const respuesta404 = page.waitForResponse((r) => r.status() === 404 && r.url().includes(rutas[0]), { timeout: 10_000 }).catch(() => null);
       await page.evaluate(async (paths) => {
@@ -824,7 +824,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await respuesta404;
 
       await esperarHoja(page);
-      await expect(page.getByTestId('texto-acceso-perdido-1')).toHaveText(`${deteccion.nombrePerdido} te sacó del equipo.`);
+      await expect(page.getByTestId('texto-acceso-perdido-1')).toHaveText('Ya no tenés acceso a este comercio.');
       await expect(page.getByTestId('texto-acceso-perdido-2')).toHaveText('Elegí con qué cuenta seguir.');
       expect(page.url()).toContain('comercio-dashboard.html');
       expect(await contextoEnSesion(page)).toBeNull();
@@ -847,8 +847,8 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await provocarPerdidaPorApi(page, request, empleado, perdido, deteccion);
 
       await esperarHoja(page);
-      await expect(page.getByTestId('texto-acceso-perdido-1')).toHaveText(`${deteccion.nombrePerdido} te sacó del equipo.`);
-      await expect(page.getByTestId('texto-acceso-perdido-2')).toHaveText('Se te redirigirá a tu cuenta de Cliente.');
+      await expect(page.getByTestId('texto-acceso-perdido-1')).toHaveText('Ya no tenés acceso a este comercio.');
+      await expect(page.getByTestId('texto-acceso-perdido-2')).toHaveText('Elegí con qué cuenta seguir.');
       expect(page.url()).toContain('comercio-pedidos.html');
       expect(await contextoEnSesion(page)).toBeNull();
 
@@ -877,20 +877,26 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       expect(page.url()).not.toContain('acceso-denegado');
     });
 
-    test('la hoja se muestra una sola vez aunque fallen varias llamadas a la vez, con una única consulta de comercios', async ({ page, request }) => {
+    test('la hoja se muestra una sola vez aunque fallen varias llamadas a la vez, con una única consulta de acceso', async ({ page, request }) => {
       const [conservado, perdido] = await comerciosNuevos(request, 2);
       const empleado = await crearEmpleado(request, [conservado, perdido]);
       const deteccion = await prepararDeteccion(page, request, empleado, perdido, 'comercio-dashboard.html');
+      const consultasDeAcceso: string[] = [];
+      page.on('request', (r) => {
+        if (r.url().includes(`/empleados/comercios/${perdido}/acceso`)) {
+          consultasDeAcceso.push(r.url());
+        }
+      });
 
       await provocarPerdidaPorApi(page, request, empleado, perdido, deteccion, ['/productos', '/pedidos/comercio', '/comercios/perfil', '/pedidos/comercio/resumen-hoy']);
 
       await esperarHoja(page);
       await page.waitForTimeout(800);
       await expect(page.getByTestId('aviso-acceso-perdido')).toHaveCount(1);
-      expect(deteccion.estado.consultasPosteriores).toBe(1);
+      expect(consultasDeAcceso).toHaveLength(1);
     });
 
-    test('si no se conoce el nombre del comercio dice "El comercio te sacó del equipo."', async ({ page, request }) => {
+    test('si no se conoce el nombre del comercio, la baja del dueño dice "El comercio te dio de baja del equipo."', async ({ page, request }) => {
       const [perdido] = await comerciosNuevos(request, 1);
       const empleado = await crearEmpleado(request, [perdido]);
       const deteccion = await prepararDeteccion(page, request, empleado, perdido, 'comercio-dashboard.html');
@@ -900,13 +906,13 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
         sessionStorage.setItem(clave, JSON.stringify(contexto));
       }, CLAVE_CONTEXTO);
 
-      await provocarPerdidaPorApi(page, request, empleado, perdido, deteccion);
+      await provocarPerdidaPorApi(page, request, empleado, perdido, deteccion, ['/productos'], 'BAJA_DUENO');
 
       await esperarHoja(page);
-      await expect(page.getByTestId('texto-acceso-perdido-1')).toHaveText('El comercio te sacó del equipo.');
+      await expect(page.getByTestId('texto-acceso-perdido-1')).toHaveText('El comercio te dio de baja del equipo. Si creés que fue un error, comunicate con el dueño.');
     });
 
-    test('si la consulta de comercios falla, se asume el caso "Cliente" y "Entendido" va al inicio de Cliente', async ({ page, request }) => {
+    test('si la consulta de comercios del selector falla, "Entendido" termina en el inicio de Cliente', async ({ page, request }) => {
       const [conservado, perdido] = await comerciosNuevos(request, 2);
       const empleado = await crearEmpleado(request, [conservado, perdido]);
       const deteccion = await prepararDeteccion(page, request, empleado, perdido, 'comercio-productos.html');
@@ -915,7 +921,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await provocarPerdidaPorApi(page, request, empleado, perdido, deteccion);
 
       await esperarHoja(page);
-      await expect(page.getByTestId('texto-acceso-perdido-2')).toHaveText('Se te redirigirá a tu cuenta de Cliente.');
+      await expect(page.getByTestId('texto-acceso-perdido-2')).toHaveText('Elegí con qué cuenta seguir.');
       await page.getByTestId('btn-entendido-acceso-perdido').click();
       await page.waitForURL('**/index.html');
       expect(await contextoEnSesion(page)).toMatchObject({ tipo: 'CLIENTE' });
@@ -963,7 +969,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await atajoEstadoRelacion(request, perdido, empleado.usuarioId, 'INACTIVO');
 
       await expect(page.getByTestId('aviso-acceso-perdido')).toBeVisible({ timeout: 30_000 });
-      await expect(page.getByTestId('texto-acceso-perdido-2')).toHaveText('Se te redirigirá a tu cuenta de Cliente.');
+      await expect(page.getByTestId('texto-acceso-perdido-2')).toHaveText('Elegí con qué cuenta seguir.');
       await page.getByTestId('btn-entendido-acceso-perdido').click();
       await page.waitForURL('**/index.html');
       expect(await contextoEnSesion(page)).toMatchObject({ tipo: 'CLIENTE' });
@@ -1275,7 +1281,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       });
       await otra404;
       await expect(otra.getByTestId('aviso-acceso-perdido')).toBeVisible();
-      await expect(otra.getByTestId('texto-acceso-perdido-2')).toHaveText('Se te redirigirá a tu cuenta de Cliente.');
+      await expect(otra.getByTestId('texto-acceso-perdido-2')).toHaveText('Elegí con qué cuenta seguir.');
       await sinScrollHorizontal(otra);
       await capturar(otra, 'j-acceso-perdido-sin-otros');
       expect(sesion.token).toBeTruthy();

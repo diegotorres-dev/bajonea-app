@@ -5,6 +5,19 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
 
+## Tramo E4, entrega B2: pantallas del Empleado y ajuste B1.1 (2026-10-15)
+
+Segunda entrega de pantallas de E4 (solo frontend y pruebas, sin cambios de backend ni de datos): el Empleado puede dejar un comercio desde su perfil, la hoja de pérdida de acceso dice la causa real (baja del dueño, renuncia en otro dispositivo, comercio no disponible o neutra) y se verificaron los avisos T32 y T37. Aparte, el ajuste B1.1 de la pantalla del Dueño (toasts con el nombre y "Inactivo" sin fecha).
+
+**Documentos de esta carpeta que cambiaron** (Diego los copia a mano a `01.` y `02.`):
+- `requisitos-funcionales-empleado.md`: copiar a `01. Análisis de Requerimientos/` (carpeta de requisitos funcionales, junto a los demás `requisitos-funcionales-*.md`). Cambian la regla de la hoja de pérdida de acceso (cuatro causas), la sección "Renuncia" (una sola hoja con casilla, en lugar de la doble confirmación) y la descripción del perfil del Empleado (sección "Mi lugar en el equipo").
+- `Historias de Usuario - Empleado.md`: copiar a `01. Análisis de Requerimientos/` (carpeta de historias de usuario). HU-E05 y HU-E06 suman criterios de aceptación.
+- `requisitos-funcionales-dueño.md`: copiar a `01. Análisis de Requerimientos/` (misma carpeta). Solo el ajuste B1.1: "Inactivo" sin fecha para un inactivo sin registro de la baja y los avisos "Desactivaste a {Nombre}" y "Reactivaste a {Nombre}".
+
+**No cambiaron:** el diccionario de datos (sigue en la v1.20), los requisitos de Sistema y Administrador, `alcance-y-limitaciones.md` ni `Historias de Usuario - Dueño.md`.
+
+**Pruebas:** ver `docs/DECISIONES.md`, 2026-10-15, "Tramo E4, entrega B2".
+
 ## Tramo E4, entrega B1: pantallas del Dueño (2026-10-15)
 
 Primera entrega de pantallas de E4 (solo frontend y pruebas, sin cambios de backend ni de datos): "Mi equipo" con Activos e Inactivos, menú de tres puntos por integrante, desactivar con confirmación única, reactivar directo, "Invitar de nuevo" y el filtro "Equipo" en la Actividad.

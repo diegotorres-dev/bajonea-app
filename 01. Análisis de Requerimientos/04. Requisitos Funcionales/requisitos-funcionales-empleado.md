@@ -159,15 +159,29 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
   A2 de E3.)*
 - Al desactivar su relación con un comercio, la próxima acción del Empleado sobre ese
   comercio responde "no encontrado" (404). La aplicación detecta la pérdida en esa acción
-  o en el sondeo de cada 15 segundos y muestra, encima de la pantalla en la que está y
-  bloqueando el fondo, una hoja con un candado tachado, el título "Ya no tenés acceso a
-  este comercio", el texto "{nombre del comercio} te sacó del equipo." (o "El comercio te
-  sacó del equipo." si no se conoce el nombre) y una segunda línea: "Elegí con qué cuenta
-  seguir." si le quedan otros comercios, o "Se te redirigirá a tu cuenta de Cliente." si no
-  le queda ninguno (también si no se pudo consultar). Al tocar "Entendido" (o al cerrar la
-  hoja) va al selector de contexto o al inicio de Cliente, respectivamente. La hoja se
-  muestra una sola vez aunque fallen varias llamadas a la vez; no hay una pantalla
-  dedicada. Su sesión no se cierra.
+  o en el sondeo de cada 15 segundos, consulta una sola vez el acceso propio
+  (`GET /api/v1/empleados/comercios/{id}/acceso`) y muestra, encima de la pantalla en la
+  que está y oscureciendo el fondo, una hoja según la causa, con la línea "Elegí con qué
+  cuenta seguir." y un botón "Entendido":
+  1. Dado de baja por el dueño (relación Inactiva con motivo `BAJA_DUENO`): ícono rojo claro
+     de persona, título "Ya no tenés acceso a este comercio" y texto "{comercio} te dio de
+     baja del equipo. Si creés que fue un error, comunicate con el dueño."
+  2. Renunció en otro dispositivo (motivo `RENUNCIA`): título "Dejaste de trabajar en este
+     comercio" y texto "Ya no sos parte del equipo de {comercio}. Si querés volver, el dueño
+     te tiene que invitar de nuevo."
+  3. Comercio no disponible (relación Activa pero comercio no accesible): título "Este
+     comercio no está disponible" y texto "{comercio} no está disponible en este momento.
+     Intentá más tarde o comunicate con el dueño."
+  4. Cualquier otro caso, o si la consulta de acceso falla: título "Ya no tenés acceso a
+     este comercio" y texto neutro "Ya no tenés acceso a este comercio." (sin atribuir una
+     causa).
+  Si no se conoce el nombre del comercio, el texto usa "El comercio" o "este comercio". Al
+  tocar "Entendido" (o al cerrar la hoja con Escape o tocando el fondo) se limpia el contexto
+  de comercio y va siempre al selector de cuenta; si no le queda ningún comercio, el
+  selector lo lleva al inicio de Cliente. La hoja se muestra una sola vez aunque fallen
+  varias llamadas a la vez; no hay una pantalla dedicada. Su sesión no se cierra. *(Esta
+  regla reemplaza a la hoja única "te sacó del equipo"; implementada en el tramo E4,
+  entrega B2.)*
 - El servidor no revela por qué el Empleado no puede acceder a un comercio: un comercio
   que no existe, que es de otro Dueño, con el que no tiene relación Activa o que está en
   un estado al que no accede (Pendiente, Rechazado, Inactivo o Rechazo definitivo)
@@ -422,10 +436,24 @@ En el detalle de su propio pedido el Empleado ve la nota "Hiciste este pedido co
 
 ## Renuncia
 
-- El Empleado puede dejar de trabajar en un comercio desde un botón "Dejar de trabajar en
-  este comercio", con doble confirmación. La relación pasa a Inactivo con motivo
-  `RENUNCIA`, el Dueño recibe una notificación y la renuncia queda en el historial. Para
-  volver hace falta una invitación nueva.
+- El Empleado puede dejar de trabajar en un comercio desde el botón de texto rojo "Dejar de
+  trabajar en este comercio", en la sección "Mi lugar en el equipo" de su perfil dentro del
+  comercio (debajo de la lista de filas; solo se muestra en el contexto de Empleado de un
+  comercio), con el texto de ayuda "Dejás de formar parte del equipo de {comercio}. Tu cuenta
+  sigue funcionando." El botón abre una única hoja: "¿Dejar de trabajar en {comercio}?", el
+  texto "Vas a salir del equipo y no vas a poder volver a operar en este comercio. Se le
+  notificará al dueño. Tu cuenta y tus datos personales continuarán intactos.", una casilla
+  "Entiendo que para volver el dueño me tiene que invitar de nuevo." y los botones "Dejar de
+  trabajar" (rojo, apagado hasta tildar la casilla) y "Volver". La relación pasa a Inactivo
+  con motivo `RENUNCIA`, el Dueño recibe una notificación y la renuncia queda en el
+  historial. Al terminar con éxito se limpia el contexto de comercio, se va al selector de
+  cuenta (o al inicio de Cliente si no le queda ningún comercio) y se muestra el aviso
+  "Dejaste de trabajar en {comercio}". Si el servidor responde con un error o falla la
+  conexión, el mensaje se muestra dentro de la hoja, que sigue abierta. Si ya había
+  renunciado en otro dispositivo, el servidor responde 200 ("Ya habías dejado de trabajar en
+  este comercio") y el flujo termina igual. Para volver hace falta una invitación nueva.
+  *(Una sola hoja con casilla, en lugar de la doble confirmación original; implementada en
+  el tramo E4, entrega B2.)*
 
 ---
 
@@ -439,7 +467,8 @@ En el detalle de su propio pedido el Empleado ve la nota "Hiciste este pedido co
 - El perfil del Empleado dentro de un comercio es una sola lista de filas, sin títulos de
   sección: "Ver datos del comercio" (descripción, dirección, teléfono, horarios y estado,
   sin datos fiscales ni legales), "Editar datos del comercio" (descripción y teléfono),
-  "Editar datos personales", "Cambiar de cuenta" y "Cerrar sesión". Los datos personales
+  "Editar datos personales", "Cambiar de cuenta" y "Cerrar sesión", y debajo la sección
+  "Mi lugar en el equipo" con el botón de renuncia (ver "Renuncia"). Los datos personales
   (nombre, apellido, teléfono, nombre de usuario), el cambio de contraseña y la foto de perfil
   personal se editan desde la cuenta de Cliente: "Editar datos personales" muestra antes una
   hoja "Vas a pasar a tu cuenta personal" y, al continuar, lleva al perfil de Cliente.

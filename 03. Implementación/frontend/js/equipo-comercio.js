@@ -205,7 +205,7 @@ function textoDeBaja(miembro) {
   if (miembro.motivoBaja === MOTIVO_RENUNCIA) {
     return `Renunció${fecha}`;
   }
-  return miembro.fechaBaja ? `Inactivo desde el ${fechaCortaDe(miembro.fechaBaja)}` : 'Inactivo';
+  return 'Inactivo';
 }
 
 function crearBotonMenuMiembro(miembro, alAbrirMenu) {
@@ -985,10 +985,10 @@ function abrirConfirmacionDesactivar(miembro) {
     ocupar(backdrop, confirmar, 'Desactivando...', true, 'Desactivar');
     volver.disabled = true;
     try {
-      const { mensaje, data } = await apiFetch(`${RUTA_EQUIPO}/miembros/${miembro.empleadoId}/desactivar`, { ...OPCIONES_RED, method: 'PUT' });
+      const { data } = await apiFetch(`${RUTA_EQUIPO}/miembros/${miembro.empleadoId}/desactivar`, { ...OPCIONES_RED, method: 'PUT' });
       backdrop.remove();
       reemplazarMiembro(data);
-      showToast(mensaje);
+      showToast(`Desactivaste a ${nombreCompleto(miembro)}`);
     } catch (error) {
       backdrop.remove();
       showToast(mensajeDeError(error, MENSAJE_ERROR_DESACTIVAR), 'error');
@@ -1028,10 +1028,10 @@ function crearAccionReactivar(miembro, backdrop, aviso) {
     backdrop.dataset.ocupado = '1';
     aviso.replaceChildren();
     try {
-      const { mensaje, data } = await apiFetch(`${RUTA_EQUIPO}/miembros/${miembro.empleadoId}/reactivar`, { ...OPCIONES_RED, method: 'PUT' });
+      const { data } = await apiFetch(`${RUTA_EQUIPO}/miembros/${miembro.empleadoId}/reactivar`, { ...OPCIONES_RED, method: 'PUT' });
       backdrop.remove();
       reemplazarMiembro(data);
-      showToast(mensaje);
+      showToast(`Reactivaste a ${nombreCompleto(miembro)}`);
     } catch (error) {
       reactivar.disabled = false;
       backdrop.dataset.ocupado = '0';

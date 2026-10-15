@@ -5709,3 +5709,55 @@ button.panel-comercios__fila:focus-visible {
   opacity: 0.45;
   cursor: default;
 }
+
+.profile-section__ayuda {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+.btn-renunciar {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 4px;
+  background: none;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-error);
+  cursor: pointer;
+}
+
+.btn-renunciar:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.renuncia-hoja__casilla {
+  width: 100%;
+  text-align: left;
+  margin-bottom: 20px;
+}
+
+.renuncia-hoja__error {
+  width: 100%;
+  margin-bottom: 16px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--color-error);
+  text-align: left;
+}
+
+.btn.renuncia-hoja__peligro,
+.btn.renuncia-hoja__peligro:hover {
+  background: var(--color-error);
+  margin-bottom: 12px;
+}
+
+.btn.renuncia-hoja__peligro:disabled {
+  opacity: 0.5;
+}
