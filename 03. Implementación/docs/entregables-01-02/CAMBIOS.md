@@ -13,7 +13,7 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 - `requisitos-funcionales-dueño.md`: "Ver equipo" tiene tres pestañas; la actividad se agrupa por día, tiene los cuatro filtros y el parámetro `fuente`; la actualización automática no pisa la lista.
 - `Historias de Usuario - Dueño.md`: criterios nuevos de la pestaña Actividad (tres pestañas, botón "Invitar" solo en las dos primeras, filas, filtros, "Ver más", vacío y error).
 - `requisitos-funcionales-sistema.md`: la lista de actividad acepta el filtro opcional `fuente` (valor inválido: 400).
-- `diccionario-de-datos.md`: nota del filtro `fuente` en la tabla `HistorialEdicionComercio` (también cambió `docs/diccionario-de-datos.md`; no hay migración ni cambio de tablas).
+- `diccionario-de-datos.md`: **pasa de la v1.16 a la v1.17** (solo documentación, sin migración ni cambio de tablas; también cambió `docs/diccionario-de-datos.md`, que es idéntico). En la tabla `HistorialEdicionComercio` se anota el filtro `fuente` y se corrige la frase desactualizada sobre qué filas de pedidos entran en la actividad (desde el bloque A2b entran las de cualquier actor, no solo Dueño y Empleado, con "Pedido recibido" y sin el nacimiento ni el vencimiento por falta de pago).
 - `requisitos-funcionales-empleado.md`: una frase (la pestaña ya no "llega en la entrega B"; el Empleado no ve la pantalla de equipo).
 
 **No cambiaron** `requisitos-funcionales-comercio.md`, `requisitos-funcionales-administrador.md`, `-cliente.md`, `-generales.md`, `requisitos-no-funcionales.md`, `alcance-y-limitaciones.md`, `Historias de Usuario - Administrador.md`, `- Cliente.md`, `- Comercio.md` ni `- Empleado.md`, ni los diagramas.
