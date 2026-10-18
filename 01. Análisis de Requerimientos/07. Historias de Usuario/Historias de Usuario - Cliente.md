@@ -39,14 +39,14 @@ temporalmente cerrados.
 **Criterios de aceptación:**
 - Los comercios cerrados (fuera de su horario o pausados por su Dueño) se ven atenuados en
   el listado y llevan una etiqueta al final de la tarjeta: "Cerrado" si están fuera de
-  horario y "Cerrado temporalmente" si el Dueño los pausó.
+  horario o si el Dueño los pausó a mano.
 - Los comercios abiertos aparecen primero, y el filtro "Abierto ahora" muestra solo los
   abiertos.
 - El detalle de un comercio cerrado muestra la misma etiqueta y cuándo reabre (por
   ejemplo, "Reabre hoy a las 19:00"), y no permite agregar productos al carrito.
-- Si el comercio está cerrado temporalmente sin fecha de regreso (por ejemplo, porque su
-  Dueño tiene la cuenta bloqueada), se ve con la misma etiqueta, sin aviso de cuándo
-  reabre, y tampoco permite agregar productos al carrito.
+- Si el comercio está cerrado sin fecha de regreso porque su Dueño tiene la cuenta
+  bloqueada, la etiqueta dice "Cerrado temporalmente" (distinta de la del cierre a mano),
+  no hay aviso de cuándo reabre, y tampoco permite agregar productos al carrito.
 - Si el comercio se cierra mientras estoy agregando un producto o confirmando mi pedido,
   el sistema me avisa con un mensaje claro y un botón para volver al catálogo.
 

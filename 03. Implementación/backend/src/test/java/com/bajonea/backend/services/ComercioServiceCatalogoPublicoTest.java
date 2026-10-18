@@ -2,6 +2,7 @@ package com.bajonea.backend.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -120,6 +121,22 @@ class ComercioServiceCatalogoPublicoTest {
         assertNull(listado.get(0).getTextoReapertura());
         assertEquals(EstadoApertura.CERRADO_TEMPORALMENTE, listado.get(1).getEstadoApertura());
         assertNull(listado.get(1).getTextoReapertura());
+    }
+
+    @Test
+    void elDtoPublicoDeUnCierreManualInformaCerradoManualConTextoYElDelBloqueoNo() {
+        Comercio cerradoAMano = comercio(1, EstadoComercio.APTO_VENTA);
+        cerradoAMano.setCerradoManualmente(true);
+        when(comercioRepository.findByEstadoIn(any()))
+                .thenReturn(List.of(cerradoAMano, comercio(2, EstadoComercio.CERRADO_TEMPORALMENTE)));
+
+        List<ComercioPublicoResponseDTO> listado = service.listarAprobados();
+
+        assertEquals(EstadoApertura.CERRADO_MANUAL, listado.get(0).getEstadoApertura());
+        assertNotNull(listado.get(0).getTextoReapertura());
+        assertEquals(EstadoApertura.CERRADO_TEMPORALMENTE, listado.get(1).getEstadoApertura());
+        assertNull(listado.get(1).getTextoReapertura());
+        assertEquals(EstadoComercio.APTO_VENTA, listado.get(0).getEstado());
     }
 
     @Test

@@ -266,7 +266,7 @@ items.push(
     `const c = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('${v('a', 'com')}')));`,
     `pm.test('La fila trae los cuatro campos de apertura', () => { pm.expect(c.cerradoManualmente).to.eql(true); pm.expect(c.abiertoAhora).to.eql(false); pm.expect(c.puedeCambiarCierre).to.eql(true); pm.expect(c.textoReapertura).to.eql(${JSON.stringify(TEXTO_REAPERTURA_MANANA)}); });`,
   ]),
-  publicoDe('[cerrar] El catalogo informa CERRADO_TEMPORALMENTE con el texto', 'a', 'CERRADO_TEMPORALMENTE', TEXTO_REAPERTURA_MANANA),
+  publicoDe('[cerrar] El catalogo informa CERRADO_MANUAL con el texto', 'a', 'CERRADO_MANUAL', TEXTO_REAPERTURA_MANANA),
 
   item('[efecto] Cliente 1 no puede crear el pedido: 409 de cierre manual', req('POST', '/pedidos/cliente', { token: 'c1_token_cliente1', body: { tipoEntrega: 'RETIRO', direccionId: null } }), [
     status(409),

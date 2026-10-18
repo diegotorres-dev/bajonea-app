@@ -5,6 +5,7 @@
 ## Gestión de Comercios
 
 - El administrador debe poder visualizar comercios pendientes de aprobación con sus datos de registro.
+- El administrador debe poder ver todos los comercios de la plataforma, sin importar su estado (Pendiente, Aprobado, Apto para Venta, Rechazado, Rechazo Definitivo, Suspendido, Cerrado Temporalmente e Inactivo), en un listado general. Cada comercio muestra una etiqueta con su estado actual y se ordena el listado por nombre. Desde el detalle de cualquier comercio puede abrir su equipo ("Ver equipo"); "Suspender" solo se ofrece cuando el estado lo permite (Aprobado o Apto para Venta). Las pantallas de solicitudes pendientes y de re-solicitudes siguen mostrando únicamente los comercios que esperan su resolución. Un comercio cerrado a mano por su Dueño sigue en su estado (Aprobado o Apto para Venta) y aparece con ese estado.
 - El administrador debe poder aprobar un comercio, habilitándolo para operar y recibir pedidos. El sistema registra la transición de estado en el historial de estados del comercio (HistorialEstadoComercio).
 - El administrador debe poder rechazar un comercio ingresando un motivo. El sistema registra la transición de estado en el historial.
 - El administrador debe poder suspender un comercio activo ingresando un motivo. La suspensión es una acción sobre ese comercio puntual: cambia su estado a Suspendido sin afectar la cuenta del Dueño ni sus demás comercios, desencadena la cancelación de pedidos activos de ese comercio según las reglas del sistema, y registra la transición de estado en el historial.

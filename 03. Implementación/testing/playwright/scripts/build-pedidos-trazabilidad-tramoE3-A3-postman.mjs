@@ -277,7 +277,7 @@ agregar(
     status(200),
     `const p = pm.response.json().data.find((x) => x.id === Number(${entorno(v('ped_propio'))}));`,
     "pm.test('esPedidoPropio es true en su pedido', () => pm.expect(p.esPedidoPropio).to.eql(true));",
-    "pm.test('El DTO del Empleado no lleva clienteId ni cargos ni estado de pago', () => { ['clienteId', 'cargoServicioCliente', 'cargoServicioComercio', 'pagoEstado'].forEach((c) => pm.expect(p).to.not.have.property(c)); });",
+    "pm.test('El DTO del Empleado lleva el cargo del cliente y no lleva clienteId, el cargo del comercio ni el estado de pago', () => { pm.expect(p).to.have.property('cargoServicioCliente'); ['clienteId', 'cargoServicioComercio', 'pagoEstado'].forEach((c) => pm.expect(p).to.not.have.property(c)); });",
   ]),
   item('Propio: la lista de Fabiana no lo marca como suyo', req('GET', '/pedidos/comercio', { token: TOKEN_EMPLEADO2, comercio: COM }), [
     status(200),

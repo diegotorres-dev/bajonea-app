@@ -295,7 +295,7 @@ public class ActividadComercioService {
             case CAMBIAR_ESTADO -> switch (tipo) {
                 case PRODUCTO -> "Cambió la disponibilidad de un producto";
                 case COMERCIO -> "Cambió el estado del comercio";
-                default -> "Cambió el estado de " + tipo.name().toLowerCase().replace('_', ' ');
+                default -> "Hizo un cambio";
             };
         };
     }

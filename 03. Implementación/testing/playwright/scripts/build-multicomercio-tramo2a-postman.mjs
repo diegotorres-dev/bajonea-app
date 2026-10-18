@@ -375,7 +375,7 @@ const enBandeja = (nombre, comercioVar, chequeo) =>
 items.push(
   enBandeja('[bandeja] El adicional pendiente se marca esAdicional y lista los otros comercios del Dueño', 'alta_p_c_id',
     "pm.test('esAdicional y otros comercios', () => { pm.expect(c.esAdicional).to.eql(true); pm.expect(c.duenoId).to.eql(Number(pm.environment.get('alta_p_dueno_id'))); const ids = c.otrosComercios.map((o) => o.id); pm.expect(ids).to.include(Number(pm.environment.get('alta_p_a_id'))); pm.expect(ids).to.include(Number(pm.environment.get('alta_p_b_id'))); pm.expect(ids).to.not.include(c.id); const primero = c.otrosComercios.find((o) => o.id === Number(pm.environment.get('alta_p_a_id'))); pm.expect(primero.estado).to.eql('APROBADO'); pm.expect(primero.nombre).to.eql('Alta Postman P'); pm.expect(primero.fotoPerfilUrl).to.be.a('string'); const rechazado = c.otrosComercios.find((o) => o.id === Number(pm.environment.get('alta_p_b_id'))); pm.expect(rechazado.estado).to.eql('RECHAZADO'); });"),
-  item('[bandeja] El listado de aprobados no trae datos de Dueño ni de otros comercios', req('GET', '/administrador/comercios', { token: 'token_admin' }), [
+  item('[bandeja] El listado general no trae datos de Dueño ni de otros comercios', req('GET', '/administrador/comercios', { token: 'token_admin' }), [
     status(200),
     "const c = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('alta_p_a_id')));",
     "pm.test('Valores neutros', () => { pm.expect(c).to.exist; pm.expect(c.duenoId).to.eql(null); pm.expect(c.esAdicional).to.eql(false); pm.expect(c.otrosComercios).to.eql([]); });",

@@ -326,7 +326,7 @@ agregar(
   ]),
   cerrar('Cierre doble: cerrar de nuevo da 409', TOKEN_EMPLEADO, 'espera', 409),
   accion('Cierre doble: entregar un pedido ya no retirado da 409', TOKEN_DUENO, 'espera', 'entregar', 409, {}, [
-    "pm.test('El pedido ya no esta listo para retirar', () => pm.expect(pm.response.json().mensaje).to.eql('El pedido no está listo para retirar'));",
+    "pm.test('El pedido ya fue resuelto', () => pm.expect(pm.response.json().mensaje).to.eql('El pedido ya fue resuelto'));",
   ]),
   estadoDelCliente('Cliente: ve el pedido como NO_RETIRADO, sin reembolso', 'espera', 'NO_RETIRADO'),
   avisosDelCliente('Cliente: recibio un solo aviso T36 con el texto aprobado', 'espera', 1),
@@ -360,7 +360,7 @@ agregar(
   ...pedidoListo('emp', TOKEN_COMPRADOR, 90),
   cerrar('Empleada: Elena cierra y recibe el DTO reducido', TOKEN_EMPLEADO, 'emp', 200, [
     "pm.test('Estado y marca en false', () => { const d = pm.response.json().data; pm.expect(d.estado).to.eql('NO_RETIRADO'); pm.expect(d.esPedidoPropio).to.eql(false); });",
-    "pm.test('Sin cargos, ni cliente ni estado de pago', () => { const d = pm.response.json().data; ['clienteId', 'cargoServicioCliente', 'cargoServicioComercio', 'pagoEstado'].forEach((c) => pm.expect(d).to.not.have.property(c)); });",
+    "pm.test('Con el cargo del cliente y sin el del comercio, ni cliente ni estado de pago', () => { const d = pm.response.json().data; pm.expect(d).to.have.property('cargoServicioCliente'); ['clienteId', 'cargoServicioComercio', 'pagoEstado'].forEach((c) => pm.expect(d).to.not.have.property(c)); });",
   ]),
   traza('Empleada: la trazabilidad la muestra como actora del cierre', TOKEN_DUENO, 'emp', 200, [
     'const pasos = pm.response.json().data.pasos;',
@@ -379,7 +379,7 @@ agregar(
 agregar(
   ...crearPedido('entregado'),
   cerrar('Estados: en PENDIENTE_CONFIRMACION_COMERCIO no se puede cerrar como no retirado', TOKEN_DUENO, 'entregado', 409, [
-    "pm.test('El pedido no esta listo para retirar', () => pm.expect(pm.response.json().mensaje).to.eql('El pedido no está listo para retirar'));",
+    "pm.test('Primero hay que aceptar el pedido', () => pm.expect(pm.response.json().mensaje).to.eql('Primero tenés que aceptar el pedido'));",
   ]),
   accion('Estados: se acepta el pedido', TOKEN_DUENO, 'entregado', 'aceptar'),
   cerrar('Estados: en EN_PREPARACION tampoco', TOKEN_DUENO, 'entregado', 409),

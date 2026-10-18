@@ -30,6 +30,8 @@ const ICONS = {
 export function showToast(mensaje, kind = 'success') {
   document.querySelectorAll('.toast').forEach((el) => el.remove());
   const toast = crear('div', 'toast');
+  toast.setAttribute('role', 'status');
+  toast.setAttribute('aria-live', 'polite');
   const banner = crear('div', `banner banner-${kind}`);
   const iconWrap = crear('span');
   iconWrap.innerHTML = kind === 'error' ? ICONS.close : ICONS.check;

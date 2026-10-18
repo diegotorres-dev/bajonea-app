@@ -15,10 +15,12 @@ import lombok.Getter;
 /**
  * Pedido del comercio para un Empleado ({@code GET /api/v1/pedidos/comercio} cuando el actor es Empleado). Es una
  * lista blanca de campos: lo necesario para operar y atender al cliente (identificador, estado, nombre del
- * cliente, entrega y dirección, ítems con precios, subtotal, total pagado, motivos de rechazo o anulación y fechas)
- * y el estado del reembolso en términos simples. No lleva el cargo de servicio (ni el del cliente ni el del
- * comercio), el neto a cobrar, el id interno del cliente, el estado técnico del pago ni nada de Mercado Pago. Un
- * campo nuevo de {@link PedidoResponseDTO} no llega al Empleado salvo que se agregue acá a propósito.
+ * cliente, entrega y dirección, ítems con precios, subtotal, cargo de servicio que paga el cliente, total pagado,
+ * motivos de rechazo o anulación y fechas) y el estado del reembolso en términos simples. El cargo del cliente
+ * ({@code cargoServicioCliente}) va para que el total cierre con el subtotal. No lleva el cargo de servicio del
+ * comercio, la comisión, el neto a cobrar, el id interno del cliente, el estado técnico del pago ni nada de
+ * Mercado Pago. Un campo nuevo de {@link PedidoResponseDTO} no llega al Empleado salvo que se agregue acá a
+ * propósito.
  * {@code esPedidoPropio} es {@code true} cuando el Empleado que consulta es el Cliente del pedido (la pantalla
  * muestra "Tu pedido" y sin botones de gestión); lo calcula el servidor por id de usuario y solo existe en este DTO,
  * nunca en el del Dueño ni en los del Cliente.
@@ -42,6 +44,7 @@ public class PedidoEmpleadoResponseDTO {
     private final LocalDateTime fechaEntrega;
     private final List<DetallePedidoResponseDTO> detalles;
     private final BigDecimal subtotal;
+    private final BigDecimal cargoServicioCliente;
     private final BigDecimal total;
     private final EstadoReembolsoEmpleado reembolsoEstado;
     private final BigDecimal reembolsoMonto;
@@ -69,6 +72,7 @@ public class PedidoEmpleadoResponseDTO {
         this.fechaEntrega = pedido.getFechaEntrega();
         this.detalles = pedido.getDetalles();
         this.subtotal = pedido.getSubtotal();
+        this.cargoServicioCliente = pedido.getCargoServicioCliente();
         this.total = pedido.getTotal();
         this.reembolsoEstado = EstadoReembolsoEmpleado.desde(pedido.getReembolsoEstado());
         this.reembolsoMonto = pedido.getReembolsoMonto();

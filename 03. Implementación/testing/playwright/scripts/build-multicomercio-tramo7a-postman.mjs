@@ -299,7 +299,7 @@ items.push(
     "pm.test('APTO_VENTA y cerrado a mano', () => { const d = pm.response.json().data; pm.expect(d.estado).to.eql('APTO_VENTA'); pm.expect(d.cerradoManualmente).to.eql(true); pm.expect(d.abiertoAhora).to.eql(false); });",
   ]),
   publicoDe('[restaurado] El comercio de B sigue cerrado a mano en el catalogo, ahora con texto de reapertura', v('b', 'com'), [
-    "pm.test('Cerrado a mano y con texto', () => { pm.expect(c.estadoApertura).to.eql('CERRADO_TEMPORALMENTE'); pm.expect(c.textoReapertura).to.match(/^Reabre /); });",
+    "pm.test('Cerrado a mano y con texto', () => { pm.expect(c.estadoApertura).to.eql('CERRADO_MANUAL'); pm.expect(c.textoReapertura).to.match(/^Reabre /); });",
   ]),
 );
 

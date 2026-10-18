@@ -36,6 +36,8 @@ Todo lo que hay que revisar antes de subir Bajoneá al servidor final y que no e
 - `JWT_SECRET`, `RESEND_API_KEY` y `MAIL_FROM`, `CLOUDINARY_CLOUD_NAME`/`_API_KEY`/`_API_SECRET`, `MERCADOPAGO_CLIENT_ID`/`_CLIENT_SECRET`/`_REDIRECT_URI`, `MERCADOPAGO_TOKEN_ENCRYPTION_KEY`, `FRONTEND_BASE_URL` y `BACKEND_BASE_URL` (ver `application-production.properties`).
 - **`MERCADOPAGO_WEBHOOK_SECRET`:** sin ella la validación de `x-signature` se omite con un `log.warn`. No es un agujero (el webhook siempre vuelve a pedirle el estado real a Mercado Pago), pero tiene que estar definida en producción.
 - `MERCADOPAGO_TEST_TOKEN` define si una cuenta vinculada es de prueba.
+- **Cloudinary: upload preset a crear a mano.** Además de las tres variables `CLOUDINARY_*`, el backend necesita que exista en la cuenta de Cloudinary el upload preset `bajonea_imagenes_mvp`, creado a mano con estas opciones: modo **signed**, formatos permitidos jpg, jpeg, png y webp, tamaño máximo de archivo 5 MB, y transformación entrante con ancho máximo 1200 px (`crop: limit`) y `quality: auto`. Sin el preset, las subidas firmadas fallan.
+- **Cloudinary: producción usa una cuenta distinta** a la de desarrollo y pruebas (los tests de Playwright suben imágenes reales, ver `docs/APRENDIZAJES-TECNICOS.md`). Cada cuenta necesita su propio preset `bajonea_imagenes_mvp`.
 
 ## 6. Frontend
 

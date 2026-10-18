@@ -283,7 +283,7 @@ function crearFilaComercio(comercio, activoId, alElegir) {
   } else if (!comercio.operativo) {
     const etiqueta = crear('span', `panel-comercios__etiqueta panel-comercios__etiqueta--${comercio.estado.toLowerCase().replace(/_/g, '-')}`);
     etiqueta.setAttribute('data-testid', `etiqueta-estado-comercio-${comercio.id}`);
-    etiqueta.textContent = ETIQUETA_ESTADO[comercio.estado] || comercio.estado;
+    etiqueta.textContent = ETIQUETA_ESTADO[comercio.estado] || 'Estado no disponible';
     fila.appendChild(etiqueta);
   }
 

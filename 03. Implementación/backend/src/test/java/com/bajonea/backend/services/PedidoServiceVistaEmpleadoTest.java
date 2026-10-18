@@ -61,9 +61,8 @@ class PedidoServiceVistaEmpleadoTest {
 
     private static final Set<String> CAMPOS_EMPLEADO = Set.of("id", "nombreCliente", "comercioId", "estado", "tipoEntrega",
             "direccion", "motivoRechazo", "comentarioRechazo", "canceladoPor", "fuenteEntrega", "motivoAnulacion", "fechaCreacion",
-            "fechaPagoAprobado", "fechaEntrega", "detalles", "subtotal", "total", "reembolsoEstado", "reembolsoMonto", "esPedidoPropio", "noRetiradoDisponibleDesde", "noRetiradoMinutosRestantes");
-    private static final Set<String> CAMPOS_EXCLUIDOS = Set.of("clienteId", "pagoEstado", "cargoServicioCliente",
-            "cargoServicioComercio");
+            "fechaPagoAprobado", "fechaEntrega", "detalles", "subtotal", "cargoServicioCliente", "total", "reembolsoEstado", "reembolsoMonto", "esPedidoPropio", "noRetiradoDisponibleDesde", "noRetiradoMinutosRestantes");
+    private static final Set<String> CAMPOS_EXCLUIDOS = Set.of("clienteId", "pagoEstado", "cargoServicioComercio");
 
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -176,7 +175,9 @@ class PedidoServiceVistaEmpleadoTest {
         assertEquals(MotivoRechazo.SIN_STOCK, dto.getMotivoRechazo());
         assertEquals(CanceladoPor.COMERCIO, dto.getCanceladoPor());
         assertEquals(new BigDecimal("10000"), dto.getSubtotal());
+        assertEquals(new BigDecimal("200"), dto.getCargoServicioCliente());
         assertEquals(new BigDecimal("10200"), dto.getTotal());
+        assertEquals(dto.getTotal(), dto.getSubtotal().add(dto.getCargoServicioCliente()));
     }
 
     @Test

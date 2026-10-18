@@ -166,7 +166,7 @@ Totales de esta entrega: 8 patrones nuevos (`lista-perfil`, `btn-ver-datos-comer
 | Pantalla | Archivo(s) | `data-testid` |
 |---|---|---|
 | `comercio-pedidos.html` y panel | `js/comercio.js` | `aviso-comercio-no-operativo` (aviso del Empleado con el comercio suspendido o cerrado temporalmente), `chip-tu-pedido` (dentro de `pedido-item-{id}`) |
-| `comercio-pedido-detalle.html` | `js/comercio.js` | `nota-pedido-propio`, `aviso-accion-slot` (contenedor del aviso fijo), `btn-cerrar-no-retirado`, `ayuda-no-retirado`, `recorrido-pedido`, `recorrido-lista`, `recorrido-paso`, `recorrido-texto`, `recorrido-meta`, `recorrido-motivo`, `recorrido-error`; `btn-confirmar-retiro` ahora dice "Entregar" |
+| `comercio-pedido-detalle.html` | `js/comercio.js` | `cargo-servicio-cliente-pedido` (línea "Cargo por servicio del cliente" del Empleado, entre `subtotal-pedido` y `total-pagado-pedido`), `nota-pedido-propio`, `aviso-accion-slot` (contenedor del aviso fijo), `btn-cerrar-no-retirado`, `ayuda-no-retirado`, `recorrido-pedido`, `recorrido-lista`, `recorrido-paso`, `recorrido-texto`, `recorrido-meta`, `recorrido-motivo`, `recorrido-error`; `btn-confirmar-retiro` ahora dice "Entregar" |
 | Confirmación de no retirado | `js/comercio.js` | `modal-no-retirado`, `texto-modal-no-retirado`, `btn-confirmar-no-retirado`, `btn-cancelar-no-retirado` |
 | Aviso fijo (compartido) | `js/form-utils.js` | `aviso-fijo` (el banner, con `role="alert"`), `aviso-fijo-texto` |
 
@@ -249,3 +249,13 @@ Hueco heredado de la entrega B3 de E1, detectado al cierre de E4 comparando los 
 | Hoja "No se pudo invitar" | `js/equipo-comercio.js` | `aviso-no-se-pudo-invitar`, `aviso-no-se-pudo-invitar-titulo`, `aviso-no-se-pudo-invitar-cuerpo`, `btn-cerrar-aviso-no-se-pudo-invitar` |
 | Menú y cancelación de una invitación | `js/equipo-comercio.js` | `btn-menu-invitacion-{invitacionId}` (tres puntitos de la fila), `menu-invitacion-equipo` (hoja del menú), `btn-cerrar-menu-invitacion`, `titulo-cancelar-invitacion`, `btn-confirmar-cancelar-invitacion`, `btn-volver-cancelar-invitacion` |
 | Detalle de una fila del equipo | `js/equipo-vistas.js` | `equipo-detalle` (segunda línea de la fila: "vence en N días", "En el equipo desde…", etc.) |
+
+## Listado general de comercios del Administrador (estado visible en cada tarjeta)
+
+| Pantalla | Archivo(s) | `data-testid` |
+|---|---|---|
+| `admin-comercios.html` | `js/admin.js` | `estado-comercio-{comercioId}` (etiqueta de estado de cada tarjeta, con `data-estado` igual al valor del servidor: `PENDIENTE`, `APROBADO`, `APTO_VENTA`, `RECHAZADO`, `RECHAZO_DEFINITIVO`, `SUSPENDIDO`, `CERRADO_TEMPORALMENTE` o `INACTIVO`; clases `status-badge--pendiente`, `--exito`, `--error` o `--neutro` según el estado). El resto (`comercio-admin-item-{id}`, `btn-ver-detalle-comercio-{id}`, `btn-ver-equipo-comercio`, `btn-suspender-comercio`, `btn-cerrar-modal-detalle-comercio`) no cambia. |
+
+## Toasts de éxito (2026-10-15)
+
+No se agregaron `data-testid`: los tests usan el selector `.toast` que ya existía. El componente suma atributos de accesibilidad: `role="status"` y `aria-live="polite"` (`js/catalogo.js`, `showToast`). Los textos nuevos que cubre el spec `62-toasts-exito-ui` son "Comercio cerrado", "Comercio abierto", "Cerraste el comercio" / "Cerraste N comercios", "Marcaste todos los avisos como leídos", "Vaciaste el carrito", "Quitaste {producto} del carrito", "Imagen eliminada", "Orden de las fotos actualizado", "Imagen actualizada", "Imagen agregada" y "Producto descontinuado".

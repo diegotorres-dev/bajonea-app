@@ -145,6 +145,7 @@ export async function initNotificaciones() {
     botonMarcarTodas.disabled = true;
     try {
       await apiFetch('/notificaciones/leidas', { method: 'PUT' });
+      showToast('Marcaste todos los avisos como leídos');
       await Promise.allSettled([refrescarComercios(), cargarLista()]);
     } catch {
       showToast('No pudimos marcar las notificaciones como leídas', 'error');

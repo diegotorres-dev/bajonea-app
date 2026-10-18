@@ -41,6 +41,15 @@ Como administrador, quiero visualizar todos los comercios con su estado actual, 
 fecha de registro, Dueño titular y si ese Dueño tiene MP vinculado, para tener una
 visión general de la plataforma y actuar cuando sea necesario.
 
+**Criterios de aceptación:**
+
+- El listado trae todos los comercios, sin importar su estado: pendientes, aprobados, listos para vender, rechazados, con rechazo definitivo, suspendidos, cerrados temporalmente e inactivos.
+- Cada comercio muestra una etiqueta con su estado actual.
+- Desde el detalle de cualquier comercio, en cualquier estado, puedo abrir su equipo con "Ver equipo".
+- "Suspender" solo aparece cuando el comercio está aprobado o listo para vender; en los demás estados no se ofrece.
+- Las pantallas de solicitudes pendientes y de re-solicitudes siguen mostrando solo los comercios que esperan resolución.
+- Un comercio que su Dueño cerró a mano sigue apareciendo con su estado (aprobado o listo para vender).
+
 ## HU-A08: Ver el Listado Completo de Clientes
 
 Como administrador, quiero visualizar todos los clientes con su estado actual, para

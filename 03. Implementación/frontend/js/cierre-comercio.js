@@ -156,10 +156,11 @@ export function montarSwitchCierre(slot) {
     boton.disabled = bloqueado;
   }
 
-  async function ejecutar(accion) {
+  async function ejecutar(accion, mensajeExito) {
     limpiarAvisoFijo(avisoSlot);
     try {
       await accion();
+      showToast(mensajeExito);
       await refrescarComercios();
     } catch (error) {
       if (error instanceof ApiError && error.status === 409 && error.message) {
@@ -189,10 +190,10 @@ export function montarSwitchCierre(slot) {
     try {
       if (modo === 'ABIERTO') {
         if (await pedirConfirmacionCierre(boton)) {
-          await ejecutar(() => cerrarComercio(activo.id));
+          await ejecutar(() => cerrarComercio(activo.id), 'Comercio cerrado');
         }
       } else {
-        await ejecutar(() => abrirComercio(activo.id));
+        await ejecutar(() => abrirComercio(activo.id), 'Comercio abierto');
       }
     } finally {
       ocupado = false;

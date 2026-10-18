@@ -234,7 +234,7 @@ class PedidoPropioYTrazabilidadHttpIntegrationTest {
         for (JsonNode pedido : lista) {
             assertEquals(pedido.path("id").asInt() == propio, pedido.path("esPedidoPropio").asBoolean(), "pedido " + pedido.path("id"));
             assertFalse(pedido.has("clienteId"));
-            assertFalse(pedido.has("cargoServicioCliente"));
+            assertTrue(pedido.has("cargoServicioCliente"));
             assertFalse(pedido.has("cargoServicioComercio"));
             assertFalse(pedido.has("pagoEstado"));
         }

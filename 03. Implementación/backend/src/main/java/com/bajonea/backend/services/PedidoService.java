@@ -142,6 +142,14 @@ public class PedidoService {
             + "porque el cliente no respondió en %d minutos.";
     private static final String MENSAJE_NO_RETIRADO = "Tu pedido #%d no fue retirado y el comercio lo cerró. "
             + "Como ya estaba preparado, no hay devolución del pago.";
+    static final String MENSAJE_PEDIDO_RESUELTO = "El pedido ya fue resuelto";
+    static final String MENSAJE_PRIMERO_ACEPTAR = "Primero tenés que aceptar el pedido";
+    static final String MENSAJE_NO_SE_ANULA_SIN_ACEPTAR = "Un pedido sin aceptar no se anula, se rechaza";
+    static final String MENSAJE_NO_SE_PUEDE_ANULAR = "El pedido ya no se puede anular";
+    static final String MENSAJE_EN_PREPARACION = "El pedido todavía está en preparación";
+    static final String MENSAJE_EN_CAMINO_LO_CONFIRMA_EL_CLIENTE = "El pedido está en camino: lo confirma el cliente";
+    static final String MENSAJE_CLIENTE_TODAVIA_NO_EN_CAMINO = "Tu pedido todavía no está en camino";
+    static final String MENSAJE_YA_ENTREGADO = "Este pedido ya figura como entregado";
 
     public PedidoResponseDTO confirmarPedido(Integer usuarioId, PedidoRequestDTO request) {
         usuarioRepository.leerIdConBloqueoCompartido(usuarioId);
@@ -432,7 +440,7 @@ public class PedidoService {
         Pedido pedido = obtenerPedidoDelComercioParaActualizar(comercioActivo, pedidoId, true);
 
         if (pedido.getEstado() != EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO) {
-            throw new ConflictoDeNegocioException("El pedido ya fue resuelto, no está en estado PENDIENTE_CONFIRMACION_COMERCIO");
+            throw new ConflictoDeNegocioException(MENSAJE_PEDIDO_RESUELTO);
         }
 
         pedido.setEstado(EstadoPedido.EN_PREPARACION);
@@ -450,7 +458,7 @@ public class PedidoService {
         Pedido pedido = obtenerPedidoDelComercioParaActualizar(comercioActivo, pedidoId);
 
         if (pedido.getEstado() != EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO) {
-            throw new ConflictoDeNegocioException("El pedido ya fue resuelto, no está en estado PENDIENTE_CONFIRMACION_COMERCIO");
+            throw new ConflictoDeNegocioException(MENSAJE_PEDIDO_RESUELTO);
         }
 
         if (request.getMotivo() == MotivoRechazo.OTRO
@@ -483,7 +491,9 @@ public class PedidoService {
         Pedido pedido = obtenerPedidoDelComercioParaActualizar(comercioActivo, pedidoId);
 
         if (pedido.getEstado() != EstadoPedido.EN_PREPARACION) {
-            throw new ConflictoDeNegocioException("El pedido no está en preparación");
+            throw new ConflictoDeNegocioException(pedido.getEstado() == EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO
+                    ? MENSAJE_PRIMERO_ACEPTAR
+                    : MENSAJE_PEDIDO_RESUELTO);
         }
 
         EstadoPedido destino = pedido.getTipoEntrega() == TipoEntrega.DOMICILIO
@@ -510,7 +520,7 @@ public class PedidoService {
         Pedido pedido = obtenerPedidoDelClienteParaActualizar(usuarioId, pedidoId);
 
         if (pedido.getEstado() != EstadoPedido.EN_CAMINO) {
-            throw new ConflictoDeNegocioException("El pedido no está en camino");
+            throw new ConflictoDeNegocioException(mensajeEntregaDelCliente(pedido.getEstado()));
         }
 
         marcarEntregado(pedido, FuenteEntrega.CLIENTE);
@@ -523,7 +533,7 @@ public class PedidoService {
         Pedido pedido = obtenerPedidoDelComercioParaActualizar(comercioActivo, pedidoId);
 
         if (pedido.getEstado() != EstadoPedido.LISTO_PARA_RETIRAR) {
-            throw new ConflictoDeNegocioException("El pedido no está listo para retirar");
+            throw new ConflictoDeNegocioException(mensajeCierreDelComercio(pedido.getEstado()));
         }
 
         marcarEntregado(pedido, FuenteEntrega.COMERCIO);
@@ -544,7 +554,7 @@ public class PedidoService {
         Pedido pedido = obtenerPedidoDelComercioParaActualizar(comercioActivo, pedidoId);
 
         if (pedido.getEstado() != EstadoPedido.LISTO_PARA_RETIRAR) {
-            throw new ConflictoDeNegocioException("El pedido no está listo para retirar");
+            throw new ConflictoDeNegocioException(mensajeCierreDelComercio(pedido.getEstado()));
         }
         if (pedido.getTipoEntrega() != TipoEntrega.RETIRO) {
             throw new ConflictoDeNegocioException("Solo se puede cerrar como no retirado un pedido de retiro");
@@ -557,6 +567,23 @@ public class PedidoService {
         avisarPedidoNoRetirado(pedido);
 
         return aResponseDTOParaComercio(pedido);
+    }
+
+    private static String mensajeEntregaDelCliente(EstadoPedido estado) {
+        return switch (estado) {
+            case PENDIENTE_CONFIRMACION_COMERCIO, EN_PREPARACION -> MENSAJE_CLIENTE_TODAVIA_NO_EN_CAMINO;
+            case ENTREGADO -> MENSAJE_YA_ENTREGADO;
+            default -> MENSAJE_PEDIDO_RESUELTO;
+        };
+    }
+
+    private static String mensajeCierreDelComercio(EstadoPedido estado) {
+        return switch (estado) {
+            case PENDIENTE_CONFIRMACION_COMERCIO -> MENSAJE_PRIMERO_ACEPTAR;
+            case EN_PREPARACION -> MENSAJE_EN_PREPARACION;
+            case EN_CAMINO -> MENSAJE_EN_CAMINO_LO_CONFIRMA_EL_CLIENTE;
+            default -> MENSAJE_PEDIDO_RESUELTO;
+        };
     }
 
     private void exigirEsperaMinimaDeRetiro(Pedido pedido, LocalDateTime ahora) {
@@ -642,7 +669,9 @@ public class PedidoService {
         Pedido pedido = obtenerPedidoDelComercioParaActualizar(comercioActivo, pedidoId);
 
         if (pedido.getEstado() != EstadoPedido.EN_PREPARACION) {
-            throw new ConflictoDeNegocioException("El pedido no está en preparación");
+            throw new ConflictoDeNegocioException(pedido.getEstado() == EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO
+                    ? MENSAJE_NO_SE_ANULA_SIN_ACEPTAR
+                    : MENSAJE_NO_SE_PUEDE_ANULAR);
         }
 
         if (request.getMotivo() == MotivoRechazo.OTRO

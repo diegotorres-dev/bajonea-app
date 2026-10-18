@@ -231,7 +231,7 @@ test.describe('Bloqueo de la cuenta del Dueño y catálogo (API), tramo C2', () 
     expect(bandera(dueno.comercioId)).toBe(1);
     expect(Number(sql(`SELECT COUNT(*) FROM historial_cierre_comercio WHERE comercio_id = ${dueno.comercioId};`))).toBe(filasDeCierre);
     const despues = await publicoDe(request, dueno.comercioId);
-    expect(despues.estadoApertura).toBe('CERRADO_TEMPORALMENTE');
+    expect(despues.estadoApertura).toBe('CERRADO_MANUAL');
     expect(despues.textoReapertura).toMatch(/^Reabre /);
   });
 

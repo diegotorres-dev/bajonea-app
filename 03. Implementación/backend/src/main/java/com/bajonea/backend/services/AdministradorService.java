@@ -51,6 +51,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -176,13 +177,15 @@ public class AdministradorService {
     }
 
     /**
-     * Incluye {@code SUSPENDIDO} además de {@code APROBADO} (Fase 19) — si filtrara
-     * exclusivamente por {@code APROBADO}, un comercio recién suspendido desaparecería de este
-     * listado y el Administrador no podría verificar el resultado de {@link #suspenderComercio}.
+     * Todos los comercios, en cualquier estado ({@code PENDIENTE}, {@code APROBADO}, {@code APTO_VENTA},
+     * {@code RECHAZADO}, {@code RECHAZO_DEFINITIVO}, {@code SUSPENDIDO}, {@code CERRADO_TEMPORALMENTE} e
+     * {@code INACTIVO}), por id ascendente. El Administrador ve todos sin importar el estado: el filtro anterior
+     * (aprobados y suspendidos) dejaba afuera, por ejemplo, a un comercio cerrado temporalmente y no se podía
+     * llegar a su equipo desde la lista. Cada fila trae su estado; las pantallas de solicitudes siguen mostrando
+     * solo los pendientes.
      */
-    public List<ComercioAdminResponseDTO> listarComerciosAprobados() {
-        return comercioRepository.findByEstadoIn(
-                        List.of(EstadoComercio.APROBADO, EstadoComercio.APTO_VENTA, EstadoComercio.SUSPENDIDO)).stream()
+    public List<ComercioAdminResponseDTO> listarComercios() {
+        return comercioRepository.findAll(Sort.by("id")).stream()
                 .map(comercio -> aAdminResponseDTO(comercio, null, false, List.of()))
                 .toList();
     }
@@ -255,7 +258,7 @@ public class AdministradorService {
         Comercio comercio = comercioRepository.findByIdConBloqueo(comercioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
         if (comercio.getEstado() != EstadoComercio.PENDIENTE) {
-            throw new ConflictoDeNegocioException("El comercio ya fue resuelto, no está en estado PENDIENTE");
+            throw new ConflictoDeNegocioException("El comercio ya fue resuelto");
         }
 
         boolean definitivo = !aprobar

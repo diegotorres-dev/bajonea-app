@@ -53,7 +53,7 @@ public class ComercioActivoService {
             throw new ComercioNoDisponibleException();
         }
         if (headerComercioId == null || headerComercioId.isBlank()) {
-            throw new ValidacionException("Falta indicar el comercio sobre el que operás (header " + HEADER_COMERCIO_ID + ")");
+            throw new ValidacionException("Falta indicar el comercio");
         }
         Integer comercioId = parsearHeader(headerComercioId.trim());
         return rol == RolUsuario.DUENO ? resolverComoDueno(usuarioId, comercioId) : resolverComoEmpleado(usuarioId, comercioId);
@@ -166,7 +166,7 @@ public class ComercioActivoService {
         try {
             return Integer.valueOf(valor);
         } catch (NumberFormatException ex) {
-            throw new ValidacionException("El header " + HEADER_COMERCIO_ID + " debe ser un número entero");
+            throw new ValidacionException("El comercio indicado no es válido");
         }
     }
 }

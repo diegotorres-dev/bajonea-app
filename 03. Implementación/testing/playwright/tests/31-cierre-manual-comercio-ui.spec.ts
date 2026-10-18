@@ -394,7 +394,7 @@ test.describe('Cierre manual del comercio (UI), tramo C1', () => {
 
       const casos = [
         { dueno: cerradoHorario, etiqueta: 'Cerrado', apertura: 'CERRADO_HORARIO' },
-        { dueno: cerradoTemporal, etiqueta: 'Cerrado temporalmente', apertura: 'CERRADO_TEMPORALMENTE' },
+        { dueno: cerradoTemporal, etiqueta: 'Cerrado', apertura: 'CERRADO_MANUAL' },
       ];
       const opacidades: number[] = [];
       for (const caso of casos) {
@@ -442,7 +442,7 @@ test.describe('Cierre manual del comercio (UI), tramo C1', () => {
 
     test('el detalle muestra la misma etiqueta y el texto de reapertura', async ({ page }) => {
       await page.goto(`/comercio-detalle.html?id=${cerradoTemporal.comercioId}`);
-      await expect(page.getByTestId('estado-comercio')).toHaveText('Cerrado temporalmente');
+      await expect(page.getByTestId('estado-comercio')).toHaveText('Cerrado');
       await expect(page.getByTestId('texto-reapertura-comercio')).toHaveText(`Reabre el ${NOMBRE_DIA[diaDeHoy()]} a las 00:00`);
 
       await page.goto(`/comercio-detalle.html?id=${cerradoHorario.comercioId}`);
@@ -665,6 +665,7 @@ test.describe('Cierre manual del comercio (UI), tramo C1', () => {
       await expect(page.getByTestId('btn-cerrar-comercios-desvincular-mp')).toHaveText('Cerrar comercios');
       await page.getByTestId('btn-cerrar-comercios-desvincular-mp').click();
 
+      await expect(page.locator('.toast')).toHaveText('Cerraste 3 comercios');
       await expect(page.getByTestId('btn-cerrar-comercios-desvincular-mp')).toHaveCount(0);
       await expect(page.getByTestId('texto-cierre-desvincular-mp')).toHaveCount(0);
       await expect(page.getByTestId('error-cierre-desvincular-mp')).toHaveCount(0);

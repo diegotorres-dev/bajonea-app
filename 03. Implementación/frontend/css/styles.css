@@ -3889,6 +3889,10 @@ img {
   color: var(--color-text-muted);
 }
 
+.comercio-admin-row__body .status-badge {
+  margin-top: 6px;
+}
+
 .comercio-admin-row__detalle {
   display: inline-flex;
   align-items: center;

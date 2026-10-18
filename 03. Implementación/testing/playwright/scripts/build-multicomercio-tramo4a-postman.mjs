@@ -181,7 +181,7 @@ items.push(
   ]),
   listarNotificaciones('[negativo] notificaciones sin header: 400', 'token_comercio_m', {}, [
     status(400),
-    "pm.test('El mensaje nombra al header', () => pm.expect(pm.response.json().mensaje).to.include('X-Comercio-Id'));",
+    "pm.test('El mensaje es neutro y no nombra al header', () => pm.expect(pm.response.json().mensaje).to.eql('Falta indicar el comercio'));",
   ]),
   listarNotificaciones('[negativo] notificaciones con header vacio: 400', 'token_comercio_m', { [HEADER]: '' }, [status(400)]),
   contador('contador con header A', 'token_comercio_m', conComercio('comercio_m_a_id'), [
@@ -204,7 +204,7 @@ items.push(
   ]),
   listarNotificaciones('[negativo] notificaciones con un header no numerico: 400', 'token_comercio_m', { [HEADER]: 'abc' }, [
     status(400),
-    "pm.test('El mensaje nombra al header', () => pm.expect(pm.response.json().mensaje).to.include('X-Comercio-Id'));",
+    "pm.test('El mensaje es neutro y no nombra al header', () => pm.expect(pm.response.json().mensaje).to.eql('El comercio indicado no es válido'));",
   ]),
   contador('[negativo] contador con el header de OTRO Dueño: 404', 'token_comercio_m', conComercio('comercio_n_id'), [status(404)]),
   contador('[negativo] contador con un header no numerico: 400', 'token_comercio_m', { [HEADER]: 'abc' }, [status(400)]),

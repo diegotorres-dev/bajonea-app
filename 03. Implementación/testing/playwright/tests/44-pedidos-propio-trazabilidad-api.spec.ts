@@ -25,7 +25,7 @@ const MENSAJE_PROPIO = 'No podés gestionar tus propios pedidos';
 const todoElDia = () => [{ diaSemana: diaDeHoy(), horaApertura: '00:00', horaCierre: '23:59' }];
 const CAMPOS_PASO = ['accionTexto', 'actorNombre', 'actorRol', 'actorRolTexto', 'estado', 'fechaHora', 'motivo'];
 const CAMPOS_EMPLEADO = [
-  'canceladoPor', 'comentarioRechazo', 'comercioId', 'detalles', 'direccion', 'esPedidoPropio', 'estado', 'fechaCreacion', 'fechaEntrega',
+  'canceladoPor', 'cargoServicioCliente', 'comentarioRechazo', 'comercioId', 'detalles', 'direccion', 'esPedidoPropio', 'estado', 'fechaCreacion', 'fechaEntrega',
   'fechaPagoAprobado', 'fuenteEntrega', 'id', 'motivoAnulacion', 'motivoRechazo', 'noRetiradoDisponibleDesde', 'noRetiradoMinutosRestantes', 'nombreCliente', 'reembolsoEstado', 'reembolsoMonto',
   'subtotal', 'tipoEntrega', 'total',
 ];
@@ -197,7 +197,7 @@ test.describe('Pedido propio y trazabilidad del pedido (API), bloque A3 de E3', 
     for (const pedido of deElena.body.data) {
       expect(pedido.esPedidoPropio, `pedido ${pedido.id}`).toBe(deElenaComoCliente.has(pedido.id));
       expect(Object.keys(pedido).sort()).toEqual(CAMPOS_EMPLEADO);
-      for (const excluido of ['clienteId', 'pagoEstado', 'cargoServicioCliente', 'cargoServicioComercio']) {
+      for (const excluido of ['clienteId', 'pagoEstado', 'cargoServicioComercio']) {
         expect(pedido).not.toHaveProperty(excluido);
       }
     }

@@ -203,7 +203,7 @@ class DisponibilidadComercioServiceTest {
         assertTrue(disponibilidad.cerradoManualmente());
         assertFalse(disponibilidad.abiertoAhora());
         assertEquals("Reabre hoy a las 19:00", disponibilidad.textoReapertura());
-        assertEquals(EstadoApertura.CERRADO_TEMPORALMENTE, disponibilidad.estadoApertura());
+        assertEquals(EstadoApertura.CERRADO_MANUAL, disponibilidad.estadoApertura());
         assertTrue(disponibilidad.puedeCambiarCierre());
     }
 
@@ -240,6 +240,21 @@ class DisponibilidadComercioServiceTest {
             assertFalse(disponibilidad.puedeCambiarCierre());
             assertFalse(disponibilidad.cerradoManualmente());
         }
+    }
+
+    @Test
+    void elCierreManualYElBloqueoDeCuentaInformanEstadosDeAperturaDistintos() {
+        List<Horario> horarios = List.of(franja(DiaSemana.LUNES, "10:00", "14:00"), franja(DiaSemana.LUNES, "19:00", "23:00"));
+        when(historialRepository.findTopByComercioIdAndAccionOrderByFechaHoraDescIdDesc(1, AccionCierre.CERRADO))
+                .thenReturn(Optional.empty());
+
+        Disponibilidad manual = service.calcular(comercio(EstadoComercio.APTO_VENTA, true), horarios, lunes("12:00"));
+        Disponibilidad bloqueado = service.calcular(comercio(EstadoComercio.CERRADO_TEMPORALMENTE, false), horarios, lunes("12:00"));
+
+        assertEquals(EstadoApertura.CERRADO_MANUAL, manual.estadoApertura());
+        assertEquals(EstadoApertura.CERRADO_TEMPORALMENTE, bloqueado.estadoApertura());
+        assertEquals("Reabre hoy a las 19:00", manual.textoReapertura());
+        assertNull(bloqueado.textoReapertura());
     }
 
     @Test

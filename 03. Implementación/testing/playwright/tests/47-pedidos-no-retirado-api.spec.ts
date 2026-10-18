@@ -158,7 +158,8 @@ test.describe('Cerrar un retiro como no retirado (API), bloque A4b de E3', () =>
     expect(respuesta.status, JSON.stringify(respuesta.body)).toBe(200);
     expect(respuesta.body.data.estado).toBe('NO_RETIRADO');
     expect(respuesta.body.data.esPedidoPropio).toBe(false);
-    for (const campo of ['cargoServicioCliente', 'cargoServicioComercio', 'clienteId', 'pagoEstado']) {
+    expect(respuesta.body.data.cargoServicioCliente).toBeDefined();
+    for (const campo of ['cargoServicioComercio', 'clienteId', 'pagoEstado']) {
       expect(respuesta.body.data[campo], campo).toBeUndefined();
     }
     expect(sql(`SELECT CONCAT(actor_rol, ':', actor_usuario_id) FROM historial_estado_pedido WHERE pedido_id = ${pedidoId} AND estado = 'NO_RETIRADO';`))
@@ -192,7 +193,7 @@ test.describe('Cerrar un retiro como no retirado (API), bloque A4b de E3', () =>
       expect(estadoDe(pedidoId)).toBe(antes);
       expect(historialDe(pedidoId)).toBe(historialAntes);
     }
-    expect((await cerrar(request, dueno.token, entregado)).body.mensaje).toBe('El pedido no está listo para retirar');
+    expect((await cerrar(request, dueno.token, entregado)).body.mensaje).toBe('El pedido ya fue resuelto');
   });
 
   test('cerrar dos veces o cerrar tras entregar da 409 sin escribir una segunda transición', async ({ request }) => {

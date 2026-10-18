@@ -118,7 +118,7 @@ class AdministradorServiceResolucionTest {
         ConflictoDeNegocioException error = assertThrows(ConflictoDeNegocioException.class,
                 () -> service.resolverAprobacion(COMERCIO_ID, ADMIN_ID, rechazo("Falta algo", false)));
 
-        assertEquals("El comercio ya fue resuelto, no está en estado PENDIENTE", error.getMessage());
+        assertEquals("El comercio ya fue resuelto", error.getMessage());
         verify(historialRepository, never()).save(any());
         verify(notificacionService, never()).crearParaDueno(any(), any(), anyString(), any(), any(), any());
     }

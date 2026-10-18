@@ -85,6 +85,7 @@ function mostrarModalVaciarCarrito(onConfirm) {
     try {
       await apiFetch('/carrito', { method: 'DELETE' });
       backdrop.remove();
+      showToast('Vaciaste el carrito');
       onConfirm();
     } catch (error) {
       btn.disabled = false;
@@ -134,6 +135,7 @@ function renderItem(item, producto, onCambio) {
     removeBtn.disabled = true;
     try {
       const carrito = await apiFetch(`/carrito/items/${item.id}`, { method: 'DELETE' });
+      showToast(`Quitaste ${item.nombreProducto} del carrito`);
       onCambio(carrito);
     } catch (error) {
       removeBtn.disabled = false;
@@ -171,6 +173,7 @@ function renderItem(item, producto, onCambio) {
       let carrito;
       if (nuevaCantidad < 1) {
         carrito = await apiFetch(`/carrito/items/${item.id}`, { method: 'DELETE' });
+        showToast(`Quitaste ${item.nombreProducto} del carrito`);
       } else {
         carrito = await apiFetch(`/carrito/items/${item.id}`, { method: 'PUT', body: { cantidad: nuevaCantidad } });
       }

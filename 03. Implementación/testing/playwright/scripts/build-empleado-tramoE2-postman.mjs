@@ -403,7 +403,7 @@ agregar(
 const sinHeader = (token, etiqueta) => [
   get(`Header ausente: ${etiqueta} da 400`, '/comercios/perfil', token, undefined, [
     status(400),
-    "pm.test('El texto es neutro', () => { const m = pm.response.json().mensaje; pm.expect(m).to.include('X-Comercio-Id'); pm.expect(m).to.not.include('Dueño'); });",
+    "pm.test('El texto es neutro', () => { const m = pm.response.json().mensaje; pm.expect(m).to.eql('Falta indicar el comercio'); pm.expect(m).to.not.include('Dueño'); });",
   ]),
   get(`Header no numérico: ${etiqueta} da 400`, '/comercios/perfil', token, 'abc', [
     status(400),
@@ -435,6 +435,7 @@ agregar(
 
 const CAMPOS_PEDIDO = [
   'canceladoPor',
+  'cargoServicioCliente',
   'comentarioRechazo',
   'comercioId',
   'detalles',
@@ -457,9 +458,9 @@ const CAMPOS_PEDIDO = [
   'tipoEntrega',
   'total',
 ];
-const CAMPOS_PEDIDO_EXCLUIDOS = ['clienteId', 'pagoEstado', 'cargoServicioCliente', 'cargoServicioComercio'];
+const CAMPOS_PEDIDO_EXCLUIDOS = ['clienteId', 'pagoEstado', 'cargoServicioComercio'];
 const REEMBOLSO_SIMPLE = { PENDIENTE: 'EN_PROCESO', PENDIENTE_REINTENTO: 'EN_PROCESO', PROCESADO: 'REEMBOLSADO', FALLIDO: 'EN_REVISION', PENDIENTE_REVISION_MANUAL: 'EN_REVISION' };
-const PALABRAS_PROHIBIDAS_PEDIDO = ['cargoservicio', 'marketplace', 'mercadopago', 'ultimoerror', 'intentos', 'pagoestado', 'clienteid', 'fallido', 'revision_manual', 'reintento'];
+const PALABRAS_PROHIBIDAS_PEDIDO = ['cargoserviciocomercio', 'marketplace', 'mercadopago', 'ultimoerror', 'intentos', 'pagoestado', 'clienteid', 'fallido', 'revision_manual', 'reintento'];
 
 agregar(...altaCliente('ped', { login: true }));
 agregar(

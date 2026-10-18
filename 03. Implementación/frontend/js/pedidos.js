@@ -468,9 +468,9 @@ export async function initPedidoDetalle() {
 
     let motivoInfo = null;
     if (pedido.estado === 'RECHAZADO' && pedido.motivoRechazo) {
-      motivoInfo = { motivoLabel: MOTIVO_RECHAZO_LABEL[pedido.motivoRechazo] || pedido.motivoRechazo, comentario: pedido.comentarioRechazo };
+      motivoInfo = { motivoLabel: MOTIVO_RECHAZO_LABEL[pedido.motivoRechazo] || 'Motivo no disponible', comentario: pedido.comentarioRechazo };
     } else if (pedido.estado === 'ANULADO' && pedido.motivoRechazo) {
-      motivoInfo = { motivoLabel: MOTIVO_RECHAZO_LABEL[pedido.motivoRechazo] || pedido.motivoRechazo, comentario: pedido.comentarioRechazo };
+      motivoInfo = { motivoLabel: MOTIVO_RECHAZO_LABEL[pedido.motivoRechazo] || 'Motivo no disponible', comentario: pedido.comentarioRechazo };
     } else if (pedido.estado === 'ANULADO' && pedido.motivoAnulacion) {
       motivoInfo = { motivoLabel: pedido.motivoAnulacion, comentario: null };
     }

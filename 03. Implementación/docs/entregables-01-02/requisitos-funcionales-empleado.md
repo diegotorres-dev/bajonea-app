@@ -200,7 +200,7 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
 > de contacto, tipo de comercio, modalidades de entrega, horarios, estado, si está abierto o
 > cerrado manualmente, si puede cambiar el cierre y el texto de reapertura), la lista de
 > productos, la lista de pedidos y el resumen de pedidos del día, estos dos últimos sin los
-> cargos de servicio ni los datos de Mercado Pago (ver Permisos Delegados). **Desde el bloque
+> cargo de servicio del comercio ni los datos de Mercado Pago (ver Permisos Delegados). **Desde el bloque
 > A2 de E3 el servidor también le abre las 17 escrituras delegables** (productos e imágenes,
 > descripción y teléfono, abrir y cerrar, y las cinco acciones sobre pedidos), con la relación
 > revalidada dentro de cada operación, las reglas por estado del comercio descritas arriba y
@@ -254,10 +254,12 @@ puede:
 - Ver el historial de pedidos y las ventas del comercio. El Empleado ve lo necesario para
   operar y atender al cliente: el número y el estado del pedido, el nombre del cliente, la
   modalidad de entrega y la dirección, los ítems con cantidades y precios, el subtotal, el
-  total que pagó el cliente, el motivo de un rechazo o una anulación y las fechas. También
+  cargo por servicio que paga el cliente (en el detalle, la línea "Cargo por servicio del
+  cliente" entre el subtotal y el total, para que el total cierre), el total que pagó el
+  cliente, el motivo de un rechazo o una anulación y las fechas. También
   ve el estado del reembolso del pedido, solo para leer y en términos simples (sin
-  reembolso, en proceso, reembolsado o en revisión) con el monto. No ve los cargos de
-  servicio (ni el del cliente ni el del comercio), la comisión, el neto a cobrar por el
+  reembolso, en proceso, reembolsado o en revisión) con el monto. No ve el cargo de
+  servicio del comercio, la comisión, el neto a cobrar por el
   comercio, ni ningún dato de MercadoPago o del detalle técnico de un reembolso. El
   contador del panel, que para el Empleado se llama "Ventas de hoy" (el Dueño ve
   "Facturado hoy"), suma el subtotal de los productos de los pedidos facturados, sin
@@ -387,7 +389,7 @@ En el detalle de su propio pedido el Empleado ve la nota "Hiciste este pedido co
   aparece el pedido todavía no pagado ni su vencimiento por falta de pago; el sistema va
   sin nombre; el Cliente figura con su nombre y apellido; el Dueño figura con su nombre y
   apellido, sin ningún otro dato. No lleva ids de usuario ni datos personales (DNI,
-  teléfono, email), ni cargos de servicio ni datos de pago. Un pedido de otro comercio,
+  teléfono, email), ni el cargo de servicio del comercio ni datos de pago. Un pedido de otro comercio,
   inexistente o que nunca se pagó responde `404`; un Cliente sin relación con el comercio
   recibe `400` (sin header) o `404` `COMERCIO_NO_DISPONIBLE` (con header), nunca la trazabilidad;
   el Administrador recibe `403`. Es una lectura sin bloqueos: si el pedido cambia de estado

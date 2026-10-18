@@ -61,6 +61,7 @@ const CAMPOS_EXCLUIDOS = [
 ];
 const CAMPOS_PEDIDO_EMPLEADO = [
   'canceladoPor',
+  'cargoServicioCliente',
   'comentarioRechazo',
   'comercioId',
   'detalles',
@@ -83,7 +84,7 @@ const CAMPOS_PEDIDO_EMPLEADO = [
   'tipoEntrega',
   'total',
 ];
-const CAMPOS_PEDIDO_EXCLUIDOS = ['clienteId', 'pagoEstado', 'cargoServicioCliente', 'cargoServicioComercio'];
+const CAMPOS_PEDIDO_EXCLUIDOS = ['clienteId', 'pagoEstado', 'cargoServicioComercio'];
 const CAMPOS_RESUMEN = ['cantidadPedidosHoy', 'cantidadPendientes', 'totalFacturadoHoy'];
 const ESTADOS_FACTURADOS = ['EN_PREPARACION', 'EN_CAMINO', 'LISTO_PARA_RETIRAR', 'ENTREGADO'];
 const REEMBOLSO_SIMPLE: Record<string, string> = {
@@ -378,7 +379,7 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
     test('el texto de la respuesta del Empleado no contiene cargos de servicio, comisiones ni datos de Mercado Pago o técnicos del reembolso', async ({ request }) => {
       const texto = JSON.stringify((await listaDe(request, empleadoToken)).body).toLowerCase();
 
-      for (const prohibido of ['cargoservicio', 'marketplace', 'mercadopago', 'mp_', 'ultimoerror', 'intentos', 'error tecnico', 'sintetico', 'pagoestado', 'clienteid', 'fallido', 'revision_manual', 'reintento']) {
+      for (const prohibido of ['cargoserviciocomercio', 'marketplace', 'mercadopago', 'mp_', 'ultimoerror', 'intentos', 'error tecnico', 'sintetico', 'pagoestado', 'clienteid', 'fallido', 'revision_manual', 'reintento']) {
         expect(texto, prohibido).not.toContain(prohibido);
       }
     });
@@ -403,6 +404,8 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
       expect(aceptado.detalles[0].precioUnitario).toBe(PRECIO);
       expect(aceptado.subtotal).toBe(PRECIO);
       expect(aceptado.total).toBeGreaterThanOrEqual(PRECIO);
+      expect(aceptado.cargoServicioCliente).toBeGreaterThanOrEqual(0);
+      expect(aceptado.total).toBe(aceptado.subtotal + aceptado.cargoServicioCliente);
       expect(aceptado.nombreCliente).toBeTruthy();
       expect(aceptado.tipoEntrega).toBe('RETIRO');
     });
@@ -595,10 +598,18 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
   test.describe('El header', () => {
     test('ausente, vacío o no numérico da 400 con texto neutro, para el Empleado y para el Dueño', async ({ request }) => {
       for (const token of [empleadoToken, dueno.token]) {
-        for (const cabeceras of [{}, { [HEADER]: '' }, { [HEADER]: '   ' }, { [HEADER]: 'abc' }, { [HEADER]: '1.5' }]) {
+        const casos: Array<[Record<string, string>, string]> = [
+          [{}, 'Falta indicar el comercio'],
+          [{ [HEADER]: '' }, 'Falta indicar el comercio'],
+          [{ [HEADER]: '   ' }, 'Falta indicar el comercio'],
+          [{ [HEADER]: 'abc' }, 'El comercio indicado no es válido'],
+          [{ [HEADER]: '1.5' }, 'El comercio indicado no es válido'],
+        ];
+        for (const [cabeceras, mensaje] of casos) {
           const respuesta = await perfil(request, token, cabeceras);
           expect(respuesta.status, JSON.stringify(cabeceras)).toBe(400);
-          expect(respuesta.body.mensaje).toContain(HEADER);
+          expect(respuesta.body.mensaje).toBe(mensaje);
+          expect(respuesta.body.mensaje).not.toContain(HEADER);
           expect(respuesta.body.mensaje).not.toContain('Dueño');
         }
       }

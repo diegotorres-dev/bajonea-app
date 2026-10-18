@@ -132,7 +132,7 @@ test.describe('Multi-comercio, tramo 1: resolución del comercio activo y aislam
     ] as const) {
       const respuesta = await apiConHeaders(request, metodo, ruta, token);
       expect(respuesta.status, `${metodo} ${ruta}`).toBe(400);
-      expect(respuesta.body.mensaje, `${metodo} ${ruta}`).toContain(HEADER);
+      expect(respuesta.body.mensaje, `${metodo} ${ruta}`).toBe('Falta indicar el comercio');
     }
     const crearSinHeader = await apiConHeaders(request, 'POST', '/productos', token, {}, { nombre: 'Sin Header', precio: 1500, categoriaId });
     expect(crearSinHeader.status).toBe(400);
@@ -175,7 +175,7 @@ test.describe('Multi-comercio, tramo 1: resolución del comercio activo y aislam
     for (const cabeceras of [{}, { [HEADER]: '' }, { [HEADER]: '   ' }]) {
       const perfil = await apiConHeaders(request, 'GET', '/comercios/perfil', dueno.sesion.token, cabeceras);
       expect(perfil.status, JSON.stringify(cabeceras)).toBe(400);
-      expect(perfil.body.mensaje).toContain(HEADER);
+      expect(perfil.body.mensaje).toBe('Falta indicar el comercio');
     }
   });
 
@@ -210,12 +210,12 @@ test.describe('Multi-comercio, tramo 1: resolución del comercio activo y aislam
     }
   });
 
-  test('un header no numérico da 400 y nombra al header', async ({ request }) => {
+  test('un header no numérico da 400 con un texto neutro', async ({ request }) => {
     const token = dueno.sesion.token;
     for (const valor of ['abc', '12.5', '1e3', '99999999999999999999']) {
       const respuesta = await apiConHeaders(request, 'GET', '/comercios/perfil', token, { [HEADER]: valor });
       expect(respuesta.status, `valor ${valor}`).toBe(400);
-      expect(respuesta.body.mensaje).toContain(HEADER);
+      expect(respuesta.body.mensaje).toBe('El comercio indicado no es válido');
     }
   });
 

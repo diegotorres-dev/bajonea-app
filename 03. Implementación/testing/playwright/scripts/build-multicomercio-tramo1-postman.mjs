@@ -190,7 +190,7 @@ items.push(
 items.push(
   perfilConHeader('[1 comercio] Dueño N sin header: 400 aunque tenga un solo comercio', 'token_comercio_n', null, [
     status(400),
-    "pm.test('El mensaje nombra al header', () => pm.expect(pm.response.json().mensaje).to.include('X-Comercio-Id'));",
+    "pm.test('El mensaje es neutro y no nombra al header', () => pm.expect(pm.response.json().mensaje).to.eql('Falta indicar el comercio'));",
   ]),
   perfilConHeader('[1 comercio] Dueño N con header propio: mismo resultado', 'token_comercio_n', '{{comercio_n_id}}', [
     status(200),
@@ -220,11 +220,11 @@ items.push(
 items.push(
   perfilConHeader('[2 comercios] Dueño M sin header: 400, no elige ningun comercio por su cuenta', 'token_comercio_m', null, [
     status(400),
-    "pm.test('El mensaje nombra al header', () => pm.expect(pm.response.json().mensaje).to.include('X-Comercio-Id'));",
+    "pm.test('El mensaje es neutro y no nombra al header', () => pm.expect(pm.response.json().mensaje).to.eql('Falta indicar el comercio'));",
   ]),
   perfilConHeader('[2 comercios] Dueño M con header vacio: 400', 'token_comercio_m', '', [
     status(400),
-    "pm.test('El mensaje nombra al header', () => pm.expect(pm.response.json().mensaje).to.include('X-Comercio-Id'));",
+    "pm.test('El mensaje es neutro y no nombra al header', () => pm.expect(pm.response.json().mensaje).to.eql('Falta indicar el comercio'));",
   ]),
   perfilConHeader('[2 comercios] Dueño M con header A', 'token_comercio_m', '{{comercio_m_a_id}}', [
     status(200),
@@ -245,7 +245,7 @@ items.push(
   ]),
   perfilConHeader('[negativo] Header no numerico', 'token_comercio_m', 'abc', [
     status(400),
-    "pm.test('El mensaje nombra al header', () => pm.expect(pm.response.json().mensaje).to.include('X-Comercio-Id'));",
+    "pm.test('El mensaje es neutro y no nombra al header', () => pm.expect(pm.response.json().mensaje).to.eql('El comercio indicado no es válido'));",
   ]),
   perfilConHeader('[negativo] Header decimal', 'token_comercio_m', '12.5', [status(400)]),
   item('[negativo] Productos con header de OTRO Dueño', req('GET', '/productos', { token: 'token_comercio_m', headers: { [HEADER]: '{{comercio_n_id}}' } }), [status(404)]),

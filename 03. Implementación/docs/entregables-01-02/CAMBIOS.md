@@ -5,6 +5,53 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
 
+## Ajustes del rol Empleado tras la prueba manual: cierre manual, cargo del cliente y mensajes (2026-10-18)
+
+Tres ajustes que cambian lo que ven el público, el Empleado y quien opera un pedido. Sin migraciones; el diccionario de datos no cambia de versión (solo se actualizó el texto de la regla de visibilidad).
+
+1. **Cierre manual contra bloqueo de la cuenta, en el catálogo del Cliente.** Un comercio cerrado a mano se ve como "Cerrado" y, en el detalle, con el aviso de cuándo reabre. Un comercio cerrado porque la cuenta de su Dueño está bloqueada se ve como "Cerrado temporalmente", sin aviso de cuándo reabre. Esta regla **reemplaza a la del tramo C2**, que mostraba los dos casos con la misma etiqueta.
+2. **El Empleado ve el cargo por servicio que paga el cliente.** En el detalle del pedido aparece la línea "Cargo por servicio del cliente" entre "Subtotal" y "Total pagado". Sigue sin ver el cargo del comercio, la comisión, el neto ni datos de Mercado Pago. "Ventas de hoy" no cambia.
+3. **Mensajes de pedido y de comercio sin nombres internos.** Ejemplo: "El pedido ya fue resuelto" en lugar de "El pedido ya fue resuelto, no está en estado …". Cuando el pedido todavía no se aceptó o está en preparación o en camino, el texto dice qué falta hacer.
+
+**Documentos de esta carpeta que cambiaron** (Diego los copia a mano):
+- `requisitos-funcionales-cliente.md`: copiar a `01. Análisis de Requerimientos/04. Requisitos Funcionales/`. Las etiquetas "Cerrado" y "Cerrado temporalmente" del catálogo.
+- `requisitos-funcionales-comercio.md`: copiar a `01. Análisis de Requerimientos/04. Requisitos Funcionales/`. Qué indicador ve el público en cada caso de cierre.
+- `requisitos-funcionales-empleado.md`: copiar a `01. Análisis de Requerimientos/04. Requisitos Funcionales/`. El cargo del cliente en el detalle del pedido y lo que sigue oculto.
+- `Historias de Usuario - Cliente.md`: copiar a `01. Análisis de Requerimientos/07. Historias de Usuario/`. Criterios de aceptación de HU-C06.
+- `Historias de Usuario - Empleado.md`: copiar a `01. Análisis de Requerimientos/07. Historias de Usuario/`. Qué ve el Empleado en los pedidos.
+- `alcance-y-limitaciones.md`: copiar a `01. Análisis de Requerimientos/03. Alcance y Limitaciones/`. El texto del bloqueo del Dueño y el catálogo.
+- `diccionario-de-datos.md`: copiar a `02. Diseño/03. Diagramas de Bases de Datos/03. Diccionario de Datos/`. El indicador de apertura `CERRADO_MANUAL` en la regla de visibilidad y venta.
+
+**No cambiaron:** los requisitos de Dueño, Administrador, Sistema y generales, los requisitos no funcionales, las historias de Dueño, Comercio y Administrador, los DFD ni los diagramas.
+
+**Pruebas:** ver `docs/DECISIONES.md`, 2026-10-18, y `docs/MAPEO-ARCHIVOS-TRAMO-AJUSTES-EMPLEADO.md`.
+
+
+## Toast de éxito en toda acción que modifica datos (2026-10-15)
+
+Toda acción que modifica datos y termina bien muestra ahora un aviso breve (toast), en todos los roles; quedan fuera las que solo navegan y las que terminan en su propia pantalla de confirmación. Se agregó a: abrir y cerrar el comercio, el cierre masivo de la desvinculación de Mercado Pago, "Marcar todas" las notificaciones, vaciar y quitar productos del carrito, eliminar, reordenar, recortar y agregar fotos de un producto guardado y descontinuar un producto desde su formulario. El aviso se anuncia a lectores de pantalla (`role="status"`).
+
+**Documentos de esta carpeta que cambiaron** (Diego los copia a mano):
+- `requisitos-no-funcionales.md`: copiar a `01. Análisis de Requerimientos/` (la carpeta donde viva la versión vigente de los requisitos no funcionales). Suma, en "Usabilidad", el requisito del aviso de éxito.
+
+**No cambiaron:** el diccionario de datos (sigue en la v1.20), los requisitos funcionales, las historias de usuario, el alcance ni los diagramas.
+
+**Pruebas:** ver `docs/DECISIONES.md`, 2026-10-15, "Toast de éxito en toda acción que modifica datos, y regresión final de E4".
+
+
+## El Administrador ve todos los comercios, sin importar el estado (2026-10-15)
+
+`GET /api/v1/administrador/comercios` y la pantalla `admin-comercios.html` muestran ahora todos los comercios en cualquier estado, con una etiqueta de estado en cada tarjeta; "Ver equipo" está disponible en todos los estados. Las bandejas de solicitudes siguen mostrando solo los pendientes.
+
+**Documentos de esta carpeta que cambiaron** (Diego los copia a mano):
+- `requisitos-funcionales-administrador.md`: copiar a `01. Análisis de Requerimientos/04. Requisitos Funcionales/`. Suma el requisito de ver todos los comercios sin importar el estado.
+- `Historias de Usuario - Administrador.md`: copiar a `01. Análisis de Requerimientos/07. Historias de Usuario/`. HU-A07 suma criterios de aceptación.
+- `alcance-y-limitaciones.md`: copiar a `01. Análisis de Requerimientos/03. Alcance y Limitaciones/`. Se actualiza la limitación (b) de la corrección de comercios rechazados.
+
+**No cambiaron:** el diccionario de datos (sigue en la v1.20), los requisitos de Dueño, Empleado, Sistema, Comercio, Cliente y generales, ni las historias de Dueño y Empleado.
+
+**Pruebas:** ver `docs/DECISIONES.md`, 2026-10-15, "El Administrador ve todos los comercios, sin importar el estado".
+
 ## Tramo E4, bloque A4: cierre y verificación (2026-10-15)
 
 Cierre de E4 (sin código nuevo de la aplicación): se volvió a probar todo y se limpiaron los documentos de requisitos que seguían diciendo "planificado" o "no existe código". Cambios de contenido en esta carpeta:

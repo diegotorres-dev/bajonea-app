@@ -78,11 +78,15 @@ test.describe('Comercio bloqueado por la cuenta del Dueño (UI), tramo C2', () =
   test.describe('Catálogo y detalle', () => {
     let abierto: Dueno;
     let bloqueado: Dueno;
+    let cerradoAMano: Dueno;
     let sinCobro: number;
     let productoBloqueado: number;
 
     test.beforeAll(async ({ request }) => {
       abierto = await duenoApto(request);
+      cerradoAMano = await duenoApto(request);
+      const cierre = await apiConHeaders(request, 'PUT', '/comercios/cerrar', cerradoAMano.token, { [HEADER]: String(cerradoAMano.comercioId) });
+      expect(cierre.status).toBe(200);
       bloqueado = await duenoApto(request);
       productoBloqueado = await productoEn(request, bloqueado);
       sinCobro = await clonarComercioTest(request, bloqueado.comercioId, `Sin cobro ${sufijoUnico()}`, 'APROBADO');
@@ -140,6 +144,26 @@ test.describe('Comercio bloqueado por la cuenta del Dueño (UI), tramo C2', () =
 
       await page.goto(`/comercio-detalle.html?id=${abierto.comercioId}`);
       await expect(page.getByTestId('estado-comercio')).toHaveText('Abierto');
+    });
+
+    test('el bloqueo de cuenta y el cierre manual muestran textos distintos en la tarjeta y en el detalle', async ({ page }) => {
+      await page.goto('/index.html');
+      const cardManual = page.getByTestId(`comercio-card-${cerradoAMano.comercioId}`);
+      const cardBloqueado = page.getByTestId(`comercio-card-${bloqueado.comercioId}`);
+      await expect(cardManual).toBeVisible();
+      await expect(cardBloqueado).toBeVisible();
+      await expect(cardManual).toHaveAttribute('data-apertura', 'CERRADO_MANUAL');
+      await expect(cardBloqueado).toHaveAttribute('data-apertura', 'CERRADO_TEMPORALMENTE');
+      await expect(cardManual.getByTestId('estado-comercio')).toHaveText('Cerrado');
+      await expect(cardBloqueado.getByTestId('estado-comercio')).toHaveText('Cerrado temporalmente');
+
+      await page.goto(`/comercio-detalle.html?id=${cerradoAMano.comercioId}`);
+      await expect(page.getByTestId('estado-comercio')).toHaveText('Cerrado');
+      await expect(page.getByTestId('texto-reapertura-comercio')).toHaveText(/^Reabre /);
+
+      await page.goto(`/comercio-detalle.html?id=${bloqueado.comercioId}`);
+      await expect(page.getByTestId('estado-comercio')).toHaveText('Cerrado temporalmente');
+      await expect(page.getByTestId('texto-reapertura-comercio')).toHaveCount(0);
     });
 
     test('el modal de producto del comercio bloqueado avisa que está cerrado y no ofrece agregar al carrito', async ({ page, request }) => {

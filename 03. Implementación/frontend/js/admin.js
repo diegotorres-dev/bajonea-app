@@ -923,6 +923,12 @@ function renderComercioAdminRow(comercio, onSuspendido) {
   const p = document.createElement('p');
   p.textContent = labelTipoComercio(comercio.tipoComercio);
   bodyEl.appendChild(p);
+  const info = BADGE_ESTADO_COMERCIO[comercio.estado] || { label: comercio.estado, className: 'status-badge--neutro' };
+  const badge = crear('span', `status-badge ${info.className}`);
+  badge.setAttribute('data-testid', `estado-comercio-${comercio.id}`);
+  badge.setAttribute('data-estado', comercio.estado);
+  badge.textContent = info.label;
+  bodyEl.appendChild(badge);
   row.appendChild(bodyEl);
 
   const detalleBtn = crear('button', 'comercio-admin-row__detalle');
@@ -952,7 +958,7 @@ export async function initAdminComercios() {
     wrapper.appendChild(icon);
     const h1 = document.createElement('h1');
     h1.className = 'state-page__title';
-    h1.textContent = 'No hay comercios aprobados';
+    h1.textContent = 'No hay comercios';
     wrapper.appendChild(h1);
     container.appendChild(wrapper);
     return;
@@ -976,7 +982,7 @@ function renderClienteAdminRow(cliente) {
   const dot = crear('span', `cliente-estado__dot ${DOT_ESTADO_USUARIO[cliente.estado] || ''}`);
   badge.appendChild(dot);
   const label = document.createElement('span');
-  label.textContent = LABELS_ESTADO_USUARIO[cliente.estado] || cliente.estado;
+  label.textContent = LABELS_ESTADO_USUARIO[cliente.estado] || 'Estado no disponible';
   badge.appendChild(label);
   top.appendChild(badge);
   row.appendChild(top);
@@ -1854,7 +1860,7 @@ function renderReembolsoRow(nota, onReintentar) {
   badge.setAttribute('data-testid', 'estado-reembolso');
   badge.appendChild(crear('span', `cliente-estado__dot ${DOT_ESTADO_REEMBOLSO[nota.estado] || ''}`));
   const label = document.createElement('span');
-  label.textContent = LABELS_ESTADO_REEMBOLSO[nota.estado] || nota.estado;
+  label.textContent = LABELS_ESTADO_REEMBOLSO[nota.estado] || 'Estado no disponible';
   badge.appendChild(label);
   top.appendChild(badge);
   row.appendChild(top);
@@ -1864,7 +1870,7 @@ function renderReembolsoRow(nota, onReintentar) {
   row.appendChild(detailRow('Comercio', nota.nombreComercio));
   row.appendChild(detailRow('Monto', formatearPrecio(nota.monto)));
   row.appendChild(detailRow('Fecha', formatearSoloFecha(nota.fechaEmision)));
-  row.appendChild(detailRow('Motivo', LABELS_MOTIVO_REEMBOLSO[nota.motivo] || nota.motivo || '—'));
+  row.appendChild(detailRow('Motivo', LABELS_MOTIVO_REEMBOLSO[nota.motivo] || '—'));
 
   if (nota.ultimoError) {
     const error = crear('p', 'reembolso-row__error');

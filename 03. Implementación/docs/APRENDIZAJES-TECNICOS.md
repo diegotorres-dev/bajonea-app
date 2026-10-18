@@ -137,6 +137,11 @@ Lecciones operativas y de herramientas que no son decisiones de diseño (esas vi
 
 - No es una optimización pendiente. `admin@bajonea.ar` es una cuenta real compartida por 13 de los 19 archivos de spec y Bajoneá tiene **sesión única por cuenta** (`Sesion.activa`): un login nuevo invalida el anterior de la misma cuenta, por UI o por API. Con más de un worker dos specs se pisan y rompe el que pierde la carrera. Además el backend único de desarrollo y Cloudinary no toleran la concurrencia real: con paralelismo por defecto fallaban ~45 tests. Convención para specs nuevos: todo el setup por API de una cuenta va antes que su login por UI dentro del mismo test.
 
+### Los tests de Playwright suben imágenes a Cloudinary y no las limpian
+
+- Los specs que cubren fotos de comercio y de producto (por ejemplo el 06, el 53 y el 62, y los helpers `subirFotoPreRegistro`, `subirImagenProductoDirecto`, `subirFotoNuevoComercio` y `subirFotoCorreccionComercio` de `tests/helpers/backend.ts`) hacen subidas reales a la cuenta de Cloudinary y nada las borra después.
+- **Hipótesis sin verificar:** esa acumulación de assets, sumada a las subidas de cada corrida completa, pudo agotar el límite de la cuenta anterior y provocar el `cloud_name is disabled` que se vio en la tanda de ajustes del rol Empleado (2026-10-18). No se comprobó con Cloudinary ni con el uso de la cuenta; es solo la explicación más probable. Ver la deuda anotada en `docs/DECISIONES.md`.
+
 ### `waitForURL` necesita comodín final cuando la redirección agrega query string
 
 - **Síntoma:** un test de Playwright cuelga hasta el timeout en un `waitForURL` aunque la pantalla de destino ya cargó.
@@ -525,3 +530,21 @@ Pendientes que no son código y hay que revisar en cada entorno antes de contar 
 
 - En el cierre de E4, `27-multicomercio-tramo4-selector.spec.ts:497` ("una sola consulta de polling por ciclo…") falló en la corrida completa y otra vez al correr el spec 27 entero sobre una base recién reseteada, y pasó 3 de 3 corriéndolo solo. No tiene relación con E4. Sigue en la lista de inestables conocidos.
 
+
+
+## Ajustes del rol Empleado (2026-10-18)
+
+### Los constructores de Newman no son todos idempotentes: antes de regenerar una carpeta, comprobar cómo la escribe
+
+- **Carpeta 58:** `build-pedidos-tramoE3-A0-postman.mjs` reemplaza la carpeta por su nombre exacto (`58 - Pedidos E3 A0 …`), pero `build-empleado-tramoE3-A1-postman.mjs` la renombra a `58 - Pedidos y actividad E3 …`. Correr solo el A0 deja las dos carpetas (la vieja y una nueva de 95 requests al final) y el A1 después toma la primera que empieza con `58 - `. Orden seguro: correr el A0, borrar la carpeta `58 - Pedidos y actividad …` vieja, correr el A1 y volver a poner la carpeta 58 entre la 57 y la 59.
+- **Carpetas 49, 50 y 51:** los constructores `1`, `2a`, `3a` y `4a` las arman y después otros constructores les parchean pedidos y encabezados (por ejemplo, el `4a` ajusta requests de las tres). **Regenerarlas pierde esos parches** (los items de pedidos de la carpeta 49 pasaron a dar `400` por falta de `X-Comercio-Id`). Para cambiar una aserción de esas carpetas, editar los items en la colección con un script y comparar item por item (request completa, no solo scripts) contra una copia de seguridad.
+- Los constructores que hacen `push` de su carpeta (A2, A3) la dejan al final de la colección: reordenar por el prefijo numérico después de correrlos.
+- Una carpeta de las primeras (por ejemplo la 49, que usa `cliente_usuario` y `cliente_password`) no corre sola: necesita las carpetas 00 a 03, que registran al Cliente. La colección completa necesita además una base reseteada: las carpetas 49 y 21 (`spec 21`) comparten CUIT y fallan con `409` si se repiten sobre la misma base.
+
+### Cloudinary deshabilitada
+
+- Con la cuenta del proyecto deshabilitada, la subida de la foto de pre-registro devuelve `401 cloud_name is disabled`. El backend solo valida que la URL sea de la cuenta y esté en la carpeta correcta, así que las pruebas usan una URL sintética (`tests/helpers/backend.ts`, `subirFotoPreRegistro`). No sirve para los specs que suben imágenes reales de producto.
+
+### `mvnw` y los tests de Playwright comparten `bajonea_test`
+
+- Después de `mvnw test` o de una corrida de Playwright la base queda con restos; para correr Newman hay que volver a resetearla con `entorno-test.mjs preparar`.

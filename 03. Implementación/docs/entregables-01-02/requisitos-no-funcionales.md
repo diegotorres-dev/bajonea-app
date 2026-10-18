@@ -60,6 +60,11 @@
   curva de aprendizaje para usuarios sin experiencia técnica.
 - Los mensajes de error deben ser claros, descriptivos y orientados al usuario,
   evitando tecnicismos innecesarios.
+- Toda acción del usuario que modifica datos y termina bien debe confirmarse con un aviso breve
+  (toast) que diga qué se hizo, en todos los roles. Quedan fuera las acciones que solo navegan
+  (iniciar sesión, cerrar sesión, cambiar de cuenta) y las que ya terminan en su propia pantalla
+  de confirmación (por ejemplo, el pedido confirmado). El aviso es una región de estado accesible
+  (`role="status"`) para que los lectores de pantalla lo anuncien.
 
 ---
 

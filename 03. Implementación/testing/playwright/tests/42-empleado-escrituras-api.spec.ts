@@ -28,7 +28,7 @@ type Metodo = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 const HEADER = 'X-Comercio-Id';
 const NO_DISPONIBLE = { mensaje: 'Comercio no encontrado', data: { codigo: 'COMERCIO_NO_DISPONIBLE' } };
-const CAMPOS_PEDIDO_EXCLUIDOS = ['clienteId', 'pagoEstado', 'cargoServicioCliente', 'cargoServicioComercio'];
+const CAMPOS_PEDIDO_EXCLUIDOS = ['clienteId', 'pagoEstado', 'cargoServicioComercio'];
 const CAMPOS_FISCALES = ['cuit', 'razonSocial', 'condicionIva', 'tipoSociedad', 'domicilioFiscal', 'fechaInicioActividades', 'representante', 'motivoRechazo'];
 const todoElDia = () => [{ diaSemana: diaDeHoy(), horaApertura: '00:00', horaCierre: '23:59' }];
 const conComercio = (comercioId: number | string): Record<string, string> => ({ [HEADER]: String(comercioId) });
@@ -311,7 +311,8 @@ test.describe('Rol Empleado, E3 bloque A2 (API): escrituras delegadas', () => {
       const entregado = await escribir(request, 'PUT', `/pedidos/comercio/${pedidoId}/entregar`, empleadoToken, comercioId);
       expect(entregado.status, JSON.stringify(entregado.body)).toBe(200);
       expect(entregado.body.data.estado).toBe('ENTREGADO');
-      expect(Object.keys(entregado.body.data)).not.toContain('cargoServicioCliente');
+      expect(Object.keys(entregado.body.data)).toContain('cargoServicioCliente');
+      expect(Object.keys(entregado.body.data)).not.toContain('cargoServicioComercio');
       expect(ultimoActor(pedidoId)).toBe(`EMPLEADO:${empleadoId}`);
     });
 

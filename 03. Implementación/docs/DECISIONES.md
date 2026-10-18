@@ -10577,3 +10577,130 @@ Nombre del comercio en los endpoints del equipo, íconos por tipo de aviso en la
 1. ¿Confirmás E4 como cerrado? (Hasta entonces la fila E4 de `CLAUDE.md` §6 queda como implementada, pendiente de tu confirmación.)
 2. ¿Querés que `27:497` (falla corriendo todo el spec 27, pasa solo) se investigue en un mini-tramo de pulido?
 3. ¿Hacemos determinista la mutación M7 con una sesión que retenga las filas?
+
+## 2026-10-15 — El Administrador ve todos los comercios, sin importar el estado
+
+Decisión de Diego (no una evaluación técnica): el Administrador ve todos los comercios, absolutamente, sin importar el estado. Detalle de archivos en `docs/MAPEO-ARCHIVOS-TRAMO-E4-ADMIN-LISTA.md`. Sin migraciones y sin cambios en escrituras ni bloqueos. **Pendiente de la confirmación de Diego.**
+
+### Relevamiento (solo lectura, antes de tocar nada)
+
+- **Estados posibles** (`EstadoComercio`, ocho): `PENDIENTE` (registro, alta adicional y re-solicitud), `APROBADO` y `APTO_VENTA` (aprobación, con o sin Mercado Pago), `RECHAZADO` y `RECHAZO_DEFINITIVO` (rechazo), `SUSPENDIDO` (suspensión del Administrador), `CERRADO_TEMPORALMENTE` (la cuenta del Dueño quedó bloqueada, tramos C2 y C3) e `INACTIVO` (cuenta del Dueño inactiva).
+- **Quién usaba qué:** `GET /administrador/comercios` (único consumidor: `initAdminComercios`, `admin-comercios.html`) filtraba `APROBADO`, `APTO_VENTA` y `SUSPENDIDO` con `findByEstadoIn`. `GET /administrador/comercios/pendientes` (`PENDIENTE` sin re-solicitudes) y `/resolicitudes` (`PENDIENTE` con re-solicitudes) alimentan las bandejas `admin-comercios-pendientes.html` y `admin-resolicitudes.html`, el detalle `admin-comercio-detalle.html` y los modales de aprobar y rechazar. `GET /administrador/metricas` ya contaba todos (`comerciosTotal = count()`): el dashboard decía "N registrados" y la lista mostraba menos.
+- **Por qué filtraba así:** nació como "aprobados" y se le sumó `SUSPENDIDO` en la Fase 19 para verificar la suspensión; nadie la ensanchó cuando aparecieron `CERRADO_TEMPORALMENTE`, `INACTIVO`, `RECHAZADO` y `RECHAZO_DEFINITIVO`. No hay paginado ni búsqueda en el servidor; la pantalla ordena por nombre.
+- **Matiz sobre el "cierre manual":** cerrar un comercio a mano (tramo C1) **no cambia su estado**: sigue `APROBADO` o `APTO_VENTA` y marca `cerrado_manualmente`, así que ya aparecía en la lista. El estado `CERRADO_TEMPORALMENTE` es el que deja el bloqueo de la cuenta del Dueño, y ese sí faltaba. Los tests cubren los dos casos.
+
+### Qué se hizo
+
+- **Backend:** `AdministradorService.listarComerciosAprobados()` pasó a `listarComercios()`, que usa `findAll(Sort.by("id"))`: todos los comercios, por id. El DTO (`ComercioAdminResponseDTO`) ya traía `estado`; los valores neutros (sin Dueño ni otros comercios) no cambian. La ruta es la misma. Las bandejas de solicitudes quedan como estaban.
+- **Frontend:** cada tarjeta de `admin-comercios.html` tiene una etiqueta de estado (`estado-comercio-{id}`, con `data-estado`), con el mapa `BADGE_ESTADO_COMERCIO` y las clases `status-badge--*` que ya existían (los ocho estados ya estaban mapeados); un estilo de margen superior y ningún color nuevo. El estado vacío dice "No hay comercios". En el modal, "Ver equipo" y "Cerrar" aparecen siempre y "Suspender" solo con `APROBADO` o `APTO_VENTA` (como ya era y como lo exige el backend). No se inventó ninguna transición.
+
+### Pruebas (backend de test en el 8081, copia del frontend en el 5502, base reseteada con `entorno-test.mjs preparar`, `workers: 1`)
+
+- **Java:** `AdministradorListadoComerciosIntegrationTest` (6 tests): un comercio por cada estado aparece con su estado, el listado trae tantos como hay en la base, el cierre manual y el cerrado temporalmente aparecen, orden por id y valores neutros, las solicitudes siguen siendo solo pendientes y solo el Administrador lo ve. **`mvnw test` completo, dos pasadas (base reseteada y una categoría sembrada): 860/860 y 6/6** (854 + 6 nuevos).
+- **Newman:** carpeta 69 nueva (`build-admin-lista-comercios-tramoE4-postman.mjs`, 21 requests: clona un comercio por estado con el atajo de test, comprueba el listado y su orden, el "Ver equipo" de cada estado, que las solicitudes sigan solo pendientes y la seguridad). En la carpeta 10, el request "GET administrador/comercios" ya no exige que el comercio D no aparezca (aparece, `PENDIENTE`); en la 50 se renombró un request. **Colección completa: 3197 requests, 5033 assertions, 0 fallos** (+21 y +44).
+- **Playwright:** spec 61 nuevo, 12 tests (uno por cada uno de los ocho estados con etiqueta, clase, "Ver equipo" que navega y "Suspender" solo cuando corresponde; cierre manual y cerrado temporalmente con un miembro; los ocho estados a la vez a 375 px; solicitudes solo pendientes). **Specs afectados (08, 17, 22, 23, 25, 60 y 61): 120/120.** No se corrió la suite completa (no se pidió).
+- **Mutación:** se volvió al filtro viejo (`findByEstadoIn(APROBADO, APTO_VENTA, SUSPENDIDO)`). El test Java falla (4 de 6: faltan `PENDIENTE` y los demás estados; 94 esperados contra 43) y el spec 61 falla (7 de 12: `PENDIENTE`, `RECHAZADO`, `RECHAZO_DEFINITIVO`, `CERRADO_TEMPORALMENTE`, `INACTIVO`, cerrado temporalmente con miembro y los ocho a la vez; pasan los que ya estaban en el filtro). `AdministradorService.java` restaurado y verificado con `sha1sum` (idéntico al de antes de la mutación).
+
+### Hallazgos
+
+1. **Rendimiento del listado.** Con 605 comercios en `bajonea_test` (perfil de test, con el SQL de Hibernate impreso) el endpoint tarda de 19 a 24 s y responde 800 KB: arma cada tarjeta con unas diez consultas (N+1) y trae datos legales, horarios y redes de cada comercio. Ya era así con el filtro viejo (548 filas); ahora incluye más estados. Con una base chica no se nota. No se tocó: es una decisión de producto (ver preguntas).
+2. **Dos pruebas de otros tramos asumían el filtro viejo** y se actualizaron: el request de la carpeta 10 de Newman ("D no aparece") y el nombre del request de la 50.
+3. **La limitación (b) de las correcciones de comercios rechazados** ("no hay pantalla que liste los rechazados") se actualizó en `alcance-y-limitaciones.md`: ahora aparecen en el listado general, aunque sin filtro por estado.
+
+### Preguntas / decisiones de producto que quedan para Diego
+
+1. **¿Qué acciones corresponden a los estados raros?** Hoy: `SUSPENDIDO` no tiene "Levantar suspensión" (no existe en el sistema, ya anotado); `CERRADO_TEMPORALMENTE` e `INACTIVO` no se pueden suspender (el backend lo rechaza) y no tienen ninguna acción; `RECHAZADO` y `RECHAZO_DEFINITIVO` no tienen acción desde el listado. ¿Querés alguna (por ejemplo, un enlace a la bandeja de solicitudes desde una tarjeta `PENDIENTE`)? No se implementó nada.
+2. **¿Paginado, búsqueda o filtro por estado?** Con todos los estados el listado crece; recomiendo chips de filtro por estado y un DTO liviano (sin datos legales, horarios ni redes) para la lista, dejando el detalle completo para el modal.
+3. **¿Las tarjetas muestran el cierre manual?** Un comercio cerrado a mano sigue con su estado (`APROBADO` o `APTO_VENTA`) y la tarjeta no lo dice. El DTO administrativo no trae `cerradoManualmente`.
+
+## 2026-10-15 — Toast de éxito en toda acción que modifica datos, y regresión final de E4
+
+**Regla de Diego:** toda acción que modifica datos y termina bien muestra un toast, en toda la app y en todos los roles. Quedan fuera las acciones que solo navegan (iniciar y cerrar sesión, cambiar de cuenta) y las que ya terminan en su propia pantalla de confirmación (por ejemplo, el pedido confirmado). Solo frontend y pruebas: ninguna escritura ni bloqueo del backend se tocó (por eso no se repitieron los 18 estreses ni las mutaciones de backend).
+
+### Auditoría (fase 1, solo lectura)
+
+- Se recorrieron los módulos de `frontend/js` buscando todo `apiFetch` con `POST`, `PUT`, `PATCH` o `DELETE` y cada `showToast`. La tabla completa por pantalla, archivo y acción está en `docs/MAPEO-ARCHIVOS-TRAMO-TOASTS.md`.
+- **Componente existente:** `showToast(mensaje, kind)` de `catalogo.js` (2,2 s, un solo toast a la vez, `banner-success` o `banner-error`). Para sobrevivir a una navegación ya existían el parámetro de URL (`?productoCreado=1`, `?comercioResuelto=1`) y `guardarToastPendiente` / `mostrarToastPendiente`. No tenía atributos de accesibilidad.
+- **Sin toast de éxito y que correspondían:** el interruptor de abrir y cerrar el comercio; el cierre masivo de la desvinculación de Mercado Pago; "Marcar todas" en notificaciones; vaciar el carrito; quitar un producto del carrito (tacho y "−" desde 1); eliminar, reordenar, recortar y subir fotos de un producto ya guardado; descontinuar un producto desde el formulario (volvía a la lista sin avisar).
+
+### Qué se hizo
+
+- Textos (voseo, cortos): "Comercio cerrado" / "Comercio abierto"; "Cerraste el comercio" / "Cerraste N comercios" (solo los que se cerraron); "Marcaste todos los avisos como leídos"; "Vaciaste el carrito"; "Quitaste {producto} del carrito"; "Imagen eliminada"; "Orden de las fotos actualizado" (una sola vez por arrastre); "Imagen actualizada"; "Imagen agregada"; "Producto descontinuado" (la lista lo muestra con `?productoDescontinuado=1`, como ya hacían crear y editar).
+- Mismo componente y mismos estilos. **Único cambio al componente:** `role="status"` y `aria-live="polite"` en el `div.toast`. Se descartó `role="alert"` porque los specs 31 y 33 cuentan los `alert` de la página (el aviso fijo de los `409` es el que lo lleva).
+- Donde la acción falla (`409` del cierre, error al marcar o al reordenar) no hay toast de éxito; los errores siguen como estaban.
+
+### Casos dudosos que se dejaron fuera (para que Diego decida)
+
+1. **Sumar o restar cantidad en el carrito** (sin llegar a cero): el número cambia en el momento; un toast por toque molestaría. Hay un test que fija que no avisa.
+2. **Marcar una notificación como leída al tocarla** y el marcado automático de las notificaciones del comercio al entrar a las pantallas de estado: son implícitos, no una acción pedida.
+3. **Reenviar el código** en la verificación de cuenta: ya muestra el aviso "Te enviamos un nuevo código." dentro de la pantalla.
+4. **Cambiar la contraseña** se trató como excluida (cierra sesión y el login muestra "Listo, ya podés ingresar"); lo mismo el envío de las solicitudes de comercio, los registros y los pasos de recuperación y reactivación, que terminan en su propia pantalla.
+
+### Pruebas
+
+- **Spec nuevo `62-toasts-exito-ui` (14 tests, 375 px):** región de estado accesible; cerrar y abrir; el `409` del cierre sin toast de éxito; "Marcar todas" y su fallo; carrito (tacho, "−" a cero y que bajar de 3 a 2 no avisa, vaciar); fotos (eliminar, reordenar con eventos de arrastre, el fallo del reordenamiento, agregar y recortar con Cloudinary real); descontinuar desde el formulario. El spec 31 suma la comprobación de "Cerraste 3 comercios" en el cierre masivo.
+- **Mutación (cinco grupos, restaurados con `sha1sum` idéntico):** sin el toast del interruptor falla el spec 62 ("cerrar y abrir"); sin el de "Marcar todas" falla el spec 62; sin los tres del carrito falla el spec 62 (tacho); sin los cuatro de las fotos y el parámetro de descontinuar falla el spec 62 (eliminar); sin el del cierre masivo falla el test del spec 31. En cada caso el test cayó y volvió a pasar con el archivo restaurado.
+- Hallazgos del spec: un error de red simulado con `abort` redirige a la pantalla de sin conexión (por eso los fallos se simulan con un `400`); `dragTo` de Playwright se cuelga con la galería, se usan eventos `dragstart`, `dragover` y `drop` con un `DataTransfer`.
+
+### Regresión final de E4 (código completo: lista del Administrador y toasts)
+
+Con todo el código aplicado (lista del Administrador y toasts), backend de test en el 8081, copia del frontend en el 5502, `workers: 1`, 375 px, base reseteada con `entorno-test.mjs preparar` antes de cada herramienta:
+
+- **`mvnw test` (dos pasadas):** 860 tests sin fallos (pasada 1) y 6 sin fallos (`AtajosDeTestFueraDelPerfilTest`); `BUILD SUCCESS` las dos (antes 854 + 6: los 6 nuevos son `AdministradorListadoComerciosIntegrationTest`).
+- **Newman, colección completa:** 3197 requests y 5033 assertions, 0 fallos (445 s). (Un primer intento falló con `ECONNREFUSED` (el backend de test no estaba escuchando). La causa no se verificó; una hipótesis es que el proceso que lo había levantado en segundo plano no sobrevivió al cierre del comando que lo lanzó, pero no se comprobó. Se volvió a levantar y se corrió de nuevo desde una base reseteada.)
+- **Playwright, suite completa:** 988 tests, **987 pasaron y 1 falló** (25,9 min): `27:497`, el inestable conocido; aislado con `--repeat-each=3` pasó 3/3. **Ninguno de los otros flakes conocidos (`51:151`, `53:304`) falló, y no hubo ningún fallo nuevo.** El spec 62 nuevo (14 tests) y el cambio del spec 31 pasaron en la corrida completa.
+- **No se repitieron** los 18 estreses ni las mutaciones de backend: no se tocó ninguna ruta de escritura ni de bloqueo.
+
+
+## 2026-10-18 — Ajustes del rol Empleado tras la prueba manual de Diego: cierre manual contra bloqueo, cargo del cliente y mensajes sin nombres internos
+
+Tres ajustes que Diego detectó probando el rol Empleado a mano. Se auditaron primero (solo lectura) y se implementaron en este orden: bloque 1 (cierre manual), bloque 3 (mensajes) y bloque 2 (cargo por servicio del cliente). Sin migraciones. Pendiente de la confirmación de Diego. Detalle por archivo en `docs/MAPEO-ARCHIVOS-TRAMO-AJUSTES-EMPLEADO.md`.
+
+### Decisión 1 — El público distingue el bloqueo de la cuenta del cierre manual (reemplaza la regla del tramo C2)
+
+- **Regla anterior (C2):** el catálogo público mostraba igual un comercio cerrado a mano y uno cerrado por el bloqueo de la cuenta del Dueño, para no revelar el bloqueo; el backend informaba `estadoApertura = CERRADO_TEMPORALMENTE` en los dos casos y el front los rotulaba "Cerrado temporalmente".
+- **Regla nueva, decidida por Diego:** el bloqueo de la cuenta (estado real `CERRADO_TEMPORALMENTE`) se ve como "Cerrado temporalmente", sin línea "Reabre…"; el cierre manual (el comercio sigue operativo) se ve solo como "Cerrado", con la línea "Reabre…" como hasta ahora. **Esta regla reemplaza a la de C2.**
+- **Cómo:** valor nuevo `EstadoApertura.CERRADO_MANUAL` (enum de la API, siguiendo `ABIERTO`, `CERRADO_HORARIO` y `CERRADO_TEMPORALMENTE`; no es una columna de la base ni hay migración). `DisponibilidadComercioService.calcular` devuelve `CERRADO_TEMPORALMENTE` si el estado del comercio lo es (aunque además tenga un cierre manual previo, manda el bloqueo), si no `CERRADO_MANUAL` si está cerrado a mano, si no `ABIERTO` o `CERRADO_HORARIO`. El campo `estado` público sigue siendo siempre `APTO_VENTA` y el `409` de carrito y pedido sigue con el mismo texto ("Este comercio está cerrado en este momento").
+- **Consumidores revisados:** el front del Cliente solo compara `estadoApertura` con `'ABIERTO'` (`estaAbiertoParaClientes`: catálogo, filtro "Abierto ahora", orden, detalle, carrito y checkout), usa `etiquetaCierrePublica` (ya devolvía "Cerrado" para cualquier valor distinto de `CERRADO_TEMPORALMENTE`) y copia el valor a `data-apertura`, que ningún CSS usa. Dueño, Empleado y Administrador usan `cerradoManualmente` y `abiertoAhora` de sus propios DTOs, no este campo. Por eso no cambió ningún archivo del front. Los "Cerrado temporalmente" de los estados reales (`selector-comercio.js`, `selector-contexto.js`, `comercio.js`, `admin.js`) no se tocaron.
+- **Pruebas:** Java `DisponibilidadComercioServiceTest` 20/20 y `ComercioServiceCatalogoPublicoTest` 21/21 (un test nuevo en cada una que compara los dos casos); Playwright specs 30 a 34, 78/78 (en el spec 33 un test nuevo compara la tarjeta y el detalle de un comercio cerrado a mano con uno bloqueado: "Cerrado" con "Reabre…" contra "Cerrado temporalmente" sin línea); Newman carpetas 53, 54 y 55 (builders 6a y 7a ajustados; el 8a no tenía casos de cierre manual), 219 requests y 316 assertions, 0 fallos.
+- **Mutación (sha1):** `DisponibilidadComercioService.java` `c2d708b6…`; con la rama del cierre manual devolviendo `CERRADO_TEMPORALMENTE` (`5e049250…`) fallaron 3 tests Java; restaurado a `c2d708b6…` idéntico.
+- **Documentos:** `requisitos-funcionales-cliente.md`, `Historias de Usuario - Cliente.md`, `requisitos-funcionales-comercio.md`, `alcance-y-limitaciones.md` y `diccionario-de-datos.md` (el de `docs/` y el de `entregables-01-02`); `CLAUDE.md` (el texto de C1 y C2 aclara el reemplazo).
+
+### Decisión 2 — El Empleado ve el cargo por servicio que paga el cliente (y solo ese)
+
+- **Problema:** el Empleado veía "Subtotal" y "Total pagado" pero no el cargo de servicio, así que el total no cerraba con el subtotal.
+- **Regla nueva:** `PedidoEmpleadoResponseDTO` suma `cargoServicioCliente` (en la lista, el detalle y las seis acciones, que comparten el mismo DTO) y el detalle del pedido para el Empleado muestra la línea "Cargo por servicio del cliente" (`data-testid="cargo-servicio-cliente-pedido"`) entre "Subtotal" y "Total pagado". Siguen ocultos para el Empleado: `cargoServicioComercio`, la comisión, el neto, `clienteId`, `pagoEstado` y todo dato de Mercado Pago o del reembolso técnico. "Ventas de hoy" no cambia (suma el subtotal bruto). El Dueño no cambia.
+- **No filtra nada nuevo:** el Empleado ya podía calcular `total − subtotal`, y `reembolsoMonto` ya estaba expuesto. El cargo del comercio es otra tarifa (fija o porcentaje, configurable) y no se deduce del cargo del cliente.
+- **Pruebas:** `mvnw test` completo en las dos pasadas, 862 + 6 (antes 860 + 6: los dos tests nuevos del bloque 1); Playwright specs 37, 38, 42, 44, 47 y 52 y el spec nuevo 64 (4 tests: orden y suma cerrada, sin cargo del comercio ni neto ni comisión, la línea sobrevive a aceptar el pedido, el Dueño no cambia), 186/186 (un fallo del spec 37, ver más abajo, corregido); Newman 00 a 03, 49, 57, 59, 61 y 64, 719 requests y 1089 assertions, 0 fallos (los builders E2, E3-A2, A3 y A4b ajustados para excluir solo `cargoServicioComercio`).
+- **Mutación (sha1):** `PedidoEmpleadoResponseDTO.java` `49fdff1e…`; con el campo en `null` (`aba9f859…`) falló `PedidoServiceVistaEmpleadoTest`; restaurado a `49fdff1e…` idéntico. `frontend/js/comercio.js` `4aac70c8…`; con la línea deshabilitada (`42a29671…`) falló el spec 64 y los 3 tests siguientes no corrieron; restaurado a `4aac70c8…` idéntico.
+- **Documentos:** `requisitos-funcionales-empleado.md`, `Historias de Usuario - Empleado.md`, el Javadoc del DTO, `CLAUDE.md` y `docs/DATA-TESTID-FASE17.md`.
+
+### Decisión 3 — Ningún mensaje de negocio muestra el nombre de un estado ni de un enum
+
+- **Problema:** al actuar sobre un pedido que otra persona ya resolvió el aviso rojo decía "El pedido ya fue resuelto, no está en estado PENDIENTE_CONFIRMACION_COMERCIO".
+- **Mensajes nuevos (backend, `PedidoService`, `AdministradorService`, `ActividadComercioService`, `ComercioActivoService`):** aceptar y rechazar un pedido que ya avanzó: "El pedido ya fue resuelto"; aprobar o rechazar un comercio que ya no está pendiente: "El comercio ya fue resuelto". Para despachar, anular, entregar y cerrar como no retirado el texto depende del estado real del pedido: sin aceptar, "Primero tenés que aceptar el pedido" (en anular, "Un pedido sin aceptar no se anula, se rechaza"); en preparación, "El pedido todavía está en preparación"; en camino, "El pedido está en camino: lo confirma el cliente"; un pedido que ya no se puede anular, "El pedido ya no se puede anular"; cualquier otro estado, "El pedido ya fue resuelto". Cuando el Cliente confirma una entrega fuera de lugar: "Tu pedido todavía no está en camino", "Este pedido ya figura como entregado" o "El pedido ya fue resuelto". La rama por defecto de la lista de actividad dice "Hizo un cambio" y los dos `400` del header del comercio activo dicen "Falta indicar el comercio" y "El comercio indicado no es válido" (ya no nombran el header `X-Comercio-Id`).
+- **Contrato:** el código de error y la forma de la respuesta no cambian. Estos `409` son `ConflictoDeNegocioException` y nunca llevaron `codigo`.
+- **Front:** los fallbacks de estado de `admin.js` (estado del Cliente y del reembolso) y de `selector-comercio.js` ahora dicen "Estado no disponible"; los de motivo de rechazo en `comercio.js` y `pedidos.js` dicen "Motivo no disponible" y el del motivo del reembolso en `admin.js` cae a "—". No se tocaron los fallbacks de tipo (tipo de comercio y de red social en `admin.js`).
+- **Pruebas:** `mvnw` con perfil `test` sobre las clases de pedido, actividad, comercio activo y `AdministradorServiceResolucionTest`, 216/216; Playwright specs 47 y 63 (nuevo: cinco tests de API por estado y dos de UI donde el aviso fijo del Dueño dice "El pedido ya fue resuelto"), 21/21; Newman 00 a 17, 42, 58, 59, 61 y 64, 737 requests y 1210 assertions, 0 fallos. Se corrigieron las aserciones de los builders A0 y A4b y, con un script, 25 items de la colección (carpetas 10, 17, 42, 58 y 64; sin items nuevos ni quitados).
+- **Mutación (sha1):** `PedidoService.java` `e2e269e5…`; con el texto viejo en `MENSAJE_PEDIDO_RESUELTO` (`d57545c0…`) falló el primer test del spec 63 (los seis siguientes, seriales, no corrieron); restaurado a `e2e269e5…` idéntico.
+- **El cambio de los textos del header tocó más pruebas de las previstas:** los specs 21, 26 y 37 y los builders `tramo1`, `tramo4a` y E2 comparaban que el mensaje "nombra al header". Se actualizaron (specs 21, 26 y 37: 75/75) y los seis items de la carpeta 49 se editaron directamente en la colección (regenerar esa carpeta con sus constructores pierde los parches de otros constructores).
+- **Verificaciones sin cambios de código:** los `400` de validación llegan como `{ campo: mensaje }` en `data` y las pantallas los ubican bajo cada campo; el texto "campo: mensaje" solo se ve como banner cuando el campo no está en el mapa de la pantalla (por ejemplo `perfil-cuenta.js:201`, `comercio.js:2081`, `:2349`, `:2426` y `:3176`, `auth.js:568` y `:732`). Los únicos parámetros de URL que son enums están en `TestController` (perfil `test`); `fuente` de la actividad se valida a mano ("La fuente tiene que ser PEDIDO, EDICION, CIERRE o EQUIPO"); un parámetro numérico inválido (`limite=abc`) responde un `400` estándar de Spring sin `mensaje`; un enum inválido en el body responde "El cuerpo de la solicitud contiene datos con formato inválido".
+
+### Deuda anotada
+
+- **Incoherencia de montos del Dueño:** la lista de pedidos del Dueño muestra el total con el cargo del cliente (`pedido.total`) y el detalle muestra el neto (subtotal menos el cargo del comercio). No se tocó.
+- Fallbacks de tipo (tipo de comercio y de red social en `admin.js`) que pueden mostrar el valor crudo si llegara uno desconocido.
+- Los `400` de parámetros numéricos inválidos no usan el envoltorio `ApiResponse` (respuesta estándar de Spring).
+
+### Entorno de prueba
+
+- **Cloudinary respondió `cloud_name is disabled`** durante esta tanda (la cuenta del proyecto está deshabilitada). `subirFotoPreRegistro` (`tests/helpers/backend.ts`) usa una URL de pre-registro sintética solo ante esa respuesta (el backend valida el prefijo y la carpeta, no que la imagen exista) y avisa con `console.warn`. Los specs que suben imágenes reales (por ejemplo el 06 y los de fotos de producto) no se corrieron.
+- Los constructores de Newman no son todos idempotentes (ver `docs/APRENDIZAJES-TECNICOS.md`): no se regeneran las carpetas 49 a 51 y el constructor A0 deja una carpeta 58 duplicada si se corre antes de A1.
+
+## 2026-10-18 — Deuda pendiente: assets de Cloudinary que dejan los tests de Playwright
+
+Diego creó una cuenta nueva de Cloudinary con el upload preset `bajonea_imagenes_mvp` (signed) y cargó las variables `CLOUDINARY_*`. Los tests de Playwright suben imágenes reales y no las borran (hipótesis sin verificar de que eso agotó el límite de la cuenta anterior, ver `docs/APRENDIZAJES-TECNICOS.md`). **Deuda, sin implementar:**
+
+- Limpiar los assets de test: un `afterAll` o un script que borre lo subido por la corrida, o mandar las subidas de test a una carpeta aparte que se pueda vaciar de una vez.
+- Reducir las subidas reales a los pocos specs que de verdad las necesitan, y que el resto use una URL sintética o un fixture ya subido una sola vez.
+- La documentación del preset y de la cuenta separada para producción quedó en `docs/LISTA-DE-DESPLIEGUE.md`, sección 5.

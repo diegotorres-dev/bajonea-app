@@ -213,8 +213,8 @@ public class ComercioService {
     /**
      * Misma validación con el estado y el cierre manual ya leídos por quien llama (por ejemplo bajo bloqueo
      * compartido, en la creación de un pedido) en vez de los que tenga cargados la entidad. Orden: cierre por
-     * bloqueo del Dueño ({@code CERRADO_TEMPORALMENTE}, mismo texto que el cierre manual para no revelar el
-     * bloqueo), resto de los estados, cierre manual y horario.
+     * bloqueo del Dueño ({@code CERRADO_TEMPORALMENTE}, con el mismo texto de rechazo que el cierre manual), resto
+     * de los estados, cierre manual y horario.
      */
     public void validarAceptaPedidos(Comercio comercio, EstadoComercio estadoActual, boolean cerradoManualmente) {
         if (estadoActual == EstadoComercio.CERRADO_TEMPORALMENTE) {
@@ -421,8 +421,9 @@ public class ComercioService {
                 comercio.getTipoComercio(),
                 comercio.isAceptaDelivery(),
                 comercio.isAceptaRetiro(),
-                // Siempre APTO_VENTA, también para un CERRADO_TEMPORALMENTE: el público no debe enterarse de que
-                // el Dueño está bloqueado; lo que ve de un cierre es estadoApertura.
+                // Siempre APTO_VENTA, también para un CERRADO_TEMPORALMENTE: lo que ve el público de un cierre es
+                // estadoApertura, que distingue el bloqueo de la cuenta (CERRADO_TEMPORALMENTE) del cierre manual
+                // (CERRADO_MANUAL).
                 EstadoComercio.APTO_VENTA,
                 comercio.getDueno().getPersonaJuridica().getRazonSocial(),
                 comercio.getDueno().getPersonaJuridica().getCuit(),

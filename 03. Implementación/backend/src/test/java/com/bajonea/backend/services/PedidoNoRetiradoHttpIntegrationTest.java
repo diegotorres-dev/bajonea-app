@@ -180,7 +180,7 @@ class PedidoNoRetiradoHttpIntegrationTest {
         assertEquals("NO_RETIRADO", data.path("estado").asText());
         assertFalse(data.path("esPedidoPropio").asBoolean(true));
         assertFalse(data.has("cargoServicioComercio"));
-        assertFalse(data.has("cargoServicioCliente"));
+        assertTrue(data.has("cargoServicioCliente"));
         assertFalse(data.has("clienteId"));
         assertFalse(data.has("pagoEstado"));
         String actor = jdbcTemplate.queryForObject("SELECT CONCAT(actor_rol, ':', actor_usuario_id) FROM historial_estado_pedido "

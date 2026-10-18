@@ -159,7 +159,7 @@ function crearPedido(clave) {
 const accionPedido = (nombre, token, clave, ruta, codigo, { cuerpo, extra = [], comercio = COM } = {}) =>
   item(nombre, req('PUT', `/pedidos/comercio/${P(clave)}/${ruta}`, { token, comercio, body: cuerpo ?? {} }), [status(codigo), ...extra]);
 const MOTIVO = { motivo: 'SIN_STOCK' };
-const PEDIDO_REDUCIDO = [sinCampos('clienteId', 'pagoEstado', 'cargoServicioCliente', 'cargoServicioComercio')];
+const PEDIDO_REDUCIDO = [sinCampos('clienteId', 'pagoEstado', 'cargoServicioComercio'), conCampos('cargoServicioCliente')];
 const PEDIDO_COMPLETO = [conCampos('clienteId', 'pagoEstado', 'cargoServicioCliente', 'cargoServicioComercio')];
 
 const productoCuerpo = (nombre, precio) => `{"nombre": "${nombre}", "descripcion": "Descripcion A2", "precio": ${precio}, "categoriaId": ${CAT}}`;
@@ -379,7 +379,7 @@ agregar(
   accionPedido('Pedidos: la Empleada no puede aceptar un pedido ya aceptado (409 por estado, sin codigo)', TOKEN_EMPLEADO, 'flujo', 'aceptar', 409),
   item('Pedidos: la Empleada ve la lista reducida y el resumen del dia', req('GET', '/pedidos/comercio', { token: TOKEN_EMPLEADO, comercio: COM }), [
     status(200),
-    "pm.test('Sin campos del Dueño', () => pm.response.json().data.forEach((p) => ['clienteId', 'pagoEstado', 'cargoServicioCliente', 'cargoServicioComercio'].forEach((c) => pm.expect(Object.keys(p)).to.not.include(c))));",
+    "pm.test('Sin campos del Dueño', () => pm.response.json().data.forEach((p) => ['clienteId', 'pagoEstado', 'cargoServicioComercio'].forEach((c) => pm.expect(Object.keys(p)).to.not.include(c))));",
   ]),
   item('Cierre: la Empleada cierra el comercio', req('PUT', '/comercios/cerrar', { token: TOKEN_EMPLEADO, comercio: COM, body: {} }), [
     status(200),

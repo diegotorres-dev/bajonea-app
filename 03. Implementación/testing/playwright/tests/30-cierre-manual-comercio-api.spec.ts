@@ -132,7 +132,7 @@ test.describe('Cierre manual del comercio (API), tramo C1', () => {
       expect(fila.textoReapertura).toBe(cerrado.body.data.textoReapertura);
 
       const publico = await publicoDe(request, dueno.comercioId);
-      expect(publico.estadoApertura).toBe('CERRADO_TEMPORALMENTE');
+      expect(publico.estadoApertura).toBe('CERRADO_MANUAL');
       expect(publico.textoReapertura).toBe(cerrado.body.data.textoReapertura);
       expect(publico.estado).toBe('APTO_VENTA');
 

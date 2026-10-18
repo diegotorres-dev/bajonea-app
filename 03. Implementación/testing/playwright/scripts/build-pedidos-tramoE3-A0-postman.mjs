@@ -209,8 +209,9 @@ const anular = (nombre, clave, codigo, motivo = MOTIVO_ANULACION, extra) => acci
 const cancelarCliente = (nombre, clave, codigo, extra) =>
   item(nombre, req('PUT', `/pedidos/cliente/${P(clave)}/cancelar`, { token: TOKEN_CLIENTE, body: {} }), [status(codigo), ...(extra || [])]);
 
-const MENSAJE_RESUELTO = 'El pedido ya fue resuelto, no está en estado PENDIENTE_CONFIRMACION_COMERCIO';
-const MENSAJE_NO_PREPARACION = 'El pedido no está en preparación';
+const MENSAJE_RESUELTO = 'El pedido ya fue resuelto';
+const MENSAJE_NO_ANULABLE = 'El pedido ya no se puede anular';
+const MENSAJE_ANULAR_SIN_ACEPTAR = 'Un pedido sin aceptar no se anula, se rechaza';
 
 const pedidoDelCliente = (clave, lineas) =>
   item(`[pedido ${clave}] El Cliente ve el pedido en su historial`, req('GET', '/pedidos/cliente', { token: TOKEN_CLIENTE }), [
@@ -254,11 +255,11 @@ agregar(
     "pm.test('Hay exactamente una nota para el pedido', () => pm.expect(notas).to.have.length(1));",
     "pm.test('Es por anulacion del comercio, pendiente de revision manual y por el total', () => { pm.expect(notas[0].motivo).to.eql('ANULACION_COMERCIO'); pm.expect(notas[0].estado).to.eql('PENDIENTE_REVISION_MANUAL'); });",
   ]),
-  anular('[pedido a] Anular de nuevo es un 409 y no crea otra nota', 'a', 409, { motivo: 'CERRADO' }, [mensajeEs(MENSAJE_NO_PREPARACION)]),
-  despachar('[pedido a] Despachar un pedido ya anulado es 409', 'a', 409, [mensajeEs(MENSAJE_NO_PREPARACION)]),
+  anular('[pedido a] Anular de nuevo es un 409 y no crea otra nota', 'a', 409, { motivo: 'CERRADO' }, [mensajeEs(MENSAJE_NO_ANULABLE)]),
+  despachar('[pedido a] Despachar un pedido ya anulado es 409', 'a', 409, [mensajeEs(MENSAJE_RESUELTO)]),
   aceptar('[pedido a] Aceptar un pedido ya anulado es 409', 'a', 409, [mensajeEs(MENSAJE_RESUELTO)]),
   rechazar('[pedido a] Rechazar un pedido ya anulado es 409', 'a', 409, [mensajeEs(MENSAJE_RESUELTO)]),
-  entregar('[pedido a] Entregar un pedido ya anulado es 409', 'a', 409, [mensajeEs('El pedido no está listo para retirar')]),
+  entregar('[pedido a] Entregar un pedido ya anulado es 409', 'a', 409, [mensajeEs(MENSAJE_RESUELTO)]),
   cancelarCliente('[pedido a] El Cliente no puede cancelar un pedido ya anulado (409)', 'a', 409, [mensajeEs('El pedido ya no se puede cancelar')]),
   reembolsosDelAdmin('[pedido a] Despues de los intentos repetidos sigue habiendo una sola nota', 'a', [
     "pm.test('Sigue habiendo exactamente una nota', () => pm.expect(notas).to.have.length(1));",
@@ -270,7 +271,7 @@ agregar(
 
 agregar(
   ...crearPedido('b'),
-  anular('[pedido b] Anular un pedido que todavia espera la respuesta del comercio es 409', 'b', 409, { motivo: 'CERRADO' }, [mensajeEs(MENSAJE_NO_PREPARACION)]),
+  anular('[pedido b] Anular un pedido que todavia espera la respuesta del comercio es 409', 'b', 409, { motivo: 'CERRADO' }, [mensajeEs(MENSAJE_ANULAR_SIN_ACEPTAR)]),
   aceptar('[pedido b] El Dueño acepta el pedido', 'b', 200),
   anular('[pedido b] Anular sin motivo es 400', 'b', 400, null),
   anular('[pedido b] Anular con motivo OTRO y comentario en blanco es 400', 'b', 400, { motivo: 'OTRO', comentario: '   ' }),
@@ -278,10 +279,10 @@ agregar(
   rechazar('[pedido b] Rechazar un pedido ya aceptado es 409 (el aceptar ya gano)', 'b', 409, [mensajeEs(MENSAJE_RESUELTO)]),
   aceptar('[pedido b] Aceptar dos veces es 409', 'b', 409, [mensajeEs(MENSAJE_RESUELTO)]),
   despachar('[pedido b] El Dueño despacha el pedido (queda listo para retirar)', 'b', 200),
-  anular('[pedido b] Anular un pedido ya despachado es 409', 'b', 409, { motivo: 'CERRADO' }, [mensajeEs(MENSAJE_NO_PREPARACION)]),
-  despachar('[pedido b] Despachar dos veces es 409', 'b', 409, [mensajeEs(MENSAJE_NO_PREPARACION)]),
+  anular('[pedido b] Anular un pedido ya despachado es 409', 'b', 409, { motivo: 'CERRADO' }, [mensajeEs(MENSAJE_NO_ANULABLE)]),
+  despachar('[pedido b] Despachar dos veces es 409', 'b', 409, [mensajeEs(MENSAJE_RESUELTO)]),
   entregar('[pedido b] El Dueño entrega el pedido', 'b', 200),
-  entregar('[pedido b] Entregar dos veces es 409', 'b', 409, [mensajeEs('El pedido no está listo para retirar')]),
+  entregar('[pedido b] Entregar dos veces es 409', 'b', 409, [mensajeEs(MENSAJE_RESUELTO)]),
   reembolsosDelAdmin('[pedido b] Un pedido entregado nunca tiene nota de credito', 'b', [
     "pm.test('Sin notas', () => pm.expect(notas).to.have.length(0));",
   ]),
@@ -314,7 +315,7 @@ agregar(
   pedidoDelCliente('d', ["pm.test('El Cliente ve el rechazo con el reembolso en gestion', () => { pm.expect(p.estado).to.eql('RECHAZADO'); pm.expect(p.reembolsoEstado).to.eql('PENDIENTE_REVISION_MANUAL'); });"]),
   aceptar('[pedido d] Aceptar un pedido ya rechazado es 409', 'd', 409, [mensajeEs(MENSAJE_RESUELTO)]),
   rechazar('[pedido d] Rechazar dos veces es 409', 'd', 409, [mensajeEs(MENSAJE_RESUELTO)]),
-  anular('[pedido d] Anular un pedido rechazado es 409', 'd', 409, { motivo: 'CERRADO' }, [mensajeEs(MENSAJE_NO_PREPARACION)]),
+  anular('[pedido d] Anular un pedido rechazado es 409', 'd', 409, { motivo: 'CERRADO' }, [mensajeEs(MENSAJE_NO_ANULABLE)]),
   cancelarCliente('[pedido d] El Cliente no puede cancelar un pedido rechazado (409)', 'd', 409, [mensajeEs('El pedido ya no se puede cancelar')]),
   reembolsosDelAdmin('[pedido d] Una sola nota por rechazo', 'd', [
     "pm.test('Exactamente una nota por rechazo del comercio', () => { pm.expect(notas).to.have.length(1); pm.expect(notas[0].motivo).to.eql('RECHAZO_COMERCIO'); });",
@@ -333,7 +334,7 @@ agregar(
   cancelarCliente('[pedido e] Cancelar dos veces es 409', 'e', 409, [mensajeEs('El pedido ya no se puede cancelar')]),
   aceptar('[pedido e] El Dueño no puede aceptar un pedido cancelado (409)', 'e', 409, [mensajeEs(MENSAJE_RESUELTO)]),
   rechazar('[pedido e] Ni rechazarlo (409)', 'e', 409, [mensajeEs(MENSAJE_RESUELTO)]),
-  anular('[pedido e] Ni anularlo (409)', 'e', 409, { motivo: 'CERRADO' }, [mensajeEs(MENSAJE_NO_PREPARACION)]),
+  anular('[pedido e] Ni anularlo (409)', 'e', 409, { motivo: 'CERRADO' }, [mensajeEs(MENSAJE_NO_ANULABLE)]),
   reembolsosDelAdmin('[pedido e] Despues de los intentos repetidos sigue habiendo una sola nota', 'e', [
     "pm.test('Sigue habiendo una sola nota', () => pm.expect(notas).to.have.length(1));",
   ]),

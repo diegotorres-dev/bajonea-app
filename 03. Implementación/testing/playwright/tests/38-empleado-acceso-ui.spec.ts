@@ -500,7 +500,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       }
     });
 
-    test('en el detalle de un pedido pendiente el Empleado ve aceptar y rechazar, y no la línea de cargo de servicio', async ({ page, request }) => {
+    test('en el detalle de un pedido pendiente el Empleado ve aceptar y rechazar, y el cargo del cliente pero no el del comercio', async ({ page, request }) => {
       await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
 
       await page.goto(`/comercio-pedido-detalle.html?id=${idsPedido.pendiente}`);
@@ -513,7 +513,8 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       for (const boton of ['btn-despachar-pedido', 'btn-anular-pedido']) {
         await expect(page.getByTestId(boton)).toHaveCount(0);
       }
-      await expect(page.getByText('Cargo por servicio')).toHaveCount(0);
+      await expect(page.getByText('Cargo por servicio (1%)')).toHaveCount(0);
+      await expect(page.getByTestId('cargo-servicio-cliente-pedido')).toContainText('Cargo por servicio del cliente');
       await expect(page.getByTestId('subtotal-pedido')).toContainText('Subtotal');
       await expect(page.getByTestId('subtotal-pedido')).toContainText(formatearPrecio(PRECIO));
       await expect(page.getByTestId('total-pagado-pedido')).toContainText('Total pagado');
@@ -750,7 +751,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       expect(texto).not.toContain('comisión');
       expect(texto).not.toContain('cargo por servicio');
       const crudo = cuerpos.join('').toLowerCase();
-      for (const prohibido of ['cargoservicio', 'ultimoerror', 'intentos', 'sintetico', 'mp_']) {
+      for (const prohibido of ['cargoserviciocomercio', 'ultimoerror', 'intentos', 'sintetico', 'mp_']) {
         expect(crudo, prohibido).not.toContain(prohibido);
       }
     });

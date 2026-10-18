@@ -1346,9 +1346,9 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado, opciones 
 
   let motivoInfo = null;
   if (pedido.estado === 'RECHAZADO' && pedido.motivoRechazo) {
-    motivoInfo = { motivoLabel: MOTIVO_RECHAZO_LABEL[pedido.motivoRechazo] || pedido.motivoRechazo, comentario: pedido.comentarioRechazo };
+    motivoInfo = { motivoLabel: MOTIVO_RECHAZO_LABEL[pedido.motivoRechazo] || 'Motivo no disponible', comentario: pedido.comentarioRechazo };
   } else if (pedido.estado === 'ANULADO' && pedido.motivoRechazo) {
-    motivoInfo = { motivoLabel: MOTIVO_RECHAZO_LABEL[pedido.motivoRechazo] || pedido.motivoRechazo, comentario: pedido.comentarioRechazo };
+    motivoInfo = { motivoLabel: MOTIVO_RECHAZO_LABEL[pedido.motivoRechazo] || 'Motivo no disponible', comentario: pedido.comentarioRechazo };
   } else if (pedido.estado === 'ANULADO' && pedido.motivoAnulacion) {
     motivoInfo = { motivoLabel: pedido.motivoAnulacion, comentario: null };
   }
@@ -1447,6 +1447,18 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado, opciones 
     subtotalValue.textContent = formatearPrecio(pedido.subtotal);
     subtotalLine.appendChild(subtotalValue);
     body.appendChild(subtotalLine);
+
+    if (pedido.cargoServicioCliente !== undefined && pedido.cargoServicioCliente !== null) {
+      const cargoClienteLine = crear('div', 'order-line');
+      cargoClienteLine.setAttribute('data-testid', 'cargo-servicio-cliente-pedido');
+      const cargoClienteLabel = document.createElement('span');
+      cargoClienteLabel.textContent = 'Cargo por servicio del cliente';
+      cargoClienteLine.appendChild(cargoClienteLabel);
+      const cargoClienteValue = document.createElement('span');
+      cargoClienteValue.textContent = formatearPrecio(pedido.cargoServicioCliente);
+      cargoClienteLine.appendChild(cargoClienteValue);
+      body.appendChild(cargoClienteLine);
+    }
   }
 
   const totalLine = crear('div', 'order-line order-line--total');
@@ -1747,6 +1759,10 @@ function abrirModalDesvincularMp({ alTerminar }) {
     entendido.disabled = true;
     const objetivo = comerciosCerrables(getComerciosEnMemoria());
     const fallidos = await cerrarVariosComercios(objetivo);
+    const cerrados = objetivo.length - fallidos.length;
+    if (cerrados > 0) {
+      showToast(cerrados === 1 ? 'Cerraste el comercio' : `Cerraste ${cerrados} comercios`);
+    }
     await refrescarComercios().catch(() => {});
     ocupado = false;
     mostrarBloqueo(previa, { fallidos });
@@ -2638,6 +2654,8 @@ export async function initComercioProductos() {
     showToast('Producto creado con éxito');
   } else if (paramsProductos.get('productoActualizado') === '1') {
     showToast('Producto actualizado con éxito');
+  } else if (paramsProductos.get('productoDescontinuado') === '1') {
+    showToast('Producto descontinuado');
   }
 
   const productos = await apiFetch('/productos');
@@ -2923,6 +2941,7 @@ export async function initComercioProductoForm() {
         const actualizada = await reordenarImagenProducto(productoId, afectadas[offset].id, desdeIndex + offset);
         imagenes[desdeIndex + offset] = actualizada;
       }
+      showToast('Orden de las fotos actualizado');
     } catch (error) {
       imagenes = anterior;
       mostrarErrorDeFormulario(error, 'No pudimos reordenar las fotos.');
@@ -2957,6 +2976,7 @@ export async function initComercioProductoForm() {
             imagenes = imagenes.filter((otra) => otra.id !== item.id);
             imagenes.forEach((otra, i) => { otra.esPrincipal = i === 0; });
             renderGaleria();
+            showToast('Imagen eliminada');
           } catch (error) {
             mostrarErrorDeFormulario(error, 'No pudimos eliminar la imagen.');
           }
@@ -2985,6 +3005,7 @@ export async function initComercioProductoForm() {
                 imagenes[posicion] = actualizada;
                 renderGaleria();
                 renderBanner(bannerSlot, '', '');
+                showToast('Imagen actualizada');
               } catch (error) {
                 mostrarErrorDeFormulario(error, 'No pudimos actualizar la imagen.');
               }
@@ -3039,7 +3060,7 @@ export async function initComercioProductoForm() {
       mostrarModalConfirmarDescontinuar(productoActual, async () => {
         try {
           await apiFetch(`/productos/${productoId}/estado`, { method: 'PATCH', body: { estado: 'DESCONTINUADO' } });
-          window.location.href = 'comercio-productos.html';
+          window.location.href = 'comercio-productos.html?productoDescontinuado=1';
         } catch (error) {
           mostrarErrorDeFormulario(error, 'No pudimos descontinuar el producto.');
         }
@@ -3086,6 +3107,7 @@ export async function initComercioProductoForm() {
           limpiarErrorCampo('error-producto-fotos');
           renderGaleria();
           renderBanner(bannerSlot, '', '');
+          showToast('Imagen agregada');
         } catch (error) {
           mostrarErrorDeFormulario(error, 'No pudimos subir la imagen.');
         }

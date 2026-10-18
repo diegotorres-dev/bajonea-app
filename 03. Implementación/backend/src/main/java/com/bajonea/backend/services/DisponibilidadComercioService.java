@@ -118,8 +118,9 @@ public class DisponibilidadComercioService {
                     .map(inicio -> textoReapertura(inicio, ahora))
                     .orElse(null);
         }
-        EstadoApertura estadoApertura = cerrado || bloqueadoPorCuenta
+        EstadoApertura estadoApertura = bloqueadoPorCuenta
                 ? EstadoApertura.CERRADO_TEMPORALMENTE
+                : cerrado ? EstadoApertura.CERRADO_MANUAL
                 : dentro ? EstadoApertura.ABIERTO : EstadoApertura.CERRADO_HORARIO;
         return new Disponibilidad(cerrado, abierto, puedeCambiarCierre(comercio.getEstado(), horarios, ahora), texto,
                 estadoApertura);

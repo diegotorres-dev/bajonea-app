@@ -236,10 +236,10 @@ test.describe('Multi-comercio, tramo 4 (API): mis-comercios y notificaciones por
       for (const cabeceras of [{}, { [HEADER]: '' }, { [HEADER]: '   ' }]) {
         const lista = await apiConHeaders(request, 'GET', '/notificaciones', dueno.token, cabeceras);
         expect(lista.status, JSON.stringify(cabeceras)).toBe(400);
-        expect(lista.body.mensaje).toContain(HEADER);
+        expect(lista.body.mensaje).toBe('Falta indicar el comercio');
         const cuenta = await apiConHeaders(request, 'GET', '/notificaciones/no-leidas/contador', dueno.token, cabeceras);
         expect(cuenta.status, JSON.stringify(cabeceras)).toBe(400);
-        expect(cuenta.body.mensaje).toContain(HEADER);
+        expect(cuenta.body.mensaje).toBe('Falta indicar el comercio');
       }
     });
 
@@ -263,7 +263,7 @@ test.describe('Multi-comercio, tramo 4 (API): mis-comercios y notificaciones por
         expect(JSON.stringify(ajeno.body)).toBe(JSON.stringify(inexistente.body));
         const noNumerico = await ruta(request, dueno.token, 'abc');
         expect(noNumerico.status).toBe(400);
-        expect(noNumerico.body.mensaje).toContain(HEADER);
+        expect(noNumerico.body.mensaje).toBe('El comercio indicado no es válido');
       }
     });
 

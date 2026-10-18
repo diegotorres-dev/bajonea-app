@@ -61,8 +61,8 @@ public class AdministradorController {
     }
 
     @GetMapping("/comercios")
-    public ResponseEntity<ApiResponse<List<ComercioAdminResponseDTO>>> listarComerciosAprobados() {
-        List<ComercioAdminResponseDTO> comercios = administradorService.listarComerciosAprobados();
+    public ResponseEntity<ApiResponse<List<ComercioAdminResponseDTO>>> listarComercios() {
+        List<ComercioAdminResponseDTO> comercios = administradorService.listarComercios();
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Comercios obtenidos correctamente", comercios));
     }
 

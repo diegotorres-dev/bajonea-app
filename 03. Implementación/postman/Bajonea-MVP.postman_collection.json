@@ -4283,7 +4283,7 @@
           ]
         },
         {
-          "name": "GET administrador/comercios (aprobados) - A y B aparecen, D no",
+          "name": "GET administrador/comercios (listado general) - A y B aparecen, D tambien con estado PENDIENTE",
           "request": {
             "method": "GET",
             "header": [
@@ -4319,7 +4319,8 @@
                   "const nombres = json.data.map(c => c.nombre);",
                   "pm.test('Incluye a Comercio A', () => pm.expect(nombres).to.include('Comercio Postman A'));",
                   "pm.test('Incluye a Comercio B', () => pm.expect(nombres).to.include('Comercio Postman B'));",
-                  "pm.test('No incluye a Comercio D', () => pm.expect(nombres).to.not.include('Comercio Postman D'));"
+                  "const d = json.data.find(c => c.nombre === 'Comercio Postman D');",
+                  "pm.test('Incluye a Comercio D, todavia PENDIENTE, porque el listado trae todos los estados', () => { pm.expect(d).to.exist; pm.expect(d.estado).to.eql('PENDIENTE'); });"
                 ]
               }
             }
@@ -4489,7 +4490,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql(\"El comercio ya fue resuelto, no está en estado PENDIENTE\"); });"
+                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql(\"El comercio ya fue resuelto\"); });"
                 ]
               }
             }
@@ -7849,7 +7850,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql(\"El pedido ya fue resuelto, no está en estado PENDIENTE_CONFIRMACION_COMERCIO\"); });"
+                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql(\"El pedido ya fue resuelto\"); });"
                 ]
               }
             }
@@ -31542,7 +31543,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql('El comercio ya fue resuelto, no está en estado PENDIENTE'); });"
+                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql('El comercio ya fue resuelto'); });"
                 ]
               }
             }
@@ -31641,7 +31642,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql('El comercio ya fue resuelto, no está en estado PENDIENTE'); });"
+                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql('El comercio ya fue resuelto'); });"
                 ]
               }
             }
@@ -31869,7 +31870,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql('El comercio ya fue resuelto, no está en estado PENDIENTE'); });"
+                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql('El comercio ya fue resuelto'); });"
                 ]
               }
             }
@@ -37887,7 +37888,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
-                  "pm.test('El mensaje nombra al header', () => pm.expect(pm.response.json().mensaje).to.include('X-Comercio-Id'));"
+                  "pm.test('El mensaje es neutro y no nombra al header', () => pm.expect(pm.response.json().mensaje).to.eql('Falta indicar el comercio'));"
                 ]
               }
             }
@@ -38348,7 +38349,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
-                  "pm.test('El mensaje nombra al header', () => pm.expect(pm.response.json().mensaje).to.include('X-Comercio-Id'));"
+                  "pm.test('El mensaje es neutro y no nombra al header', () => pm.expect(pm.response.json().mensaje).to.eql('Falta indicar el comercio'));"
                 ]
               }
             }
@@ -38387,7 +38388,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
-                  "pm.test('El mensaje nombra al header', () => pm.expect(pm.response.json().mensaje).to.include('X-Comercio-Id'));"
+                  "pm.test('El mensaje es neutro y no nombra al header', () => pm.expect(pm.response.json().mensaje).to.eql('Falta indicar el comercio'));"
                 ]
               }
             }
@@ -38583,7 +38584,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
-                  "pm.test('El mensaje nombra al header', () => pm.expect(pm.response.json().mensaje).to.include('X-Comercio-Id'));"
+                  "pm.test('El mensaje es neutro y no nombra al header', () => pm.expect(pm.response.json().mensaje).to.eql('El comercio indicado no es válido'));"
                 ]
               }
             }
@@ -42014,7 +42015,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
-                  "pm.test('El mensaje nombra al header', () => pm.expect(pm.response.json().mensaje).to.include('X-Comercio-Id'));"
+                  "pm.test('El mensaje es neutro y no nombra al header', () => pm.expect(pm.response.json().mensaje).to.eql('Falta indicar el comercio'));"
                 ]
               }
             }
@@ -42319,7 +42320,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
-                  "pm.test('El mensaje nombra al header', () => pm.expect(pm.response.json().mensaje).to.include('X-Comercio-Id'));"
+                  "pm.test('El mensaje es neutro y no nombra al header', () => pm.expect(pm.response.json().mensaje).to.eql('El comercio indicado no es válido'));"
                 ]
               }
             }
@@ -47721,7 +47722,7 @@
           ]
         },
         {
-          "name": "[bandeja] El listado de aprobados no trae datos de Dueño ni de otros comercios",
+          "name": "[bandeja] El listado general no trae datos de Dueño ni de otros comercios",
           "request": {
             "method": "GET",
             "header": [
@@ -61101,7 +61102,7 @@
           ]
         },
         {
-          "name": "[cerrar] El catalogo informa CERRADO_TEMPORALMENTE con el texto",
+          "name": "[cerrar] El catalogo informa CERRADO_MANUAL con el texto",
           "request": {
             "method": "GET",
             "header": [],
@@ -61125,7 +61126,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const c = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('c1_ua_com')));",
-                  "pm.test('El comercio esta en el catalogo con estadoApertura CERRADO_TEMPORALMENTE', () => { pm.expect(c).to.exist; pm.expect(c.estadoApertura).to.eql('CERRADO_TEMPORALMENTE'); pm.expect(c.textoReapertura).to.eql(\"Reabre mañana a las 00:00\"); pm.expect(c.estado).to.eql('APTO_VENTA'); });"
+                  "pm.test('El comercio esta en el catalogo con estadoApertura CERRADO_MANUAL', () => { pm.expect(c).to.exist; pm.expect(c.estadoApertura).to.eql('CERRADO_MANUAL'); pm.expect(c.textoReapertura).to.eql(\"Reabre mañana a las 00:00\"); pm.expect(c.estado).to.eql('APTO_VENTA'); });"
                 ]
               }
             }
@@ -64843,7 +64844,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const c = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('c2_ub_com')));",
-                  "pm.test('Cerrado a mano y con texto', () => { pm.expect(c.estadoApertura).to.eql('CERRADO_TEMPORALMENTE'); pm.expect(c.textoReapertura).to.match(/^Reabre /); });"
+                  "pm.test('Cerrado a mano y con texto', () => { pm.expect(c.estadoApertura).to.eql('CERRADO_MANUAL'); pm.expect(c.textoReapertura).to.match(/^Reabre /); });"
                 ]
               }
             }
@@ -80019,7 +80020,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
-                  "pm.test('El texto es neutro', () => { const m = pm.response.json().mensaje; pm.expect(m).to.include('X-Comercio-Id'); pm.expect(m).to.not.include('Dueño'); });"
+                  "pm.test('El texto es neutro', () => { const m = pm.response.json().mensaje; pm.expect(m).to.eql('Falta indicar el comercio'); pm.expect(m).to.not.include('Dueño'); });"
                 ]
               }
             }
@@ -80093,7 +80094,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
-                  "pm.test('El texto es neutro', () => { const m = pm.response.json().mensaje; pm.expect(m).to.include('X-Comercio-Id'); pm.expect(m).to.not.include('Dueño'); });"
+                  "pm.test('El texto es neutro', () => { const m = pm.response.json().mensaje; pm.expect(m).to.eql('Falta indicar el comercio'); pm.expect(m).to.not.include('Dueño'); });"
                 ]
               }
             }
@@ -81237,7 +81238,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "pm.test('Tres pedidos', () => pm.expect(pm.response.json().data.length).to.eql(3));",
-                  "pm.test('Con los cargos de servicio, el id del cliente y el estado del pago', () => pm.response.json().data.forEach((p) => { [\"clienteId\",\"pagoEstado\",\"cargoServicioCliente\",\"cargoServicioComercio\"].forEach((c) => pm.expect(p).to.have.property(c)); [\"canceladoPor\",\"comentarioRechazo\",\"comercioId\",\"detalles\",\"direccion\",\"estado\",\"fechaCreacion\",\"fechaEntrega\",\"fechaPagoAprobado\",\"fuenteEntrega\",\"id\",\"motivoAnulacion\",\"motivoRechazo\",\"noRetiradoDisponibleDesde\",\"noRetiradoMinutosRestantes\",\"nombreCliente\",\"reembolsoEstado\",\"reembolsoMonto\",\"subtotal\",\"tipoEntrega\",\"total\"].forEach((c) => pm.expect(p).to.have.property(c)); pm.expect(p).to.not.have.property('esPedidoPropio'); }));",
+                  "pm.test('Con los cargos de servicio, el id del cliente y el estado del pago', () => pm.response.json().data.forEach((p) => { [\"clienteId\",\"pagoEstado\",\"cargoServicioComercio\"].forEach((c) => pm.expect(p).to.have.property(c)); [\"canceladoPor\",\"cargoServicioCliente\",\"comentarioRechazo\",\"comercioId\",\"detalles\",\"direccion\",\"estado\",\"fechaCreacion\",\"fechaEntrega\",\"fechaPagoAprobado\",\"fuenteEntrega\",\"id\",\"motivoAnulacion\",\"motivoRechazo\",\"noRetiradoDisponibleDesde\",\"noRetiradoMinutosRestantes\",\"nombreCliente\",\"reembolsoEstado\",\"reembolsoMonto\",\"subtotal\",\"tipoEntrega\",\"total\"].forEach((c) => pm.expect(p).to.have.property(c)); pm.expect(p).to.not.have.property('esPedidoPropio'); }));",
                   "pm.environment.set('e2_pedidos_dueno', JSON.stringify(pm.response.json().data));"
                 ]
               }
@@ -81279,9 +81280,9 @@
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"Pedidos obtenidos correctamente\"));",
                   "pm.test('Tres pedidos', () => pm.expect(pm.response.json().data.length).to.eql(3));",
-                  "pm.test('Exactamente los campos de la lista blanca', () => pm.response.json().data.forEach((p) => pm.expect(Object.keys(p).sort()).to.eql([\"canceladoPor\",\"comentarioRechazo\",\"comercioId\",\"detalles\",\"direccion\",\"esPedidoPropio\",\"estado\",\"fechaCreacion\",\"fechaEntrega\",\"fechaPagoAprobado\",\"fuenteEntrega\",\"id\",\"motivoAnulacion\",\"motivoRechazo\",\"noRetiradoDisponibleDesde\",\"noRetiradoMinutosRestantes\",\"nombreCliente\",\"reembolsoEstado\",\"reembolsoMonto\",\"subtotal\",\"tipoEntrega\",\"total\"])));",
-                  "pm.test('Ninguno de los campos excluidos', () => pm.response.json().data.forEach((p) => [\"clienteId\",\"pagoEstado\",\"cargoServicioCliente\",\"cargoServicioComercio\"].forEach((c) => pm.expect(p).to.not.have.property(c))));",
-                  "pm.test('Sin cargos, comisiones, Mercado Pago ni datos técnicos del reembolso', () => { const t = pm.response.text().toLowerCase(); [\"cargoservicio\",\"marketplace\",\"mercadopago\",\"ultimoerror\",\"intentos\",\"pagoestado\",\"clienteid\",\"fallido\",\"revision_manual\",\"reintento\"].forEach((p) => pm.expect(t).to.not.include(p)); });",
+                  "pm.test('Exactamente los campos de la lista blanca', () => pm.response.json().data.forEach((p) => pm.expect(Object.keys(p).sort()).to.eql([\"canceladoPor\",\"cargoServicioCliente\",\"comentarioRechazo\",\"comercioId\",\"detalles\",\"direccion\",\"esPedidoPropio\",\"estado\",\"fechaCreacion\",\"fechaEntrega\",\"fechaPagoAprobado\",\"fuenteEntrega\",\"id\",\"motivoAnulacion\",\"motivoRechazo\",\"noRetiradoDisponibleDesde\",\"noRetiradoMinutosRestantes\",\"nombreCliente\",\"reembolsoEstado\",\"reembolsoMonto\",\"subtotal\",\"tipoEntrega\",\"total\"])));",
+                  "pm.test('Ninguno de los campos excluidos', () => pm.response.json().data.forEach((p) => [\"clienteId\",\"pagoEstado\",\"cargoServicioComercio\"].forEach((c) => pm.expect(p).to.not.have.property(c))));",
+                  "pm.test('Sin cargos, comisiones, Mercado Pago ni datos técnicos del reembolso', () => { const t = pm.response.text().toLowerCase(); [\"cargoserviciocomercio\",\"marketplace\",\"mercadopago\",\"ultimoerror\",\"intentos\",\"pagoestado\",\"clienteid\",\"fallido\",\"revision_manual\",\"reintento\"].forEach((p) => pm.expect(t).to.not.include(p)); });",
                   "pm.test('Mismos pedidos, en el mismo orden, y mismos valores en los campos compartidos', () => { const e = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_pedidos_dueno')); pm.expect(e.map((p) => p.id)).to.eql(d.map((p) => p.id)); e.forEach((p, i) => Object.keys(p).filter((c) => c !== 'reembolsoEstado' && c !== 'esPedidoPropio').forEach((c) => pm.expect(p[c]).to.eql(d[i][c]))); });",
                   "pm.test('El reembolso en términos simples, derivado del estado que ve el Dueño', () => { const e = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_pedidos_dueno')); const mapa = {\"PENDIENTE\":\"EN_PROCESO\",\"PENDIENTE_REINTENTO\":\"EN_PROCESO\",\"PROCESADO\":\"REEMBOLSADO\",\"FALLIDO\":\"EN_REVISION\",\"PENDIENTE_REVISION_MANUAL\":\"EN_REVISION\"}; e.forEach((p, i) => pm.expect(p.reembolsoEstado).to.eql(d[i].reembolsoEstado === null ? 'SIN_REEMBOLSO' : mapa[d[i].reembolsoEstado])); });",
                   "pm.test('El pendiente y el aceptado sin reembolso, con monto nulo', () => { const e = pm.response.json().data; [pm.environment.get('e2_ped_pendiente'), pm.environment.get('e2_ped_aceptado')].forEach((id) => { const p = e.find((x) => x.id === Number(id)); pm.expect(p.reembolsoEstado).to.eql('SIN_REEMBOLSO'); pm.expect(p.reembolsoMonto).to.eql(null); }); });",
@@ -82909,7 +82910,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido no está en preparación\"));"
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya no se puede anular\"));"
                 ]
               }
             }
@@ -82963,7 +82964,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido no está en preparación\"));"
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto\"));"
                 ]
               }
             }
@@ -83017,7 +83018,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto, no está en estado PENDIENTE_CONFIRMACION_COMERCIO\"));"
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto\"));"
                 ]
               }
             }
@@ -83071,7 +83072,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto, no está en estado PENDIENTE_CONFIRMACION_COMERCIO\"));"
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto\"));"
                 ]
               }
             }
@@ -83125,7 +83126,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido no está listo para retirar\"));"
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto\"));"
                 ]
               }
             }
@@ -83446,7 +83447,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido no está en preparación\"));"
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"Un pedido sin aceptar no se anula, se rechaza\"));"
                 ]
               }
             }
@@ -83712,7 +83713,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto, no está en estado PENDIENTE_CONFIRMACION_COMERCIO\"));"
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto\"));"
                 ]
               }
             }
@@ -83766,7 +83767,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto, no está en estado PENDIENTE_CONFIRMACION_COMERCIO\"));"
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto\"));"
                 ]
               }
             }
@@ -83873,7 +83874,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido no está en preparación\"));"
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya no se puede anular\"));"
                 ]
               }
             }
@@ -83927,7 +83928,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido no está en preparación\"));"
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto\"));"
                 ]
               }
             }
@@ -84034,7 +84035,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido no está listo para retirar\"));"
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto\"));"
                 ]
               }
             }
@@ -84718,7 +84719,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto, no está en estado PENDIENTE_CONFIRMACION_COMERCIO\"));"
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto\"));"
                 ]
               }
             }
@@ -84772,7 +84773,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto, no está en estado PENDIENTE_CONFIRMACION_COMERCIO\"));"
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto\"));"
                 ]
               }
             }
@@ -84826,7 +84827,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido no está en preparación\"));"
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya no se puede anular\"));"
                 ]
               }
             }
@@ -85249,7 +85250,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto, no está en estado PENDIENTE_CONFIRMACION_COMERCIO\"));"
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto\"));"
                 ]
               }
             }
@@ -85303,7 +85304,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto, no está en estado PENDIENTE_CONFIRMACION_COMERCIO\"));"
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto\"));"
                 ]
               }
             }
@@ -85357,7 +85358,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido no está en preparación\"));"
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya no se puede anular\"));"
                 ]
               }
             }
@@ -85690,7 +85691,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto, no está en estado PENDIENTE_CONFIRMACION_COMERCIO\"));"
+                  "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"El pedido ya fue resuelto\"));"
                 ]
               }
             }
@@ -92343,7 +92344,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test('No trae clienteId, pagoEstado, cargoServicioCliente, cargoServicioComercio', () => { const d = pm.response.json().data; [\"clienteId\",\"pagoEstado\",\"cargoServicioCliente\",\"cargoServicioComercio\"].forEach((c) => pm.expect(Object.keys(d)).to.not.include(c)); });",
+                  "pm.test('No trae clienteId, pagoEstado, cargoServicioComercio', () => { const d = pm.response.json().data; [\"clienteId\",\"pagoEstado\",\"cargoServicioComercio\"].forEach((c) => pm.expect(Object.keys(d)).to.not.include(c)); });",
+                  "pm.test('Trae cargoServicioCliente', () => { const d = pm.response.json().data; [\"cargoServicioCliente\"].forEach((c) => pm.expect(Object.keys(d)).to.include(c)); });",
                   "pm.test('En preparacion', () => pm.expect(pm.response.json().data.estado).to.eql('EN_PREPARACION'));"
                 ]
               }
@@ -92398,7 +92400,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test('No trae clienteId, pagoEstado, cargoServicioCliente, cargoServicioComercio', () => { const d = pm.response.json().data; [\"clienteId\",\"pagoEstado\",\"cargoServicioCliente\",\"cargoServicioComercio\"].forEach((c) => pm.expect(Object.keys(d)).to.not.include(c)); });",
+                  "pm.test('No trae clienteId, pagoEstado, cargoServicioComercio', () => { const d = pm.response.json().data; [\"clienteId\",\"pagoEstado\",\"cargoServicioComercio\"].forEach((c) => pm.expect(Object.keys(d)).to.not.include(c)); });",
+                  "pm.test('Trae cargoServicioCliente', () => { const d = pm.response.json().data; [\"cargoServicioCliente\"].forEach((c) => pm.expect(Object.keys(d)).to.include(c)); });",
                   "pm.test('Listo para retirar', () => pm.expect(pm.response.json().data.estado).to.eql('LISTO_PARA_RETIRAR'));"
                 ]
               }
@@ -92453,7 +92456,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test('No trae clienteId, pagoEstado, cargoServicioCliente, cargoServicioComercio', () => { const d = pm.response.json().data; [\"clienteId\",\"pagoEstado\",\"cargoServicioCliente\",\"cargoServicioComercio\"].forEach((c) => pm.expect(Object.keys(d)).to.not.include(c)); });",
+                  "pm.test('No trae clienteId, pagoEstado, cargoServicioComercio', () => { const d = pm.response.json().data; [\"clienteId\",\"pagoEstado\",\"cargoServicioComercio\"].forEach((c) => pm.expect(Object.keys(d)).to.not.include(c)); });",
+                  "pm.test('Trae cargoServicioCliente', () => { const d = pm.response.json().data; [\"cargoServicioCliente\"].forEach((c) => pm.expect(Object.keys(d)).to.include(c)); });",
                   "pm.test('Entregado', () => pm.expect(pm.response.json().data.estado).to.eql('ENTREGADO'));"
                 ]
               }
@@ -92508,7 +92512,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test('No trae clienteId, pagoEstado, cargoServicioCliente, cargoServicioComercio', () => { const d = pm.response.json().data; [\"clienteId\",\"pagoEstado\",\"cargoServicioCliente\",\"cargoServicioComercio\"].forEach((c) => pm.expect(Object.keys(d)).to.not.include(c)); });",
+                  "pm.test('No trae clienteId, pagoEstado, cargoServicioComercio', () => { const d = pm.response.json().data; [\"clienteId\",\"pagoEstado\",\"cargoServicioComercio\"].forEach((c) => pm.expect(Object.keys(d)).to.not.include(c)); });",
+                  "pm.test('Trae cargoServicioCliente', () => { const d = pm.response.json().data; [\"cargoServicioCliente\"].forEach((c) => pm.expect(Object.keys(d)).to.include(c)); });",
                   "pm.test('Rechazado y reembolso en terminos simples', () => { const d = pm.response.json().data; pm.expect(d.estado).to.eql('RECHAZADO'); pm.expect(['EN_PROCESO', 'REEMBOLSADO', 'EN_REVISION']).to.include(d.reembolsoEstado); });"
                 ]
               }
@@ -92617,7 +92622,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test('No trae clienteId, pagoEstado, cargoServicioCliente, cargoServicioComercio', () => { const d = pm.response.json().data; [\"clienteId\",\"pagoEstado\",\"cargoServicioCliente\",\"cargoServicioComercio\"].forEach((c) => pm.expect(Object.keys(d)).to.not.include(c)); });",
+                  "pm.test('No trae clienteId, pagoEstado, cargoServicioComercio', () => { const d = pm.response.json().data; [\"clienteId\",\"pagoEstado\",\"cargoServicioComercio\"].forEach((c) => pm.expect(Object.keys(d)).to.not.include(c)); });",
+                  "pm.test('Trae cargoServicioCliente', () => { const d = pm.response.json().data; [\"cargoServicioCliente\"].forEach((c) => pm.expect(Object.keys(d)).to.include(c)); });",
                   "pm.test('Anulado con su motivo', () => { const d = pm.response.json().data; pm.expect(d.estado).to.eql('ANULADO'); pm.expect(d.motivoAnulacion).to.include('Se rompio el horno'); });"
                 ]
               }
@@ -92710,7 +92716,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Sin campos del Dueño', () => pm.response.json().data.forEach((p) => ['clienteId', 'pagoEstado', 'cargoServicioCliente', 'cargoServicioComercio'].forEach((c) => pm.expect(Object.keys(p)).to.not.include(c))));"
+                  "pm.test('Sin campos del Dueño', () => pm.response.json().data.forEach((p) => ['clienteId', 'pagoEstado', 'cargoServicioComercio'].forEach((c) => pm.expect(Object.keys(p)).to.not.include(c))));"
                 ]
               }
             }
@@ -92816,7 +92822,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test('No trae clienteId, pagoEstado, cargoServicioCliente, cargoServicioComercio', () => { const d = pm.response.json().data; [\"clienteId\",\"pagoEstado\",\"cargoServicioCliente\",\"cargoServicioComercio\"].forEach((c) => pm.expect(Object.keys(d)).to.not.include(c)); });"
+                  "pm.test('No trae clienteId, pagoEstado, cargoServicioComercio', () => { const d = pm.response.json().data; [\"clienteId\",\"pagoEstado\",\"cargoServicioComercio\"].forEach((c) => pm.expect(Object.keys(d)).to.not.include(c)); });",
+                  "pm.test('Trae cargoServicioCliente', () => { const d = pm.response.json().data; [\"cargoServicioCliente\"].forEach((c) => pm.expect(Object.keys(d)).to.include(c)); });"
                 ]
               }
             }
@@ -93456,7 +93463,8 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test('No trae clienteId, pagoEstado, cargoServicioCliente, cargoServicioComercio', () => { const d = pm.response.json().data; [\"clienteId\",\"pagoEstado\",\"cargoServicioCliente\",\"cargoServicioComercio\"].forEach((c) => pm.expect(Object.keys(d)).to.not.include(c)); });"
+                  "pm.test('No trae clienteId, pagoEstado, cargoServicioComercio', () => { const d = pm.response.json().data; [\"clienteId\",\"pagoEstado\",\"cargoServicioComercio\"].forEach((c) => pm.expect(Object.keys(d)).to.not.include(c)); });",
+                  "pm.test('Trae cargoServicioCliente', () => { const d = pm.response.json().data; [\"cargoServicioCliente\"].forEach((c) => pm.expect(Object.keys(d)).to.include(c)); });"
                 ]
               }
             }
@@ -102407,7 +102415,7 @@
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const p = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('tp_ped_propio')));",
                   "pm.test('esPedidoPropio es true en su pedido', () => pm.expect(p.esPedidoPropio).to.eql(true));",
-                  "pm.test('El DTO del Empleado no lleva clienteId ni cargos ni estado de pago', () => { ['clienteId', 'cargoServicioCliente', 'cargoServicioComercio', 'pagoEstado'].forEach((c) => pm.expect(p).to.not.have.property(c)); });"
+                  "pm.test('El DTO del Empleado lleva el cargo del cliente y no lleva clienteId, el cargo del comercio ni el estado de pago', () => { pm.expect(p).to.have.property('cargoServicioCliente'); ['clienteId', 'cargoServicioComercio', 'pagoEstado'].forEach((c) => pm.expect(p).to.not.have.property(c)); });"
                 ]
               }
             }
@@ -116276,7 +116284,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El pedido ya no esta listo para retirar', () => pm.expect(pm.response.json().mensaje).to.eql('El pedido no está listo para retirar'));"
+                  "pm.test('El pedido ya fue resuelto', () => pm.expect(pm.response.json().mensaje).to.eql('El pedido ya fue resuelto'));"
                 ]
               }
             }
@@ -117019,7 +117027,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "pm.test('Estado y marca en false', () => { const d = pm.response.json().data; pm.expect(d.estado).to.eql('NO_RETIRADO'); pm.expect(d.esPedidoPropio).to.eql(false); });",
-                  "pm.test('Sin cargos, ni cliente ni estado de pago', () => { const d = pm.response.json().data; ['clienteId', 'cargoServicioCliente', 'cargoServicioComercio', 'pagoEstado'].forEach((c) => pm.expect(d).to.not.have.property(c)); });"
+                  "pm.test('Con el cargo del cliente y sin el del comercio, ni cliente ni estado de pago', () => { const d = pm.response.json().data; pm.expect(d).to.have.property('cargoServicioCliente'); ['clienteId', 'cargoServicioComercio', 'pagoEstado'].forEach((c) => pm.expect(d).to.not.have.property(c)); });"
                 ]
               }
             }
@@ -117777,7 +117785,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
-                  "pm.test('El pedido no esta listo para retirar', () => pm.expect(pm.response.json().mensaje).to.eql('El pedido no está listo para retirar'));"
+                  "pm.test('Primero hay que aceptar el pedido', () => pm.expect(pm.response.json().mensaje).to.eql('Primero tenés que aceptar el pedido'));"
                 ]
               }
             }
@@ -140927,6 +140935,893 @@
                 "comercios",
                 "{{e4_com}}",
                 "actividad"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "69 - Listado general de comercios del Administrador (todos los estados, sin filtro, equipo de cada uno)",
+      "item": [
+        {
+          "name": "Clonar un comercio en estado PENDIENTE",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{comercio_a_id}}/clonar?nombre={{lc_1_nombre}}&estado=PENDIENTE",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{comercio_a_id}}",
+                "clonar"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "{{lc_1_nombre}}"
+                },
+                {
+                  "key": "estado",
+                  "value": "PENDIENTE"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('lc_1_nombre', 'Lista Newman 1 ' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('lc_1_id', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clonar un comercio en estado APROBADO",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{comercio_a_id}}/clonar?nombre={{lc_2_nombre}}&estado=APROBADO",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{comercio_a_id}}",
+                "clonar"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "{{lc_2_nombre}}"
+                },
+                {
+                  "key": "estado",
+                  "value": "APROBADO"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('lc_2_nombre', 'Lista Newman 2 ' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('lc_2_id', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clonar un comercio en estado APTO_VENTA",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{comercio_a_id}}/clonar?nombre={{lc_3_nombre}}&estado=APTO_VENTA",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{comercio_a_id}}",
+                "clonar"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "{{lc_3_nombre}}"
+                },
+                {
+                  "key": "estado",
+                  "value": "APTO_VENTA"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('lc_3_nombre', 'Lista Newman 3 ' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('lc_3_id', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clonar un comercio en estado RECHAZADO",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{comercio_a_id}}/clonar?nombre={{lc_4_nombre}}&estado=RECHAZADO",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{comercio_a_id}}",
+                "clonar"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "{{lc_4_nombre}}"
+                },
+                {
+                  "key": "estado",
+                  "value": "RECHAZADO"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('lc_4_nombre', 'Lista Newman 4 ' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('lc_4_id', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clonar un comercio en estado RECHAZO_DEFINITIVO",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{comercio_a_id}}/clonar?nombre={{lc_5_nombre}}&estado=RECHAZO_DEFINITIVO",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{comercio_a_id}}",
+                "clonar"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "{{lc_5_nombre}}"
+                },
+                {
+                  "key": "estado",
+                  "value": "RECHAZO_DEFINITIVO"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('lc_5_nombre', 'Lista Newman 5 ' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('lc_5_id', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clonar un comercio en estado SUSPENDIDO",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{comercio_a_id}}/clonar?nombre={{lc_6_nombre}}&estado=SUSPENDIDO",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{comercio_a_id}}",
+                "clonar"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "{{lc_6_nombre}}"
+                },
+                {
+                  "key": "estado",
+                  "value": "SUSPENDIDO"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('lc_6_nombre', 'Lista Newman 6 ' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('lc_6_id', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clonar un comercio en estado CERRADO_TEMPORALMENTE",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{comercio_a_id}}/clonar?nombre={{lc_7_nombre}}&estado=CERRADO_TEMPORALMENTE",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{comercio_a_id}}",
+                "clonar"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "{{lc_7_nombre}}"
+                },
+                {
+                  "key": "estado",
+                  "value": "CERRADO_TEMPORALMENTE"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('lc_7_nombre', 'Lista Newman 7 ' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('lc_7_id', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Clonar un comercio en estado INACTIVO",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{comercio_a_id}}/clonar?nombre={{lc_8_nombre}}&estado=INACTIVO",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{comercio_a_id}}",
+                "clonar"
+              ],
+              "query": [
+                {
+                  "key": "nombre",
+                  "value": "{{lc_8_nombre}}"
+                },
+                {
+                  "key": "estado",
+                  "value": "INACTIVO"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('lc_8_nombre', 'Lista Newman 8 ' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('lc_8_id', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El listado general trae un comercio por cada estado, con su estado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const lista = pm.response.json().data;",
+                  "const esperados = [[\"PENDIENTE\", Number(pm.environment.get('lc_1_id'))], [\"APROBADO\", Number(pm.environment.get('lc_2_id'))], [\"APTO_VENTA\", Number(pm.environment.get('lc_3_id'))], [\"RECHAZADO\", Number(pm.environment.get('lc_4_id'))], [\"RECHAZO_DEFINITIVO\", Number(pm.environment.get('lc_5_id'))], [\"SUSPENDIDO\", Number(pm.environment.get('lc_6_id'))], [\"CERRADO_TEMPORALMENTE\", Number(pm.environment.get('lc_7_id'))], [\"INACTIVO\", Number(pm.environment.get('lc_8_id'))]];",
+                  "pm.test('Los ocho estados posibles estan cubiertos', () => pm.expect(esperados.length).to.eql(8));",
+                  "esperados.forEach(([estado, id]) => pm.test('Aparece el comercio ' + estado, () => { const c = lista.find((x) => x.id === id); pm.expect(c, 'falta ' + estado).to.exist; pm.expect(c.estado).to.eql(estado); }));",
+                  "pm.test('Viene ordenado por id ascendente', () => { const ids = lista.map((c) => c.id); pm.expect(ids).to.eql([...ids].sort((a, b) => a - b)); });",
+                  "pm.test('Sin datos de Dueño ni de otros comercios', () => esperados.forEach(([estado, id]) => { const c = lista.find((x) => x.id === id); pm.expect(c.duenoId).to.eql(null); pm.expect(c.esAdicional).to.eql(false); pm.expect(c.otrosComercios).to.eql([]); }));",
+                  "pm.test('Trae al menos tantos comercios como los de cada estado listado antes', () => pm.expect(lista.length).to.be.at.least(8));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver equipo: el Administrador abre el equipo de un comercio PENDIENTE",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{lc_1_id}}/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{lc_1_id}}",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Trae la lista de miembros', () => pm.expect(pm.response.json().data.miembros).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver equipo: el Administrador abre el equipo de un comercio APROBADO",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{lc_2_id}}/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{lc_2_id}}",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Trae la lista de miembros', () => pm.expect(pm.response.json().data.miembros).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver equipo: el Administrador abre el equipo de un comercio APTO_VENTA",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{lc_3_id}}/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{lc_3_id}}",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Trae la lista de miembros', () => pm.expect(pm.response.json().data.miembros).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver equipo: el Administrador abre el equipo de un comercio RECHAZADO",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{lc_4_id}}/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{lc_4_id}}",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Trae la lista de miembros', () => pm.expect(pm.response.json().data.miembros).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver equipo: el Administrador abre el equipo de un comercio RECHAZO_DEFINITIVO",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{lc_5_id}}/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{lc_5_id}}",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Trae la lista de miembros', () => pm.expect(pm.response.json().data.miembros).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver equipo: el Administrador abre el equipo de un comercio SUSPENDIDO",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{lc_6_id}}/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{lc_6_id}}",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Trae la lista de miembros', () => pm.expect(pm.response.json().data.miembros).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver equipo: el Administrador abre el equipo de un comercio CERRADO_TEMPORALMENTE",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{lc_7_id}}/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{lc_7_id}}",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Trae la lista de miembros', () => pm.expect(pm.response.json().data.miembros).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ver equipo: el Administrador abre el equipo de un comercio INACTIVO",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{lc_8_id}}/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{lc_8_id}}",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Trae la lista de miembros', () => pm.expect(pm.response.json().data.miembros).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Las solicitudes siguen mostrando solo los pendientes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/pendientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "pendientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const lista = pm.response.json().data;",
+                  "const otros = [Number(pm.environment.get('lc_2_id')), Number(pm.environment.get('lc_3_id')), Number(pm.environment.get('lc_4_id')), Number(pm.environment.get('lc_5_id')), Number(pm.environment.get('lc_6_id')), Number(pm.environment.get('lc_7_id')), Number(pm.environment.get('lc_8_id'))];",
+                  "pm.test('Incluye al comercio PENDIENTE', () => pm.expect(lista.map((c) => c.id)).to.include(Number(pm.environment.get('lc_1_id'))));",
+                  "pm.test('No incluye a los de otro estado', () => otros.forEach((id) => pm.expect(lista.map((c) => c.id)).to.not.include(id)));",
+                  "pm.test('Todos estan en estado PENDIENTE', () => lista.forEach((c) => pm.expect(c.estado).to.eql('PENDIENTE')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seguridad: sin sesion el listado general da 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seguridad: un Cliente recibe 403 en el listado general",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_cliente}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Seguridad: un Comercio recibe 403 en el listado general",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_comercio}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios"
               ]
             }
           },

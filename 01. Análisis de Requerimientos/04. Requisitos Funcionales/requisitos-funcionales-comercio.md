@@ -105,17 +105,17 @@ cumplen simultáneamente:
 - El horario de consulta está dentro de las franjas horarias del comercio.
 - `Comercio.cerrado_manualmente == false`
 
-Un comercio aparece en el catálogo con indicador **"temporalmente cerrado"** — y sin
-posibilidad de recibir pedidos — si se cumple alguna de estas condiciones:
-- Su estado es `CERRADO_TEMPORALMENTE` (Dueño titular bloqueado), sin aviso de cuándo
-  reabre, o
-- Su estado es `APTO_VENTA` con `cerrado_manualmente = true` (cierre manual voluntario),
-  con el aviso de cuándo reabre.
+Un comercio aparece en el catálogo cerrado — y sin posibilidad de recibir pedidos — si se
+cumple alguna de estas condiciones:
+- Su estado es `CERRADO_TEMPORALMENTE` (Dueño titular bloqueado): el indicador dice
+  **"Cerrado temporalmente"**, sin aviso de cuándo reabre, o
+- Su estado es `APTO_VENTA` con `cerrado_manualmente = true` (cierre manual voluntario):
+  el indicador dice **"Cerrado"**, con el aviso de cuándo reabre.
 
-Para el público el estado de un comercio bloqueado se informa siempre como Apto para Venta,
-para no revelar que el Dueño está bloqueado. Si alguien intenta agregar un producto de un
-comercio cerrado temporalmente al carrito o confirmar su pedido, el sistema responde con
-el mismo mensaje del cierre manual ("Este comercio está cerrado en este momento").
+El estado de un comercio bloqueado se informa al público como Apto para Venta; lo que
+distingue el bloqueo del cierre manual es el indicador de apertura. Si alguien intenta
+agregar un producto de un comercio cerrado al carrito o confirmar su pedido, el sistema
+responde con el mismo mensaje en ambos casos ("Este comercio está cerrado en este momento").
 
 Un comercio `APTO_VENTA` fuera de todas las franjas de su horario se muestra como cerrado por
 horario, también con el aviso de cuándo reabre.
