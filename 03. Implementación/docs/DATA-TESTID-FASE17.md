@@ -259,3 +259,13 @@ Hueco heredado de la entrega B3 de E1, detectado al cierre de E4 comparando los 
 ## Toasts de éxito (2026-10-15)
 
 No se agregaron `data-testid`: los tests usan el selector `.toast` que ya existía. El componente suma atributos de accesibilidad: `role="status"` y `aria-live="polite"` (`js/catalogo.js`, `showToast`). Los textos nuevos que cubre el spec `62-toasts-exito-ui` son "Comercio cerrado", "Comercio abierto", "Cerraste el comercio" / "Cerraste N comercios", "Marcaste todos los avisos como leídos", "Vaciaste el carrito", "Quitaste {producto} del carrito", "Imagen eliminada", "Orden de las fotos actualizado", "Imagen actualizada", "Imagen agregada" y "Producto descontinuado".
+
+## Registro de Comercio, Tramo 1 (2026-10-18)
+
+| Pantalla | `data-testid` nuevos | `data-testid` que desaparecen |
+|---|---|---|
+| `registro-comercio.html`, `agregar-comercio.html`, `comercio-corregir.html`, `registro-cliente.html` y la cuenta nueva de `invitacion-empleado.html` | `input-provincia-fija`, `campo-provincia-fija`, `texto-provincia-fija` (provincia de solo lectura; `select-provincia` queda oculto) | `input-email-contacto`, `mensaje-error-email-contacto` (de los tres formularios de comercio) |
+| `registro-comercio.html` (paso 2) y `comercio-corregir.html` (paso Legales) | `seccion-datos-adicionales`, `resumen-datos-adicionales` (sección plegable de razón social, tipo de sociedad, condición IVA e inicio de actividades) | — |
+| Registro de Cliente, invitación, registro de Comercio y alta adicional | `bloque-terminos`, `enlace-terminos`, `enlace-privacidad` (el componente compartido; `input-acepta-terminos` y `mensaje-error-terminos` se conservan) | — |
+| `terminos.html`, `privacidad.html` | `titulo-terminos`, `titulo-privacidad`, `aviso-texto-provisorio`, `enlace-ir-a-privacidad`, `enlace-ir-a-terminos` | — |
+| `comercio-perfil.html` | `telefono-comercio-perfil`, `estado-localidad-comercio-perfil` | `email-comercio-perfil`, `input-email-contacto` (edición del Dueño), `campo-bloqueado-email` (vista del Empleado) |

@@ -20,6 +20,7 @@ import {
   apiPost,
   esperarImagenCargadaEnRecorte,
 } from './helpers/backend';
+import { abrirDatosAdicionales } from './helpers/datos-adicionales';
 
 const FIXTURE_PATH = path.resolve(__dirname, '../fixtures/bajonea-e2e-producto.png');
 const FIXTURE_BUFFER = readFileSync(FIXTURE_PATH);
@@ -173,7 +174,6 @@ test.describe('Registro y verificación de cuenta', () => {
 
     await page.getByTestId('input-nombre').fill(`Comercio UI E2E ${suf}`);
     await page.getByTestId('input-telefono').fill(generarTelefono());
-    await page.getByTestId('input-email-contacto').fill(emailContacto);
     await page.getByTestId('select-tipo-comercio').selectOption('RESTAURANTE');
     await page.getByTestId('input-calle').fill('Av. San Martín');
     await page.getByTestId('input-numero').fill('100');
@@ -182,6 +182,7 @@ test.describe('Registro y verificación de cuenta', () => {
     await subirFotoComercioUi(page);
     await page.getByTestId('btn-continuar').click();
 
+    await abrirDatosAdicionales(page);
     await expect(page.getByTestId('input-razon-social')).toBeVisible();
     await page.getByTestId('input-razon-social').fill(`Razón Social UI E2E ${suf}`);
     await page.getByTestId('input-cuit').fill(generarCuit());
@@ -222,6 +223,7 @@ test.describe('Registro y verificación de cuenta', () => {
     const registroResponse = page.waitForResponse(
       (res) => res.url().endsWith('/auth/registro/comercio') && res.request().method() === 'POST',
     );
+    await page.getByTestId('input-acepta-terminos').check();
     await page.getByTestId('btn-registrar-comercio').click();
     const respuesta = await registroResponse;
     expect(respuesta.status()).toBe(201);
@@ -334,7 +336,6 @@ test.describe('Registro y verificación de cuenta', () => {
     await page.goto('/registro-comercio.html');
 
     await page.getByTestId('input-telefono').fill(generarTelefono());
-    await page.getByTestId('input-email-contacto').fill(`comercio.ui.${sufijoUnico()}@bajonea.test`);
     await page.getByTestId('input-calle').fill('Av. San Martín');
     await page.getByTestId('input-numero').fill('100');
     await page.getByTestId('input-codigo-postal').fill('9420');
@@ -352,7 +353,6 @@ test.describe('Registro y verificación de cuenta', () => {
 
     await page.getByTestId('input-nombre').fill(`Comercio UI E2E ${suf}`);
     await page.getByTestId('input-telefono').fill(generarTelefono());
-    await page.getByTestId('input-email-contacto').fill(`comercio.ui.contacto.${suf}@bajonea.test`);
     await page.getByTestId('select-tipo-comercio').selectOption('RESTAURANTE');
     await page.getByTestId('input-calle').fill('Av. San Martín');
     await page.getByTestId('input-numero').fill('100');
@@ -361,6 +361,7 @@ test.describe('Registro y verificación de cuenta', () => {
     await subirFotoComercioUi(page);
     await page.getByTestId('btn-continuar').click();
 
+    await abrirDatosAdicionales(page);
     await expect(page.getByTestId('input-razon-social')).toBeVisible();
     await page.getByTestId('input-razon-social').fill(`Razón Social UI E2E ${suf}`);
     await page.getByTestId('input-cuit').fill('12345');
@@ -440,7 +441,6 @@ test.describe('Registro y verificación de cuenta', () => {
     await page.goto('/registro-comercio.html');
     await page.getByTestId('input-nombre').fill(`Comercio Banner E2E ${suf}`);
     await page.getByTestId('input-telefono').fill(generarTelefono());
-    await page.getByTestId('input-email-contacto').fill(`comercio.banner.contacto.${suf}@bajonea.test`);
     await page.getByTestId('select-tipo-comercio').selectOption('RESTAURANTE');
     await page.getByTestId('input-calle').fill('Av. San Martín');
     await page.getByTestId('input-numero').fill('100');
@@ -449,6 +449,7 @@ test.describe('Registro y verificación de cuenta', () => {
     await subirFotoComercioUi(page);
     await page.getByTestId('btn-continuar').click();
 
+    await abrirDatosAdicionales(page);
     await page.getByTestId('input-razon-social').fill(`Razón Social Banner ${suf}`);
     await page.getByTestId('input-cuit').fill(generarCuit());
     await page.getByTestId('input-fecha-inicio-actividades').fill('2020-01-01');
@@ -476,6 +477,7 @@ test.describe('Registro y verificación de cuenta', () => {
 
     await expect(page.getByTestId('lista-redes-sociales')).toBeVisible();
     await completarRedSocialUi(page, suf);
+    await page.getByTestId('input-acepta-terminos').check();
     await page.getByTestId('btn-registrar-comercio').click();
 
     const banner = page.getByTestId('mensaje-banner');

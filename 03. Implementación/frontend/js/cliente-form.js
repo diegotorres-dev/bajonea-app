@@ -3,7 +3,7 @@ import { initGeografiaSelects } from './geografia.js';
 import { validarArchivoImagen, subirFotoPerfilRegistroCliente, CloudinaryUploadError } from './cloudinary.js';
 import { abrirEditorRecorte } from './crop.js';
 import { validarCampoRequeridoYValido, validarCampoOpcionalYValido, bindValidacionCampo } from './comercio-form.js';
-import { h, crearSvg, renderBannerTexto, bindPasswordToggle, setLoading, construirTelefono, bindNombreUsuario, crearPasos, MENSAJE_NOMBRE_USUARIO_EN_USO } from './form-utils.js';
+import { h, crearSvg, renderBannerTexto, bindPasswordToggle, setLoading, construirTelefono, bindNombreUsuario, crearPasos, crearCheckboxTerminos, validarTerminos, MENSAJE_NOMBRE_USUARIO_EN_USO } from './form-utils.js';
 import {
   esPasswordSegura,
   aplicarFortalezaPassword,
@@ -191,11 +191,7 @@ function construirPaso1({ incluirEmail, mostrarEnlaceLogin }) {
       'error-confirmarPassword',
       'mensaje-error-confirmar-password',
     ),
-    h('div', { class: 'checkbox-row' }, [
-      h('input', { type: 'checkbox', id: 'aceptaTerminos', 'data-testid': 'input-acepta-terminos' }),
-      h('label', { for: 'aceptaTerminos' }, ['Acepto los ', h('span', { class: 'link' }, ['Términos y Condiciones']), ' y la ', h('span', { class: 'link' }, ['Política de Privacidad'])]),
-    ]),
-    mensajeError('error-terminos', 'mensaje-error-terminos'),
+    crearCheckboxTerminos(),
   );
 
   const hijos = [
@@ -322,7 +318,6 @@ export function montarFormularioCliente(contenedor, opciones) {
     limpiarErrorCampo('error-password');
   });
   confirmarInput.addEventListener('input', () => limpiarErrorCampo('error-confirmarPassword'));
-  document.getElementById('aceptaTerminos').addEventListener('change', () => limpiarErrorCampo('error-terminos'));
 
   const nombreUsuarioCtl = bindNombreUsuario();
   const camposConErrorEnVivo = ['nombre', 'apellido', 'dni', 'fechaNacimiento', 'telefono'];
@@ -410,12 +405,10 @@ export function montarFormularioCliente(contenedor, opciones) {
       return;
     }
     limpiarErrorCampo('error-confirmarPassword');
-    if (!document.getElementById('aceptaTerminos').checked) {
-      mostrarErrorCampo('error-terminos', 'Tenés que aceptar los Términos y Condiciones para continuar.');
+    if (!validarTerminos()) {
       scrollAlPrimerError();
       return;
     }
-    limpiarErrorCampo('error-terminos');
     pasos.mostrar(1);
   });
 

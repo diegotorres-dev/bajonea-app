@@ -108,14 +108,12 @@ interface DatosPaso1 {
   numero: string;
   pisoDepto?: string;
   telefono?: string;
-  emailContacto?: string;
 }
 
 async function completarPaso1(page: Page, localidadId: string, datos: DatosPaso1) {
   await page.getByTestId('input-nombre').fill(datos.nombre);
   await page.getByTestId('select-tipo-comercio').selectOption('RESTAURANTE');
   await page.getByTestId('input-telefono').fill(datos.telefono ?? '2964123456');
-  await page.getByTestId('input-email-contacto').fill(datos.emailContacto ?? `adic.ui.${sufijoUnico()}@bajonea.test`);
   await expect(page.getByTestId('select-localidad')).toBeEnabled();
   await page.getByTestId('select-localidad').selectOption(localidadId);
   await page.getByTestId('input-calle').fill(datos.calle);
@@ -139,6 +137,7 @@ async function completarPaso2(page: Page) {
 async function completarPaso3(page: Page, suf: string) {
   await page.getByTestId('select-tipo-red-social').selectOption('INSTAGRAM');
   await page.getByTestId('input-url-red-social').fill(`instagram.com/adic.ui.${suf}`);
+  await page.getByTestId('input-acepta-terminos').check();
 }
 
 async function recorrerWizardCompleto(page: Page, localidadId: string, datos: DatosPaso1) {
@@ -304,7 +303,7 @@ test.describe('Multi-comercio, tramo 2B: alta adicional de comercio (UI del Due�
         await route.fulfill({
           status: 400,
           contentType: 'application/json',
-          body: JSON.stringify({ mensaje: 'validación', data: { emailContacto: 'Ingresá un email de contacto con formato válido' } }),
+          body: JSON.stringify({ mensaje: 'validación', data: { telefono: 'Ingresá un número de teléfono válido (cod. área + número)' } }),
         });
       });
       await page.goto('/agregar-comercio.html');
@@ -313,7 +312,7 @@ test.describe('Multi-comercio, tramo 2B: alta adicional de comercio (UI del Due�
       await page.getByTestId('btn-enviar-solicitud').click();
 
       await expect(page.getByTestId('mensaje-banner')).toContainText('Revisá los campos marcados.');
-      await expect(page.getByTestId('mensaje-error-email-contacto')).toContainText('Ingresá un email de contacto con formato válido');
+      await expect(page.getByTestId('mensaje-error-telefono')).toContainText('Ingresá un número de teléfono válido');
       await expect(page.getByTestId('btn-continuar')).toBeVisible();
     });
 

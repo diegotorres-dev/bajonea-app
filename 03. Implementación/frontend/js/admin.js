@@ -557,7 +557,9 @@ function renderComercioDetailSections(body, comercio) {
   datosComercio.appendChild(detailRow('Nombre comercial', comercio.nombre));
   datosComercio.appendChild(detailRow('Tipo', labelTipoComercio(comercio.tipoComercio)));
   datosComercio.appendChild(detailRow('Teléfono de contacto', comercio.telefono));
-  datosComercio.appendChild(detailRow('Email de contacto', comercio.emailContacto));
+  if (comercio.emailContacto) {
+    datosComercio.appendChild(detailRow('Email de contacto', comercio.emailContacto));
+  }
   datosComercio.appendChild(detailRow('Email de cuenta', comercio.emailCuenta));
   body.appendChild(datosComercio);
 
@@ -566,8 +568,8 @@ function renderComercioDetailSections(body, comercio) {
   datosLegalesTitulo.textContent = 'Datos Legales / Fiscales';
   datosLegales.appendChild(datosLegalesTitulo);
   datosLegales.appendChild(detailRow('CUIT', comercio.cuit));
-  datosLegales.appendChild(detailRow('Razón Social', comercio.razonSocial));
-  datosLegales.appendChild(detailRow('Condición IVA', LABELS_CONDICION_IVA[comercio.condicionIva] || comercio.condicionIva));
+  datosLegales.appendChild(detailRow('Razón Social', comercio.razonSocial || '—'));
+  datosLegales.appendChild(detailRow('Condición IVA', comercio.condicionIva ? (LABELS_CONDICION_IVA[comercio.condicionIva] || comercio.condicionIva) : '—'));
   body.appendChild(datosLegales);
 
   if (comercio.direccion) {

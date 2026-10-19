@@ -12,8 +12,8 @@ comercios se encuentran en Requisitos Funcionales — Dueño.
 ## Perfil del Negocio
 
 - El Dueño debe poder registrar los datos propios de cada comercio que administra:
-  nombre, descripción, foto de perfil del negocio, teléfono, email de contacto del
-  negocio, dirección operativa, tipo de comercio (Restaurante, Emprendimiento,
+  nombre, descripción, foto de perfil del negocio, teléfono, dirección operativa (solo
+  Tierra del Fuego: Río Grande, Tolhuin o Ushuaia), tipo de comercio (Restaurante, Emprendimiento,
   Rotisería, Heladería, Cafetería, Panadería, Pizzería, Parrilla, Bar, Kiosco, Food
   Truck u Otro) y modalidades de entrega aceptadas (acepta_delivery, acepta_retiro —
   al menos una obligatoria). La foto de perfil del comercio es obligatoria desde el

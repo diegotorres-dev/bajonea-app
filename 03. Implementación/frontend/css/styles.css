@@ -5881,3 +5881,85 @@ button.panel-comercios__fila:focus-visible {
   height: 18px;
   border-radius: var(--radius-sm);
 }
+
+.legal-texto {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text);
+  margin: 0 0 14px;
+}
+
+.terminos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input-shell--solo-lectura {
+  background: var(--color-surface-alt);
+  cursor: default;
+}
+
+.input-shell--solo-lectura input {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.seccion-plegable {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.seccion-plegable > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 17px;
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--color-text);
+  list-style: none;
+}
+
+.seccion-plegable > summary::-webkit-details-marker {
+  display: none;
+}
+
+.seccion-plegable__chevron {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  transition: transform 0.15s;
+}
+
+.seccion-plegable[open] .seccion-plegable__chevron {
+  transform: rotate(180deg);
+}
+
+.seccion-plegable__contenido {
+  padding: 4px 17px 17px;
+}
+
+.perfil-linea {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.perfil-linea svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.perfil-linea--secundaria {
+  font-size: 13px;
+  margin-top: 2px;
+}

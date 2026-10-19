@@ -88,6 +88,40 @@ export function construirTelefono(digitos) {
   return `+549${String(digitos || '').replace(/[ ()\-]/g, '')}`;
 }
 
+export const MENSAJE_TERMINOS_REQUERIDOS = 'Tenés que aceptar los Términos y Condiciones';
+
+export function crearCheckboxTerminos() {
+  const enlace = (href, texto, testid) => h('a', { href, target: '_blank', rel: 'noopener', 'data-testid': testid }, [texto]);
+  const input = h('input', { type: 'checkbox', id: 'aceptaTerminos', 'data-testid': 'input-acepta-terminos' });
+  input.addEventListener('change', () => limpiarErrorCampo('error-terminos'));
+  return h('div', { class: 'terminos', 'data-testid': 'bloque-terminos' }, [
+    h('div', { class: 'checkbox-row' }, [
+      input,
+      h('label', { for: 'aceptaTerminos' }, [
+        'Acepto los ',
+        enlace('terminos.html', 'Términos y Condiciones', 'enlace-terminos'),
+        ' y la ',
+        enlace('privacidad.html', 'Política de Privacidad', 'enlace-privacidad'),
+      ]),
+    ]),
+    h('div', { class: 'field__error', id: 'error-terminos', style: 'display:none;', role: 'alert', 'data-testid': 'mensaje-error-terminos' }),
+  ]);
+}
+
+export function montarTerminos(slotId = 'terminos-slot') {
+  document.getElementById(slotId).replaceChildren(crearCheckboxTerminos());
+}
+
+export function validarTerminos() {
+  const marcado = document.getElementById('aceptaTerminos').checked;
+  if (marcado) {
+    limpiarErrorCampo('error-terminos');
+  } else {
+    mostrarErrorCampo('error-terminos', MENSAJE_TERMINOS_REQUERIDOS);
+  }
+  return marcado;
+}
+
 export function crearPasos({ pasos, barras, etiquetas }) {
   let actual = 0;
   return {

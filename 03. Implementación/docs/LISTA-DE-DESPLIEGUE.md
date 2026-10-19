@@ -44,6 +44,8 @@ Todo lo que hay que revisar antes de subir Bajoneá al servidor final y que no e
 - **Las fuentes (Nunito e Inter) se piden a Google Fonts por internet** desde `frontend/css/styles.css` (`@import`). Cada carga de página depende de esa red. Empaquetar las fuentes en `frontend/` es una mejora de producción pendiente (ver la "Lista de pulido" de `CLAUDE.md` §9). Los tests de Playwright las bloquean con un fixture para ser deterministas.
 - `frontend/js/api.js` fija `http://localhost:8080/api/v1`: el despliegue tiene que reemplazarlo por la URL del backend (hoy se cambia a mano; para probar en otro puerto, `scripts/entorno-test.mjs` sirve una copia temporal).
 - WebKit/iPhone real sin probar en ningún tramo de UI (Windows bloquea el navegador en la máquina de Diego).
+- **Textos legales provisorios:** `frontend/terminos.html` y `frontend/privacidad.html` llevan un texto de reemplazo con la línea visible "Texto provisorio: se reemplaza por la versión definitiva al final del proyecto". Hay que reemplazarlos por la versión definitiva y sacar esa línea antes de publicar.
+- **Tolhuin entra por la migración `V36`, no por el ETL de Georef:** la localidad `94011010` se inserta con `INSERT ... ON DUPLICATE KEY UPDATE`; las bases ya cargadas con el ETL la reciben al arrancar el backend. La lista de localidades habilitadas está en la propiedad `geografia.localidades-habilitadas` (valor por defecto en el código; no hace falta tocar `application.properties`).
 
 ## 7. Cosas que se aceptaron y conviene saber
 

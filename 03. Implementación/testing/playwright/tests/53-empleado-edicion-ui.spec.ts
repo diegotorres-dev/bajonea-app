@@ -119,7 +119,7 @@ test.describe('Edición del comercio, productos y cierre para el Empleado, E3 en
       await sinScrollHorizontal(page);
     });
 
-    test('"Editar datos del comercio" muestra descripción y teléfono editables y cinco filas con candado bajo "Solo el Dueño puede cambiarlos"', async ({ page, request }) => {
+    test('"Editar datos del comercio" muestra descripción y teléfono editables y cuatro filas con candado bajo "Solo el Dueño puede cambiarlos"', async ({ page, request }) => {
       const comercio = await datosDelComercio(request);
       await abrirComoEmpleado(page);
       await abrirEdicionDelComercio(page);
@@ -130,13 +130,12 @@ test.describe('Edición del comercio, productos y cierre para el Empleado, E3 en
       await expect(page.getByTestId('btn-guardar-datos-comercio')).toBeEnabled();
       await expect(page.getByTestId('titulo-campos-bloqueados')).toHaveText(TITULO_BLOQUEADOS);
       const filas = page.getByTestId('campos-bloqueados').locator('.campo-bloqueado');
-      await expect(filas).toHaveCount(5);
-      await expect(filas.locator('.field__label')).toHaveText(['Nombre', 'Foto', 'Dirección', 'Email de contacto', 'Modalidades de entrega']);
+      await expect(filas).toHaveCount(4);
+      await expect(filas.locator('.field__label')).toHaveText(['Nombre', 'Foto', 'Dirección', 'Modalidades de entrega']);
       await expect(page.getByTestId('campo-bloqueado-nombre')).toContainText(dueno.nombre);
       await expect(page.getByTestId('campo-bloqueado-direccion')).not.toContainText('undefined');
-      await expect(page.getByTestId('campo-bloqueado-email')).toContainText(String(comercio.emailContacto));
       await expect(page.getByTestId('campo-bloqueado-modalidades')).not.toBeEmpty();
-      for (let i = 0; i < 5; i += 1) {
+      for (let i = 0; i < 4; i += 1) {
         await expect(filas.nth(i).locator('svg')).toHaveCount(1);
       }
       await expect(page.getByTestId('campos-bloqueados').locator('input, textarea, select, button')).toHaveCount(0);
@@ -261,7 +260,7 @@ test.describe('Edición del comercio, productos y cierre para el Empleado, E3 en
       await page.getByTestId('btn-editar-perfil-comercio').click();
       await expect(page.getByTestId('input-nombre')).toHaveValue(dueno.nombre);
       await expect(page.getByTestId('input-nombre')).toBeEditable();
-      await expect(page.getByTestId('input-email-contacto')).toBeEditable();
+      await expect(page.getByTestId('input-telefono')).toBeEditable();
       await expect(page.getByTestId('btn-switch-delivery')).toBeVisible();
       await expect(page.locator('#editar-nombre, #editar-telefono, #editar-banner-slot')).toHaveCount(3);
     });

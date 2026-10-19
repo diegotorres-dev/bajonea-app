@@ -12,9 +12,13 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
 ## Registro y Datos Fiscales
 
 - El sistema debe permitir el registro de un Dueño nuevo solicitando en un mismo flujo:
-  los datos de la persona jurídica (razón social, CUIT, domicilio fiscal, condición
-  frente al IVA, tipo de sociedad e inicio de actividades) y los datos de su primer
-  comercio (ver Requisitos Funcionales — Comercio, sección Perfil del Negocio).
+  los datos de la persona jurídica (CUIT y domicilio fiscal, obligatorios; razón social,
+  condición frente al IVA, tipo de sociedad e inicio de actividades, opcionales), los datos del
+  representante y los datos de su primer comercio (ver Requisitos Funcionales — Comercio,
+  sección Perfil del Negocio). Para registrarse tiene que aceptar los Términos y Condiciones
+  y la Política de Privacidad (el servidor rechaza con 400 si `aceptaTerminos` falta o es falso;
+  la aceptación se valida y no se guarda). El alta de un comercio adicional pide la misma
+  aceptación; la corrección de un comercio rechazado no.
 - El registro del Dueño solicita también el nombre de usuario de su cuenta, que es su credencial de login (ver Requisitos Funcionales — Generales, sección Nombre de Usuario). El Dueño no tiene, en esta versión, una pantalla para ver ni cambiar su nombre de usuario.
 - Un Dueño que ya tiene una cuenta activa debe poder dar de alta un comercio adicional
   desde su panel sin volver a solicitar sus datos fiscales, ya cargados en su registro
@@ -256,7 +260,7 @@ Las siguientes acciones no son delegables a un Empleado, aunque este tenga acces
 Activo al comercio:
 
 - Editar los datos fiscales y de persona jurídica.
-- Cambiar el nombre, la foto, la dirección y el tipo de comercio, el email de contacto y las
+- Cambiar el nombre, la foto, la dirección y el tipo de comercio y las
   modalidades de entrega (la edición completa del perfil). De todo el perfil, el Empleado solo
   edita la descripción y el teléfono, por una ruta aparte que rechaza cualquier otro campo; el
   Dueño también puede usarla.

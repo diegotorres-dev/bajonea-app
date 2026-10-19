@@ -29,7 +29,7 @@ import {
   scrollAlPrimerError,
 } from './validators.js';
 import { montarFormularioCliente } from './cliente-form.js';
-import { renderBanner, renderBannerTexto, bindPasswordToggle, setLoading, construirTelefono, bindNombreUsuario, MENSAJE_NOMBRE_USUARIO_EN_USO } from './form-utils.js';
+import { renderBanner, renderBannerTexto, bindPasswordToggle, setLoading, construirTelefono, bindNombreUsuario, montarTerminos, validarTerminos, MENSAJE_NOMBRE_USUARIO_EN_USO } from './form-utils.js';
 
 export { LABELS_TIPO_SOCIEDAD, LABELS_CONDICION_IVA, LABELS_TIPO_COMERCIO, LABELS_TIPO_RED_SOCIAL } from './comercio-form.js';
 export { construirTelefono, bindNombreUsuario } from './form-utils.js';
@@ -243,6 +243,7 @@ const MAPA_ERRORES_REGISTRO_COMERCIO = {
   nombreUsuario: 'error-nombreUsuario',
   email: 'error-email',
   password: 'error-password',
+  aceptaTerminos: 'error-terminos',
 };
 
 export function initRegistroComercio() {
@@ -346,11 +347,16 @@ export function initRegistroComercio() {
   });
 
   const redesSociales = initRedesSociales({ mostrarError: mostrarErrorEnBanner });
+  montarTerminos();
 
   const submitBtn = document.getElementById('submit-btn');
   document.getElementById('form-step-4').addEventListener('submit', async (event) => {
     event.preventDefault();
     renderBanner(bannerSlot, 'info', '');
+    if (!validarTerminos()) {
+      scrollAlPrimerError();
+      return;
+    }
     const horariosCargados = horarios.recolectar();
     const redesSocialesCargadas = redesSociales.validarYRecolectar();
     if (!redesSocialesCargadas) {
@@ -377,6 +383,7 @@ export function initRegistroComercio() {
       nombreUsuario: document.getElementById('nombreUsuario').value.trim().toLowerCase(),
       email: document.getElementById('email').value.trim().toLowerCase(),
       password: passwordInput.value,
+      aceptaTerminos: true,
       horarios: horariosCargados,
       redesSociales: redesSocialesCargadas,
     };
@@ -398,7 +405,7 @@ export function initRegistroComercio() {
         const campos = Object.keys(error.data);
         const tieneErrorStep1 = campos.some(esCampoBackendDeNegocio);
         const tieneErrorStep2 = campos.some((campo) => CAMPOS_STEP2_BACKEND_COMERCIO.includes(campo));
-        const tieneErrorStep4 = campos.some(esCampoBackendDeRedesSociales);
+        const tieneErrorStep4 = campos.some(esCampoBackendDeRedesSociales) || campos.includes('aceptaTerminos');
         mostrarPaso(tieneErrorStep1 ? 0 : tieneErrorStep2 ? 1 : tieneErrorStep4 ? 3 : 2);
         renderBanner(bannerSlot, 'error', 'Revisá los campos marcados.');
         scrollAlPrimerError();

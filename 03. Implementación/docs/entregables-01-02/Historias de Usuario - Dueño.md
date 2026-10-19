@@ -7,8 +7,8 @@ Usuario — Comercio.
 
 ## HU-D01: Registrarme como Dueño
 
-Como Dueño, quiero registrarme eligiendo un nombre de usuario para mi cuenta, con mis datos de persona jurídica (razón social, CUIT,
-domicilio fiscal, condición frente al IVA, tipo de sociedad e inicio de actividades)
+Como Dueño, quiero registrarme eligiendo un nombre de usuario para mi cuenta, con mis datos de persona jurídica (CUIT y domicilio fiscal; razón social,
+condición frente al IVA, tipo de sociedad e inicio de actividades son opcionales y van en una sección plegable "Datos adicionales (opcional)")
 junto con los datos de mi primer comercio (tipo de comercio, modalidades de entrega,
 horarios de atención), para solicitar mi habilitación con información completa desde
 un único flujo.

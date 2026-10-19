@@ -14,6 +14,7 @@ import {
   esCampoBackendDeRedesSociales,
 } from './comercio-form.js';
 import { mapearErroresBackend, mostrarErrorCampo, scrollAlPrimerError } from './validators.js';
+import { montarTerminos, validarTerminos } from './form-utils.js';
 
 const ICONO_ERROR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
 
@@ -153,6 +154,7 @@ export async function initAgregarComercio() {
   negocio = initCamposNegocio({ foto });
   const horarios = initHorarios({ mostrarError: mostrarErrorEnBanner });
   const redesSociales = initRedesSociales({ mostrarError: mostrarErrorEnBanner });
+  montarTerminos();
 
   document.getElementById('continuar-btn').addEventListener('click', () => {
     renderBannerError(bannerSlot, '');
@@ -172,6 +174,10 @@ export async function initAgregarComercio() {
   document.getElementById('form-step-3').addEventListener('submit', async (event) => {
     event.preventDefault();
     renderBannerError(bannerSlot, '');
+    if (!validarTerminos()) {
+      scrollAlPrimerError();
+      return;
+    }
     const redes = redesSociales.validarYRecolectar();
     if (!redes) {
       return;
@@ -192,6 +198,7 @@ export async function initAgregarComercio() {
       const payload = {
         ...negocio.leerPayloadNegocio(construirTelefono),
         fotoPerfilUrl,
+        aceptaTerminos: true,
         horarios: horarios.recolectar(),
         redesSociales: redes,
       };
@@ -210,7 +217,7 @@ export async function initAgregarComercio() {
       }
       const campos = error.data && typeof error.data === 'object' ? Object.keys(error.data) : [];
       if (error.status === 400 && campos.length > 0) {
-        mapearErroresBackend(error.data, MAPA_ERRORES_NEGOCIO);
+        mapearErroresBackend(error.data, { ...MAPA_ERRORES_NEGOCIO, aceptaTerminos: 'error-terminos' });
         const tieneNegocio = campos.some(esCampoBackendDeNegocio);
         const claveHorarios = campos.find(esCampoBackendDeHorarios);
         const claveRedes = campos.find(esCampoBackendDeRedesSociales);
@@ -221,9 +228,9 @@ export async function initAgregarComercio() {
           mostrarPaso(1);
           mostrarErrorCampo('error-horarios', error.data[claveHorarios]);
           mostrarErrorEnBanner('Revisá los horarios cargados.');
-        } else if (claveRedes) {
+        } else if (claveRedes || campos.includes('aceptaTerminos')) {
           mostrarPaso(2);
-          mostrarErrorEnBanner(error.data[claveRedes]);
+          mostrarErrorEnBanner(claveRedes ? error.data[claveRedes] : 'Revisá los campos marcados.');
         } else {
           mostrarPaso(0);
           mostrarErrorEnBanner('Revisá los campos marcados.');

@@ -46,7 +46,6 @@ import {
   aTitleCase,
   esTextoConContenidoValido,
   esTelefonoValido,
-  esEmailValido,
   esPasswordSegura,
   aplicarFortalezaPassword,
   scrollAlPrimerError,
@@ -232,6 +231,9 @@ function bindPasswordToggle(toggleBtn, input) {
 }
 
 function formatearFechaLarga(fechaTexto) {
+  if (!fechaTexto) {
+    return '—';
+  }
   const fecha = new Date(`${fechaTexto}T00:00:00`);
   return fecha.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
 }
@@ -1959,7 +1961,7 @@ const DIAS_DE_LA_SEMANA = [
   { clave: 'DOMINGO', etiqueta: 'Domingo' },
 ];
 
-function textoEstadoParaEmpleado(comercio) {
+function textoEstadoDelComercio(comercio) {
   if (comercio.estado === 'SUSPENDIDO') {
     return 'Suspendido';
   }
@@ -2014,7 +2016,6 @@ function pintarCamposBloqueadosDelEmpleado(comercio) {
   document.getElementById('bloqueado-nombre').textContent = comercio.nombre;
   document.getElementById('bloqueado-foto').textContent = comercio.fotoPerfilUrl ? 'Foto de perfil cargada' : 'Sin foto de perfil';
   document.getElementById('bloqueado-direccion').textContent = formatearDireccion(comercio.direccion);
-  document.getElementById('bloqueado-email').textContent = comercio.emailContacto;
   document.getElementById('bloqueado-modalidades').textContent = textoModalidadesDeEntrega(comercio);
 }
 
@@ -2102,16 +2103,27 @@ function enlazarEdicionDatosDelComercioEmpleado(comercio) {
   document.getElementById('editar-comercio-empleado-link').disabled = false;
 }
 
+function pintarHeaderDelDueno(comercio) {
+  const telefono = comercio.telefono ? String(comercio.telefono).trim() : '';
+  document.getElementById('perfil-telefono').textContent = telefono;
+  document.getElementById('perfil-telefono-linea').classList.toggle('is-hidden', !telefono);
+  const localidad = comercio.direccion && comercio.direccion.nombreLocalidad ? comercio.direccion.nombreLocalidad : '';
+  const linea = document.getElementById('perfil-estado-localidad');
+  linea.textContent = [textoEstadoDelComercio(comercio), localidad].filter(Boolean).join(' · ');
+  linea.classList.remove('is-hidden');
+}
+
 function pintarPerfilDelEmpleado(comercio) {
   document.getElementById('perfil-nombre').textContent = comercio.nombre;
-  document.getElementById('perfil-email').classList.add('is-hidden');
+  document.getElementById('perfil-telefono-linea').classList.add('is-hidden');
+  document.getElementById('perfil-estado-localidad').classList.add('is-hidden');
   document.getElementById('perfil-insignia-empleado').classList.remove('is-hidden');
   pintarAvatarComercio(document.getElementById('perfil-avatar'), comercio);
   document.getElementById('empleado-descripcion').textContent = comercio.descripcion || 'Sin descripción';
   document.getElementById('empleado-direccion').textContent = formatearDireccion(comercio.direccion);
   document.getElementById('empleado-telefono').textContent = comercio.telefono;
   pintarHorariosParaEmpleado(document.getElementById('empleado-horarios'), comercio.horarios);
-  document.getElementById('empleado-estado').textContent = textoEstadoParaEmpleado(comercio);
+  document.getElementById('empleado-estado').textContent = textoEstadoDelComercio(comercio);
 }
 
 async function iniciarPerfilDelEmpleado(comercio) {
@@ -2163,7 +2175,7 @@ export async function initComercioPerfil() {
   }
 
   document.getElementById('perfil-nombre').textContent = comercio.nombre;
-  document.getElementById('perfil-email').textContent = comercio.emailContacto;
+  pintarHeaderDelDueno(comercio);
 
   const avatarPerfil = document.getElementById('perfil-avatar');
 
@@ -2172,10 +2184,10 @@ export async function initComercioPerfil() {
   }
   actualizarAvatares();
 
-  document.getElementById('legal-razon-social').textContent = comercio.razonSocial;
+  document.getElementById('legal-razon-social').textContent = comercio.razonSocial || '—';
   document.getElementById('legal-cuit').textContent = comercio.cuit;
-  document.getElementById('legal-condicion-iva').textContent = LABELS_CONDICION_IVA[comercio.condicionIva] || comercio.condicionIva;
-  document.getElementById('legal-tipo-sociedad').textContent = LABELS_TIPO_SOCIEDAD[comercio.tipoSociedad] || comercio.tipoSociedad;
+  document.getElementById('legal-condicion-iva').textContent = comercio.condicionIva ? (LABELS_CONDICION_IVA[comercio.condicionIva] || comercio.condicionIva) : '—';
+  document.getElementById('legal-tipo-sociedad').textContent = comercio.tipoSociedad ? (LABELS_TIPO_SOCIEDAD[comercio.tipoSociedad] || comercio.tipoSociedad) : '—';
   document.getElementById('legal-domicilio-fiscal').textContent = comercio.domicilioFiscal;
   document.getElementById('legal-fecha-inicio').textContent = formatearFechaLarga(comercio.fechaInicioActividades);
 
@@ -2187,7 +2199,6 @@ export async function initComercioPerfil() {
     document.getElementById('editar-nombre').value = comercio.nombre;
     document.getElementById('editar-descripcion').value = comercio.descripcion || '';
     document.getElementById('editar-telefono').value = comercio.telefono.replace(/^\+549/, '');
-    document.getElementById('editar-emailContacto').value = comercio.emailContacto;
     const switchDelivery = document.getElementById('switch-delivery');
     const switchRetiro = document.getElementById('switch-retiro');
     switchDelivery.setAttribute('aria-pressed', String(comercio.aceptaDelivery));
@@ -2315,7 +2326,6 @@ export async function initComercioPerfil() {
     const camposValidos = validarCamposRequeridosSilencioso([
       { inputId: 'editar-nombre', errorId: 'error-editar-nombre', validador: esTextoConContenidoValido, mensajeVacio: 'Ingresá el nombre de tu comercio.', mensajeInvalido: 'El nombre no puede contener solo caracteres especiales.' },
       { inputId: 'editar-telefono', errorId: 'error-editar-telefono', validador: esTelefonoValido, mensajeVacio: 'Ingresá tu teléfono.', mensajeInvalido: 'Ingresá un teléfono argentino válido (código de área + número).' },
-      { inputId: 'editar-emailContacto', errorId: 'error-editar-emailContacto', validador: esEmailValido, mensajeVacio: 'El email de contacto es obligatorio.', mensajeInvalido: 'Ingresá un email de contacto con formato válido.' },
     ]);
     if (!camposValidos) {
       scrollAlPrimerError();
@@ -2335,7 +2345,6 @@ export async function initComercioPerfil() {
           nombre: document.getElementById('editar-nombre').value.trim(),
           descripcion: document.getElementById('editar-descripcion').value.trim() || null,
           telefono: construirTelefono(document.getElementById('editar-telefono').value.trim()),
-          emailContacto: document.getElementById('editar-emailContacto').value.trim(),
           aceptaDelivery: switchDelivery.getAttribute('aria-pressed') === 'true',
           aceptaRetiro: switchRetiro.getAttribute('aria-pressed') === 'true',
         },
@@ -2344,11 +2353,10 @@ export async function initComercioPerfil() {
       comercio.nombre = actualizado.nombre;
       comercio.descripcion = actualizado.descripcion;
       comercio.telefono = actualizado.telefono;
-      comercio.emailContacto = actualizado.emailContacto;
       comercio.aceptaDelivery = actualizado.aceptaDelivery;
       comercio.aceptaRetiro = actualizado.aceptaRetiro;
       document.getElementById('perfil-nombre').textContent = actualizado.nombre;
-      document.getElementById('perfil-email').textContent = actualizado.emailContacto;
+      pintarHeaderDelDueno(comercio);
       refrescarComercios().catch(() => {});
       mostrarVista('view-principal');
       showToast('Datos actualizados correctamente');
@@ -2356,7 +2364,6 @@ export async function initComercioPerfil() {
       const mapaErrores = {
         nombre: 'error-editar-nombre',
         telefono: 'error-editar-telefono',
-        emailContacto: 'error-editar-emailContacto',
       };
       if (!(error instanceof ApiError && error.data && mapearErroresBackend(error.data, mapaErrores))) {
         renderBanner(bannerEditar, 'error', error instanceof ApiError ? error.message : 'No pudimos guardar los cambios. Intentá nuevamente.');

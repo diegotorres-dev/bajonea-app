@@ -21,6 +21,7 @@ import {
   obtenerCodigoTest,
   API_BASE_URL,
 } from './helpers/backend';
+import { abrirDatosAdicionales } from './helpers/datos-adicionales';
 
 const FIXTURE_PATH = path.resolve(__dirname, '../fixtures/bajonea-e2e-producto.png');
 const FIXTURE_BUFFER = readFileSync(FIXTURE_PATH);
@@ -431,7 +432,6 @@ test.describe('Nombre de usuario: login, registro, disponibilidad en vivo y perf
       await page.goto('/registro-comercio.html');
       await page.getByTestId('input-nombre').fill(`Comercio Usuario E2E ${suf}`);
       await page.getByTestId('input-telefono').fill(generarTelefono());
-      await page.getByTestId('input-email-contacto').fill(`comercio.nu.${suf}@bajonea.test`);
       await page.getByTestId('select-tipo-comercio').selectOption('RESTAURANTE');
       await page.getByTestId('input-calle').fill('Av. San Martín');
       await page.getByTestId('input-numero').fill('100');
@@ -446,6 +446,7 @@ test.describe('Nombre de usuario: login, registro, disponibilidad en vivo y perf
       await page.getByTestId('btn-confirmar-recorte').click();
       await expect(page.getByTestId('modal-recorte-imagen')).toHaveCount(0);
       await page.getByTestId('btn-continuar').click();
+      await abrirDatosAdicionales(page);
       await expect(page.getByTestId('input-razon-social')).toBeVisible();
     }
 

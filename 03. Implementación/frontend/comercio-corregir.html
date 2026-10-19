@@ -72,16 +72,6 @@
             </div>
             <div class="field__error" id="error-telefono" style="display:none;" data-testid="mensaje-error-telefono"></div>
           </div>
-          <div class="field">
-            <label class="field__label" for="emailContacto">Email de contacto del comercio</label>
-            <div class="input-shell">
-              <span class="input-shell__icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
-              </span>
-              <input type="email" id="emailContacto" placeholder="Ingresá el email de tu comercio" required data-testid="input-email-contacto" />
-            </div>
-            <div class="field__error" id="error-emailContacto" style="display:none;" data-testid="mensaje-error-email-contacto"></div>
-          </div>
           <div class="form-section">
             <p class="section-heading">Dirección del local</p>
             <div class="form" style="gap:16px;">
@@ -223,41 +213,11 @@
             <p class="section-note">Información fiscal, usada solo para la gestión administrativa.</p>
             <div class="form" style="gap:16px;">
               <div class="field">
-                <label class="field__label" for="razonSocial">Razón social</label>
-                <div class="input-shell">
-                  <input type="text" id="razonSocial" placeholder="Nombre legal o razón social" required maxlength="150" data-testid="input-razon-social" />
-                </div>
-                <div class="field__error" id="error-razonSocial" style="display:none;" data-testid="mensaje-error-razon-social"></div>
-              </div>
-              <div class="field">
                 <label class="field__label" for="cuit">CUIT</label>
                 <div class="input-shell">
                   <input type="text" id="cuit" inputmode="numeric" placeholder="20123456789" maxlength="11" required data-testid="input-cuit" />
                 </div>
                 <div class="field__error" id="error-cuit" style="display:none;" data-testid="mensaje-error-cuit"></div>
-              </div>
-              <div class="field">
-                <label class="field__label" for="fechaInicioActividades">Fecha de inicio de actividades</label>
-                <div class="input-shell">
-                  <input type="date" id="fechaInicioActividades" required data-testid="input-fecha-inicio-actividades" />
-                </div>
-                <div class="field__error" id="error-fechaInicioActividades" style="display:none;" data-testid="mensaje-error-fecha-inicio-actividades"></div>
-              </div>
-              <div class="field">
-                <label class="field__label" for="tipoSociedad">Tipo de sociedad</label>
-                <div class="select-shell">
-                  <select id="tipoSociedad" required data-testid="select-tipo-sociedad"></select>
-                  <svg class="select-shell__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
-                <div class="field__error" id="error-tipoSociedad" style="display:none;" data-testid="mensaje-error-tipo-sociedad"></div>
-              </div>
-              <div class="field">
-                <label class="field__label" for="condicionIva">Condición ante el IVA</label>
-                <div class="select-shell">
-                  <select id="condicionIva" required data-testid="select-condicion-iva"></select>
-                  <svg class="select-shell__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-                </div>
-                <div class="field__error" id="error-condicionIva" style="display:none;" data-testid="mensaje-error-condicion-iva"></div>
               </div>
               <div class="field">
                 <label class="field__label" for="domicilioFiscal">Domicilio fiscal</label>
@@ -267,6 +227,41 @@
                 <p class="field__hint">Puede coincidir con la dirección del local o ser diferente.</p>
                 <div class="field__error" id="error-domicilioFiscal" style="display:none;" data-testid="mensaje-error-domicilio-fiscal"></div>
               </div>
+              <details class="seccion-plegable" id="datos-adicionales" data-testid="seccion-datos-adicionales">
+                <summary data-testid="resumen-datos-adicionales">Datos adicionales (opcional)<svg class="seccion-plegable__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></summary>
+                <div class="form seccion-plegable__contenido" style="gap:16px;">
+                <div class="field">
+                  <label class="field__label" for="razonSocial">Razón social</label>
+                  <div class="input-shell">
+                    <input type="text" id="razonSocial" placeholder="Nombre legal o razón social" maxlength="150" data-testid="input-razon-social" />
+                  </div>
+                  <div class="field__error" id="error-razonSocial" style="display:none;" data-testid="mensaje-error-razon-social"></div>
+                </div>
+                <div class="field">
+                  <label class="field__label" for="tipoSociedad">Tipo de sociedad</label>
+                  <div class="select-shell">
+                    <select id="tipoSociedad" data-testid="select-tipo-sociedad"></select>
+                    <svg class="select-shell__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
+                  <div class="field__error" id="error-tipoSociedad" style="display:none;" data-testid="mensaje-error-tipo-sociedad"></div>
+                </div>
+                <div class="field">
+                  <label class="field__label" for="condicionIva">Condición ante el IVA</label>
+                  <div class="select-shell">
+                    <select id="condicionIva" data-testid="select-condicion-iva"></select>
+                    <svg class="select-shell__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
+                  <div class="field__error" id="error-condicionIva" style="display:none;" data-testid="mensaje-error-condicion-iva"></div>
+                </div>
+                <div class="field">
+                  <label class="field__label" for="fechaInicioActividades">Fecha de inicio de actividades</label>
+                  <div class="input-shell">
+                    <input type="date" id="fechaInicioActividades" data-testid="input-fecha-inicio-actividades" />
+                  </div>
+                  <div class="field__error" id="error-fechaInicioActividades" style="display:none;" data-testid="mensaje-error-fecha-inicio-actividades"></div>
+                </div>
+                </div>
+              </details>
             </div>
           </div>
         </form>

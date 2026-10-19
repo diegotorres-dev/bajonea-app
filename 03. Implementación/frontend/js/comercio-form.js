@@ -2,7 +2,6 @@ import { initGeografiaSelects, preseleccionarGeografia } from './geografia.js';
 import { validarArchivoImagen } from './cloudinary.js';
 import { abrirEditorRecorte } from './crop.js';
 import {
-  esEmailValido,
   esTelefonoValido,
   esCalleValida,
   esNumeroDireccionValido,
@@ -104,12 +103,11 @@ const LABELS_DIA_SEMANA_CORTO = {
   DOMINGO: 'D',
 };
 
-export const CAMPOS_BACKEND_NEGOCIO = ['nombre', 'telefono', 'emailContacto', 'tipoComercio', 'aceptaDelivery', 'aceptaRetiro', 'fotoPerfilUrl'];
+export const CAMPOS_BACKEND_NEGOCIO = ['nombre', 'telefono', 'tipoComercio', 'aceptaDelivery', 'aceptaRetiro', 'fotoPerfilUrl'];
 
 export const MAPA_ERRORES_NEGOCIO = {
   nombre: 'error-nombre',
   telefono: 'error-telefono',
-  emailContacto: 'error-emailContacto',
   tipoComercio: 'error-tipoComercio',
   fotoPerfilUrl: 'error-foto-comercio',
   'direccion.calle': 'error-calle',
@@ -320,7 +318,6 @@ export function initCamposNegocio({ foto }) {
   telefonoInput.addEventListener('input', () => {
     telefonoInput.value = telefonoInput.value.replace(/\D/g, '').slice(0, 10);
   });
-  bindValidacionCampo('emailContacto', 'error-emailContacto', esEmailValido, 'Ingresá un email de contacto con formato válido.');
   bindValidacionCampo('calle', 'error-calle', esCalleValida, 'La calle no puede contener solo caracteres especiales.');
   bindValidacionCampo('numero', 'error-numero', esNumeroDireccionValido, 'Solo se permiten números.');
   const numeroInput = document.getElementById('numero');
@@ -336,7 +333,6 @@ export function initCamposNegocio({ foto }) {
     const camposValidos = [
       validarCampoRequeridoYValido('nombre', 'error-nombre', 'El nombre del comercio es obligatorio', esTextoConContenidoValido, 'Ingresá un nombre de comercio válido.'),
       validarCampoRequeridoYValido('telefono', 'error-telefono', 'El teléfono de contacto es obligatorio', esTelefonoValido, 'Ingresá un número de teléfono válido (cod. área + número)'),
-      validarCampoRequeridoYValido('emailContacto', 'error-emailContacto', 'El email de contacto es obligatorio', esEmailValido, 'Ingresá un email de contacto con formato válido.'),
       validarCampoRequeridoYValido('calle', 'error-calle', 'La calle es obligatoria', esCalleValida, 'La calle no puede contener solo caracteres especiales.'),
       validarCampoRequeridoYValido('numero', 'error-numero', 'El número es obligatorio', esNumeroDireccionValido, 'Solo se permiten números.'),
       validarCampoOpcionalYValido('pisoDepto', 'error-pisoDepto', esTextoConContenidoValido, 'El piso/departamento no puede contener solo caracteres especiales'),
@@ -367,7 +363,7 @@ export function initCamposNegocio({ foto }) {
   }
 
   function hayDatosCargados() {
-    const ids = ['nombre', 'descripcion', 'telefono', 'emailContacto', 'calle', 'numero', 'pisoDepto', 'codigoPostal'];
+    const ids = ['nombre', 'descripcion', 'telefono', 'calle', 'numero', 'pisoDepto', 'codigoPostal'];
     return ids.some((id) => document.getElementById(id).value.trim() !== '');
   }
 
@@ -376,7 +372,6 @@ export function initCamposNegocio({ foto }) {
       nombre: document.getElementById('nombre').value.trim(),
       descripcion: document.getElementById('descripcion').value.trim() || null,
       telefono: construirTelefono(document.getElementById('telefono').value.trim()),
-      emailContacto: document.getElementById('emailContacto').value.trim(),
       tipoComercio: document.getElementById('tipoComercio').value,
       aceptaDelivery: switchDelivery.getAttribute('aria-pressed') === 'true',
       aceptaRetiro: switchRetiro.getAttribute('aria-pressed') === 'true',
@@ -401,7 +396,6 @@ export function initCamposNegocio({ foto }) {
     document.getElementById('tipoComercio').value = datos.tipoComercio || '';
     document.getElementById('descripcion').value = datos.descripcion || '';
     document.getElementById('telefono').value = quitarPrefijoTelefono(datos.telefono);
-    document.getElementById('emailContacto').value = datos.emailContacto || '';
     setSwitch(switchDelivery, datos.aceptaDelivery);
     setSwitch(switchRetiro, datos.aceptaRetiro);
     const direccion = datos.direccion;
@@ -432,10 +426,18 @@ export function initCamposNegocio({ foto }) {
 }
 
 export function initDatosLegales() {
-  poblarSelect(document.getElementById('tipoSociedad'), LABELS_TIPO_SOCIEDAD, 'Seleccioná el tipo de sociedad');
-  poblarSelect(document.getElementById('condicionIva'), LABELS_CONDICION_IVA, 'Seleccioná la condición ante el IVA');
+  poblarSelect(document.getElementById('tipoSociedad'), LABELS_TIPO_SOCIEDAD, 'Sin especificar');
+  poblarSelect(document.getElementById('condicionIva'), LABELS_CONDICION_IVA, 'Sin especificar');
   document.getElementById('tipoSociedad').addEventListener('change', () => limpiarErrorCampo('error-tipoSociedad'));
   document.getElementById('condicionIva').addEventListener('change', () => limpiarErrorCampo('error-condicionIva'));
+
+  const detallesAdicionales = document.getElementById('datos-adicionales');
+  const idsAdicionales = ['razonSocial', 'tipoSociedad', 'condicionIva', 'fechaInicioActividades'];
+  const hayValorAdicional = () => idsAdicionales.some((id) => document.getElementById(id).value !== '');
+  const hayErrorAdicional = () => Array.from(detallesAdicionales.querySelectorAll('.field__error')).some((error) => error.style.display === 'flex');
+  new MutationObserver(() => {
+    if (hayErrorAdicional()) detallesAdicionales.open = true;
+  }).observe(detallesAdicionales, { subtree: true, attributes: true, attributeFilter: ['style'] });
 
   function validarFechaNacimientoRepresentante(requerido) {
     const inputId = 'fechaNacimientoRepresentante';
@@ -492,14 +494,10 @@ export function initDatosLegales() {
   bindValidacionCampo('telefonoRepresentante', 'error-telefonoRepresentante', esTelefonoValido, 'Ingresá un número de teléfono válido (cod. área + número)');
 
   function validar() {
-    return [
-      validarCampoRequeridoYValido('razonSocial', 'error-razonSocial', 'La razón social es obligatoria', esTextoConContenidoValido, 'La razón social no puede contener solo caracteres especiales'),
+    const camposValidos = [
+      validarCampoOpcionalYValido('razonSocial', 'error-razonSocial', esTextoConContenidoValido, 'La razón social no puede contener solo caracteres especiales'),
       validarCampoRequeridoYValido('cuit', 'error-cuit', 'El CUIT es obligatorio', esCuitValido, 'El CUIT debe tener 11 dígitos numéricos'),
-      validarCampoRequeridoYValido('fechaInicioActividades', 'error-fechaInicioActividades', 'La fecha de inicio de actividades es obligatoria', esFechaNoFuturaValida, 'La fecha ingresada no es válida'),
-      validarCamposSilencioso([
-        { inputId: 'tipoSociedad', errorId: 'error-tipoSociedad', mensaje: 'Seleccioná el tipo de sociedad.' },
-        { inputId: 'condicionIva', errorId: 'error-condicionIva', mensaje: 'Seleccioná la condición ante el IVA.' },
-      ]),
+      validarCampoOpcionalYValido('fechaInicioActividades', 'error-fechaInicioActividades', esFechaNoFuturaValida, 'La fecha ingresada no es válida'),
       validarCampoRequeridoYValido('domicilioFiscal', 'error-domicilioFiscal', 'El domicilio fiscal es obligatorio', esTextoConContenidoValido, 'El domicilio fiscal no puede contener solo caracteres especiales'),
       validarCampoRequeridoYValido('nombreRepresentante', 'error-nombreRepresentante', 'El nombre es obligatorio', esNombreClienteValido, 'El nombre solo puede contener letras'),
       validarCampoRequeridoYValido('apellidoRepresentante', 'error-apellidoRepresentante', 'El apellido es obligatorio', esNombreClienteValido, 'El apellido solo puede contener letras'),
@@ -507,16 +505,18 @@ export function initDatosLegales() {
       validarFechaNacimientoRepresentante(true),
       validarCampoRequeridoYValido('telefonoRepresentante', 'error-telefonoRepresentante', 'El teléfono es obligatorio', esTelefonoValido, 'Ingresá un número de teléfono válido (cod. área + número)'),
     ].every(Boolean);
+    if (hayErrorAdicional()) detallesAdicionales.open = true;
+    return camposValidos;
   }
 
   function leerPayload(construirTelefono) {
     return {
-      razonSocial: document.getElementById('razonSocial').value.trim(),
+      razonSocial: document.getElementById('razonSocial').value.trim() || null,
       cuit: sanitizarCuit(document.getElementById('cuit').value),
-      condicionIva: document.getElementById('condicionIva').value,
-      tipoSociedad: document.getElementById('tipoSociedad').value,
+      condicionIva: document.getElementById('condicionIva').value || null,
+      tipoSociedad: document.getElementById('tipoSociedad').value || null,
       domicilioFiscal: document.getElementById('domicilioFiscal').value.trim(),
-      fechaInicioActividades: document.getElementById('fechaInicioActividades').value,
+      fechaInicioActividades: document.getElementById('fechaInicioActividades').value || null,
       nombreRepresentante: colapsarEspacios(document.getElementById('nombreRepresentante').value),
       apellidoRepresentante: colapsarEspacios(document.getElementById('apellidoRepresentante').value),
       dniRepresentante: sanitizarDni(document.getElementById('dniRepresentante').value),
@@ -538,6 +538,7 @@ export function initDatosLegales() {
     document.getElementById('dniRepresentante').value = representante.dni || '';
     document.getElementById('telefonoRepresentante').value = quitarPrefijoTelefono(representante.telefono);
     document.getElementById('fechaNacimientoRepresentante').value = representante.fechaNacimiento || '';
+    if (hayValorAdicional()) detallesAdicionales.open = true;
   }
 
   function snapshot() {

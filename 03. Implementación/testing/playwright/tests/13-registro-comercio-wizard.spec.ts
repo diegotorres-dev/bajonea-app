@@ -14,6 +14,7 @@ import {
   nombreUsuarioUnico,
   esperarImagenCargadaEnRecorte,
 } from './helpers/backend';
+import { abrirDatosAdicionales } from './helpers/datos-adicionales';
 
 const FIXTURE_PATH = path.resolve(__dirname, '../fixtures/bajonea-e2e-producto.png');
 const FIXTURE_BUFFER = readFileSync(FIXTURE_PATH);
@@ -48,7 +49,6 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
   interface DatosPaso1 {
     nombre: string;
     telefono: string;
-    emailContacto: string;
     calle: string;
     numero: string;
     codigoPostal: string;
@@ -57,7 +57,6 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
   async function completarPaso1(page: Page, datos: DatosPaso1) {
     await page.getByTestId('input-nombre').fill(datos.nombre);
     await page.getByTestId('input-telefono').fill(datos.telefono);
-    await page.getByTestId('input-email-contacto').fill(datos.emailContacto);
     await page.getByTestId('select-tipo-comercio').selectOption('RESTAURANTE');
     await page.getByTestId('input-calle').fill(datos.calle);
     await page.getByTestId('input-numero').fill(datos.numero);
@@ -78,6 +77,7 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
   }
 
   async function completarPaso2(page: Page, datos: DatosPaso2) {
+    await abrirDatosAdicionales(page);
     await page.getByTestId('input-razon-social').fill(datos.razonSocial);
     await page.getByTestId('input-cuit').fill(datos.cuit);
     await page.getByTestId('input-fecha-inicio-actividades').fill('2020-01-01');
@@ -100,7 +100,6 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
     const paso1: DatosPaso1 = {
       nombre: `Comercio Wizard E2E ${suf}`,
       telefono: generarTelefono(),
-      emailContacto: `comercio.wizard.${suf}@bajonea.test`,
       calle: 'Av. San Martín',
       numero: '100',
       codigoPostal: '9420',
@@ -109,16 +108,12 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
     await page.goto('/registro-comercio.html');
     await completarPaso1(page, paso1);
     await page.getByTestId('btn-continuar').click();
-    await expect(page.getByTestId('input-razon-social')).toBeVisible();
+    await expect(page.getByTestId('input-cuit')).toBeVisible();
 
     const cuit = generarCuit();
     const dniRepresentante = generarDni();
     const telefonoRepresentante = generarTelefono();
     await page.getByTestId('input-cuit').fill(cuit);
-    await page.getByTestId('input-fecha-inicio-actividades').fill('2020-01-01');
-    await page.getByTestId('select-tipo-sociedad').selectOption('SRL');
-    await page.getByTestId('select-condicion-iva').selectOption('RESPONSABLE_INSCRIPTO');
-    await page.getByTestId('input-domicilio-fiscal').fill('Av. San Martín 100');
     await page.getByTestId('input-nombre-representante').fill('Rodrigo');
     await page.getByTestId('input-apellido-representante').fill('Fernández');
     await page.getByTestId('input-dni-representante').fill(dniRepresentante);
@@ -130,15 +125,14 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
     await page.getByTestId('input-confirmar-password').fill('Testing123');
 
     await page.getByTestId('btn-continuar-2').click();
-    await expect(page.getByTestId('mensaje-error-razon-social')).toBeVisible();
-    await expect(page.getByTestId('mensaje-error-razon-social')).toContainText('La razón social es obligatoria');
+    await expect(page.getByTestId('mensaje-error-domicilio-fiscal')).toBeVisible();
+    await expect(page.getByTestId('mensaje-error-domicilio-fiscal')).toContainText('El domicilio fiscal es obligatorio');
     await expect(page.getByTestId('lista-horarios')).toBeHidden();
 
     await page.getByTestId('btn-volver').click();
     await expect(page.getByTestId('input-nombre')).toBeVisible();
     await expect(page.getByTestId('input-nombre')).toHaveValue(paso1.nombre);
     await expect(page.getByTestId('input-telefono')).toHaveValue(paso1.telefono);
-    await expect(page.getByTestId('input-email-contacto')).toHaveValue(paso1.emailContacto);
     await expect(page.getByTestId('input-calle')).toHaveValue(paso1.calle);
     await expect(page.getByTestId('input-numero')).toHaveValue(paso1.numero);
     await expect(page.getByTestId('input-codigo-postal')).toHaveValue(paso1.codigoPostal);
@@ -146,7 +140,7 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
 
     await expect(page.getByTestId('input-cuit')).toHaveValue(cuit);
     await expect(page.getByTestId('input-dni-representante')).toHaveValue(dniRepresentante);
-    await expect(page.getByTestId('input-razon-social')).toHaveValue('');
+    await expect(page.getByTestId('input-domicilio-fiscal')).toHaveValue('');
   });
 
   test('paso 2: CUIT, DNI del representante y teléfono del representante bloquean letras y símbolos en tiempo real', async ({ page }) => {
@@ -155,12 +149,12 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
     await completarPaso1(page, {
       nombre: `Comercio Wizard Teclado E2E ${suf}`,
       telefono: generarTelefono(),
-      emailContacto: `comercio.wizard.teclado.${suf}@bajonea.test`,
       calle: 'Av. San Martín',
       numero: '100',
       codigoPostal: '9420',
     });
     await page.getByTestId('btn-continuar').click();
+    await abrirDatosAdicionales(page);
     await expect(page.getByTestId('input-razon-social')).toBeVisible();
 
     const cuitInput = page.getByTestId('input-cuit');
@@ -190,12 +184,12 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
     await completarPaso1(page, {
       nombre: `Comercio Wizard Maxlength E2E ${suf}`,
       telefono: generarTelefono(),
-      emailContacto: `comercio.wizard.maxlength.${suf}@bajonea.test`,
       calle: 'Av. San Martín',
       numero: '100',
       codigoPostal: '9420',
     });
     await page.getByTestId('btn-continuar').click();
+    await abrirDatosAdicionales(page);
     await expect(page.getByTestId('input-razon-social')).toBeVisible();
 
     const razonSocialInput = page.getByTestId('input-razon-social');
@@ -209,12 +203,12 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
     await completarPaso1(page, {
       nombre: `Comercio Wizard Horarios E2E ${suf}`,
       telefono: generarTelefono(),
-      emailContacto: `comercio.wizard.horarios.${suf}@bajonea.test`,
       calle: 'Av. San Martín',
       numero: '100',
       codigoPostal: '9420',
     });
     await page.getByTestId('btn-continuar').click();
+    await abrirDatosAdicionales(page);
     await expect(page.getByTestId('input-razon-social')).toBeVisible();
     await completarPaso2(page, {
       razonSocial: `Razón Social Horarios E2E ${suf}`,
@@ -258,12 +252,12 @@ test.describe('Wizard de registro de Comercio: navegación entre pasos, teclado 
     await completarPaso1(page, {
       nombre: `Comercio Wizard Solapado E2E ${suf}`,
       telefono: generarTelefono(),
-      emailContacto: `comercio.wizard.solapado.${suf}@bajonea.test`,
       calle: 'Av. San Martín',
       numero: '100',
       codigoPostal: '9420',
     });
     await page.getByTestId('btn-continuar').click();
+    await abrirDatosAdicionales(page);
     await expect(page.getByTestId('input-razon-social')).toBeVisible();
     await completarPaso2(page, {
       razonSocial: `Razón Social Solapado E2E ${suf}`,

@@ -36,6 +36,7 @@ import {
   registrarPendiente,
   reenviarConCambioSimple,
 } from './helpers/multicomercio';
+import { abrirDatosAdicionales } from './helpers/datos-adicionales';
 
 const FIXTURE_BUFFER = readFileSync(path.resolve(__dirname, '../fixtures/bajonea-e2e-producto.png'));
 
@@ -302,6 +303,7 @@ test.describe('Multi-comercio, tramo 3B: corrección de comercios rechazados (UI
       await page.getByTestId('input-nombre').fill(nombreNuevo);
       await page.getByTestId('btn-continuar').click();
 
+      await abrirDatosAdicionales(page);
       await page.getByTestId('input-razon-social').fill(razonSocialNueva);
       await page.getByTestId('input-cuit').fill(cuitNuevo);
       await page.getByTestId('btn-continuar-legales').click();
@@ -458,13 +460,14 @@ test.describe('Multi-comercio, tramo 3B: corrección de comercios rechazados (UI
         await route.fulfill({
           status: 400,
           contentType: 'application/json',
-          body: JSON.stringify({ mensaje: 'Datos inválidos', data: { 'legales.razonSocial': 'La razón social es obligatoria' } }),
+          body: JSON.stringify({ mensaje: 'Datos inválidos', data: { 'legales.razonSocial': 'La razón social no puede contener solo caracteres especiales' } }),
         });
       });
       await page.getByTestId('input-descripcion').fill(`Validación ${sufijoUnico()}`);
       await recorrerHastaEnviar(page, { conLegales: true });
 
-      await expect(page.getByTestId('mensaje-error-razon-social')).toContainText('La razón social es obligatoria');
+      await expect(page.getByTestId('mensaje-error-razon-social')).toContainText('La razón social no puede contener solo caracteres especiales');
+      await expect(page.getByTestId('seccion-datos-adicionales')).toHaveJSProperty('open', true);
       await expect(page.getByTestId('input-razon-social')).toBeVisible();
       await expect(page.getByTestId('mensaje-banner')).toContainText('Revisá los campos marcados.');
     });

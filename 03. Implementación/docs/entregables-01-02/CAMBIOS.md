@@ -5,6 +5,17 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
 
+## Registro de Comercio, Tramo 1: datos legales opcionales, sin email de contacto, solo Tierra del Fuego y Términos (2026-10-18)
+
+Cambia lo que se pide y se muestra al registrar un comercio y en las pantallas que derivan de eso. Migración `V36`; diccionario de datos v1.21.
+
+1. **Datos legales.** CUIT y domicilio fiscal siguen siendo obligatorios, igual que los datos del representante. Razón social, condición frente al IVA, tipo de sociedad e inicio de actividades pasan a ser opcionales y van en una sección plegable "Datos adicionales (opcional)", cerrada por defecto (se abre sola si algún campo tiene valor o error). La razón social deja de mostrarse al público.
+2. **Email de contacto del comercio.** Se elimina del registro, del alta adicional, de la corrección y del perfil; el encabezado del perfil del Dueño muestra el teléfono del comercio y, debajo, el estado y la localidad. Los comercios ya registrados conservan el valor y solo lo ve el Administrador, de solo lectura. El CUIT deja de viajar en el catálogo público.
+3. **Geografía.** Solo Tierra del Fuego, con Río Grande, Tolhuin y Ushuaia, en el registro de Cliente, el alta por invitación, el registro de Comercio, el alta adicional y la corrección. La provincia se muestra como un campo de solo lectura con candado ("Solo Tierra del Fuego por ahora"). Las direcciones ya guardadas fuera de esa lista siguen leyéndose.
+4. **Términos y Condiciones.** Una sola línea "Acepto los Términos y Condiciones y la Política de Privacidad", con enlaces reales a dos páginas nuevas (`terminos.html` y `privacidad.html`, con texto provisorio y una línea visible que lo avisa), en el registro de Cliente, la invitación, el registro de Comercio y el alta adicional. El servidor exige `aceptaTerminos` (400 si falta o es falso) y no lo guarda. La corrección de un comercio rechazado no lo pide.
+
+**Documentos de 01. y 02. que hay que copiar de esta carpeta:** `diccionario-de-datos.md` (v1.21), `requisitos-funcionales-comercio.md`, `requisitos-funcionales-dueño.md` e `Historias de Usuario - Dueño.md`. Detalle en `docs/DECISIONES.md` y `docs/MAPEO-ARCHIVOS-TRAMO-REGISTRO-1.md`.
+
 ## Ajustes del rol Empleado tras la prueba manual: cierre manual, cargo del cliente y mensajes (2026-10-18)
 
 Tres ajustes que cambian lo que ven el público, el Empleado y quien opera un pedido. Sin migraciones; el diccionario de datos no cambia de versión (solo se actualizó el texto de la regla de visibilidad).

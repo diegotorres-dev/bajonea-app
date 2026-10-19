@@ -91,16 +91,6 @@
             </div>
             <div class="field__error" id="error-telefono" style="display:none;" data-testid="mensaje-error-telefono"></div>
           </div>
-          <div class="field">
-            <label class="field__label" for="emailContacto">Email de contacto del comercio</label>
-            <div class="input-shell">
-              <span class="input-shell__icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
-              </span>
-              <input type="email" id="emailContacto" placeholder="Ingresá el email de tu comercio" required data-testid="input-email-contacto" />
-            </div>
-            <div class="field__error" id="error-emailContacto" style="display:none;" data-testid="mensaje-error-email-contacto"></div>
-          </div>
           <div class="form-section">
             <p class="section-heading">Dirección del local</p>
             <div class="form" style="gap:16px;">
@@ -232,6 +222,7 @@
           <div id="red-social-list" class="schedule-list" data-testid="lista-redes-sociales"></div>
           <button type="button" class="btn btn-tertiary" id="agregar-red-social-btn" data-testid="btn-agregar-red-social">+ Agregar red social</button>
           <p class="field__hint is-hidden" id="red-social-max-hint" data-testid="mensaje-maximo-redes-sociales">Alcanzaste el máximo de 5 redes sociales.</p>
+          <div id="terminos-slot" style="margin-top:8px;"></div>
           <button class="btn btn-primary" type="submit" id="submit-btn" style="margin-top:8px;" data-testid="btn-enviar-solicitud">Enviar solicitud</button>
         </form>
       </section>

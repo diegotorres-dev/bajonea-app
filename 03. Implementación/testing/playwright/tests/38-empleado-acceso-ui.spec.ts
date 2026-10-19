@@ -560,7 +560,8 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
 
       await expect(page.getByTestId('nombre-comercio-perfil')).toHaveText(duenoA.nombre);
       await expect(page.getByTestId('insignia-empleado-perfil')).toBeVisible();
-      await expect(page.getByTestId('email-comercio-perfil')).toBeHidden();
+      await expect(page.getByTestId('telefono-comercio-perfil')).toBeHidden();
+      await expect(page.getByTestId('estado-localidad-comercio-perfil')).toBeHidden();
       await expect(page.getByTestId('lista-perfil').locator('.profile-link')).toHaveText([
         'Ver datos del comercio',
         'Editar datos del comercio',
