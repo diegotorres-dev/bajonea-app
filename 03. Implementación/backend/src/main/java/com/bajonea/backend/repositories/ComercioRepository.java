@@ -66,6 +66,10 @@ public interface ComercioRepository extends JpaRepository<Comercio, Integer> {
      */
     List<Comercio> findByDuenoIdIn(Collection<Integer> duenoIds);
 
+    @Query("SELECT c FROM Comercio c JOIN FETCH c.dueno d JOIN FETCH d.personaJuridica pj JOIN FETCH pj.persona p "
+            + "JOIN FETCH p.usuario JOIN FETCH d.personaFisica ORDER BY c.id")
+    List<Comercio> findAllParaListadoAdmin();
+
     /**
      * Lectura con {@code SELECT ... FOR UPDATE}: a diferencia de una lectura común, en
      * {@code REPEATABLE READ} ve siempre lo último confirmado y no la foto de la transacción. Usada por

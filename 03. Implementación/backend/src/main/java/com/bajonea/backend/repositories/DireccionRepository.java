@@ -14,6 +14,9 @@ public interface DireccionRepository extends JpaRepository<Direccion, Integer> {
      */
     Optional<Direccion> findByComercioId(Integer comercioId);
 
+    @Query("SELECT d FROM Direccion d JOIN FETCH d.localidad l JOIN FETCH l.provincia WHERE d.comercio.id IN :comercioIds")
+    List<Direccion> findByComercioIdInConLocalidad(java.util.Collection<Integer> comercioIds);
+
     /**
      * Usado en {@code ClienteService.aResponseDTO} para exponer la dirección única del
      * Cliente en {@code ClienteResponseDTO} (Tramo 16.3, ver docs/DECISIONES.md) — mismo

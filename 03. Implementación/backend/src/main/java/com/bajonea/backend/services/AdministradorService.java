@@ -45,6 +45,7 @@ import jakarta.persistence.PersistenceContext;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -184,9 +185,27 @@ public class AdministradorService {
      * llegar a su equipo desde la lista. Cada fila trae su estado; las pantallas de solicitudes siguen mostrando
      * solo los pendientes.
      */
+    @Transactional(readOnly = true)
     public List<ComercioAdminResponseDTO> listarComercios() {
-        return comercioRepository.findAll(Sort.by("id")).stream()
-                .map(comercio -> aAdminResponseDTO(comercio, null, false, List.of()))
+        List<Comercio> comercios = comercioRepository.findAllParaListadoAdmin();
+        if (comercios.isEmpty()) {
+            return List.of();
+        }
+        List<Integer> ids = comercios.stream().map(Comercio::getId).toList();
+        Map<Integer, Direccion> direcciones = new HashMap<>();
+        for (Direccion direccion : direccionRepository.findByComercioIdInConLocalidad(ids)) {
+            direcciones.putIfAbsent(direccion.getComercio().getId(), direccion);
+        }
+        Map<Integer, List<Horario>> horarios = horarioRepository.findByComercioIdIn(ids).stream()
+                .sorted(Comparator.comparing(Horario::getId))
+                .collect(Collectors.groupingBy(h -> h.getComercio().getId()));
+        Map<Integer, List<RedSocial>> redes = redSocialRepository.findByComercioIdInAndFechaBajaIsNull(ids).stream()
+                .sorted(Comparator.comparing(RedSocial::getId))
+                .collect(Collectors.groupingBy(r -> r.getComercio().getId()));
+        return comercios.stream()
+                .map(comercio -> construirAdminResponseDTO(comercio, direcciones.get(comercio.getId()),
+                        horarios.getOrDefault(comercio.getId(), List.of()),
+                        redes.getOrDefault(comercio.getId(), List.of()), null, false, List.of()))
                 .toList();
     }
 
@@ -354,6 +373,14 @@ public class AdministradorService {
     private ComercioAdminResponseDTO aAdminResponseDTO(Comercio comercio, Integer duenoId, boolean esAdicional,
             List<OtroComercioDuenoResponseDTO> otrosComercios) {
         Direccion direccion = direccionRepository.findByComercioId(comercio.getId()).orElse(null);
+        List<Horario> horarios = horarioRepository.findByComercioId(comercio.getId());
+        List<RedSocial> redes = redSocialRepository.findByComercioIdAndFechaBajaIsNull(comercio.getId());
+        return construirAdminResponseDTO(comercio, direccion, horarios, redes, duenoId, esAdicional, otrosComercios);
+    }
+
+    private ComercioAdminResponseDTO construirAdminResponseDTO(Comercio comercio, Direccion direccion,
+            List<Horario> horariosComercio, List<RedSocial> redesComercio, Integer duenoId, boolean esAdicional,
+            List<OtroComercioDuenoResponseDTO> otrosComercios) {
         DireccionResponseDTO direccionDTO = direccion == null ? null : new DireccionResponseDTO(
                 direccion.getId(),
                 direccion.getCalle(),
@@ -365,14 +392,13 @@ public class AdministradorService {
                 direccion.getLocalidad().getProvincia().getNombre(),
                 direccion.isPrincipal());
 
-        List<HorarioResponseDTO> horarios = horarioRepository.findByComercioId(comercio.getId()).stream()
+        List<HorarioResponseDTO> horarios = horariosComercio.stream()
                 .map(this::aResponseDTO)
                 .toList();
 
         RepresentanteResponseDTO representante = aRepresentanteResponseDTO(comercio.getDueno().getPersonaFisica());
 
-        List<RedSocialResponseDTO> redesSociales = redSocialRepository
-                .findByComercioIdAndFechaBajaIsNull(comercio.getId()).stream()
+        List<RedSocialResponseDTO> redesSociales = redesComercio.stream()
                 .map(this::aRedSocialResponseDTO)
                 .toList();
 
