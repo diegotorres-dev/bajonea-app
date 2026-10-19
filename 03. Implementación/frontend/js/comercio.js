@@ -4,7 +4,7 @@ import { logout, construirTelefono, resolverHomePorRol, LABELS_TIPO_SOCIEDAD, LA
 import { resumenHorarioHoy, renderTopBar, showToast, pintarAvatarComercio, renderPedidoEstadoHeader, manejarBloqueoPorCambioPassword, crearBloqueMotivoRechazo } from './catalogo.js';
 import { SOPORTE_CONTACTO_URL } from './config.js';
 import { horaConDiaDe, horaMinutoDe } from './fechas.js';
-import { limpiarAvisoFijo, mostrarAvisoFijo } from './form-utils.js';
+import { limpiarAvisoFijo, mostrarAvisoFijo, bindNombreComercio, MENSAJE_NOMBRE_COMERCIO_EN_USO } from './form-utils.js';
 import {
   activarComercio,
   contarNotificacionesNoLeidasActivo,
@@ -2195,7 +2195,15 @@ export async function initComercioPerfil() {
     mostrarVista('view-datos-legales');
   });
 
+  const nombreEditarCtl = bindNombreComercio({
+    inputId: 'editar-nombre',
+    comercioId: () => comercio.id,
+    valorOriginal: () => comercio.nombre,
+    validarFormato: (valor) => (!valor || esTextoConContenidoValido(valor) ? null : 'El nombre no puede contener solo caracteres especiales.'),
+  });
+
   document.getElementById('editar-perfil-link').addEventListener('click', () => {
+    nombreEditarCtl.reiniciar();
     document.getElementById('editar-nombre').value = comercio.nombre;
     document.getElementById('editar-descripcion').value = comercio.descripcion || '';
     document.getElementById('editar-telefono').value = comercio.telefono.replace(/^\+549/, '');
@@ -2323,11 +2331,12 @@ export async function initComercioPerfil() {
   formEditar.addEventListener('submit', async (event) => {
     event.preventDefault();
     renderBanner(bannerEditar, 'info', '');
-    const camposValidos = validarCamposRequeridosSilencioso([
+    const camposSincronicos = validarCamposRequeridosSilencioso([
       { inputId: 'editar-nombre', errorId: 'error-editar-nombre', validador: esTextoConContenidoValido, mensajeVacio: 'Ingresá el nombre de tu comercio.', mensajeInvalido: 'El nombre no puede contener solo caracteres especiales.' },
       { inputId: 'editar-telefono', errorId: 'error-editar-telefono', validador: esTelefonoValido, mensajeVacio: 'Ingresá tu teléfono.', mensajeInvalido: 'Ingresá un teléfono argentino válido (código de área + número).' },
     ]);
-    if (!camposValidos) {
+    const nombreDisponible = await nombreEditarCtl.validarParaContinuar();
+    if (!camposSincronicos || !nombreDisponible) {
       scrollAlPrimerError();
       return;
     }
@@ -2365,7 +2374,9 @@ export async function initComercioPerfil() {
         nombre: 'error-editar-nombre',
         telefono: 'error-editar-telefono',
       };
-      if (!(error instanceof ApiError && error.data && mapearErroresBackend(error.data, mapaErrores))) {
+      if (error instanceof ApiError && error.status === 409 && error.message === MENSAJE_NOMBRE_COMERCIO_EN_USO) {
+        nombreEditarCtl.marcarEnUso();
+      } else if (!(error instanceof ApiError && error.data && mapearErroresBackend(error.data, mapaErrores))) {
         renderBanner(bannerEditar, 'error', error instanceof ApiError ? error.message : 'No pudimos guardar los cambios. Intentá nuevamente.');
       }
       scrollAlPrimerError();

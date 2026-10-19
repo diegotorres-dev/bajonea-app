@@ -5,6 +5,16 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
 
+## Registro de Comercio, Tramo 2: nombre único de comercio y aviso en vivo (2026-10-19)
+
+Cambia una regla de negocio y lo que ve el Dueño al elegir el nombre de un comercio. Migración `V37`; diccionario de datos v1.22.
+
+1. **Nombre único en toda la plataforma.** Ningún comercio puede tener el mismo nombre que otro, sea de otro Dueño o del mismo, y esté donde esté. Se compara sin distinguir mayúsculas, tildes ni espacios de más, y la "ñ" cuenta como "n". Cuentan todos los estados salvo Rechazo definitivo, que libera el nombre; un comercio Rechazado lo conserva. Reemplaza la regla anterior (mismo nombre en la misma dirección y piso).
+2. **Aviso en vivo.** Al salir del campo del nombre (registro, alta adicional, corrección y edición del perfil) el formulario muestra "Verificando…", "Nombre disponible" o "Ya existe un comercio con ese nombre. Elegí otro."; con el nombre ocupado no se avanza ni se guarda. En la corrección y en el perfil, conservar el nombre propio no cuenta como duplicado.
+3. **Límite de consultas.** Las consultas de disponibilidad públicas (nombre de comercio y nombre de usuario) comparten un límite por IP (30 por minuto por defecto).
+
+**Documentos de 01. y 02. que hay que copiar de esta carpeta:** `diccionario-de-datos.md` (v1.22), `requisitos-funcionales-dueño.md`, `requisitos-funcionales-comercio.md` e `Historias de Usuario - Dueño.md`.
+
 ## Registro de Comercio, Tramo 1: datos legales opcionales, sin email de contacto, solo Tierra del Fuego y Términos (2026-10-18)
 
 Cambia lo que se pide y se muestra al registrar un comercio y en las pantallas que derivan de eso. Migración `V36`; diccionario de datos v1.21.

@@ -17,7 +17,8 @@ comercios se encuentran en Requisitos Funcionales — Dueño.
   Rotisería, Heladería, Cafetería, Panadería, Pizzería, Parrilla, Bar, Kiosco, Food
   Truck u Otro) y modalidades de entrega aceptadas (acepta_delivery, acepta_retiro —
   al menos una obligatoria). La foto de perfil del comercio es obligatoria desde el
-  alta inicial.
+  alta inicial. El nombre del comercio es único en toda la plataforma (ver los requisitos
+  del Dueño): el formulario avisa en vivo, al salir del campo, si el nombre está disponible.
 - El comercio debe definir al menos una franja horaria de atención al momento del alta,
   pudiendo agregar múltiples franjas que contemplen diferentes horarios por día.
 - El Dueño debe poder editar los datos, la foto de perfil y los horarios del comercio

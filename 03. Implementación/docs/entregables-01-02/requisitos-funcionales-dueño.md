@@ -47,9 +47,15 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   la que puede agregar un comercio nuevo (únicamente si cumple la regla de más abajo) y,
   cuando exista el módulo de soporte, contactar al soporte.
 - Un Dueño puede agregar un comercio nuevo si tiene al menos un comercio Aprobado o Apto
-  para venta, o si tiene al menos un comercio y todos están en Rechazo definitivo. Un
-  comercio en Rechazo definitivo cuenta como duplicado (mismo nombre en la misma dirección);
-  uno solo Rechazado, no.
+  para venta, o si tiene al menos un comercio y todos están en Rechazo definitivo.
+- El nombre de un comercio es único en toda la plataforma, sin importar el Dueño ni la
+  dirección. Se compara sin distinguir mayúsculas, tildes ni espacios de más (y la "ñ" cuenta
+  como "n": "Cafetería Ñandú" y "Cafeteria Nandu" son el mismo nombre). Cuentan todos los
+  estados salvo Rechazo definitivo, que libera el nombre; un comercio Rechazado lo conserva
+  (para usarlo de nuevo se corrige y se vuelve a solicitar el mismo comercio). Al registrar,
+  agregar, corregir o editar un comercio, el formulario avisa en vivo si el nombre está
+  disponible o no, y el servidor lo verifica de todos modos al guardar. Un nombre tomado
+  por una cuenta que nunca llegó a verificarse queda retenido.
 - Un Dueño con un comercio suspendido puede contactar al soporte desde su panel
   completando un formulario con su descargo. El Administrador recibe la solicitud y
   decide manualmente.

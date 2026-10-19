@@ -29,7 +29,7 @@ import {
   scrollAlPrimerError,
 } from './validators.js';
 import { montarFormularioCliente } from './cliente-form.js';
-import { renderBanner, renderBannerTexto, bindPasswordToggle, setLoading, construirTelefono, bindNombreUsuario, montarTerminos, validarTerminos, MENSAJE_NOMBRE_USUARIO_EN_USO } from './form-utils.js';
+import { renderBanner, renderBannerTexto, bindPasswordToggle, setLoading, construirTelefono, bindNombreUsuario, montarTerminos, validarTerminos, MENSAJE_NOMBRE_USUARIO_EN_USO, MENSAJE_NOMBRE_COMERCIO_EN_USO } from './form-utils.js';
 
 export { LABELS_TIPO_SOCIEDAD, LABELS_CONDICION_IVA, LABELS_TIPO_COMERCIO, LABELS_TIPO_RED_SOCIAL } from './comercio-form.js';
 export { construirTelefono, bindNombreUsuario } from './form-utils.js';
@@ -276,11 +276,11 @@ export function initRegistroComercio() {
   };
 
   const foto = initFotoComercio();
-  const negocio = initCamposNegocio({ foto });
+  const negocio = initCamposNegocio({ foto, disponibilidad: { publico: true } });
 
-  document.getElementById('continuar-btn').addEventListener('click', () => {
+  document.getElementById('continuar-btn').addEventListener('click', async () => {
     renderBanner(bannerSlot, 'info', '');
-    if (negocio.validar()) {
+    if (await negocio.validar()) {
       mostrarPaso(1);
     }
   });
@@ -399,6 +399,11 @@ export function initRegistroComercio() {
       if (error instanceof ApiError && error.status === 409 && error.message === MENSAJE_NOMBRE_USUARIO_EN_USO) {
         nombreUsuarioCtl.marcarEnUso();
         mostrarPaso(1);
+        renderBanner(bannerSlot, 'error', 'Revisá los campos marcados.');
+        scrollAlPrimerError();
+      } else if (error instanceof ApiError && error.status === 409 && error.message === MENSAJE_NOMBRE_COMERCIO_EN_USO) {
+        negocio.marcarNombreEnUso();
+        mostrarPaso(0);
         renderBanner(bannerSlot, 'error', 'Revisá los campos marcados.');
         scrollAlPrimerError();
       } else if (error instanceof ApiError && error.data && mapearErroresBackend(error.data, MAPA_ERRORES_REGISTRO_COMERCIO)) {

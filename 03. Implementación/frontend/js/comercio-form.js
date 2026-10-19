@@ -1,6 +1,7 @@
 import { initGeografiaSelects, preseleccionarGeografia } from './geografia.js';
 import { validarArchivoImagen } from './cloudinary.js';
 import { abrirEditorRecorte } from './crop.js';
+import { bindNombreComercio } from './form-utils.js';
 import {
   esTelefonoValido,
   esCalleValida,
@@ -294,7 +295,7 @@ export function initFotoComercio({ urlExistente = null } = {}) {
   };
 }
 
-export function initCamposNegocio({ foto }) {
+export function initCamposNegocio({ foto, disponibilidad = {} }) {
   poblarSelect(document.getElementById('tipoComercio'), LABELS_TIPO_COMERCIO, 'Seleccioná el tipo de comercio');
   document.getElementById('tipoComercio').addEventListener('change', () => limpiarErrorCampo('error-tipoComercio'));
 
@@ -313,6 +314,12 @@ export function initCamposNegocio({ foto }) {
   const geografiaLista = initGeografiaSelects(document.getElementById('provincia'), document.getElementById('localidad'), 'Tierra del Fuego');
 
   bindValidacionCampo('nombre', 'error-nombre', esTextoConContenidoValido, 'Ingresá un nombre de comercio válido.');
+  const nombreCtl = bindNombreComercio({
+    publico: Boolean(disponibilidad.publico),
+    comercioId: disponibilidad.comercioId || null,
+    valorOriginal: disponibilidad.valorOriginal || null,
+    validarFormato: (valor) => (!valor || esTextoConContenidoValido(valor) ? null : 'Ingresá un nombre de comercio válido.'),
+  });
   bindValidacionCampo('telefono', 'error-telefono', esTelefonoValido, 'Ingresá un número de teléfono válido (cod. área + número)');
   const telefonoInput = document.getElementById('telefono');
   telefonoInput.addEventListener('input', () => {
@@ -329,8 +336,8 @@ export function initCamposNegocio({ foto }) {
   document.getElementById('provincia').addEventListener('change', () => limpiarErrorCampo('error-provincia'));
   document.getElementById('localidad').addEventListener('change', () => limpiarErrorCampo('error-localidad'));
 
-  function validar() {
-    const camposValidos = [
+  async function validar() {
+    const camposSincronicos = [
       validarCampoRequeridoYValido('nombre', 'error-nombre', 'El nombre del comercio es obligatorio', esTextoConContenidoValido, 'Ingresá un nombre de comercio válido.'),
       validarCampoRequeridoYValido('telefono', 'error-telefono', 'El teléfono de contacto es obligatorio', esTelefonoValido, 'Ingresá un número de teléfono válido (cod. área + número)'),
       validarCampoRequeridoYValido('calle', 'error-calle', 'La calle es obligatoria', esCalleValida, 'La calle no puede contener solo caracteres especiales.'),
@@ -343,7 +350,8 @@ export function initCamposNegocio({ foto }) {
         { inputId: 'tipoComercio', errorId: 'error-tipoComercio', mensaje: 'Seleccioná el tipo de comercio.' },
       ]),
     ].every(Boolean);
-    if (!camposValidos) {
+    const nombreDisponible = await nombreCtl.validarParaContinuar();
+    if (!camposSincronicos || !nombreDisponible) {
       scrollAlPrimerError();
       return false;
     }
@@ -422,6 +430,7 @@ export function initCamposNegocio({ foto }) {
     leerPayloadNegocio,
     precargar,
     snapshot,
+    marcarNombreEnUso: nombreCtl.marcarEnUso,
   };
 }
 

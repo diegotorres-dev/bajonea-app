@@ -14,7 +14,7 @@ import {
   esCampoBackendDeRedesSociales,
 } from './comercio-form.js';
 import { mapearErroresBackend, mostrarErrorCampo, scrollAlPrimerError } from './validators.js';
-import { montarTerminos, validarTerminos } from './form-utils.js';
+import { montarTerminos, validarTerminos, MENSAJE_NOMBRE_COMERCIO_EN_USO } from './form-utils.js';
 
 const ICONO_ERROR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
 
@@ -151,14 +151,14 @@ export async function initAgregarComercio() {
   };
 
   foto = initFotoComercio();
-  negocio = initCamposNegocio({ foto });
+  negocio = initCamposNegocio({ foto, disponibilidad: { publico: false } });
   const horarios = initHorarios({ mostrarError: mostrarErrorEnBanner });
   const redesSociales = initRedesSociales({ mostrarError: mostrarErrorEnBanner });
   montarTerminos();
 
-  document.getElementById('continuar-btn').addEventListener('click', () => {
+  document.getElementById('continuar-btn').addEventListener('click', async () => {
     renderBannerError(bannerSlot, '');
-    if (negocio.validar()) {
+    if (await negocio.validar()) {
       mostrarPaso(1);
     }
   });
@@ -213,6 +213,12 @@ export async function initAgregarComercio() {
       if (!(error instanceof ApiError)) {
         mostrarPaso(0);
         mostrarErrorEnBanner('No pudimos enviar tu solicitud. Intentá nuevamente.');
+        return;
+      }
+      if (error.status === 409 && error.message === MENSAJE_NOMBRE_COMERCIO_EN_USO) {
+        negocio.marcarNombreEnUso();
+        mostrarPaso(0);
+        mostrarErrorEnBanner('Revisá los campos marcados.');
         return;
       }
       const campos = error.data && typeof error.data === 'object' ? Object.keys(error.data) : [];

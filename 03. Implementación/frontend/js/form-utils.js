@@ -140,21 +140,43 @@ export function crearPasos({ pasos, barras, etiquetas }) {
 }
 
 export const MENSAJE_NOMBRE_USUARIO_EN_USO = 'Ese nombre de usuario ya está en uso';
+export const MENSAJE_NOMBRE_COMERCIO_EN_USO = 'Ya existe un comercio con ese nombre. Elegí otro.';
 
-const ICONOS_ESTADO_NOMBRE_USUARIO = {
+const ICONOS_ESTADO_DISPONIBILIDAD = {
   verificando: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>',
   disponible: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="8 12 11 15 16 9"/></svg>',
   ocupado: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
 };
 
-export function bindNombreUsuario({ inputId = 'nombreUsuario', valorOriginal = null } = {}) {
+export function normalizarNombreComercio(valor) {
+  return String(valor || '').trim().replace(/\s+/g, ' ');
+}
+
+export function bindDisponibilidad({
+  inputId,
+  endpoint,
+  parametro,
+  auth = false,
+  extraQuery = null,
+  textos,
+  normalizar,
+  reescribir = false,
+  valorOriginal = null,
+  validarFormato = () => null,
+  consultarSiHaceFalta = false,
+  reservarEspacio = false,
+}) {
   const input = document.getElementById(inputId);
   const estadoEl = document.getElementById(`estado-${inputId}`);
   const errorId = `error-${inputId}`;
   const iconoEl = document.getElementById(`icono-${inputId}`);
   function obtenerOriginal() {
     const valor = typeof valorOriginal === 'function' ? valorOriginal() : valorOriginal;
-    return valor ? valor.trim().toLowerCase() : null;
+    return valor ? normalizar(valor).toLowerCase() : null;
+  }
+  function esElOriginal(valor) {
+    const original = obtenerOriginal();
+    return original !== null && valor.toLowerCase() === original;
   }
   let estado = 'inactivo';
   let secuencia = 0;
@@ -170,14 +192,24 @@ export function bindNombreUsuario({ inputId = 'nombreUsuario', valorOriginal = n
   function mostrarIcono(variante) {
     if (!iconoEl) return;
     iconoEl.className = `input-shell__status-icon input-shell__status-icon--${variante}`;
-    iconoEl.innerHTML = ICONOS_ESTADO_NOMBRE_USUARIO[variante] || '';
+    iconoEl.innerHTML = ICONOS_ESTADO_DISPONIBILIDAD[variante] || '';
     iconoEl.style.display = 'flex';
   }
 
-  function ocultarEstado() {
-    estadoEl.textContent = '';
+  function vaciarEstado() {
     estadoEl.classList.remove('field__status--ok');
-    estadoEl.style.display = 'none';
+    if (reservarEspacio) {
+      estadoEl.textContent = ' ';
+      estadoEl.style.display = 'block';
+      estadoEl.style.visibility = 'hidden';
+    } else {
+      estadoEl.textContent = '';
+      estadoEl.style.display = 'none';
+    }
+  }
+
+  function ocultarEstado() {
+    vaciarEstado();
     ocultarIcono();
   }
 
@@ -185,6 +217,7 @@ export function bindNombreUsuario({ inputId = 'nombreUsuario', valorOriginal = n
     estadoEl.textContent = texto;
     estadoEl.classList.toggle('field__status--ok', ok);
     estadoEl.style.display = 'block';
+    estadoEl.style.visibility = 'visible';
   }
 
   function reiniciar() {
@@ -197,20 +230,25 @@ export function bindNombreUsuario({ inputId = 'nombreUsuario', valorOriginal = n
 
   function marcarEnUso() {
     estado = 'ocupado';
-    estadoEl.textContent = '';
-    estadoEl.classList.remove('field__status--ok');
-    estadoEl.style.display = 'none';
+    vaciarEstado();
     mostrarIcono('ocupado');
-    mostrarErrorCampo(errorId, MENSAJE_NOMBRE_USUARIO_EN_USO);
+    mostrarErrorCampo(errorId, textos.ocupado);
+  }
+
+  function armarUrl(valor) {
+    const partes = [`${endpoint}?${parametro}=${encodeURIComponent(valor)}`];
+    const extra = typeof extraQuery === 'function' ? extraQuery() : extraQuery;
+    if (extra) partes.push(extra);
+    return partes.join('&');
   }
 
   async function consultarDisponibilidad(valor, miSecuencia) {
     try {
-      const data = await apiFetch(`/auth/nombre-usuario/disponibilidad?nombreUsuario=${encodeURIComponent(valor)}`, { auth: false });
+      const data = await apiFetch(armarUrl(valor), { auth });
       if (miSecuencia !== secuencia) return;
       if (data.disponible) {
         estado = 'disponible';
-        mostrarEstado('Nombre de usuario disponible', true);
+        mostrarEstado(textos.disponible, true);
         mostrarIcono('disponible');
       } else {
         marcarEnUso();
@@ -222,52 +260,100 @@ export function bindNombreUsuario({ inputId = 'nombreUsuario', valorOriginal = n
     }
   }
 
+  function iniciarConsulta(valor) {
+    secuencia += 1;
+    estado = 'verificando';
+    limpiarErrorCampo(errorId);
+    mostrarEstado(textos.verificando, false);
+    mostrarIcono('verificando');
+    pendiente = consultarDisponibilidad(valor, secuencia);
+    return pendiente;
+  }
+
+  if (reservarEspacio) vaciarEstado();
+
   input.addEventListener('input', reiniciar);
   input.addEventListener('blur', () => {
-    input.value = input.value.trim().toLowerCase();
-    const valor = input.value;
+    const valor = normalizar(input.value);
+    if (reescribir) input.value = valor;
     if (!valor) return;
-    const original = obtenerOriginal();
-    if (original !== null && valor === original) {
+    if (esElOriginal(valor)) {
       reiniciar();
       return;
     }
-    const mensaje = mensajeNombreUsuarioInvalido(valor);
+    const mensaje = validarFormato(valor);
     if (mensaje) {
       reiniciar();
       mostrarErrorCampo(errorId, mensaje);
       return;
     }
-    secuencia += 1;
-    estado = 'verificando';
-    limpiarErrorCampo(errorId);
-    mostrarEstado('Verificando…', false);
-    mostrarIcono('verificando');
-    pendiente = consultarDisponibilidad(valor, secuencia);
+    iniciarConsulta(valor);
   });
 
   return {
     async validarParaContinuar() {
-      const valor = input.value.trim().toLowerCase();
-      const original = obtenerOriginal();
-      if (original !== null && valor === original) {
+      const valor = normalizar(input.value);
+      if (esElOriginal(valor)) {
         return true;
       }
-      const mensaje = mensajeNombreUsuarioInvalido(valor);
+      const mensaje = validarFormato(valor);
       if (mensaje) {
         mostrarErrorCampo(errorId, mensaje);
         return false;
       }
       if (estado === 'verificando' && pendiente) {
         await pendiente;
+      } else if (consultarSiHaceFalta && estado === 'inactivo' && valor) {
+        await iniciarConsulta(valor);
       }
-      return estado !== 'ocupado';
+      if (estado === 'ocupado') {
+        mostrarErrorCampo(errorId, textos.ocupado);
+        return false;
+      }
+      return true;
     },
     haCambiado() {
       const original = obtenerOriginal();
-      return original === null || input.value.trim().toLowerCase() !== original;
+      return original === null || normalizar(input.value).toLowerCase() !== original;
     },
     reiniciar,
     marcarEnUso,
   };
+}
+
+function normalizarNombreUsuario(valor) {
+  return String(valor || '').trim().toLowerCase();
+}
+
+export function bindNombreUsuario({ inputId = 'nombreUsuario', valorOriginal = null } = {}) {
+  return bindDisponibilidad({
+    inputId,
+    endpoint: '/auth/nombre-usuario/disponibilidad',
+    parametro: 'nombreUsuario',
+    auth: false,
+    textos: { verificando: 'Verificando…', disponible: 'Nombre de usuario disponible', ocupado: MENSAJE_NOMBRE_USUARIO_EN_USO },
+    normalizar: normalizarNombreUsuario,
+    reescribir: true,
+    valorOriginal,
+    validarFormato: mensajeNombreUsuarioInvalido,
+  });
+}
+
+export function bindNombreComercio({ inputId = 'nombre', publico = false, comercioId = null, valorOriginal = null, validarFormato = () => null } = {}) {
+  return bindDisponibilidad({
+    inputId,
+    endpoint: publico ? '/auth/comercio-nombre/disponibilidad' : '/comercios/nombre/disponibilidad',
+    parametro: 'nombre',
+    auth: !publico,
+    extraQuery: () => {
+      const id = typeof comercioId === 'function' ? comercioId() : comercioId;
+      return id ? `comercioId=${encodeURIComponent(id)}` : null;
+    },
+    textos: { verificando: 'Verificando…', disponible: 'Nombre disponible', ocupado: MENSAJE_NOMBRE_COMERCIO_EN_USO },
+    normalizar: normalizarNombreComercio,
+    valorOriginal,
+    validarFormato,
+    consultarSiHaceFalta: true,
+    reservarEspacio: true,
+  });
 }

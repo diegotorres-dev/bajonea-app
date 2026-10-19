@@ -332,3 +332,10 @@ Cada una se aplicó a una copia del código, se levantó el backend, se corrió 
 ### Regresión
 
 Los 18 estreses del runner (`correr-estreses.mjs`, incluidos `carrito` con el backend apuntando al stub de Mercado Pago y `e4` con S1 a S10) terminaron OK en 37,2 minutos, con 0 `Deadlock found` y 0 `Lock wait timeout` en el log del backend durante toda la corrida.
+
+## Nombre único de comercio — Tramo 2 (2026-10-19), serialización por índice único
+
+- **Sin cambios al orden global de bloqueos.** La unicidad del nombre se resuelve con el índice `uq_comercio_nombre_unico` (columna generada `nombre_unico`, `V37`), no con un lock. `NombreComercioService` hace una lectura sin bloqueos antes de la primera escritura (registro, alta adicional, corrección y edición del perfil) solo para devolver un `409` limpio en el caso normal; el índice decide la carrera.
+- **Carrera.** Dos o más altas simultáneas del mismo nombre (aun de Dueños distintos y con variantes de mayúsculas, tildes o espacios): una gana y el resto recibe `409` con el mismo mensaje porque `GlobalExceptionHandler` mapea la violación del índice; los perdedores no dejan filas a medias (el registro revierte `usuario`, `persona` y el resto). Los flush explícitos (`saveAndFlush` en el alta y en la edición) hacen que la violación salga dentro del método y no en el commit, después de haber escrito historial o avisos.
+- **Verificado.** Estrés `stress-locks-tramoNombreUnico.mjs` (5 escenarios, 2 a 12 simultáneos, mezcla de variantes, altas adicionales del mismo Dueño y de Dueños distintos, renombres contra registros, disponibilidad en paralelo): cero `5xx`, un solo ganador por tanda, 0 `Deadlock found` y 0 `Lock wait timeout`. Mutaciones (A9): nueve, cada una hace fallar al menos un test (el plan las enumeraba: quitar el `UNIQUE`, el chequeo previo, el mapeo del handler, la exclusión del propio id y la validación de `comercioId`).
+- **Disponibilidad.** `GET /auth/comercio-nombre/disponibilidad` y `GET /comercios/nombre/disponibilidad` son lecturas sin bloqueos; no entran en el orden de bloqueos.

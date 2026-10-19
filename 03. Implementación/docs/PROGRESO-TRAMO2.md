@@ -25,3 +25,12 @@ Plan: `docs/PLAN-FASE1-REGISTRO-TRAMO2.md`. Una linea por bloque.
 | 5. Mutaciones | hecho | M1 a M9 hacen fallar su test (ver el informe); M4 no mordia y se agrego un test; M8 se rehizo porque la primera version fallaba por NPE |
 
 Para retomar: el entorno de pruebas se prepara con `bash testing/playwright/scripts/preparar-entorno-test.sh` (resetea bajonea_test, levanta backend y frontend). Las contraseñas de prueba no se anotan aca.
+
+## Entrega B (una linea por bloque)
+
+| Bloque | Estado | Verificado |
+|---|---|---|
+| B1 bindDisponibilidad en form-utils.js | hecho | bindNombreUsuario es ahora una llamada a bindDisponibilidad (mismos ids y textos; los specs 19 y 01 siguen en verde); nuevo bindNombreComercio con reservarEspacio (la linea de estado no desplaza el formulario: sin eso el clic en el switch de abajo se perdia, spec 14:69) |
+| B2 Las cuatro pantallas y validar() asincrono | hecho | registro, alta adicional, correccion y perfil; llamadores actualizados (auth.js, agregar-comercio.js, comercio-corregir.js, submit del perfil); la disponibilidad se evalua despues de las validaciones sincronas (si no, estas borraban el error de ocupado); el 409 del envio vuelve al campo |
+| B3 Specs de UI afectados y spec 67 | hecho | 01, 13, 14, 19, 22, 23, 24, 25 y 53 corridos solos: 190 de 193 la primera vez; los 3 fallos eran 14:69 (layout, corregido), 23:275 (cambio de significado, test reescrito) y 53:443 (inestable, pasa al repetirlo); spec 67 nuevo de 15 tests en verde; mutacion de la compuerta de disponibilidad: 3 tests fallan |
+| B4 Regresion completa e informe | hecho | Playwright completo 1080/1080 (37,2 min); mvnw test pasada 1: 900 tests, con la base de Playwright fallan 2 (TokenEspacioLleno por restos de tokens y un UnfinishedStubbing que pasa solo), con la base reseteada fallan los 15 CarritoVaciado conocidos; pasada 2: 6/6; Newman completo desde base reseteada: 3394 requests, 5307 assertions, 0 fallas; sin estreses (B no toca backend); documentacion del tramo escrita |

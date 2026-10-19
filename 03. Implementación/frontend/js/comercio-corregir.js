@@ -3,6 +3,7 @@ import { exigirDueno } from './contexto.js';
 import { subirFotoCorreccionComercio, CloudinaryUploadError } from './cloudinary.js';
 import { construirTelefono, resolverHomePorRol } from './auth.js';
 import { crearBloqueMotivoRechazo } from './catalogo.js';
+import { MENSAJE_NOMBRE_COMERCIO_EN_USO } from './form-utils.js';
 import {
   initFotoComercio,
   initCamposNegocio,
@@ -22,7 +23,6 @@ const ICONO_ERROR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" 
 
 const DESTINO_INICIO = 'comercio-dashboard.html';
 const PREFIJO_MENSAJE_VERSION = 'La solicitud cambió';
-const PREFIJO_MENSAJE_DUPLICADO = 'Ya tenés un comercio con ese nombre';
 const MENSAJE_ERROR_CARGA = 'No pudimos cargar la solicitud. Intentá nuevamente.';
 
 const MAPA_ERRORES_CORRECCION = {
@@ -215,7 +215,7 @@ export async function initComercioCorregir() {
   };
 
   const foto = initFotoComercio({ urlExistente: correccion.fotoPerfilUrl });
-  const negocio = initCamposNegocio({ foto });
+  const negocio = initCamposNegocio({ foto, disponibilidad: { publico: false, comercioId, valorOriginal: correccion.nombre } });
   const legales = puedeCorregirLegales ? initDatosLegales() : null;
   const horarios = initHorarios({ mostrarError: mostrarErrorEnBanner });
   const redesSociales = initRedesSociales({ mostrarError: mostrarErrorEnBanner });
@@ -242,9 +242,9 @@ export async function initComercioCorregir() {
   wizardActivo = true;
   mostrarPaso(0);
 
-  document.getElementById('continuar-negocio-btn').addEventListener('click', () => {
+  document.getElementById('continuar-negocio-btn').addEventListener('click', async () => {
     renderBannerError(bannerSlot, '');
-    if (negocio.validar()) {
+    if (await negocio.validar()) {
       mostrarPaso(pasoActual + 1);
     }
   });
@@ -349,7 +349,8 @@ export async function initComercioCorregir() {
         });
         return;
       }
-      if (error.status === 409 && error.message.startsWith(PREFIJO_MENSAJE_DUPLICADO)) {
+      if (error.status === 409 && error.message === MENSAJE_NOMBRE_COMERCIO_EN_USO) {
+        negocio.marcarNombreEnUso();
         irAlPasoPorId('step-negocio');
       } else if (error.status === 409 && legales && /CUIT|DNI/.test(error.message)) {
         irAlPasoPorId('step-legales');

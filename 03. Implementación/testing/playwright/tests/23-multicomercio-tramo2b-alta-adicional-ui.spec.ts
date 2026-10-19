@@ -272,23 +272,24 @@ test.describe('Multi-comercio, tramo 2B: alta adicional de comercio (UI del Due�
       expect(foto).toContain(`/duenos/${base.sesion.usuario.id}/comercios-nuevos/`);
     });
 
-    test('un duplicado exacto muestra el banner de error y vuelve al paso 1 con lo cargado', async ({ page }) => {
+    test('un duplicado exacto se avisa en vivo y bloquea el paso 1 sin llegar a enviar nada al servidor', async ({ page }) => {
       await abrirComoUsuario(page, base.sesion);
       await page.goto('/agregar-comercio.html');
       await expect(page.getByTestId('btn-continuar')).toBeVisible();
       const antes = sql(`SELECT COUNT(*) FROM comercio WHERE dueno_id = ${base.sesion.usuario.id};`);
+      let altas = 0;
+      page.on('request', (r) => {
+        if (r.url().endsWith('/comercios') && r.method() === 'POST') altas += 1;
+      });
 
-      await recorrerWizardCompleto(page, localidadId, { nombre: base.nombre, calle: 'Av. San Martín', numero: '100' });
+      await completarPaso1(page, localidadId, { nombre: base.nombre, calle: 'Av. San Martín', numero: '100' });
+      await expect(page.getByTestId('mensaje-error-nombre')).toHaveText(TEXTO_DUPLICADO);
+      await page.getByTestId('btn-continuar').click();
 
-      const respuestaAlta = page.waitForResponse((res) => res.url().endsWith('/comercios') && res.request().method() === 'POST');
-      await page.getByTestId('btn-enviar-solicitud').click();
-      expect((await respuestaAlta).status()).toBe(409);
-
-      const banner = page.getByTestId('mensaje-banner');
-      await expect(banner).toContainText(TEXTO_DUPLICADO);
-      await expect(page.getByTestId('btn-continuar')).toBeVisible();
+      await expect(page.getByTestId('mensaje-error-nombre')).toHaveText(TEXTO_DUPLICADO);
+      await expect(page.getByTestId('btn-continuar-2')).toBeHidden();
       await expect(page.getByTestId('input-nombre')).toHaveValue(base.nombre);
-      await expect(page.getByTestId('btn-enviar-solicitud')).toBeHidden();
+      expect(altas).toBe(0);
       expect(sql(`SELECT COUNT(*) FROM comercio WHERE dueno_id = ${base.sesion.usuario.id};`)).toBe(antes);
     });
 

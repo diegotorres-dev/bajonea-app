@@ -269,3 +269,9 @@ No se agregaron `data-testid`: los tests usan el selector `.toast` que ya exist�
 | Registro de Cliente, invitación, registro de Comercio y alta adicional | `bloque-terminos`, `enlace-terminos`, `enlace-privacidad` (el componente compartido; `input-acepta-terminos` y `mensaje-error-terminos` se conservan) | — |
 | `terminos.html`, `privacidad.html` | `titulo-terminos`, `titulo-privacidad`, `aviso-texto-provisorio`, `enlace-ir-a-privacidad`, `enlace-ir-a-terminos` | — |
 | `comercio-perfil.html` | `telefono-comercio-perfil`, `estado-localidad-comercio-perfil` | `email-comercio-perfil`, `input-email-contacto` (edición del Dueño), `campo-bloqueado-email` (vista del Empleado) |
+
+## Registro de Comercio, Tramo 2 (entrega B, 2026-10-19)
+
+| Pantalla | `data-testid` nuevos | `data-testid` que desaparecen |
+|---|---|---|
+| `registro-comercio.html` (paso 1), `agregar-comercio.html`, `comercio-corregir.html` y `comercio-perfil.html` (edición del Dueño) | `estado-nombre-comercio` (texto "Verificando…" o "Nombre disponible" bajo el campo del nombre) e `icono-estado-nombre-comercio` (ícono de 4 estados: la clase lleva `input-shell__status-icon--verificando`, `--disponible` o `--ocupado`). El texto de ocupado sale por `mensaje-error-nombre`, que ya existía. | — |

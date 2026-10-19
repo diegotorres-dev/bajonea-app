@@ -57,7 +57,9 @@ todos mis comercios aprobados comiencen a aparecer en el catálogo y a recibir p
 
 Como Dueño, quiero dar de alta comercios adicionales bajo mi cuenta sin volver a cargar
 mis datos fiscales, y elegir desde un selector sobre cuál de mis comercios estoy
-operando en cada momento, para gestionar varios negocios desde una única cuenta.
+operando en cada momento, para gestionar varios negocios desde una única cuenta. Sé que
+el nombre de cada comercio tiene que ser distinto del de cualquier otro comercio de la
+plataforma, y que el formulario me avisa en vivo si el nombre que elegí ya está tomado.
 
 ## HU-D06: Dar de Baja un Comercio
 

@@ -548,3 +548,23 @@ Pendientes que no son código y hay que revisar en cada entorno antes de contar 
 ### `mvnw` y los tests de Playwright comparten `bajonea_test`
 
 - Después de `mvnw test` o de una corrida de Playwright la base queda con restos; para correr Newman hay que volver a resetearla con `entorno-test.mjs preparar`.
+
+## Nombre único de comercio (Tramo 2, 2026-10-19)
+
+### Columna generada `STORED` con `REGEXP_REPLACE` y colación `utf8mb4_unicode_ci` (MariaDB 10.4)
+
+- MariaDB 10.4 acepta `REGEXP_REPLACE` dentro de una columna generada `STORED` con `UNIQUE` (`V37`): `nombre_unico = CASE WHEN estado = 'RECHAZO_DEFINITIVO' THEN NULL ELSE TRIM(REGEXP_REPLACE(nombre,'[[:space:]]+',' ')) END`. `[[:space:]]` colapsa también tabulaciones y espacios no cortantes. La entidad JPA no mapea la columna (igual que `cuenta_mercado_pago.mp_user_id_activo`), así que `ddl-auto=validate` no la ve.
+- Con `utf8mb4_unicode_ci` (y también con `utf8mb4_general_ci`) la `ñ` es igual a la `n`, y `é` a `e`: "Cafetería Ñandú" y "Cafeteria Nandu" son el mismo nombre. Es lo que se quiere para este requisito y queda anotado como regla de producto. La consulta nativa compara contra la columna, y la colación de la columna gana a la del literal, así que da lo mismo que el índice sin depender de la conexión.
+- Cambiar el estado recalcula la columna. Volver un comercio de `RECHAZO_DEFINITIVO` a otro estado chocaría si el nombre se retomó, pero ningún código de la aplicación saca a un comercio de ese estado.
+- La carrera entre dos altas del mismo nombre se resuelve con el índice (el perdedor recibe `409` por `GlobalExceptionHandler`, que mapea `uq_comercio_nombre_unico`); el estrés con 2, 3, 6 y 12 registros simultáneos no produjo `Deadlock found`, así que no hizo falta reintentar la transacción ni agregar un lock.
+
+### Validación asíncrona en un formulario por pasos: orden de las validaciones y desplazamiento del layout
+
+- **El error de "ocupado" tiene que escribirse al final.** `initCamposNegocio().validar()` pasó a ser asíncrono porque espera la consulta de disponibilidad. Si la comprobación de disponibilidad corre antes que las validaciones síncronas del mismo campo (`validarCampoRequeridoYValido` limpia el error cuando el formato es válido), el mensaje de ocupado se borra y el usuario ve que no avanza sin saber por qué. La disponibilidad se evalúa después de las síncronas y, si el estado es "ocupado", vuelve a mostrar el error (`validarParaContinuar`). El mismo orden rige en el guardado del perfil del Dueño.
+- **Una línea de estado que aparece al salir del campo puede comerse el clic siguiente.** El `blur` se dispara con el `mousedown` sobre otro control; si en ese momento aparece "Nombre disponible" y empuja el formulario hacia abajo, el `mouseup` cae en otro elemento y el clic se pierde (lo detectó el spec `14` al tocar el switch de "Retiro" justo después de escribir el nombre). Para el nombre del comercio la línea de estado reserva su espacio (`reservarEspacio`: `visibility:hidden` con un espacio no cortante en vez de `display:none`). El campo de nombre de usuario sigue con `display:none` y tiene el mismo riesgo latente.
+- Un error de red en la consulta deja el campo sin aviso (estado inactivo): el servidor vuelve a validar al guardar, así que no hay un hueco, pero el usuario no ve que la verificación no se hizo.
+
+### Otros
+
+- Los scripts que se escriben a mano con `node` desde una tubería de bash pierden los caracteres con tilde (`á` llega mal por la entrada estándar de Windows): para editar archivos con texto en español, usar un archivo `.mjs` o la herramienta de edición, no `node -e` ni un heredoc por la entrada estándar.
+- Los archivos del frontend mezclan finales de línea LF y CRLF en el árbol de trabajo (git los normaliza): al reemplazar texto con un script hay que detectar el final de línea del archivo (`includes('\r\n')`) y convertir el patrón.
