@@ -58,7 +58,7 @@ const cuerpoAlta = (duenoId, email, nombre, numero) => ({
   nombre,
   descripcion: 'x',
   telefono: tel(),
-  emailContacto: email,
+  aceptaTerminos: true,
   tipoComercio: 'RESTAURANTE',
   aceptaDelivery: false,
   aceptaRetiro: true,
@@ -73,6 +73,7 @@ async function nuevoDueno() {
   const email = `stress.${u}@bajonea.test`;
   const nombreUsuario = `st${u}`.slice(0, 20);
   const r = await call('POST', '/auth/registro/comercio', null, {
+    aceptaTerminos: true,
     razonSocial: `Stress ${u} SRL`,
     cuit: cuit(),
     condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -82,7 +83,6 @@ async function nuevoDueno() {
     nombre: `Stress ${u}`,
     descripcion: 'x',
     telefono: tel(),
-    emailContacto: email,
     tipoComercio: 'RESTAURANTE',
     aceptaDelivery: false,
     aceptaRetiro: true,
@@ -193,7 +193,6 @@ const cuerpoDesdeCorreccion = (d, descripcion) => ({
   nombre: d.nombre,
   descripcion,
   telefono: d.telefono,
-  emailContacto: d.emailContacto,
   tipoComercio: d.tipoComercio,
   aceptaDelivery: d.aceptaDelivery,
   aceptaRetiro: d.aceptaRetiro,

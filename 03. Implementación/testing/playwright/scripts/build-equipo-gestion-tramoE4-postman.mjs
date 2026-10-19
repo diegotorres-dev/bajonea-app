@@ -198,6 +198,7 @@ agregar(
     'Registro Dueño',
     req('POST', '/auth/registro/comercio', {
       body: {
+        aceptaTerminos: true,
         razonSocial: 'Equipo E4 SRL',
         cuit: `{{${v('cuit_tmp')}}}`,
         condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -207,7 +208,6 @@ agregar(
         nombre: 'Local Equipo E4',
         descripcion: 'Comercio generado por la coleccion de Postman (gestion del equipo, E4)',
         telefono: '+5492964555444',
-        emailContacto: `{{${v('d_email')}}}`,
         tipoComercio: 'RESTAURANTE',
         aceptaDelivery: false,
         aceptaRetiro: true,

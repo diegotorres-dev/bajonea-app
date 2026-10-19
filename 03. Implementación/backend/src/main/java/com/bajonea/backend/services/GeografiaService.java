@@ -11,8 +11,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 /**
- * Catálogo de solo lectura precargado por el ETL de Georef (Fase 2bis) — sin lógica de
- * negocio, solo mapeo Entity→DTO para los selectores dependientes de Provincia/Localidad.
+ * Catálogo de solo lectura precargado por el ETL de Georef (Fase 2bis) para los selectores dependientes de
+ * Provincia/Localidad. Solo expone las localidades de {@link LocalidadesHabilitadas} y las provincias que
+ * tienen al menos una; el resto sigue en la base pero no se ofrece.
  */
 @Service
 @RequiredArgsConstructor
@@ -20,15 +21,17 @@ public class GeografiaService {
 
     private final ProvinciaRepository provinciaRepository;
     private final LocalidadRepository localidadRepository;
+    private final LocalidadesHabilitadas localidadesHabilitadas;
 
     public List<ProvinciaResponseDTO> listarProvincias() {
-        return provinciaRepository.findAll().stream()
+        List<String> provinciaIds = localidadRepository.findProvinciaIdsByIdIn(localidadesHabilitadas.ids());
+        return provinciaRepository.findAllById(provinciaIds).stream()
                 .map(this::aResponseDTO)
                 .toList();
     }
 
     public List<LocalidadResponseDTO> listarLocalidadesPorProvincia(String provinciaId) {
-        return localidadRepository.findByProvinciaId(provinciaId).stream()
+        return localidadRepository.findByProvinciaIdAndIdInOrderByNombreAsc(provinciaId, localidadesHabilitadas.ids()).stream()
                 .map(localidad -> aResponseDTO(localidad, provinciaId))
                 .toList();
     }

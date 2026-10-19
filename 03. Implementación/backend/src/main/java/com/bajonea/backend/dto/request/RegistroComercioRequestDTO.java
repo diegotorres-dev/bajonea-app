@@ -11,6 +11,7 @@ import com.bajonea.backend.validation.annotations.ValidarFormatoNombre;
 import com.bajonea.backend.validation.annotations.ValidarNombreUsuario;
 import com.bajonea.backend.validation.annotations.ValidarPasswordSegura;
 import com.bajonea.backend.validation.annotations.ValidarTelefonoArgentino;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
@@ -26,7 +27,7 @@ import lombok.Setter;
 /**
  * Body de {@code POST /api/v1/auth/registro/comercio} (Fase 9). Extiende
  * {@link DatosNegocioComercioRequestDTO} (multi-comercio, tramo 2A): los datos del negocio
- * ({@code nombre}, {@code descripcion}, {@code telefono}, {@code emailContacto}, {@code tipoComercio},
+ * ({@code nombre}, {@code descripcion}, {@code telefono}, {@code tipoComercio},
  * modalidades, {@code direccion}, {@code horarios}, {@code fotoPerfilUrl} y {@code redesSociales}, con
  * todo lo que se explica más abajo sobre ellos) viven en esa superclase, compartida con el alta de un
  * comercio adicional; acá quedan los datos fiscales, del representante y de la cuenta. El JSON del
@@ -35,9 +36,12 @@ import lombok.Setter;
  * {@code Comercio} + las credenciales de acceso del {@code Usuario} que se crea junto con el
  * comercio — ninguna de esas entidades tiene un DTO propio (ver {@code CLAUDE.md} §5bis).
  * <p>
- * Lleva dos campos de email distintos, a propósito: {@code email} es la credencial de login
- * del Usuario, {@code emailContacto} es el email público del Comercio, que según
- * {@code docs/modelo-mvp.md} "puede diferir del email del usuario representante".
+ * {@code email} es la credencial de login del Usuario. El comercio ya no tiene email de contacto propio
+ * (Fase 1 de registro, 2026-10-18): ningún envío ni pantalla lo usaba.
+ * <p>
+ * Razón social, tipo de sociedad, condición ante el IVA y fecha de inicio de actividades son opcionales; el
+ * CUIT y el domicilio fiscal siguen siendo obligatorios, igual que los datos del representante.
+ * {@code aceptaTerminos} se valida y no se guarda, como en el registro de Cliente.
  * <p>
  * {@code horarios} suma la reincorporación de {@code Horario} (Fase 16a, ver
  * {@code CLAUDE.md} §5 y docs/DECISIONES.md): al menos una franja es obligatoria para
@@ -82,9 +86,9 @@ import lombok.Setter;
 @NoArgsConstructor
 public class RegistroComercioRequestDTO extends DatosNegocioComercioRequestDTO {
 
-    @NotBlank(message = "La razón social es obligatoria")
     @Pattern(regexp = ".*[\\p{L}0-9].*", message = "La razón social no puede contener solo caracteres especiales")
     @Size(max = 150, message = "La razón social no puede superar los 150 caracteres")
+    @Setter(AccessLevel.NONE)
     private String razonSocial;
 
     @NotBlank(message = "El CUIT es obligatorio")
@@ -92,10 +96,8 @@ public class RegistroComercioRequestDTO extends DatosNegocioComercioRequestDTO {
     @Setter(AccessLevel.NONE)
     private String cuit;
 
-    @NotNull(message = "Seleccioná la condición ante el IVA")
     private CondicionIva condicionIva;
 
-    @NotNull(message = "Seleccioná el tipo de sociedad")
     private TipoPersonaJuridica tipoSociedad;
 
     @NotBlank(message = "El domicilio fiscal es obligatorio")
@@ -103,9 +105,12 @@ public class RegistroComercioRequestDTO extends DatosNegocioComercioRequestDTO {
     @Size(max = 255, message = "El domicilio fiscal no puede superar los 255 caracteres")
     private String domicilioFiscal;
 
-    @NotNull(message = "La fecha de inicio de actividades es obligatoria")
     @PastOrPresent(message = "La fecha ingresada no es válida")
     private LocalDate fechaInicioActividades;
+
+    @NotNull(message = "Tenés que aceptar los Términos y Condiciones")
+    @AssertTrue(message = "Tenés que aceptar los Términos y Condiciones")
+    private Boolean aceptaTerminos;
 
     @NotBlank(message = "El nombre de usuario es obligatorio")
     @ValidarNombreUsuario
@@ -148,6 +153,10 @@ public class RegistroComercioRequestDTO extends DatosNegocioComercioRequestDTO {
     @NotNull(message = "La fecha de nacimiento es obligatoria")
     @ValidarFechaNacimientoRepresentante
     private LocalDate fechaNacimientoRepresentante;
+
+    public void setRazonSocial(String razonSocial) {
+        this.razonSocial = razonSocial == null || razonSocial.isBlank() ? null : razonSocial.trim();
+    }
 
     public void setCuit(String cuit) {
         this.cuit = cuit == null ? null : cuit.replaceAll("[^0-9]", "");

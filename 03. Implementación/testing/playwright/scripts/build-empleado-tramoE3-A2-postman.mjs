@@ -173,6 +173,7 @@ agregar(
     'Registro Dueño',
     req('POST', '/auth/registro/comercio', {
       body: {
+        aceptaTerminos: true,
         razonSocial: 'Escrituras A2 SRL',
         cuit: `{{${v('cuit_tmp')}}}`,
         condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -182,7 +183,6 @@ agregar(
         nombre: 'Local Escrituras A2',
         descripcion: 'Comercio generado por la coleccion de Postman (escrituras delegadas, E3 A2)',
         telefono: '+5492964555444',
-        emailContacto: `{{${v('d_email')}}}`,
         tipoComercio: 'RESTAURANTE',
         aceptaDelivery: false,
         aceptaRetiro: true,
@@ -287,13 +287,11 @@ agregar(
   item('Perfil: la Empleada edita descripcion y telefono y recibe el perfil reducido', req('PUT', DATOS, { token: TOKEN_EMPLEADO, comercio: COM, rawBody: datosOk('Descripcion A2 nueva', '+5492964111222') }), [
     status(200),
     "pm.test('Cambiaron los dos campos', () => { const d = pm.response.json().data; pm.expect(d.descripcion).to.eql('Descripcion A2 nueva'); pm.expect(d.telefono).to.eql('+5492964111222'); });",
-    conCampos('emailContacto'),
-    sinCampos('cuit', 'razonSocial', 'condicionIva', 'tipoSociedad', 'domicilioFiscal', 'fechaInicioActividades', 'representante', 'motivoRechazo'),
+    sinCampos('emailContacto', 'cuit', 'razonSocial', 'condicionIva', 'tipoSociedad', 'domicilioFiscal', 'fechaInicioActividades', 'representante', 'motivoRechazo'),
   ]),
-  item('Perfil: la Empleada ve el perfil con el email de contacto, solo lectura', req('GET', '/comercios/perfil', { token: TOKEN_EMPLEADO, comercio: COM }), [
+  item('Perfil: la Empleada ve el perfil sin email de contacto', req('GET', '/comercios/perfil', { token: TOKEN_EMPLEADO, comercio: COM }), [
     status(200),
-    conCampos('emailContacto'),
-    sinCampos('cuit', 'representante'),
+    sinCampos('emailContacto', 'cuit', 'representante'),
   ]),
   ...[['nombre', '"nombre": "Hackeado"'], ['emailContacto', '"emailContacto": "otro@bajonea.test"'], ['aceptaDelivery', '"aceptaDelivery": true'], ['aceptaRetiro', '"aceptaRetiro": false'], ['fotoPerfilUrl', '"fotoPerfilUrl": "https://res.cloudinary.com/demo/image/upload/x.png"'], ['cuit', '"cuit": "20111111112"']].map(([campo, fragmento]) =>
     item(`Perfil: un cuerpo con "${campo}" es 400 y no cambia nada`, req('PUT', DATOS, { token: TOKEN_EMPLEADO, comercio: COM, rawBody: `{"descripcion": "x", "telefono": "+5492964111222", ${fragmento}}` }), [status(400)]),
@@ -302,9 +300,9 @@ agregar(
   item('Perfil: telefono invalido es 400', req('PUT', DATOS, { token: TOKEN_EMPLEADO, comercio: COM, rawBody: '{"descripcion": "x", "telefono": "123"}' }), [status(400)]),
   item('Perfil: sin telefono es 400', req('PUT', DATOS, { token: TOKEN_EMPLEADO, comercio: COM, rawBody: '{"descripcion": "x"}' }), [status(400)]),
   item('Perfil: descripcion de mas de 2000 caracteres es 400', req('PUT', DATOS, { token: TOKEN_EMPLEADO, comercio: COM, rawBody: '{"descripcion": "' + 'x'.repeat(2001) + '", "telefono": "+5492964111222"}' }), [status(400)]),
-  item('Perfil: el nombre, el email y las modalidades siguen como estaban', req('GET', '/comercios/perfil', { token: TOKEN_DUENO, comercio: COM }), [
+  item('Perfil: el nombre y las modalidades siguen como estaban', req('GET', '/comercios/perfil', { token: TOKEN_DUENO, comercio: COM }), [
     status(200),
-    "pm.test('Nombre, email y modalidades intactos', () => { const d = pm.response.json().data; pm.expect(d.nombre).to.eql('Local Escrituras A2'); pm.expect(d.emailContacto).to.eql(pm.environment.get('a2_d_email')); pm.expect(d.aceptaDelivery).to.eql(false); pm.expect(d.aceptaRetiro).to.eql(true); });",
+    "pm.test('Nombre y modalidades intactos', () => { const d = pm.response.json().data; pm.expect(d.nombre).to.eql('Local Escrituras A2'); pm.expect(d).to.not.have.property('emailContacto'); pm.expect(d.aceptaDelivery).to.eql(false); pm.expect(d.aceptaRetiro).to.eql(true); });",
   ]),
   item('Perfil: el Dueño tambien puede usar la ruta y recibe su perfil completo', req('PUT', DATOS, { token: TOKEN_DUENO, comercio: COM, rawBody: datosOk('Descripcion del Dueño', '+5492964333444') }), [status(200), conCampos('cuit', 'representante')]),
   item('Perfil: PUT /comercios/perfil sigue siendo exclusivo del Dueño (403 para la Empleada)', req('PUT', '/comercios/perfil', { token: TOKEN_EMPLEADO, comercio: COM, body: {} }), [status(403)]),

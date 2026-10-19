@@ -85,6 +85,7 @@ const preRequestHorariosFuera = [
 
 function registroDueno({ s, cuit, dni, horarios }) {
   return {
+    aceptaTerminos: true,
     razonSocial: `Cierre Manual Postman ${s} SRL`,
     cuit,
     condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -94,7 +95,6 @@ function registroDueno({ s, cuit, dni, horarios }) {
     nombre: `Local Cierre Manual ${s}`,
     descripcion: 'Comercio generado por la coleccion de Postman (cierre manual)',
     telefono: '+5492964555444',
-    emailContacto: `contacto.c1u${s}@bajonea.test`,
     tipoComercio: 'RESTAURANTE',
     aceptaDelivery: false,
     aceptaRetiro: true,
@@ -334,7 +334,7 @@ function cuerpoAdicional(nombre, horarios, instagram) {
     nombre,
     descripcion: 'Comercio adicional del cierre masivo generado por la coleccion de Postman',
     telefono: '+5492964555444',
-    emailContacto: `contacto.${instagram}@bajonea.test`,
+    aceptaTerminos: true,
     tipoComercio: 'RESTAURANTE',
     aceptaDelivery: false,
     aceptaRetiro: true,

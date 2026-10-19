@@ -101,7 +101,7 @@ class ComercioEdicionServiceTest {
     @Test
     void datosBasicosIgualesDespuesDeNormalizarNoSonUnCambioNiSeGuardan() {
         List<CambioComercio> cambios = service.actualizarDatosBasicos(comercio, "  cafetería del sur ", "  Cafe de especialidad",
-                "+5492964111222", " contacto@cafe.test ");
+                "+5492964111222");
 
         assertTrue(cambios.isEmpty());
         verify(comercioRepository, never()).save(any());
@@ -111,21 +111,19 @@ class ComercioEdicionServiceTest {
     void unaDescripcionVaciaEnBlancoONulaEsLoMismo() {
         comercio.setDescripcion(null);
 
-        assertTrue(service.actualizarDatosBasicos(comercio, "Cafetería Del Sur", "   ", "+5492964111222", "contacto@cafe.test").isEmpty());
-        assertTrue(service.actualizarDatosBasicos(comercio, "Cafetería Del Sur", null, "+5492964111222", "contacto@cafe.test").isEmpty());
+        assertTrue(service.actualizarDatosBasicos(comercio, "Cafetería Del Sur", "   ", "+5492964111222").isEmpty());
+        assertTrue(service.actualizarDatosBasicos(comercio, "Cafetería Del Sur", null, "+5492964111222").isEmpty());
         verify(comercioRepository, never()).save(any());
     }
 
     @Test
     void cadaDatoBasicoCambiadoDejaUnCambioConSuValorAnteriorYNuevo() {
-        List<CambioComercio> cambios = service.actualizarDatosBasicos(comercio, "nuevo nombre", "Otra descripción", "+5492964999888",
-                "otro@cafe.test");
+        List<CambioComercio> cambios = service.actualizarDatosBasicos(comercio, "nuevo nombre", "Otra descripción", "+5492964999888");
 
         assertEquals(List.of(
                 new CambioComercio(CampoCambioComercio.NOMBRE, "Cafetería Del Sur", "Nuevo Nombre"),
                 new CambioComercio(CampoCambioComercio.DESCRIPCION, "Cafe de especialidad", "Otra descripción"),
-                new CambioComercio(CampoCambioComercio.TELEFONO, "+5492964111222", "+5492964999888"),
-                new CambioComercio(CampoCambioComercio.EMAIL_CONTACTO, "contacto@cafe.test", "otro@cafe.test")), cambios);
+                new CambioComercio(CampoCambioComercio.TELEFONO, "+5492964111222", "+5492964999888")), cambios);
         assertEquals("Nuevo Nombre", comercio.getNombre());
         assertNotNull(comercio.getFechaModificacion());
         verify(comercioRepository).save(comercio);
@@ -133,7 +131,7 @@ class ComercioEdicionServiceTest {
 
     @Test
     void unaDescripcionQuitadaQuedaEnNulo() {
-        List<CambioComercio> cambios = service.actualizarDatosBasicos(comercio, "Cafetería Del Sur", "", "+5492964111222", "contacto@cafe.test");
+        List<CambioComercio> cambios = service.actualizarDatosBasicos(comercio, "Cafetería Del Sur", "", "+5492964111222");
 
         assertEquals(List.of(new CambioComercio(CampoCambioComercio.DESCRIPCION, "Cafe de especialidad", null)), cambios);
         assertNull(comercio.getDescripcion());

@@ -33,6 +33,7 @@ const collectionPath = path.resolve(__dirname, '../../../postman/Bajonea-MVP.pos
 function baseComercioPayload(overrides = {}) {
   const payload = {
     fotoPerfilUrl: 'https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg',
+    aceptaTerminos: true,
     razonSocial: 'Comercio Matriz SRL',
     cuit: '30799000306',
     condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -42,7 +43,6 @@ function baseComercioPayload(overrides = {}) {
     nombre: 'Comercio Matriz Base',
     descripcion: 'Comercio de prueba para la matriz de Postman de Comercio',
     telefono: '+5492964555100',
-    emailContacto: 'contacto.matriz.comercio@bajonea.test',
     tipoComercio: 'RESTAURANTE',
     aceptaDelivery: true,
     aceptaRetiro: true,
@@ -168,9 +168,6 @@ const folder33 = {
     registroItem('Registro Comercio - telefono formato invalido (sin +549)', { telefono: '2964555111' }, assertFieldMessage(400, 'telefono', 'Ingresá un número de teléfono válido (cod. área + número)')),
     registroItem('Registro Comercio - telefono formato invalido (letras)', { telefono: '+549296455abcd' }, assertFieldMessage(400, 'telefono', 'Ingresá un número de teléfono válido (cod. área + número)')),
 
-    registroItem('Registro Comercio - emailContacto vacio', { emailContacto: '' }, assertFieldMessage(400, 'emailContacto', 'El email de contacto es obligatorio')),
-    registroItem('Registro Comercio - emailContacto formato invalido (sin arroba)', { emailContacto: 'contacto.sin.arroba.test' }, assertFieldMessage(400, 'emailContacto', 'Ingresá un email de contacto con formato válido')),
-    registroItem('Registro Comercio - emailContacto formato invalido (sin dominio)', { emailContacto: 'contacto@' }, assertFieldMessage(400, 'emailContacto', 'Ingresá un email de contacto con formato válido')),
 
     ...['RESTAURANTE', 'EMPRENDIMIENTO', 'ROTISERIA', 'HELADERIA', 'CAFETERIA', 'PANADERIA', 'PIZZERIA', 'PARRILLA', 'BAR', 'KIOSCO', 'FOOD_TRUCK', 'OTRO'].map((tipo) =>
       registroItem(`Registro Comercio - tipoComercio=${tipo} (pasa validacion de formato, aislado con password vacio)`, { tipoComercio: tipo, password: '' }, assertFieldAbsent(400, 'tipoComercio')),
@@ -192,7 +189,7 @@ const folder33 = {
 const folder34 = {
   name: '34 - Matriz Comercio - Registro Paso 2 (Legales)',
   item: [
-    registroItem('Registro Comercio - razonSocial vacia', { razonSocial: '' }, assertFieldMessage(400, 'razonSocial', 'La razón social es obligatoria')),
+    registroItem('Registro Comercio - razonSocial vacia (opcional, debe aceptar)', { razonSocial: '', email: 'matriz.c2.razonvacia@bajonea.test', cuit: '30799000918', dniRepresentante: '30199395' }, assertCreated201()),
     registroItem('Registro Comercio - razonSocial formato invalido (solo simbolos)', { razonSocial: '####' }, assertFieldMessage(400, 'razonSocial', 'La razón social no puede contener solo caracteres especiales')),
     registroItem('Registro Comercio - razonSocial por encima del limite 151 (debe rechazar)', { razonSocial: s(151, 'R') }, assertFieldMessage(400, 'razonSocial', 'La razón social no puede superar los 150 caracteres')),
     registroItem('Registro Comercio - razonSocial limite superior exacto 150 (debe aceptar)', { razonSocial: s(150, 'R'), email: 'matriz.c2.razon150@bajonea.test', cuit: '30799000144', dniRepresentante: '30199310' }, assertCreated201()),
@@ -204,13 +201,13 @@ const folder34 = {
     ...['RESPONSABLE_INSCRIPTO', 'EXENTO', 'NO_INSCRIPTO', 'MONOTRIBUTO', 'RESPONSABLE_NACIONAL'].map((c) =>
       registroItem(`Registro Comercio - condicionIva=${c} (pasa validacion de formato, aislado con password vacio)`, { condicionIva: c, password: '' }, assertFieldAbsent(400, 'condicionIva')),
     ),
-    registroItem('Registro Comercio - condicionIva vacio (null)', { condicionIva: null }, assertFieldMessage(400, 'condicionIva', 'Seleccioná la condición ante el IVA')),
+    registroItem('Registro Comercio - condicionIva vacio (opcional, debe aceptar)', { condicionIva: null, email: 'matriz.c2.ivanull@bajonea.test', cuit: '30799000926', dniRepresentante: '30199396' }, assertCreated201()),
     registroItem('Registro Comercio - condicionIva fuera del enum', { condicionIva: 'INVALIDO' }, assertTopLevelMessage(400, 'El cuerpo de la solicitud contiene datos con formato inválido')),
 
     ...['SA', 'SRL', 'SAS', 'SC', 'SCS', 'SCRL', 'SCSA', 'SCCS', 'CC', 'CS', 'CCSA', 'CA', 'SP', 'ST', 'ACP', 'EMP', 'EU', 'UTE'].map((t) =>
       registroItem(`Registro Comercio - tipoSociedad=${t} (pasa validacion de formato, aislado con password vacio)`, { tipoSociedad: t, password: '' }, assertFieldAbsent(400, 'tipoSociedad')),
     ),
-    registroItem('Registro Comercio - tipoSociedad vacio (null)', { tipoSociedad: null }, assertFieldMessage(400, 'tipoSociedad', 'Seleccioná el tipo de sociedad')),
+    registroItem('Registro Comercio - tipoSociedad vacio (opcional, debe aceptar)', { tipoSociedad: null, email: 'matriz.c2.sociedadnull@bajonea.test', cuit: '30799000934', dniRepresentante: '30199397' }, assertCreated201()),
     registroItem('Registro Comercio - tipoSociedad fuera del enum', { tipoSociedad: 'INVALIDO' }, assertTopLevelMessage(400, 'El cuerpo de la solicitud contiene datos con formato inválido')),
 
     registroItem('Registro Comercio - domicilioFiscal vacio', { domicilioFiscal: '' }, assertFieldMessage(400, 'domicilioFiscal', 'El domicilio fiscal es obligatorio')),
@@ -218,7 +215,7 @@ const folder34 = {
     registroItem('Registro Comercio - domicilioFiscal por encima del limite 256 (debe rechazar)', { domicilioFiscal: s(256, 'D') }, assertFieldMessage(400, 'domicilioFiscal', 'El domicilio fiscal no puede superar los 255 caracteres')),
     registroItem('Registro Comercio - domicilioFiscal limite superior exacto 255 (debe aceptar)', { domicilioFiscal: s(255, 'D'), email: 'matriz.c2.dom255@bajonea.test', cuit: '30799000152', dniRepresentante: '30199311' }, assertCreated201()),
 
-    registroItem('Registro Comercio - fechaInicioActividades vacia (null)', { fechaInicioActividades: null }, assertFieldMessage(400, 'fechaInicioActividades', 'La fecha de inicio de actividades es obligatoria')),
+    registroItem('Registro Comercio - fechaInicioActividades vacia (opcional, debe aceptar)', { fechaInicioActividades: null, email: 'matriz.c2.fechanull@bajonea.test', cuit: '30799000942', dniRepresentante: '30199398' }, assertCreated201()),
     registroItem('Registro Comercio - fechaInicioActividades futura (invalida)', { fechaInicioActividades: '2099-01-01' }, assertFieldMessage(400, 'fechaInicioActividades', 'La fecha ingresada no es válida')),
 
     registroItem('Registro Comercio - nombreRepresentante vacio', { nombreRepresentante: '' }, assertFieldMessage(400, 'nombreRepresentante', 'El nombre es obligatorio')),
@@ -319,7 +316,7 @@ function setupRegistroComercio(nombreSetup, overrides, tokenVar) {
 
 const perfilSetup = setupRegistroComercio('matriz perfil comercio', { email: 'matriz.comercio.perfil@bajonea.test', cuit: '30799000225', dniRepresentante: '30199340' }, 'matriz_comercio_perfil_token');
 function perfilBody(o) {
-  return { nombre: 'Comercio Perfil Editado', descripcion: 'desc', telefono: '+5492964555200', emailContacto: 'nuevo.contacto@bajonea.test', aceptaDelivery: true, aceptaRetiro: true, ...o };
+  return { nombre: 'Comercio Perfil Editado', descripcion: 'desc', telefono: '+5492964555200', aceptaDelivery: true, aceptaRetiro: true, ...o };
 }
 const folder36 = {
   name: '36 - Matriz Comercio - Perfil (edicion)',
@@ -337,8 +334,6 @@ const folder36 = {
     item('Perfil Comercio - descripcion limite superior exacto 2000 (debe aceptar)', req('PUT', '/comercios/perfil', perfilBody({ descripcion: s(2000, 'd') }), 'matriz_comercio_perfil_token'), assertStatusOnly(200)),
     item('Perfil Comercio - telefono vacio', req('PUT', '/comercios/perfil', perfilBody({ telefono: '' }), 'matriz_comercio_perfil_token'), assertFieldMessage(400, 'telefono', 'No debe estar vacío')),
     item('Perfil Comercio - telefono formato invalido', req('PUT', '/comercios/perfil', perfilBody({ telefono: '123456' }), 'matriz_comercio_perfil_token'), assertFieldMessage(400, 'telefono', 'Ingresá un número de teléfono válido (cod. área + número)')),
-    item('Perfil Comercio - emailContacto vacio', req('PUT', '/comercios/perfil', perfilBody({ emailContacto: '' }), 'matriz_comercio_perfil_token'), assertFieldMessage(400, 'emailContacto', 'No debe estar vacío')),
-    item('Perfil Comercio - emailContacto formato invalido', req('PUT', '/comercios/perfil', perfilBody({ emailContacto: 'sin-arroba' }), 'matriz_comercio_perfil_token'), assertFieldMessage(400, 'emailContacto', 'Ingresá un email de contacto con formato válido')),
     item(
       '[GAP CERRADO, confirmado por primera vez con test real] Perfil Comercio - sin ninguna modalidad de entrega (debe rechazar)',
       req('PUT', '/comercios/perfil', perfilBody({ aceptaDelivery: false, aceptaRetiro: false }), 'matriz_comercio_perfil_token'),

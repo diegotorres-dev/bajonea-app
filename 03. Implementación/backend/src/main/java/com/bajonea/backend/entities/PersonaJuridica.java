@@ -40,7 +40,7 @@ public class PersonaJuridica {
     private Persona persona;
 
     @Setter
-    @Column(name = "razon_social", length = 150, nullable = false)
+    @Column(name = "razon_social", length = 150)
     private String razonSocial;
 
     @Setter
@@ -49,12 +49,12 @@ public class PersonaJuridica {
 
     @Setter
     @Enumerated(EnumType.STRING)
-    @Column(name = "condicion_iva", nullable = false)
+    @Column(name = "condicion_iva")
     private CondicionIva condicionIva;
 
     @Setter
     @Enumerated(EnumType.STRING)
-    @Column(name = "tipo_sociedad", nullable = false)
+    @Column(name = "tipo_sociedad")
     private TipoPersonaJuridica tipoSociedad;
 
     @Setter
@@ -62,6 +62,6 @@ public class PersonaJuridica {
     private String domicilioFiscal;
 
     @Setter
-    @Column(name = "fecha_inicio_actividades", nullable = false)
+    @Column(name = "fecha_inicio_actividades")
     private LocalDate fechaInicioActividades;
 }

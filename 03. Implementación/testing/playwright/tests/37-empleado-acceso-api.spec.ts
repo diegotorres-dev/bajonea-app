@@ -38,7 +38,6 @@ const CAMPOS_PERFIL_EMPLEADO = [
   'cerradoManualmente',
   'descripcion',
   'direccion',
-  'emailContacto',
   'estado',
   'fotoPerfilUrl',
   'horarios',
@@ -236,7 +235,7 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
       expect(texto).not.toContain(completo.body.data.cuit);
       expect(texto).not.toContain(completo.body.data.razonSocial);
       expect(texto).not.toContain(completo.body.data.domicilioFiscal);
-      expect(texto.split(dueno.email).length - 1, 'el email aparece a lo sumo una vez, como emailContacto').toBeLessThanOrEqual(1);
+      expect(texto.split(dueno.email).length - 1, 'el email del Dueño no aparece').toBe(0);
       expect(texto).not.toContain(dueno.nombreUsuario);
       expect(texto.toLowerCase()).not.toContain('mercadopago');
     });
@@ -245,7 +244,7 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
       const respuesta = await perfil(request, dueno.token, conComercio(dueno.comercioId));
 
       expect(respuesta.status).toBe(200);
-      for (const campo of ['cuit', 'razonSocial', 'condicionIva', 'tipoSociedad', 'domicilioFiscal', 'fechaInicioActividades', 'representante', 'emailContacto', 'puedeCambiarCierre']) {
+      for (const campo of ['cuit', 'razonSocial', 'condicionIva', 'tipoSociedad', 'domicilioFiscal', 'fechaInicioActividades', 'representante', 'puedeCambiarCierre']) {
         expect(Object.keys(respuesta.body.data), campo).toContain(campo);
       }
       expect(respuesta.body.data.representante.dni).toBeTruthy();

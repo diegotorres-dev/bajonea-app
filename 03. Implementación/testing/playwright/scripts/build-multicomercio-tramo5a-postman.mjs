@@ -81,6 +81,7 @@ const horariosTodosLosDias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES
 
 function registroDueno({ s, cuit, dni }) {
   return {
+    aceptaTerminos: true,
     razonSocial: `Cuenta Unica Postman ${s} SRL`,
     cuit,
     condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -90,7 +91,6 @@ function registroDueno({ s, cuit, dni }) {
     nombre: `Local Cuenta Unica ${s}`,
     descripcion: 'Comercio generado por la coleccion de Postman (cuenta de Mercado Pago unica)',
     telefono: '+5492964555444',
-    emailContacto: `contacto.t5u${s}@bajonea.test`,
     tipoComercio: 'RESTAURANTE',
     aceptaDelivery: false,
     aceptaRetiro: true,

@@ -195,6 +195,7 @@ agregar(
     'Registro Dueño',
     req('POST', '/auth/registro/comercio', {
       body: {
+        aceptaTerminos: true,
         razonSocial: 'Avisos A4 SRL',
         cuit: `{{${v('cuit_tmp')}}}`,
         condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -204,7 +205,6 @@ agregar(
         nombre: 'Local Avisos A4',
         descripcion: 'Comercio generado por la coleccion de Postman (avisos al equipo, E3 A4)',
         telefono: '+5492964555447',
-        emailContacto: `{{${v('d_email')}}}`,
         tipoComercio: 'RESTAURANTE',
         aceptaDelivery: true,
         aceptaRetiro: true,

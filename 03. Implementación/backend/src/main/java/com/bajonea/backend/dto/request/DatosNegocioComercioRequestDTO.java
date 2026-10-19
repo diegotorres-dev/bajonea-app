@@ -4,7 +4,6 @@ import com.bajonea.backend.enums.TipoComercio;
 import com.bajonea.backend.validation.annotations.ValidarTelefonoArgentino;
 import com.bajonea.backend.validation.annotations.ValidarUrlCloudinary;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -45,11 +44,6 @@ public class DatosNegocioComercioRequestDTO {
     @ValidarTelefonoArgentino
     @Size(max = 30, message = "El teléfono no puede superar los 30 caracteres")
     private String telefono;
-
-    @NotBlank(message = "El email de contacto es obligatorio")
-    @Email(message = "Ingresá un email de contacto con formato válido")
-    @Size(max = 150, message = "El email no puede superar los 150 caracteres")
-    private String emailContacto;
 
     @NotNull(message = "Seleccioná el tipo de comercio")
     private TipoComercio tipoComercio;

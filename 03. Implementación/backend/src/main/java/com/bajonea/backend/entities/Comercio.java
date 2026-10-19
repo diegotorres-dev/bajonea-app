@@ -59,7 +59,7 @@ public class Comercio {
     private String telefono;
 
     @Setter
-    @Column(name = "email", length = 150, nullable = false)
+    @Column(name = "email", length = 150)
     private String email;
 
     @Setter

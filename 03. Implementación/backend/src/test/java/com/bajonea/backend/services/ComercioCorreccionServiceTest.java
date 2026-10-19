@@ -92,7 +92,7 @@ class ComercioCorreccionServiceTest {
                 .thenReturn(Optional.of(filaRechazo));
         when(aprobacionPrevia.duenoTuvoComercioAprobado(DUENO_ID, COMERCIO_ID)).thenReturn(false);
         when(validadorDatosNegocio.validar(any())).thenReturn(localidad);
-        when(edicion.actualizarDatosBasicos(any(), any(), any(), any(), any())).thenReturn(List.of());
+        when(edicion.actualizarDatosBasicos(any(), any(), any(), any())).thenReturn(List.of());
         when(edicion.actualizarTipo(any(), any())).thenReturn(List.of());
         when(edicion.actualizarModalidades(any(), org.mockito.ArgumentMatchers.anyBoolean(), org.mockito.ArgumentMatchers.anyBoolean()))
                 .thenReturn(List.of());
@@ -115,7 +115,7 @@ class ComercioCorreccionServiceTest {
     }
 
     private void unCambio() {
-        when(edicion.actualizarDatosBasicos(any(), any(), any(), any(), any()))
+        when(edicion.actualizarDatosBasicos(any(), any(), any(), any()))
                 .thenReturn(List.of(new CambioComercio(CampoCambioComercio.NOMBRE, "Cafe", "Cafe Nuevo")));
     }
 
@@ -173,7 +173,7 @@ class ComercioCorreccionServiceTest {
 
         assertEquals("La solicitud cambió desde que abriste la corrección. Volvé a abrirla para continuar", error.getMessage());
         assertEquals(0, comercio.getCantidadResolicitudes());
-        verify(edicion, never()).actualizarDatosBasicos(any(), any(), any(), any(), any());
+        verify(edicion, never()).actualizarDatosBasicos(any(), any(), any(), any());
     }
 
     @Test

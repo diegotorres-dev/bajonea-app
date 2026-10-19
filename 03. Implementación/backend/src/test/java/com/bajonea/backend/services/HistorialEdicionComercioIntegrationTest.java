@@ -222,10 +222,10 @@ class HistorialEdicionComercioIntegrationTest {
 
     @Test
     void editarElPerfilRegistraLosCamposQueCambiaronYSoloEsos() {
-        ComercioPerfilRequestDTO igual = perfil("Comercio Igual", "descripcion", "+5492964111111", "contacto@bajonea.test", false, true);
+        ComercioPerfilRequestDTO igual = perfil("Comercio Igual", "descripcion", "+5492964111111", false, true);
         comercioService.editarPerfil(actor, igual);
         assertEquals(1, filas().size());
-        assertEquals("Editó: nombre, descripción, teléfono, email de contacto, modalidades de entrega", ultima().get("detalle"));
+        assertEquals("Editó: nombre, descripción, teléfono, modalidades de entrega", ultima().get("detalle"));
         assertEquals("COMERCIO", ultima().get("entidad_tipo"));
         assertEquals(dueno.comercioId(), ultima().get("entidad_id"));
         assertEquals("Comercio Igual", ultima().get("entidad_nombre"));
@@ -233,7 +233,7 @@ class HistorialEdicionComercioIntegrationTest {
         comercioService.editarPerfil(actor, igual);
         assertEquals(1, filas().size(), "Guardar lo mismo no registra nada");
 
-        comercioService.editarPerfil(actor, perfil("comercio igual", "descripcion", "+5492964222222", "contacto@bajonea.test", false, true));
+        comercioService.editarPerfil(actor, perfil("comercio igual", "descripcion", "+5492964222222", false, true));
         assertEquals("Editó: teléfono", ultima().get("detalle"));
         assertEquals(2, filas().size());
         assertTrue(!filas().stream().map(fila -> String.valueOf(fila.get("detalle"))).toList().toString().contains("2964222222"),
@@ -333,8 +333,8 @@ class HistorialEdicionComercioIntegrationTest {
         assertTrue(ultima().get("detalle").toString().endsWith("…"));
     }
 
-    private static ComercioPerfilRequestDTO perfil(String nombre, String descripcion, String telefono, String email, boolean delivery,
+    private static ComercioPerfilRequestDTO perfil(String nombre, String descripcion, String telefono, boolean delivery,
             boolean retiro) {
-        return new ComercioPerfilRequestDTO(nombre, descripcion, telefono, email, delivery, retiro);
+        return new ComercioPerfilRequestDTO(nombre, descripcion, telefono, delivery, retiro);
     }
 }

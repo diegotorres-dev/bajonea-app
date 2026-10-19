@@ -159,6 +159,7 @@ agregar(
     'Registro Dueño (con retiro en el local)',
     req('POST', '/auth/registro/comercio', {
       body: {
+        aceptaTerminos: true,
         razonSocial: 'No Retirado A4b SRL',
         cuit: `{{${v('cuit_tmp')}}}`,
         condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -168,7 +169,6 @@ agregar(
         nombre: 'Local No Retirado A4b',
         descripcion: 'Comercio generado por la coleccion de Postman (cierre como no retirado, E3 A4b)',
         telefono: '+5492964555446',
-        emailContacto: `{{${v('d_email')}}}`,
         tipoComercio: 'RESTAURANTE',
         aceptaDelivery: true,
         aceptaRetiro: true,

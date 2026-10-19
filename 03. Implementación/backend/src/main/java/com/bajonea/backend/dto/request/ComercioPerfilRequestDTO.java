@@ -1,6 +1,5 @@
 package com.bajonea.backend.dto.request;
 
-import com.bajonea.backend.validation.annotations.ValidarFormatoEmail;
 import com.bajonea.backend.validation.annotations.ValidarTelefonoArgentino;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
@@ -40,11 +39,6 @@ public class ComercioPerfilRequestDTO {
     @ValidarTelefonoArgentino
     @Size(max = 30)
     private String telefono;
-
-    @NotBlank(message = "No debe estar vacío")
-    @ValidarFormatoEmail(message = "Ingresá un email de contacto con formato válido")
-    @Size(max = 150)
-    private String emailContacto;
 
     private boolean aceptaDelivery;
 

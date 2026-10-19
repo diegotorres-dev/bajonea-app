@@ -162,6 +162,7 @@ agregar(
     'Registro Dueño',
     req('POST', '/auth/registro/comercio', {
       body: {
+        aceptaTerminos: true,
         razonSocial: 'Matriz A5 SRL',
         cuit: `{{${v('cuit_tmp')}}}`,
         condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -171,7 +172,6 @@ agregar(
         nombre: 'Local Matriz A5',
         descripcion: 'Comercio generado por la coleccion de Postman (matriz de rutas delegables, E3 A5)',
         telefono: '+5492964555444',
-        emailContacto: `{{${v('d_email')}}}`,
         tipoComercio: 'RESTAURANTE',
         aceptaDelivery: false,
         aceptaRetiro: true,

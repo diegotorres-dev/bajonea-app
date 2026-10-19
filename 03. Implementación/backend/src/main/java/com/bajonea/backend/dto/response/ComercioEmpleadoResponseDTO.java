@@ -22,7 +22,6 @@ public class ComercioEmpleadoResponseDTO {
     private final String descripcion;
     private final String fotoPerfilUrl;
     private final String telefono;
-    private final String emailContacto;
     private final TipoComercio tipoComercio;
     private final boolean aceptaDelivery;
     private final boolean aceptaRetiro;
@@ -35,7 +34,7 @@ public class ComercioEmpleadoResponseDTO {
     private final String textoReapertura;
 
     public ComercioEmpleadoResponseDTO(Integer id, String nombre, String descripcion, String fotoPerfilUrl, String telefono,
-            String emailContacto, TipoComercio tipoComercio, boolean aceptaDelivery, boolean aceptaRetiro, DireccionResponseDTO direccion,
+            TipoComercio tipoComercio, boolean aceptaDelivery, boolean aceptaRetiro, DireccionResponseDTO direccion,
             List<HorarioResponseDTO> horarios, EstadoComercio estado, boolean cerradoManualmente, boolean abiertoAhora,
             boolean puedeCambiarCierre, String textoReapertura) {
         this.id = id;
@@ -43,7 +42,6 @@ public class ComercioEmpleadoResponseDTO {
         this.descripcion = descripcion;
         this.fotoPerfilUrl = fotoPerfilUrl;
         this.telefono = telefono;
-        this.emailContacto = emailContacto;
         this.tipoComercio = tipoComercio;
         this.aceptaDelivery = aceptaDelivery;
         this.aceptaRetiro = aceptaRetiro;

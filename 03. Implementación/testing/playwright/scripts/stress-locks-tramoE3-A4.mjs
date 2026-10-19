@@ -75,6 +75,7 @@ async function nuevoDueno() {
   const nombreUsuario = `sf${u}`.slice(0, 20);
   const password = clavePropia();
   const r = await call('POST', '/auth/registro/comercio', null, {
+    aceptaTerminos: true,
     razonSocial: `StressA4 ${u} SRL`,
     cuit: cuit(),
     condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -84,7 +85,6 @@ async function nuevoDueno() {
     nombre: `StressA4 ${u}`,
     descripcion: 'x',
     telefono: tel(),
-    emailContacto: email,
     tipoComercio: 'RESTAURANTE',
     aceptaDelivery: false,
     aceptaRetiro: true,

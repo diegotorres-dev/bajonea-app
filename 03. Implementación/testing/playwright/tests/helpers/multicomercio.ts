@@ -139,7 +139,6 @@ export function payloadDesde(correccion: any, cambios: Record<string, unknown> =
     nombre: correccion.nombre,
     descripcion: correccion.descripcion,
     telefono: correccion.telefono,
-    emailContacto: correccion.emailContacto,
     tipoComercio: correccion.tipoComercio,
     aceptaDelivery: correccion.aceptaDelivery,
     aceptaRetiro: correccion.aceptaRetiro,

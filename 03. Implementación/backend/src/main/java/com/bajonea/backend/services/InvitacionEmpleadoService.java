@@ -117,6 +117,8 @@ public class InvitacionEmpleadoService {
     static final String MENSAJE_FALTAN_DATOS_DE_CUENTA = "Completá tus datos para crear tu cuenta";
     static final String MENSAJE_TERMINOS = "Tenés que aceptar los Términos y Condiciones";
     static final String CAMPO_FECHA_NACIMIENTO_CUENTA_NUEVA = "cuentaNueva.fechaNacimiento";
+    static final String CAMPO_LOCALIDAD_CUENTA_NUEVA = "cuentaNueva.direccion.localidadId";
+    static final String MENSAJE_LOCALIDAD_NO_HABILITADA = "Esa localidad todavía no está disponible";
     static final String MENSAJE_EDAD_CUENTA_NUEVA = "Tenés que tener 18 años o más para trabajar en un comercio";
     static final String MENSAJE_EDAD_CUENTA_EXISTENTE = "Tenés que tener 18 años o más para sumarte a un equipo";
 
@@ -494,6 +496,10 @@ public class InvitacionEmpleadoService {
                 && !EdadUtils.cumpleEdadMinima(request.getCuentaNueva().getFechaNacimiento(), LocalDate.now(clock),
                         EDAD_MINIMA_EMPLEADO)) {
             errores.put(CAMPO_FECHA_NACIMIENTO_CUENTA_NUEVA, MENSAJE_EDAD_CUENTA_NUEVA);
+        }
+        if (request.getCuentaNueva() != null && request.getCuentaNueva().getDireccion() != null
+                && registroService.esLocalidadExistenteNoHabilitada(request.getCuentaNueva().getDireccion().getLocalidadId())) {
+            errores.put(CAMPO_LOCALIDAD_CUENTA_NUEVA, MENSAJE_LOCALIDAD_NO_HABILITADA);
         }
         if (!errores.isEmpty()) {
             throw new ValidacionCamposException(errores);

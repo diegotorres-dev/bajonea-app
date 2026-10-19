@@ -93,7 +93,7 @@ agregar(
   item('El Dueño edita el perfil del comercio (teléfono)', req('PUT', '/comercios/perfil', {
     token: TOKEN_DUENO,
     comercio: COM,
-    rawBody: '{"nombre": "Local Pedidos A0", "descripcion": "Comercio generado por la coleccion de Postman (pedidos, E3 A0)", "telefono": "+5492964555999", "emailContacto": "{{' + a0('d_email') + '}}", "aceptaDelivery": false, "aceptaRetiro": true}',
+    rawBody: '{"nombre": "Local Pedidos A0", "descripcion": "Comercio generado por la coleccion de Postman (pedidos, E3 A0)", "telefono": "+5492964555999", "aceptaDelivery": false, "aceptaRetiro": true}',
   }), [status(200)]),
   item('El Dueño agrega una red social', req('POST', '/comercios/redes-sociales', { token: TOKEN_DUENO, comercio: COM, rawBody: '{"tipo": "TIKTOK", "url": "tiktok.com/a1-actividad"}' }), [
     status(201),

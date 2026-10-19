@@ -189,6 +189,7 @@ agregar(
     'Registro Dueño (con retiro en el local)',
     req('POST', '/auth/registro/comercio', {
       body: {
+        aceptaTerminos: true,
         razonSocial: 'Trazabilidad A3 SRL',
         cuit: `{{${v('cuit_tmp')}}}`,
         condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -198,7 +199,6 @@ agregar(
         nombre: 'Local Trazabilidad A3',
         descripcion: 'Comercio generado por la coleccion de Postman (pedido propio y trazabilidad, E3 A3)',
         telefono: '+5492964555446',
-        emailContacto: `{{${v('d_email')}}}`,
         tipoComercio: 'RESTAURANTE',
         aceptaDelivery: true,
         aceptaRetiro: true,

@@ -173,16 +173,15 @@ test.describe('Rol Empleado, E3 bloque A2 (API): escrituras delegadas', () => {
   });
 
   test.describe('Datos operativos del perfil', () => {
-    test('el Empleado edita descripción y teléfono, recibe el perfil reducido con el email de contacto y queda registrado', async ({ request }) => {
+    test('el Empleado edita descripción y teléfono, recibe el perfil reducido y queda registrado', async ({ request }) => {
       const comercioId = await comercioDelEquipo(request);
       const nombreAntes = sql(`SELECT nombre FROM comercio WHERE id = ${comercioId};`);
-      const emailAntes = sql(`SELECT email FROM comercio WHERE id = ${comercioId};`);
 
       const respuesta = await escribir(request, 'PUT', '/comercios/perfil/datos-operativos', empleadoToken, comercioId, { descripcion: 'Descripción A2 nueva', telefono: '+5492964111222' });
       expect(respuesta.status, JSON.stringify(respuesta.body)).toBe(200);
       expect(respuesta.body.data.descripcion).toBe('Descripción A2 nueva');
       expect(respuesta.body.data.telefono).toBe('+5492964111222');
-      expect(respuesta.body.data.emailContacto).toBe(emailAntes);
+      expect(Object.keys(respuesta.body.data)).not.toContain('emailContacto');
       for (const campo of CAMPOS_FISCALES) {
         expect(Object.keys(respuesta.body.data), campo).not.toContain(campo);
       }
@@ -192,11 +191,11 @@ test.describe('Rol Empleado, E3 bloque A2 (API): escrituras delegadas', () => {
       );
     });
 
-    test('el perfil que ve el Empleado ahora incluye el email de contacto, solo lectura', async ({ request }) => {
+    test('el perfil que ve el Empleado no incluye el email de contacto', async ({ request }) => {
       const comercioId = await comercioDelEquipo(request);
       const perfil = await escribir(request, 'GET', '/comercios/perfil', empleadoToken, comercioId);
       expect(perfil.status).toBe(200);
-      expect(perfil.body.data.emailContacto).toBe(sql(`SELECT email FROM comercio WHERE id = ${comercioId};`));
+      expect(Object.keys(perfil.body.data)).not.toContain('emailContacto');
     });
 
     test('un cuerpo con cualquier campo exclusivo del Dueño da 400 y no cambia nada', async ({ request }) => {

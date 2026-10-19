@@ -75,6 +75,7 @@ const horariosTodosLosDias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES
 }));
 
 const registroComercio = (cuit, dniRep, usuario, email, password, nombre) => ({
+  aceptaTerminos: true,
   razonSocial: `${nombre} SRL`,
   cuit,
   condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -84,7 +85,6 @@ const registroComercio = (cuit, dniRep, usuario, email, password, nombre) => ({
   nombre,
   descripcion: 'Comercio generado por la coleccion de Postman (rol Empleado, E2)',
   telefono: '+5492964555444',
-  emailContacto: email,
   tipoComercio: 'RESTAURANTE',
   aceptaDelivery: false,
   aceptaRetiro: true,
@@ -254,7 +254,6 @@ const CAMPOS_PERFIL = [
   'cerradoManualmente',
   'descripcion',
   'direccion',
-  'emailContacto',
   'estado',
   'fotoPerfilUrl',
   'horarios',
@@ -295,7 +294,7 @@ const get = (nombre, ruta, token, comercio, testLines, pre = []) => item(nombre,
 agregar(
   get('Dueño: perfil completo de A (referencia de los datos fiscales)', '/comercios/perfil', TOKEN_D1, COM_A, [
     status(200),
-    `pm.test('El Dueño recibe el DTO completo', () => ${JSON.stringify(['cuit', 'razonSocial', 'condicionIva', 'tipoSociedad', 'domicilioFiscal', 'fechaInicioActividades', 'representante', 'emailContacto', 'puedeCambiarCierre'])}.forEach((c) => pm.expect(pm.response.json().data).to.have.property(c)));`,
+    `pm.test('El Dueño recibe el DTO completo', () => ${JSON.stringify(['cuit', 'razonSocial', 'condicionIva', 'tipoSociedad', 'domicilioFiscal', 'fechaInicioActividades', 'representante', 'puedeCambiarCierre'])}.forEach((c) => pm.expect(pm.response.json().data).to.have.property(c)));`,
     guardar(v('cuit_a'), 'pm.response.json().data.cuit'),
     guardar(v('razon_a'), 'pm.response.json().data.razonSocial'),
     guardar(v('nombre_a'), 'pm.response.json().data.nombre'),
@@ -306,7 +305,7 @@ agregar(
     mensajeEs('Perfil obtenido correctamente'),
     `pm.test('Solo los campos de la lista blanca', () => pm.expect(Object.keys(pm.response.json().data).sort()).to.eql(${JSON.stringify(CAMPOS_PERFIL)}));`,
     `pm.test('Ninguno de los campos excluidos', () => ${JSON.stringify(CAMPOS_EXCLUIDOS)}.forEach((c) => pm.expect(pm.response.json().data).to.not.have.property(c)));`,
-    "pm.test('Sin el CUIT ni la razón social, y el email aparece a lo sumo una vez, como emailContacto', () => { const t = pm.response.text(); pm.expect(t).to.not.include(pm.environment.get('e2_cuit_a')); pm.expect(t).to.not.include(pm.environment.get('e2_razon_a')); pm.expect(t.split(pm.environment.get('e2_d1_email')).length - 1).to.be.at.most(1); });",
+    "pm.test('Sin el CUIT ni la razón social, y sin el email del Dueño', () => { const t = pm.response.text(); pm.expect(t).to.not.include(pm.environment.get('e2_cuit_a')); pm.expect(t).to.not.include(pm.environment.get('e2_razon_a')); pm.expect(t).to.not.include(pm.environment.get('e2_d1_email')); });",
     "pm.test('Sin nada de Mercado Pago', () => pm.expect(pm.response.text().toLowerCase()).to.not.include('mercadopago'));",
     "pm.test('Tipo de comercio, modalidades, puedeCambiarCierre y textoReapertura iguales a los del Dueño', () => { const e = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_perfil_dueno_ref')); ['tipoComercio', 'aceptaDelivery', 'aceptaRetiro', 'puedeCambiarCierre', 'textoReapertura'].forEach((c) => pm.expect(e[c]).to.eql(d[c])); });",
     "pm.test('El nombre es el del comercio', () => pm.expect(pm.response.json().data.nombre).to.eql(pm.environment.get('e2_nombre_a')));",

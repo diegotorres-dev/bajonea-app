@@ -1078,6 +1078,7 @@ test.describe('Invitaciones de empleado (API), tramo E1', () => {
       const suf = sufijoUnico();
       const payload = (emailDeRegistro: string, dniRepresentante: string) => ({
         fotoPerfilUrl: 'https://res.cloudinary.com/demo/image/upload/ex-empleado.jpg',
+        aceptaTerminos: true,
         razonSocial: `Ex Empleado SRL ${suf}`,
         cuit: generarCuit(),
         condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -1087,7 +1088,6 @@ test.describe('Invitaciones de empleado (API), tramo E1', () => {
         nombre: `Ex Empleado ${suf}`,
         descripcion: 'Intento de registro de un ex Empleado',
         telefono: '+5492964555444',
-        emailContacto: emailDeRegistro,
         tipoComercio: 'RESTAURANTE',
         aceptaDelivery: true,
         aceptaRetiro: false,

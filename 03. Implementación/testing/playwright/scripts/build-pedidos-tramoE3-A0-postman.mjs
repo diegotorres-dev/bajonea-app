@@ -92,6 +92,7 @@ agregar(
     'Registro Dueño',
     req('POST', '/auth/registro/comercio', {
       body: {
+        aceptaTerminos: true,
         razonSocial: 'Pedidos A0 SRL',
         cuit: `{{${v('cuit_tmp')}}}`,
         condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -101,7 +102,6 @@ agregar(
         nombre: 'Local Pedidos A0',
         descripcion: 'Comercio generado por la coleccion de Postman (pedidos, E3 A0)',
         telefono: '+5492964555444',
-        emailContacto: `{{${v('d_email')}}}`,
         tipoComercio: 'RESTAURANTE',
         aceptaDelivery: false,
         aceptaRetiro: true,

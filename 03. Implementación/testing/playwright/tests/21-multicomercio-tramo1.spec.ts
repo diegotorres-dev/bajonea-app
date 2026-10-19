@@ -163,7 +163,6 @@ test.describe('Multi-comercio, tramo 1: resolución del comercio activo y aislam
       nombre: 'Comercio Unico Editado',
       descripcion: 'Descripción de prueba',
       telefono: '+5492964123456',
-      emailContacto: 'unico.editado@bajonea.test',
       aceptaDelivery: false,
       aceptaRetiro: true,
     });
@@ -302,7 +301,6 @@ test.describe('Multi-comercio, tramo 1: resolución del comercio activo y aislam
       nombre: 'Comercio B Editado',
       descripcion: 'Solo cambia B',
       telefono: '+5492964654321',
-      emailContacto: 'b.editado@bajonea.test',
       aceptaDelivery: false,
       aceptaRetiro: true,
     });

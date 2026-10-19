@@ -63,6 +63,7 @@ async function nuevoDueno() {
   const nombreUsuario = `sa${u}`.slice(0, 20);
   const password = `Pw${uniq()}x`;
   const r = await call('POST', '/auth/registro/comercio', null, {
+    aceptaTerminos: true,
     razonSocial: `StressA1 ${u} SRL`,
     cuit: cuit(),
     condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -72,7 +73,6 @@ async function nuevoDueno() {
     nombre: `StressA1 ${u}`,
     descripcion: 'x',
     telefono: tel(),
-    emailContacto: email,
     tipoComercio: 'RESTAURANTE',
     aceptaDelivery: false,
     aceptaRetiro: true,
@@ -121,7 +121,7 @@ async function duenoOperativo(admin, categoriaId) {
 }
 
 const editarPerfil = (d) => call('PUT', '/comercios/perfil', d.token, {
-  nombre: `Stress A1 ${uniq()}`, descripcion: 'x', telefono: tel(), emailContacto: d.email, aceptaDelivery: false, aceptaRetiro: true,
+  nombre: `Stress A1 ${uniq()}`, descripcion: 'x', telefono: tel(), aceptaDelivery: false, aceptaRetiro: true,
 }, cabecera(d));
 const editarProducto = (d) => call('PUT', `/productos/${d.productoId}`, d.token,
   { nombre: `Producto ${uniq()}`, precio: 1000 + aleatorio(9000), categoriaId: d.categoriaId }, cabecera(d));

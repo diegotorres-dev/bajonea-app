@@ -172,6 +172,7 @@ agregar(
     'Registro Dueño',
     req('POST', '/auth/registro/comercio', {
       body: {
+        aceptaTerminos: true,
         razonSocial: 'Orden A5b SRL',
         cuit: `{{${v('cuit_tmp')}}}`,
         condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -181,7 +182,6 @@ agregar(
         nombre: 'Local Orden A5b',
         descripcion: 'Comercio generado por la coleccion de Postman (orden unico de bloqueo, E3 A5b)',
         telefono: '+5492964555444',
-        emailContacto: `{{${v('d_email')}}}`,
         tipoComercio: 'RESTAURANTE',
         aceptaDelivery: false,
         aceptaRetiro: true,

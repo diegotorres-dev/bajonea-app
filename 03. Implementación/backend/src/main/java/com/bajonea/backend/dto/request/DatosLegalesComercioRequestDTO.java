@@ -30,9 +30,9 @@ import lombok.Setter;
 @NoArgsConstructor
 public class DatosLegalesComercioRequestDTO {
 
-    @NotBlank(message = "La razón social es obligatoria")
     @Pattern(regexp = ".*[\\p{L}0-9].*", message = "La razón social no puede contener solo caracteres especiales")
     @Size(max = 150, message = "La razón social no puede superar los 150 caracteres")
+    @Setter(AccessLevel.NONE)
     private String razonSocial;
 
     @NotBlank(message = "El CUIT es obligatorio")
@@ -40,10 +40,8 @@ public class DatosLegalesComercioRequestDTO {
     @Setter(AccessLevel.NONE)
     private String cuit;
 
-    @NotNull(message = "Seleccioná la condición ante el IVA")
     private CondicionIva condicionIva;
 
-    @NotNull(message = "Seleccioná el tipo de sociedad")
     private TipoPersonaJuridica tipoSociedad;
 
     @NotBlank(message = "El domicilio fiscal es obligatorio")
@@ -51,7 +49,6 @@ public class DatosLegalesComercioRequestDTO {
     @Size(max = 255, message = "El domicilio fiscal no puede superar los 255 caracteres")
     private String domicilioFiscal;
 
-    @NotNull(message = "La fecha de inicio de actividades es obligatoria")
     @PastOrPresent(message = "La fecha ingresada no es válida")
     private LocalDate fechaInicioActividades;
 
@@ -80,6 +77,10 @@ public class DatosLegalesComercioRequestDTO {
     @NotNull(message = "La fecha de nacimiento es obligatoria")
     @ValidarFechaNacimientoRepresentante
     private LocalDate fechaNacimientoRepresentante;
+
+    public void setRazonSocial(String razonSocial) {
+        this.razonSocial = razonSocial == null || razonSocial.isBlank() ? null : razonSocial.trim();
+    }
 
     public void setCuit(String cuit) {
         this.cuit = cuit == null ? null : cuit.replaceAll("[^0-9]", "");

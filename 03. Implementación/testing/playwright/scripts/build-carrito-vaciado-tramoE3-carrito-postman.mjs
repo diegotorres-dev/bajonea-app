@@ -124,6 +124,7 @@ agregar(
     'Registro Dueño',
     req('POST', '/auth/registro/comercio', {
       body: {
+        aceptaTerminos: true,
         razonSocial: 'Carrito E3 SRL',
         cuit: `{{${v('cuit_tmp')}}}`,
         condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -133,7 +134,6 @@ agregar(
         nombre: 'Local Carrito E3',
         descripcion: 'Comercio generado por la coleccion de Postman (carrito sin fallos por filas ya borradas)',
         telefono: '+5492964555447',
-        emailContacto: `{{${v('d_email')}}}`,
         tipoComercio: 'RESTAURANTE',
         aceptaDelivery: true,
         aceptaRetiro: true,

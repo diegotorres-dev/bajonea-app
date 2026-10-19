@@ -32,7 +32,6 @@ public class ComercioResponseDTO {
     private final String descripcion;
     private final String fotoPerfilUrl;
     private final String telefono;
-    private final String emailContacto;
     private final TipoComercio tipoComercio;
     private final boolean aceptaDelivery;
     private final boolean aceptaRetiro;
@@ -58,7 +57,6 @@ public class ComercioResponseDTO {
             String descripcion,
             String fotoPerfilUrl,
             String telefono,
-            String emailContacto,
             TipoComercio tipoComercio,
             boolean aceptaDelivery,
             boolean aceptaRetiro,
@@ -82,7 +80,6 @@ public class ComercioResponseDTO {
         this.descripcion = descripcion;
         this.fotoPerfilUrl = fotoPerfilUrl;
         this.telefono = telefono;
-        this.emailContacto = emailContacto;
         this.tipoComercio = tipoComercio;
         this.aceptaDelivery = aceptaDelivery;
         this.aceptaRetiro = aceptaRetiro;

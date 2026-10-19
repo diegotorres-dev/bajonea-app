@@ -111,13 +111,13 @@ class EscriturasEmpleadoHttpIntegrationTest {
     }
 
     @Test
-    void elEmpleadoEditaDescripcionYTelefonoYRecibeElPerfilReducidoConElEmailDeContacto() throws Exception {
+    void elEmpleadoEditaDescripcionYTelefonoYRecibeElPerfilReducidoSinElEmailDeContacto() throws Exception {
         Escenario e = escenario("APTO_VENTA");
 
         JsonNode respuesta = cuerpo(datosOperativos(e.tokenEmpleado(), e.dueno().comercioId(), DATOS_OK).andExpect(status().isOk()));
 
         assertEquals("Descripcion HTTP", respuesta.path("data").path("descripcion").asText());
-        assertTrue(respuesta.path("data").has("emailContacto"));
+        assertFalse(respuesta.path("data").has("emailContacto"));
         assertFalse(respuesta.path("data").has("cuit"));
         assertFalse(respuesta.path("data").has("representante"));
         assertEquals("EMPLEADO", jdbcTemplate.queryForObject(

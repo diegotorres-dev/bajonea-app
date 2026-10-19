@@ -27,6 +27,7 @@ async function registrarYVerificarComercioSinCloudinaryReal(request: APIRequestC
   const password = 'Testing123';
   const payload = {
     fotoPerfilUrl: 'https://res.cloudinary.com/demo/image/upload/v1/comercios/fixture.jpg',
+    aceptaTerminos: true,
     razonSocial: `Razon Social Tarifas E2E ${suf}`,
     cuit: generarCuit(),
     condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -36,7 +37,6 @@ async function registrarYVerificarComercioSinCloudinaryReal(request: APIRequestC
     nombre: `Comercio Tarifas E2E ${suf}`,
     descripcion: 'Comercio de prueba generado por Playwright (spec 18, sin Cloudinary real)',
     telefono: `+549${generarTelefono()}`,
-    emailContacto: email,
     tipoComercio: 'RESTAURANTE',
     aceptaDelivery: true,
     aceptaRetiro: false,

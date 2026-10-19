@@ -77,7 +77,7 @@ class HistorialEdicionComercioLockIntegrationTest {
             Future<?> escritura = hilos.submit(() -> {
                 escrituraLanzada.countDown();
                 comercioService.editarPerfil(actor, new ComercioPerfilRequestDTO("Nombre Nuevo Lock", "descripcion", "+5492964333333",
-                        "lock@bajonea.test", true, false));
+                        true, false));
             });
 
             bloqueoDeCuenta.get(30, TimeUnit.SECONDS);
@@ -111,7 +111,7 @@ class HistorialEdicionComercioLockIntegrationTest {
                         try {
                             largada.await(10, TimeUnit.SECONDS);
                             comercioService.editarPerfil(actor, new ComercioPerfilRequestDTO("Comercio Concurrente", "descripcion", telefono,
-                                    "concurrente@bajonea.test", true, false));
+                                    true, false));
                         } catch (Exception e) {
                             fallos.add(e);
                         }

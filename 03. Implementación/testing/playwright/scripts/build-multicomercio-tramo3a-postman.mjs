@@ -76,6 +76,7 @@ const horariosTodosLosDias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES
 
 function registroDueno({ s, cuit, dni }) {
   return {
+    aceptaTerminos: true,
     razonSocial: `Correccion Postman ${s} SRL`,
     cuit,
     condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -85,7 +86,6 @@ function registroDueno({ s, cuit, dni }) {
     nombre: `Local Correccion ${s}`,
     descripcion: 'Comercio generado por la coleccion de Postman (correccion de rechazados)',
     telefono: '+5492964555444',
-    emailContacto: `contacto.r${s}@bajonea.test`,
     tipoComercio: 'RESTAURANTE',
     aceptaDelivery: false,
     aceptaRetiro: true,
@@ -178,7 +178,7 @@ function correccionYGuardar(nombre, s, comVar, testLines = []) {
   const l = v(s, 'legales');
   return correccion(nombre, s, comVar, 200, [
     'const d = pm.response.json().data;',
-    `const base = { nombre: d.nombre, descripcion: d.descripcion, telefono: d.telefono, emailContacto: d.emailContacto, tipoComercio: d.tipoComercio, aceptaDelivery: d.aceptaDelivery, aceptaRetiro: d.aceptaRetiro, fotoPerfilUrl: d.fotoPerfilUrl, direccion: { calle: d.direccion.calle, numero: d.direccion.numero, pisoDepto: d.direccion.pisoDepto, codigoPostal: d.direccion.codigoPostal, localidadId: d.direccion.localidadId, principal: false }, horarios: d.horarios.map((h) => ({ diaSemana: h.diaSemana, horaApertura: h.horaApertura, horaCierre: h.horaCierre })), redesSociales: d.redesSociales.map((r) => ({ tipo: r.tipo, url: r.url })), tokenVersion: d.tokenVersion };`,
+    `const base = { nombre: d.nombre, descripcion: d.descripcion, telefono: d.telefono, tipoComercio: d.tipoComercio, aceptaDelivery: d.aceptaDelivery, aceptaRetiro: d.aceptaRetiro, fotoPerfilUrl: d.fotoPerfilUrl, direccion: { calle: d.direccion.calle, numero: d.direccion.numero, pisoDepto: d.direccion.pisoDepto, codigoPostal: d.direccion.codigoPostal, localidadId: d.direccion.localidadId, principal: false }, horarios: d.horarios.map((h) => ({ diaSemana: h.diaSemana, horaApertura: h.horaApertura, horaCierre: h.horaCierre })), redesSociales: d.redesSociales.map((r) => ({ tipo: r.tipo, url: r.url })), tokenVersion: d.tokenVersion };`,
     `pm.environment.set('${b}', JSON.stringify(base));`,
     `if (d.legales) { const g = d.legales; pm.environment.set('${l}', JSON.stringify({ razonSocial: g.razonSocial, cuit: g.cuit, condicionIva: g.condicionIva, tipoSociedad: g.tipoSociedad, domicilioFiscal: g.domicilioFiscal, fechaInicioActividades: g.fechaInicioActividades, nombreRepresentante: g.representante.nombre, apellidoRepresentante: g.representante.apellido, dniRepresentante: g.representante.dni, telefonoRepresentante: g.representante.telefono, fechaNacimientoRepresentante: g.representante.fechaNacimiento })); } else { pm.environment.set('${l}', ''); }`,
     ...testLines,
@@ -362,7 +362,7 @@ items.push(
       nombre: 'Adicional Correccion M',
       descripcion: 'Adicional que despues se rechaza',
       telefono: '+5492964555444',
-      emailContacto: 'adicional.rm@bajonea.test',
+      aceptaTerminos: true,
       tipoComercio: 'RESTAURANTE',
       aceptaDelivery: false,
       aceptaRetiro: true,
@@ -402,7 +402,7 @@ const altaN = (nombre, testLines, nombreComercio = 'Alta Posterior N') =>
       nombre: nombreComercio,
       descripcion: 'Comercio dado de alta despues de un rechazo definitivo',
       telefono: '+5492964555444',
-      emailContacto: 'alta.rn@bajonea.test',
+      aceptaTerminos: true,
       tipoComercio: 'RESTAURANTE',
       aceptaDelivery: false,
       aceptaRetiro: true,
@@ -448,7 +448,7 @@ items.push(
       nombre: '{{rN_nombre}}',
       descripcion: 'Igual al rechazado definitivamente',
       telefono: '+5492964555444',
-      emailContacto: 'alta.rn@bajonea.test',
+      aceptaTerminos: true,
       tipoComercio: 'RESTAURANTE',
       aceptaDelivery: false,
       aceptaRetiro: true,

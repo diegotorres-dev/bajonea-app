@@ -77,6 +77,7 @@ async function nuevoDueno() {
   const email = `stressc1.${u}@bajonea.test`;
   const nombreUsuario = `sg${u}`.slice(0, 20);
   const r = await call('POST', '/auth/registro/comercio', null, {
+    aceptaTerminos: true,
     razonSocial: `StressC1 ${u} SRL`,
     cuit: cuit(),
     condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -86,7 +87,6 @@ async function nuevoDueno() {
     nombre: `StressC1 ${u}`,
     descripcion: 'x',
     telefono: tel(),
-    emailContacto: email,
     tipoComercio: 'RESTAURANTE',
     aceptaDelivery: false,
     aceptaRetiro: true,
@@ -152,7 +152,7 @@ const cabecera = (dueno) => ({ 'X-Comercio-Id': String(dueno.comercioId) });
 const cerrar = (dueno) => call('PUT', '/comercios/cerrar', dueno.token, undefined, cabecera(dueno));
 const abrir = (dueno) => call('PUT', '/comercios/abrir', dueno.token, undefined, cabecera(dueno));
 const editarPerfil = (dueno, nombre) =>
-  call('PUT', '/comercios/perfil', dueno.token, { nombre, descripcion: 'x', telefono: tel(), emailContacto: dueno.email, aceptaDelivery: false, aceptaRetiro: true }, cabecera(dueno));
+  call('PUT', '/comercios/perfil', dueno.token, { nombre, descripcion: 'x', telefono: tel(), aceptaDelivery: false, aceptaRetiro: true }, cabecera(dueno));
 const desvincular = (dueno) => call('DELETE', '/oauth/mercadopago/desvincular', dueno.token);
 const vincular = (dueno, mpUserId) => call('POST', `/test/duenos/${dueno.duenoId}/mercadopago-simulada${mpUserId ? `?mpUserId=${mpUserId}` : ''}`);
 const correrJob = (ahora) => call('POST', `/test/jobs/reapertura-comercios${ahora ? `?ahora=${encodeURIComponent(ahora)}` : ''}`);

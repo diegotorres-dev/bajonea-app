@@ -157,7 +157,6 @@ function payloadDesde(correccion: any, cambios: Record<string, unknown> = {}) {
     nombre: correccion.nombre,
     descripcion: correccion.descripcion,
     telefono: correccion.telefono,
-    emailContacto: correccion.emailContacto,
     tipoComercio: correccion.tipoComercio,
     aceptaDelivery: correccion.aceptaDelivery,
     aceptaRetiro: correccion.aceptaRetiro,
@@ -418,7 +417,6 @@ test.describe('Multi-comercio, tramo 3A: corrección y re-solicitud de comercios
           aceptaRetiro: true,
           fotoPerfilUrl: foto,
           telefono: '+5492964000111',
-          emailContacto: 'otro.contacto.e2e@bajonea.test',
           direccion: { calle: 'Belgrano', numero: '250', pisoDepto: '2B', codigoPostal: '9420', localidadId, principal: false },
           redesSociales: [
             { tipo: 'INSTAGRAM', url: urlInstagram },
@@ -430,7 +428,6 @@ test.describe('Multi-comercio, tramo 3A: corrección y re-solicitud de comercios
       expect(respuesta.status).toBe(200);
       expect(camposDeLosCambios(dueno.comercioId)).toEqual([
         'DIRECCION',
-        'EMAIL_CONTACTO',
         'FOTO_PERFIL',
         'MODALIDADES',
         'REDES_SOCIALES',

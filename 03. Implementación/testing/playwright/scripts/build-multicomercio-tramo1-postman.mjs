@@ -65,6 +65,7 @@ const horariosTodosLosDias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES
 
 function registroDueno(sufijo, cuit, dni) {
   return {
+    aceptaTerminos: true,
     razonSocial: `Multi Postman ${sufijo} SRL`,
     cuit,
     condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -73,7 +74,6 @@ function registroDueno(sufijo, cuit, dni) {
     fechaInicioActividades: '2020-01-01',
     nombre: `Multi Postman ${sufijo}`,
     telefono: '+5492964555444',
-    emailContacto: `contacto.multi${sufijo}@bajonea.test`,
     tipoComercio: 'RESTAURANTE',
     aceptaDelivery: false,
     aceptaRetiro: true,
@@ -331,7 +331,7 @@ items.push(
   item('[aislamiento] Editar el perfil de B', req('PUT', '/comercios/perfil', {
     token: 'token_comercio_m',
     headers: { [HEADER]: '{{comercio_m_b_id}}' },
-    body: { nombre: 'Multi Postman B Editado', descripcion: 'Solo cambia B', telefono: '+5492964654321', emailContacto: 'b.editado@bajonea.test', aceptaDelivery: false, aceptaRetiro: true },
+    body: { nombre: 'Multi Postman B Editado', descripcion: 'Solo cambia B', telefono: '+5492964654321', aceptaDelivery: false, aceptaRetiro: true },
   }), [
     status(200),
     "pm.test('Cambio B', () => { const d = pm.response.json().data; pm.expect(d.id).to.eql(Number(pm.environment.get('comercio_m_b_id'))); pm.expect(d.nombre).to.eql('Multi Postman B Editado'); });",

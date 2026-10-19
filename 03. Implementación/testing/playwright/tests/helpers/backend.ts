@@ -335,6 +335,7 @@ export async function registrarComercio(
   const fotoPerfilUrl = await subirFotoPreRegistro(request, 'comercio');
   const payload = {
     fotoPerfilUrl,
+    aceptaTerminos: true,
     razonSocial: `Razon Social E2E ${suf}`,
     cuit: generarCuit(),
     condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -344,7 +345,6 @@ export async function registrarComercio(
     nombre,
     descripcion: 'Comercio de prueba generado por Playwright (Fase 17)',
     telefono: generarTelefonoCompleto(),
-    emailContacto: email,
     tipoComercio: opciones.tipoComercio || 'RESTAURANTE',
     aceptaDelivery: opciones.aceptaDelivery ?? true,
     aceptaRetiro: opciones.aceptaRetiro ?? false,
@@ -688,7 +688,7 @@ export interface DatosAltaAdicional {
   nombre: string;
   descripcion: string;
   telefono: string;
-  emailContacto: string;
+  aceptaTerminos: boolean;
   tipoComercio: string;
   aceptaDelivery: boolean;
   aceptaRetiro: boolean;
@@ -715,7 +715,7 @@ export function payloadAltaAdicional(
     nombre: `Adicional E2E ${suf}`,
     descripcion: 'Comercio adicional generado por Playwright (multi-comercio, tramo 2A)',
     telefono: generarTelefonoCompleto(),
-    emailContacto: `adicional.e2e.${suf}@bajonea.test`,
+    aceptaTerminos: true,
     tipoComercio: 'RESTAURANTE',
     aceptaDelivery: true,
     aceptaRetiro: false,

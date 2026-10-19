@@ -5,11 +5,13 @@ import com.bajonea.backend.dto.request.HorarioRequestDTO;
 import com.bajonea.backend.dto.request.RedSocialRequestDTO;
 import com.bajonea.backend.entities.Localidad;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
+import com.bajonea.backend.exceptions.ValidacionCamposException;
 import com.bajonea.backend.exceptions.ValidacionException;
 import com.bajonea.backend.repositories.LocalidadRepository;
 import com.bajonea.backend.util.ComercioTextoLegible;
 import com.bajonea.backend.util.ComercioValidaciones;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -24,7 +26,13 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ValidadorDatosNegocioComercio {
 
+    static final String CAMPO_LOCALIDAD = "direccion.localidadId";
+
+    static final String MENSAJE_LOCALIDAD_NO_HABILITADA = "Esa localidad todavía no está disponible";
+
     private final LocalidadRepository localidadRepository;
+
+    private final LocalidadesHabilitadas localidadesHabilitadas;
 
     /**
      * Valida los datos del negocio y devuelve la {@link Localidad} de la dirección.
@@ -36,9 +44,23 @@ public class ValidadorDatosNegocioComercio {
         return obtenerLocalidad(datos.getDireccion().getLocalidadId());
     }
 
+    /**
+     * La localidad tiene que existir ({@code 404} si no) y estar entre las habilitadas ({@code 400} con el error
+     * por campo si existe pero no lo está): lo usan el registro de Cliente, el alta por invitación, el registro
+     * de Comercio, el alta adicional y la corrección de un rechazado.
+     */
     public Localidad obtenerLocalidad(String localidadId) {
-        return localidadRepository.findById(localidadId)
+        Localidad localidad = localidadRepository.findById(localidadId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("La localidad indicada no existe"));
+        if (!localidadesHabilitadas.contiene(localidad.getId())) {
+            throw new ValidacionCamposException(Map.of(CAMPO_LOCALIDAD, MENSAJE_LOCALIDAD_NO_HABILITADA));
+        }
+        return localidad;
+    }
+
+    /** {@code true} si la localidad existe pero no está habilitada; una inexistente la resuelve {@link #obtenerLocalidad}. */
+    public boolean esLocalidadExistenteNoHabilitada(String localidadId) {
+        return localidadId != null && !localidadesHabilitadas.contiene(localidadId) && localidadRepository.existsById(localidadId);
     }
 
     private void validarRedesSociales(List<RedSocialRequestDTO> redesSociales) {

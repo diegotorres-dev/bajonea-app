@@ -66,14 +66,13 @@ public class ComercioEdicionService {
     private final PersonaFisicaRepository personaFisicaRepository;
     private final CloudinaryService cloudinaryService;
 
-    /** Nombre, descripción, teléfono y email de contacto. */
+    /** Nombre, descripción y teléfono. */
     public List<CambioComercio> actualizarDatosBasicos(Comercio comercio, String nombre, String descripcion,
-            String telefono, String emailContacto) {
+            String telefono) {
         List<CambioComercio> cambios = new ArrayList<>();
         String nuevoNombre = TextoUtils.aTitleCase(limpiar(nombre));
         String nuevaDescripcion = limpiar(descripcion);
         String nuevoTelefono = limpiar(telefono);
-        String nuevoEmail = limpiar(emailContacto);
 
         if (registrar(cambios, CampoCambioComercio.NOMBRE, comercio.getNombre(), nuevoNombre)) {
             comercio.setNombre(nuevoNombre);
@@ -83,9 +82,6 @@ public class ComercioEdicionService {
         }
         if (registrar(cambios, CampoCambioComercio.TELEFONO, comercio.getTelefono(), nuevoTelefono)) {
             comercio.setTelefono(nuevoTelefono);
-        }
-        if (registrar(cambios, CampoCambioComercio.EMAIL_CONTACTO, comercio.getEmail(), nuevoEmail)) {
-            comercio.setEmail(nuevoEmail);
         }
         guardarSiCambio(comercio, cambios);
         return cambios;

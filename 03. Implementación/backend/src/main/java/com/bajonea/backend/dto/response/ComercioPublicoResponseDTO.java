@@ -21,13 +21,10 @@ public class ComercioPublicoResponseDTO {
     private final String descripcion;
     private final String fotoPerfilUrl;
     private final String telefono;
-    private final String emailContacto;
     private final TipoComercio tipoComercio;
     private final boolean aceptaDelivery;
     private final boolean aceptaRetiro;
     private final EstadoComercio estado;
-    private final String razonSocial;
-    private final String cuit;
     private final DireccionResponseDTO direccion;
     private final List<HorarioResponseDTO> horarios;
     private final EstadoApertura estadoApertura;
@@ -39,13 +36,10 @@ public class ComercioPublicoResponseDTO {
             String descripcion,
             String fotoPerfilUrl,
             String telefono,
-            String emailContacto,
             TipoComercio tipoComercio,
             boolean aceptaDelivery,
             boolean aceptaRetiro,
             EstadoComercio estado,
-            String razonSocial,
-            String cuit,
             DireccionResponseDTO direccion,
             List<HorarioResponseDTO> horarios,
             EstadoApertura estadoApertura,
@@ -55,13 +49,10 @@ public class ComercioPublicoResponseDTO {
         this.descripcion = descripcion;
         this.fotoPerfilUrl = fotoPerfilUrl;
         this.telefono = telefono;
-        this.emailContacto = emailContacto;
         this.tipoComercio = tipoComercio;
         this.aceptaDelivery = aceptaDelivery;
         this.aceptaRetiro = aceptaRetiro;
         this.estado = estado;
-        this.razonSocial = razonSocial;
-        this.cuit = cuit;
         this.direccion = direccion;
         this.horarios = horarios;
         this.estadoApertura = estadoApertura;

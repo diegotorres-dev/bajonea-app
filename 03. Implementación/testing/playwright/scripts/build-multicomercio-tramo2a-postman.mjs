@@ -68,6 +68,7 @@ const horariosTodosLosDias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES
 
 function registroDueno({ sufijo, cuit, dni }) {
   return {
+    aceptaTerminos: true,
     razonSocial: `Alta Postman ${sufijo} SRL`,
     cuit,
     condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -76,7 +77,6 @@ function registroDueno({ sufijo, cuit, dni }) {
     fechaInicioActividades: '2020-01-01',
     nombre: `Alta Postman ${sufijo}`,
     telefono: '+5492964555444',
-    emailContacto: `contacto.alta${sufijo}@bajonea.test`,
     tipoComercio: 'RESTAURANTE',
     aceptaDelivery: false,
     aceptaRetiro: true,
@@ -100,7 +100,7 @@ function cuerpoAlta(mutar) {
     nombre: 'Sucursal Postman Base',
     descripcion: 'Comercio adicional generado por la coleccion de Postman',
     telefono: '+5492964555444',
-    emailContacto: 'contacto.adicional@bajonea.test',
+    aceptaTerminos: true,
     tipoComercio: 'RESTAURANTE',
     aceptaDelivery: false,
     aceptaRetiro: true,
@@ -247,8 +247,8 @@ const invalidos = [
   ['descripcion de mas de 2000 caracteres', (c) => (c.descripcion = 'D'.repeat(2001))],
   ['sin telefono', (c) => delete c.telefono],
   ['telefono con formato invalido', (c) => (c.telefono = 'abc')],
-  ['sin email de contacto', (c) => delete c.emailContacto],
-  ['email de contacto con formato invalido', (c) => (c.emailContacto = 'no-es-un-email')],
+  ['sin aceptar los terminos', (c) => delete c.aceptaTerminos],
+  ['aceptaTerminos en false', (c) => (c.aceptaTerminos = false)],
   ['sin tipo de comercio', (c) => delete c.tipoComercio],
   ['tipo de comercio inexistente', (c) => (c.tipoComercio = 'INVENTADO')],
   ['sin direccion', (c) => delete c.direccion],
@@ -313,10 +313,9 @@ items.push(
     "pm.test('No esta en el catalogo', () => pm.expect(pm.response.json().data.map((c) => c.id)).to.not.include(Number(pm.environment.get('alta_p_b_id'))));",
   ]),
   altaP('[alta] Ok: el header X-Comercio-Id invalido se ignora', null, [status(201)], (c) => (c.nombre = 'Sucursal Postman Header'), { [HEADER]: 'abc' }),
-  altaP('[alta] Ok: telefono y email de contacto repetidos entre comercios del mismo Dueño', null, [status(201)], (c) => {
+  altaP('[alta] Ok: telefono repetido entre comercios del mismo Dueño', null, [status(201)], (c) => {
     c.nombre = 'Sucursal Postman Contacto Repetido';
     c.telefono = '+5492964555444';
-    c.emailContacto = 'contacto.altaP@bajonea.test';
   }),
 );
 

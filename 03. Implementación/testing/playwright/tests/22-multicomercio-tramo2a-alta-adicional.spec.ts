@@ -271,7 +271,8 @@ test.describe('Multi-comercio, tramo 2A: alta adicional, aprobación y bandeja d
         ['nombre solo con símbolos', (p) => (p.nombre = '***')],
         ['nombre de más de 150 caracteres', (p) => (p.nombre = 'A'.repeat(151))],
         ['teléfono inválido', (p) => (p.telefono = 'abc')],
-        ['email de contacto inválido', (p) => (p.emailContacto = 'no-es-un-email')],
+        ['sin aceptar los términos', (p) => delete p.aceptaTerminos],
+        ['aceptaTerminos en false', (p) => (p.aceptaTerminos = false)],
         ['sin tipo de comercio', (p) => delete p.tipoComercio],
         ['tipo de comercio inexistente', (p) => (p.tipoComercio = 'INVENTADO')],
         ['sin dirección', (p) => delete p.direccion],
@@ -347,9 +348,9 @@ test.describe('Multi-comercio, tramo 2A: alta adicional, aprobación y bandeja d
       expect(cantidadComercios(base.duenoId)).toBe(antes);
     });
 
-    test('teléfono y email de contacto pueden repetirse entre comercios del mismo Dueño y no hay tope de altas pendientes', async ({ request }) => {
+    test('el teléfono puede repetirse entre comercios del mismo Dueño y no hay tope de altas pendientes', async ({ request }) => {
       const dueno = await prepararDueno(request, localidadId, adminToken, { estado: 'APROBADO', conFoto: true });
-      const contacto = { telefono: '+5492964111222', emailContacto: 'repetido.e2e@bajonea.test' };
+      const contacto = { telefono: '+5492964111222' };
       for (let i = 0; i < 4; i += 1) {
         const respuesta = await registrarComercioAdicional(request, dueno.token, localidadId, { fotoPerfilUrl: dueno.foto, ...contacto });
         expect(respuesta.status, `alta ${i + 1}`).toBe(201);

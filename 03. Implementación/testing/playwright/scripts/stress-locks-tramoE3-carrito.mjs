@@ -110,6 +110,7 @@ async function nuevoDueno() {
   const email = `stresscar.${u}@bajonea.test`;
   const nombreUsuario = `sk${u}`.slice(0, 20);
   const r = await call('POST', '/auth/registro/comercio', null, {
+    aceptaTerminos: true,
     razonSocial: `StressCar ${u} SRL`,
     cuit: cuit(),
     condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -119,7 +120,6 @@ async function nuevoDueno() {
     nombre: `StressCar ${u}`,
     descripcion: 'x',
     telefono: tel(),
-    emailContacto: email,
     tipoComercio: 'RESTAURANTE',
     aceptaDelivery: false,
     aceptaRetiro: true,

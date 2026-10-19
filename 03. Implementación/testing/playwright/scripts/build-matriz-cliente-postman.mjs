@@ -465,6 +465,7 @@ const CUIT_CARRITO_COMERCIO = cuitValido('3079900050');
 function baseComercioMatrizPayload(overrides = {}) {
   const payload = {
     fotoPerfilUrl: 'https://res.cloudinary.com/demo/image/upload/v1/matriz-cliente-comercio.jpg',
+    aceptaTerminos: true,
     razonSocial: 'Comercio Matriz Cliente SRL',
     cuit: CUIT_CARRITO_COMERCIO,
     condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -474,7 +475,6 @@ function baseComercioMatrizPayload(overrides = {}) {
     nombre: 'Comercio Matriz Cliente',
     descripcion: 'Comercio de prueba para la matriz de Postman de Cliente',
     telefono: '+5492964800100',
-    emailContacto: 'contacto.matrizcliente.comercio@bajonea.test',
     tipoComercio: 'RESTAURANTE',
     aceptaDelivery: true,
     aceptaRetiro: true,
@@ -586,7 +586,6 @@ const folder31 = {
     item('Setup - Registro Comercio sin delivery (matriz carrito)', req('POST', '/auth/registro/comercio', baseComercioMatrizPayload({
       email: EMAIL_CARRITO_COMERCIO2,
       cuit: CUIT_CARRITO_COMERCIO2,
-      emailContacto: 'contacto.matrizsindelivery@bajonea.test',
       nombre: 'Comercio Matriz Sin Delivery',
       aceptaDelivery: false,
       aceptaRetiro: true,

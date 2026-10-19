@@ -152,6 +152,24 @@ class ComercioServiceCatalogoPublicoTest {
     }
 
     @Test
+    void elJsonPublicoNoIncluyeCuitNiRazonSocialNiEmailDeContacto() throws Exception {
+        when(comercioRepository.findByEstadoIn(any())).thenReturn(List.of(comercio(1, EstadoComercio.APTO_VENTA)));
+        when(comercioRepository.findById(1)).thenReturn(Optional.of(comercio(1, EstadoComercio.APTO_VENTA)));
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
+
+        String listado = mapper.writeValueAsString(service.listarAprobados().get(0));
+        String detalle = mapper.writeValueAsString(service.buscarAprobadoPorId(1));
+
+        for (String json : List.of(listado, detalle)) {
+            assertFalse(json.contains("cuit"));
+            assertFalse(json.contains("razonSocial"));
+            assertFalse(json.contains("emailContacto"));
+            assertFalse(json.contains("30712403001"));
+            assertTrue(json.contains("\"nombre\""));
+        }
+    }
+
+    @Test
     void elDetalleDeUnAptoVentaSigueFuncionando() {
         when(comercioRepository.findById(1)).thenReturn(Optional.of(comercio(1, EstadoComercio.APTO_VENTA)));
 

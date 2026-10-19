@@ -117,7 +117,7 @@ public class ComercioCorreccionService {
         DatosLegalesCorreccionResponseDTO legales = puedeLegales ? aLegalesDTO(comercio.getDueno()) : null;
 
         return new CorreccionComercioResponseDTO(comercio.getId(), comercio.getNombre(), comercio.getDescripcion(),
-                comercio.getTelefono(), comercio.getEmail(), comercio.getTipoComercio(), comercio.isAceptaDelivery(),
+                comercio.getTelefono(), comercio.getTipoComercio(), comercio.isAceptaDelivery(),
                 comercio.isAceptaRetiro(), comercio.getFotoPerfilUrl(), direccionDTO, horarios, redes, motivo, usadas + 1,
                 maximo, Math.max(0, maximo - usadas), puedeLegales, legales, ultimoRechazo == null ? 0 : ultimoRechazo.getId());
     }
@@ -157,7 +157,7 @@ public class ComercioCorreccionService {
 
         List<CambioComercio> cambios = new ArrayList<>();
         cambios.addAll(comercioEdicionService.actualizarDatosBasicos(comercio, request.getNombre(), request.getDescripcion(),
-                request.getTelefono(), request.getEmailContacto()));
+                request.getTelefono()));
         cambios.addAll(comercioEdicionService.actualizarTipo(comercio, request.getTipoComercio()));
         cambios.addAll(comercioEdicionService.actualizarModalidades(comercio, request.isAceptaDelivery(), request.isAceptaRetiro()));
         cambios.addAll(comercioEdicionService.actualizarFoto(comercio, request.getFotoPerfilUrl()));

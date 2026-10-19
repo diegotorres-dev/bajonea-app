@@ -4,6 +4,7 @@ const BASE = 'http://localhost:8080/api/v1';
 function baseComercioPayload(overrides = {}) {
   const payload = {
     fotoPerfilUrl: 'https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg',
+    aceptaTerminos: true,
     razonSocial: 'Comercio Matriz SRL',
     cuit: '30799000306',
     condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -13,7 +14,6 @@ function baseComercioPayload(overrides = {}) {
     nombre: 'Comercio Matriz Base',
     descripcion: 'Comercio de prueba para la matriz de Postman de Comercio',
     telefono: '+5492964555100',
-    emailContacto: 'contacto.matriz.comercio@bajonea.test',
     tipoComercio: 'RESTAURANTE',
     aceptaDelivery: true,
     aceptaRetiro: true,

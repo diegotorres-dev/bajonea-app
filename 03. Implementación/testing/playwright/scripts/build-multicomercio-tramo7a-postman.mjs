@@ -74,6 +74,7 @@ const horariosTodosLosDias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES
 
 function registroDueno({ s, cuit, dni }) {
   return {
+    aceptaTerminos: true,
     razonSocial: `Bloqueo Dueño Postman ${s} SRL`,
     cuit,
     condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -83,7 +84,6 @@ function registroDueno({ s, cuit, dni }) {
     nombre: `Local Bloqueo ${s}`,
     descripcion: 'Comercio generado por la coleccion de Postman (bloqueo del Dueño)',
     telefono: '+5492964555444',
-    emailContacto: `contacto.c2u${s}@bajonea.test`,
     tipoComercio: 'RESTAURANTE',
     aceptaDelivery: false,
     aceptaRetiro: true,

@@ -175,6 +175,7 @@ agregar(
     'Registro Dueño (con entrega a domicilio y retiro)',
     req('POST', '/auth/registro/comercio', {
       body: {
+        aceptaTerminos: true,
         razonSocial: 'Actividad A2b SRL',
         cuit: `{{${v('cuit_tmp')}}}`,
         condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -184,7 +185,6 @@ agregar(
         nombre: 'Local Actividad A2b',
         descripcion: 'Comercio generado por la coleccion de Postman (actividad con pedidos, E3 A2b)',
         telefono: '+5492964555445',
-        emailContacto: `{{${v('d_email')}}}`,
         tipoComercio: 'RESTAURANTE',
         aceptaDelivery: true,
         aceptaRetiro: true,

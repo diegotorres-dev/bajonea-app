@@ -22,7 +22,6 @@ public class CorreccionComercioResponseDTO {
     private final String nombre;
     private final String descripcion;
     private final String telefono;
-    private final String emailContacto;
     private final TipoComercio tipoComercio;
     private final boolean aceptaDelivery;
     private final boolean aceptaRetiro;

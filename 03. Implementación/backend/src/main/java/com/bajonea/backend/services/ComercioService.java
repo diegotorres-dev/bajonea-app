@@ -88,7 +88,6 @@ public class ComercioService {
                 comercio.getDescripcion(),
                 comercio.getFotoPerfilUrl(),
                 comercio.getTelefono(),
-                comercio.getEmail(),
                 comercio.getTipoComercio(),
                 comercio.isAceptaDelivery(),
                 comercio.isAceptaRetiro(),
@@ -153,9 +152,6 @@ public class ComercioService {
         if (!Objects.equals(comercio.getTelefono(), request.getTelefono())) {
             camposCambiados.add("teléfono");
         }
-        if (!Objects.equals(comercio.getEmail(), request.getEmailContacto())) {
-            camposCambiados.add("email de contacto");
-        }
         if (comercio.isAceptaDelivery() != request.isAceptaDelivery() || comercio.isAceptaRetiro() != request.isAceptaRetiro()) {
             camposCambiados.add("modalidades de entrega");
         }
@@ -163,7 +159,6 @@ public class ComercioService {
         comercio.setNombre(nombreNuevo);
         comercio.setDescripcion(request.getDescripcion());
         comercio.setTelefono(request.getTelefono());
-        comercio.setEmail(request.getEmailContacto());
         comercio.setAceptaDelivery(request.isAceptaDelivery());
         comercio.setAceptaRetiro(request.isAceptaRetiro());
         comercio.setFechaModificacion(LocalDateTime.now());
@@ -374,7 +369,6 @@ public class ComercioService {
                 comercio.getDescripcion(),
                 comercio.getFotoPerfilUrl(),
                 comercio.getTelefono(),
-                comercio.getEmail(),
                 comercio.getTipoComercio(),
                 comercio.isAceptaDelivery(),
                 comercio.isAceptaRetiro(),
@@ -417,7 +411,6 @@ public class ComercioService {
                 comercio.getDescripcion(),
                 comercio.getFotoPerfilUrl(),
                 comercio.getTelefono(),
-                comercio.getEmail(),
                 comercio.getTipoComercio(),
                 comercio.isAceptaDelivery(),
                 comercio.isAceptaRetiro(),
@@ -425,8 +418,6 @@ public class ComercioService {
                 // estadoApertura, que distingue el bloqueo de la cuenta (CERRADO_TEMPORALMENTE) del cierre manual
                 // (CERRADO_MANUAL).
                 EstadoComercio.APTO_VENTA,
-                comercio.getDueno().getPersonaJuridica().getRazonSocial(),
-                comercio.getDueno().getPersonaJuridica().getCuit(),
                 direccionDTO,
                 horarios,
                 disponibilidad.estadoApertura(),

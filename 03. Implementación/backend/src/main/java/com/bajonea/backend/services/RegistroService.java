@@ -197,7 +197,6 @@ public class RegistroService {
                 .nombre(TextoUtils.aTitleCase(datos.getNombre()))
                 .descripcion(datos.getDescripcion())
                 .telefono(datos.getTelefono())
-                .email(datos.getEmailContacto())
                 .tipoComercio(datos.getTipoComercio())
                 .aceptaDelivery(datos.isAceptaDelivery())
                 .aceptaRetiro(datos.isAceptaRetiro())
@@ -248,6 +247,10 @@ public class RegistroService {
 
     private Localidad obtenerLocalidad(String localidadId) {
         return validadorDatosNegocio.obtenerLocalidad(localidadId);
+    }
+
+    public boolean esLocalidadExistenteNoHabilitada(String localidadId) {
+        return validadorDatosNegocio.esLocalidadExistenteNoHabilitada(localidadId);
     }
 
     @Transactional(readOnly = true)

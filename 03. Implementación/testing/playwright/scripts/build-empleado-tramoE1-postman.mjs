@@ -80,6 +80,7 @@ const horariosTodosLosDias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES
 }));
 
 const registroComercio = (cuit, dniRep, usuario, email, password, nombre) => ({
+  aceptaTerminos: true,
   razonSocial: `${nombre} SRL`,
   cuit,
   condicionIva: 'RESPONSABLE_INSCRIPTO',
@@ -89,7 +90,6 @@ const registroComercio = (cuit, dniRep, usuario, email, password, nombre) => ({
   nombre,
   descripcion: 'Comercio generado por la coleccion de Postman (rol Empleado, E1)',
   telefono: '+5492964555444',
-  emailContacto: email,
   tipoComercio: 'RESTAURANTE',
   aceptaDelivery: false,
   aceptaRetiro: true,
