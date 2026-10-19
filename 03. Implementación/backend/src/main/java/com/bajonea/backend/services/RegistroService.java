@@ -77,6 +77,7 @@ public class RegistroService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final ValidadorDatosNegocioComercio validadorDatosNegocio;
+    private final NombreComercioService nombreComercioService;
 
     public UsuarioResponseDTO registrarCliente(RegistroClienteRequestDTO request) {
         Cliente cliente = crearCliente(request, request.getEmail(), EstadoUsuario.PENDIENTE);
@@ -137,6 +138,7 @@ public class RegistroService {
             throw new ConflictoDeNegocioException("Ya existe una cuenta registrada con ese DNI");
         }
         Localidad localidad = validarDatosNegocio(request);
+        nombreComercioService.validar(request.getNombre(), null);
 
         Usuario usuario = crearUsuario(request.getNombreUsuario(), request.getEmail(), request.getPassword(), RolUsuario.DUENO, EstadoUsuario.PENDIENTE, null);
         Persona persona = crearPersona(usuario);
@@ -184,7 +186,9 @@ public class RegistroService {
      * envía emails ni toca ningún dato del Dueño. Corre dentro de la transacción del llamador.
      */
     public Comercio crearComercio(Dueno dueno, DatosNegocioComercioRequestDTO datos) {
-        return crearComercio(dueno, datos, validarDatosNegocio(datos));
+        Localidad localidad = validarDatosNegocio(datos);
+        nombreComercioService.validar(datos.getNombre(), null);
+        return crearComercio(dueno, datos, localidad);
     }
 
     private Localidad validarDatosNegocio(DatosNegocioComercioRequestDTO datos) {

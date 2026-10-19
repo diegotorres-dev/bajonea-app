@@ -37,9 +37,12 @@ class DatosPruebaEmpleado {
     }
 
     Dueno registrarDuenoAprobado() {
+        return registrarDuenoAprobado("Comercio Equipo " + sufijo());
+    }
+
+    Dueno registrarDuenoAprobado(String nombreComercio) {
         String sufijo = sufijo();
         String email = "dueno." + sufijo + "@bajonea.test";
-        String nombreComercio = "Comercio Equipo " + sufijo;
         String nombreUsuario = "dnu" + sufijo;
         String clave = claveAleatoria();
         UsuarioResponseDTO usuario = registroService.registrarComercio(comercioJson(sufijo, email, nombreComercio, nombreUsuario, clave));

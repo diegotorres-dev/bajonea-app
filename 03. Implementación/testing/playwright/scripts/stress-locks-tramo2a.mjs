@@ -4,6 +4,7 @@ const B = process.env.E2E_API_BASE_URL || 'http://localhost:8080/api/v1';
 const LOC = process.env.LOC;
 const CLOUD = process.env.CLOUDINARY_CLOUD_NAME;
 const ROUNDS = Number(process.env.ROUNDS || 15);
+const CORRIDA = Date.now().toString(36);
 const ADMIN = { nombreUsuario: process.env.ADMIN_USUARIO || 'adminbajonea', password: process.env.ADMIN_PASSWORD };
 if (!ADMIN.password) {
   console.error('Falta ADMIN_PASSWORD (contraseña de admin@bajonea.ar en bajonea_test; ver testing/playwright/README.md)');
@@ -122,7 +123,7 @@ async function main() {
 
     const altas = [];
     for (let i = 0; i < 6; i++) {
-      const r = await call('POST', '/comercios', login.token, cuerpoAlta(duenoId, d.email, `Stress Alta ${ronda} ${i}`, 10 + i));
+      const r = await call('POST', '/comercios', login.token, cuerpoAlta(duenoId, d.email, `Stress Alta ${CORRIDA} ${ronda} ${i}`, 10 + i));
       if (r.status !== 201) throw new Error('alta ' + JSON.stringify(r));
       altas.push(r.json.data.id);
     }
@@ -144,7 +145,7 @@ async function main() {
     );
     if (!conBloqueo) {
       tareas.push(call('DELETE', '/oauth/mercadopago/desvincular', login.token).then((r) => registrar5xx('desvincular', r)));
-      tareas.push(call('POST', '/comercios', login.token, cuerpoAlta(duenoId, d.email, `Stress Extra ${ronda}`, 99)).then((r) => registrar5xx('alta extra', r)));
+      tareas.push(call('POST', '/comercios', login.token, cuerpoAlta(duenoId, d.email, `Stress Extra ${CORRIDA} ${ronda}`, 99)).then((r) => registrar5xx('alta extra', r)));
     } else {
       for (let k = 0; k < 3; k++) {
         tareas.push(call('POST', '/auth/login', null, { nombreUsuario: d.nombreUsuario, password: 'Incorrecta1' }).then((r) => registrar5xx('login fallido', r)));
@@ -238,10 +239,10 @@ async function tramo3a() {
     await call('PUT', `/administrador/comercios/${pendiente.id}/resolver`, admin, { aprobar: true });
 
     const rechazados = [];
-    for (let i = 0; i < 4; i++) rechazados.push(await clonarConRedes(pendiente.id, `Stress Rechazado ${ronda} ${i}`, 'RECHAZADO'));
-    const duplaPendiente = await clonarConRedes(pendiente.id, `Stress Dupla ${ronda}`, 'PENDIENTE');
+    for (let i = 0; i < 4; i++) rechazados.push(await clonarConRedes(pendiente.id, `Stress Rechazado ${CORRIDA} ${ronda} ${i}`, 'RECHAZADO'));
+    const duplaPendiente = await clonarConRedes(pendiente.id, `Stress Dupla ${CORRIDA} ${ronda}`, 'PENDIENTE');
     const aAprobar = [];
-    for (let i = 0; i < 2; i++) aAprobar.push(await clonarConRedes(pendiente.id, `Stress Aprobar ${ronda} ${i}`, 'PENDIENTE'));
+    for (let i = 0; i < 2; i++) aAprobar.push(await clonarConRedes(pendiente.id, `Stress Aprobar ${CORRIDA} ${ronda} ${i}`, 'PENDIENTE'));
 
     const cuerpos = new Map();
     for (const id of rechazados) {
@@ -286,7 +287,7 @@ async function tramo3a() {
         .then((r) => registrar5xx('desvincular', r)),
     );
     if (!conBloqueo) {
-      tareas.push(call('POST', '/comercios', login.token, cuerpoAlta(duenoId, d.email, `Stress Alta3a ${ronda}`, 77)).then((r) => registrar5xx('alta adicional', r)));
+      tareas.push(call('POST', '/comercios', login.token, cuerpoAlta(duenoId, d.email, `Stress Alta3a ${CORRIDA} ${ronda}`, 77)).then((r) => registrar5xx('alta adicional', r)));
     } else {
       for (let k = 0; k < 3; k++) {
         tareas.push(call('POST', '/auth/login', null, { nombreUsuario: d.nombreUsuario, password: 'Incorrecta1' }).then((r) => registrar5xx('login fallido', r)));

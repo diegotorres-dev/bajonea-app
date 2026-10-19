@@ -51,7 +51,7 @@ class ComercioCorreccionServiceTest {
     private HistorialEstadoComercioRepository historialEstadoRepository;
     private HistorialCambioComercioRepository historialCambioRepository;
     private ValidadorDatosNegocioComercio validadorDatosNegocio;
-    private ValidadorComercioDuplicado validadorDuplicado;
+    private NombreComercioService nombreComercioService;
     private ComercioEdicionService edicion;
     private ComercioService comercioService;
     private AprobacionPreviaDueno aprobacionPrevia;
@@ -69,7 +69,7 @@ class ComercioCorreccionServiceTest {
         historialEstadoRepository = mock(HistorialEstadoComercioRepository.class);
         historialCambioRepository = mock(HistorialCambioComercioRepository.class);
         validadorDatosNegocio = mock(ValidadorDatosNegocioComercio.class);
-        validadorDuplicado = mock(ValidadorComercioDuplicado.class);
+        nombreComercioService = mock(NombreComercioService.class);
         edicion = mock(ComercioEdicionService.class);
         comercioService = mock(ComercioService.class);
         aprobacionPrevia = mock(AprobacionPreviaDueno.class);
@@ -78,7 +78,7 @@ class ComercioCorreccionServiceTest {
 
         service = new ComercioCorreccionService(duenoRepository, comercioRepository, mock(DireccionRepository.class),
                 mock(HorarioRepository.class), mock(RedSocialRepository.class), historialEstadoRepository, historialCambioRepository,
-                validadorDatosNegocio, validadorDuplicado, edicion, comercioService, aprobacionPrevia, mock(CloudinaryService.class),
+                validadorDatosNegocio, nombreComercioService, edicion, comercioService, aprobacionPrevia, mock(CloudinaryService.class),
                 propiedades);
 
         dueno = Dueno.builder().id(DUENO_ID).build();
@@ -244,7 +244,7 @@ class ComercioCorreccionServiceTest {
 
         service.reSolicitar(DUENO_ID, COMERCIO_ID, pedido(ID_FILA_RECHAZO));
 
-        verify(validadorDuplicado).validar(eq(DUENO_ID), eq("Cafe"), any(), eq(COMERCIO_ID));
-        verify(validadorDuplicado, never()).validar(anyInt(), anyString(), any(), eq(null));
+        verify(nombreComercioService).validar(eq("Cafe"), eq(COMERCIO_ID));
+        verify(nombreComercioService, never()).validar(anyString(), eq(null));
     }
 }

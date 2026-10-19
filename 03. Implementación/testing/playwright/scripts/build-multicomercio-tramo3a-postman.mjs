@@ -66,6 +66,7 @@ function item(name, request, testLines = [], preLines = []) {
 const status = (codigo) => `pm.test('Status code es ${codigo}', () => pm.response.to.have.status(${codigo}));`;
 const guardar = (variable, expr) => `pm.environment.set('${variable}', ${expr});`;
 const mensajeEs = (texto) => `pm.test('El mensaje es "${texto}"', () => pm.expect(pm.response.json().mensaje).to.eql(${JSON.stringify(texto)}));`;
+const MENSAJE_NOMBRE_EN_USO = 'Ya existe un comercio con ese nombre. Elegí otro.';
 const mensajeContiene = (texto) => `pm.test('El mensaje contiene "${texto}"', () => pm.expect(pm.response.json().mensaje).to.include(${JSON.stringify(texto)}));`;
 
 const horariosTodosLosDias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'].map((diaSemana) => ({
@@ -380,9 +381,9 @@ items.push(
     status(409),
     mensajeEs('No podés modificar los datos fiscales ni del representante'),
   ]),
-  reenviar('[PUT] Mismo nombre y direccion que el comercio principal del Dueño: 409 duplicado', 'M', 'rM_adic', "b.nombre = pm.environment.get('rM_nombre'); b.direccion = { calle: 'Belgrano', numero: '700', pisoDepto: null, codigoPostal: '9420', localidadId: pm.environment.get('localidad_id'), principal: false };", [
+  reenviar('[PUT] Mismo nombre que el comercio principal del Dueño: 409 duplicado', 'M', 'rM_adic', "b.nombre = pm.environment.get('rM_nombre'); b.direccion = { calle: 'Belgrano', numero: '700', pisoDepto: null, codigoPostal: '9420', localidadId: pm.environment.get('localidad_id'), principal: false };", [
     status(409),
-    mensajeContiene('nombre en esa dirección'),
+    mensajeEs(MENSAJE_NOMBRE_EN_USO),
   ]),
   reenviar('[PUT] Corrigiendo solo datos del negocio: 200', 'M', 'rM_adic', cambiarDescripcion('Adicional corregido'), [status(200)]),
   item('[bandeja] El adicional reenviado se ve como adicional y lista los demas comercios del Dueño', req('GET', '/administrador/comercios/resolicitudes', { token: 'token_admin' }), [
@@ -442,7 +443,7 @@ items.push(
     status(200),
     guardar('rN_foto', "'https://res.cloudinary.com/' + pm.response.json().data.cloudName + '/image/upload/v1/' + pm.response.json().data.folder + 'postman-alta.png'"),
   ]),
-  item('[duplicado] Un RECHAZO_DEFINITIVO cuenta como duplicado al agregar otro comercio igual', req('POST', '/comercios', {
+  item('[nombre] Un RECHAZO_DEFINITIVO libera su nombre: agregar otro comercio con el mismo nombre da 201 y nace PENDIENTE', req('POST', '/comercios', {
     token: 'token_r_n',
     body: {
       nombre: '{{rN_nombre}}',
@@ -457,8 +458,7 @@ items.push(
       horarios: [{ diaSemana: 'LUNES', horaApertura: '09:00:00', horaCierre: '18:00:00' }],
       redesSociales: [{ tipo: 'INSTAGRAM', url: 'instagram.com/altarn' }],
     },
-  }), [status(409), mensajeContiene('nombre en esa dirección')]),
-  altaN('[alta] Con todo en RECHAZO_DEFINITIVO puede agregar otro comercio: 201 y nace PENDIENTE', [
+  }), [
     status(201),
     "pm.test('Nace PENDIENTE', () => pm.expect(pm.response.json().data.estado).to.eql('PENDIENTE'));",
     guardar('rN_alta', 'pm.response.json().data.id'),

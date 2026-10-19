@@ -19,7 +19,7 @@ class RateLimitPublicoFilterTest {
     private static final String FOTO_CLIENTE = "/api/v1/auth/registro/cliente/foto-firma";
     private static final String FOTO_COMERCIO = "/api/v1/auth/registro/comercio/foto-firma";
 
-    private final RateLimitPublicoFilter filtro = new RateLimitPublicoFilter(2, 3);
+    private final RateLimitPublicoFilter filtro = new RateLimitPublicoFilter(2, 3, 4);
 
     private MockHttpServletResponse llamar(String metodo, String ruta, String ip) throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest(metodo, ruta);
@@ -68,6 +68,21 @@ class RateLimitPublicoFilterTest {
         assertEquals(200, estado(VALIDAR, "10.0.0.1"));
         assertEquals(200, estado(VALIDAR, "10.0.0.1"));
         assertEquals(429, estado(VALIDAR, "10.0.0.1"));
+    }
+
+    @Test
+    void lasDosConsultasPublicasDeDisponibilidadComparteGrupoYLimiteSinPisarLosDemasGrupos() throws Exception {
+        String usuario = "/api/v1/auth/nombre-usuario/disponibilidad";
+        String comercio = "/api/v1/auth/comercio-nombre/disponibilidad";
+        assertEquals(200, llamar("GET", usuario, "10.0.0.1").getStatus());
+        assertEquals(200, llamar("GET", comercio, "10.0.0.1").getStatus());
+        assertEquals(200, llamar("GET", usuario, "10.0.0.1").getStatus());
+        assertEquals(200, llamar("GET", comercio, "10.0.0.1").getStatus());
+        assertEquals(429, llamar("GET", usuario, "10.0.0.1").getStatus());
+        assertEquals(429, llamar("GET", comercio, "10.0.0.1").getStatus());
+
+        assertEquals(200, llamar("GET", comercio, "10.0.0.2").getStatus(), "otra IP tiene su propio cupo");
+        assertEquals(200, estado(VALIDAR, "10.0.0.1"), "los otros grupos no se ven afectados");
     }
 
     @Test

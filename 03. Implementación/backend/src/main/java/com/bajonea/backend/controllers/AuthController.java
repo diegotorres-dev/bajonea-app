@@ -14,11 +14,13 @@ import com.bajonea.backend.dto.request.ValidarCodigoRecuperacionRequestDTO;
 import com.bajonea.backend.dto.request.VerificarCodigoRequestDTO;
 import com.bajonea.backend.dto.response.ApiResponse;
 import com.bajonea.backend.dto.response.CloudinarySignatureResponseDTO;
+import com.bajonea.backend.dto.response.DisponibilidadNombreComercioResponseDTO;
 import com.bajonea.backend.dto.response.DisponibilidadNombreUsuarioResponseDTO;
 import com.bajonea.backend.dto.response.LoginResponseDTO;
 import com.bajonea.backend.dto.response.UsuarioResponseDTO;
 import com.bajonea.backend.services.AuthService;
 import com.bajonea.backend.services.CloudinaryService;
+import com.bajonea.backend.services.NombreComercioService;
 import com.bajonea.backend.services.RegistroService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -43,6 +45,7 @@ public class AuthController {
     private final AuthService authService;
     private final RegistroService registroService;
     private final CloudinaryService cloudinaryService;
+    private final NombreComercioService nombreComercioService;
 
     @PostMapping("/registro/cliente")
     public ResponseEntity<ApiResponse<UsuarioResponseDTO>> registrarCliente(
@@ -55,6 +58,13 @@ public class AuthController {
     public ResponseEntity<ApiResponse<DisponibilidadNombreUsuarioResponseDTO>> consultarDisponibilidadNombreUsuario(
             @RequestParam String nombreUsuario) {
         DisponibilidadNombreUsuarioResponseDTO response = registroService.consultarDisponibilidadNombreUsuario(nombreUsuario);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Consulta realizada correctamente", response));
+    }
+
+    @GetMapping("/comercio-nombre/disponibilidad")
+    public ResponseEntity<ApiResponse<DisponibilidadNombreComercioResponseDTO>> consultarDisponibilidadNombreComercio(
+            @RequestParam String nombre) {
+        DisponibilidadNombreComercioResponseDTO response = nombreComercioService.consultarDisponibilidad(nombre, null, null);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Consulta realizada correctamente", response));
     }
 

@@ -348,7 +348,7 @@ public class ComercioEdicionService {
     private void guardarSiCambio(Comercio comercio, List<CambioComercio> cambios) {
         if (!cambios.isEmpty()) {
             comercio.setFechaModificacion(LocalDateTime.now());
-            comercioRepository.save(comercio);
+            comercioRepository.saveAndFlush(comercio);
         }
     }
 

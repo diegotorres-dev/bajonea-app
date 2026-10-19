@@ -94,6 +94,7 @@ public class SecurityConfig {
             "/api/v1/auth/registro/**",
             "/api/v1/auth/login",
             "/api/v1/auth/nombre-usuario/disponibilidad",
+            "/api/v1/auth/comercio-nombre/disponibilidad",
             "/api/v1/auth/verificar/**",
             "/api/v1/auth/verificar",
             "/api/v1/auth/reenviar-verificacion",

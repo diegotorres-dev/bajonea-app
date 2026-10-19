@@ -15,7 +15,7 @@ test.describe('Notificaciones in-app', () => {
   }) => {
     const localidadId = await obtenerLocalidadRioGrande(request);
     const comercio = await registrarYVerificarComercio(request, localidadId, {
-      nombre: 'Comercio Notificaciones E2E',
+      nombre: `Comercio Notificaciones E2E ${Date.now()}`,
       horarios: [{ diaSemana: diaDeHoy(), horaApertura: '00:00', horaCierre: '23:59' }],
     });
 

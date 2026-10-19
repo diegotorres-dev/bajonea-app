@@ -53,7 +53,7 @@ class ComercioServiceBloqueoVigenteTest {
                 historialRepository, mock(CloudinaryService.class),
                 new DisponibilidadComercioService(mock(HorarioRepository.class), mock(HistorialCierreComercioRepository.class),
                         Clock.systemDefaultZone()),
-                usuarioRepository, mock(HistorialEdicionComercioService.class));
+                usuarioRepository, mock(HistorialEdicionComercioService.class), mock(NombreComercioService.class));
         when(historialRepository.save(any(HistorialEstadoComercio.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
     }
 

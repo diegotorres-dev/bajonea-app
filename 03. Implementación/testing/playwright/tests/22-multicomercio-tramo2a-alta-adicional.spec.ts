@@ -382,14 +382,14 @@ test.describe('Multi-comercio, tramo 2A: alta adicional, aprobación y bandeja d
         direccion: { ...direccion, ...cambios.direccion },
       });
 
-    test('el mismo nombre en la misma dirección da 409, con un mensaje distinto al de no elegible', async ({ request }) => {
+    test('el mismo nombre da 409, con un mensaje distinto al de no elegible', async ({ request }) => {
       const respuesta = await intentar(request, {});
       expect(respuesta.status).toBe(409);
-      expect(respuesta.body.mensaje).toContain('nombre en esa dirección');
+      expect(respuesta.body.mensaje).toBe('Ya existe un comercio con ese nombre. Elegí otro.');
       expect(respuesta.body.mensaje).not.toContain('al menos uno aprobado');
     });
 
-    test('mayúsculas, tildes, espacios de más y código postal distinto no evitan el duplicado', async ({ request }) => {
+    test('mayúsculas, tildes, la ñ como n, espacios de más y cualquier dirección no evitan el duplicado', async ({ request }) => {
       const sufijo = nombre.split(' ').pop();
       const variantes = [
         { nombre: `CAFETERIA NANDU ${sufijo}`, direccion: {} },
@@ -403,7 +403,7 @@ test.describe('Multi-comercio, tramo 2A: alta adicional, aprobación y bandeja d
       }
     });
 
-    test('el mismo nombre en otra dirección, con otro piso, sin piso o en otra localidad es un comercio distinto', async ({ request }) => {
+    test('el mismo nombre en otra dirección, con otro piso, sin piso o en otra localidad también es duplicado', async ({ request }) => {
       const casos: Array<[string, { direccion: Partial<typeof direccion> }]> = [
         ['otro número', { direccion: { numero: '481' } }],
         ['otra calle', { direccion: { calle: 'Perito Moreno' } }],
@@ -413,11 +413,12 @@ test.describe('Multi-comercio, tramo 2A: alta adicional, aprobación y bandeja d
       ];
       for (const [descripcion, cambios] of casos) {
         const respuesta = await intentar(request, cambios);
-        expect(respuesta.status, descripcion).toBe(201);
+        expect(respuesta.status, descripcion).toBe(409);
+        expect(respuesta.body.mensaje, descripcion).toBe('Ya existe un comercio con ese nombre. Elegí otro.');
       }
     });
 
-    test('piso nulo y piso vacío o en blanco cuentan como lo mismo', async ({ request }) => {
+    test('repetir el nombre de un comercio ya dado de alta da 409 sea cual sea el piso (nulo, vacío o en blanco)', async ({ request }) => {
       const sufijo = sufijoUnico();
       const sinPiso = { calle: 'Elcano', numero: '77', pisoDepto: null, codigoPostal: '9420', localidadId, principal: false };
       const primera = await registrarComercioAdicional(request, dueno.token, localidadId, {
@@ -447,7 +448,7 @@ test.describe('Multi-comercio, tramo 2A: alta adicional, aprobación y bandeja d
       expect(respuesta.status).toBe(409);
     });
 
-    test('un comercio RECHAZADO no cuenta como duplicado: se puede volver a dar de alta el mismo', async ({ request }) => {
+    test('un comercio RECHAZADO retiene su nombre: darlo de alta otra vez da 409 y con otro nombre da 201', async ({ request }) => {
       const rechazo = await apiConHeaders(request, 'PUT', `/administrador/comercios/${adicionalId}/resolver`, adminToken, {}, {
         aprobar: false,
         motivo: 'Fotos poco claras (E2E)',
@@ -456,18 +457,34 @@ test.describe('Multi-comercio, tramo 2A: alta adicional, aprobación y bandeja d
       expect(estadoDe(adicionalId)).toBe('RECHAZADO');
 
       const otraVez = await intentar(request, {});
-      expect(otraVez.status).toBe(201);
-      const nuevoId = otraVez.body.data.id;
-      expect(nuevoId).not.toBe(adicionalId);
+      expect(otraVez.status).toBe(409);
+      expect(otraVez.body.mensaje).toBe('Ya existe un comercio con ese nombre. Elegí otro.');
 
-      const tercera = await intentar(request, {});
-      expect(tercera.status).toBe(409);
+      const conOtroNombre = await intentar(request, { nombre: `${nombre} Dos` });
+      expect(conOtroNombre.status).toBe(201);
+      expect(conOtroNombre.body.data.id).not.toBe(adicionalId);
     });
 
-    test('dos Dueños distintos pueden tener el mismo nombre en la misma dirección', async ({ request }) => {
+    test('dos Dueños distintos no pueden tener el mismo nombre, tampoco en otra dirección', async ({ request }) => {
+      const otro = await prepararDueno(request, localidadId, adminToken, { estado: 'APROBADO', conFoto: true });
+      const respuesta = await registrarComercioAdicional(request, otro.token, localidadId, { fotoPerfilUrl: otro.foto, nombre, direccion });
+      expect(respuesta.status).toBe(409);
+      expect(respuesta.body.mensaje).toBe('Ya existe un comercio con ese nombre. Elegí otro.');
+      const otraDireccion = await registrarComercioAdicional(request, otro.token, localidadId, {
+        fotoPerfilUrl: otro.foto,
+        nombre: nombre.toUpperCase(),
+        direccion: { ...direccion, calle: 'Otra Calle', numero: '999' },
+      });
+      expect(otraDireccion.status).toBe(409);
+    });
+
+    test('un comercio en RECHAZO_DEFINITIVO libera su nombre para cualquier Dueño', async ({ request }) => {
+      sql(`UPDATE comercio SET estado = 'RECHAZO_DEFINITIVO' WHERE id = ${adicionalId};`);
       const otro = await prepararDueno(request, localidadId, adminToken, { estado: 'APROBADO', conFoto: true });
       const respuesta = await registrarComercioAdicional(request, otro.token, localidadId, { fotoPerfilUrl: otro.foto, nombre, direccion });
       expect(respuesta.status).toBe(201);
+      const repetido = await intentar(request, { nombre });
+      expect(repetido.status).toBe(409);
     });
 
     test('dos altas idénticas en paralelo: una se crea y la otra da 409', async ({ request }) => {
@@ -693,7 +710,7 @@ test.describe('Multi-comercio, tramo 2A: alta adicional, aprobación y bandeja d
       const otro = await prepararDueno(request, localidadId, adminToken, { estado: 'PENDIENTE' });
       sql(
         `INSERT INTO comercio (dueno_id, nombre, foto_perfil_url, telefono, email, tipo_comercio, acepta_delivery, acepta_retiro, estado, fecha_registro) ` +
-          `SELECT dueno_id, 'Clon Rechazado E2E', foto_perfil_url, telefono, email, tipo_comercio, acepta_delivery, acepta_retiro, 'RECHAZADO', NOW() FROM comercio WHERE id = ${otro.comercioId};`,
+          `SELECT dueno_id, 'Clon Rechazado E2E ${Date.now()}', foto_perfil_url, telefono, email, tipo_comercio, acepta_delivery, acepta_retiro, 'RECHAZADO', NOW() FROM comercio WHERE id = ${otro.comercioId};`,
       );
       const pendiente = (await pendientesDelAdmin(request, adminToken)).find((c) => c.id === otro.comercioId);
       expect(pendiente.esAdicional).toBe(false);

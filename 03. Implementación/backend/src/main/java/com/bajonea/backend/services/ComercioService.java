@@ -65,6 +65,7 @@ public class ComercioService {
     private final DisponibilidadComercioService disponibilidadComercioService;
     private final UsuarioRepository usuarioRepository;
     private final HistorialEdicionComercioService historialEdicionComercioService;
+    private final NombreComercioService nombreComercioService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -144,6 +145,7 @@ public class ComercioService {
         String nombreNuevo = TextoUtils.aTitleCase(request.getNombre());
         List<String> camposCambiados = new ArrayList<>();
         if (!Objects.equals(comercio.getNombre(), nombreNuevo)) {
+            nombreComercioService.validar(nombreNuevo, comercio.getId());
             camposCambiados.add("nombre");
         }
         if (!Objects.equals(comercio.getDescripcion(), request.getDescripcion())) {
@@ -162,7 +164,7 @@ public class ComercioService {
         comercio.setAceptaDelivery(request.isAceptaDelivery());
         comercio.setAceptaRetiro(request.isAceptaRetiro());
         comercio.setFechaModificacion(LocalDateTime.now());
-        comercioRepository.save(comercio);
+        comercioRepository.saveAndFlush(comercio);
 
         if (!camposCambiados.isEmpty()) {
             historialEdicionComercioService.registrar(actor, TipoEntidadEdicion.COMERCIO, comercio.getId(), comercio.getNombre(),

@@ -72,7 +72,7 @@ for (let vuelta = 1; vuelta <= repeticiones; vuelta += 1) {
     resumenes.push({ vuelta, requests: resumen.requests.total, assertions: resumen.assertions.total, fallas: f, segundos: Number(duracion) });
     console.log(`vuelta ${vuelta}: requests ${resumen.requests.total}, assertions ${resumen.assertions.total}, fallas ${f}, ${duracion} s`);
     if (f > 0) {
-      const detalle = corrida.failures.slice(0, 15);
+      const detalle = corrida.failures.slice(0, Number(process.env.NEWMAN_FALLAS || 15));
       for (const falla of detalle) {
         console.log(`  FALLA: ${falla.source?.name || '?'} -> ${falla.error?.name}: ${String(falla.error?.message).slice(0, 220)}`);
       }

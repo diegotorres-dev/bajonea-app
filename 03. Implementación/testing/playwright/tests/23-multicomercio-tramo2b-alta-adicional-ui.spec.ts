@@ -31,8 +31,7 @@ const FIXTURE_BUFFER = readFileSync(path.resolve(__dirname, '../fixtures/bajonea
 const TEXTO_AVISO_SIN_MP = 'Usamos los datos fiscales de tu cuenta. No hace falta cargarlos de nuevo.';
 const TEXTO_AVISO_CON_MP = 'Usamos los datos fiscales y la cuenta de MercadoPago de tu cuenta. No hace falta cargarlos de nuevo.';
 const TEXTO_NO_ELEGIBLE = 'Para agregar un nuevo comercio, necesitás tener al menos uno aprobado previamente';
-const TEXTO_DUPLICADO =
-  'Ya tenés un comercio con ese nombre en esa dirección. Si es otro local del mismo edificio, agregá el piso o número de local.';
+const TEXTO_DUPLICADO = 'Ya existe un comercio con ese nombre. Elegí otro.';
 
 interface DuenoPreparado {
   sesion: SesionApi;

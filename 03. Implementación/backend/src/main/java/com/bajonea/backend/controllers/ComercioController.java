@@ -12,6 +12,7 @@ import com.bajonea.backend.dto.response.CierreComercioResponseDTO;
 import com.bajonea.backend.dto.response.CloudinarySignatureResponseDTO;
 import com.bajonea.backend.dto.response.ComercioResponseDTO;
 import com.bajonea.backend.dto.response.CorreccionComercioResponseDTO;
+import com.bajonea.backend.dto.response.DisponibilidadNombreComercioResponseDTO;
 import com.bajonea.backend.dto.response.ElegibilidadAltaAdicionalResponseDTO;
 import com.bajonea.backend.dto.response.MiComercioResponseDTO;
 import com.bajonea.backend.enums.ActorCierre;
@@ -20,6 +21,7 @@ import com.bajonea.backend.services.CierreComercioService;
 import com.bajonea.backend.services.ComercioCorreccionService;
 import com.bajonea.backend.services.ComercioService;
 import com.bajonea.backend.services.MisComerciosService;
+import com.bajonea.backend.services.NombreComercioService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -44,6 +47,7 @@ public class ComercioController {
     private final ComercioCorreccionService comercioCorreccionService;
     private final MisComerciosService misComerciosService;
     private final CierreComercioService cierreComercioService;
+    private final NombreComercioService nombreComercioService;
 
     /**
      * Alta de un comercio adicional del Dueño autenticado (multi-comercio, tramo 2A). Igual que
@@ -67,6 +71,19 @@ public class ComercioController {
             @AuthenticationPrincipal AuthenticatedUser usuario) {
         List<MiComercioResponseDTO> comercios = misComerciosService.listar(usuario.userId());
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Comercios obtenidos correctamente", comercios));
+    }
+
+    /**
+     * Disponibilidad en vivo del nombre para el alta adicional, la corrección y el perfil. Exclusivo del Dueño
+     * (no es delegable al Empleado) e ignora {@code X-Comercio-Id}; {@code comercioId} es el comercio que se
+     * edita, que no cuenta contra sí mismo, y se valida contra el Dueño autenticado.
+     */
+    @GetMapping("/nombre/disponibilidad")
+    public ResponseEntity<ApiResponse<DisponibilidadNombreComercioResponseDTO>> consultarDisponibilidadNombre(
+            @AuthenticationPrincipal AuthenticatedUser usuario, @RequestParam String nombre,
+            @RequestParam(required = false) Integer comercioId) {
+        DisponibilidadNombreComercioResponseDTO response = nombreComercioService.consultarDisponibilidad(nombre, usuario.userId(), comercioId);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Consulta realizada correctamente", response));
     }
 
     @GetMapping("/alta-adicional/elegibilidad")

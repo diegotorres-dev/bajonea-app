@@ -82,7 +82,7 @@ public class ComercioCorreccionService {
     private final HistorialEstadoComercioRepository historialEstadoComercioRepository;
     private final HistorialCambioComercioRepository historialCambioComercioRepository;
     private final ValidadorDatosNegocioComercio validadorDatosNegocio;
-    private final ValidadorComercioDuplicado validadorComercioDuplicado;
+    private final NombreComercioService nombreComercioService;
     private final ComercioEdicionService comercioEdicionService;
     private final ComercioService comercioService;
     private final AprobacionPreviaDueno aprobacionPreviaDueno;
@@ -153,7 +153,7 @@ public class ComercioCorreccionService {
         }
 
         Localidad localidad = validadorDatosNegocio.validar(request);
-        validadorComercioDuplicado.validar(duenoId, request.getNombre(), request.getDireccion(), comercioId);
+        nombreComercioService.validar(request.getNombre(), comercioId);
 
         List<CambioComercio> cambios = new ArrayList<>();
         cambios.addAll(comercioEdicionService.actualizarDatosBasicos(comercio, request.getNombre(), request.getDescripcion(),

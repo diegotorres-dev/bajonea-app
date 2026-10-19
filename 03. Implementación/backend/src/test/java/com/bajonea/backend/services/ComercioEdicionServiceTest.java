@@ -104,7 +104,7 @@ class ComercioEdicionServiceTest {
                 "+5492964111222");
 
         assertTrue(cambios.isEmpty());
-        verify(comercioRepository, never()).save(any());
+        verify(comercioRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -113,7 +113,7 @@ class ComercioEdicionServiceTest {
 
         assertTrue(service.actualizarDatosBasicos(comercio, "Cafetería Del Sur", "   ", "+5492964111222").isEmpty());
         assertTrue(service.actualizarDatosBasicos(comercio, "Cafetería Del Sur", null, "+5492964111222").isEmpty());
-        verify(comercioRepository, never()).save(any());
+        verify(comercioRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -126,7 +126,7 @@ class ComercioEdicionServiceTest {
                 new CambioComercio(CampoCambioComercio.TELEFONO, "+5492964111222", "+5492964999888")), cambios);
         assertEquals("Nuevo Nombre", comercio.getNombre());
         assertNotNull(comercio.getFechaModificacion());
-        verify(comercioRepository).save(comercio);
+        verify(comercioRepository).saveAndFlush(comercio);
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.bajonea.backend.exceptions;
 
 import com.bajonea.backend.dto.response.ApiResponse;
+import com.bajonea.backend.services.NombreComercioService;
 import com.bajonea.backend.dto.response.DesvinculacionBloqueadaResponseDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import org.springframework.validation.FieldError;
 
@@ -55,6 +57,11 @@ public class GlobalExceptionHandler {
         if (esViolacionUnique && String.valueOf(causaRaiz.getMessage()).contains("uq_usuario_nombre_usuario")) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(new ApiResponse<>("Ese nombre de usuario ya está en uso", null));
+        }
+
+        if (esViolacionUnique && String.valueOf(causaRaiz.getMessage()).contains("uq_comercio_nombre_unico")) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ApiResponse<>(NombreComercioService.MENSAJE_NOMBRE_EN_USO, null));
         }
 
         if (esViolacionUnique) {
@@ -185,5 +192,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<?>> handleMissingServletRequestParameter(MissingServletRequestParameterException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ApiResponse<>(ex.getParameterName() + ": parámetro requerido ausente", null));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<?>> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse<>(ex.getName() + ": valor inválido", null));
     }
 }

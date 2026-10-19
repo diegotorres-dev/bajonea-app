@@ -159,15 +159,16 @@ test.describe('Multi-comercio, tramo 1: resolución del comercio activo y aislam
     expect(resumen.status).toBe(200);
     expect(resumen.body.data.cantidadPedidosHoy).toBe(0);
 
+    const nombreEditado = `Comercio Unico Editado ${Date.now()}`;
     const editar = await apiConHeaders(request, 'PUT', '/comercios/perfil', token, propio, {
-      nombre: 'Comercio Unico Editado',
+      nombre: nombreEditado,
       descripcion: 'Descripción de prueba',
       telefono: '+5492964123456',
       aceptaDelivery: false,
       aceptaRetiro: true,
     });
     expect(editar.status).toBe(200);
-    expect(editar.body.data.nombre).toBe('Comercio Unico Editado');
+    expect(editar.body.data.nombre).toBe(nombreEditado);
   });
 
   test('un Dueño con dos comercios recibe 400 sin header, vacío o en blanco: no elige ninguno por su cuenta', async ({ request }) => {
@@ -298,7 +299,7 @@ test.describe('Multi-comercio, tramo 1: resolución del comercio activo y aislam
 
     const nombreAntesA = (await apiConHeaders(request, 'GET', '/comercios/perfil', token, { [HEADER]: String(comercioA) })).body.data.nombre;
     const editarPerfilB = await apiConHeaders(request, 'PUT', '/comercios/perfil', token, { [HEADER]: String(comercioB) }, {
-      nombre: 'Comercio B Editado',
+      nombre: `Comercio B Editado ${Date.now()}`,
       descripcion: 'Solo cambia B',
       telefono: '+5492964654321',
       aceptaDelivery: false,

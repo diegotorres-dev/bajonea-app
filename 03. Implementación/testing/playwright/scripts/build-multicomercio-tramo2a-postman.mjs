@@ -58,6 +58,8 @@ function item(name, request, testLines = []) {
 
 const status = (codigo) => `pm.test('Status code es ${codigo}', () => pm.response.to.have.status(${codigo}));`;
 const guardar = (variable, expr) => `pm.environment.set('${variable}', ${expr});`;
+const MENSAJE_NOMBRE_EN_USO = 'Ya existe un comercio con ese nombre. Elegí otro.';
+const mensajeEs = (texto) => `pm.test('El mensaje es exacto', () => pm.expect(pm.response.json().mensaje).to.eql(${JSON.stringify(texto)}));`;
 const mensajeContiene = (texto) => `pm.test('El mensaje contiene "${texto}"', () => pm.expect(pm.response.json().mensaje).to.include(${JSON.stringify(texto)}));`;
 
 const horariosTodosLosDias = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'].map((diaSemana) => ({
@@ -320,7 +322,7 @@ items.push(
 );
 
 const dir = (cambios) => (c) => Object.assign(c.direccion, cambios);
-const duplicado = (nombre, mutar) => altaP(nombre, null, [status(409), mensajeContiene('nombre en esa dirección')], mutar);
+const duplicado = (nombre, mutar) => altaP(nombre, null, [status(409), mensajeEs(MENSAJE_NOMBRE_EN_USO)], mutar);
 const baseDuplicada = (c) => {
   c.nombre = 'Cafetería Ñandú Postman';
 };
@@ -336,31 +338,32 @@ items.push(
     baseDuplicada(c);
     c.direccion.codigoPostal = 'V9420ABC';
   }),
-  altaP('[duplicado] Mismo nombre en otra direccion (otro numero): 201', null, [status(201)], (c) => {
+  duplicado('[duplicado] Mismo nombre en otra direccion (otro numero) tambien es duplicado: 409', (c) => {
     baseDuplicada(c);
     c.direccion.numero = '901';
   }),
-  altaP('[duplicado] Mismo nombre y direccion con otro piso: 201', null, [status(201)], (c) => {
+  duplicado('[duplicado] Mismo nombre con otro piso tambien es duplicado: 409', (c) => {
     baseDuplicada(c);
     c.direccion.pisoDepto = '3C';
   }),
-  altaP('[duplicado] Piso con otras mayusculas y espacios equivale al 3C ya cargado: 409', null, [status(409)], (c) => {
-    baseDuplicada(c);
-    c.direccion.pisoDepto = ' 3c ';
+  duplicado('[duplicado] El mismo nombre sin la tilde ni la ene es el mismo nombre: 409', (c) => {
+    c.nombre = 'Cafeteria Nandu Postman';
+    c.direccion.calle = 'Otra Calle';
+    c.direccion.numero = '1500';
   }),
-  altaP('[duplicado] Piso vacio equivale a sin piso: 409 contra la base', null, [status(409)], (c) => {
-    baseDuplicada(c);
-    c.direccion.pisoDepto = '   ';
+  duplicado('[duplicado] El mismo nombre con tabulacion entre las palabras: 409', (c) => {
+    c.nombre = 'Cafeteria	Nandu	Postman';
   }),
-  altaP('[duplicado] Contra el comercio original APROBADO del Dueño: 409', null, [status(409), mensajeContiene('nombre en esa dirección')], (c) => {
+  altaP('[duplicado] Contra el comercio original APROBADO del Dueño: 409', null, [status(409), mensajeEs(MENSAJE_NOMBRE_EN_USO)], (c) => {
     c.nombre = 'ALTA POSTMAN P';
     Object.assign(c.direccion, { calle: 'Belgrano', numero: '700' });
   }),
-  item('[duplicado] Administrador rechaza el adicional base (RECHAZADO no cuenta como duplicado)', req('PUT', '/administrador/comercios/{{alta_p_b_id}}/resolver', { token: 'token_admin', body: { aprobar: false, motivo: 'Fotos poco claras (Postman)' } }), [
+  item('[duplicado] Administrador rechaza el adicional base (RECHAZADO retiene su nombre)', req('PUT', '/administrador/comercios/{{alta_p_b_id}}/resolver', { token: 'token_admin', body: { aprobar: false, motivo: 'Fotos poco claras (Postman)' } }), [
     status(200),
   ]),
-  altaP('[duplicado] Tras el rechazo se puede dar de alta el mismo comercio otra vez: 201', null, [status(201), guardar('alta_p_c_id', 'pm.response.json().data.id')], baseDuplicada),
-  duplicado('[duplicado] Y un tercer intento igual ya es duplicado: 409', baseDuplicada),
+  duplicado('[duplicado] Un comercio RECHAZADO retiene su nombre: darlo de alta otra vez da 409', baseDuplicada),
+  altaP('[alta] Con otro nombre si se puede dar de alta un comercio nuevo tras el rechazo: 201', null, [status(201), guardar('alta_p_c_id', 'pm.response.json().data.id')], (c) => (c.nombre = 'Cafetería Ñandú Postman Dos')),
+  duplicado('[duplicado] Y un tercer intento con el nombre del rechazado sigue siendo duplicado: 409', baseDuplicada),
 );
 
 const enBandeja = (nombre, comercioVar, chequeo) =>

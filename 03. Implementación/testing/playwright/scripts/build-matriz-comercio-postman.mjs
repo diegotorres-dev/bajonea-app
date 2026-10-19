@@ -8,12 +8,18 @@ function nombreUsuarioDe(email) {
   return 'pm' + crypto.createHash('sha1').update(String(email)).digest('hex').slice(0, 12);
 }
 
+let contadorNombresDeComercio = 0;
+
 function adaptarAutenticacion(urlPath, body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return body;
   if (urlPath === '/auth/registro/cliente' || urlPath === '/auth/registro/comercio') {
     let completo = body;
     if (!('nombreUsuario' in completo) && typeof completo.email === 'string') {
       completo = { ...completo, nombreUsuario: nombreUsuarioDe(completo.email) };
+    }
+    if (urlPath === '/auth/registro/comercio' && completo.nombre === 'Comercio Matriz Base') {
+      contadorNombresDeComercio += 1;
+      completo = { ...completo, nombre: `Comercio Matriz Base ${String(contadorNombresDeComercio).padStart(3, '0')}` };
     }
     if (urlPath === '/auth/registro/cliente' && !('aceptaTerminos' in completo)) {
       completo = { ...completo, aceptaTerminos: true };
@@ -329,7 +335,7 @@ const folder36 = {
       req('PUT', '/comercios/perfil', perfilBody({ nombre: s(151, 'N') }), 'matriz_comercio_perfil_token'),
       assertFieldMessage(400, 'nombre', 'el tamaño debe estar entre 0 y 150'),
     ),
-    item('Perfil Comercio - nombre limite superior exacto 150 (debe aceptar)', req('PUT', '/comercios/perfil', perfilBody({ nombre: s(150, 'N') }), 'matriz_comercio_perfil_token'), assertStatusOnly(200)),
+    item('Perfil Comercio - nombre limite superior exacto 150 (debe aceptar)', req('PUT', '/comercios/perfil', perfilBody({ nombre: s(150, 'M') }), 'matriz_comercio_perfil_token'), assertStatusOnly(200)),
     item('Perfil Comercio - descripcion limite superior 2001 (debe rechazar)', req('PUT', '/comercios/perfil', perfilBody({ descripcion: s(2001, 'd') }), 'matriz_comercio_perfil_token'), assertFieldMessage(400, 'descripcion', 'La descripción no puede superar los 2000 caracteres.')),
     item('Perfil Comercio - descripcion limite superior exacto 2000 (debe aceptar)', req('PUT', '/comercios/perfil', perfilBody({ descripcion: s(2000, 'd') }), 'matriz_comercio_perfil_token'), assertStatusOnly(200)),
     item('Perfil Comercio - telefono vacio', req('PUT', '/comercios/perfil', perfilBody({ telefono: '' }), 'matriz_comercio_perfil_token'), assertFieldMessage(400, 'telefono', 'No debe estar vacío')),

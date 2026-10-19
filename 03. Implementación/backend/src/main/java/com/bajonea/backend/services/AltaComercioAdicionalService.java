@@ -26,15 +26,13 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code APTO_VENTA} ({@link #ESTADOS_QUE_HABILITAN}), o si tiene al menos un comercio y todos están en
  * {@code RECHAZO_DEFINITIVO} (el rechazo definitivo no lo deja sin poder volver a empezar con otro comercio);
  * con cualquier otra combinación (pendientes, rechazados que todavía puede corregir, suspendidos, etc.) no
- * lo es. No puede tener otro comercio con el mismo nombre en la misma dirección
- * ({@link ValidadorComercioDuplicado}: un {@code RECHAZADO} no cuenta, cualquier otro estado sí, incluido
- * {@code RECHAZO_DEFINITIVO}). Teléfono y email de contacto pueden repetirse, y no hay tope de altas
- * pendientes.
+ * lo es. El nombre tiene que ser único en toda la plataforma ({@link NombreComercioService}). El teléfono
+ * puede repetirse, y no hay tope de altas pendientes.
  * <p>
  * Concurrencia: la fila del Dueño se bloquea ({@code SELECT ... FOR UPDATE}) como primera sentencia de
  * la transacción, así dos altas simultáneas del mismo Dueño se ejecutan una detrás de la otra y la
- * segunda ve al comercio que insertó la primera (el chequeo de duplicado no tiene restricción única en
- * la base que lo respalde). No se toma ningún otro bloqueo, y la fila de {@code dueno} solo la esperan
+ * segunda ve al comercio que insertó la primera (la carrera entre Dueños distintos la resuelve el índice
+ * único del nombre, V37). No se toma ningún otro bloqueo, y la fila de {@code dueno} solo la esperan
  * otras altas del mismo Dueño y las inserciones que la referencian como padre (ver
  * docs/APRENDIZAJES-TECNICOS.md).
  */
@@ -52,7 +50,6 @@ public class AltaComercioAdicionalService {
     private final RegistroService registroService;
     private final ComercioService comercioService;
     private final CloudinaryService cloudinaryService;
-    private final ValidadorComercioDuplicado validadorComercioDuplicado;
 
     @Transactional(readOnly = true)
     public ElegibilidadAltaAdicionalResponseDTO consultarElegibilidad(Integer duenoId) {
@@ -72,8 +69,6 @@ public class AltaComercioAdicionalService {
         }
 
         cloudinaryService.validarFotoNuevoComercio(duenoId, request.getFotoPerfilUrl());
-
-        validadorComercioDuplicado.validar(duenoId, request.getNombre(), request.getDireccion(), null);
 
         Comercio comercio = registroService.crearComercio(dueno, request);
         return comercioService.verPerfil(comercio.getId());

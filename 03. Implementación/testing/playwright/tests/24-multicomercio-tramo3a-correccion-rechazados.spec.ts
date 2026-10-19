@@ -36,8 +36,7 @@ const MENSAJE_SIN_CAMBIOS = 'Modificá al menos un dato antes de volver a solici
 const MENSAJE_VERSION = 'La solicitud cambió desde que abriste la corrección. Volvé a abrirla para continuar';
 const MENSAJE_YA_ENVIADO = 'Este comercio ya fue enviado nuevamente a revisión';
 const MENSAJE_LEGALES = 'No podés modificar los datos fiscales ni del representante';
-const MENSAJE_DUPLICADO =
-  'Ya tenés un comercio con ese nombre en esa dirección. Si es otro local del mismo edificio, agregá el piso o número de local.';
+const MENSAJE_DUPLICADO = 'Ya existe un comercio con ese nombre. Elegí otro.';
 const MENSAJE_NO_ELEGIBLE = 'Para agregar un nuevo comercio, necesitás tener al menos uno aprobado previamente';
 const DIAS = ['LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO', 'DOMINGO'];
 const ETIQUETA_DIA: Record<string, string> = {
@@ -368,11 +367,12 @@ test.describe('Multi-comercio, tramo 3A: corrección y re-solicitud de comercios
       const horariosNuevos: Franja[] = [...c.horarios.map((h: any) => ({ diaSemana: h.diaSemana, horaApertura: h.horaApertura, horaCierre: h.horaCierre })),
         { diaSemana: otroDia, horaApertura: '10:00:00', horaCierre: '14:00:00' }];
 
+      const marca = String(Date.now());
       const respuesta = await reenviar(
         request,
         dueno.token,
         dueno.comercioId,
-        payloadDesde(c, { nombre: 'nombre corregido e2e', descripcion: 'Descripción corregida', horarios: horariosNuevos }),
+        payloadDesde(c, { nombre: `nombre corregido e2e ${marca}`, descripcion: 'Descripción corregida', horarios: horariosNuevos }),
       );
 
       expect(respuesta.status).toBe(200);
@@ -380,7 +380,7 @@ test.describe('Multi-comercio, tramo 3A: corrección y re-solicitud de comercios
       expect(estadoDe(dueno.comercioId)).toBe('PENDIENTE');
       expect(cantidadResolicitudesDe(dueno.comercioId)).toBe(1);
       expect(sql(`SELECT fecha_resolicitud IS NOT NULL FROM comercio WHERE id = ${dueno.comercioId};`)).toBe('1');
-      expect(sql(`SELECT nombre FROM comercio WHERE id = ${dueno.comercioId};`)).toBe('Nombre Corregido E2e');
+      expect(sql(`SELECT nombre FROM comercio WHERE id = ${dueno.comercioId};`)).toBe(`Nombre Corregido E2e ${marca}`);
 
       const historial = historialDe(dueno.comercioId);
       expect(historial).toHaveLength(2);
@@ -389,7 +389,7 @@ test.describe('Multi-comercio, tramo 3A: corrección y re-solicitud de comercios
 
       expect(camposDeLosCambios(dueno.comercioId)).toEqual(['DESCRIPCION', 'HORARIOS', 'NOMBRE']);
       const cambios = cambiosDeLaUltimaResolicitud(dueno.comercioId);
-      expect(cambios).toContain(`NOMBRE|${dueno.nombre}|Nombre Corregido E2e`);
+      expect(cambios).toContain(`NOMBRE|${dueno.nombre}|Nombre Corregido E2e ${marca}`);
       expect(cambios).toContain('DESCRIPCION|Comercio de prueba generado por Playwright (Fase 17)|Descripción corregida');
       expect(cambios).toContain(`HORARIOS|${textoHorarios(c.horarios)}|${textoHorarios(horariosNuevos)}`);
 
@@ -791,41 +791,53 @@ test.describe('Multi-comercio, tramo 3A: corrección y re-solicitud de comercios
   });
 
   test.describe('comercios duplicados', () => {
-    test('la corrección no se cuenta a sí misma pero sí a los demás comercios del Dueño, salvo los rechazados', async ({ request }) => {
+    test('la corrección no se cuenta a sí misma: conservar el nombre no es un duplicado', async ({ request }) => {
       const base = await prepararAprobado(request);
-      const nombre = `Local Duplicado ${sufijoUnico()}`;
+      const nombre = `Local Propio ${sufijoUnico()}`;
       const rechazadoId = await clonarConRedes(request, base.comercioId, nombre, 'RECHAZADO');
-      const otroId = await clonarConRedes(request, base.comercioId, nombre.toUpperCase(), 'PENDIENTE');
 
-      for (const estadoDelOtro of ['PENDIENTE', 'APROBADO', 'SUSPENDIDO', 'RECHAZO_DEFINITIVO']) {
-        sql(`UPDATE comercio SET estado = '${estadoDelOtro}' WHERE id = ${otroId};`);
-        const { body } = await correccionDe(request, base.token, rechazadoId);
-        const respuesta = await reenviar(request, base.token, rechazadoId, payloadDesde(body.data, { descripcion: `Cambio ${estadoDelOtro}` }));
-        expect(respuesta.status, estadoDelOtro).toBe(409);
-        expect(respuesta.body.mensaje).toBe(MENSAJE_DUPLICADO);
-      }
-
-      sql(`UPDATE comercio SET estado = 'RECHAZADO' WHERE id = ${otroId};`);
       const { body } = await correccionDe(request, base.token, rechazadoId);
-      const respuesta = await reenviar(request, base.token, rechazadoId, payloadDesde(body.data, { descripcion: 'Sin duplicado vivo' }));
+      const respuesta = await reenviar(request, base.token, rechazadoId, payloadDesde(body.data, { descripcion: 'Mismo nombre, otra descripción' }));
       expect(respuesta.status).toBe(200);
       expect(estadoDe(rechazadoId)).toBe('PENDIENTE');
     });
 
-    test('un RECHAZO_DEFINITIVO cuenta como duplicado al agregar un comercio; un RECHAZADO no', async ({ request }) => {
+    test('la corrección choca con el nombre de cualquier otro comercio, salvo uno en RECHAZO_DEFINITIVO', async ({ request }) => {
+      const base = await prepararAprobado(request);
+      const sufijo = sufijoUnico();
+      const rechazadoId = await clonarConRedes(request, base.comercioId, `Local A Corregir ${sufijo}`, 'RECHAZADO');
+      const nombreAjeno = `Local Ocupado ${sufijo}`;
+      const otroId = await clonarConRedes(request, base.comercioId, nombreAjeno, 'PENDIENTE');
+
+      for (const estadoDelOtro of ['PENDIENTE', 'APROBADO', 'SUSPENDIDO', 'RECHAZADO']) {
+        sql(`UPDATE comercio SET estado = '${estadoDelOtro}' WHERE id = ${otroId};`);
+        const { body } = await correccionDe(request, base.token, rechazadoId);
+        const respuesta = await reenviar(request, base.token, rechazadoId, payloadDesde(body.data, { nombre: nombreAjeno.toUpperCase(), descripcion: `Cambio ${estadoDelOtro}` }));
+        expect(respuesta.status, estadoDelOtro).toBe(409);
+        expect(respuesta.body.mensaje).toBe(MENSAJE_DUPLICADO);
+      }
+
+      sql(`UPDATE comercio SET estado = 'RECHAZO_DEFINITIVO' WHERE id = ${otroId};`);
+      const { body } = await correccionDe(request, base.token, rechazadoId);
+      const respuesta = await reenviar(request, base.token, rechazadoId, payloadDesde(body.data, { nombre: nombreAjeno, descripcion: 'Con el nombre liberado' }));
+      expect(respuesta.status).toBe(200);
+      expect(estadoDe(rechazadoId)).toBe('PENDIENTE');
+    });
+
+    test('un RECHAZADO retiene su nombre al agregar un comercio; un RECHAZO_DEFINITIVO lo libera', async ({ request }) => {
       const base = await prepararAprobado(request);
       const nombre = `Alta Duplicada ${sufijoUnico()}`;
-      const clonId = await clonarConRedes(request, base.comercioId, nombre, 'RECHAZO_DEFINITIVO');
+      const clonId = await clonarConRedes(request, base.comercioId, nombre, 'RECHAZADO');
       const foto = await subirFotoNuevoComercio(request, base.token);
       const direccionDelClon = { calle: 'Av. San Martín', numero: '100', pisoDepto: null, codigoPostal: '9420', localidadId, principal: false };
 
-      const contraDefinitivo = await registrarComercioAdicional(request, base.token, localidadId, { nombre, fotoPerfilUrl: foto, direccion: direccionDelClon });
-      expect(contraDefinitivo.status).toBe(409);
-      expect(contraDefinitivo.body.mensaje).toBe(MENSAJE_DUPLICADO);
-
-      sql(`UPDATE comercio SET estado = 'RECHAZADO' WHERE id = ${clonId};`);
       const contraRechazado = await registrarComercioAdicional(request, base.token, localidadId, { nombre, fotoPerfilUrl: foto, direccion: direccionDelClon });
-      expect(contraRechazado.status).toBe(201);
+      expect(contraRechazado.status).toBe(409);
+      expect(contraRechazado.body.mensaje).toBe(MENSAJE_DUPLICADO);
+
+      sql(`UPDATE comercio SET estado = 'RECHAZO_DEFINITIVO' WHERE id = ${clonId};`);
+      const contraDefinitivo = await registrarComercioAdicional(request, base.token, localidadId, { nombre, fotoPerfilUrl: foto, direccion: direccionDelClon });
+      expect(contraDefinitivo.status).toBe(201);
     });
   });
 
@@ -1004,7 +1016,8 @@ test.describe('Multi-comercio, tramo 3A: corrección y re-solicitud de comercios
       const nuevo = await registrarPendiente(request);
       const { body } = await correccionDe(request, reenviado.token, reenviado.comercioId);
       const c = body.data;
-      await reenviar(request, reenviado.token, reenviado.comercioId, payloadDesde(c, { nombre: 'Nombre De La Bandeja', descripcion: 'Descripción de la bandeja' }));
+      const nombreBandeja = `Nombre De La Bandeja ${Date.now()}`;
+      await reenviar(request, reenviado.token, reenviado.comercioId, payloadDesde(c, { nombre: nombreBandeja, descripcion: 'Descripción de la bandeja' }));
 
       const pendientes = await pendientesDelAdmin(request);
       const resolicitudes = await resolicitudesDelAdmin(request);
@@ -1018,10 +1031,10 @@ test.describe('Multi-comercio, tramo 3A: corrección y re-solicitud de comercios
       expect(r).toMatchObject({ intento: 1, maximoResolicitudes: 3, esUltimoIntento: false, motivoRechazoAnterior: 'Motivo de la bandeja' });
       expect(r.fechaResolicitud).toBeTruthy();
       expect(r.cambios.map((x: any) => x.campo).sort()).toEqual(['DESCRIPCION', 'NOMBRE']);
-      expect(r.cambios.find((x: any) => x.campo === 'NOMBRE')).toEqual({ campo: 'NOMBRE', valorAnterior: reenviado.nombre, valorNuevo: 'Nombre De La Bandeja' });
+      expect(r.cambios.find((x: any) => x.campo === 'NOMBRE')).toEqual({ campo: 'NOMBRE', valorAnterior: reenviado.nombre, valorNuevo: nombreBandeja });
       expect(r.comercio).toMatchObject({
         estado: 'PENDIENTE',
-        nombre: 'Nombre De La Bandeja',
+        nombre: nombreBandeja,
         razonSocial: c.legales.razonSocial,
         cuit: c.legales.cuit,
         condicionIva: 'RESPONSABLE_INSCRIPTO',

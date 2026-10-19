@@ -42,22 +42,27 @@ public class RateLimitPublicoFilter extends OncePerRequestFilter {
 
     private static final String GRUPO_FOTO_REGISTRO = "foto-registro";
     private static final String GRUPO_INVITACION_EMPLEADO = "invitacion-empleado";
+    private static final String GRUPO_DISPONIBILIDAD = "disponibilidad";
 
     private static final Map<String, String> GRUPO_POR_RUTA = Map.of(
             "/api/v1/auth/registro/comercio/foto-firma", GRUPO_FOTO_REGISTRO,
             "/api/v1/auth/registro/cliente/foto-firma", GRUPO_FOTO_REGISTRO,
             "/api/v1/auth/invitaciones-empleado/validar", GRUPO_INVITACION_EMPLEADO,
-            "/api/v1/auth/invitaciones-empleado/aceptar", GRUPO_INVITACION_EMPLEADO);
+            "/api/v1/auth/invitaciones-empleado/aceptar", GRUPO_INVITACION_EMPLEADO,
+            "/api/v1/auth/nombre-usuario/disponibilidad", GRUPO_DISPONIBILIDAD,
+            "/api/v1/auth/comercio-nombre/disponibilidad", GRUPO_DISPONIBILIDAD);
 
     private final Map<String, Integer> limitePorGrupo;
     private final Map<String, VentanaRateLimit> ventanasPorGrupoEIp = new ConcurrentHashMap<>();
 
     public RateLimitPublicoFilter(
             @Value("${app.rate-limit.foto-registro-por-minuto:5}") int limiteFotoRegistroPorMinuto,
-            @Value("${app.rate-limit.invitacion-empleado-por-minuto:10}") int limiteInvitacionEmpleadoPorMinuto) {
+            @Value("${app.rate-limit.invitacion-empleado-por-minuto:10}") int limiteInvitacionEmpleadoPorMinuto,
+            @Value("${app.rate-limit.disponibilidad-por-minuto:30}") int limiteDisponibilidadPorMinuto) {
         this.limitePorGrupo = Map.of(
                 GRUPO_FOTO_REGISTRO, limiteFotoRegistroPorMinuto,
-                GRUPO_INVITACION_EMPLEADO, limiteInvitacionEmpleadoPorMinuto);
+                GRUPO_INVITACION_EMPLEADO, limiteInvitacionEmpleadoPorMinuto,
+                GRUPO_DISPONIBILIDAD, limiteDisponibilidadPorMinuto);
     }
 
     @Override

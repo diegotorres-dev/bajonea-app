@@ -36,6 +36,9 @@ function baseComercioPayload(overrides = {}) {
     redesSociales: [{ tipo: 'INSTAGRAM', url: 'https://instagram.com/matriz.comercio' }],
   };
   const merged = deepMerge(payload, overrides);
+  if (merged.nombre === 'Comercio Matriz Base') {
+    merged.nombre = `Comercio Matriz Base ${crypto.randomBytes(5).toString('hex')}`;
+  }
   if (!merged.nombreUsuario) {
     merged.nombreUsuario = 'pm' + crypto.createHash('sha1').update(merged.email).digest('hex').slice(0, 12);
   }
