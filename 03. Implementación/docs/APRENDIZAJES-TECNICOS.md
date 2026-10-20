@@ -568,3 +568,14 @@ Pendientes que no son código y hay que revisar en cada entorno antes de contar 
 
 - Los scripts que se escriben a mano con `node` desde una tubería de bash pierden los caracteres con tilde (`á` llega mal por la entrada estándar de Windows): para editar archivos con texto en español, usar un archivo `.mjs` o la herramienta de edición, no `node -e` ni un heredoc por la entrada estándar.
 - Los archivos del frontend mezclan finales de línea LF y CRLF en el árbol de trabajo (git los normaliza): al reemplazar texto con un script hay que detectar el final de línea del archivo (`includes('\r\n')`) y convertir el patrón.
+
+
+## Edición de horarios — Fase 2, tramo T1 (2026-10-19)
+
+- **Una lectura común después de esperar un bloqueo ve la foto vieja.** La primera versión de `HorarioEdicionService` leía `horario` con una consulta común después de esperar el `FOR UPDATE` del comercio, pero la foto de la transacción ya se había fijado en la primera lectura (`findById`): dos ediciones simultáneas no veían los cambios de la otra y quedaban 15 filas pendientes. Se corrigió leyendo las filas con `FOR UPDATE` (`findVigentesDesdeConBloqueo`). Lo detectó `HorarioEdicionConcurrenciaIntegrationTest`.
+- **Los dos extremos de `23:59`.** `23:59` vale `24:00` solo en una franja que no cruza la medianoche (`20:00` a `23:59` no cruza; `20:00` a `00:00` sí cruza y el cierre se cuenta como la hora literal). El validador del servidor (`ValidadorHorarios`) y el del cliente (`js/horarios.js`) tienen que mantener esa misma regla; cualquier cambio va en los dos.
+- **El mensaje de una superposición entre días distintos tiene que ser estable.** El cliente valida la fila que el usuario acaba de editar, y esa puede ser la segunda en el orden de la semana; si el mensaje nombrara primero la fila editada, el texto cambiaría según qué campo se tocó. Se ordena por el inicio del turno dentro de la semana circular (el domingo que cruza va antes que el lunes).
+- **La cola de un turno de hoy no se valida en el cliente.** Depende de qué día es hoy en el comercio y de lo que rige ahora, no solo de la lista que se está cargando; la valida el servidor y el cliente muestra su mensaje bajo el campo.
+- **En Playwright, `fill` sobre un `input type="time"` dispara `input` y `change`**, así que las validaciones y la leyenda de cruce se actualizan solas.
+- **Un `409` o un `400` dejan "Failed to load resource" en la consola del navegador.** Los tests que verifican "sin errores de consola" tienen que filtrar ese mensaje de red y mirar solo `pageerror` y los errores de JavaScript.
+- **Anotado, sin arreglar:** `.field__hint` (`#b0a9a3` sobre blanco, unos 2,2:1 de contraste) está por debajo de 4,5:1 en todos los formularios; los botones de editar y quitar del resumen del horario fijo miden 32 px (menos de los 44 px recomendados para tocar).

@@ -10,11 +10,13 @@ Usuario — Dueño; las de invitación y permisos del rol Empleado, en Historias
 
 Como Dueño o Empleado autorizado, quiero editar los datos del negocio (nombre,
 descripción, foto de perfil del comercio, tipo de comercio, teléfono, email de
-contacto, modalidades de entrega) y, como Dueño, sus horarios de atención, para mantener
+contacto, modalidades de entrega) y sus horarios de atención, para mantener
 la información visible y actualizada. Sé que la foto de perfil del comercio es propia de
 ese negocio y obligatoria, distinta de la foto de perfil personal del Dueño. Como
 Empleado no veo la razón social, el CUIT ni los demás datos fiscales o del representante,
-y la edición de horarios se habilitará para mí cuando exista esa función.
+y puedo editar los horarios. Un cambio de horarios rige desde mañana: veo qué rige hoy y qué
+regirá desde mañana, y puedo cancelar el cambio programado. Un turno puede terminar al día
+siguiente (por ejemplo, de 20:00 a 02:00).
 
 ## HU-CO02: Gestionar mis Redes Sociales
 

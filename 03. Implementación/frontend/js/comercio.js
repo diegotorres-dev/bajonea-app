@@ -23,6 +23,8 @@ import { abrirHojaCambiarCuenta } from './selector-contexto.js';
 import { abrirHojaRenuncia } from './renuncia-empleado.js';
 import { montarSwitchCierre } from './cierre-comercio.js';
 import { abrirEquipoComercio, enlazarEquipoComercio } from './equipo-comercio.js';
+import { initHorarios } from './comercio-form.js';
+import { ordenarFranjas, recortarHora, textoFranja, textoRango } from './horarios.js';
 import { cerrarVariosComercios, comerciosCerrables } from './apertura-comercio.js';
 import {
   subirImagenProducto,
@@ -1974,7 +1976,7 @@ function textoEstadoDelComercio(comercio) {
   return comercio.abiertoAhora ? 'Abierto ahora' : 'Cerrado en este momento';
 }
 
-function pintarHorariosParaEmpleado(contenedor, horarios) {
+function pintarHorariosParaEmpleado(contenedor, horarios, pendientes) {
   contenedor.replaceChildren();
   DIAS_DE_LA_SEMANA.forEach((dia) => {
     const franjas = (horarios || []).filter((horario) => horario.diaSemana === dia.clave);
@@ -1982,9 +1984,142 @@ function pintarHorariosParaEmpleado(contenedor, horarios) {
     fila.setAttribute('data-testid', `empleado-horario-${dia.clave.toLowerCase()}`);
     fila.textContent = franjas.length === 0
       ? `${dia.etiqueta}: Cerrado`
-      : `${dia.etiqueta}: ${franjas.map((franja) => `${franja.horaApertura.slice(0, 5)} - ${franja.horaCierre.slice(0, 5)}`).join(' / ')}`;
+      : `${dia.etiqueta}: ${franjas.map(textoRango).join(' / ')}`;
     contenedor.appendChild(fila);
   });
+  if (pendientes && pendientes.length > 0) {
+    const titulo = crear('p', 'horarios-vigencia__titulo');
+    titulo.style.marginTop = '12px';
+    titulo.textContent = 'Desde mañana';
+    contenedor.appendChild(titulo);
+    ordenarFranjas(pendientes).forEach((franja) => {
+      const fila = crear('p', 'perfil-datos__horario');
+      fila.setAttribute('data-testid', 'empleado-horario-pendiente');
+      fila.textContent = textoFranja(franja);
+      contenedor.appendChild(fila);
+    });
+  }
+}
+
+function enlazarEdicionDeHorarios(comercio, idEnlace) {
+  const avisoSlot = document.getElementById('horarios-aviso-slot');
+  const form = document.getElementById('form-editar-horarios');
+  const guardarBtn = document.getElementById('guardar-horarios-btn');
+  const cancelarBtn = document.getElementById('btn-cancelar-cambio-horarios');
+  const enlace = document.getElementById(idEnlace);
+  const horarios = initHorarios({ mostrarError: (mensaje) => mostrarErrorCampo('error-horarios', mensaje) });
+
+  function pintarFilas(contenedor, franjas) {
+    contenedor.replaceChildren();
+    ordenarFranjas(franjas).forEach((franja) => {
+      const fila = crear('p', 'horarios-vigencia__fila');
+      fila.setAttribute('data-testid', 'fila-horario-vigencia');
+      fila.textContent = textoFranja(franja);
+      contenedor.appendChild(fila);
+    });
+  }
+
+  function pendientes() {
+    return comercio.horariosPendientes || [];
+  }
+
+  function pintarTarjeta() {
+    pintarFilas(document.getElementById('horarios-rige-hoy'), comercio.horarios || []);
+    pintarFilas(document.getElementById('horarios-desde-manana'), pendientes());
+    document.getElementById('horarios-desde-manana-bloque').classList.toggle('is-hidden', pendientes().length === 0);
+  }
+
+  function precargarFormulario() {
+    horarios.precargar(pendientes().length > 0 ? pendientes() : (comercio.horarios || []));
+  }
+
+  function aplicarRespuesta(respuesta) {
+    comercio.horarios = respuesta.vigentes;
+    comercio.horariosPendientes = respuesta.pendientes;
+    comercio.horariosRigenDesde = respuesta.rigeDesde;
+    pintarTarjeta();
+    precargarFormulario();
+    if (esContextoEmpleado()) {
+      pintarHorariosParaEmpleado(document.getElementById('empleado-horarios'), comercio.horarios, comercio.horariosPendientes);
+    }
+    refrescarComercios().catch(() => {});
+  }
+
+  function cuerpoDeFranjas(franjas) {
+    return franjas.map((franja) => ({
+      diaSemana: franja.diaSemana,
+      horaApertura: recortarHora(franja.horaApertura),
+      horaCierre: recortarHora(franja.horaCierre),
+    }));
+  }
+
+  enlace.addEventListener('click', () => {
+    limpiarAvisoFijo(avisoSlot);
+    limpiarErrorCampo('error-horarios');
+    pintarTarjeta();
+    precargarFormulario();
+    mostrarVista('view-editar-horarios');
+  });
+
+  cancelarBtn.addEventListener('click', async () => {
+    limpiarAvisoFijo(avisoSlot);
+    setLoading(cancelarBtn, 'Cancelando...', true);
+    try {
+      const respuesta = await apiFetch('/comercios/perfil/horarios', {
+        method: 'PUT',
+        body: { horarios: cuerpoDeFranjas(comercio.horarios || []) },
+      });
+      aplicarRespuesta(respuesta);
+      showToast('Cambio de horarios cancelado');
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        mostrarAvisoFijo(avisoSlot, error.message);
+      } else {
+        showToast(error instanceof ApiError ? error.message : 'No pudimos cancelar el cambio. Intentá nuevamente.', 'error');
+      }
+    } finally {
+      setLoading(cancelarBtn, '', false, 'Cancelar el cambio');
+    }
+  });
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    limpiarAvisoFijo(avisoSlot);
+    if (!horarios.validar()) {
+      scrollAlPrimerError();
+      return;
+    }
+    const franjas = horarios.recolectar().filter((franja) => franja.diaSemana && franja.horaApertura && franja.horaCierre);
+    const habiaCambio = pendientes().length > 0;
+    setLoading(guardarBtn, 'Guardando...', true);
+    try {
+      const respuesta = await apiFetch('/comercios/perfil/horarios', {
+        method: 'PUT',
+        body: { horarios: cuerpoDeFranjas(franjas) },
+      });
+      aplicarRespuesta(respuesta);
+      mostrarVista('view-principal');
+      if (respuesta.pendientes.length > 0) {
+        showToast('Horarios guardados. Rigen desde mañana.');
+      } else {
+        showToast(habiaCambio ? 'Cambio de horarios cancelado' : 'No hiciste cambios en los horarios');
+      }
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        mostrarAvisoFijo(avisoSlot, error.message);
+      } else if (error instanceof ApiError && error.status === 400) {
+        mostrarErrorCampo('error-horarios', error.message);
+      } else {
+        renderBanner(avisoSlot, 'error', error instanceof ApiError ? error.message : 'No pudimos guardar los horarios. Intentá nuevamente.');
+      }
+      scrollAlPrimerError();
+    } finally {
+      setLoading(guardarBtn, '', false, 'Guardar cambios');
+    }
+  });
+
+  guardarBtn.disabled = false;
+  enlace.disabled = false;
 }
 
 function prepararVistasDelPerfil(esEmpleado) {
@@ -2122,7 +2257,7 @@ function pintarPerfilDelEmpleado(comercio) {
   document.getElementById('empleado-descripcion').textContent = comercio.descripcion || 'Sin descripción';
   document.getElementById('empleado-direccion').textContent = formatearDireccion(comercio.direccion);
   document.getElementById('empleado-telefono').textContent = comercio.telefono;
-  pintarHorariosParaEmpleado(document.getElementById('empleado-horarios'), comercio.horarios);
+  pintarHorariosParaEmpleado(document.getElementById('empleado-horarios'), comercio.horarios, comercio.horariosPendientes);
   document.getElementById('empleado-estado').textContent = textoEstadoDelComercio(comercio);
 }
 
@@ -2146,6 +2281,7 @@ async function iniciarPerfilDelEmpleado(comercio) {
   editarDatos.disabled = false;
 
   enlazarEdicionDatosDelComercioEmpleado(comercio);
+  enlazarEdicionDeHorarios(comercio, 'editar-horarios-empleado-link');
 
   document.getElementById('renuncia-ayuda-comercio').textContent = comercio.nombre;
   const renunciar = document.getElementById('btn-renunciar-equipo');
@@ -2221,6 +2357,8 @@ export async function initComercioPerfil() {
   editarTelefonoInput.addEventListener('input', () => {
     editarTelefonoInput.value = editarTelefonoInput.value.replace(/\D/g, '').slice(0, 10);
   });
+
+  enlazarEdicionDeHorarios(comercio, 'editar-horarios-link');
 
   document.getElementById('cambiar-password-link').addEventListener('click', () => {
     document.getElementById('form-cambiar-password').reset();

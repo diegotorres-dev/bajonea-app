@@ -61,3 +61,10 @@ Todo lo que hay que revisar antes de subir Bajoneá al servidor final y que no e
 ## 8. Hallazgos del bloque A5 (resueltos en el bloque A5b, ver `docs/DECISIONES.md`)
 
 - **A5-1, A5-2 y A5-3: resueltos (bloque A5b, 2026-10-14).** Las firmas de Cloudinary revalidan la relación y el estado del comercio; las cuatro escrituras de imagen serializan por producto (la segunda recibe `404` en vez de `500`); y todas las escrituras del catálogo, del Dueño y del Empleado, toman el comercio compartido antes que el producto (se acabó el deadlock de tres con `cerrar`, `abrir` y `datos-operativos`). Orden y tabla de cada método en `docs/CONCURRENCIA-Y-TRANSACCIONES.md`. **Sin cambios de despliegue.**
+
+
+## Edición de horarios (Fase 2, tramo T1, 2026-10-19)
+
+- **Migración `V38`** (`horario.vigente_desde` y `vigente_hasta`): la aplica Flyway al arrancar el backend; las filas existentes quedan con `vigente_desde = 2000-01-01` y `vigente_hasta = NULL` (vigentes). No hay `V39`: se verificó con consultas de solo lectura sobre `bajonea_practicas3` que no había pares `23:59` + `00:00` para fusionar (repetir esa revisión sobre la base de producción antes de desplegar; las consultas están en `docs/PLAN-FASE2-T1.md`, anexo 9.1).
+- **Propiedad nueva `comercio.reapertura.job-habilitado`** (`true` por defecto en el código; `false` en el perfil `test`). No hace falta definirla en el servidor.
+- **Reloj de "mañana":** el cambio de horarios rige desde el día siguiente en la zona `app.zona-horaria` (por defecto `America/Argentina/Ushuaia`).

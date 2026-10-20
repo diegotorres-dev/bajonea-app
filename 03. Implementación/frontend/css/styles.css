@@ -5964,3 +5964,80 @@ button.panel-comercios__fila:focus-visible {
   font-size: 13px;
   margin-top: 2px;
 }
+
+.leyenda-cruce {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.leyenda-cruce svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.quick-schedule .leyenda-cruce {
+  margin-top: 6px;
+}
+
+.horarios-vigencia {
+  margin-bottom: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.horarios-vigencia__bloque {
+  padding: 14px 16px;
+}
+
+.horarios-vigencia__bloque + .horarios-vigencia__bloque {
+  border-top: 1px solid var(--color-border);
+  background: var(--color-primary-soft);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.horarios-vigencia__titulo {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.horarios-vigencia__fila {
+  margin: 0 0 2px;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.horarios-vigencia__cancelar {
+  min-height: 44px;
+  margin-top: 6px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.horarios-vigencia__cancelar:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.horarios-aviso-vigencia {
+  margin: 16px 0 12px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--color-text-muted);
+}

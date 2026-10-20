@@ -28,6 +28,11 @@
             <span>Editar datos del comercio</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
+          <button class="profile-link" type="button" id="editar-horarios-link" data-testid="btn-editar-horarios" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Editar horarios</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
           <button class="profile-link" type="button" id="ver-legales-link" data-testid="btn-ver-legales" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
             <span>Ver datos legales</span>
@@ -60,6 +65,11 @@
           <button class="profile-link" type="button" id="editar-comercio-empleado-link" data-testid="btn-editar-datos-comercio" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
             <span>Editar datos del comercio</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+          <button class="profile-link" type="button" id="editar-horarios-empleado-link" data-testid="btn-editar-horarios" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>Editar horarios</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
           <button class="profile-link" type="button" id="editar-datos-link" data-testid="btn-editar-datos" disabled>
@@ -273,6 +283,71 @@
             </div>
           </div>
           <button class="btn btn-primary" type="submit" id="guardar-datos-comercio-btn" data-testid="btn-guardar-datos-comercio" disabled>Guardar cambios</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="view-editar-horarios" class="perfil-view is-hidden">
+      <header class="app-header">
+        <button class="app-header__back" type="button" data-volver-perfil aria-label="Volver" data-testid="btn-volver-perfil-editar-horarios">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="app-header__title">Editar horarios</span>
+      </header>
+      <div class="screen-body">
+        <div id="horarios-aviso-slot" data-testid="mensaje-banner-editar-horarios"></div>
+        <div class="horarios-vigencia" data-testid="tarjeta-vigencia-horarios">
+          <div class="horarios-vigencia__bloque">
+            <p class="horarios-vigencia__titulo">Rige hoy</p>
+            <div id="horarios-rige-hoy" data-testid="horarios-rige-hoy"></div>
+          </div>
+          <div class="horarios-vigencia__bloque is-hidden" id="horarios-desde-manana-bloque" data-testid="horarios-desde-manana-bloque">
+            <p class="horarios-vigencia__titulo">Desde mañana</p>
+            <div id="horarios-desde-manana" data-testid="horarios-desde-manana"></div>
+            <button type="button" class="horarios-vigencia__cancelar" id="btn-cancelar-cambio-horarios" data-testid="btn-cancelar-cambio-horarios">Cancelar el cambio</button>
+          </div>
+        </div>
+        <form class="form" id="form-editar-horarios" novalidate>
+          <div class="segmented-control" role="tablist" data-testid="tabs-horarios">
+            <button type="button" class="segmented-control__btn" id="tab-horario-fijo" role="tab" aria-selected="true" data-testid="tab-horario-fijo">Horario fijo</button>
+            <button type="button" class="segmented-control__btn" id="tab-horario-personalizado" role="tab" aria-selected="false" data-testid="tab-horario-personalizado">Personalizado</button>
+          </div>
+          <div id="panel-horario-fijo" data-testid="panel-horario-fijo">
+            <div class="quick-schedule" data-testid="bloque-franja-rapida">
+              <p class="section-note" style="margin-top:0;">Tildá los días y cargá un horario para aplicarlo a todos de una sola vez.</p>
+              <div class="chip-row chip-row--wrap" id="dia-chip-row" style="padding:4px 0;" data-testid="chips-dia-franja-rapida"></div>
+              <div class="form-row" style="margin-top:4px;">
+                <div class="field">
+                  <label class="field__label" for="franja-rapida-desde">Desde</label>
+                  <div class="input-shell">
+                    <input type="time" id="franja-rapida-desde" data-testid="input-franja-rapida-desde" />
+                  </div>
+                </div>
+                <div class="field">
+                  <label class="field__label" for="franja-rapida-hasta">Hasta</label>
+                  <div class="input-shell">
+                    <input type="time" id="franja-rapida-hasta" data-testid="input-franja-rapida-hasta" />
+                  </div>
+                </div>
+              </div>
+              <p class="field__hint" data-testid="texto-formato-24hs-rapida">Formato 24 hrs (00:00 a 23:59 hrs)</p>
+              <div class="field__error" id="error-franja-rapida" style="display:none;" data-testid="mensaje-error-franja-rapida"></div>
+              <button type="button" class="btn btn-secondary" id="aplicar-franja-rapida-btn" style="margin-top:8px;" data-testid="btn-aplicar-franja-rapida">Aplicar a los días seleccionados</button>
+            </div>
+            <div style="margin-top:20px;">
+              <p class="section-heading" style="margin-top:0;" data-testid="titulo-ya-cargaste">Tus horarios</p>
+              <div id="horario-resumen-fijo" data-testid="resumen-horarios-cargados"></div>
+              <p class="field__hint" id="horario-resumen-vacio" data-testid="texto-sin-horarios-cargados">Todavía no cargaste ningún horario.</p>
+            </div>
+          </div>
+          <div id="panel-horario-personalizado" class="is-hidden" data-testid="panel-horario-personalizado">
+            <div id="horario-list" class="schedule-list" data-testid="lista-horarios"></div>
+            <button type="button" class="btn btn-tertiary" id="agregar-horario-btn" data-testid="btn-agregar-horario">+ Agregar franja horaria</button>
+            <p class="field__hint" data-testid="texto-formato-24hs">Podés agregar más de una franja por día. Formato 24 hrs (00:00 a 23:59 hrs)</p>
+          </div>
+          <div class="field__error" id="error-horarios" style="display:none;margin-top:12px;" data-testid="mensaje-error-horarios"></div>
+          <p class="horarios-aviso-vigencia" data-testid="aviso-rigen-manana">Los cambios rigen desde mañana</p>
+          <button class="btn btn-primary" type="submit" id="guardar-horarios-btn" data-testid="btn-guardar-horarios" disabled>Guardar cambios</button>
         </form>
       </div>
     </section>

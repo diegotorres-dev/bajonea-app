@@ -3,6 +3,7 @@ import { showToast, renderTopBar, pintarAvatarComercio, pintarAvatarUsuario, cre
 import { logout, LABELS_TIPO_COMERCIO, LABELS_TIPO_RED_SOCIAL, LABELS_TIPO_SOCIEDAD } from './auth.js';
 import { normalizarCampos } from './validators.js';
 import { recordarNombreDelComercio } from './admin-comercio-nombre.js';
+import { cruzaMedianoche, recortarHora, textoRango } from './horarios.js';
 
 function normalizarComercioAdmin(comercio) {
   normalizarCampos(comercio, ['nombre', 'razonSocial']);
@@ -635,7 +636,7 @@ function renderComercioDetailSections(body, comercio) {
       .sort((a, b) => ORDEN_DIA_SEMANA.indexOf(a.diaSemana) - ORDEN_DIA_SEMANA.indexOf(b.diaSemana))
       .forEach((horario) => {
         horariosSection.appendChild(
-          detailRow(LABELS_DIA_SEMANA[horario.diaSemana] || horario.diaSemana, `${horario.horaApertura.slice(0, 5)} - ${horario.horaCierre.slice(0, 5)}`),
+          detailRow(LABELS_DIA_SEMANA[horario.diaSemana] || horario.diaSemana, textoRango(horario)),
         );
       });
     body.appendChild(horariosSection);
@@ -2021,7 +2022,7 @@ function textoDireccion(direccion) {
 function textoHorarios(horarios) {
   return [...horarios]
     .sort((a, b) => ORDEN_DIA_SEMANA.indexOf(a.diaSemana) - ORDEN_DIA_SEMANA.indexOf(b.diaSemana) || a.horaApertura.localeCompare(b.horaApertura))
-    .map((h) => `${LABELS_DIA_SEMANA[h.diaSemana] || h.diaSemana} ${h.horaApertura.slice(0, 5)}-${h.horaCierre.slice(0, 5)}`)
+    .map((h) => `${LABELS_DIA_SEMANA[h.diaSemana] || h.diaSemana} ${recortarHora(h.horaApertura)}-${recortarHora(h.horaCierre)}${cruzaMedianoche(h.horaApertura, h.horaCierre) ? ' (día siguiente)' : ''}`)
     .join('\n');
 }
 

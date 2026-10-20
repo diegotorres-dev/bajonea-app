@@ -3,6 +3,15 @@ import { validarArchivoImagen } from './cloudinary.js';
 import { abrirEditorRecorte } from './crop.js';
 import { bindNombreComercio } from './form-utils.js';
 import {
+  franjasSeSuperponen,
+  leyendaCruce,
+  leyendaCruceVariosDias,
+  mensajeConflictoFranjas,
+  MENSAJE_CIERRE_IGUAL,
+  ordenarFranjas,
+  textoFranja,
+} from './horarios.js';
+import {
   esTelefonoValido,
   esCalleValida,
   esNumeroDireccionValido,
@@ -25,7 +34,9 @@ import {
   sanitizarDni,
 } from './validators.js';
 
-const ICONO_SALIR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>';
+const ICONO_LUNA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+
+const ICONO_SALIR ='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>';
 
 export const LABELS_TIPO_SOCIEDAD = {
   SA: 'Sociedad Anónima (SA)',
@@ -161,14 +172,6 @@ export function poblarSelect(select, labels, placeholder) {
     option.textContent = label;
     select.appendChild(option);
   });
-}
-
-function franjasSeSuperponen(aDesde, aHasta, bDesde, bHasta) {
-  return aDesde < bHasta && bDesde < aHasta;
-}
-
-function mensajeConflictoHorario(conflicto) {
-  return `Ya tenés un horario cargado el ${LABELS_DIA_SEMANA[conflicto.diaSemana]} de ${conflicto.horaApertura} a ${conflicto.horaCierre}, que se superpone con este.`;
 }
 
 export function validarCampo(inputId, errorId, validador, mensaje) {
@@ -596,8 +599,7 @@ export function initHorarios({ mostrarError }) {
       if (otraFila === filaActual) continue;
       const otra = leerFilaHorario(otraFila);
       if (!otra.diaSemana || !otra.horaApertura || !otra.horaCierre) continue;
-      if (otra.diaSemana !== actual.diaSemana) continue;
-      if (franjasSeSuperponen(actual.horaApertura, actual.horaCierre, otra.horaApertura, otra.horaCierre)) {
+      if (franjasSeSuperponen(actual, otra)) {
         return otra;
       }
     }
@@ -614,17 +616,17 @@ export function initHorarios({ mostrarError }) {
       limpiarErrorCampo('error-horarios');
       return true;
     }
-    if (datos.horaCierre <= datos.horaApertura) {
+    if (datos.horaCierre === datos.horaApertura) {
       shellApertura.classList.add('input-shell--error');
       shellCierre.classList.add('input-shell--error');
-      mostrarErrorCampo('error-horarios', 'El horario de cierre tiene que ser posterior al de apertura.');
+      mostrarErrorCampo('error-horarios', MENSAJE_CIERRE_IGUAL);
       return false;
     }
     const conflicto = buscarConflictoEntreFilas(fila);
     if (conflicto) {
       shellApertura.classList.add('input-shell--error');
       shellCierre.classList.add('input-shell--error');
-      mostrarErrorCampo('error-horarios', mensajeConflictoHorario(conflicto));
+      mostrarErrorCampo('error-horarios', mensajeConflictoFranjas(datos, conflicto));
       return false;
     }
     limpiarErrorCampo('error-horarios');
@@ -634,13 +636,11 @@ export function initHorarios({ mostrarError }) {
   function renderResumenFijo() {
     const contenedor = document.getElementById('horario-resumen-fijo');
     const vacioEl = document.getElementById('horario-resumen-vacio');
-    const filas = todasLasFilasHorario()
+    const completas = todasLasFilasHorario()
       .map((fila) => ({ fila, datos: leerFilaHorario(fila) }))
-      .filter(({ datos }) => datos.diaSemana && datos.horaApertura && datos.horaCierre)
-      .sort((a, b) => {
-        const diaComp = ORDEN_DIAS_SEMANA.indexOf(a.datos.diaSemana) - ORDEN_DIAS_SEMANA.indexOf(b.datos.diaSemana);
-        return diaComp !== 0 ? diaComp : a.datos.horaApertura.localeCompare(b.datos.horaApertura);
-      });
+      .filter(({ datos }) => datos.diaSemana && datos.horaApertura && datos.horaCierre);
+    const filas = ordenarFranjas(completas.map(({ datos }) => datos))
+      .map((datos) => completas.find((item) => item.datos === datos));
     contenedor.innerHTML = '';
     vacioEl.classList.toggle('is-hidden', filas.length > 0);
     filas.forEach(({ fila, datos }) => {
@@ -649,7 +649,7 @@ export function initHorarios({ mostrarError }) {
       row.setAttribute('data-testid', 'fila-resumen-horario');
       const texto = document.createElement('span');
       texto.className = 'schedule-summary-row__text';
-      texto.textContent = `${LABELS_DIA_SEMANA[datos.diaSemana]}: ${datos.horaApertura} a ${datos.horaCierre}`;
+      texto.textContent = textoFranja(datos);
       const acciones = document.createElement('div');
       acciones.className = 'schedule-summary-row__actions';
       const btnEditar = document.createElement('button');
@@ -702,6 +702,7 @@ export function initHorarios({ mostrarError }) {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
+      <p class="leyenda-cruce is-hidden" role="status" data-testid="leyenda-cruce-horario">${ICONO_LUNA}<span></span></p>
     `;
     poblarSelect(row.querySelector('.horario-dia'), LABELS_DIA_SEMANA, 'Día');
     row.querySelector('.schedule-chip__remove').addEventListener('click', () => {
@@ -711,11 +712,20 @@ export function initHorarios({ mostrarError }) {
     });
     ['horario-dia', 'horario-apertura', 'horario-cierre'].forEach((clase) => {
       row.querySelector(`.${clase}`).addEventListener('change', () => {
+        actualizarLeyendaFila(row);
         validarFilaHorario(row);
         renderResumenFijo();
       });
     });
     return row;
+  }
+
+  function actualizarLeyendaFila(fila) {
+    const datos = leerFilaHorario(fila);
+    const texto = leyendaCruce(datos.diaSemana, datos.horaApertura, datos.horaCierre);
+    const leyenda = fila.querySelector('.leyenda-cruce');
+    leyenda.querySelector('span').textContent = texto;
+    leyenda.classList.toggle('is-hidden', !texto);
   }
 
   document.getElementById('agregar-horario-btn').addEventListener('click', () => {
@@ -746,6 +756,22 @@ export function initHorarios({ mostrarError }) {
 
   const franjaRapidaDesde = document.getElementById('franja-rapida-desde');
   const franjaRapidaHasta = document.getElementById('franja-rapida-hasta');
+  const leyendaRapida = document.createElement('p');
+  leyendaRapida.className = 'leyenda-cruce is-hidden';
+  leyendaRapida.setAttribute('role', 'status');
+  leyendaRapida.setAttribute('data-testid', 'leyenda-cruce-franja-rapida');
+  leyendaRapida.innerHTML = `${ICONO_LUNA}<span></span>`;
+  franjaRapidaHasta.closest('.form-row').insertAdjacentElement('afterend', leyendaRapida);
+
+  function actualizarLeyendaRapida() {
+    const texto = leyendaCruceVariosDias(franjaRapidaDesde.value, franjaRapidaHasta.value);
+    leyendaRapida.querySelector('span').textContent = texto;
+    leyendaRapida.classList.toggle('is-hidden', !texto);
+  }
+  franjaRapidaDesde.addEventListener('input', actualizarLeyendaRapida);
+  franjaRapidaHasta.addEventListener('input', actualizarLeyendaRapida);
+  franjaRapidaDesde.addEventListener('change', actualizarLeyendaRapida);
+  franjaRapidaHasta.addEventListener('change', actualizarLeyendaRapida);
 
   document.getElementById('aplicar-franja-rapida-btn').addEventListener('click', () => {
     limpiarErrorCampo('error-franja-rapida');
@@ -757,16 +783,16 @@ export function initHorarios({ mostrarError }) {
       mostrarErrorCampo('error-franja-rapida', 'Completá el horario Desde y Hasta.');
       return;
     }
-    if (franjaRapidaHasta.value <= franjaRapidaDesde.value) {
-      mostrarErrorCampo('error-franja-rapida', 'El horario de cierre tiene que ser posterior al de apertura.');
+    if (franjaRapidaHasta.value === franjaRapidaDesde.value) {
+      mostrarErrorCampo('error-franja-rapida', MENSAJE_CIERRE_IGUAL);
       return;
     }
-    const horariosActuales = recolectar();
+    const horariosActuales = recolectar().filter((h) => h.diaSemana && h.horaApertura && h.horaCierre);
     for (const dia of diasSeleccionadosFranjaRapida) {
-      const conflicto = horariosActuales.find((h) => h.diaSemana === dia && h.horaApertura && h.horaCierre
-        && franjasSeSuperponen(franjaRapidaDesde.value, franjaRapidaHasta.value, h.horaApertura, h.horaCierre));
+      const nueva = { diaSemana: dia, horaApertura: franjaRapidaDesde.value, horaCierre: franjaRapidaHasta.value };
+      const conflicto = horariosActuales.find((h) => franjasSeSuperponen(nueva, h));
       if (conflicto) {
-        mostrarErrorCampo('error-franja-rapida', mensajeConflictoHorario(conflicto));
+        mostrarErrorCampo('error-franja-rapida', mensajeConflictoFranjas(nueva, conflicto));
         return;
       }
     }
@@ -776,6 +802,7 @@ export function initHorarios({ mostrarError }) {
       fila.querySelector('.horario-dia').value = dia;
       fila.querySelector('.horario-apertura').value = franjaRapidaDesde.value;
       fila.querySelector('.horario-cierre').value = franjaRapidaHasta.value;
+      actualizarLeyendaFila(fila);
       horarioList.appendChild(fila);
     });
     diaChipRow.querySelectorAll('.chip').forEach((chip) => chip.setAttribute('aria-pressed', 'false'));
@@ -801,16 +828,15 @@ export function initHorarios({ mostrarError }) {
       return false;
     }
     for (const horario of completos) {
-      if (horario.horaCierre <= horario.horaApertura) {
-        mostrarError('El horario de cierre tiene que ser posterior al de apertura en cada franja.');
+      if (horario.horaCierre === horario.horaApertura) {
+        mostrarError(MENSAJE_CIERRE_IGUAL);
         return false;
       }
     }
     for (let i = 0; i < completos.length; i++) {
       for (let j = i + 1; j < completos.length; j++) {
-        if (completos[i].diaSemana !== completos[j].diaSemana) continue;
-        if (franjasSeSuperponen(completos[i].horaApertura, completos[i].horaCierre, completos[j].horaApertura, completos[j].horaCierre)) {
-          mostrarError(mensajeConflictoHorario(completos[j]));
+        if (franjasSeSuperponen(completos[i], completos[j])) {
+          mostrarError(mensajeConflictoFranjas(completos[i], completos[j]));
           return false;
         }
       }
@@ -825,6 +851,7 @@ export function initHorarios({ mostrarError }) {
       fila.querySelector('.horario-dia').value = franja.diaSemana;
       fila.querySelector('.horario-apertura').value = String(franja.horaApertura).slice(0, 5);
       fila.querySelector('.horario-cierre').value = String(franja.horaCierre).slice(0, 5);
+      actualizarLeyendaFila(fila);
       horarioList.appendChild(fila);
     });
     limpiarErrorCampo('error-horarios');

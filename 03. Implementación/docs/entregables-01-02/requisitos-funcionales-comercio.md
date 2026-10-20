@@ -26,9 +26,11 @@ comercios se encuentran en Requisitos Funcionales — Dueño.
   comercio solo la descripción, el teléfono y los horarios; el nombre, la foto, la dirección,
   el tipo de comercio, los datos fiscales, las redes sociales, MercadoPago y el equipo son
   exclusivos del Dueño (el Empleado ve el nombre, la foto, la dirección y el tipo, pero no
-  los edita). La edición de horarios se habilitará para el Empleado cuando exista esa
-  función (hoy los horarios solo se cargan en el alta y en la corrección de un comercio
-  rechazado). Ver Requisitos Funcionales — Empleado.
+  los edita). Los cambios de horarios (Dueño o Empleado) rigen desde el día siguiente: lo que
+  rige hoy no cambia, el cambio programado se ve como "Desde mañana" y se puede cancelar
+  mientras no haya empezado. Una franja puede terminar al día siguiente (por ejemplo, de
+  20:00 a 02:00); una franja no puede abrir y cerrar a la misma hora (las 24 horas se cargan
+  de 00:00 a 23:59). Ver Requisitos Funcionales — Empleado.
 - La foto de perfil del comercio es un dato propio de cada comercio, independiente de
   la foto de perfil personal de su Dueño (ver Requisitos Funcionales — Dueño). Si un
   Dueño administra varios comercios, cada uno mantiene su propia foto de negocio.

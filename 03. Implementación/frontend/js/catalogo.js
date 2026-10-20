@@ -4,6 +4,7 @@ import { resolverHomePorRol, LABELS_TIPO_COMERCIO } from './auth.js';
 import { contarNotificacionesNoLeidasActivo, resolverComercioActivo, suscribirComercios } from './comercio-activo.js';
 import { normalizarCampos, excedeSubtotalMaximo, mensajeSubtotalMaximoExcedido } from './validators.js';
 import { crearAvisoCierre, esConflictoDeCierre, estaAbiertoParaClientes, etiquetaCierrePublica } from './apertura-comercio.js';
+import { franjaDeHoyYMadrugada, recortarHora, textoRango } from './horarios.js';
 
 const DIA_POR_INDICE = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 
@@ -79,12 +80,15 @@ export function resumenHorarioHoy(horarios) {
     return { resumenHoy: 'Sin horario cargado', cerradoTodoElDia: false };
   }
   const diaHoy = DIA_POR_INDICE[new Date().getDay()];
-  const franjasHoy = horarios.filter((horario) => horario.diaSemana === diaHoy);
-  if (franjasHoy.length === 0) {
+  const { colaDeAyer, deHoy } = franjaDeHoyYMadrugada(horarios, diaHoy);
+  const partes = [
+    ...colaDeAyer.map((franja) => `Hasta las ${recortarHora(franja.horaCierre)}`),
+    ...deHoy.map(textoRango),
+  ];
+  if (partes.length === 0) {
     return { resumenHoy: 'Cerrado hoy', cerradoTodoElDia: true };
   }
-  const resumenHoy = franjasHoy.map((franja) => `${franja.horaApertura.slice(0, 5)} - ${franja.horaCierre.slice(0, 5)}`).join(' / ');
-  return { resumenHoy, cerradoTodoElDia: false };
+  return { resumenHoy: partes.join(' / '), cerradoTodoElDia: false };
 }
 
 function pintarBadgeDueno(bellLink) {

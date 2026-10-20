@@ -53,7 +53,7 @@ class ComercioTextoLegibleTest {
                 horario(DiaSemana.SABADO, "00:00", "23:59"),
                 horario(DiaSemana.DOMINGO, "20:00", "00:00"));
 
-        assertEquals("Viernes 20:00-02:00 (+1); Sábado 00:00-23:59; Domingo 20:00-00:00 (+1)", ComercioTextoLegible.horarios(franjas));
+        assertEquals("Viernes 20:00-02:00 (día siguiente); Sábado 00:00-23:59; Domingo 20:00-00:00 (día siguiente)", ComercioTextoLegible.horarios(franjas));
     }
 
     @Test

@@ -18,3 +18,15 @@ Hallazgos durante la entrega A:
 - `HorarioEdicionConcurrenciaIntegrationTest` mordió un defecto real de la primera versión: la edición leía `horario` con una consulta común después de esperar el bloqueo del comercio, pero la foto de la transacción se había fijado en la primera lectura (`findById`), así que dos ediciones simultáneas no veían los cambios de la otra (quedaban 15 filas pendientes). Se corrigió leyendo las filas con `FOR UPDATE` (`findVigentesDesdeConBloqueo`).
 - `stress-locks-tramoE3-A1.mjs` generaba a veces una contraseña sin dígito (falla propia del script, anterior a este tramo); se le agregó un dígito fijo.
 - Contratos que cambiaron de significado y se actualizaron: cierre menor que apertura ahora es válido (turno que cruza) y cierre igual da `400` con el mensaje nuevo (specs 22 y 24, carpetas 9, 35 y 50 de Newman), el DTO reducido del Empleado suma `horariosPendientes` y `horariosRigenDesde` (spec 37, builder de E2 y su carpeta de Newman), y la lista delegable pasa de 23 a 24 rutas (spec 50, carpeta 66).
+
+## Entrega B (pantallas y tests de UI, 2026-10-19)
+
+Decisiones de Diego: M1-A (tarjeta "Rige hoy" / "Desde mañana" más el asistente del registro), M2-B (fila propia "Editar horarios" para el Dueño y el Empleado), M3-A (dos campos de hora y leyenda automática con luna). Nunca "+1": en listas y resúmenes, "20:00 a 02:00 (día siguiente)".
+
+| Bloque | Estado | Verificado |
+|---|---|---|
+| B1 initHorarios y validación | hecho | módulo nuevo `js/horarios.js` (intervalos de semana circular, leyenda, textos); `comercio-form.js` usa superposición circular, cierre igual rechazado, leyenda por fila y en el horario fijo; spec 70 |
+| B2 Vista "Editar horarios" | hecho | `view-editar-horarios` en `comercio-perfil.html`, filas para Dueño y Empleado, `enlazarEdicionDeHorarios` en `comercio.js`; spec 70 |
+| B3 Textos en el resto del frontend | hecho | `resumenHorarioHoy` (catálogo, dashboard) con cola de ayer, `admin.js`, "Ver datos del comercio" del Empleado con "Desde mañana"; `ComercioTextoLegible` con "(día siguiente)" y su test |
+| B4 Pruebas de UI | en curso | spec 70 nuevo; specs afectados 13, 23, 25, 31, 33, 38, 53, 60, 61 |
+| B5 Cierre | pendiente | documentación y regresión completa |

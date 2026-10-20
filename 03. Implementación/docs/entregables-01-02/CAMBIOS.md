@@ -754,3 +754,15 @@ No cambian el diccionario de datos ni los diagramas (sin migración). Otros docu
 ## Tramo E3, bloque A5b: orden único de bloqueo del catálogo (2026-10-14)
 
 Corrige tres hallazgos de producción del estrés de A5 (deadlock de tres entre escrituras de producto del Dueño y del Empleado y `cerrar`/`abrir`/`datos-operativos`; `500` al escribir sobre una imagen que otro acababa de borrar; las dos firmas de Cloudinary sin revalidar la relación). **No cambia ningún documento de `01.` ni de `02.`: no hay nada que copiar.** Lo único visible para quien opera es que un Empleado desactivado o con el comercio suspendido recibe `404`/`409` también al pedir una firma de subida, y que la segunda persona que toca una imagen ya borrada recibe `404` "Imagen no encontrada" en vez de un error genérico. Sin migraciones, sin cambios en el diccionario de datos ni en los diagramas. Detalle en `docs/DECISIONES.md`, `docs/CONCURRENCIA-Y-TRANSACCIONES.md` (con la tabla de cada método de `ProductoService`) y `docs/APRENDIZAJES-TECNICOS.md`.
+
+
+## Fase 2, tramo T1: edición de horarios y turnos que cruzan la medianoche (2026-10-19)
+
+Backend y pantallas. En el sistema: el Dueño y el Empleado pueden editar los horarios de atención desde una fila propia "Editar horarios" del perfil. El cambio rige desde el día siguiente: la pantalla muestra qué rige hoy y qué regirá desde mañana, y el cambio programado se puede cancelar. Una franja puede terminar al día siguiente (de 20:00 a 02:00): al cargarla aparece la leyenda "Termina el sábado a las 02:00" y en las listas se escribe "20:00 a 02:00 (día siguiente)". Una franja no puede abrir y cerrar a la misma hora (las 24 horas se cargan de 00:00 a 23:59).
+
+| Archivo | Cambio |
+|---|---|
+| `requisitos-funcionales-comercio.md` | Los cambios de horarios rigen desde el día siguiente, el cambio programado se ve como "Desde mañana" y se puede cancelar; los turnos que cruzan la medianoche; cierre igual a apertura no permitido |
+| `requisitos-funcionales-empleado.md` | La edición de horarios deja de ser futura: el Empleado la tiene igual que el Dueño y con el comercio Suspendido no puede guardarla |
+| `Historias de Usuario - Comercio.md` | HU-CO01: el Dueño y el Empleado editan horarios; vigencia desde mañana y turnos que cruzan la medianoche |
+| `diccionario-de-datos.md` | Versión 1.23: `Horario` suma `vigente_desde` y `vigente_hasta` y el índice de vigencia (migración `V38`); `HistorialEdicionComercio` registra los horarios |

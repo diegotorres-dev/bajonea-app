@@ -275,3 +275,12 @@ No se agregaron `data-testid`: los tests usan el selector `.toast` que ya exist�
 | Pantalla | `data-testid` nuevos | `data-testid` que desaparecen |
 |---|---|---|
 | `registro-comercio.html` (paso 1), `agregar-comercio.html`, `comercio-corregir.html` y `comercio-perfil.html` (edición del Dueño) | `estado-nombre-comercio` (texto "Verificando…" o "Nombre disponible" bajo el campo del nombre) e `icono-estado-nombre-comercio` (ícono de 4 estados: la clase lleva `input-shell__status-icon--verificando`, `--disponible` o `--ocupado`). El texto de ocupado sale por `mensaje-error-nombre`, que ya existía. | — |
+
+
+## Edición de horarios, Fase 2 T1 entrega B (2026-10-19)
+
+| Pantalla | `data-testid` nuevos | `data-testid` que desaparecen |
+|---|---|---|
+| `comercio-perfil.html` (vista "Editar horarios", Dueño y Empleado) | `btn-editar-horarios` (la fila de entrada, una sola presente según el rol), `btn-volver-perfil-editar-horarios`, `mensaje-banner-editar-horarios`, `tarjeta-vigencia-horarios`, `horarios-rige-hoy`, `horarios-desde-manana-bloque`, `horarios-desde-manana`, `fila-horario-vigencia`, `btn-cancelar-cambio-horarios`, `aviso-rigen-manana`, `btn-guardar-horarios`; el asistente repite los de `registro-comercio.html` (`tab-horario-fijo`, `tab-horario-personalizado`, `fila-horario`, `btn-agregar-horario`, `mensaje-error-horarios`, `resumen-horarios-cargados`, ...) | — |
+| `comercio-perfil.html` ("Ver datos del comercio" del Empleado) | `empleado-horario-pendiente` (una línea por franja del cambio programado) | — |
+| `registro-comercio.html`, `agregar-comercio.html`, `comercio-corregir.html` y la vista "Editar horarios" | `leyenda-cruce-horario` (dentro de cada `fila-horario`, visible solo si el cierre es menor que la apertura) y `leyenda-cruce-franja-rapida` (bajo "Desde / Hasta" del horario fijo) | — |

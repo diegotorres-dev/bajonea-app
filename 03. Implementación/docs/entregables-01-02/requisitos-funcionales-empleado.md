@@ -9,8 +9,8 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
 > confirmación final del dueño del proyecto. Las estructuras (`Empleado`,
 > `EmpleadoComercio`, `InvitacionEmpleado`, `HistorialEmpleadoComercio`,
 > `HistorialEdicionComercio`) están en las migraciones `V29` a `V35`. Lo que sigue
-> pendiente se lista en Alcance y Limitaciones (por ejemplo, la edición de horarios, que
-> todavía no existe para nadie, y el rediseño de la suspensión de comercios).
+> pendiente se lista en Alcance y Limitaciones (por ejemplo, el rediseño de la suspensión de
+> comercios). La edición de horarios existe desde el tramo T1 de la Fase 2.
 
 ---
 
@@ -242,9 +242,9 @@ puede:
   (cualquier otro campo, como el nombre o el email, da error de datos inválidos 400 y no
   cambia nada). El Empleado no ve la razón social, el CUIT, la condición de IVA, el tipo de
   sociedad, el domicilio fiscal, la fecha de inicio de actividades ni los datos del
-  representante. La edición de horarios todavía no existe para nadie: hoy los horarios solo
-  se cargan en el alta y en la corrección de un comercio rechazado; el Empleado la tendrá
-  cuando exista.
+  representante. La edición de horarios (fila propia "Editar horarios") es igual a la del Dueño: el cambio
+  rige desde mañana, se puede cancelar mientras no empiece y, con el comercio Suspendido, el
+  Empleado no puede guardarlo.
 - Abrir y cerrar el comercio manualmente (queda registrado con rol Empleado). Puede abrir un
   cierre manual aunque lo haya hecho el Dueño; solo dentro de un horario de atención y con
   el comercio operativo (si está Suspendido o Cerrado Temporalmente, o fuera de horario,
@@ -286,8 +286,7 @@ puede:
 - Recibir y ver las notificaciones operativas del comercio.
 
 **Futuros delegables** (hoy no tienen endpoint): grupos de extras y extras. Se
-clasificarán como delegables cuando existan. La edición de horarios también será delegable,
-pero hoy no existe para nadie.
+clasificarán como delegables cuando existan. La edición de horarios ya es delegable (tramo T1 de la Fase 2).
 
 ---
 

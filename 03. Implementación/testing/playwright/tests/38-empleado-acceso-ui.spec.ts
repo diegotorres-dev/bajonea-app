@@ -552,7 +552,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await expect(page.getByText('Cargo por servicio (1%)')).toBeVisible();
     });
 
-    test('el perfil del Empleado es una sola lista de cinco filas, en orden, con la única sección "Mi lugar en el equipo" debajo y sin "Cambiar contraseña"', async ({ page, request }) => {
+    test('el perfil del Empleado es una sola lista de seis filas, en orden, con la única sección "Mi lugar en el equipo" debajo y sin "Cambiar contraseña"', async ({ page, request }) => {
       await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
 
       await page.goto('/comercio-perfil.html');
@@ -565,6 +565,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await expect(page.getByTestId('lista-perfil').locator('.profile-link')).toHaveText([
         'Ver datos del comercio',
         'Editar datos del comercio',
+        'Editar horarios',
         'Editar datos personales',
         'Cambiar de cuenta',
         'Cerrar sesión',
