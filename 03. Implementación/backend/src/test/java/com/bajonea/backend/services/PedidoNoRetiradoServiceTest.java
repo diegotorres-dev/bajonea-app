@@ -108,7 +108,7 @@ class PedidoNoRetiradoServiceTest {
                 mock(DireccionRepository.class), historialRepository, usuarioRepository, notificacionService,
                 mock(CarritoService.class), mock(ComercioService.class), mock(ConfiguracionTarifaService.class), timeouts,
                 reembolsoService, notaCreditoService, mock(PlatformTransactionManager.class), comercioActivoService,
-                mock(EmpleadoComercioRepository.class), RELOJ);
+                mock(EmpleadoComercioRepository.class), mock(TurnoPedidoService.class), RELOJ);
         ReflectionTestUtils.setField(pedidoService, "entityManager", entityManager);
 
         ParticipantesPedido participantes = mock(ParticipantesPedido.class);
@@ -413,16 +413,5 @@ class PedidoNoRetiradoServiceTest {
         pedidoService.autoconfirmarRetirosPorSuspension(AHORA);
 
         verificarQueNoSeEscribioNada(pedido, EstadoPedido.NO_RETIRADO);
-    }
-
-    @Test
-    void facturadoHoyCuentaElNoRetiradoParaElDuenoNetoYParaElEmpleadoBruto() {
-        Pedido pedido = pedido(27, EstadoPedido.NO_RETIRADO, TipoEntrega.RETIRO, AHORA.minusMinutes(90));
-        when(pedidoRepository.findLlegadosPagadosByComercioId(40)).thenReturn(List.of(pedido));
-        when(historialRepository.findPrimeraEntradaAEstadoPorPedido(any(), eq(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO)))
-                .thenReturn(List.<Object[]>of(new Object[] {27, AHORA.minusHours(3)}));
-
-        assertEquals(new BigDecimal("9900"), pedidoService.obtenerResumenHoy(40).getTotalFacturadoHoy());
-        assertEquals(new BigDecimal("10000"), pedidoService.obtenerResumenHoyEmpleado(40).getTotalFacturadoHoy());
     }
 }

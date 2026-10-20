@@ -94,7 +94,7 @@ class PedidoServiceReembolsoTest {
                 reembolsoService,
                 notaCreditoService,
                 mock(PlatformTransactionManager.class), mock(ComercioActivoService.class),
-                mock(EmpleadoComercioRepository.class),
+                mock(EmpleadoComercioRepository.class), mock(TurnoPedidoService.class),
                 Clock.systemDefaultZone());
         ReflectionTestUtils.setField(pedidoService, "entityManager", mock(jakarta.persistence.EntityManager.class));
         ParticipantesPedido participantes = mock(ParticipantesPedido.class);

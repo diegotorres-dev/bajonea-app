@@ -208,12 +208,12 @@ items.push(
   item('[1 comercio] Dueño N lista productos sin header: 400', req('GET', '/productos', { token: 'token_comercio_n' }), [status(400)]),
   item('[1 comercio] Dueño N lista redes sociales sin header: 400', req('GET', '/comercios/redes-sociales', { token: 'token_comercio_n' }), [status(400)]),
   item('[1 comercio] Dueño N lista pedidos sin header: 400', req('GET', '/pedidos/comercio', { token: 'token_comercio_n' }), [status(400)]),
-  item('[1 comercio] Dueño N resumen de hoy sin header: 400', req('GET', '/pedidos/comercio/resumen-hoy', { token: 'token_comercio_n' }), [status(400)]),
+  item('[1 comercio] Dueño N resumen del turno sin header: 400', req('GET', '/pedidos/comercio/resumen-turno', { token: 'token_comercio_n' }), [status(400)]),
   item('[1 comercio] Dueño N lista redes sociales con su header', req('GET', '/comercios/redes-sociales', { token: 'token_comercio_n', headers: { [HEADER]: '{{comercio_n_id}}' } }), [status(200)]),
   item('[1 comercio] Dueño N lista pedidos con su header', req('GET', '/pedidos/comercio', { token: 'token_comercio_n', headers: { [HEADER]: '{{comercio_n_id}}' } }), [status(200)]),
-  item('[1 comercio] Dueño N resumen de hoy con su header', req('GET', '/pedidos/comercio/resumen-hoy', { token: 'token_comercio_n', headers: { [HEADER]: '{{comercio_n_id}}' } }), [
+  item('[1 comercio] Dueño N resumen del turno con su header', req('GET', '/pedidos/comercio/resumen-turno', { token: 'token_comercio_n', headers: { [HEADER]: '{{comercio_n_id}}' } }), [
     status(200),
-    "pm.test('Sin pedidos hoy', () => pm.expect(pm.response.json().data.cantidadPedidosHoy).to.eql(0));",
+    "pm.test('Sin pedidos hoy', () => pm.expect(pm.response.json().data.cantidadPedidos).to.eql(0));",
   ]),
 );
 
@@ -251,7 +251,7 @@ items.push(
   item('[negativo] Productos con header de OTRO Dueño', req('GET', '/productos', { token: 'token_comercio_m', headers: { [HEADER]: '{{comercio_n_id}}' } }), [status(404)]),
   item('[negativo] Redes sociales con header de OTRO Dueño', req('GET', '/comercios/redes-sociales', { token: 'token_comercio_m', headers: { [HEADER]: '{{comercio_n_id}}' } }), [status(404)]),
   item('[negativo] Pedidos con header de OTRO Dueño', req('GET', '/pedidos/comercio', { token: 'token_comercio_m', headers: { [HEADER]: '{{comercio_n_id}}' } }), [status(404)]),
-  item('[negativo] Resumen de hoy con header de OTRO Dueño', req('GET', '/pedidos/comercio/resumen-hoy', { token: 'token_comercio_m', headers: { [HEADER]: '{{comercio_n_id}}' } }), [status(404)]),
+  item('[negativo] Resumen del turno con header de OTRO Dueño', req('GET', '/pedidos/comercio/resumen-turno', { token: 'token_comercio_m', headers: { [HEADER]: '{{comercio_n_id}}' } }), [status(404)]),
 );
 
 items.push(
@@ -362,13 +362,13 @@ items.push(
     status(200),
     "pm.test('No incluye el pedido de B', () => pm.expect(pm.response.json().data.map((p) => p.id)).to.not.include(Number(pm.environment.get('pedido_m_b_id'))));",
   ]),
-  item('[pedidos] Resumen de hoy con header B: 1 pedido', req('GET', '/pedidos/comercio/resumen-hoy', { token: 'token_comercio_m', headers: { [HEADER]: '{{comercio_m_b_id}}' } }), [
+  item('[pedidos] Resumen del turno con header B: 1 pedido', req('GET', '/pedidos/comercio/resumen-turno', { token: 'token_comercio_m', headers: { [HEADER]: '{{comercio_m_b_id}}' } }), [
     status(200),
-    "pm.test('Un pedido hoy', () => pm.expect(pm.response.json().data.cantidadPedidosHoy).to.eql(1));",
+    "pm.test('Un pedido hoy', () => pm.expect(pm.response.json().data.cantidadPedidos).to.eql(1));",
   ]),
-  item('[pedidos] Resumen de hoy con header A: 0 pedidos', req('GET', '/pedidos/comercio/resumen-hoy', { token: 'token_comercio_m', headers: { [HEADER]: '{{comercio_m_a_id}}' } }), [
+  item('[pedidos] Resumen del turno con header A: 0 pedidos', req('GET', '/pedidos/comercio/resumen-turno', { token: 'token_comercio_m', headers: { [HEADER]: '{{comercio_m_a_id}}' } }), [
     status(200),
-    "pm.test('Ningun pedido hoy', () => pm.expect(pm.response.json().data.cantidadPedidosHoy).to.eql(0));",
+    "pm.test('Ningun pedido hoy', () => pm.expect(pm.response.json().data.cantidadPedidos).to.eql(0));",
   ]),
   item('[pedidos] Consultar el pago del pedido de B con header A', req('GET', '/pedidos/comercio/{{pedido_m_b_id}}/pago', { token: 'token_comercio_m', headers: { [HEADER]: '{{comercio_m_a_id}}' } }), [status(404)]),
   item('[pedidos] Aceptar el pedido de B con header A', req('PUT', '/pedidos/comercio/{{pedido_m_b_id}}/aceptar', { token: 'token_comercio_m', headers: { [HEADER]: '{{comercio_m_a_id}}' } }), [status(404)]),

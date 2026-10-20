@@ -13,8 +13,6 @@ import static org.mockito.Mockito.when;
 import com.bajonea.backend.config.PedidoTimeoutProperties;
 import com.bajonea.backend.dto.response.PedidoEmpleadoResponseDTO;
 import com.bajonea.backend.dto.response.PedidoResponseDTO;
-import com.bajonea.backend.dto.response.ResumenPedidosHoyEmpleadoResponseDTO;
-import com.bajonea.backend.dto.response.ResumenPedidosHoyResponseDTO;
 import com.bajonea.backend.entities.Cliente;
 import com.bajonea.backend.entities.Comercio;
 import com.bajonea.backend.entities.NotaCredito;
@@ -101,7 +99,7 @@ class PedidoServiceVistaEmpleadoTest {
                 mock(ReembolsoService.class),
                 notaCreditoService,
                 mock(PlatformTransactionManager.class), mock(ComercioActivoService.class),
-                mock(EmpleadoComercioRepository.class),
+                mock(EmpleadoComercioRepository.class), mock(TurnoPedidoService.class),
                 Clock.systemDefaultZone());
 
         cliente = mock(Cliente.class, Answers.RETURNS_DEEP_STUBS);
@@ -240,36 +238,5 @@ class PedidoServiceVistaEmpleadoTest {
             assertTrue(EstadoReembolsoEmpleado.desde(estado) != EstadoReembolsoEmpleado.SIN_REEMBOLSO, estado.name());
         }
         assertEquals(EstadoReembolsoEmpleado.SIN_REEMBOLSO, EstadoReembolsoEmpleado.desde(null));
-    }
-
-    @Test
-    void elResumenDelEmpleadoSumaElSubtotalBrutoYElDelDuenoElNeto() {
-        pagadosHoy(
-                pedido(20, EstadoPedido.EN_PREPARACION, "10000", "100"),
-                pedido(21, EstadoPedido.ENTREGADO, "5000", "50"),
-                pedido(22, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, "7000", "70"),
-                pedido(23, EstadoPedido.RECHAZADO, "9000", "90"));
-
-        ResumenPedidosHoyResponseDTO dueno = pedidoService.obtenerResumenHoy(40);
-        ResumenPedidosHoyEmpleadoResponseDTO empleado = pedidoService.obtenerResumenHoyEmpleado(40);
-
-        assertEquals(new BigDecimal("14850"), dueno.getTotalFacturadoHoy());
-        assertEquals(new BigDecimal("15000"), empleado.getTotalFacturadoHoy());
-        assertEquals(4, dueno.getCantidadPedidosHoy());
-        assertEquals(4, empleado.getCantidadPedidosHoy());
-        assertEquals(1, dueno.getCantidadPendientes());
-        assertEquals(1, empleado.getCantidadPendientes());
-        assertEquals(Set.of("totalFacturadoHoy", "cantidadPedidosHoy", "cantidadPendientes"), camposDe(empleado));
-    }
-
-    @Test
-    void elResumenDelEmpleadoSinPedidosEsCero() {
-        when(pedidoRepository.findLlegadosPagadosByComercioId(40)).thenReturn(List.of());
-
-        ResumenPedidosHoyEmpleadoResponseDTO empleado = pedidoService.obtenerResumenHoyEmpleado(40);
-
-        assertEquals(BigDecimal.ZERO, empleado.getTotalFacturadoHoy());
-        assertEquals(0, empleado.getCantidadPedidosHoy());
-        assertEquals(0, empleado.getCantidadPendientes());
     }
 }

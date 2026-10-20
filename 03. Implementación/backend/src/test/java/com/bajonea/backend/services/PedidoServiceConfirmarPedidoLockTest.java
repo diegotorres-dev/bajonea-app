@@ -72,7 +72,7 @@ class PedidoServiceConfirmarPedidoLockTest {
                 mock(NotificacionService.class), mock(CarritoService.class), comercioService,
                 mock(ConfiguracionTarifaService.class), timeouts, mock(ReembolsoService.class),
                 mock(NotaCreditoService.class), mock(PlatformTransactionManager.class), mock(ComercioActivoService.class),
-                mock(EmpleadoComercioRepository.class),
+                mock(EmpleadoComercioRepository.class), mock(TurnoPedidoService.class),
                 Clock.systemDefaultZone());
         ReflectionTestUtils.setField(pedidoService, "entityManager", entityManager);
 

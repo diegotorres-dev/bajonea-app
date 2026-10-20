@@ -65,7 +65,7 @@ class ClasificacionRutasComercioTest {
         delegable("GET /api/v1/comercios/perfil");
         delegable("GET /api/v1/productos");
         delegable("GET /api/v1/pedidos/comercio");
-        delegable("GET /api/v1/pedidos/comercio/resumen-hoy");
+        delegable("GET /api/v1/pedidos/comercio/resumen-turno");
         delegable("GET /api/v1/pedidos/comercio/{id}/trazabilidad");
         delegable("POST /api/v1/productos");
         delegable("PUT /api/v1/productos/{id}");

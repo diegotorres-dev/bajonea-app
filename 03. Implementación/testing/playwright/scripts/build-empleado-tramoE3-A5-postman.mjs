@@ -253,7 +253,7 @@ const las24 = (prod, img, ped) => [
   RUTA('GET', '/comercios/perfil'),
   RUTA('GET', '/productos'),
   RUTA('GET', '/pedidos/comercio'),
-  RUTA('GET', '/pedidos/comercio/resumen-hoy'),
+  RUTA('GET', '/pedidos/comercio/resumen-turno'),
   RUTA('GET', `/pedidos/comercio/${ped}/trazabilidad`),
   RUTA('POST', '/productos', productoCuerpo('Matriz', 1)),
   RUTA('PUT', `/productos/${prod}`, productoCuerpo('Matriz', 1)),

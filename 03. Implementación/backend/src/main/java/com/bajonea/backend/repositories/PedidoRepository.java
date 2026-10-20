@@ -3,6 +3,8 @@ package com.bajonea.backend.repositories;
 import com.bajonea.backend.entities.Pedido;
 import com.bajonea.backend.enums.EstadoPedido;
 import com.bajonea.backend.enums.MotivoRechazo;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
@@ -124,4 +126,22 @@ public interface PedidoRepository extends JpaRepository<Pedido, Integer> {
             + "where p.comercio.dueno.id = :duenoId and p.estado in :estados group by p.comercio.id, p.estado")
     List<Object[]> contarPorComercioYEstadoDeDueno(@Param("duenoId") Integer duenoId,
             @Param("estados") Collection<EstadoPedido> estados);
+
+    interface AgregadoDeTurno {
+        Long getCantidad();
+
+        BigDecimal getVendido();
+
+        BigDecimal getComision();
+    }
+
+    @Query("select count(p) as cantidad, "
+            + "sum(case when p.estado in :facturables then p.subtotal end) as vendido, "
+            + "sum(case when p.estado in :facturables then p.cargoServicioComercio end) as comision "
+            + "from Pedido p where p.comercio.id = :comercioId and p.turnoFecha = :turnoFecha "
+            + "and p.turnoHorarioId = :turnoHorarioId")
+    AgregadoDeTurno agregarTurno(@Param("comercioId") Integer comercioId, @Param("turnoFecha") LocalDate turnoFecha,
+            @Param("turnoHorarioId") Integer turnoHorarioId, @Param("facturables") Collection<EstadoPedido> facturables);
+
+    long countByComercioIdAndEstado(Integer comercioId, EstadoPedido estado);
 }

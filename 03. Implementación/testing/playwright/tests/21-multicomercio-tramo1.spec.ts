@@ -128,7 +128,7 @@ test.describe('Multi-comercio, tramo 1: resolución del comercio activo y aislam
       ['GET', '/productos'],
       ['GET', '/comercios/redes-sociales'],
       ['GET', '/pedidos/comercio'],
-      ['GET', '/pedidos/comercio/resumen-hoy'],
+      ['GET', '/pedidos/comercio/resumen-turno'],
     ] as const) {
       const respuesta = await apiConHeaders(request, metodo, ruta, token);
       expect(respuesta.status, `${metodo} ${ruta}`).toBe(400);
@@ -155,9 +155,9 @@ test.describe('Multi-comercio, tramo 1: resolución del comercio activo y aislam
     expect(pedidos.status).toBe(200);
     expect(Array.isArray(pedidos.body.data)).toBe(true);
 
-    const resumen = await apiConHeaders(request, 'GET', '/pedidos/comercio/resumen-hoy', token, propio);
+    const resumen = await apiConHeaders(request, 'GET', '/pedidos/comercio/resumen-turno', token, propio);
     expect(resumen.status).toBe(200);
-    expect(resumen.body.data.cantidadPedidosHoy).toBe(0);
+    expect(resumen.body.data.cantidadPedidos).toBe(0);
 
     const nombreEditado = `Comercio Unico Editado ${Date.now()}`;
     const editar = await apiConHeaders(request, 'PUT', '/comercios/perfil', token, propio, {
@@ -203,7 +203,7 @@ test.describe('Multi-comercio, tramo 1: resolución del comercio activo y aislam
       ['GET', '/productos'],
       ['GET', '/comercios/redes-sociales'],
       ['GET', '/pedidos/comercio'],
-      ['GET', '/pedidos/comercio/resumen-hoy'],
+      ['GET', '/pedidos/comercio/resumen-turno'],
     ] as const) {
       const respuesta = await apiConHeaders(request, metodo, ruta, token, { [HEADER]: String(comercioAjeno) });
       expect(respuesta.status, `${metodo} ${ruta}`).toBe(404);
@@ -325,10 +325,10 @@ test.describe('Multi-comercio, tramo 1: resolución del comercio activo y aislam
     expect(listaB.body.data.map((p: any) => p.id)).toContain(pedidoB);
     expect(listaA.body.data.map((p: any) => p.id)).not.toContain(pedidoB);
 
-    const resumenB = await apiConHeaders(request, 'GET', '/pedidos/comercio/resumen-hoy', token, { [HEADER]: String(comercioB) });
-    const resumenA = await apiConHeaders(request, 'GET', '/pedidos/comercio/resumen-hoy', token, { [HEADER]: String(comercioA) });
-    expect(resumenB.body.data.cantidadPedidosHoy).toBe(1);
-    expect(resumenA.body.data.cantidadPedidosHoy).toBe(0);
+    const resumenB = await apiConHeaders(request, 'GET', '/pedidos/comercio/resumen-turno', token, { [HEADER]: String(comercioB) });
+    const resumenA = await apiConHeaders(request, 'GET', '/pedidos/comercio/resumen-turno', token, { [HEADER]: String(comercioA) });
+    expect(resumenB.body.data.cantidadPedidos).toBe(1);
+    expect(resumenA.body.data.cantidadPedidos).toBe(0);
 
     const pagoCruzado = await apiConHeaders(request, 'GET', `/pedidos/comercio/${pedidoB}/pago`, token, { [HEADER]: String(comercioA) });
     expect(pagoCruzado.status).toBe(404);

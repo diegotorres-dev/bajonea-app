@@ -92,7 +92,7 @@ class PedidoServiceCarreraTest {
                 mock(DireccionRepository.class), historialRepository, usuarioRepository, notificacionService,
                 mock(CarritoService.class), mock(ComercioService.class), mock(ConfiguracionTarifaService.class), timeouts,
                 reembolsoService, mock(NotaCreditoService.class), mock(PlatformTransactionManager.class), comercioActivoService,
-                mock(EmpleadoComercioRepository.class),
+                mock(EmpleadoComercioRepository.class), mock(TurnoPedidoService.class),
                 Clock.systemDefaultZone());
         ReflectionTestUtils.setField(pedidoService, "entityManager", entityManager);
 

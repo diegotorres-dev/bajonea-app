@@ -11,6 +11,7 @@ import com.bajonea.backend.dto.response.PedidoEmpleadoResponseDTO;
 import com.bajonea.backend.dto.response.PedidoResponseDTO;
 import com.bajonea.backend.services.MercadoPagoPagoService;
 import com.bajonea.backend.services.PedidoService;
+import com.bajonea.backend.services.ResumenTurnoService;
 import com.bajonea.backend.services.TrazabilidadPedidoService;
 import com.bajonea.backend.dto.response.TrazabilidadPedidoResponseDTO;
 import com.bajonea.backend.dto.request.SincronizarPagoRequestDTO;
@@ -37,6 +38,7 @@ public class PedidoController {
     private final PedidoService pedidoService;
     private final MercadoPagoPagoService mercadoPagoPagoService;
     private final TrazabilidadPedidoService trazabilidadPedidoService;
+    private final ResumenTurnoService resumenTurnoService;
 
     @PostMapping("/cliente")
     public ResponseEntity<ApiResponse<PedidoResponseDTO>> confirmarPedido(@Valid @RequestBody PedidoRequestDTO request,
@@ -120,12 +122,12 @@ public class PedidoController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Trazabilidad obtenida correctamente", response));
     }
 
-    @GetMapping("/comercio/resumen-hoy")
-    public ResponseEntity<ApiResponse<?>> obtenerResumenHoy(
+    @GetMapping("/comercio/resumen-turno")
+    public ResponseEntity<ApiResponse<?>> obtenerResumenTurno(
             ComercioActivo comercio) {
         Object response = comercio.esEmpleado()
-                ? pedidoService.obtenerResumenHoyEmpleado(comercio.comercioId())
-                : pedidoService.obtenerResumenHoy(comercio.comercioId());
+                ? resumenTurnoService.obtenerParaEmpleado(comercio.comercioId())
+                : resumenTurnoService.obtener(comercio.comercioId());
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Resumen obtenido correctamente", response));
     }
 

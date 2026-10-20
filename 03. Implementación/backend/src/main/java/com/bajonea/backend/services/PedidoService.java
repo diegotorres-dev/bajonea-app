@@ -9,8 +9,6 @@ import com.bajonea.backend.dto.response.DetallePedidoResponseDTO;
 import com.bajonea.backend.dto.response.DireccionResponseDTO;
 import com.bajonea.backend.dto.response.PedidoEmpleadoResponseDTO;
 import com.bajonea.backend.dto.response.PedidoResponseDTO;
-import com.bajonea.backend.dto.response.ResumenPedidosHoyEmpleadoResponseDTO;
-import com.bajonea.backend.dto.response.ResumenPedidosHoyResponseDTO;
 import com.bajonea.backend.entities.Carrito;
 import com.bajonea.backend.entities.Cliente;
 import com.bajonea.backend.entities.Comercio;
@@ -59,7 +57,6 @@ import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -126,6 +123,7 @@ public class PedidoService {
     private final PlatformTransactionManager transactionManager;
     private final ComercioActivoService comercioActivoService;
     private final EmpleadoComercioRepository empleadoComercioRepository;
+    private final TurnoPedidoService turnoPedidoService;
     private final Clock clock;
 
     private static final Logger log = LoggerFactory.getLogger(PedidoService.class);
@@ -134,9 +132,6 @@ public class PedidoService {
     private EntityManager entityManager;
 
     private static final BigDecimal SUBTOTAL_MAXIMO = new BigDecimal("99999999");
-    private static final List<EstadoPedido> ESTADOS_FACTURADOS = List.of(
-            EstadoPedido.EN_PREPARACION, EstadoPedido.EN_CAMINO, EstadoPedido.LISTO_PARA_RETIRAR, EstadoPedido.ENTREGADO,
-            EstadoPedido.NO_RETIRADO);
     private static final DateTimeFormatter HORA_MINUTO = DateTimeFormatter.ofPattern("HH:mm");
     private static final String MENSAJE_AUTOCONFIRMADO_COMERCIO = "El pedido #%d se confirmó automáticamente como entregado "
             + "porque el cliente no respondió en %d minutos.";
@@ -258,19 +253,36 @@ public class PedidoService {
      * de pago) no hace nada, no reintenta la transición.
      */
     public void confirmarPagoAprobado(Integer pedidoId) {
+        confirmarPagoAprobado(pedidoId, null);
+    }
+
+    /**
+     * Igual que {@link #confirmarPagoAprobado(Integer)} con un instante de pago elegido: solo lo usan los atajos de
+     * test para probar turnos que no coinciden con la hora real. Con {@code null} toma la hora del reloj de la
+     * aplicación después del bloqueo del pedido. Esa única hora es la del historial, la de
+     * {@code fecha_pago_confirmado} y la que decide el turno del pedido.
+     */
+    public void confirmarPagoAprobado(Integer pedidoId, LocalDateTime instanteDelPago) {
         PedidoBloqueado bloqueado = bloquearParaActualizarConEquipo(pedidoId, null);
         Pedido pedido = bloqueado.pedido();
         if (pedido.getEstado() != EstadoPedido.PENDIENTE_PAGO) {
             return;
         }
 
-        pedido.setPagoEstado(EstadoPagoPedido.PAGADO);
-        pedido.setEstado(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO);
-        pedidoRepository.save(pedido);
-        registrarHistorial(pedido, ActorPedido.SISTEMA, null);
-
         Integer clienteId = pedido.getCliente().getId();
         Integer comercioId = pedido.getComercio().getId();
+        LocalDateTime instante = (instanteDelPago != null ? instanteDelPago : LocalDateTime.now(clock))
+                .truncatedTo(ChronoUnit.SECONDS);
+
+        pedido.setPagoEstado(EstadoPagoPedido.PAGADO);
+        pedido.setEstado(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO);
+        pedido.setFechaPagoConfirmado(instante);
+        turnoPedidoService.asignar(comercioId, instante).ifPresent(asignacion -> {
+            pedido.setTurnoFecha(asignacion.fecha());
+            pedido.setTurnoHorarioId(asignacion.horarioId());
+        });
+        pedidoRepository.save(pedido);
+        registrarHistorial(pedido, ActorPedido.SISTEMA, null, null, instante);
 
         notificacionService.crearParaEquipo(comercioId, pedido.getComercio().getDueno().getId(), bloqueado.equipo(),
                 "Nuevo pedido recibido de " + pedido.getCliente().getPersonaFisica().getNombre() + " "
@@ -732,43 +744,6 @@ public class PedidoService {
                 .toList();
     }
 
-    public ResumenPedidosHoyResponseDTO obtenerResumenHoy(Integer comercioId) {
-        List<Pedido> pedidosHoy = pedidosLlegadosPagadosHoy(comercioId);
-        BigDecimal totalFacturadoHoy = pedidosHoy.stream()
-                .filter(pedido -> ESTADOS_FACTURADOS.contains(pedido.getEstado()))
-                .map(pedido -> pedido.getSubtotal().subtract(pedido.getCargoServicioComercio()))
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return new ResumenPedidosHoyResponseDTO(totalFacturadoHoy, pedidosHoy.size(), contarPendientes(pedidosHoy));
-    }
-
-    public ResumenPedidosHoyEmpleadoResponseDTO obtenerResumenHoyEmpleado(Integer comercioId) {
-        List<Pedido> pedidosHoy = pedidosLlegadosPagadosHoy(comercioId);
-        BigDecimal totalFacturadoHoy = pedidosHoy.stream()
-                .filter(pedido -> ESTADOS_FACTURADOS.contains(pedido.getEstado()))
-                .map(Pedido::getSubtotal)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return new ResumenPedidosHoyEmpleadoResponseDTO(totalFacturadoHoy, pedidosHoy.size(), contarPendientes(pedidosHoy));
-    }
-
-    private List<Pedido> pedidosLlegadosPagadosHoy(Integer comercioId) {
-        LocalDateTime inicioHoy = LocalDate.now(clock).atStartOfDay();
-        LocalDateTime finHoy = inicioHoy.plusDays(1);
-        List<Pedido> llegadosPagados = pedidoRepository.findLlegadosPagadosByComercioId(comercioId);
-        Map<Integer, LocalDateTime> fechasPago = fechasPagoAprobado(llegadosPagados);
-        return llegadosPagados.stream()
-                .filter(pedido -> {
-                    LocalDateTime fecha = fechasPago.get(pedido.getId());
-                    return fecha != null && !fecha.isBefore(inicioHoy) && fecha.isBefore(finHoy);
-                })
-                .toList();
-    }
-
-    private int contarPendientes(List<Pedido> pedidosHoy) {
-        return (int) pedidosHoy.stream()
-                .filter(pedido -> pedido.getEstado() == EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO)
-                .count();
-    }
-
     /**
      * Lógica reactiva del lado de Pedido cuando un Comercio se suspende (invocada por
      * {@code AdministradorService.suspenderComercio}). Los pedidos en curso ({@code PENDIENTE_CONFIRMACION_COMERCIO}/
@@ -1007,13 +982,18 @@ public class PedidoService {
     }
 
     private void registrarHistorial(Pedido pedido, ActorPedido actorRol, Integer actorUsuarioId, MotivoTimeoutPedido motivoTimeout) {
+        registrarHistorial(pedido, actorRol, actorUsuarioId, motivoTimeout, LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS));
+    }
+
+    private void registrarHistorial(Pedido pedido, ActorPedido actorRol, Integer actorUsuarioId, MotivoTimeoutPedido motivoTimeout,
+            LocalDateTime fechaHora) {
         HistorialEstadoPedido historial = HistorialEstadoPedido.builder()
                 .pedido(pedido)
                 .estado(pedido.getEstado())
                 .actorRol(actorRol)
                 .actorUsuario(actorUsuarioId == null ? null : usuarioRepository.getReferenceById(actorUsuarioId))
                 .motivoTimeout(motivoTimeout)
-                .fechaHora(LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS))
+                .fechaHora(fechaHora)
                 .build();
         historialEstadoPedidoRepository.save(historial);
     }

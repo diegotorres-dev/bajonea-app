@@ -56,6 +56,9 @@ class PedidoNoRetiradoHttpIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private java.time.Clock clock;
+
     @MockitoBean
     private EmailService emailService;
 
@@ -315,25 +318,40 @@ class PedidoNoRetiradoHttpIntegrationTest {
         assertEquals("Cerró un pedido como no retirado", actividad.get(0).path("accionTexto").asText());
     }
 
+    private void asignarTurnoDeHoy(int comercioId, int pedidoId) {
+        java.time.LocalDate hoy = java.time.LocalDate.now(clock);
+        String dia = com.bajonea.backend.enums.DiaSemana.values()[hoy.getDayOfWeek().getValue() - 1].name();
+        jdbcTemplate.update("DELETE FROM horario WHERE comercio_id = ?", comercioId);
+        jdbcTemplate.update("INSERT INTO horario (comercio_id, dia_semana, hora_apertura, hora_cierre) VALUES (?, ?, '00:00:00', '23:59:00')",
+                comercioId, dia);
+        int horarioId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Integer.class);
+        jdbcTemplate.update("UPDATE pedido SET turno_fecha = ?, turno_horario_id = ?, fecha_pago_confirmado = ? WHERE id = ?",
+                hoy, horarioId, hoy.atStartOfDay().plusSeconds(1), pedidoId);
+    }
+
+    private JsonNode resumenDelTurno(String token, int comercioId) throws Exception {
+        return cuerpo(mockMvc.perform(con(get(BASE + "resumen-turno"), token, comercioId)).andExpect(status().isOk())).path("data");
+    }
+
     @Test
-    void facturadoHoyCuentaElPedidoNoRetiradoParaElDuenoNetoYParaElEmpleadoBruto() throws Exception {
+    void elVendidoDelTurnoCuentaElPedidoNoRetiradoIgualParaElDuenoYElEmpleadoYElNetoSoloParaElDueno() throws Exception {
         Escenario e = escenario();
         int pedidoId = listo(e.cliente().id(), e.comercioId(), "RETIRO", 90);
-        jdbcTemplate.update("UPDATE historial_estado_pedido SET fecha_hora = ? WHERE pedido_id = ? AND estado = 'PENDIENTE_CONFIRMACION_COMERCIO'",
-                java.time.LocalDate.now().atStartOfDay().plusSeconds(1), pedidoId);
-        double duenoAntes = cuerpo(mockMvc.perform(con(get(BASE + "resumen-hoy"), e.tokenDueno(), e.comercioId()))
-                .andExpect(status().isOk())).path("data").path("totalFacturadoHoy").asDouble();
-        double empleadoAntes = cuerpo(mockMvc.perform(con(get(BASE + "resumen-hoy"), e.tokenEmpleado(), e.comercioId()))
-                .andExpect(status().isOk())).path("data").path("totalFacturadoHoy").asDouble();
+        asignarTurnoDeHoy(e.comercioId(), pedidoId);
+        JsonNode duenoAntes = resumenDelTurno(e.tokenDueno(), e.comercioId());
+        JsonNode empleadoAntes = resumenDelTurno(e.tokenEmpleado(), e.comercioId());
 
         cerrar(pedidoId, e.tokenDueno(), e.comercioId()).andExpect(status().isOk());
 
-        double duenoDespues = cuerpo(mockMvc.perform(con(get(BASE + "resumen-hoy"), e.tokenDueno(), e.comercioId()))
-                .andExpect(status().isOk())).path("data").path("totalFacturadoHoy").asDouble();
-        double empleadoDespues = cuerpo(mockMvc.perform(con(get(BASE + "resumen-hoy"), e.tokenEmpleado(), e.comercioId()))
-                .andExpect(status().isOk())).path("data").path("totalFacturadoHoy").asDouble();
-        assertEquals(9900.0, duenoAntes);
-        assertEquals(10000.0, empleadoAntes);
+        JsonNode duenoDespues = resumenDelTurno(e.tokenDueno(), e.comercioId());
+        JsonNode empleadoDespues = resumenDelTurno(e.tokenEmpleado(), e.comercioId());
+        assertEquals("EN_CURSO", duenoAntes.path("estado").asText());
+        assertEquals(10000.0, duenoAntes.path("vendido").asDouble());
+        assertEquals(100.0, duenoAntes.path("comision").asDouble());
+        assertEquals(9900.0, duenoAntes.path("neto").asDouble());
+        assertEquals(10000.0, empleadoAntes.path("vendido").asDouble());
+        assertFalse(empleadoAntes.has("comision"));
+        assertFalse(empleadoAntes.has("neto"));
         assertEquals(duenoAntes, duenoDespues);
         assertEquals(empleadoAntes, empleadoDespues);
     }

@@ -7734,7 +7734,7 @@
           ]
         },
         {
-          "name": "GET pedidos/comercio/resumen-hoy (Comercio A)",
+          "name": "GET pedidos/comercio/resumen-turno (Comercio A)",
           "request": {
             "method": "GET",
             "header": [
@@ -7748,14 +7748,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -7768,7 +7768,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const json = pm.response.json();",
-                  "pm.test('Trae los 3 campos del resumen', () => { pm.expect(json.data.totalFacturadoHoy).to.exist; pm.expect(json.data.cantidadPedidosHoy).to.exist; pm.expect(json.data.cantidadPendientes).to.exist; });"
+                  "pm.test('Trae los campos del resumen del turno', () => { pm.expect(json.data.vendido).to.exist; pm.expect(json.data.cantidadPedidos).to.exist; pm.expect(json.data.cantidadPendientes).to.exist; pm.expect(json.data.estado).to.exist; });"
                 ]
               }
             }
@@ -37929,7 +37929,7 @@
           ]
         },
         {
-          "name": "[1 comercio] Dueño N resumen de hoy sin header: 400",
+          "name": "[1 comercio] Dueño N resumen del turno sin header: 400",
           "request": {
             "method": "GET",
             "header": [
@@ -37939,14 +37939,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -38040,7 +38040,7 @@
           ]
         },
         {
-          "name": "[1 comercio] Dueño N resumen de hoy con su header",
+          "name": "[1 comercio] Dueño N resumen del turno con su header",
           "request": {
             "method": "GET",
             "header": [
@@ -38054,14 +38054,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -38073,7 +38073,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Sin pedidos hoy', () => pm.expect(pm.response.json().data.cantidadPedidosHoy).to.eql(0));"
+                  "pm.test('Sin pedidos hoy', () => pm.expect(pm.response.json().data.cantidadPedidos).to.eql(0));"
                 ]
               }
             }
@@ -38501,7 +38501,7 @@
           ]
         },
         {
-          "name": "[negativo] Resumen de hoy con header de OTRO Dueño",
+          "name": "[negativo] Resumen del turno con header de OTRO Dueño",
           "request": {
             "method": "GET",
             "header": [
@@ -38515,14 +38515,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -39592,7 +39592,7 @@
           ]
         },
         {
-          "name": "[pedidos] Resumen de hoy con header B: 1 pedido",
+          "name": "[pedidos] Resumen del turno con header B: 1 pedido",
           "request": {
             "method": "GET",
             "header": [
@@ -39606,14 +39606,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -39625,14 +39625,14 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Un pedido hoy', () => pm.expect(pm.response.json().data.cantidadPedidosHoy).to.eql(1));"
+                  "pm.test('Un pedido hoy', () => pm.expect(pm.response.json().data.cantidadPedidos).to.eql(1));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "[pedidos] Resumen de hoy con header A: 0 pedidos",
+          "name": "[pedidos] Resumen del turno con header A: 0 pedidos",
           "request": {
             "method": "GET",
             "header": [
@@ -39646,14 +39646,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -39665,7 +39665,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Ningun pedido hoy', () => pm.expect(pm.response.json().data.cantidadPedidosHoy).to.eql(0));"
+                  "pm.test('Ningun pedido hoy', () => pm.expect(pm.response.json().data.cantidadPedidos).to.eql(0));"
                 ]
               }
             }
@@ -78057,7 +78057,7 @@
           ]
         },
         {
-          "name": "Dueño: resumen de hoy de A (referencia)",
+          "name": "Dueño: resumen del turno de A (referencia)",
           "request": {
             "method": "GET",
             "header": [
@@ -78071,14 +78071,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -78097,7 +78097,7 @@
           ]
         },
         {
-          "name": "Empleado: resumen de hoy de A, igual al del Dueño",
+          "name": "Empleado: resumen del turno de A, igual al del Dueño",
           "request": {
             "method": "GET",
             "header": [
@@ -78111,14 +78111,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -78130,7 +78130,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Mismo resumen que ve el Dueño', () => pm.expect(JSON.stringify(pm.response.json().data)).to.eql(pm.environment.get('e2_resumen_dueno')));"
+                  "pm.test('Mismo resumen que ve el Dueño, sin comision ni neto', () => { const d = JSON.parse(pm.environment.get('e2_resumen_dueno')); delete d.comision; delete d.neto; pm.expect(pm.response.json().data).to.eql(d); });"
                 ]
               }
             }
@@ -78529,7 +78529,7 @@
           ]
         },
         {
-          "name": "Sin token: resumen de hoy da 401",
+          "name": "Sin token: resumen del turno da 401",
           "request": {
             "method": "GET",
             "header": [
@@ -78539,14 +78539,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -78564,7 +78564,7 @@
           ]
         },
         {
-          "name": "Administrador: resumen de hoy da 403 con header",
+          "name": "Administrador: resumen del turno da 403 con header",
           "request": {
             "method": "GET",
             "header": [
@@ -78578,14 +78578,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -78603,7 +78603,7 @@
           ]
         },
         {
-          "name": "Administrador: resumen de hoy da 403 sin header",
+          "name": "Administrador: resumen del turno da 403 sin header",
           "request": {
             "method": "GET",
             "header": [
@@ -78613,14 +78613,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -79544,7 +79544,7 @@
           ]
         },
         {
-          "name": "404: resumen de hoy con relación INACTIVA",
+          "name": "404: resumen del turno con relación INACTIVA",
           "request": {
             "method": "GET",
             "header": [
@@ -79558,14 +79558,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -80158,7 +80158,7 @@
           ]
         },
         {
-          "name": "Estados: el Empleado sigue leyendo S suspendido (resumen de hoy)",
+          "name": "Estados: el Empleado sigue leyendo S suspendido (resumen del turno)",
           "request": {
             "method": "GET",
             "header": [
@@ -80172,14 +80172,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -81031,7 +81031,7 @@
           ]
         },
         {
-          "name": "Pedidos: el resumen del Dueño es el neto (referencia)",
+          "name": "Pedidos: el resumen del Dueño trae vendido bruto, comision y neto (referencia)",
           "request": {
             "method": "GET",
             "header": [
@@ -81045,14 +81045,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -81065,14 +81065,14 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "pm.environment.set('e2_resumen_b_dueno', JSON.stringify(pm.response.json().data));",
-                  "pm.test('Facturado neto, tres pedidos de hoy y uno pendiente', () => { const r = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_pedidos_dueno')); const aceptado = d.find((p) => p.id === Number(pm.environment.get('e2_ped_aceptado'))); pm.expect(r.totalFacturadoHoy).to.be.closeTo(aceptado.subtotal - aceptado.cargoServicioComercio, 0.001); pm.expect(r.cantidadPedidosHoy).to.eql(3); pm.expect(r.cantidadPendientes).to.eql(1); });"
+                  "pm.test('Vendido bruto, comision y neto, tres pedidos del turno y uno pendiente', () => { const r = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_pedidos_dueno')); const aceptado = d.find((p) => p.id === Number(pm.environment.get('e2_ped_aceptado'))); pm.expect(r.vendido).to.be.closeTo(aceptado.subtotal, 0.001); pm.expect(r.neto).to.be.closeTo(aceptado.subtotal - aceptado.cargoServicioComercio, 0.001); pm.expect(r.comision).to.be.closeTo(aceptado.cargoServicioComercio, 0.001); pm.expect(r.estado).to.eql('EN_CURSO'); pm.expect(r.cantidadPedidos).to.eql(3); pm.expect(r.cantidadPendientes).to.eql(1); });"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Pedidos: el resumen del Empleado trae tres campos, el facturado bruto y los mismos contadores",
+          "name": "Pedidos: el resumen del Empleado trae el vendido bruto y los contadores, sin comision ni neto",
           "request": {
             "method": "GET",
             "header": [
@@ -81086,14 +81086,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -81105,9 +81105,9 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Solo los tres campos', () => pm.expect(Object.keys(pm.response.json().data).sort()).to.eql(['cantidadPedidosHoy', 'cantidadPendientes', 'totalFacturadoHoy']));",
-                  "pm.test('Facturado bruto de productos del pedido aceptado', () => pm.expect(pm.response.json().data.totalFacturadoHoy).to.eql(1500));",
-                  "pm.test('Mismos contadores que el Dueño', () => { const e = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_resumen_b_dueno')); pm.expect(e.cantidadPedidosHoy).to.eql(d.cantidadPedidosHoy); pm.expect(e.cantidadPendientes).to.eql(d.cantidadPendientes); });"
+                  "pm.test('Solo el vendido bruto, el turno y los contadores', () => pm.expect(Object.keys(pm.response.json().data).sort()).to.eql(['cantidadPedidos', 'cantidadPendientes', 'estado', 'turno', 'vendido']));",
+                  "pm.test('Vendido bruto de productos del pedido aceptado', () => pm.expect(pm.response.json().data.vendido).to.eql(1500));",
+                  "pm.test('Mismos contadores que el Dueño', () => { const e = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_resumen_b_dueno')); pm.expect(e.cantidadPedidos).to.eql(d.cantidadPedidos); pm.expect(e.cantidadPendientes).to.eql(d.cantidadPendientes); });"
                 ]
               }
             }
@@ -115706,14 +115706,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -115725,7 +115725,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.environment.set('nr_fact_dueno_antes', pm.response.json().data.totalFacturadoHoy);"
+                  "pm.environment.set('nr_fact_dueno_antes', pm.response.json().data.neto);"
                 ]
               }
             }
@@ -115746,14 +115746,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -115765,7 +115765,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.environment.set('nr_fact_emp_antes', pm.response.json().data.totalFacturadoHoy);"
+                  "pm.environment.set('nr_fact_emp_antes', pm.response.json().data.vendido);"
                 ]
               }
             }
@@ -116187,14 +116187,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -116206,7 +116206,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.environment.set('nr_fact_dueno_despues', pm.response.json().data.totalFacturadoHoy);"
+                  "pm.environment.set('nr_fact_dueno_despues', pm.response.json().data.neto);"
                 ]
               }
             }
@@ -116227,14 +116227,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -116246,7 +116246,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.environment.set('nr_fact_emp_despues', pm.response.json().data.totalFacturadoHoy);"
+                  "pm.environment.set('nr_fact_emp_despues', pm.response.json().data.vendido);"
                 ]
               }
             }
@@ -116267,14 +116267,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -127551,7 +127551,7 @@
           ]
         },
         {
-          "name": "Sin token: GET /pedidos/comercio/resumen-hoy da 401",
+          "name": "Sin token: GET /pedidos/comercio/resumen-turno da 401",
           "request": {
             "method": "GET",
             "header": [
@@ -127561,14 +127561,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -128644,7 +128644,7 @@
           ]
         },
         {
-          "name": "Administrador: GET /pedidos/comercio/resumen-hoy da 403",
+          "name": "Administrador: GET /pedidos/comercio/resumen-turno da 403",
           "request": {
             "method": "GET",
             "header": [
@@ -128658,14 +128658,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -129824,7 +129824,7 @@
           ]
         },
         {
-          "name": "Cliente sin relacion con header: GET /pedidos/comercio/resumen-hoy da el mismo 404",
+          "name": "Cliente sin relacion con header: GET /pedidos/comercio/resumen-turno da el mismo 404",
           "request": {
             "method": "GET",
             "header": [
@@ -129838,14 +129838,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -131010,7 +131010,7 @@
           ]
         },
         {
-          "name": "Cliente sin relacion sin header: GET /pedidos/comercio/resumen-hoy da 400",
+          "name": "Cliente sin relacion sin header: GET /pedidos/comercio/resumen-turno da 400",
           "request": {
             "method": "GET",
             "header": [
@@ -131020,14 +131020,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -132159,7 +132159,7 @@
           ]
         },
         {
-          "name": "Relacion inactiva: GET /pedidos/comercio/resumen-hoy da el mismo 404",
+          "name": "Relacion inactiva: GET /pedidos/comercio/resumen-turno da el mismo 404",
           "request": {
             "method": "GET",
             "header": [
@@ -132173,14 +132173,14 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "pedidos",
                 "comercio",
-                "resumen-hoy"
+                "resumen-turno"
               ]
             }
           },
@@ -152060,6 +152060,2582 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "pm.test(\"Queda una pendiente\", () => { const d = pm.response.json().data; pm.expect(d.pendientes.length).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "74 - Pedido por turno y Vendido en el turno Fase 2 T2 (turno estampado al confirmar el pago, resumen-turno para el Dueño y el Empleado, pendientes de otro turno, la edicion de horarios no lo cambia, autorizacion, backfill)",
+      "item": [
+        {
+          "name": "Login Administrador (sesion propia de esta carpeta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{admin_usuario}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('token_admin', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Dueño (abierto los siete dias las 24 horas)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "comercio"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Turnos T2 SRL\",\n  \"cuit\": \"{{tt_cuit_tmp}}\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Direccion fiscal T2 100\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"{{tt_d_nombre}}\",\n  \"descripcion\": \"Comercio generado por la coleccion de Postman (pedido por turno, Fase 2 T2)\",\n  \"telefono\": \"+5492964555447\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"nombreUsuario\": \"{{tt_d_usuario}}\",\n  \"email\": \"{{tt_d_email}}\",\n  \"password\": \"{{tt_d_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"803\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Carlos\",\n  \"apellidoRepresentante\": \"Sanchez\",\n  \"dniRepresentante\": \"{{tt_dni_rep_tmp}}\",\n  \"telefonoRepresentante\": \"+5492964701106\",\n  \"fechaNacimientoRepresentante\": \"1988-04-04\",\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/postman-turnos-t2.jpg\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/turnost2\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('tt_d_email', 'tt.d.' + s + '@bajonea.test');",
+                  "pm.environment.set('tt_d_usuario', ('ttd' + s).slice(0, 20));",
+                  "pm.environment.set('tt_d_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('tt_d_dni', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "const mult = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];",
+                  "let cuit = null;",
+                  "while (cuit === null) {",
+                  "  const base = '30' + String(Math.floor(10000000 + Math.random() * 89999999));",
+                  "  let suma = 0;",
+                  "  for (let i = 0; i < 10; i += 1) suma += Number(base[i]) * mult[i];",
+                  "  let dv = 11 - (suma % 11);",
+                  "  if (dv === 11) dv = 0;",
+                  "  if (dv !== 10) cuit = base + dv;",
+                  "}",
+                  "pm.environment.set('tt_cuit_tmp', cuit);",
+                  "pm.environment.set('tt_dni_rep_tmp', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "pm.environment.set('tt_d_nombre', 'Local Turnos T2 ' + Date.now().toString(36));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Dueño",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{tt_d_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{tt_d_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('tt_d_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Dueño",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{tt_d_email}}\",\n  \"codigo\": \"{{tt_d_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Dueño",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{tt_d_usuario}}\",\n  \"password\": \"{{tt_d_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('tt_d_token', pm.response.json().data.token);",
+                  "pm.environment.set('tt_d_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador busca el comercio pendiente del Dueño",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/pendientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "pendientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.emailCuenta === pm.environment.get('tt_d_email').toLowerCase());",
+                  "pm.test('El comercio del Dueño esta pendiente', () => pm.expect(c).to.exist);",
+                  "pm.environment.set('tt_com', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador aprueba el comercio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{tt_com}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{tt_com}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: el comercio pasa a APTO_VENTA sin cuenta de Mercado Pago vinculada",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{tt_com}}/apto-venta",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{tt_com}}",
+                "apto-venta"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador crea la categoria del producto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categorias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"{{tt_cat_nombre}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('tt_cat_nombre', 'Cat Turnos T2 ' + Date.now().toString(36));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('tt_cat', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueño crea el producto con el que compran los Clientes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{tt_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"Producto Turnos T2\", \"descripcion\": \"Descripcion T2\", \"precio\": 10000, \"categoriaId\": {{tt_cat}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('tt_prod', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Carla",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carla\",\n  \"apellido\": \"Turnos\",\n  \"dni\": \"{{tt_c_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551237\",\n  \"nombreUsuario\": \"{{tt_c_usuario}}\",\n  \"email\": \"{{tt_c_email}}\",\n  \"password\": \"{{tt_c_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('tt_c_email', 'tt.c.' + s + '@bajonea.test');",
+                  "pm.environment.set('tt_c_usuario', ('ttc' + s).slice(0, 20));",
+                  "pm.environment.set('tt_c_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('tt_c_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Carla",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{tt_c_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{tt_c_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('tt_c_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Carla",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{tt_c_email}}\",\n  \"codigo\": \"{{tt_c_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Carla (Compradora)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{tt_c_usuario}}\",\n  \"password\": \"{{tt_c_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('tt_c_token', pm.response.json().data.token);",
+                  "pm.environment.set('tt_c_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Elena",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Elena\",\n  \"apellido\": \"Turnos\",\n  \"dni\": \"{{tt_e_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551237\",\n  \"nombreUsuario\": \"{{tt_e_usuario}}\",\n  \"email\": \"{{tt_e_email}}\",\n  \"password\": \"{{tt_e_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('tt_e_email', 'tt.e.' + s + '@bajonea.test');",
+                  "pm.environment.set('tt_e_usuario', ('tte' + s).slice(0, 20));",
+                  "pm.environment.set('tt_e_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('tt_e_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Elena",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{tt_e_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{tt_e_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('tt_e_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Elena",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{tt_e_email}}\",\n  \"codigo\": \"{{tt_e_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueño invita a Elena al comercio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{tt_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{tt_e_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de la invitacion de Elena",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/invitaciones-empleado/codigo?email={{tt_e_email}}&comercioId={{tt_com}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "invitaciones-empleado",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{tt_e_email}}"
+                },
+                {
+                  "key": "comercioId",
+                  "value": "{{tt_com}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('tt_e_inv_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Elena acepta la invitacion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{tt_e_email}}\",\n  \"codigo\": \"{{tt_e_inv_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Elena (Empleada)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{tt_e_usuario}}\",\n  \"password\": \"{{tt_e_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('tt_e_token', pm.response.json().data.token);",
+                  "pm.environment.set('tt_e_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Ximena",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ximena\",\n  \"apellido\": \"Turnos\",\n  \"dni\": \"{{tt_x_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551237\",\n  \"nombreUsuario\": \"{{tt_x_usuario}}\",\n  \"email\": \"{{tt_x_email}}\",\n  \"password\": \"{{tt_x_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('tt_x_email', 'tt.x.' + s + '@bajonea.test');",
+                  "pm.environment.set('tt_x_usuario', ('ttx' + s).slice(0, 20));",
+                  "pm.environment.set('tt_x_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('tt_x_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Ximena",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{tt_x_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{tt_x_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('tt_x_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Ximena",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{tt_x_email}}\",\n  \"codigo\": \"{{tt_x_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Ximena (sin relacion con el comercio)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{tt_x_usuario}}\",\n  \"password\": \"{{tt_x_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('tt_x_token', pm.response.json().data.token);",
+                  "pm.environment.set('tt_x_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Antes de cualquier pedido: el turno esta en curso y todo en cero",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{tt_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-turno"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Estado EN_CURSO y turno de hoy', () => { const d = pm.response.json().data; pm.expect(d.estado).to.eql('EN_CURSO'); pm.expect(d.turno.inicio).to.be.a('string'); pm.expect(d.turno.fin).to.be.a('string'); });",
+                  "pm.test('Todo en cero', () => { const d = pm.response.json().data; pm.expect(d.vendido).to.eql(0); pm.expect(d.comision).to.eql(0); pm.expect(d.neto).to.eql(0); pm.expect(d.cantidadPedidos).to.eql(0); pm.expect(d.cantidadPendientes).to.eql(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido aceptado] El Cliente vacia el carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Carrito vaciado o ya vacio', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido aceptado] El Cliente agrega el producto al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productoId\": {{tt_prod}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido aceptado] El Cliente confirma el pedido (retiro en el local)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tipoEntrega\": \"RETIRO\", \"direccionId\": null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('tt_ped_aceptado', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido aceptado] Atajo de test: el pago queda aprobado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/pedidos/{{tt_ped_aceptado}}/pago-aprobado?registrarPago=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "pedidos",
+                "{{tt_ped_aceptado}}",
+                "pago-aprobado"
+              ],
+              "query": [
+                {
+                  "key": "registrarPago",
+                  "value": "true"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido pendiente] El Cliente vacia el carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Carrito vaciado o ya vacio', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido pendiente] El Cliente agrega el producto al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productoId\": {{tt_prod}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido pendiente] El Cliente confirma el pedido (retiro en el local)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tipoEntrega\": \"RETIRO\", \"direccionId\": null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('tt_ped_pendiente', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido pendiente] Atajo de test: el pago queda aprobado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/pedidos/{{tt_ped_pendiente}}/pago-aprobado?registrarPago=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "pedidos",
+                "{{tt_ped_pendiente}}",
+                "pago-aprobado"
+              ],
+              "query": [
+                {
+                  "key": "registrarPago",
+                  "value": "true"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueño acepta el primer pedido",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{tt_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{tt_ped_aceptado}}/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{tt_ped_aceptado}}",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueño lee la lista del comercio para conocer el cargo del pedido aceptado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{tt_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const p = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('tt_ped_aceptado')));",
+                  "pm.environment.set('tt_cargo', p.cargoServicioComercio);",
+                  "pm.environment.set('tt_subtotal', p.subtotal);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dueño: vendido bruto, comision y neto del turno, dos pedidos y uno pendiente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{tt_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-turno"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Vendido bruto = subtotal del pedido aceptado', () => pm.expect(pm.response.json().data.vendido).to.eql(Number(pm.environment.get('tt_subtotal'))));",
+                  "pm.test('Comision = cargo del comercio y neto = vendido - comision', () => { const d = pm.response.json().data; pm.expect(d.comision).to.be.closeTo(Number(pm.environment.get('tt_cargo')), 0.001); pm.expect(d.neto).to.be.closeTo(d.vendido - d.comision, 0.001); });",
+                  "pm.test('Dos pedidos del turno y uno pendiente', () => { const d = pm.response.json().data; pm.expect(d.estado).to.eql('EN_CURSO'); pm.expect(d.cantidadPedidos).to.eql(2); pm.expect(d.cantidadPendientes).to.eql(1); });",
+                  "pm.test('Los siete campos del Dueño', () => pm.expect(Object.keys(pm.response.json().data).sort()).to.eql(['cantidadPedidos', 'cantidadPendientes', 'comision', 'estado', 'neto', 'turno', 'vendido']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido ayer] El Cliente vacia el carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Carrito vaciado o ya vacio', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido ayer] El Cliente agrega el producto al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productoId\": {{tt_prod}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido ayer] El Cliente confirma el pedido (retiro en el local)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tipoEntrega\": \"RETIRO\", \"direccionId\": null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('tt_ped_ayer', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido ayer] Atajo de test: el pago queda aprobado a la hora elegida",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/pedidos/{{tt_ped_ayer}}/pago-aprobado?registrarPago=true&ahora={{tt_ahora}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "pedidos",
+                "{{tt_ped_ayer}}",
+                "pago-aprobado"
+              ],
+              "query": [
+                {
+                  "key": "registrarPago",
+                  "value": "true"
+                },
+                {
+                  "key": "ahora",
+                  "value": "{{tt_ahora}}"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const dia = new Date(Date.now() + (-1) * 86400000).toLocaleString('sv-SE', { timeZone: 'America/Argentina/Ushuaia' }).replace(' ', 'T').slice(0, 10);",
+                  "pm.environment.set('tt_ahora', dia + 'T10:00:00');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Un pedido pagado ayer pertenece al turno de ayer: suma un pendiente pero no entra en el turno de hoy",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{tt_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-turno"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Pedidos del turno sin cambios y un pendiente mas', () => { const d = pm.response.json().data; pm.expect(d.cantidadPedidos).to.eql(2); pm.expect(d.cantidadPendientes).to.eql(2); pm.expect(d.vendido).to.eql(Number(pm.environment.get('tt_subtotal'))); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido madrugada] El Cliente vacia el carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Carrito vaciado o ya vacio', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido madrugada] El Cliente agrega el producto al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productoId\": {{tt_prod}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido madrugada] El Cliente confirma el pedido (retiro en el local)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tipoEntrega\": \"RETIRO\", \"direccionId\": null}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('tt_ped_madrugada', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido madrugada] Atajo de test: el pago queda aprobado a la hora elegida",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/pedidos/{{tt_ped_madrugada}}/pago-aprobado?registrarPago=true&ahora={{tt_ahora}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "pedidos",
+                "{{tt_ped_madrugada}}",
+                "pago-aprobado"
+              ],
+              "query": [
+                {
+                  "key": "registrarPago",
+                  "value": "true"
+                },
+                {
+                  "key": "ahora",
+                  "value": "{{tt_ahora}}"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const dia = new Date(Date.now() + (0) * 86400000).toLocaleString('sv-SE', { timeZone: 'America/Argentina/Ushuaia' }).replace(' ', 'T').slice(0, 10);",
+                  "pm.environment.set('tt_ahora', dia + 'T00:00:30');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Un pedido pagado hoy a las 00:00:30 entra en el turno de hoy (la franja es de 00:00 a 23:59)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{tt_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-turno"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Tres pedidos del turno y tres pendientes', () => { const d = pm.response.json().data; pm.expect(d.cantidadPedidos).to.eql(3); pm.expect(d.cantidadPendientes).to.eql(3); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Empleada: el mismo vendido y los mismos contadores, sin comision ni neto",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_e_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{tt_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-turno"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Cinco campos, sin comision ni neto', () => pm.expect(Object.keys(pm.response.json().data).sort()).to.eql(['cantidadPedidos', 'cantidadPendientes', 'estado', 'turno', 'vendido']));",
+                  "pm.test('Mismo vendido bruto y mismos contadores', () => { const d = pm.response.json().data; pm.expect(d.vendido).to.eql(Number(pm.environment.get('tt_subtotal'))); pm.expect(d.cantidadPedidos).to.eql(3); pm.expect(d.cantidadPendientes).to.eql(3); });",
+                  "pm.test('Ni el texto de la respuesta nombra la comision', () => pm.expect(pm.response.text()).to.not.include('comision'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueño edita los horarios (rige desde mañana)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{tt_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"22:00:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"22:00:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"22:00:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"22:00:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"22:00:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"22:00:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"22:00:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar los horarios no cambia el turno de hoy ni sus cifras",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{tt_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-turno"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Mismo turno, mismas cifras', () => { const d = pm.response.json().data; pm.expect(d.estado).to.eql('EN_CURSO'); pm.expect(d.cantidadPedidos).to.eql(3); pm.expect(d.vendido).to.eql(Number(pm.environment.get('tt_subtotal'))); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin token: 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{tt_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-turno"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador: 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{tt_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-turno"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cliente sin relacion y con header: el mismo 404 de siempre",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_x_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{tt_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-turno"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Mensaje de comercio no encontrado', () => pm.expect(pm.response.json().mensaje).to.eql('Comercio no encontrado'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cliente sin relacion y sin header: 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_x_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-turno",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-turno"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La ruta vieja resumen-hoy ya no existe",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{tt_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{tt_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/resumen-hoy",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "resumen-hoy"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Responde un error de cliente y no 200', () => { pm.expect(pm.response.code).to.be.at.least(400); pm.expect(pm.response.code).to.be.below(500); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: el proceso de asignacion de turnos responde con sus contadores",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/jobs/backfill-turnos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "jobs",
+                "backfill-turnos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Trae asignados y sin turno', () => { const d = pm.response.json().data; pm.expect(d.asignados).to.be.a('number'); pm.expect(d.sinTurno).to.be.a('number'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: repetir el proceso no asigna nada nuevo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/jobs/backfill-turnos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "jobs",
+                "backfill-turnos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Nada nuevo para asignar', () => pm.expect(pm.response.json().data.asignados).to.eql(0));"
                 ]
               }
             }

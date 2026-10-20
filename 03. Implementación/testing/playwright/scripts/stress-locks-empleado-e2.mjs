@@ -164,7 +164,7 @@ async function empleadoDe(dueno, comercioIds) {
   return { ...cuenta, token: login.json.data.token, id: login.json.data.usuario.id };
 }
 
-const LECTURAS = ['/comercios/perfil', '/productos', '/pedidos/comercio', '/pedidos/comercio/resumen-hoy'];
+const LECTURAS = ['/comercios/perfil', '/productos', '/pedidos/comercio', '/pedidos/comercio/resumen-turno'];
 const leer = (empleado, comercioId, ruta) => call('GET', ruta, empleado.token, undefined, cabecera(comercioId));
 const atajoRelacion = (comercioId, empleadoId, estado) => call('PUT', `/test/comercios/${comercioId}/empleados/${empleadoId}/estado?estado=${estado}`);
 const estadoComercio = (comercioId, estado) => sql(`UPDATE comercio SET estado = '${estado}' WHERE id = ${comercioId};`);

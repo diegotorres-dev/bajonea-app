@@ -280,9 +280,9 @@ const traza = (nombre, token, clave, codigo, comprobaciones = []) =>
   item(nombre, req('GET', `/pedidos/comercio/${P(clave)}/trazabilidad`, { token, comercio: COM }), [status(codigo), ...comprobaciones]);
 
 const resumen = (nombre, token, variable) =>
-  item(nombre, req('GET', '/pedidos/comercio/resumen-hoy', { token, comercio: COM }), [
+  item(nombre, req('GET', '/pedidos/comercio/resumen-turno', { token, comercio: COM }), [
     status(200),
-    guardar(v(variable), 'pm.response.json().data.totalFacturadoHoy'),
+    guardar(v(variable), variable.includes('dueno') ? 'pm.response.json().data.neto' : 'pm.response.json().data.vendido'),
   ]);
 
 agregar(
@@ -340,7 +340,7 @@ agregar(
   ]),
   resumen('Facturado: el Dueño despues de cerrar', TOKEN_DUENO, 'fact_dueno_despues'),
   resumen('Facturado: la Empleada despues de cerrar', TOKEN_EMPLEADO, 'fact_emp_despues'),
-  item('Facturado: la cifra no cambia al pasar de listo a no retirado (neto para el Dueño, bruto para la Empleada)', req('GET', '/pedidos/comercio/resumen-hoy', { token: TOKEN_DUENO, comercio: COM }), [
+  item('Facturado: la cifra no cambia al pasar de listo a no retirado (neto para el Dueño, bruto para la Empleada)', req('GET', '/pedidos/comercio/resumen-turno', { token: TOKEN_DUENO, comercio: COM }), [
     status(200),
     "pm.test('Dueño: misma cifra antes y despues', () => pm.expect(Number(pm.environment.get('nr_fact_dueno_despues'))).to.eql(Number(pm.environment.get('nr_fact_dueno_antes'))));",
     "pm.test('Empleada: misma cifra antes y despues', () => pm.expect(Number(pm.environment.get('nr_fact_emp_despues'))).to.eql(Number(pm.environment.get('nr_fact_emp_antes'))));",

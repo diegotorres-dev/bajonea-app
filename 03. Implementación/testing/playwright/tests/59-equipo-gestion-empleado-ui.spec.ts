@@ -588,7 +588,7 @@ test.describe('Empleado: renuncia, pérdida de acceso según la causa y avisos, 
       });
 
       expect((await putEquipo(request, perdido.id, miembro.id, 'desactivar')).status).toBe(200);
-      await provocar404(page, ['/productos', '/pedidos/comercio', '/comercios/perfil', '/pedidos/comercio/resumen-hoy']);
+      await provocar404(page, ['/productos', '/pedidos/comercio', '/comercios/perfil', '/pedidos/comercio/resumen-turno']);
 
       await esperarHoja(page, 'BAJA_DUENO');
       await page.waitForTimeout(1000);

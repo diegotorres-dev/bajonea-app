@@ -114,6 +114,12 @@ public class TestSupportService {
         pedidoService.confirmarPagoAprobado(pedidoId);
     }
 
+    /** Con {@code instanteDelPago} el pago queda confirmado a esa hora (la del historial, la del pedido y la del turno). */
+    @Transactional
+    public void confirmarPagoAprobado(Integer pedidoId, LocalDateTime instanteDelPago) {
+        pedidoService.confirmarPagoAprobado(pedidoId, instanteDelPago);
+    }
+
     /**
      * Igual que {@link #confirmarPagoAprobado(Integer)}, y además deja la fila de {@code pago} que dejaría el webhook
      * real (monto del pedido, {@code mp_estado = approved}, id de transacción sintético y fecha de confirmación), para
@@ -122,7 +128,12 @@ public class TestSupportService {
      */
     @Transactional
     public void confirmarPagoAprobadoConRegistro(Integer pedidoId) {
-        pedidoService.confirmarPagoAprobado(pedidoId);
+        confirmarPagoAprobadoConRegistro(pedidoId, null);
+    }
+
+    @Transactional
+    public void confirmarPagoAprobadoConRegistro(Integer pedidoId, LocalDateTime instanteDelPago) {
+        pedidoService.confirmarPagoAprobado(pedidoId, instanteDelPago);
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado"));
         Pago pago = pagoService.buscarPorPedido(pedidoId)

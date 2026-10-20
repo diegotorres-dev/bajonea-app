@@ -233,18 +233,24 @@ test.describe('Cerrar un retiro como no retirado (API), bloque A4b de E3', () =>
     expect((await atajoEstadoRelacion(request, dueno.comercioId, fabiana.id, 'ACTIVO')).status).toBe(200);
   });
 
-  test('"Facturado hoy" lo cuenta: la cifra no cambia al pasar de listo a no retirado (Dueño neto, Empleado bruto)', async ({ request }) => {
+  test('"Vendido en el turno" lo cuenta: la cifra no cambia al pasar de listo a no retirado (bruto para los dos, neto solo para el Dueño)', async ({ request }) => {
     const pedidoId = await pedidoListo(request, comprador, 90);
     const resumen = async (token: string) =>
-      Number((await apiConHeaders(request, 'GET', '/pedidos/comercio/resumen-hoy', token, conComercio(dueno.comercioId))).body.data.totalFacturadoHoy);
+      (await apiConHeaders(request, 'GET', '/pedidos/comercio/resumen-turno', token, conComercio(dueno.comercioId))).body.data;
     const duenoAntes = await resumen(dueno.token);
     const empleadoAntes = await resumen(elena.token);
 
     expect((await cerrar(request, dueno.token, pedidoId)).status).toBe(200);
 
-    expect(await resumen(dueno.token)).toBe(duenoAntes);
-    expect(await resumen(elena.token)).toBe(empleadoAntes);
-    expect(empleadoAntes - duenoAntes).toBeGreaterThan(0);
+    const duenoDespues = await resumen(dueno.token);
+    const empleadoDespues = await resumen(elena.token);
+    expect(duenoDespues.vendido).toBe(duenoAntes.vendido);
+    expect(empleadoDespues.vendido).toBe(empleadoAntes.vendido);
+    expect(empleadoAntes.vendido).toBe(duenoAntes.vendido);
+    expect(duenoAntes.vendido - duenoAntes.neto).toBeGreaterThan(0);
+    expect(duenoDespues.neto).toBe(duenoAntes.neto);
+    expect(empleadoAntes.neto).toBeUndefined();
+    expect(empleadoAntes.comision).toBeUndefined();
   });
 
   test('la trazabilidad y la Actividad muestran el cierre con su texto, y el atajo falla sin fila de listo', async ({ request }) => {

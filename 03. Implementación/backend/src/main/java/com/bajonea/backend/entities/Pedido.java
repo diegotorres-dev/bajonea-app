@@ -18,6 +18,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -124,4 +125,16 @@ public class Pedido {
     @Setter
     @Column(name = "fecha_creacion", nullable = false, updatable = false)
     private LocalDateTime fechaCreacion;
+
+    @Setter
+    @Column(name = "fecha_pago_confirmado")
+    private LocalDateTime fechaPagoConfirmado;
+
+    @Setter
+    @Column(name = "turno_fecha")
+    private LocalDate turnoFecha;
+
+    @Setter
+    @Column(name = "turno_horario_id")
+    private Integer turnoHorarioId;
 }

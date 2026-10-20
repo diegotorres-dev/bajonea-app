@@ -56,7 +56,7 @@ test.describe('Rol Empleado, E3 bloque A5 (API): matriz de las 24 rutas delegabl
       { metodo: 'GET', ruta: '/comercios/perfil' },
       { metodo: 'GET', ruta: '/productos' },
       { metodo: 'GET', ruta: '/pedidos/comercio' },
-      { metodo: 'GET', ruta: '/pedidos/comercio/resumen-hoy' },
+      { metodo: 'GET', ruta: '/pedidos/comercio/resumen-turno' },
       { metodo: 'GET', ruta: `/pedidos/comercio/${pedidoId}/trazabilidad` },
       { metodo: 'POST', ruta: '/productos', cuerpo: { nombre: 'Matriz', precio: 1, categoriaId } },
       { metodo: 'PUT', ruta: `/productos/${productoId}`, cuerpo: { nombre: 'Matriz', precio: 1, categoriaId } },

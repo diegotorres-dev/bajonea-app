@@ -86,8 +86,9 @@ const CAMPOS_PEDIDO_EMPLEADO = [
   'total',
 ];
 const CAMPOS_PEDIDO_EXCLUIDOS = ['clienteId', 'pagoEstado', 'cargoServicioComercio'];
-const CAMPOS_RESUMEN = ['cantidadPedidosHoy', 'cantidadPendientes', 'totalFacturadoHoy'];
-const ESTADOS_FACTURADOS = ['EN_PREPARACION', 'EN_CAMINO', 'LISTO_PARA_RETIRAR', 'ENTREGADO'];
+const CAMPOS_RESUMEN_EMPLEADO = ['cantidadPedidos', 'cantidadPendientes', 'estado', 'turno', 'vendido'];
+const CAMPOS_RESUMEN_DUENO = ['cantidadPedidos', 'cantidadPendientes', 'comision', 'estado', 'neto', 'turno', 'vendido'];
+const ESTADOS_FACTURADOS = ['EN_PREPARACION', 'EN_CAMINO', 'LISTO_PARA_RETIRAR', 'ENTREGADO', 'NO_RETIRADO'];
 const REEMBOLSO_SIMPLE: Record<string, string> = {
   PENDIENTE: 'EN_PROCESO',
   PENDIENTE_REINTENTO: 'EN_PROCESO',
@@ -125,8 +126,8 @@ function pedidos(request: APIRequestContext, token: string | undefined, headers:
   return apiConHeaders(request, 'GET', '/pedidos/comercio', token, headers);
 }
 
-function resumenHoy(request: APIRequestContext, token: string | undefined, headers: Record<string, string> = {}) {
-  return apiConHeaders(request, 'GET', '/pedidos/comercio/resumen-hoy', token, headers);
+function resumenDelTurno(request: APIRequestContext, token: string | undefined, headers: Record<string, string> = {}) {
+  return apiConHeaders(request, 'GET', '/pedidos/comercio/resumen-turno', token, headers);
 }
 
 function misComerciosEmpleado(request: APIRequestContext, token: string | undefined, headers: Record<string, string> = {}) {
@@ -262,15 +263,16 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
       expect(delEmpleado.body.data).toEqual(delDueno.body.data);
     });
 
-    test('el Empleado lee los pedidos del comercio y el resumen de hoy', async ({ request }) => {
+    test('el Empleado lee los pedidos del comercio y el resumen del turno', async ({ request }) => {
       const lista = await pedidos(request, empleadoToken, conComercio(dueno.comercioId));
-      const resumen = await resumenHoy(request, empleadoToken, conComercio(dueno.comercioId));
-      const resumenDueno = await resumenHoy(request, dueno.token, conComercio(dueno.comercioId));
+      const resumen = await resumenDelTurno(request, empleadoToken, conComercio(dueno.comercioId));
+      const resumenDueno = await resumenDelTurno(request, dueno.token, conComercio(dueno.comercioId));
 
       expect(lista.status).toBe(200);
       expect(Array.isArray(lista.body.data)).toBe(true);
       expect(resumen.status).toBe(200);
-      expect(resumen.body.data).toEqual(resumenDueno.body.data);
+      const { comision, neto, ...delDueno } = resumenDueno.body.data;
+      expect(resumen.body.data).toEqual(delDueno);
     });
 
     test('con dos comercios, cada header devuelve los datos de su comercio y nunca los del otro', async ({ request }) => {
@@ -288,13 +290,13 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
     });
 
     test('sin token las cuatro lecturas dan 401', async ({ request }) => {
-      for (const llamar of [perfil, productos, pedidos, resumenHoy]) {
+      for (const llamar of [perfil, productos, pedidos, resumenDelTurno]) {
         expect((await llamar(request, undefined, conComercio(dueno.comercioId))).status).toBe(401);
       }
     });
 
     test('el Administrador recibe 403 en las cuatro lecturas, con y sin header', async ({ request }) => {
-      for (const llamar of [perfil, productos, pedidos, resumenHoy]) {
+      for (const llamar of [perfil, productos, pedidos, resumenDelTurno]) {
         expect((await llamar(request, adminToken, conComercio(dueno.comercioId))).status).toBe(403);
         expect((await llamar(request, adminToken)).status).toBe(403);
       }
@@ -325,7 +327,7 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
     }
 
     function resumenDe(request: APIRequestContext, token: string) {
-      return apiConHeaders(request, 'GET', '/pedidos/comercio/resumen-hoy', token, conComercio(duenoMp.comercioId));
+      return apiConHeaders(request, 'GET', '/pedidos/comercio/resumen-turno', token, conComercio(duenoMp.comercioId));
     }
 
     test.beforeAll(async ({ request }) => {
@@ -447,7 +449,7 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
       }
     });
 
-    test('el resumen del Empleado trae solo tres campos; el facturado es el bruto de productos y el del Dueño el neto, con los mismos contadores', async ({ request }) => {
+    test('el resumen del turno del Empleado trae solo el vendido bruto y los contadores; el Dueño suma comision y neto, con el mismo vendido y los mismos contadores', async ({ request }) => {
       const resumenEmpleado = (await resumenDe(request, empleadoToken)).body.data;
       const resumenDueno = (await resumenDe(request, duenoMp.token)).body.data;
       const completos = (await listaDe(request, duenoMp.token)).body.data as Array<Record<string, any>>;
@@ -455,26 +457,29 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
       const bruto = facturados.reduce((suma, p) => suma + p.subtotal, 0);
       const neto = facturados.reduce((suma, p) => suma + p.subtotal - p.cargoServicioComercio, 0);
 
-      expect(Object.keys(resumenEmpleado).sort()).toEqual(CAMPOS_RESUMEN);
-      expect(Object.keys(resumenDueno).sort()).toEqual(CAMPOS_RESUMEN);
+      expect(Object.keys(resumenEmpleado).sort()).toEqual(CAMPOS_RESUMEN_EMPLEADO);
+      expect(Object.keys(resumenDueno).sort()).toEqual(CAMPOS_RESUMEN_DUENO);
       expect(facturados.length).toBe(1);
-      expect(resumenEmpleado.totalFacturadoHoy).toBeCloseTo(bruto, 2);
-      expect(resumenDueno.totalFacturadoHoy).toBeCloseTo(neto, 2);
-      expect(resumenEmpleado.totalFacturadoHoy).toBe(PRECIO);
-      expect(resumenEmpleado.cantidadPedidosHoy).toBe(resumenDueno.cantidadPedidosHoy);
-      expect(resumenEmpleado.cantidadPedidosHoy).toBe(Object.keys(ids).length);
+      expect(resumenEmpleado.vendido).toBeCloseTo(bruto, 2);
+      expect(resumenDueno.vendido).toBeCloseTo(bruto, 2);
+      expect(resumenDueno.neto).toBeCloseTo(neto, 2);
+      expect(resumenDueno.comision).toBeCloseTo(bruto - neto, 2);
+      expect(resumenEmpleado.vendido).toBe(PRECIO);
+      expect(resumenEmpleado.estado).toBe('EN_CURSO');
+      expect(resumenEmpleado.cantidadPedidos).toBe(resumenDueno.cantidadPedidos);
+      expect(resumenEmpleado.cantidadPedidos).toBe(Object.keys(ids).length);
       expect(resumenEmpleado.cantidadPendientes).toBe(resumenDueno.cantidadPendientes);
       expect(resumenEmpleado.cantidadPendientes).toBe(4);
     });
 
     test('el Empleado no ve pedidos de otro comercio: con el header de su otro comercio la lista y el resumen están vacíos', async ({ request }) => {
       const vacio = await apiConHeaders(request, 'GET', '/pedidos/comercio', empleadoToken, conComercio(dueno.comercioId));
-      const resumen = await apiConHeaders(request, 'GET', '/pedidos/comercio/resumen-hoy', empleadoToken, conComercio(dueno.comercioId));
+      const resumen = await apiConHeaders(request, 'GET', '/pedidos/comercio/resumen-turno', empleadoToken, conComercio(dueno.comercioId));
 
       expect(vacio.status).toBe(200);
       expect(vacio.body.data).toEqual([]);
-      expect(resumen.body.data.totalFacturadoHoy).toBe(0);
-      expect(resumen.body.data.cantidadPedidosHoy).toBe(0);
+      expect(resumen.body.data.vendido).toBe(0);
+      expect(resumen.body.data.cantidadPedidos).toBe(0);
     });
   });
 
@@ -543,7 +548,7 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
     });
 
     test('el mismo 404 se obtiene en las cuatro rutas delegables', async ({ request }) => {
-      for (const llamar of [perfil, productos, pedidos, resumenHoy]) {
+      for (const llamar of [perfil, productos, pedidos, resumenDelTurno]) {
         const respuesta = await llamar(request, empleadoToken, conComercio(otroDueno.comercioId));
         expect(respuesta.status).toBe(404);
         expect(respuesta.body).toEqual(NO_ENCONTRADO);
@@ -554,7 +559,7 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
       test(`el Empleado activo accede a un comercio ${estado} en las cuatro lecturas`, async ({ request }) => {
         const comercioId = await comercioDelEquipo(request, estado);
 
-        for (const llamar of [perfil, productos, pedidos, resumenHoy]) {
+        for (const llamar of [perfil, productos, pedidos, resumenDelTurno]) {
           expect((await llamar(request, empleadoToken, conComercio(comercioId))).status).toBe(200);
         }
         expect((await perfil(request, empleadoToken, conComercio(comercioId))).body.data.estado).toBe(estado);
@@ -565,7 +570,7 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
       test(`el Empleado activo no accede a un comercio ${estado}: 404 idéntico`, async ({ request }) => {
         const comercioId = await comercioDelEquipo(request, estado);
 
-        for (const llamar of [perfil, productos, pedidos, resumenHoy]) {
+        for (const llamar of [perfil, productos, pedidos, resumenDelTurno]) {
           const respuesta = await llamar(request, empleadoToken, conComercio(comercioId));
           expect(respuesta.status).toBe(404);
           expect(respuesta.body).toEqual(NO_ENCONTRADO);

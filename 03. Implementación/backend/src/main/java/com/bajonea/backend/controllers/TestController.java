@@ -7,6 +7,7 @@ import com.bajonea.backend.services.DisponibilidadComercioService;
 import com.bajonea.backend.services.InvitacionVencimientoJob;
 import com.bajonea.backend.services.ReaperturaComerciosJob;
 import com.bajonea.backend.services.TestSupportService;
+import com.bajonea.backend.services.TurnoBackfillService;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,7 @@ public class TestController {
     private final ReaperturaComerciosJob reaperturaComerciosJob;
     private final DisponibilidadComercioService disponibilidadComercioService;
     private final InvitacionVencimientoJob invitacionVencimientoJob;
+    private final TurnoBackfillService turnoBackfillService;
     private final Clock clock;
 
     @GetMapping("/token-verificacion")
@@ -95,13 +97,20 @@ public class TestController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Job de vencimiento de invitaciones ejecutado", vencidas));
     }
 
+    @PostMapping("/jobs/backfill-turnos")
+    public ResponseEntity<ApiResponse<TurnoBackfillService.ResultadoBackfill>> ejecutarBackfillDeTurnos() {
+        TurnoBackfillService.ResultadoBackfill resultado = turnoBackfillService.ejecutar();
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Asignación de turnos ejecutada", resultado));
+    }
+
     @PutMapping("/pedidos/{id}/pago-aprobado")
     public ResponseEntity<ApiResponse<Void>> confirmarPagoAprobado(@PathVariable Integer id,
-            @RequestParam(defaultValue = "false") boolean registrarPago) {
+            @RequestParam(defaultValue = "false") boolean registrarPago,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime ahora) {
         if (registrarPago) {
-            testSupportService.confirmarPagoAprobadoConRegistro(id);
+            testSupportService.confirmarPagoAprobadoConRegistro(id, ahora);
         } else {
-            testSupportService.confirmarPagoAprobado(id);
+            testSupportService.confirmarPagoAprobado(id, ahora);
         }
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Pago del pedido confirmado", null));
     }

@@ -246,7 +246,7 @@ const envejecer = (pedidoId, minutos) => call('PUT', `/test/pedidos/${pedidoId}/
 const trazabilidad = (actor, comercioId, pedidoId) => call('GET', `/pedidos/comercio/${pedidoId}/trazabilidad`, actor.token, undefined, cabecera(comercioId));
 const listaDePedidos = (actor, comercioId) => call('GET', '/pedidos/comercio', actor.token, undefined, cabecera(comercioId));
 const actividad = (actor, comercioId) => call('GET', '/comercios/equipo/actividad', actor.token, undefined, cabecera(comercioId));
-const resumenHoy = (actor, comercioId) => call('GET', '/pedidos/comercio/resumen-hoy', actor.token, undefined, cabecera(comercioId));
+const resumenHoy = (actor, comercioId) => call('GET', '/pedidos/comercio/resumen-turno', actor.token, undefined, cabecera(comercioId));
 const avisosDelCliente = (cliente) => call('GET', '/notificaciones', cliente.token);
 const loginCorrecto = (cuenta) => call('POST', '/auth/login', null, { nombreUsuario: cuenta.nombreUsuario, password: cuenta.password });
 const loginIncorrecto = (cuenta) => call('POST', '/auth/login', null, { nombreUsuario: cuenta.nombreUsuario, password: 'ClaveIncorrecta1' });

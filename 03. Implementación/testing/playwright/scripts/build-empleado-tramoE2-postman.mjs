@@ -326,13 +326,13 @@ agregar(
     status(200),
     "pm.test('Es una lista', () => pm.expect(pm.response.json().data).to.be.an('array'));",
   ]),
-  get('Dueño: resumen de hoy de A (referencia)', '/pedidos/comercio/resumen-hoy', TOKEN_D1, COM_A, [
+  get('Dueño: resumen del turno de A (referencia)', '/pedidos/comercio/resumen-turno', TOKEN_D1, COM_A, [
     status(200),
     guardar(v('resumen_dueno'), 'JSON.stringify(pm.response.json().data)'),
   ]),
-  get('Empleado: resumen de hoy de A, igual al del Dueño', '/pedidos/comercio/resumen-hoy', TOKEN_EMP, COM_A, [
+  get('Empleado: resumen del turno de A, igual al del Dueño', '/pedidos/comercio/resumen-turno', TOKEN_EMP, COM_A, [
     status(200),
-    "pm.test('Mismo resumen que ve el Dueño', () => pm.expect(JSON.stringify(pm.response.json().data)).to.eql(pm.environment.get('e2_resumen_dueno')));",
+    "pm.test('Mismo resumen que ve el Dueño, sin comision ni neto', () => { const d = JSON.parse(pm.environment.get('e2_resumen_dueno')); delete d.comision; delete d.neto; pm.expect(pm.response.json().data).to.eql(d); });",
   ]),
   get('Empleado: con dos comercios, el header B devuelve los datos de B', '/comercios/perfil', TOKEN_EMP, COM_B, [
     status(200),
@@ -348,7 +348,7 @@ const cuatroLecturas = [
   ['perfil', '/comercios/perfil'],
   ['productos', '/productos'],
   ['pedidos', '/pedidos/comercio'],
-  ['resumen de hoy', '/pedidos/comercio/resumen-hoy'],
+  ['resumen del turno', '/pedidos/comercio/resumen-turno'],
 ];
 
 for (const [nombre, ruta] of cuatroLecturas) {
@@ -395,7 +395,7 @@ agregar(
   get('404: el Empleado con relación INACTIVA, con el mismo token', '/comercios/perfil', TOKEN_EMP, COM_I, guardar404),
   get('404: productos con relación INACTIVA', '/productos', TOKEN_EMP, COM_I, guardar404),
   get('404: pedidos con relación INACTIVA', '/pedidos/comercio', TOKEN_EMP, COM_I, guardar404),
-  get('404: resumen de hoy con relación INACTIVA', '/pedidos/comercio/resumen-hoy', TOKEN_EMP, COM_I, guardar404),
+  get('404: resumen del turno con relación INACTIVA', '/pedidos/comercio/resumen-turno', TOKEN_EMP, COM_I, guardar404),
   item('Atajo de test: la relación del Empleado con I vuelve a ACTIVO', req('PUT', `/test/comercios/${COM_I}/empleados/{{${v('emp_id')}}}/estado`, { body: {}, query: 'estado=ACTIVO' }), [status(200)]),
   get('Reactivada: el Empleado vuelve a leer I con el mismo token', '/comercios/perfil', TOKEN_EMP, COM_I, [status(200)]),
   item('Atajo de test: el estado de una relación inexistente da 404', req('PUT', `/test/comercios/${COM_AJENO}/empleados/{{${v('emp_id')}}}/estado`, { body: {}, query: 'estado=INACTIVO' }), [status(404)]),
@@ -431,7 +431,7 @@ agregar(
   ]),
   get('Estados: el Empleado sigue leyendo S suspendido (productos)', '/productos', TOKEN_EMP, COM_S, [status(200)]),
   get('Estados: el Empleado sigue leyendo S suspendido (pedidos)', '/pedidos/comercio', TOKEN_EMP, COM_S, [status(200)]),
-  get('Estados: el Empleado sigue leyendo S suspendido (resumen de hoy)', '/pedidos/comercio/resumen-hoy', TOKEN_EMP, COM_S, [status(200)]),
+  get('Estados: el Empleado sigue leyendo S suspendido (resumen del turno)', '/pedidos/comercio/resumen-turno', TOKEN_EMP, COM_S, [status(200)]),
 );
 
 const CAMPOS_PEDIDO = [
@@ -507,16 +507,16 @@ agregar(
     "pm.test('El rechazado trae el motivo y quién lo canceló', () => { const p = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('e2_ped_rechazado'))); pm.expect(p.estado).to.eql('RECHAZADO'); pm.expect(p.motivoRechazo).to.eql('SIN_STOCK'); pm.expect(p.canceladoPor).to.eql('COMERCIO'); });",
     "pm.test('Ítems, subtotal y total del pedido aceptado', () => { const p = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('e2_ped_aceptado'))); pm.expect(p.estado).to.eql('EN_PREPARACION'); pm.expect(p.subtotal).to.eql(1500); pm.expect(p.total).to.be.at.least(1500); pm.expect(p.detalles[0].precioUnitario).to.eql(1500); pm.expect(p.nombreCliente).to.be.a('string'); });",
   ]),
-  get('Pedidos: el resumen del Dueño es el neto (referencia)', '/pedidos/comercio/resumen-hoy', TOKEN_D1, COM_B, [
+  get('Pedidos: el resumen del Dueño trae vendido bruto, comision y neto (referencia)', '/pedidos/comercio/resumen-turno', TOKEN_D1, COM_B, [
     status(200),
     guardar(v('resumen_b_dueno'), 'JSON.stringify(pm.response.json().data)'),
-    "pm.test('Facturado neto, tres pedidos de hoy y uno pendiente', () => { const r = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_pedidos_dueno')); const aceptado = d.find((p) => p.id === Number(pm.environment.get('e2_ped_aceptado'))); pm.expect(r.totalFacturadoHoy).to.be.closeTo(aceptado.subtotal - aceptado.cargoServicioComercio, 0.001); pm.expect(r.cantidadPedidosHoy).to.eql(3); pm.expect(r.cantidadPendientes).to.eql(1); });",
+    "pm.test('Vendido bruto, comision y neto, tres pedidos del turno y uno pendiente', () => { const r = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_pedidos_dueno')); const aceptado = d.find((p) => p.id === Number(pm.environment.get('e2_ped_aceptado'))); pm.expect(r.vendido).to.be.closeTo(aceptado.subtotal, 0.001); pm.expect(r.neto).to.be.closeTo(aceptado.subtotal - aceptado.cargoServicioComercio, 0.001); pm.expect(r.comision).to.be.closeTo(aceptado.cargoServicioComercio, 0.001); pm.expect(r.estado).to.eql('EN_CURSO'); pm.expect(r.cantidadPedidos).to.eql(3); pm.expect(r.cantidadPendientes).to.eql(1); });",
   ]),
-  get('Pedidos: el resumen del Empleado trae tres campos, el facturado bruto y los mismos contadores', '/pedidos/comercio/resumen-hoy', TOKEN_EMP, COM_B, [
+  get('Pedidos: el resumen del Empleado trae el vendido bruto y los contadores, sin comision ni neto', '/pedidos/comercio/resumen-turno', TOKEN_EMP, COM_B, [
     status(200),
-    "pm.test('Solo los tres campos', () => pm.expect(Object.keys(pm.response.json().data).sort()).to.eql(['cantidadPedidosHoy', 'cantidadPendientes', 'totalFacturadoHoy']));",
-    "pm.test('Facturado bruto de productos del pedido aceptado', () => pm.expect(pm.response.json().data.totalFacturadoHoy).to.eql(1500));",
-    "pm.test('Mismos contadores que el Dueño', () => { const e = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_resumen_b_dueno')); pm.expect(e.cantidadPedidosHoy).to.eql(d.cantidadPedidosHoy); pm.expect(e.cantidadPendientes).to.eql(d.cantidadPendientes); });",
+    "pm.test('Solo el vendido bruto, el turno y los contadores', () => pm.expect(Object.keys(pm.response.json().data).sort()).to.eql(['cantidadPedidos', 'cantidadPendientes', 'estado', 'turno', 'vendido']));",
+    "pm.test('Vendido bruto de productos del pedido aceptado', () => pm.expect(pm.response.json().data.vendido).to.eql(1500));",
+    "pm.test('Mismos contadores que el Dueño', () => { const e = pm.response.json().data; const d = JSON.parse(pm.environment.get('e2_resumen_b_dueno')); pm.expect(e.cantidadPedidos).to.eql(d.cantidadPedidos); pm.expect(e.cantidadPendientes).to.eql(d.cantidadPendientes); });",
   ]),
 );
 
