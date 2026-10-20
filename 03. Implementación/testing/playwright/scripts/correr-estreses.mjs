@@ -30,6 +30,7 @@ const ESTRESES = [
   { id: 'a6', archivo: 'stress-locks-tramoE3-A6.mjs', descripcion: 'E3 A6: T30 al equipo' },
   { id: 'a5', archivo: 'stress-locks-tramoE3-A5.mjs', descripcion: 'E3 A5 y A5b: desactivación contra las 18 escrituras, Dueño y Empleado a la vez, matriz de 49 combinaciones de producto e imagen y escrituras de imagen' },
   { id: 'nombre', archivo: 'stress-locks-tramoNombreUnico.mjs', descripcion: 'Tramo 2: nombre único de comercio (registros, altas, renombres y disponibilidad simultáneos)' },
+  { id: 'horarios', archivo: 'stress-locks-tramoHorarios.mjs', descripcion: 'Fase 2 T1: edicion versionada de horarios contra cierre, bloqueos, desactivacion, lecturas, pedidos y productos' },
   { id: 'e4', archivo: 'stress-locks-empleado-e4.mjs', descripcion: 'E4: gestión del equipo (desactivar, reactivar y renunciar; S1 a S10)' },
 ];
 

@@ -42,6 +42,7 @@ import com.bajonea.backend.repositories.TagRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -72,6 +73,7 @@ public class AdministradorService {
     private final ComercioRepository comercioRepository;
     private final DireccionRepository direccionRepository;
     private final HorarioRepository horarioRepository;
+    private final DisponibilidadComercioService disponibilidadComercioService;
     private final RedSocialRepository redSocialRepository;
     private final AdministradorRepository administradorRepository;
     private final HistorialEstadoComercioRepository historialEstadoComercioRepository;
@@ -196,7 +198,9 @@ public class AdministradorService {
         for (Direccion direccion : direccionRepository.findByComercioIdInConLocalidad(ids)) {
             direcciones.putIfAbsent(direccion.getComercio().getId(), direccion);
         }
-        Map<Integer, List<Horario>> horarios = horarioRepository.findByComercioIdIn(ids).stream()
+        LocalDate hoy = disponibilidadComercioService.ahora().toLocalDate();
+        Map<Integer, List<Horario>> horarios = horarioRepository.findVigentesDesdeIn(ids, hoy).stream()
+                .filter(h -> DisponibilidadComercioService.vigenteEn(h, hoy))
                 .sorted(Comparator.comparing(Horario::getId))
                 .collect(Collectors.groupingBy(h -> h.getComercio().getId()));
         Map<Integer, List<RedSocial>> redes = redSocialRepository.findByComercioIdInAndFechaBajaIsNull(ids).stream()
@@ -373,7 +377,9 @@ public class AdministradorService {
     private ComercioAdminResponseDTO aAdminResponseDTO(Comercio comercio, Integer duenoId, boolean esAdicional,
             List<OtroComercioDuenoResponseDTO> otrosComercios) {
         Direccion direccion = direccionRepository.findByComercioId(comercio.getId()).orElse(null);
-        List<Horario> horarios = horarioRepository.findByComercioId(comercio.getId());
+        LocalDate hoy = disponibilidadComercioService.ahora().toLocalDate();
+        List<Horario> horarios = DisponibilidadComercioService.vigentesEn(
+                horarioRepository.findVigentesDesde(comercio.getId(), hoy), hoy);
         List<RedSocial> redes = redSocialRepository.findByComercioIdAndFechaBajaIsNull(comercio.getId());
         return construirAdminResponseDTO(comercio, direccion, horarios, redes, duenoId, esAdicional, otrosComercios);
     }

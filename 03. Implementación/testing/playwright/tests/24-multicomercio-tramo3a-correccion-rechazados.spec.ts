@@ -521,7 +521,7 @@ test.describe('Multi-comercio, tramo 3A: corrección y re-solicitud de comercios
           status: 400,
           mensaje: 'se superpone',
         },
-        { cambios: { horarios: [{ diaSemana: dia, horaApertura: '13:00', horaCierre: '09:00' }] }, status: 400, mensaje: 'posterior' },
+        { cambios: { horarios: [{ diaSemana: dia, horaApertura: '09:00', horaCierre: '09:00' }] }, status: 400, mensaje: 'no puede ser igual' },
         { cambios: { redesSociales: [] }, status: 400 },
         { cambios: { aceptaDelivery: false, aceptaRetiro: false }, status: 400, mensaje: 'al menos una modalidad' },
         { cambios: { nombre: '   ' }, status: 400 },

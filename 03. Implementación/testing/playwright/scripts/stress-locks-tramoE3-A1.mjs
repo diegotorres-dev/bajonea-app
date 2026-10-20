@@ -61,7 +61,7 @@ async function nuevoDueno() {
   const u = uniq();
   const email = `stressa1.${u}@bajonea.test`;
   const nombreUsuario = `sa${u}`.slice(0, 20);
-  const password = `Pw${uniq()}x`;
+  const password = `Pw${uniq()}x1`;
   const r = await call('POST', '/auth/registro/comercio', null, {
     aceptaTerminos: true,
     razonSocial: `StressA1 ${u} SRL`,

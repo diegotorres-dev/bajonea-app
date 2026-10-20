@@ -282,7 +282,7 @@ test.describe('Multi-comercio, tramo 2A: alta adicional, aprobación y bandeja d
         ['localidad vacía', (p) => (p.direccion.localidadId = '')],
         ['sin horarios', (p) => delete p.horarios],
         ['horarios vacíos', (p) => (p.horarios = [])],
-        ['cierre anterior a la apertura', (p) => (p.horarios = [{ diaSemana: 'LUNES', horaApertura: '20:00', horaCierre: '10:00' }])],
+        ['cierre igual a la apertura', (p) => (p.horarios = [{ diaSemana: 'LUNES', horaApertura: '10:00', horaCierre: '10:00' }])],
         [
           'horarios superpuestos el mismo día',
           (p) =>

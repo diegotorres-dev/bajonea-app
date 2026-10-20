@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -51,4 +52,13 @@ public class Horario {
     @Setter
     @Column(name = "hora_cierre", nullable = false)
     private LocalTime horaCierre;
+
+    @Setter
+    @Builder.Default
+    @Column(name = "vigente_desde", nullable = false)
+    private LocalDate vigenteDesde = LocalDate.of(2000, 1, 1);
+
+    @Setter
+    @Column(name = "vigente_hasta")
+    private LocalDate vigenteHasta;
 }

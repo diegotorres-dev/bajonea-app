@@ -74,8 +74,15 @@ class ComercioServiceCatalogoPublicoTest {
         service = new ComercioService(comercioRepository, mock(DireccionRepository.class), horarioRepository, historialRepository,
                 mock(CloudinaryService.class), disponibilidad, mock(UsuarioRepository.class), mock(HistorialEdicionComercioService.class), mock(NombreComercioService.class));
         ReflectionTestUtils.setField(service, "entityManager", entityManager);
-        when(horarioRepository.findByComercioId(any())).thenReturn(List.of(
+        when(horarioRepository.findVigentesDesde(any(), any())).thenReturn(List.of(
                 Horario.builder().diaSemana(DiaSemana.LUNES).horaApertura(LocalTime.of(10, 0)).horaCierre(LocalTime.of(14, 0)).build()));
+        when(horarioRepository.findVigentesDesdeIn(any(), any())).thenAnswer(invocacion -> {
+            java.util.Collection<Integer> ids = invocacion.getArgument(0);
+            return ids.stream()
+                    .map(id -> Horario.builder().comercio(Comercio.builder().id(id).build()).diaSemana(DiaSemana.LUNES)
+                            .horaApertura(LocalTime.of(10, 0)).horaCierre(LocalTime.of(14, 0)).build())
+                    .toList();
+        });
         when(historialRepository.save(any(HistorialEstadoComercio.class))).thenAnswer(invocacion -> invocacion.getArgument(0));
     }
 

@@ -3748,7 +3748,7 @@
           ]
         },
         {
-          "name": "[negativo] Registro Comercio con horaCierre anterior a horaApertura",
+          "name": "[negativo] Registro Comercio con horaCierre igual a horaApertura",
           "request": {
             "method": "POST",
             "header": [
@@ -3770,7 +3770,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Postman Negativo SRL\",\n  \"cuit\": \"30071234610\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Otra direccion\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Postman Negativo\",\n  \"telefono\": \"+5492964555995\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"nombreUsuario\": \"pme2554b4ff706\",\n  \"email\": \"postman.comerciohorainvalida@bajonea.test\",\n  \"password\": \"Postman123\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"995\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"22:00:00\",\n      \"horaCierre\": \"09:00:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Testigo\",\n  \"apellidoRepresentante\": \"Gamma\",\n  \"dniRepresentante\": \"30500193\",\n  \"telefonoRepresentante\": \"+5492964701195\",\n  \"fechaNacimientoRepresentante\": \"1980-01-01\",\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/postman-negativo.jpg\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/negativo\"\n    }\n  ]\n}",
+              "raw": "{\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Postman Negativo SRL\",\n  \"cuit\": \"30071234610\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Otra direccion\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Postman Negativo\",\n  \"telefono\": \"+5492964555995\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"nombreUsuario\": \"pme2554b4ff706\",\n  \"email\": \"postman.comerciohorainvalida@bajonea.test\",\n  \"password\": \"Postman123\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"995\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"09:00:00\",\n      \"horaCierre\": \"09:00:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Testigo\",\n  \"apellidoRepresentante\": \"Gamma\",\n  \"dniRepresentante\": \"30500193\",\n  \"telefonoRepresentante\": \"+5492964701195\",\n  \"fechaNacimientoRepresentante\": \"1980-01-01\",\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/postman-negativo.jpg\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/negativo\"\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3786,7 +3786,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
-                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql(\"La hora de cierre debe ser posterior a la hora de apertura\"); });"
+                  "pm.test('Mensaje exacto', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.eql(\"La hora de cierre no puede ser igual a la de apertura. Si atendés las 24 horas, cargá de 00:00 a 23:59.\"); });"
                 ]
               }
             }
@@ -24544,14 +24544,14 @@
                 "exec": [
                   "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
                   "const json = pm.response.json();",
-                  "pm.test('Mensaje exacto', () => pm.expect(json.mensaje).to.eql(\"La hora de cierre debe ser posterior a la hora de apertura\"));"
+                  "pm.test('Mensaje exacto', () => pm.expect(json.mensaje).to.eql(\"La hora de cierre no puede ser igual a la de apertura. Si atendés las 24 horas, cargá de 00:00 a 23:59.\"));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Registro Comercio - horarios horaCierre anterior a horaApertura (debe rechazar)",
+          "name": "Registro Comercio - horarios horaCierre anterior a horaApertura (turno que cruza la medianoche, debe aceptar)",
           "request": {
             "method": "POST",
             "header": [
@@ -24573,7 +24573,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base 098\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"18:00:00\",\n      \"horaCierre\": \"09:00:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199331\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ],\n  \"nombreUsuario\": \"pm53c4a826f90c\"\n}",
+              "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000993\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Matriz C1 Turno Que Cruza\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.c1.cruza@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"18:00:00\",\n      \"horaCierre\": \"02:00:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199399\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ],\n  \"nombreUsuario\": \"pmb146405a1db6\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -24588,9 +24588,8 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
-                  "const json = pm.response.json();",
-                  "pm.test('Mensaje exacto', () => pm.expect(json.mensaje).to.eql(\"La hora de cierre debe ser posterior a la hora de apertura\"));"
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.test('La respuesta tiene mensaje', () => { const json = pm.response.json(); pm.expect(json.mensaje).to.exist; });"
                 ]
               }
             }
@@ -24619,7 +24618,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base 099\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"09:00:00\",\n      \"horaCierre\": \"13:00:00\"\n    },\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"12:00:00\",\n      \"horaCierre\": \"18:00:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199332\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ],\n  \"nombreUsuario\": \"pm53c4a826f90c\"\n}",
+              "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base 098\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"09:00:00\",\n      \"horaCierre\": \"13:00:00\"\n    },\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"12:00:00\",\n      \"horaCierre\": \"18:00:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199332\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ],\n  \"nombreUsuario\": \"pm53c4a826f90c\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -24665,7 +24664,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000268\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base 100\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.c3.horariopartido@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"09:00:00\",\n      \"horaCierre\": \"13:00:00\"\n    },\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"17:00:00\",\n      \"horaCierre\": \"21:00:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199320\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ],\n  \"nombreUsuario\": \"pm8aa5ca163e75\"\n}",
+              "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000268\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base 099\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.c3.horariopartido@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"09:00:00\",\n      \"horaCierre\": \"13:00:00\"\n    },\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"17:00:00\",\n      \"horaCierre\": \"21:00:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199320\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ],\n  \"nombreUsuario\": \"pm8aa5ca163e75\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -24710,7 +24709,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base 101\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNESX\",\n      \"horaApertura\": \"09:00:00\",\n      \"horaCierre\": \"18:00:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199333\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ],\n  \"nombreUsuario\": \"pm53c4a826f90c\"\n}",
+              "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000306\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base 100\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.default@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNESX\",\n      \"horaApertura\": \"09:00:00\",\n      \"horaCierre\": \"18:00:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199333\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ],\n  \"nombreUsuario\": \"pm53c4a826f90c\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -24761,7 +24760,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000225\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base 102\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.perfil@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199340\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ],\n  \"nombreUsuario\": \"pm1feaf2f29423\"\n}",
+              "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000225\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base 101\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.perfil@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199340\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ],\n  \"nombreUsuario\": \"pm1feaf2f29423\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -25419,7 +25418,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000403\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base 103\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.pw@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199350\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ],\n  \"nombreUsuario\": \"pmfadb1baf1154\"\n}",
+              "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000403\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base 102\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.pw@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199350\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ],\n  \"nombreUsuario\": \"pmfadb1baf1154\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -26018,7 +26017,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000411\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base 104\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.foto@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199360\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ],\n  \"nombreUsuario\": \"pm41cc6628612b\"\n}",
+              "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000411\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base 103\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.foto@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199360\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ],\n  \"nombreUsuario\": \"pm41cc6628612b\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -26972,7 +26971,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000438\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base 105\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.productos@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199370\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ],\n  \"nombreUsuario\": \"pmc625bfb91532\"\n}",
+              "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000438\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base 104\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.productos@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199370\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ],\n  \"nombreUsuario\": \"pmc625bfb91532\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -28955,7 +28954,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000454\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base 106\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.pedido@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199381\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ],\n  \"nombreUsuario\": \"pm22bcc78d6915\"\n}",
+              "raw": "{\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/v1/matriz-comercio-perfil.jpg\",\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Comercio Matriz SRL\",\n  \"cuit\": \"30799000454\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Av. San Martin 100, Rio Grande\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Comercio Matriz Base 105\",\n  \"descripcion\": \"Comercio de prueba para la matriz de Postman de Comercio\",\n  \"telefono\": \"+5492964555100\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"email\": \"matriz.comercio.pedido@bajonea.test\",\n  \"password\": \"Aa1Password2026\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"200\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"94008010\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:59\"\n    }\n  ],\n  \"nombreRepresentante\": \"Roberto\",\n  \"apellidoRepresentante\": \"Fernandez\",\n  \"dniRepresentante\": \"30199381\",\n  \"telefonoRepresentante\": \"+5492964555333\",\n  \"fechaNacimientoRepresentante\": \"1985-03-15\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"https://instagram.com/matriz.comercio\"\n    }\n  ],\n  \"nombreUsuario\": \"pm22bcc78d6915\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -46023,7 +46022,7 @@
           ]
         },
         {
-          "name": "[alta invalida] cierre anterior a la apertura: 400",
+          "name": "[alta invalida] cierre igual a la apertura: 400",
           "request": {
             "method": "POST",
             "header": [
@@ -46047,7 +46046,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nombre\": \"Sucursal Postman Base\",\n  \"descripcion\": \"Comercio adicional generado por la coleccion de Postman\",\n  \"telefono\": \"+5492964555444\",\n  \"aceptaTerminos\": true,\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": false,\n  \"aceptaRetiro\": true,\n  \"fotoPerfilUrl\": \"{{alta_foto_url}}\",\n  \"direccion\": {\n    \"calle\": \"Elcano\",\n    \"numero\": \"900\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"20:00:00\",\n      \"horaCierre\": \"10:00:00\"\n    }\n  ],\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/sucursalpostman\"\n    }\n  ]\n}",
+              "raw": "{\n  \"nombre\": \"Sucursal Postman Base\",\n  \"descripcion\": \"Comercio adicional generado por la coleccion de Postman\",\n  \"telefono\": \"+5492964555444\",\n  \"aceptaTerminos\": true,\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": false,\n  \"aceptaRetiro\": true,\n  \"fotoPerfilUrl\": \"{{alta_foto_url}}\",\n  \"direccion\": {\n    \"calle\": \"Elcano\",\n    \"numero\": \"900\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"10:00:00\",\n      \"horaCierre\": \"10:00:00\"\n    }\n  ],\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/sucursalpostman\"\n    }\n  ]\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -49853,7 +49852,7 @@
           ]
         },
         {
-          "name": "[PUT invalido] cierre anterior a la apertura: 400",
+          "name": "[PUT invalido] cierre igual a la apertura: 400",
           "request": {
             "method": "PUT",
             "header": [
@@ -49896,7 +49895,7 @@
                 "exec": [
                   "const b = JSON.parse(pm.environment.get('rK_base'));",
                   "const lRaw = pm.environment.get('rK_legales'); const l = lRaw ? JSON.parse(lRaw) : null;",
-                  "b.horarios = [{ diaSemana: 'LUNES', horaApertura: '20:00:00', horaCierre: '10:00:00' }];",
+                  "b.horarios = [{ diaSemana: 'LUNES', horaApertura: '10:00:00', horaCierre: '10:00:00' }];",
                   "pm.variables.set('cuerpo', JSON.stringify(b));"
                 ]
               }
@@ -49907,7 +49906,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
-                  "pm.test('El mensaje menciona el problema', () => pm.expect(pm.response.json().mensaje.toLowerCase()).to.include(\"posterior\"));"
+                  "pm.test('El mensaje menciona el problema', () => pm.expect(pm.response.json().mensaje.toLowerCase()).to.include(\"no puede ser igual\"));"
                 ]
               }
             }
@@ -77929,7 +77928,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "pm.test('El mensaje es el esperado', () => pm.expect(pm.response.json().mensaje).to.eql(\"Perfil obtenido correctamente\"));",
-                  "pm.test('Solo los campos de la lista blanca', () => pm.expect(Object.keys(pm.response.json().data).sort()).to.eql([\"abiertoAhora\",\"aceptaDelivery\",\"aceptaRetiro\",\"cerradoManualmente\",\"descripcion\",\"direccion\",\"estado\",\"fotoPerfilUrl\",\"horarios\",\"id\",\"nombre\",\"puedeCambiarCierre\",\"telefono\",\"textoReapertura\",\"tipoComercio\"]));",
+                  "pm.test('Solo los campos de la lista blanca', () => pm.expect(Object.keys(pm.response.json().data).sort()).to.eql([\"abiertoAhora\",\"aceptaDelivery\",\"aceptaRetiro\",\"cerradoManualmente\",\"descripcion\",\"direccion\",\"estado\",\"fotoPerfilUrl\",\"horarios\",\"horariosPendientes\",\"horariosRigenDesde\",\"id\",\"nombre\",\"puedeCambiarCierre\",\"telefono\",\"textoReapertura\",\"tipoComercio\"]));",
                   "pm.test('Ninguno de los campos excluidos', () => [\"cuit\",\"razonSocial\",\"condicionIva\",\"tipoSociedad\",\"domicilioFiscal\",\"fechaInicioActividades\",\"representante\",\"motivoRechazo\"].forEach((c) => pm.expect(pm.response.json().data).to.not.have.property(c)));",
                   "pm.test('Sin el CUIT ni la razón social, y sin el email del Dueño', () => { const t = pm.response.text(); pm.expect(t).to.not.include(pm.environment.get('e2_cuit_a')); pm.expect(t).to.not.include(pm.environment.get('e2_razon_a')); pm.expect(t).to.not.include(pm.environment.get('e2_d1_email')); });",
                   "pm.test('Sin nada de Mercado Pago', () => pm.expect(pm.response.text().toLowerCase()).to.not.include('mercadopago'));",
@@ -123870,7 +123869,7 @@
       ]
     },
     {
-      "name": "66 - Matriz de las 23 rutas delegables E3 A5 (pertenencia cruzada entre comercios, sin token, Administrador, Cliente sin relacion y relacion inactiva)",
+      "name": "66 - Matriz de las 24 rutas delegables E3 A5 (pertenencia cruzada entre comercios, sin token, Administrador, Cliente sin relacion y relacion inactiva)",
       "item": [
         {
           "name": "Login Administrador (sesion propia de esta carpeta)",
@@ -128096,6 +128095,54 @@
           ]
         },
         {
+          "name": "Sin token: PUT /comercios/perfil/horarios da 401",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a5_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"horarios\": [{\"diaSemana\": \"LUNES\", \"horaApertura\": \"09:00\", \"horaCierre\": \"18:00\"}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Sin token: PUT /comercios/cerrar da 401",
           "request": {
             "method": "PUT",
@@ -129168,6 +129215,58 @@
             "body": {
               "mode": "raw",
               "raw": "{\"descripcion\": \"Matriz\", \"telefono\": \"+5492964111222\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador: PUT /comercios/perfil/horarios da 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a5_clon}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"horarios\": [{\"diaSemana\": \"LUNES\", \"horaApertura\": \"09:00\", \"horaCierre\": \"18:00\"}]}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -130329,6 +130428,59 @@
           ]
         },
         {
+          "name": "Cliente sin relacion con header: PUT /comercios/perfil/horarios da el mismo 404",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a5_x_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a5_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"horarios\": [{\"diaSemana\": \"LUNES\", \"horaApertura\": \"09:00\", \"horaCierre\": \"18:00\"}]}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Mismo 404 de siempre: Comercio no encontrado y codigo COMERCIO_NO_DISPONIBLE', () => { const b = pm.response.json(); pm.expect(b.mensaje).to.eql('Comercio no encontrado'); pm.expect(b.data.codigo).to.eql('COMERCIO_NO_DISPONIBLE'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
           "name": "Cliente sin relacion con header: PUT /comercios/cerrar da el mismo 404",
           "request": {
             "method": "PUT",
@@ -131381,6 +131533,54 @@
             "body": {
               "mode": "raw",
               "raw": "{\"descripcion\": \"Matriz\", \"telefono\": \"+5492964111222\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cliente sin relacion sin header: PUT /comercios/perfil/horarios da 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a5_x_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"horarios\": [{\"diaSemana\": \"LUNES\", \"horaApertura\": \"09:00\", \"horaCierre\": \"18:00\"}]}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -132541,6 +132741,59 @@
             "body": {
               "mode": "raw",
               "raw": "{\"descripcion\": \"Matriz\", \"telefono\": \"+5492964111222\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Mismo 404 de siempre: Comercio no encontrado y codigo COMERCIO_NO_DISPONIBLE', () => { const b = pm.response.json(); pm.expect(b.mensaje).to.eql('Comercio no encontrado'); pm.expect(b.data.codigo).to.eql('COMERCIO_NO_DISPONIBLE'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Relacion inactiva: PUT /comercios/perfil/horarios da el mismo 404",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{a5_e_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{a5_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"horarios\": [{\"diaSemana\": \"LUNES\", \"horaApertura\": \"09:00\", \"horaCierre\": \"18:00\"}]}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -149735,6 +149988,2078 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "pm.test('data es exactamente {\"disponible\":false}', () => pm.expect(pm.response.json().data).to.eql({\"disponible\":false}));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "73 - Horarios Fase 2 T1 (edicion versionada, turnos que cruzan la medianoche, cambio programado y cancelacion, Empleado y guards)",
+      "item": [
+        {
+          "name": "Login Administrador (sesion propia de esta carpeta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{admin_usuario}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('token_admin', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Dueño",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "comercio"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Horarios T1 SRL\",\n  \"cuit\": \"{{ht1_cuit_tmp}}\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Direccion fiscal T1 100\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"{{ht1_nombre_tmp}}\",\n  \"descripcion\": \"Comercio generado por la coleccion de Postman (horarios, Fase 2 T1)\",\n  \"telefono\": \"+5492964555444\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": false,\n  \"aceptaRetiro\": true,\n  \"nombreUsuario\": \"{{ht1_d_usuario}}\",\n  \"email\": \"{{ht1_d_email}}\",\n  \"password\": \"{{ht1_d_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"800\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Carlos\",\n  \"apellidoRepresentante\": \"Sanchez\",\n  \"dniRepresentante\": \"{{ht1_dni_rep_tmp}}\",\n  \"telefonoRepresentante\": \"+5492964701103\",\n  \"fechaNacimientoRepresentante\": \"1988-04-04\",\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/postman-horarios-t1.jpg\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/horariost1\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('ht1_d_email', 't1.d.' + s + '@bajonea.test');",
+                  "pm.environment.set('ht1_d_usuario', ('t1d' + s).slice(0, 20));",
+                  "pm.environment.set('ht1_d_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('ht1_d_dni', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "const mult = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];",
+                  "let cuit = null;",
+                  "while (cuit === null) {",
+                  "  const base = '30' + String(Math.floor(10000000 + Math.random() * 89999999));",
+                  "  let suma = 0;",
+                  "  for (let i = 0; i < 10; i += 1) suma += Number(base[i]) * mult[i];",
+                  "  let dv = 11 - (suma % 11);",
+                  "  if (dv === 11) dv = 0;",
+                  "  if (dv !== 10) cuit = base + dv;",
+                  "}",
+                  "pm.environment.set('ht1_cuit_tmp', cuit);",
+                  "pm.environment.set('ht1_dni_rep_tmp', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "pm.environment.set('ht1_nombre_tmp', 'Local Horarios T1 ' + Date.now().toString(36));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Dueño",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{ht1_d_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{ht1_d_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('ht1_d_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Dueño",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{ht1_d_email}}\",\n  \"codigo\": \"{{ht1_d_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Dueño",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{ht1_d_usuario}}\",\n  \"password\": \"{{ht1_d_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('ht1_d_token', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador busca el comercio pendiente del Dueño",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/pendientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "pendientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.emailCuenta === pm.environment.get('ht1_d_email').toLowerCase());",
+                  "pm.test('El comercio del Dueño esta pendiente', () => pm.expect(c).to.exist);",
+                  "pm.environment.set('ht1_com', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador aprueba el comercio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{ht1_com}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{ht1_com}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: el comercio pasa a APTO_VENTA (entra al catalogo)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{ht1_com}}/apto-venta",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{ht1_com}}",
+                "apto-venta"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Empleada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Empleada\",\n  \"apellido\": \"Horarios\",\n  \"dni\": \"{{ht1_e_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551235\",\n  \"nombreUsuario\": \"{{ht1_e_usuario}}\",\n  \"email\": \"{{ht1_e_email}}\",\n  \"password\": \"{{ht1_e_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('ht1_e_email', 't1.e.' + s + '@bajonea.test');",
+                  "pm.environment.set('ht1_e_usuario', ('t1e' + s).slice(0, 20));",
+                  "pm.environment.set('ht1_e_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('ht1_e_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Empleada",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{ht1_e_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{ht1_e_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('ht1_e_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Empleada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{ht1_e_email}}\",\n  \"codigo\": \"{{ht1_e_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueño invita a la Empleada al comercio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_d_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{ht1_e_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de la invitacion",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/invitaciones-empleado/codigo?email={{ht1_e_email}}&comercioId={{ht1_com}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "invitaciones-empleado",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{ht1_e_email}}"
+                },
+                {
+                  "key": "comercioId",
+                  "value": "{{ht1_com}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('ht1_inv_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La Empleada acepta la invitacion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{ht1_e_email}}\",\n  \"codigo\": \"{{ht1_inv_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Empleada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{ht1_e_usuario}}\",\n  \"password\": \"{{ht1_e_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('ht1_e_token', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Cliente sin relacion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente sin relacion\",\n  \"apellido\": \"Horarios\",\n  \"dni\": \"{{ht1_x_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551235\",\n  \"nombreUsuario\": \"{{ht1_x_usuario}}\",\n  \"email\": \"{{ht1_x_email}}\",\n  \"password\": \"{{ht1_x_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('ht1_x_email', 't1.x.' + s + '@bajonea.test');",
+                  "pm.environment.set('ht1_x_usuario', ('t1x' + s).slice(0, 20));",
+                  "pm.environment.set('ht1_x_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('ht1_x_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Cliente sin relacion",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{ht1_x_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{ht1_x_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('ht1_x_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Cliente sin relacion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{ht1_x_email}}\",\n  \"codigo\": \"{{ht1_x_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Cliente sin relacion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{ht1_x_usuario}}\",\n  \"password\": \"{{ht1_x_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('ht1_x_token', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[edicion] El Dueño programa una version nueva: lo vigente de hoy no cambia y el cambio rige desde mañana",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_d_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": [\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"10:00:00\",\n      \"horaCierre\": \"20:00:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Hay 7 franjas vigentes y 1 pendiente con la fecha desde la que rige\", () => { const d = pm.response.json().data; pm.expect(d.vigentes.length).to.eql(7); pm.expect(d.pendientes.length).to.eql(1); pm.expect(d.rigeDesde).to.match(/^\\d{4}-\\d{2}-\\d{2}$/); });",
+                  "pm.environment.set('ht1_rige', pm.response.json().data.rigeDesde);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[lectura] El perfil del Dueño separa lo vigente del cambio programado",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"7 vigentes, 1 pendiente y la fecha de rige\", () => { const d = pm.response.json().data; pm.expect(d.horarios.length).to.eql(7); pm.expect(d.horariosPendientes.length).to.eql(1); pm.expect(d.horariosRigenDesde).to.eql(pm.environment.get('ht1_rige')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[lectura] El perfil de la Empleada tambien lo ve",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_e_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"7 vigentes y 1 pendiente\", () => { const d = pm.response.json().data; pm.expect(d.horarios.length).to.eql(7); pm.expect(d.horariosPendientes.length).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[lectura] El catalogo publico solo muestra lo vigente de hoy",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/catalogo/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "catalogo",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => String(x.id) === String(pm.environment.get('ht1_com')));",
+                  "pm.test('El comercio esta en el catalogo', () => pm.expect(c).to.exist);",
+                  "pm.test('Muestra las 7 franjas vigentes y ninguna cruza la medianoche', () => { pm.expect(c.horarios.length).to.eql(7); c.horarios.forEach((h) => pm.expect(h.cruzaMedianoche).to.eql(false)); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[edicion] Una segunda edicion el mismo dia reemplaza al cambio programado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_d_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": [\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"08:00:00\",\n      \"horaCierre\": \"12:00:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Solo queda la version nueva pendiente\", () => { const d = pm.response.json().data; pm.expect(d.pendientes.length).to.eql(1); pm.expect(d.pendientes[0].diaSemana).to.eql('JUEVES'); pm.expect(d.vigentes.length).to.eql(7); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[edicion] La Empleada edita y un turno que cruza la medianoche se informa con cruzaMedianoche",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_e_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": [\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"20:00:00\",\n      \"horaCierre\": \"02:00:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"20:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"El turno del viernes cruza y el del sabado no\", () => { const d = pm.response.json().data; const v = d.pendientes.find((h) => h.diaSemana === 'VIERNES'); const s = d.pendientes.find((h) => h.diaSemana === 'SABADO'); pm.expect(v.cruzaMedianoche).to.eql(true); pm.expect(s.cruzaMedianoche).to.eql(false); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[actividad] La Actividad del Dueño muestra \"Editó los horarios\" con el rol de quien edito",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/actividad?fuente=EDICION",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "actividad"
+              ],
+              "query": [
+                {
+                  "key": "fuente",
+                  "value": "EDICION"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Hay filas de Editó los horarios del Dueño y de la Empleada', () => { const filas = pm.response.json().data.items.filter((i) => i.accionTexto === 'Editó los horarios'); pm.expect(filas.length).to.be.at.least(3); pm.expect(filas.some((f) => f.actorRol === 'EMPLEADO')).to.eql(true); pm.expect(filas.some((f) => f.actorRol === 'DUENO')).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[edicion] Una edicion igual a lo vigente cancela el cambio programado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_d_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"No queda nada pendiente ni fecha de rige\", () => { const d = pm.response.json().data; pm.expect(d.pendientes.length).to.eql(0); pm.expect(d.rigeDesde).to.eql(null); pm.expect(d.vigentes.length).to.eql(7); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[edicion] Cancelar de nuevo sin nada programado es un 200 que no cambia nada",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_d_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Sigue sin pendientes\", () => { const d = pm.response.json().data; pm.expect(d.pendientes.length).to.eql(0); pm.expect(d.vigentes.length).to.eql(7); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[validacion] La lista vacia: 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_d_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[validacion] Cierre igual a la apertura: 400 con el mensaje de las 24 horas",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_d_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"09:00:00\",\n      \"horaCierre\": \"09:00:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test('El mensaje es exacto', () => pm.expect(pm.response.json().mensaje).to.eql(\"La hora de cierre no puede ser igual a la de apertura. Si atendés las 24 horas, cargá de 00:00 a 23:59.\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[validacion] Superposicion el mismo dia: 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_d_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"09:00:00\",\n      \"horaCierre\": \"13:00:00\"\n    },\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"12:00:00\",\n      \"horaCierre\": \"15:00:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test('El mensaje es exacto', () => pm.expect(pm.response.json().mensaje).to.eql(\"Ya tenés un horario cargado el Lunes de 12:00 a 15:00, que se superpone con este\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[validacion] Superposicion entre dias por la cola del turno: 400 con el mensaje de los dos turnos",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_d_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": [\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"20:00:00\",\n      \"horaCierre\": \"02:00:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"01:00:00\",\n      \"horaCierre\": \"05:00:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test('El mensaje es exacto', () => pm.expect(pm.response.json().mensaje).to.eql(\"El turno del viernes de 20:00 a 02:00 se superpone con el del sábado de 01:00 a 05:00\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[validacion] Superposicion con la vuelta de domingo a lunes: 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_d_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": [\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"22:00:00\",\n      \"horaCierre\": \"03:00:00\"\n    },\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"02:00:00\",\n      \"horaCierre\": \"10:00:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test(\"El mensaje contiene \\\"El turno del domingo de 22:00 a 03:00\\\"\", () => pm.expect(pm.response.json().mensaje).to.include(\"El turno del domingo de 22:00 a 03:00\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[validacion] Turnos adyacentes que no se solapan: 200",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_d_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": [\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"20:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"02:00:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Quedan 2 pendientes\", () => { const d = pm.response.json().data; pm.expect(d.pendientes.length).to.eql(2); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[validacion] Volver a lo vigente deja el comercio sin cambio programado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_d_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Sin pendientes\", () => { const d = pm.response.json().data; pm.expect(d.pendientes.length).to.eql(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[seguridad] Sin token: 401",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"09:00:00\",\n      \"horaCierre\": \"13:00:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[seguridad] Administrador: 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"09:00:00\",\n      \"horaCierre\": \"13:00:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[seguridad] Cliente sin relacion con el header del comercio: 404 identico",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_x_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"09:00:00\",\n      \"horaCierre\": \"13:00:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Mismo 404 de siempre: Comercio no encontrado y codigo COMERCIO_NO_DISPONIBLE', () => { const b = pm.response.json(); pm.expect(b.mensaje).to.eql('Comercio no encontrado'); pm.expect(b.data.codigo).to.eql('COMERCIO_NO_DISPONIBLE'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[seguridad] Cliente sin relacion y sin header: 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_x_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"09:00:00\",\n      \"horaCierre\": \"13:00:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[seguridad] Un Empleado sin relacion y con la lista vacia recibe el 404 y no el 400",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_x_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Mismo 404 de siempre: Comercio no encontrado y codigo COMERCIO_NO_DISPONIBLE', () => { const b = pm.response.json(); pm.expect(b.mensaje).to.eql('Comercio no encontrado'); pm.expect(b.data.codigo).to.eql('COMERCIO_NO_DISPONIBLE'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Administrador suspende el comercio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{ht1_com}}/suspender",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{ht1_com}}",
+                "suspender"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Suspension de la coleccion de horarios\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[suspendido] La Empleada recibe 409 COMERCIO_SUSPENDIDO",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_e_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": [\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"10:00:00\",\n      \"horaCierre\": \"20:00:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test('El codigo estable es COMERCIO_SUSPENDIDO', () => pm.expect(pm.response.json().data.codigo).to.eql('COMERCIO_SUSPENDIDO'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[suspendido] El Dueño si puede editar",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ht1_d_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{ht1_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil/horarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil",
+                "horarios"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"horarios\": [\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"10:00:00\",\n      \"horaCierre\": \"20:00:00\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Queda una pendiente\", () => { const d = pm.response.json().data; pm.expect(d.pendientes.length).to.eql(1); });"
                 ]
               }
             }

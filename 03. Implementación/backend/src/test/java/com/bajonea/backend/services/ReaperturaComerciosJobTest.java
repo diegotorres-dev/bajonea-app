@@ -25,7 +25,7 @@ class ReaperturaComerciosJobTest {
     void preparar() {
         comercioRepository = mock(ComercioRepository.class);
         cierreComercioService = mock(CierreComercioService.class);
-        job = new ReaperturaComerciosJob(comercioRepository, cierreComercioService, mock(DisponibilidadComercioService.class));
+        job = new ReaperturaComerciosJob(comercioRepository, cierreComercioService, mock(DisponibilidadComercioService.class), true);
     }
 
     @Test
@@ -68,7 +68,7 @@ class ReaperturaComerciosJobTest {
         DisponibilidadComercioService disponibilidad = mock(DisponibilidadComercioService.class);
         when(disponibilidad.ahora()).thenReturn(AHORA);
         when(comercioRepository.findIdsCerradosManualmente()).thenReturn(List.of(4));
-        ReaperturaComerciosJob programado = new ReaperturaComerciosJob(comercioRepository, cierreComercioService, disponibilidad);
+        ReaperturaComerciosJob programado = new ReaperturaComerciosJob(comercioRepository, cierreComercioService, disponibilidad, true);
 
         programado.reabrirComerciosVencidos();
 

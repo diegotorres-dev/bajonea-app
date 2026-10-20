@@ -38,6 +38,7 @@ public final class DelegacionEmpleado {
             new RutaDelegable(HttpMethod.POST, "/api/v1/productos/{id}/imagenes/{imagenId}/recorte/firma"),
             new RutaDelegable(HttpMethod.PATCH, "/api/v1/productos/{id}/imagenes/{imagenId}/url"),
             new RutaDelegable(HttpMethod.PUT, "/api/v1/comercios/perfil/datos-operativos"),
+            new RutaDelegable(HttpMethod.PUT, "/api/v1/comercios/perfil/horarios"),
             new RutaDelegable(HttpMethod.PUT, "/api/v1/comercios/cerrar"),
             new RutaDelegable(HttpMethod.PUT, "/api/v1/comercios/abrir"),
             new RutaDelegable(HttpMethod.PUT, "/api/v1/pedidos/comercio/{id}/aceptar"),

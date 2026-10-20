@@ -70,7 +70,7 @@ class AdministradorServiceResolucionTest {
         ComercioResolicitudesProperties propiedades = new ComercioResolicitudesProperties();
         propiedades.setMax(3);
 
-        service = new AdministradorService(comercioRepository, mock(DireccionRepository.class), mock(HorarioRepository.class),
+        service = new AdministradorService(comercioRepository, mock(DireccionRepository.class), mock(HorarioRepository.class), mock(DisponibilidadComercioService.class),
                 mock(RedSocialRepository.class), administradorRepository, historialRepository, mock(ClienteRepository.class),
                 mock(CategoriaRepository.class), mock(TagRepository.class), notificacionService, mock(PedidoService.class),
                 comercioService, cuentaMercadoPagoService, mock(AprobacionPreviaDueno.class),

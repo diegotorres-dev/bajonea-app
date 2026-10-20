@@ -41,6 +41,8 @@ const CAMPOS_PERFIL_EMPLEADO = [
   'estado',
   'fotoPerfilUrl',
   'horarios',
+  'horariosPendientes',
+  'horariosRigenDesde',
   'id',
   'nombre',
   'puedeCambiarCierre',

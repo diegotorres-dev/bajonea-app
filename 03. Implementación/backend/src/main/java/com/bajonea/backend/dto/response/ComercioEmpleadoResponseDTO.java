@@ -2,6 +2,7 @@ package com.bajonea.backend.dto.response;
 
 import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.TipoComercio;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.Getter;
 
@@ -27,6 +28,8 @@ public class ComercioEmpleadoResponseDTO {
     private final boolean aceptaRetiro;
     private final DireccionResponseDTO direccion;
     private final List<HorarioResponseDTO> horarios;
+    private final List<HorarioResponseDTO> horariosPendientes;
+    private final LocalDate horariosRigenDesde;
     private final EstadoComercio estado;
     private final boolean cerradoManualmente;
     private final boolean abiertoAhora;
@@ -35,7 +38,8 @@ public class ComercioEmpleadoResponseDTO {
 
     public ComercioEmpleadoResponseDTO(Integer id, String nombre, String descripcion, String fotoPerfilUrl, String telefono,
             TipoComercio tipoComercio, boolean aceptaDelivery, boolean aceptaRetiro, DireccionResponseDTO direccion,
-            List<HorarioResponseDTO> horarios, EstadoComercio estado, boolean cerradoManualmente, boolean abiertoAhora,
+            List<HorarioResponseDTO> horarios, List<HorarioResponseDTO> horariosPendientes, LocalDate horariosRigenDesde,
+            EstadoComercio estado, boolean cerradoManualmente, boolean abiertoAhora,
             boolean puedeCambiarCierre, String textoReapertura) {
         this.id = id;
         this.nombre = nombre;
@@ -47,6 +51,8 @@ public class ComercioEmpleadoResponseDTO {
         this.aceptaRetiro = aceptaRetiro;
         this.direccion = direccion;
         this.horarios = horarios;
+        this.horariosPendientes = horariosPendientes;
+        this.horariosRigenDesde = horariosRigenDesde;
         this.estado = estado;
         this.cerradoManualmente = cerradoManualmente;
         this.abiertoAhora = abiertoAhora;

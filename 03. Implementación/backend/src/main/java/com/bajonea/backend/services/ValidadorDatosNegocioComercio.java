@@ -8,7 +8,6 @@ import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.exceptions.ValidacionCamposException;
 import com.bajonea.backend.exceptions.ValidacionException;
 import com.bajonea.backend.repositories.LocalidadRepository;
-import com.bajonea.backend.util.ComercioTextoLegible;
 import com.bajonea.backend.util.ComercioValidaciones;
 import java.util.List;
 import java.util.Map;
@@ -71,26 +70,6 @@ public class ValidadorDatosNegocioComercio {
     }
 
     private void validarHorarios(List<HorarioRequestDTO> horarios) {
-        for (HorarioRequestDTO horario : horarios) {
-            if (!horario.getHoraCierre().isAfter(horario.getHoraApertura())) {
-                throw new ValidacionException("La hora de cierre debe ser posterior a la hora de apertura");
-            }
-        }
-        for (int i = 0; i < horarios.size(); i++) {
-            HorarioRequestDTO actual = horarios.get(i);
-            for (int j = i + 1; j < horarios.size(); j++) {
-                HorarioRequestDTO otro = horarios.get(j);
-                if (actual.getDiaSemana() != otro.getDiaSemana()) {
-                    continue;
-                }
-                boolean seSuperponen = actual.getHoraApertura().isBefore(otro.getHoraCierre())
-                        && otro.getHoraApertura().isBefore(actual.getHoraCierre());
-                if (seSuperponen) {
-                    throw new ValidacionException(String.format(
-                            "Ya tenés un horario cargado el %s de %s a %s, que se superpone con este",
-                            ComercioTextoLegible.etiquetaDia(otro.getDiaSemana()), otro.getHoraApertura(), otro.getHoraCierre()));
-                }
-            }
-        }
+        ValidadorHorarios.validar(horarios);
     }
 }

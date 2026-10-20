@@ -248,7 +248,7 @@ const invalidosK = [
   ['dos redes del mismo tipo', "b.redesSociales = [{ tipo: 'INSTAGRAM', url: 'instagram.com/a' }, { tipo: 'INSTAGRAM', url: 'instagram.com/b' }];", 400, 'mismo tipo'],
   ['ni delivery ni retiro', 'b.aceptaDelivery = false; b.aceptaRetiro = false;', 400, 'al menos una modalidad'],
   ['horarios superpuestos', "b.horarios = [{ diaSemana: 'LUNES', horaApertura: '10:00:00', horaCierre: '14:00:00' }, { diaSemana: 'LUNES', horaApertura: '13:00:00', horaCierre: '18:00:00' }];", 400, 'se superpone'],
-  ['cierre anterior a la apertura', "b.horarios = [{ diaSemana: 'LUNES', horaApertura: '20:00:00', horaCierre: '10:00:00' }];", 400, 'posterior'],
+  ['cierre igual a la apertura', "b.horarios = [{ diaSemana: 'LUNES', horaApertura: '10:00:00', horaCierre: '10:00:00' }];", 400, 'no puede ser igual'],
   ['localidad inexistente', "b.direccion.localidadId = '0000000';", 404, 'localidad'],
   ['foto del pre-registro', "b.fotoPerfilUrl = pm.environment.get('r_foto_pre_registro');", 400, 'La foto de perfil no es válida'],
   ['foto de otra cuenta de Cloudinary', "b.fotoPerfilUrl = pm.environment.get('r_foto_otra_cuenta');", 400, 'La foto de perfil no es válida'],

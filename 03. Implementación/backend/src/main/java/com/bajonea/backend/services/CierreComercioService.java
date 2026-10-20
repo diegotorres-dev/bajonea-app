@@ -88,7 +88,8 @@ public class CierreComercioService {
         if (!ComercioActivoService.esOperativo(comercio.getEstado())) {
             throw new ConflictoComercioException(ConflictoComercioException.NO_OPERATIVO, MENSAJE_NO_OPERATIVO);
         }
-        List<Horario> horarios = horarioRepository.findByComercioId(comercio.getId());
+        List<Horario> horarios = horarioRepository.findVigentesDesde(comercio.getId(),
+                disponibilidadComercioService.fechaDesdeParaLeer(ahora));
         if (!disponibilidadComercioService.dentroDeFranja(horarios, ahora)) {
             throw new ConflictoComercioException(ConflictoComercioException.FUERA_DE_HORARIO, MENSAJE_FUERA_DE_HORARIO);
         }
@@ -109,16 +110,19 @@ public class CierreComercioService {
         if (!comercio.isCerradoManualmente()) {
             return false;
         }
-        List<Horario> horarios = horarioRepository.findByComercioId(comercioId);
         Optional<HistorialCierreComercio> ultimoCierre = historialCierreComercioRepository
                 .findTopByComercioIdAndAccionOrderByFechaHoraDescIdDesc(comercioId, AccionCierre.CERRADO);
         if (ultimoCierre.isEmpty()) {
             log.warn("El comercio {} tiene el cierre manual prendido y ninguna fila CERRADO en el historial: se reabre",
                     comercioId);
         } else {
+            LocalDateTime momentoDelCierre = ultimoCierre.get().getFechaHora();
+            List<Horario> horarios = horarioRepository.findVigentesDesde(comercioId, momentoDelCierre.toLocalDate());
             Optional<LocalDateTime> inicio = disponibilidadComercioService
-                    .proximoInicioDeFranja(horarios, ultimoCierre.get().getFechaHora());
-            if (inicio.isEmpty() || ahora.isBefore(inicio.get())) {
+                    .proximoInicioDeFranja(horarios, momentoDelCierre);
+            if (inicio.isEmpty()) {
+                log.warn("El comercio {} tiene el cierre manual prendido y ninguna franja vigente: se reabre", comercioId);
+            } else if (ahora.isBefore(inicio.get())) {
                 return false;
             }
         }

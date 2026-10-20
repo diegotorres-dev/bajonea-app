@@ -1,5 +1,7 @@
 package com.bajonea.backend.services;
 
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -56,7 +58,7 @@ class ComercioServiceValidarAceptaPedidosTest {
                 mock(HistorialEstadoComercioRepository.class), mock(CloudinaryService.class), disponibilidad,
                 mock(UsuarioRepository.class), mock(HistorialEdicionComercioService.class), mock(NombreComercioService.class));
         comercio = Comercio.builder().id(5).estado(EstadoComercio.APTO_VENTA).build();
-        when(horarioRepository.findByComercioId(5)).thenReturn(List.of(
+        when(horarioRepository.findVigentesDesde(eq(5), any())).thenReturn(List.of(
                 Horario.builder().diaSemana(DiaSemana.LUNES).horaApertura(LocalTime.of(10, 0)).horaCierre(LocalTime.of(14, 0)).build()));
     }
 
@@ -144,7 +146,7 @@ class ComercioServiceValidarAceptaPedidosTest {
 
     @Test
     void sinHorariosCargadosSiempreEstaCerrado() {
-        when(horarioRepository.findByComercioId(5)).thenReturn(List.of());
+        when(horarioRepository.findVigentesDesde(eq(5), any())).thenReturn(List.of());
 
         ConflictoDeNegocioException ex = assertThrows(ConflictoDeNegocioException.class,
                 () -> service.validarAceptaPedidos(comercio, EstadoComercio.APTO_VENTA, false));
@@ -154,7 +156,7 @@ class ComercioServiceValidarAceptaPedidosTest {
 
     @Test
     void unaFranjaHasta2359AceptaEn235930() {
-        when(horarioRepository.findByComercioId(5)).thenReturn(List.of(
+        when(horarioRepository.findVigentesDesde(eq(5), any())).thenReturn(List.of(
                 Horario.builder().diaSemana(DiaSemana.LUNES).horaApertura(LocalTime.of(0, 0)).horaCierre(LocalTime.of(23, 59)).build()));
         ahora = LUNES.atTime(23, 59, 30);
 

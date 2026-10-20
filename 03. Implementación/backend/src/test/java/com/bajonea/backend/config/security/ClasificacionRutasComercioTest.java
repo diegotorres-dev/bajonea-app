@@ -77,6 +77,7 @@ class ClasificacionRutasComercioTest {
         delegable("POST /api/v1/productos/{id}/imagenes/{imagenId}/recorte/firma");
         delegable("PATCH /api/v1/productos/{id}/imagenes/{imagenId}/url");
         delegable("PUT /api/v1/comercios/perfil/datos-operativos");
+        delegable("PUT /api/v1/comercios/perfil/horarios");
         delegable("PUT /api/v1/comercios/cerrar");
         delegable("PUT /api/v1/comercios/abrir");
         delegable("PUT /api/v1/pedidos/comercio/{id}/aceptar");
@@ -242,7 +243,7 @@ class ClasificacionRutasComercioTest {
             assertEquals(Categoria.EXCLUSIVO, CLASIFICACION.get(clave), clave);
             assertTrue(!listaBlanca.contains(clave), clave + " no puede estar en la lista blanca");
         }
-        assertEquals(23, listaBlanca.size());
+        assertEquals(24, listaBlanca.size());
     }
 
     @Test

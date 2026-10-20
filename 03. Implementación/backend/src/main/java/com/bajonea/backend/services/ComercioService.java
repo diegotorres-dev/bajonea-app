@@ -33,10 +33,14 @@ import com.bajonea.backend.util.TextoUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -80,9 +84,9 @@ public class ComercioService {
     }
 
     private ComercioEmpleadoResponseDTO aEmpleadoResponseDTO(Comercio comercio) {
-        List<Horario> horariosEntidad = horarioRepository.findByComercioId(comercio.getId());
-        Disponibilidad disponibilidad = disponibilidadComercioService.calcular(comercio, horariosEntidad,
-                disponibilidadComercioService.ahora());
+        LocalDateTime ahora = disponibilidadComercioService.ahora();
+        LecturaHorarios lectura = leerHorarios(comercio.getId(), ahora);
+        Disponibilidad disponibilidad = disponibilidadComercioService.calcular(comercio, lectura.todos(), ahora);
         return new ComercioEmpleadoResponseDTO(
                 comercio.getId(),
                 comercio.getNombre(),
@@ -93,7 +97,9 @@ public class ComercioService {
                 comercio.isAceptaDelivery(),
                 comercio.isAceptaRetiro(),
                 aDireccionResponseDTO(comercio),
-                horariosEntidad.stream().map(this::aResponseDTO).toList(),
+                lectura.vigentes(),
+                lectura.pendientes(),
+                lectura.rigeDesde(),
                 comercio.getEstado(),
                 disponibilidad.cerradoManualmente(),
                 disponibilidad.abiertoAhora(),
@@ -198,8 +204,19 @@ public class ComercioService {
             EstadoComercio.APTO_VENTA, EstadoComercio.CERRADO_TEMPORALMENTE);
 
     public List<ComercioPublicoResponseDTO> listarAprobados() {
-        return comercioRepository.findByEstadoIn(ESTADOS_VISIBLES_EN_CATALOGO).stream()
-                .map(this::aPublicoResponseDTO)
+        List<Comercio> comercios = comercioRepository.findByEstadoIn(ESTADOS_VISIBLES_EN_CATALOGO);
+        if (comercios.isEmpty()) {
+            return List.of();
+        }
+        LocalDateTime ahora = disponibilidadComercioService.ahora();
+        Map<Integer, List<Horario>> horariosPorComercio = horarioRepository
+                .findVigentesDesdeIn(comercios.stream().map(Comercio::getId).toList(),
+                        disponibilidadComercioService.fechaDesdeParaLeer(ahora))
+                .stream()
+                .collect(Collectors.groupingBy(horario -> horario.getComercio().getId()));
+        return comercios.stream()
+                .map(comercio -> aPublicoResponseDTO(comercio,
+                        LecturaHorarios.de(horariosPorComercio.getOrDefault(comercio.getId(), List.of()), ahora), ahora))
                 .toList();
     }
 
@@ -223,8 +240,9 @@ public class ComercioService {
         if (cerradoManualmente) {
             throw new ConflictoDeNegocioException(MENSAJE_COMERCIO_CERRADO);
         }
-        List<Horario> horarios = horarioRepository.findByComercioId(comercio.getId());
-        if (!disponibilidadComercioService.dentroDeFranja(horarios, disponibilidadComercioService.ahora())) {
+        LocalDateTime ahora = disponibilidadComercioService.ahora();
+        List<Horario> horarios = disponibilidadComercioService.horariosParaLeer(comercio.getId(), ahora);
+        if (!disponibilidadComercioService.dentroDeFranja(horarios, ahora)) {
             throw new ConflictoDeNegocioException(
                     "Este comercio está cerrado en este momento. Podés hacer tu pedido dentro de su horario de atención.");
         }
@@ -358,10 +376,9 @@ public class ComercioService {
 
     private ComercioResponseDTO aResponseDTO(Comercio comercio) {
         DireccionResponseDTO direccionDTO = aDireccionResponseDTO(comercio);
-        List<Horario> horariosEntidad = horarioRepository.findByComercioId(comercio.getId());
-        List<HorarioResponseDTO> horarios = horariosEntidad.stream().map(this::aResponseDTO).toList();
-        Disponibilidad disponibilidad = disponibilidadComercioService.calcular(comercio, horariosEntidad,
-                disponibilidadComercioService.ahora());
+        LocalDateTime ahora = disponibilidadComercioService.ahora();
+        LecturaHorarios lectura = leerHorarios(comercio.getId(), ahora);
+        Disponibilidad disponibilidad = disponibilidadComercioService.calcular(comercio, lectura.todos(), ahora);
         RepresentanteResponseDTO representante = aRepresentanteResponseDTO(comercio.getDueno().getPersonaFisica());
         String motivoRechazo = obtenerMotivoRechazo(comercio);
 
@@ -382,7 +399,9 @@ public class ComercioService {
                 comercio.getDueno().getPersonaJuridica().getDomicilioFiscal(),
                 comercio.getDueno().getPersonaJuridica().getFechaInicioActividades(),
                 direccionDTO,
-                horarios,
+                lectura.vigentes(),
+                lectura.pendientes(),
+                lectura.rigeDesde(),
                 representante,
                 motivoRechazo,
                 disponibilidad.cerradoManualmente(),
@@ -401,11 +420,14 @@ public class ComercioService {
     }
 
     private ComercioPublicoResponseDTO aPublicoResponseDTO(Comercio comercio) {
+        LocalDateTime ahora = disponibilidadComercioService.ahora();
+        return aPublicoResponseDTO(comercio, leerHorarios(comercio.getId(), ahora), ahora);
+    }
+
+    private ComercioPublicoResponseDTO aPublicoResponseDTO(Comercio comercio, LecturaHorarios lectura,
+            LocalDateTime ahora) {
         DireccionResponseDTO direccionDTO = aDireccionResponseDTO(comercio);
-        List<Horario> horariosEntidad = horarioRepository.findByComercioId(comercio.getId());
-        List<HorarioResponseDTO> horarios = horariosEntidad.stream().map(this::aResponseDTO).toList();
-        Disponibilidad disponibilidad = disponibilidadComercioService.calcular(comercio, horariosEntidad,
-                disponibilidadComercioService.ahora());
+        Disponibilidad disponibilidad = disponibilidadComercioService.calcular(comercio, lectura.todos(), ahora);
 
         return new ComercioPublicoResponseDTO(
                 comercio.getId(),
@@ -421,7 +443,7 @@ public class ComercioService {
                 // (CERRADO_MANUAL).
                 EstadoComercio.APTO_VENTA,
                 direccionDTO,
-                horarios,
+                lectura.vigentes(),
                 disponibilidad.estadoApertura(),
                 disponibilidad.textoReapertura());
     }
@@ -449,7 +471,22 @@ public class ComercioService {
                 personaFisica.getFechaNacimiento());
     }
 
-    private HorarioResponseDTO aResponseDTO(Horario horario) {
-        return new HorarioResponseDTO(horario.getId(), horario.getDiaSemana(), horario.getHoraApertura(), horario.getHoraCierre());
+    private LecturaHorarios leerHorarios(Integer comercioId, LocalDateTime ahora) {
+        return LecturaHorarios.de(disponibilidadComercioService.horariosParaLeer(comercioId, ahora), ahora);
+    }
+
+    private record LecturaHorarios(List<Horario> todos, List<HorarioResponseDTO> vigentes,
+            List<HorarioResponseDTO> pendientes, LocalDate rigeDesde) {
+
+        static LecturaHorarios de(List<Horario> todos, LocalDateTime ahora) {
+            LocalDate hoy = ahora.toLocalDate();
+            List<HorarioResponseDTO> vigentes = DisponibilidadComercioService.vigentesEn(todos, hoy).stream()
+                    .map(HorarioResponseDTO::de).toList();
+            List<Horario> filasPendientes = todos.stream().filter(horario -> horario.getVigenteDesde().isAfter(hoy)).toList();
+            LocalDate rigeDesde = filasPendientes.stream().map(Horario::getVigenteDesde).min(Comparator.naturalOrder())
+                    .orElse(null);
+            return new LecturaHorarios(todos, vigentes, filasPendientes.stream().map(HorarioResponseDTO::de).toList(),
+                    rigeDesde);
+        }
     }
 }

@@ -44,6 +44,8 @@ public class ComercioResponseDTO {
     private final LocalDate fechaInicioActividades;
     private final DireccionResponseDTO direccion;
     private final List<HorarioResponseDTO> horarios;
+    private final List<HorarioResponseDTO> horariosPendientes;
+    private final LocalDate horariosRigenDesde;
     private final RepresentanteResponseDTO representante;
     private final String motivoRechazo;
     private final boolean cerradoManualmente;
@@ -69,6 +71,8 @@ public class ComercioResponseDTO {
             LocalDate fechaInicioActividades,
             DireccionResponseDTO direccion,
             List<HorarioResponseDTO> horarios,
+            List<HorarioResponseDTO> horariosPendientes,
+            LocalDate horariosRigenDesde,
             RepresentanteResponseDTO representante,
             String motivoRechazo,
             boolean cerradoManualmente,
@@ -92,6 +96,8 @@ public class ComercioResponseDTO {
         this.fechaInicioActividades = fechaInicioActividades;
         this.direccion = direccion;
         this.horarios = horarios;
+        this.horariosPendientes = horariosPendientes;
+        this.horariosRigenDesde = horariosRigenDesde;
         this.representante = representante;
         this.motivoRechazo = motivoRechazo;
         this.cerradoManualmente = cerradoManualmente;

@@ -272,8 +272,8 @@ const folder35 = {
   item: [
     registroItem('Registro Comercio - horarios diaSemana null en una franja', { horarios: [{ diaSemana: null, horaApertura: '09:00:00', horaCierre: '18:00:00' }] }, assertFieldMessage(400, 'horarios[0].diaSemana', 'no debe ser nulo')),
     registroItem('Registro Comercio - horarios horaApertura null en una franja', { horarios: [{ diaSemana: 'LUNES', horaApertura: null, horaCierre: '18:00:00' }] }, assertFieldMessage(400, 'horarios[0].horaApertura', 'no debe ser nulo')),
-    registroItem('Registro Comercio - horarios horaCierre igual a horaApertura (limite, debe rechazar)', { dniRepresentante: '30199330', horarios: [{ diaSemana: 'LUNES', horaApertura: '09:00:00', horaCierre: '09:00:00' }] }, assertTopLevelMessage(400, 'La hora de cierre debe ser posterior a la hora de apertura')),
-    registroItem('Registro Comercio - horarios horaCierre anterior a horaApertura (debe rechazar)', { dniRepresentante: '30199331', horarios: [{ diaSemana: 'LUNES', horaApertura: '18:00:00', horaCierre: '09:00:00' }] }, assertTopLevelMessage(400, 'La hora de cierre debe ser posterior a la hora de apertura')),
+    registroItem('Registro Comercio - horarios horaCierre igual a horaApertura (limite, debe rechazar)', { dniRepresentante: '30199330', horarios: [{ diaSemana: 'LUNES', horaApertura: '09:00:00', horaCierre: '09:00:00' }] }, assertTopLevelMessage(400, 'La hora de cierre no puede ser igual a la de apertura. Si atendés las 24 horas, cargá de 00:00 a 23:59.')),
+    registroItem('Registro Comercio - horarios horaCierre anterior a horaApertura (turno que cruza la medianoche, debe aceptar)', { nombre: 'Matriz C1 Turno Que Cruza', email: 'matriz.c1.cruza@bajonea.test', cuit: '30799000993', dniRepresentante: '30199399', horarios: [{ diaSemana: 'LUNES', horaApertura: '18:00:00', horaCierre: '02:00:00' }] }, assertCreated201()),
     registroItem(
       'Registro Comercio - horarios superposicion en el mismo dia (debe rechazar)',
       { dniRepresentante: '30199332', horarios: [

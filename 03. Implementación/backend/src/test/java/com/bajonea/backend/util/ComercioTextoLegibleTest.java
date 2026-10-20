@@ -47,6 +47,16 @@ class ComercioTextoLegibleTest {
     }
 
     @Test
+    void unTurnoQueCruzaLaMedianocheSeMarcaConMasUno() {
+        List<Horario> franjas = List.of(
+                horario(DiaSemana.VIERNES, "20:00", "02:00"),
+                horario(DiaSemana.SABADO, "00:00", "23:59"),
+                horario(DiaSemana.DOMINGO, "20:00", "00:00"));
+
+        assertEquals("Viernes 20:00-02:00 (+1); Sábado 00:00-23:59; Domingo 20:00-00:00 (+1)", ComercioTextoLegible.horarios(franjas));
+    }
+
+    @Test
     void horariosConLosMismosDatosEnOtroOrdenDanElMismoTexto() {
         List<Horario> uno = List.of(horario(DiaSemana.SABADO, "10:00", "14:00"), horario(DiaSemana.DOMINGO, "10:00", "14:00"));
         List<Horario> otro = List.of(horario(DiaSemana.DOMINGO, "10:00", "14:00"), horario(DiaSemana.SABADO, "10:00", "14:00"));

@@ -28,7 +28,7 @@ const URL_IMAGEN = 'https://res.cloudinary.com/demo/image/upload/v1/matriz.png';
 const todoElDia = () => [{ diaSemana: diaDeHoy(), horaApertura: '00:00', horaCierre: '23:59' }];
 const conComercio = (comercioId: number | string): Record<string, string> => ({ [HEADER]: String(comercioId) });
 
-test.describe('Rol Empleado, E3 bloque A5 (API): matriz de las 23 rutas delegables', () => {
+test.describe('Rol Empleado, E3 bloque A5 (API): matriz de las 24 rutas delegables', () => {
   test.describe.configure({ timeout: 300_000 });
 
   let adminToken: string;
@@ -51,7 +51,7 @@ test.describe('Rol Empleado, E3 bloque A5 (API): matriz de las 23 rutas delegabl
   const estadoPedido = (id: number): string => sql(`SELECT estado FROM pedido WHERE id = ${id};`);
   const filasHistorialPedido = (id: number): number => Number(sql(`SELECT COUNT(*) FROM historial_estado_pedido WHERE pedido_id = ${id};`));
 
-  function las23(productoId: number, imagenId: number, pedidoId: number): Ruta[] {
+  function las24(productoId: number, imagenId: number, pedidoId: number): Ruta[] {
     return [
       { metodo: 'GET', ruta: '/comercios/perfil' },
       { metodo: 'GET', ruta: '/productos' },
@@ -68,6 +68,7 @@ test.describe('Rol Empleado, E3 bloque A5 (API): matriz de las 23 rutas delegabl
       { metodo: 'POST', ruta: `/productos/${productoId}/imagenes/${imagenId}/recorte/firma` },
       { metodo: 'PATCH', ruta: `/productos/${productoId}/imagenes/${imagenId}/url`, cuerpo: { url: URL_IMAGEN } },
       { metodo: 'PUT', ruta: '/comercios/perfil/datos-operativos', cuerpo: { descripcion: 'Matriz', telefono: '+5492964111222' } },
+      { metodo: 'PUT', ruta: '/comercios/perfil/horarios', cuerpo: { horarios: [{ diaSemana: 'LUNES', horaApertura: '09:00', horaCierre: '18:00' }] } },
       { metodo: 'PUT', ruta: '/comercios/cerrar' },
       { metodo: 'PUT', ruta: '/comercios/abrir' },
       { metodo: 'PUT', ruta: `/pedidos/comercio/${pedidoId}/aceptar` },
@@ -164,9 +165,9 @@ test.describe('Rol Empleado, E3 bloque A5 (API): matriz de las 23 rutas delegabl
     await verificarPertenencia(request, dueno.token, 'Dueño');
   });
 
-  test('sin token las 23 rutas dan 401, con y sin header de comercio', async ({ request }) => {
-    const lista = las23(productoA, 1, pedidoB);
-    expect(lista.length).toBe(23);
+  test('sin token las 24 rutas dan 401, con y sin header de comercio', async ({ request }) => {
+    const lista = las24(productoA, 1, pedidoB);
+    expect(lista.length).toBe(24);
     for (const r of lista) {
       const sinHeader = await llamar(request, r, undefined);
       expect(sinHeader.status, `${r.metodo} ${r.ruta} sin header`).toBe(401);
@@ -175,9 +176,9 @@ test.describe('Rol Empleado, E3 bloque A5 (API): matriz de las 23 rutas delegabl
     }
   });
 
-  test('el Administrador recibe 403 en las 23 rutas y no cambia nada', async ({ request }) => {
+  test('el Administrador recibe 403 en las 24 rutas y no cambia nada', async ({ request }) => {
     const historialAntes = filasHistorialPedido(pedidoB);
-    for (const r of las23(productoB, imagenB, pedidoB)) {
+    for (const r of las24(productoB, imagenB, pedidoB)) {
       const respuesta = await llamar(request, r, adminToken, comercioB);
       expect(respuesta.status, `${r.metodo} ${r.ruta}`).toBe(403);
     }
@@ -186,8 +187,8 @@ test.describe('Rol Empleado, E3 bloque A5 (API): matriz de las 23 rutas delegabl
     expect(imagenesDe(productoB)).toBe(1);
   });
 
-  test('un Cliente sin relación recibe 404 con header y 400 sin header en las 23 rutas', async ({ request }) => {
-    for (const r of las23(productoA, 1, pedidoB)) {
+  test('un Cliente sin relación recibe 404 con header y 400 sin header en las 24 rutas', async ({ request }) => {
+    for (const r of las24(productoA, 1, pedidoB)) {
       const conHeader = await llamar(request, r, sinRelacionToken, comercioA);
       expect(conHeader.status, `${r.metodo} ${r.ruta} con header`).toBe(404);
       expect({ mensaje: conHeader.body.mensaje, data: conHeader.body.data }, `${r.metodo} ${r.ruta}`).toEqual(NO_DISPONIBLE);
@@ -196,10 +197,10 @@ test.describe('Rol Empleado, E3 bloque A5 (API): matriz de las 23 rutas delegabl
     }
   });
 
-  test('con la relación INACTIVA las 23 rutas dan el mismo 404, aun con cuerpo inválido, y al reactivarla vuelve el acceso', async ({ request }) => {
+  test('con la relación INACTIVA las 24 rutas dan el mismo 404, aun con cuerpo inválido, y al reactivarla vuelve el acceso', async ({ request }) => {
     expect((await atajoEstadoRelacion(request, comercioA, empleadoId, 'INACTIVO')).status).toBe(200);
     try {
-      for (const r of las23(productoA, 1, pedidoB)) {
+      for (const r of las24(productoA, 1, pedidoB)) {
         const respuesta = await llamar(request, r, empleadoToken, comercioA);
         expect(respuesta.status, `${r.metodo} ${r.ruta}`).toBe(404);
         expect({ mensaje: respuesta.body.mensaje, data: respuesta.body.data }, `${r.metodo} ${r.ruta}`).toEqual(NO_DISPONIBLE);

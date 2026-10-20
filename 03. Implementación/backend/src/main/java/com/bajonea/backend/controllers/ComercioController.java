@@ -4,6 +4,7 @@ import com.bajonea.backend.config.security.AuthenticatedUser;
 import com.bajonea.backend.config.security.ComercioActivo;
 import com.bajonea.backend.dto.request.AltaComercioAdicionalRequestDTO;
 import com.bajonea.backend.dto.request.ComercioDatosOperativosRequestDTO;
+import com.bajonea.backend.dto.request.ComercioHorariosRequestDTO;
 import com.bajonea.backend.dto.request.ComercioPerfilRequestDTO;
 import com.bajonea.backend.dto.request.FotoPerfilComercioRequestDTO;
 import com.bajonea.backend.dto.request.ReSolicitudComercioRequestDTO;
@@ -14,12 +15,14 @@ import com.bajonea.backend.dto.response.ComercioResponseDTO;
 import com.bajonea.backend.dto.response.CorreccionComercioResponseDTO;
 import com.bajonea.backend.dto.response.DisponibilidadNombreComercioResponseDTO;
 import com.bajonea.backend.dto.response.ElegibilidadAltaAdicionalResponseDTO;
+import com.bajonea.backend.dto.response.HorariosComercioResponseDTO;
 import com.bajonea.backend.dto.response.MiComercioResponseDTO;
 import com.bajonea.backend.enums.ActorCierre;
 import com.bajonea.backend.services.AltaComercioAdicionalService;
 import com.bajonea.backend.services.CierreComercioService;
 import com.bajonea.backend.services.ComercioCorreccionService;
 import com.bajonea.backend.services.ComercioService;
+import com.bajonea.backend.services.HorarioEdicionService;
 import com.bajonea.backend.services.MisComerciosService;
 import com.bajonea.backend.services.NombreComercioService;
 import jakarta.validation.Valid;
@@ -43,6 +46,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ComercioController {
 
     private final ComercioService comercioService;
+    private final HorarioEdicionService horarioEdicionService;
     private final AltaComercioAdicionalService altaComercioAdicionalService;
     private final ComercioCorreccionService comercioCorreccionService;
     private final MisComerciosService misComerciosService;
@@ -171,6 +175,17 @@ public class ComercioController {
             @Valid @RequestBody ComercioDatosOperativosRequestDTO request) {
         Object response = comercioService.editarDatosOperativos(comercio, request);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Perfil actualizado correctamente", response));
+    }
+
+    /**
+     * Edición de los horarios del comercio activo, delegable al Empleado. Reemplaza el conjunto completo de franjas;
+     * el cambio rige desde mañana y queda visible como cambio programado hasta entonces.
+     */
+    @PutMapping("/perfil/horarios")
+    public ResponseEntity<ApiResponse<HorariosComercioResponseDTO>> editarHorarios(ComercioActivo comercio,
+            @Valid @RequestBody ComercioHorariosRequestDTO request) {
+        HorariosComercioResponseDTO response = horarioEdicionService.editarHorarios(comercio, request.getHorarios());
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Horarios actualizados correctamente", response));
     }
 
     /**

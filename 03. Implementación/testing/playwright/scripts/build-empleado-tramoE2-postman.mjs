@@ -257,6 +257,8 @@ const CAMPOS_PERFIL = [
   'estado',
   'fotoPerfilUrl',
   'horarios',
+  'horariosPendientes',
+  'horariosRigenDesde',
   'id',
   'nombre',
   'puedeCambiarCierre',

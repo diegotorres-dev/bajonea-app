@@ -122,7 +122,7 @@ class MisComerciosEmpleadoIntegrationTest {
         Set<String> campos = new java.util.TreeSet<>();
         json.fieldNames().forEachRemaining(campos::add);
         assertEquals(Set.of("id", "nombre", "descripcion", "fotoPerfilUrl", "telefono", "tipoComercio", "aceptaDelivery",
-                "aceptaRetiro", "direccion", "horarios", "estado", "cerradoManualmente", "abiertoAhora", "puedeCambiarCierre",
+                "aceptaRetiro", "direccion", "horarios", "horariosPendientes", "horariosRigenDesde", "estado", "cerradoManualmente", "abiertoAhora", "puedeCambiarCierre",
                 "textoReapertura"), campos);
         assertEquals(dueno.nombreComercio(), perfil.getNombre());
         assertEquals(TipoComercio.RESTAURANTE, perfil.getTipoComercio());

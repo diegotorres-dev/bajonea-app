@@ -260,7 +260,7 @@ const invalidos = [
   ['localidad vacia', (c) => (c.direccion.localidadId = '')],
   ['sin horarios', (c) => delete c.horarios],
   ['horarios vacios', (c) => (c.horarios = [])],
-  ['cierre anterior a la apertura', (c) => (c.horarios = [{ diaSemana: 'LUNES', horaApertura: '20:00:00', horaCierre: '10:00:00' }])],
+  ['cierre igual a la apertura', (c) => (c.horarios = [{ diaSemana: 'LUNES', horaApertura: '10:00:00', horaCierre: '10:00:00' }])],
   [
     'horarios superpuestos el mismo dia',
     (c) =>

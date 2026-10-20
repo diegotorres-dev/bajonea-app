@@ -41,14 +41,16 @@ public class MisComerciosEmpleadoService {
         if (relaciones.isEmpty()) {
             return List.of();
         }
+        LocalDateTime ahora = disponibilidadComercioService.ahora();
         Map<Integer, List<Horario>> horariosPorComercio = horarioRepository
-                .findByComercioIdIn(relaciones.stream().map(relacion -> relacion.getComercio().getId()).toList()).stream()
+                .findVigentesDesdeIn(relaciones.stream().map(relacion -> relacion.getComercio().getId()).toList(),
+                        disponibilidadComercioService.fechaDesdeParaLeer(ahora))
+                .stream()
                 .collect(Collectors.groupingBy(horario -> horario.getComercio().getId()));
         Map<Integer, Long> noLeidasPorComercio = new HashMap<>();
         for (ContadorNoLeidasPorComercio contador : notificacionRepository.contarNoLeidasPorComercio(empleadoId)) {
             noLeidasPorComercio.put(contador.getComercioId(), contador.getCantidad());
         }
-        LocalDateTime ahora = disponibilidadComercioService.ahora();
         return relaciones.stream()
                 .map(relacion -> {
                     Comercio comercio = relacion.getComercio();

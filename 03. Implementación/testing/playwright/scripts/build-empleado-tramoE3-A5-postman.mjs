@@ -7,7 +7,7 @@ const collectionPath = path.resolve(__dirname, '../../../postman/Bajonea-MVP.pos
 const environmentPath = path.resolve(__dirname, '../../../postman/Bajonea-Local.postman_environment.json');
 
 const PREFIJO_CARPETA = '66 - ';
-const NOMBRE_CARPETA = '66 - Matriz de las 23 rutas delegables E3 A5 (pertenencia cruzada entre comercios, sin token, Administrador, Cliente sin relacion y relacion inactiva)';
+const NOMBRE_CARPETA = '66 - Matriz de las 24 rutas delegables E3 A5 (pertenencia cruzada entre comercios, sin token, Administrador, Cliente sin relacion y relacion inactiva)';
 
 const v = (clave) => `a5_${clave}`;
 
@@ -249,7 +249,7 @@ agregar(
 );
 
 const RUTA = (metodo, ruta, cuerpo) => ({ metodo, ruta, cuerpo });
-const las23 = (prod, img, ped) => [
+const las24 = (prod, img, ped) => [
   RUTA('GET', '/comercios/perfil'),
   RUTA('GET', '/productos'),
   RUTA('GET', '/pedidos/comercio'),
@@ -265,6 +265,7 @@ const las23 = (prod, img, ped) => [
   RUTA('POST', `/productos/${prod}/imagenes/${img}/recorte/firma`, '{}'),
   RUTA('PATCH', `/productos/${prod}/imagenes/${img}/url`, `{"url": "${URL_VALIDA}"}`),
   RUTA('PUT', '/comercios/perfil/datos-operativos', '{"descripcion": "Matriz", "telefono": "+5492964111222"}'),
+  RUTA('PUT', '/comercios/perfil/horarios', '{"horarios": [{"diaSemana": "LUNES", "horaApertura": "09:00", "horaCierre": "18:00"}]}'),
   RUTA('PUT', '/comercios/cerrar', '{}'),
   RUTA('PUT', '/comercios/abrir', '{}'),
   RUTA('PUT', `/pedidos/comercio/${ped}/aceptar`, '{}'),
@@ -333,7 +334,7 @@ agregar(
   ]),
 );
 
-const LISTA = las23(PA, '1', PEDB);
+const LISTA = las24(PA, '1', PEDB);
 for (const r of LISTA) {
   agregar(item(`Sin token: ${corto(r)} da 401`, reqRuta(r, undefined, COM), [status(401)]));
 }

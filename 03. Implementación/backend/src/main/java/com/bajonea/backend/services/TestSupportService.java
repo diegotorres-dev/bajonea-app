@@ -199,6 +199,8 @@ public class TestSupportService {
                     .diaSemana(horario.getDiaSemana())
                     .horaApertura(horario.getHoraApertura())
                     .horaCierre(horario.getHoraCierre())
+                    .vigenteDesde(horario.getVigenteDesde())
+                    .vigenteHasta(horario.getVigenteHasta())
                     .build());
         }
         return clon.getId();

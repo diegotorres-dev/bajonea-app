@@ -1,5 +1,6 @@
 package com.bajonea.backend.services;
 
+import static org.mockito.ArgumentMatchers.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -76,7 +77,7 @@ class CierreComercioServiceTest {
 
         comercio = Comercio.builder().id(COMERCIO_ID).estado(EstadoComercio.APTO_VENTA).build();
         when(comercioRepository.findById(COMERCIO_ID)).thenReturn(Optional.of(comercio));
-        when(horarioRepository.findByComercioId(COMERCIO_ID)).thenReturn(List.of(franja("10:00", "14:00"), franja("19:00", "23:00")));
+        when(horarioRepository.findVigentesDesde(eq(COMERCIO_ID), any())).thenReturn(List.of(franja("10:00", "14:00"), franja("19:00", "23:00")));
     }
 
     private static Horario franja(String apertura, String cierre) {
@@ -292,7 +293,7 @@ class CierreComercioServiceTest {
 
     @Test
     void unaFranjaQueCierraA2359PermiteCerrarEn235930() {
-        when(horarioRepository.findByComercioId(COMERCIO_ID)).thenReturn(List.of(franja("00:00", "23:59")));
+        when(horarioRepository.findVigentesDesde(eq(COMERCIO_ID), any())).thenReturn(List.of(franja("00:00", "23:59")));
         ahora = LUNES.atTime(23, 59, 30);
 
         CierreComercioResponseDTO respuesta = service.cerrar(COMERCIO_ID, DUENO_ID, ActorCierre.DUENO);
@@ -380,11 +381,11 @@ class CierreComercioServiceTest {
     }
 
     @Test
-    void sinFranjasElJobNoReabreSolo() {
+    void sinFranjasVigentesElJobReabreYAvisaEnElLog() {
         cierreVigenteEn(LUNES.atTime(11, 0));
-        when(horarioRepository.findByComercioId(COMERCIO_ID)).thenReturn(List.of());
+        when(horarioRepository.findVigentesDesde(eq(COMERCIO_ID), any())).thenReturn(List.of());
 
-        assertFalse(service.reabrirSiVencido(COMERCIO_ID, LUNES.plusDays(30).atTime(12, 0)));
-        assertTrue(comercio.isCerradoManualmente());
+        assertTrue(service.reabrirSiVencido(COMERCIO_ID, LUNES.plusDays(30).atTime(12, 0)));
+        assertFalse(comercio.isCerradoManualmente());
     }
 }

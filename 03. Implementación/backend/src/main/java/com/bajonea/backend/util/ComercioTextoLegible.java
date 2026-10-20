@@ -108,7 +108,8 @@ public final class ComercioTextoLegible {
                 .thenComparing(FranjaOrdenable::cierre);
 
         public String texto() {
-            return etiquetaDia(dia) + " " + FORMATO_HORA.format(apertura) + "-" + FORMATO_HORA.format(cierre);
+            String texto = etiquetaDia(dia) + " " + FORMATO_HORA.format(apertura) + "-" + FORMATO_HORA.format(cierre);
+            return cierre.isBefore(apertura) ? texto + " (+1)" : texto;
         }
     }
 }
