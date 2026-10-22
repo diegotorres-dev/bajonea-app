@@ -7,6 +7,7 @@ import com.bajonea.backend.dto.request.PedidoRequestDTO;
 import com.bajonea.backend.dto.request.RechazoPedidoRequestDTO;
 import com.bajonea.backend.dto.response.DetallePedidoResponseDTO;
 import com.bajonea.backend.dto.response.DireccionResponseDTO;
+import com.bajonea.backend.dto.response.ItemCarritoResponseDTO;
 import com.bajonea.backend.dto.response.PedidoEmpleadoResponseDTO;
 import com.bajonea.backend.dto.response.PedidoResponseDTO;
 import com.bajonea.backend.entities.Carrito;
@@ -62,6 +63,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
@@ -208,6 +210,17 @@ public class PedidoService {
         if (subtotalPedido.add(cargoServicioCliente).compareTo(SUBTOTAL_MAXIMO) > 0) {
             throw new ValidacionException(
                     "El total del pedido supera el monto máximo permitido por el sistema ($" + SUBTOTAL_MAXIMO + ")");
+        }
+
+        BigDecimal totalPedido = subtotalPedido.add(cargoServicioCliente);
+        if (request.getTotalEsperado() != null && request.getTotalEsperado().compareTo(totalPedido) != 0) {
+            Map<String, Object> montosNuevos = new LinkedHashMap<>();
+            montosNuevos.put("subtotal", subtotalPedido);
+            montosNuevos.put("cargoServicioCliente", cargoServicioCliente);
+            montosNuevos.put("total", totalPedido);
+            montosNuevos.put("items", items.stream().map(ItemCarritoResponseDTO::de).toList());
+            throw new ConflictoComercioException(ConflictoComercioException.PRECIO_CAMBIO,
+                    ConflictoComercioException.MENSAJE_PRECIO_CAMBIO, montosNuevos);
         }
 
         Pedido pedido = Pedido.builder()

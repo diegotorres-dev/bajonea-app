@@ -92,7 +92,12 @@ abstract class CarritoIntegrationBase {
     }
 
     protected int producto(Dueno dueno) {
-        Integer categoriaId = jdbcTemplate.queryForObject("SELECT id FROM categoria ORDER BY id LIMIT 1", Integer.class);
+        List<Integer> categorias = jdbcTemplate.queryForList("SELECT id FROM categoria ORDER BY id LIMIT 1", Integer.class);
+        if (categorias.isEmpty()) {
+            jdbcTemplate.update("INSERT INTO categoria (nombre) VALUES (?)", "Cat base " + DatosPruebaEmpleado.sufijo());
+            categorias = jdbcTemplate.queryForList("SELECT id FROM categoria ORDER BY id LIMIT 1", Integer.class);
+        }
+        Integer categoriaId = categorias.get(0);
         jdbcTemplate.update("INSERT INTO producto (comercio_id, categoria_id, nombre, precio, estado) VALUES (?, ?, ?, 1500, 'DISPONIBLE')",
                 dueno.comercioId(), categoriaId, "Producto carrito " + DatosPruebaEmpleado.sufijo());
         return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Integer.class);

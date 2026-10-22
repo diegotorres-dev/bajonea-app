@@ -112,6 +112,7 @@ public class CarritoService {
                     .producto(producto)
                     .cantidad(request.getCantidad())
                     .nota(request.getNota())
+                    .precioVisto(producto.getPrecio())
                     .build();
             itemCarritoRepository.save(item);
         }
@@ -242,14 +243,6 @@ public class CarritoService {
     }
 
     private ItemCarritoResponseDTO aResponseDTO(ItemCarrito item) {
-        BigDecimal subtotal = item.getProducto().getPrecio().multiply(BigDecimal.valueOf(item.getCantidad()));
-        return new ItemCarritoResponseDTO(
-                item.getId(),
-                item.getProducto().getId(),
-                item.getProducto().getNombre(),
-                item.getProducto().getPrecio(),
-                item.getCantidad(),
-                subtotal,
-                item.getNota());
+        return ItemCarritoResponseDTO.de(item);
     }
 }

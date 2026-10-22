@@ -483,6 +483,22 @@ export async function marcarAptoVenta(request: APIRequestContext, comercioId: nu
   }
 }
 
+export async function bloqueoDePrecioTest(request: APIRequestContext, habilitado: boolean): Promise<void> {
+  const { status, body } = await apiPut(request, `/test/precio-bloqueo?habilitado=${habilitado}`, {});
+  if (status !== 200) {
+    throw new Error(`No se pudo ${habilitado ? 'encender' : 'apagar'} el bloqueo de precio: ${status} ${JSON.stringify(body)}`);
+  }
+}
+
+export async function conBloqueoDePrecio<T>(request: APIRequestContext, accion: () => Promise<T>): Promise<T> {
+  await bloqueoDePrecioTest(request, true);
+  try {
+    return await accion();
+  } finally {
+    await bloqueoDePrecioTest(request, false);
+  }
+}
+
 export async function confirmarPagoTest(request: APIRequestContext, pedidoId: number, registrarPago = false, ahora?: string): Promise<void> {
   const parametros = [registrarPago ? 'registrarPago=true' : '', ahora ? `ahora=${encodeURIComponent(ahora)}` : ''].filter(Boolean).join('&');
   const { status, body } = await apiPut(request, `/test/pedidos/${pedidoId}/pago-aprobado${parametros ? `?${parametros}` : ''}`, {});

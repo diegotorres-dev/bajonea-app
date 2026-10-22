@@ -126,6 +126,25 @@ public class DisponibilidadComercioService {
         return turnoDe(horarios, ahora).isPresent();
     }
 
+    public record FranjaContinua(LocalDateTime fin) {
+    }
+
+    public Optional<FranjaContinua> franjaContinuaDe(List<Horario> horarios, LocalDateTime ahora) {
+        Optional<Turno> actual = turnoDe(horarios, ahora);
+        if (actual.isEmpty()) {
+            return Optional.empty();
+        }
+        LocalDateTime fin = actual.get().fin();
+        for (int vuelta = 0; vuelta < DIAS_POR_SEMANA + 1; vuelta++) {
+            Optional<Turno> siguiente = turnoDe(horarios, fin);
+            if (siguiente.isEmpty()) {
+                return Optional.of(new FranjaContinua(fin));
+            }
+            fin = siguiente.get().fin();
+        }
+        return Optional.of(new FranjaContinua(null));
+    }
+
     public boolean abiertoAhora(boolean cerradoManualmente, List<Horario> horarios, LocalDateTime ahora) {
         return !cerradoManualmente && dentroDeFranja(horarios, ahora);
     }

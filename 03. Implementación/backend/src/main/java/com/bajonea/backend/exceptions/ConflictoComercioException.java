@@ -22,6 +22,10 @@ import java.util.Map;
  * de baja él (renunció, o no hay registro de la baja); para que vuelva hace falta una invitación nueva.</li>
  * <li>{@link #INVITACION_PENDIENTE}: el Dueño intenta reactivar directamente a un miembro inactivo que tiene una
  * invitación pendiente y vigente en ese comercio.</li>
+ * <li>{@link #PRECIO_BLOQUEADO_EN_FRANJA}: el Dueño o el Empleado intenta cambiar el precio de un producto mientras el
+ * comercio está dentro de una franja horaria.</li>
+ * <li>{@link #PRECIO_CAMBIO}: el Cliente confirma un pedido con un total esperado distinto del que se cobraría;
+ * {@code data} suma {@code subtotal}, {@code cargoServicioCliente}, {@code total} e {@code items}.</li>
  * </ul>
  */
 public class ConflictoComercioException extends ConflictoDeNegocioException {
@@ -36,6 +40,11 @@ public class ConflictoComercioException extends ConflictoDeNegocioException {
     public static final String RETIRO_EN_ESPERA = "RETIRO_EN_ESPERA";
     public static final String EMPLEADO_NO_REACTIVABLE = "EMPLEADO_NO_REACTIVABLE";
     public static final String INVITACION_PENDIENTE = "INVITACION_PENDIENTE";
+    public static final String PRECIO_BLOQUEADO_EN_FRANJA = "PRECIO_BLOQUEADO_EN_FRANJA";
+    public static final String MENSAJE_PRECIO_BLOQUEADO_EN_FRANJA =
+            "No podés cambiar precios mientras tu comercio está en horario de atención. Hacelo fuera de ese horario.";
+    public static final String PRECIO_CAMBIO = "PRECIO_CAMBIO";
+    public static final String MENSAJE_PRECIO_CAMBIO = "Los montos de tu pedido cambiaron. Revisá el nuevo total antes de pagar.";
 
     private final String codigo;
     private final Map<String, Object> datosAdicionales;

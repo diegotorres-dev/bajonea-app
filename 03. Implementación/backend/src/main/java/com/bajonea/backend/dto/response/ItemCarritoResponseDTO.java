@@ -1,5 +1,6 @@
 package com.bajonea.backend.dto.response;
 
+import com.bajonea.backend.entities.ItemCarrito;
 import java.math.BigDecimal;
 import lombok.Getter;
 
@@ -19,6 +20,21 @@ public class ItemCarritoResponseDTO {
     private final Integer cantidad;
     private final BigDecimal subtotal;
     private final String nota;
+    private final BigDecimal precioVisto;
+    private final boolean precioCambio;
+
+    public static ItemCarritoResponseDTO de(ItemCarrito item) {
+        BigDecimal precioVigente = item.getProducto().getPrecio();
+        return new ItemCarritoResponseDTO(
+                item.getId(),
+                item.getProducto().getId(),
+                item.getProducto().getNombre(),
+                precioVigente,
+                item.getCantidad(),
+                precioVigente.multiply(BigDecimal.valueOf(item.getCantidad())),
+                item.getNota(),
+                item.getPrecioVisto());
+    }
 
     public ItemCarritoResponseDTO(
             Integer id,
@@ -27,7 +43,8 @@ public class ItemCarritoResponseDTO {
             BigDecimal precioUnitario,
             Integer cantidad,
             BigDecimal subtotal,
-            String nota) {
+            String nota,
+            BigDecimal precioVisto) {
         this.id = id;
         this.productoId = productoId;
         this.nombreProducto = nombreProducto;
@@ -35,5 +52,7 @@ public class ItemCarritoResponseDTO {
         this.cantidad = cantidad;
         this.subtotal = subtotal;
         this.nota = nota;
+        this.precioVisto = precioVisto;
+        this.precioCambio = precioVisto != null && precioVisto.compareTo(precioUnitario) != 0;
     }
 }

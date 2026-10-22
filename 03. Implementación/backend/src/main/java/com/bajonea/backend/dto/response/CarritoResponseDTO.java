@@ -22,6 +22,8 @@ public class CarritoResponseDTO {
     private final List<ItemCarritoResponseDTO> items;
     private final BigDecimal subtotal;
     private final BigDecimal cargoServicioCliente;
+    private final BigDecimal total;
+    private final boolean hayCambioDePrecio;
 
     public CarritoResponseDTO(
             Integer comercioId, String nombreComercio, List<ItemCarritoResponseDTO> items, BigDecimal subtotal,
@@ -31,5 +33,7 @@ public class CarritoResponseDTO {
         this.items = items;
         this.subtotal = subtotal;
         this.cargoServicioCliente = cargoServicioCliente;
+        this.total = subtotal.add(cargoServicioCliente);
+        this.hayCambioDePrecio = items.stream().anyMatch(ItemCarritoResponseDTO::isPrecioCambio);
     }
 }

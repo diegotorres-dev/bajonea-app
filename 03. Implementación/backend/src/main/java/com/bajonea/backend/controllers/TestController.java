@@ -1,5 +1,6 @@
 package com.bajonea.backend.controllers;
 
+import com.bajonea.backend.config.PrecioBloqueoProperties;
 import com.bajonea.backend.dto.response.ApiResponse;
 import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.TipoToken;
@@ -44,6 +45,7 @@ public class TestController {
     private final DisponibilidadComercioService disponibilidadComercioService;
     private final InvitacionVencimientoJob invitacionVencimientoJob;
     private final TurnoBackfillService turnoBackfillService;
+    private final PrecioBloqueoProperties precioBloqueoProperties;
     private final Clock clock;
 
     @GetMapping("/token-verificacion")
@@ -101,6 +103,13 @@ public class TestController {
     public ResponseEntity<ApiResponse<TurnoBackfillService.ResultadoBackfill>> ejecutarBackfillDeTurnos() {
         TurnoBackfillService.ResultadoBackfill resultado = turnoBackfillService.ejecutar();
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Asignación de turnos ejecutada", resultado));
+    }
+
+    @PutMapping("/precio-bloqueo")
+    public ResponseEntity<ApiResponse<Boolean>> cambiarBloqueoDePrecio(@RequestParam boolean habilitado) {
+        precioBloqueoProperties.setHabilitado(habilitado);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ApiResponse<>("Bloqueo de precio en franja " + (habilitado ? "encendido" : "apagado"), habilitado));
     }
 
     @PutMapping("/pedidos/{id}/pago-aprobado")

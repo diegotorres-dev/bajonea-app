@@ -32,6 +32,7 @@ const ESTRESES = [
   { id: 'nombre', archivo: 'stress-locks-tramoNombreUnico.mjs', descripcion: 'Tramo 2: nombre único de comercio (registros, altas, renombres y disponibilidad simultáneos)' },
   { id: 'horarios', archivo: 'stress-locks-tramoHorarios.mjs', descripcion: 'Fase 2 T1: edicion versionada de horarios contra cierre, bloqueos, desactivacion, lecturas, pedidos y productos' },
   { id: 'turnos', archivo: 'stress-locks-tramoTurnos.mjs', descripcion: 'Fase 2 T2: pedido por turno (pagos contra ediciones de horarios, bloqueos, resumen, backfill y pago repetido)' },
+  { id: 'precios', archivo: 'stress-locks-tramoPrecios.mjs', descripcion: 'Fase 2 T3: precio no modificable en franja y total esperado (ediciones de precio contra carrito, pedido, cierre, horarios y pagos)' },
   { id: 'e4', archivo: 'stress-locks-empleado-e4.mjs', descripcion: 'E4: gestión del equipo (desactivar, reactivar y renunciar; S1 a S10)' },
 ];
 

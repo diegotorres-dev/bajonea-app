@@ -9,6 +9,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -47,4 +48,8 @@ public class ItemCarrito {
     @Setter
     @Column(name = "nota", length = 255)
     private String nota;
+
+    @Setter
+    @Column(name = "precio_visto", precision = 10, scale = 2)
+    private BigDecimal precioVisto;
 }

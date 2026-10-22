@@ -1,5 +1,6 @@
 package com.bajonea.backend.services;
 
+import com.bajonea.backend.config.PrecioBloqueoProperties;
 import com.bajonea.backend.config.security.ComercioActivo;
 import com.bajonea.backend.dto.request.ImagenProductoRequestDTO;
 import com.bajonea.backend.dto.request.ProductoRequestDTO;
@@ -12,6 +13,7 @@ import com.bajonea.backend.dto.response.ProductosPaginadosResponseDTO;
 import com.bajonea.backend.dto.response.TagFiltroResponseDTO;
 import com.bajonea.backend.entities.Categoria;
 import com.bajonea.backend.entities.Comercio;
+import com.bajonea.backend.entities.Horario;
 import com.bajonea.backend.entities.ImagenProducto;
 import com.bajonea.backend.entities.Producto;
 import com.bajonea.backend.entities.ProductoTag;
@@ -22,6 +24,7 @@ import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.EstadoProducto;
 import com.bajonea.backend.enums.TipoEntidadEdicion;
 import com.bajonea.backend.exceptions.ComercioNoDisponibleException;
+import com.bajonea.backend.exceptions.ConflictoComercioException;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.repositories.CategoriaRepository;
@@ -71,6 +74,8 @@ public class ProductoService {
     private final CarritoService carritoService;
     private final CloudinaryService cloudinaryService;
     private final HistorialEdicionComercioService historialEdicionComercioService;
+    private final DisponibilidadComercioService disponibilidadComercioService;
+    private final PrecioBloqueoProperties precioBloqueoProperties;
 
     public ProductoResponseDTO crearProducto(ComercioActivo actor, ProductoRequestDTO request) {
         iniciarEscrituraDeCatalogo(actor);
@@ -109,6 +114,10 @@ public class ProductoService {
 
         Categoria categoria = obtenerCategoria(request.getCategoriaId());
 
+        if (producto.getPrecio().compareTo(request.getPrecio()) != 0) {
+            exigirPrecioModificable(actor.comercioId());
+        }
+
         String nombreNuevo = TextoUtils.aTitleCase(request.getNombre());
         List<Integer> tagsAntes = productoTagRepository.findByProductoId(productoId).stream()
                 .map(productoTag -> productoTag.getTag().getId()).sorted().toList();
@@ -146,13 +155,14 @@ public class ProductoService {
                     AccionEdicion.EDITAR, HistorialEdicionComercioService.detalleDeEdicion(camposCambiados));
         }
 
-        return aResponseDTO(producto);
+        return aResponseDTO(producto, bloqueoDePrecio(actor.comercioId()));
     }
 
     public List<ProductoResponseDTO> listarProductosDelComercio(Integer comercioId) {
         Comercio comercio = obtenerComercio(comercioId);
+        BloqueoPrecio bloqueo = bloqueoDePrecio(comercio.getId());
         return productoRepository.findByComercioId(comercio.getId()).stream()
-                .map(this::aResponseDTO)
+                .map(producto -> aResponseDTO(producto, bloqueo))
                 .toList();
     }
 
@@ -498,7 +508,32 @@ public class ProductoService {
         return producto;
     }
 
+    private record BloqueoPrecio(boolean bloqueado, LocalDateTime hasta) {
+    }
+
+    private void exigirPrecioModificable(Integer comercioId) {
+        if (bloqueoDePrecio(comercioId).bloqueado()) {
+            throw new ConflictoComercioException(ConflictoComercioException.PRECIO_BLOQUEADO_EN_FRANJA,
+                    ConflictoComercioException.MENSAJE_PRECIO_BLOQUEADO_EN_FRANJA);
+        }
+    }
+
+    private BloqueoPrecio bloqueoDePrecio(Integer comercioId) {
+        if (!precioBloqueoProperties.isHabilitado()) {
+            return new BloqueoPrecio(false, null);
+        }
+        LocalDateTime ahora = disponibilidadComercioService.ahora();
+        List<Horario> horarios = disponibilidadComercioService.horariosParaLeer(comercioId, ahora);
+        return disponibilidadComercioService.franjaContinuaDe(horarios, ahora)
+                .map(franja -> new BloqueoPrecio(true, franja.fin()))
+                .orElse(new BloqueoPrecio(false, null));
+    }
+
     private ProductoResponseDTO aResponseDTO(Producto producto) {
+        return aResponseDTO(producto, null);
+    }
+
+    private ProductoResponseDTO aResponseDTO(Producto producto, BloqueoPrecio bloqueo) {
         List<ImagenProductoResponseDTO> imagenes = imagenProductoRepository.findByProductoIdOrderByOrdenAsc(producto.getId())
                 .stream()
                 .map(img -> new ImagenProductoResponseDTO(img.getId(), img.getUrl(), img.getOrden(), img.isEsPrincipal()))
@@ -519,6 +554,8 @@ public class ProductoService {
                 producto.getComercio().getNombre(),
                 producto.getEstado(),
                 imagenes,
-                tags);
+                tags,
+                bloqueo == null ? null : bloqueo.bloqueado(),
+                bloqueo == null ? null : bloqueo.hasta());
     }
 }

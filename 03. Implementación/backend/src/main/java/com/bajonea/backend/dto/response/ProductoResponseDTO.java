@@ -1,7 +1,9 @@
 package com.bajonea.backend.dto.response;
 
 import com.bajonea.backend.enums.EstadoProducto;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Getter;
 
@@ -29,6 +31,12 @@ public class ProductoResponseDTO {
     private final List<ImagenProductoResponseDTO> imagenes;
     private final List<String> tags;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private final Boolean precioBloqueado;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private final LocalDateTime precioBloqueadoHasta;
+
     public ProductoResponseDTO(
             Integer id,
             String nombre,
@@ -41,6 +49,24 @@ public class ProductoResponseDTO {
             EstadoProducto estado,
             List<ImagenProductoResponseDTO> imagenes,
             List<String> tags) {
+        this(id, nombre, descripcion, precio, categoriaId, nombreCategoria, comercioId, nombreComercio, estado, imagenes, tags,
+                null, null);
+    }
+
+    public ProductoResponseDTO(
+            Integer id,
+            String nombre,
+            String descripcion,
+            BigDecimal precio,
+            Integer categoriaId,
+            String nombreCategoria,
+            Integer comercioId,
+            String nombreComercio,
+            EstadoProducto estado,
+            List<ImagenProductoResponseDTO> imagenes,
+            List<String> tags,
+            Boolean precioBloqueado,
+            LocalDateTime precioBloqueadoHasta) {
         this.id = id;
         this.nombre = nombre;
         this.descripcion = descripcion;
@@ -52,5 +78,7 @@ public class ProductoResponseDTO {
         this.estado = estado;
         this.imagenes = imagenes;
         this.tags = tags;
+        this.precioBloqueado = precioBloqueado;
+        this.precioBloqueadoHasta = precioBloqueadoHasta;
     }
 }
