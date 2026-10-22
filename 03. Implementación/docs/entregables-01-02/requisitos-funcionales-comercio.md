@@ -187,6 +187,7 @@ horario, también con el aviso de cuándo reabre.
   aparece en un aviso fijo en la misma pantalla (lista de productos, formulario o subida
   de fotos); el rechazo al pedir permiso de subida de una foto por esa causa no se
   confunde con el aviso del máximo de imágenes por producto.
+- El precio de un producto existente no se puede cambiar mientras el comercio está dentro de uno de sus horarios de atención (cuenta el horario, no si el comercio está abierto o cerrado a mano). En el formulario el campo precio aparece deshabilitado con un candado y la leyenda "Se puede cambiar fuera de tu horario de atención", y se habilita solo cuando termina el horario; los demás datos del producto se editan con normalidad y el alta de un producto nuevo no tiene esta restricción. Si el servidor rechaza el cambio igualmente, el mensaje aparece en un aviso fijo y el campo vuelve a su valor.
 - Cada producto puede encontrarse en uno de los siguientes estados:
   - **DISPONIBLE:** el producto es visible en el menú y puede ser agregado al carrito
     y pedido.

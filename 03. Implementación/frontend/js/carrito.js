@@ -2,6 +2,7 @@ import { apiFetch, ApiError, getUsuario } from './api.js';
 import { exigirContextoCliente } from './contexto.js';
 import { renderTopBar, renderBottomNav, showToast, pintarAvatarComercio, actualizarContadorCarrito } from './catalogo.js';
 import { normalizarCampos, excedeSubtotalMaximo, mensajeSubtotalMaximoExcedido } from './validators.js';
+import { crearPrecioUnitario } from './precio-cambio.js';
 
 const ICONS = {
   bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><line x1="3" y1="9" x2="21" y2="9"/></svg>',
@@ -116,9 +117,7 @@ function renderItem(item, producto, onCambio) {
   const nombre = document.createElement('h3');
   nombre.textContent = item.nombreProducto;
   info.appendChild(nombre);
-  const precioUnit = crear('p', 'cart-item__unit-price');
-  precioUnit.textContent = `${formatearPrecio(item.precioUnitario)} c/u`;
-  info.appendChild(precioUnit);
+  info.appendChild(crearPrecioUnitario(item));
   if (item.nota) {
     const nota = crear('p', 'cart-item__nota');
     nota.textContent = `Nota: "${item.nota}"`;
@@ -228,7 +227,7 @@ function renderConProductos(container, footerSlot, carrito, comercioInfo, produc
   footerSlot.innerHTML = '';
   const footer = crear('div', 'cart-footer');
   const cargoServicio = carrito.cargoServicioCliente || 0;
-  const total = carrito.subtotal + cargoServicio;
+  const total = carrito.total != null ? carrito.total : carrito.subtotal + cargoServicio;
 
   const subtotalRow = crear('div', 'cart-summary__row');
   const subtotalLabel = document.createElement('span');

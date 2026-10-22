@@ -37,7 +37,10 @@ Como Dueño o Empleado autorizado, quiero editar los datos de mis productos en
 cualquier momento, para mantener mi menú actualizado ante cambios de precio,
 descripción o disponibilidad. Si el sistema no me deja (por ejemplo, el comercio está
 suspendido), el motivo aparece en un aviso rojo fijo en la misma pantalla (lista,
-formulario o subida de fotos).
+formulario o subida de fotos). El precio de un producto no se puede cambiar mientras mi
+comercio está dentro de uno de sus horarios de atención: el campo aparece deshabilitado
+con un candado y la leyenda "Se puede cambiar fuera de tu horario de atención", y se
+habilita solo cuando el horario termina; el resto del producto lo sigo editando.
 
 ## HU-CO05: Gestionar el Estado de Disponibilidad de un Producto
 

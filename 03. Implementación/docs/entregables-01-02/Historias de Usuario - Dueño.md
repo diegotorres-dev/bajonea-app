@@ -158,3 +158,7 @@ explicando mi situación, para solicitar la revisión de la suspensión de ese c
 ## HU-D11: Ver Cuánto Vendí en el Turno
 
 Como Dueño, quiero ver en el panel de cada comercio cuánto se vendió en el turno en curso (o en el último turno terminado, aclarando que ya terminó), cuántos pedidos tuvo y cuántos están pendientes, y poder desplegar la comisión de plataforma y el neto del turno, para saber cuánto factura el comercio y cuánto me queda sin tener que sumar a mano. Un turno que cruza la medianoche cuenta como un solo turno, y el panel me avisa "Sin turno por ahora" cuando no hay ninguno.
+
+## HU-D12: Cambiar Precios Fuera del Horario de Atención
+
+Como Dueño, quiero que el precio de mis productos no se pueda cambiar mientras mi comercio está en horario de atención, para que los clientes que están pidiendo no vean precios que cambian en medio de la compra. En el formulario del producto veo el campo precio deshabilitado con un candado y la leyenda "Se puede cambiar fuera de tu horario de atención", sigo editando el resto del producto, y el campo se habilita solo cuando termina el horario. Dar de alta un producto nuevo no tiene esta restricción.

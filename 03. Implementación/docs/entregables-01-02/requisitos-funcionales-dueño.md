@@ -268,6 +268,14 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
 
 ---
 
+## Precios de los Productos
+
+- El precio de un producto no se puede cambiar mientras el comercio está dentro de uno de sus horarios de atención (aunque el comercio esté cerrado a mano o cerrado temporalmente: cuenta el horario, no el estado). Las demás partes del producto (nombre, descripción, categoría, tags, fotos, estado) se siguen editando con normalidad, y el alta de un producto nuevo con su precio no tiene restricción. Un comercio sin horarios cargados no tiene esta restricción.
+- En el formulario de edición, mientras el precio está bloqueado, el campo aparece deshabilitado con un candado y la leyenda "Se puede cambiar fuera de tu horario de atención"; el precio se conserva sin cambios al guardar los demás datos. Si el horario de atención termina con el formulario abierto, el campo se habilita solo a esa hora. Si el servidor igualmente rechaza el cambio, el mensaje "No podés cambiar precios mientras tu comercio está en horario de atención. Hacelo fuera de ese horario." aparece en un aviso fijo y el campo vuelve a su valor.
+- Este bloqueo vale por igual para el Dueño y para el Empleado.
+
+---
+
 ## Permisos Exclusivos del Dueño
 
 Las siguientes acciones no son delegables a un Empleado, aunque este tenga acceso

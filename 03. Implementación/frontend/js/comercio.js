@@ -3,7 +3,7 @@ import { exigirContextoComercio, exigirDueno } from './contexto.js';
 import { logout, construirTelefono, resolverHomePorRol, LABELS_TIPO_SOCIEDAD, LABELS_CONDICION_IVA } from './auth.js';
 import { resumenHorarioHoy, renderTopBar, showToast, pintarAvatarComercio, renderPedidoEstadoHeader, manejarBloqueoPorCambioPassword, crearBloqueMotivoRechazo } from './catalogo.js';
 import { SOPORTE_CONTACTO_URL } from './config.js';
-import { horaConDiaDe, horaMinutoDe } from './fechas.js';
+import { horaConDiaDe, horaMinutoDe, milisegundosHasta } from './fechas.js';
 import { limpiarAvisoFijo, mostrarAvisoFijo, bindNombreComercio, MENSAJE_NOMBRE_COMERCIO_EN_USO } from './form-utils.js';
 import {
   activarComercio,
@@ -2970,6 +2970,31 @@ export async function initComercioProductoForm() {
     inputPrecio.value = formatearMilesInput(soloDigitos);
   });
 
+  const iconoPrecioBloqueado = document.getElementById('icono-precio-bloqueado');
+  const leyendaPrecioBloqueado = document.getElementById('leyenda-precio-bloqueado');
+  let precioBloqueado = false;
+  let temporizadorPrecio = null;
+
+  function desbloquearPrecio() {
+    precioBloqueado = false;
+    window.clearTimeout(temporizadorPrecio);
+    inputPrecio.disabled = false;
+    iconoPrecioBloqueado.classList.add('is-hidden');
+    leyendaPrecioBloqueado.classList.add('is-hidden');
+  }
+
+  function bloquearPrecio(hasta) {
+    precioBloqueado = true;
+    inputPrecio.disabled = true;
+    iconoPrecioBloqueado.classList.remove('is-hidden');
+    leyendaPrecioBloqueado.classList.remove('is-hidden');
+    window.clearTimeout(temporizadorPrecio);
+    const espera = hasta ? milisegundosHasta(hasta) : null;
+    if (espera !== null && espera > 0) {
+      temporizadorPrecio = window.setTimeout(desbloquearPrecio, Math.min(espera, 2147483647));
+    }
+  }
+
   const [categorias, tags] = await Promise.all([
     apiFetch('/categorias'),
     apiFetch('/tags'),
@@ -3175,6 +3200,9 @@ export async function initComercioProductoForm() {
     document.getElementById('producto-nombre').value = productoActual.nombre;
     document.getElementById('producto-descripcion').value = productoActual.descripcion || '';
     document.getElementById('producto-precio').value = formatearMilesInput(String(Math.trunc(Number(productoActual.precio))));
+    if (productoActual.precioBloqueado) {
+      bloquearPrecio(productoActual.precioBloqueadoHasta);
+    }
     selectCategoria.value = String(productoActual.categoriaId);
     imagenes = [...productoActual.imagenes].sort((a, b) => a.orden - b.orden);
     chipRowTags.querySelectorAll('.chip').forEach((chip) => {
@@ -3263,21 +3291,26 @@ export async function initComercioProductoForm() {
       return;
     }
     limpiarErrorCampo('error-producto-fotos');
-    if (!inputPrecio.value.trim()) {
-      mostrarErrorCampo('error-producto-precio', 'El precio es obligatorio.');
-      scrollAlPrimerError();
-      return;
-    }
-    if (!esPrecioValido(inputPrecio.value)) {
-      mostrarErrorCampo('error-producto-precio', 'El precio no puede tener más de 8 dígitos.');
-      scrollAlPrimerError();
-      return;
-    }
-    const precio = precioDesdeInput(inputPrecio.value);
-    if (precio <= 0) {
-      mostrarErrorCampo('error-producto-precio', 'El precio debe ser mayor a $0.');
-      scrollAlPrimerError();
-      return;
+    let precio;
+    if (precioBloqueado) {
+      precio = Number(productoActual.precio);
+    } else {
+      if (!inputPrecio.value.trim()) {
+        mostrarErrorCampo('error-producto-precio', 'El precio es obligatorio.');
+        scrollAlPrimerError();
+        return;
+      }
+      if (!esPrecioValido(inputPrecio.value)) {
+        mostrarErrorCampo('error-producto-precio', 'El precio no puede tener más de 8 dígitos.');
+        scrollAlPrimerError();
+        return;
+      }
+      precio = precioDesdeInput(inputPrecio.value);
+      if (precio <= 0) {
+        mostrarErrorCampo('error-producto-precio', 'El precio debe ser mayor a $0.');
+        scrollAlPrimerError();
+        return;
+      }
     }
     limpiarErrorCampo('error-producto-precio');
     setLoading(submitBtn, 'Guardando...', true);
@@ -3308,6 +3341,15 @@ export async function initComercioProductoForm() {
 
       window.location.href = 'comercio-productos.html?productoCreado=1';
     } catch (error) {
+      if (error instanceof ApiError && error.status === 409 && error.data && error.data.codigo === 'PRECIO_BLOQUEADO_EN_FRANJA') {
+        mostrarAvisoFijo(bannerSlot, error.message);
+        if (productoActual) {
+          inputPrecio.value = formatearMilesInput(String(Math.trunc(Number(productoActual.precio))));
+        }
+        bloquearPrecio(null);
+        scrollAlPrimerError();
+        return;
+      }
       const mapaErrores = {
         nombre: 'error-producto-nombre',
         precio: 'error-producto-precio',

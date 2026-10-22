@@ -3,6 +3,7 @@ import { exigirContextoCliente } from './contexto.js';
 import { showToast } from './catalogo.js';
 import { crearBannerCierre, crearBotonVolverAlCatalogo, esConflictoDeCierre, estaAbiertoParaClientes } from './apertura-comercio.js';
 import { normalizarCampos } from './validators.js';
+import { crearPrecioUnitario } from './precio-cambio.js';
 
 const ICONS = {
   truck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
@@ -32,7 +33,7 @@ function formatearDireccion(direccion) {
   return partes.join(', ');
 }
 
-function renderBanner(slot, kind, texto) {
+function renderBanner(slot, kind, texto, testid) {
   if (!texto) {
     slot.innerHTML = '';
     return;
@@ -40,6 +41,9 @@ function renderBanner(slot, kind, texto) {
   slot.innerHTML = '';
   const banner = crear('div', `banner banner-${kind}`);
   banner.style.marginBottom = '20px';
+  if (testid) {
+    banner.setAttribute('data-testid', testid);
+  }
   const iconWrap = document.createElement('span');
   iconWrap.innerHTML = ICONS[kind] || ICONS.warning;
   banner.appendChild(iconWrap.firstElementChild);
@@ -82,6 +86,7 @@ export async function initCheckout() {
   const backBtn = document.getElementById('back-btn');
   let currentStep = 0;
   let tipoEntregaSeleccionado = null;
+  let montosActualizados = false;
 
   function mostrarPaso(index) {
     steps.forEach((step, i) => step.classList.toggle('is-hidden', i !== index));
@@ -330,7 +335,14 @@ export async function initCheckout() {
       const line = crear('div', 'order-line');
       const label = document.createElement('span');
       label.textContent = `${item.cantidad}x ${item.nombreProducto}`;
-      line.appendChild(label);
+      if (item.precioCambio) {
+        const detalle = crear('div', 'order-line__detalle');
+        detalle.appendChild(label);
+        detalle.appendChild(crearPrecioUnitario(item));
+        line.appendChild(detalle);
+      } else {
+        line.appendChild(label);
+      }
       const value = document.createElement('span');
       value.textContent = formatearPrecio(item.subtotal);
       line.appendChild(value);
@@ -363,8 +375,9 @@ export async function initCheckout() {
     const confirmBtn = crear('button', 'btn btn-primary');
     confirmBtn.type = 'button';
     confirmBtn.style.marginTop = '24px';
-    confirmBtn.setAttribute('data-testid', 'btn-confirmar-pedido');
-    confirmBtn.textContent = `Ir a pagar - ${formatearPrecio(totalConCargo)}`;
+    confirmBtn.setAttribute('data-testid', montosActualizados ? 'btn-confirmar-nuevo-total' : 'btn-confirmar-pedido');
+    const textoBoton = `${montosActualizados ? 'Confirmar con el nuevo total' : 'Ir a pagar'} - ${formatearPrecio(totalConCargo)}`;
+    confirmBtn.textContent = textoBoton;
     confirmBtn.addEventListener('click', async () => {
       confirmBtn.disabled = true;
       confirmBtn.textContent = 'Procesando...';
@@ -374,6 +387,7 @@ export async function initCheckout() {
           body: {
             tipoEntrega: tipoEntregaSeleccionado,
             direccionId: tipoEntregaSeleccionado === 'DOMICILIO' ? cliente.direccion.id : undefined,
+            totalEsperado: totalConCargo,
           },
         });
         normalizarCampos(pedido.direccion, ['calle']);
@@ -381,7 +395,24 @@ export async function initCheckout() {
         renderStep4(pedido);
         mostrarPaso(3);
       } catch (error) {
-        confirmBtn.textContent = `Ir a pagar - ${formatearPrecio(totalConCargo)}`;
+        confirmBtn.textContent = textoBoton;
+        if (error instanceof ApiError && error.status === 409 && error.data && error.data.codigo === 'PRECIO_CAMBIO') {
+          const hayItemConPrecioNuevo = (error.data.items || []).some((item) => item.precioCambio);
+          carrito.items = error.data.items;
+          carrito.subtotal = error.data.subtotal;
+          carrito.cargoServicioCliente = error.data.cargoServicioCliente;
+          carrito.total = error.data.total;
+          montosActualizados = true;
+          renderStep3();
+          renderBanner(
+            bannerSlot,
+            'warning',
+            hayItemConPrecioNuevo ? error.message : 'El cargo por servicio cambió. Revisá el nuevo total antes de pagar.',
+            'aviso-total-cambio',
+          );
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
         if (esConflictoDeCierre(error)) {
           renderAvisoCierre(bannerSlot, error.message, confirmBtn);
         } else {

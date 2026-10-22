@@ -284,3 +284,12 @@ No se agregaron `data-testid`: los tests usan el selector `.toast` que ya exist�
 | `comercio-perfil.html` (vista "Editar horarios", Dueño y Empleado) | `btn-editar-horarios` (la fila de entrada, una sola presente según el rol), `btn-volver-perfil-editar-horarios`, `mensaje-banner-editar-horarios`, `tarjeta-vigencia-horarios`, `horarios-rige-hoy`, `horarios-desde-manana-bloque`, `horarios-desde-manana`, `fila-horario-vigencia`, `btn-cancelar-cambio-horarios`, `aviso-rigen-manana`, `btn-guardar-horarios`; el asistente repite los de `registro-comercio.html` (`tab-horario-fijo`, `tab-horario-personalizado`, `fila-horario`, `btn-agregar-horario`, `mensaje-error-horarios`, `resumen-horarios-cargados`, ...) | — |
 | `comercio-perfil.html` ("Ver datos del comercio" del Empleado) | `empleado-horario-pendiente` (una línea por franja del cambio programado) | — |
 | `registro-comercio.html`, `agregar-comercio.html`, `comercio-corregir.html` y la vista "Editar horarios" | `leyenda-cruce-horario` (dentro de cada `fila-horario`, visible solo si el cierre es menor que la apertura) y `leyenda-cruce-franja-rapida` (bajo "Desde / Hasta" del horario fijo) | — |
+
+
+## Precio bloqueado, aviso de precio cambiado y reconfirmación, Fase 2 T3 entrega B (2026-10-22)
+
+| Pantalla | `data-testid` nuevos | `data-testid` que desaparecen |
+|---|---|---|
+| `comercio-producto-form.html` (edición, Dueño y Empleado) | `icono-precio-bloqueado` (candado a la derecha del campo precio; oculto salvo con el precio bloqueado) y `leyenda-precio-bloqueado` (texto "Se puede cambiar fuera de tu horario de atención" bajo el campo). El `409` de respaldo reutiliza `aviso-fijo` y `aviso-fijo-texto` | — |
+| `carrito.html` y `checkout.html` (paso 3) | `item-precio-unitario-{id}` (la línea "$X c/u" de cada ítem), `item-precio-anterior-{id}` (el precio viejo tachado, solo si cambió) e `item-precio-cambio-{id}` (el puntito y "Cambió el precio") | — |
+| `checkout.html` (paso 3) | `aviso-total-cambio` (el aviso arriba tras un `409 PRECIO_CAMBIO`) y `btn-confirmar-nuevo-total` (el botón "Confirmar con el nuevo total - $X"; reemplaza al `btn-confirmar-pedido` mientras los montos están actualizados) | `btn-confirmar-pedido` mientras dura el aviso (vuelve a existir si el Cliente recarga) |

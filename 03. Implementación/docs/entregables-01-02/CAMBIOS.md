@@ -782,3 +782,20 @@ Backend y pantallas. En el sistema: el Dueño y el Empleado pueden editar los ho
 | `requisitos-funcionales-empleado.md` | La edición de horarios deja de ser futura: el Empleado la tiene igual que el Dueño y con el comercio Suspendido no puede guardarla |
 | `Historias de Usuario - Comercio.md` | HU-CO01: el Dueño y el Empleado editan horarios; vigencia desde mañana y turnos que cruzan la medianoche |
 | `diccionario-de-datos.md` | Versión 1.23: `Horario` suma `vigente_desde` y `vigente_hasta` y el índice de vigencia (migración `V38`); `HistorialEdicionComercio` registra los horarios |
+
+
+## Fase 2, tramo T3: el precio no se cambia dentro del horario de atención, aviso de precio cambiado y total esperado (2026-10-22)
+
+Backend y pantallas. En el sistema: el precio de un producto no se puede cambiar mientras el comercio está dentro de uno de sus horarios de atención (vale para el Dueño y para el Empleado; el alta de un producto nuevo no tiene la restricción). En el formulario el campo precio aparece deshabilitado con un candado y la leyenda "Se puede cambiar fuera de tu horario de atención", y se habilita solo cuando termina el horario. En el carrito, si el precio de un producto cambió desde que el cliente lo agregó, se ve el precio anterior tachado, el nuevo y "Cambió el precio". Al confirmar el pedido, si el total cambió (por un precio o por el cargo por servicio) el pedido no se crea: el resumen se vuelve a mostrar con los montos nuevos y el botón "Confirmar con el nuevo total".
+
+| Archivo | Cambio |
+|---|---|
+| `requisitos-funcionales-comercio.md` | El precio de un producto no se cambia dentro del horario de atención; campo deshabilitado con candado y leyenda |
+| `requisitos-funcionales-dueño.md` | Sección nueva "Precios de los Productos" |
+| `requisitos-funcionales-empleado.md` | El Empleado tampoco cambia el precio dentro del horario de atención |
+| `requisitos-funcionales-cliente.md` | Aviso de precio cambiado en el carrito y reconfirmación del total al confirmar el pedido |
+| `Historias de Usuario - Comercio.md` | HU-CO04: precio bloqueado dentro del horario |
+| `Historias de Usuario - Dueño.md` | HU-D12 nueva: cambiar precios fuera del horario de atención |
+| `Historias de Usuario - Empleado.md` | HU-E03: el precio también está bloqueado dentro del horario |
+| `Historias de Usuario - Cliente.md` | HU-C09: aviso de precio cambiado; HU-C10: reconfirmación del total |
+| `diccionario-de-datos.md` | Versión 1.25: `ItemCarrito.precio_visto` (migración `V40`) |

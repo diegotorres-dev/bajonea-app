@@ -35,6 +35,7 @@
 - El carrito debe restringir la selección a productos de un único comercio por sesión. Intentar agregar un producto de otro comercio devuelve un error 409 solicitando vaciar el carrito primero.
 - El cliente debe poder modificar la cantidad de un ítem, eliminarlo individualmente o vaciar el carrito completo.
 - El sistema debe calcular y mostrar el subtotal del carrito en tiempo real, incluyendo el precio de los extras seleccionados en cada ítem.
+- Si el comercio cambia el precio de un producto que el cliente ya tiene en el carrito, el sistema cobra el precio vigente y lo avisa en esa línea: el precio que el cliente vio al agregarlo, tachado, el nuevo al lado y el texto "Cambió el precio". El subtotal, el cargo por servicio y el total del carrito ya muestran los valores nuevos. El aviso no se apaga al cambiar la cantidad del ítem; se va cuando el ítem sale del carrito o el pedido se paga.
 - El carrito debe vincularse a la sesión activa del cliente, pasando a estado inactivo al expirar la sesión o al inactivarse la cuenta.
 - El carrito solo se limpia automáticamente una vez confirmado el pago (transición del pedido a estado PENDIENTE_CONFIRMACION_COMERCIO), y solo si el carrito actual es del mismo comercio del pedido pagado. En caso de pago fallido o timeout de pago, el carrito permanece intacto.
 
@@ -47,6 +48,7 @@
 - El sistema debe validar, al momento de confirmar el pedido: que el comercio esté en estado APTO_VENTA (Aprobado y con la cuenta de MercadoPago de su Dueño vinculada), que esté dentro de su horario de atención, que todos los productos sigan activos, que se haya seleccionado al menos un extra en cada grupo obligatorio, y —en caso de domicilio— que el cliente tenga una dirección principal configurada.
 - El sistema debe registrar el pedido con todos sus ítems, precios al momento de la compra, comercio, modalidad de entrega, tarifa de servicio vigente al cliente y al comercio (ambas persistidas en el registro del pedido), y fecha.
 - El resumen del pedido debe mostrar: subtotal, cargo de servicio al cliente (valor vigente al momento del pedido) y total a pagar.
+- Al confirmar el pedido, el sistema envía el total que el cliente vio en el resumen. Si ese total ya no coincide con el que se cobraría (porque cambió el precio de algún producto o el cargo por servicio), no se crea el pedido: el resumen se vuelve a mostrar con los montos nuevos, un aviso "Los montos de tu pedido cambiaron. Revisá el nuevo total antes de pagar." (o "El cargo por servicio cambió…" si ningún precio cambió) y el botón "Confirmar con el nuevo total - $X"; recién con ese segundo paso se crea el pedido.
 - El cliente debe poder visualizar el historial completo de sus pedidos con su estado actual y detalle de cada uno.
 - El cliente puede cancelar su pedido según modalidad:
   - **Domicilio:** hasta el momento en que el comercio lo marca como EN_CAMINO (estados cancelables: PENDIENTE_CONFIRMACION_COMERCIO y EN_PREPARACION).
