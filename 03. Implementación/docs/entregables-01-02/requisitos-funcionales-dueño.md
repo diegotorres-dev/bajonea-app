@@ -260,6 +260,14 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
 
 ---
 
+## Resumen del Turno en el Panel
+
+- El panel de cada comercio muestra el turno en curso o, entre turnos, el último turno terminado, con su horario y un rótulo ("En curso", "Terminó", "Terminó ayer", "Sin turno por ahora"), y tres contadores: "Vendido en el turno" (el subtotal de los pedidos facturados del turno, sin descontar cargos), "Pedidos del turno" y "Pendientes" (todos los del comercio).
+- El Dueño puede desplegar, debajo de los contadores, la comisión de plataforma del turno y el neto del turno (el vendido menos la comisión). La comisión y el neto son exclusivos del Dueño: un Empleado ve el mismo resumen sin esos dos datos.
+- Un pedido pertenece al turno en el que se confirmó su pago (el turno que empezó el día anterior si el pago fue de madrugada y el turno cruza la medianoche); si el pago cayó fuera de toda franja, al último turno terminado de los 7 días anteriores. Editar los horarios después no cambia el turno de los pedidos ya pagados.
+
+---
+
 ## Permisos Exclusivos del Dueño
 
 Las siguientes acciones no son delegables a un Empleado, aunque este tenga acceso
@@ -271,6 +279,7 @@ Activo al comercio:
   edita la descripción y el teléfono, por una ruta aparte que rechaza cualquier otro campo; el
   Dueño también puede usarla.
 - Vincular o desvincular la cuenta de MercadoPago.
+- Ver la comisión y el neto del turno en el panel.
 - Invitar, reenviar y cancelar invitaciones, desactivar y reactivar Empleados, y ver el
   historial del equipo y la actividad del comercio.
 - Gestionar los enlaces a redes sociales del comercio.

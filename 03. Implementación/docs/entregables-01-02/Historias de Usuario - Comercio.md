@@ -132,9 +132,10 @@ Como Dueño o Empleado autorizado, veo la campana en el panel con el contador de
 ## HU-CO14: Ver Solo los Pedidos ya Pagados
 
 Como Dueño o Empleado autorizado, quiero ver únicamente los pedidos cuyo pago ya fue
-confirmado, con la fecha en que se pagaron y los contadores del día (pedidos de hoy,
-pendientes y facturado), para gestionar solo ventas reales y tener un resumen fiel de mi
-jornada.
+confirmado, con la fecha en que se pagaron y los contadores del turno (vendido, pedidos
+del turno y pendientes), para gestionar solo ventas reales y tener un resumen fiel de mi
+turno. El panel me dice si el turno está en curso o ya terminó, y se actualiza solo cuando
+termina. Como Dueño puedo desplegar además la comisión y el neto del turno.
 
 ## HU-CO15: Ver Quién Atendió un Pedido
 

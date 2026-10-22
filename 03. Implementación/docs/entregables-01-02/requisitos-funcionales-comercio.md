@@ -258,7 +258,7 @@ horario, también con el aviso de cuándo reabre.
   configurable); la espera aplica solo a este cierre, confirmar la entrega es inmediato.
   ENTREGADO queda reservado para entregas reales, así que la fuente de entrega
   COMERCIO_SIN_RETIRO deja de ser necesaria. El Cliente ve el pedido como "No retirado", el
-  pedido cuenta en el "facturado hoy" y el Cliente recibe la notificación T36 ("Tu pedido #12
+  pedido cuenta en el "Vendido en el turno" y el Cliente recibe la notificación T36 ("Tu pedido #12
   no fue retirado y el comercio lo cerró. Como ya estaba preparado, no hay devolución del
   pago."). Implementado en el tramo E3, bloque A4b (`PUT /api/v1/pedidos/comercio/{id}/no-retirado`,
   sexta acción de pedido delegable al Empleado): antes de la espera responde 409 con los
@@ -309,8 +309,11 @@ horario, también con el aviso de cuándo reabre.
 - Un Empleado no puede gestionar un pedido del que él mismo es el Cliente (aceptar, rechazar, despachar, entregar y anular responden `409` con el código `PEDIDO_PROPIO` y el mensaje "No podés gestionar tus propios pedidos"); el Dueño y cualquier otro Empleado sí. Cualquier persona del equipo puede actuar sobre un pedido que aceptó otra. La vista del Empleado marca su pedido con `esPedidoPropio` (ver `requisitos-funcionales-empleado.md`).
 - Cuando dos personas actúan a la vez sobre el mismo pedido (por ejemplo, aceptar y rechazar, o anular y despachar, o el Cliente cancelando mientras el comercio acepta), el sistema las atiende de a una: gana la primera, la segunda recibe un aviso de que el pedido ya fue resuelto, y solo la acción ganadora deja historial, aviso al cliente y reembolso. Lo mismo vale para los procesos automáticos (expiración, autoconfirmación) cuando coinciden con una acción de una persona.
 - El Dueño o un Empleado autorizado ve únicamente los pedidos que llegaron al comercio con el pago aprobado (los que pasaron por PENDIENTE_CONFIRMACION_COMERCIO). Un pedido que nunca llegó pagado no aparece en la lista, en el resumen ni en el detalle de pago, y sus acciones responden como recurso inexistente.
-- La fecha de un pedido para el comercio es la de la confirmación del pago, no la de su creación, y es la que define qué pedidos cuentan como "de hoy".
-- El panel muestra tres contadores del día: pedidos de hoy (los que llegaron pagados hoy, sin importar cómo terminaron), pendientes (los que están en PENDIENTE_CONFIRMACION_COMERCIO) y facturado hoy (suma del subtotal de los que llegaron pagados hoy y hoy están en EN_PREPARACION, EN_CAMINO, LISTO_PARA_RETIRAR, ENTREGADO o, desde el tramo E3, bloque A4b, NO_RETIRADO).
+- La fecha de un pedido para el comercio es la de la confirmación del pago, no la de su creación.
+- Cada pedido pertenece a un turno del comercio: el que contiene el instante en que se confirmó el pago o, si el pago cayó fuera de toda franja, el último turno terminado de los 7 días anteriores. Un pago de madrugada en un turno que cruza la medianoche pertenece al turno que empezó el día anterior. El turno de un pedido no cambia aunque después se editen los horarios.
+- El panel muestra el turno en curso y, entre turnos, el último turno terminado, con un rótulo que lo dice ("En curso · 20:00 a 02:00 (día siguiente)", "Terminó · 12:00 a 15:00", "Terminó ayer · 20:00 a 02:00 (día siguiente)"). Sin ningún turno dice "Sin turno por ahora". Muestra tres contadores: "Vendido en el turno" (suma del subtotal, sin descontar ningún cargo, de los pedidos del turno en EN_PREPARACION, EN_CAMINO, LISTO_PARA_RETIRAR, ENTREGADO o NO_RETIRADO), "Pedidos del turno" (los que llegaron pagados al turno, sin importar cómo terminaron) y "Pendientes" (todos los que están en PENDIENTE_CONFIRMACION_COMERCIO, sean o no del turno). Sin turno, "Vendido" y "Pedidos" se muestran con un guion y "Pendientes" con su cifra.
+- Solo el Dueño ve, debajo de los contadores y plegado por defecto ("Ver comisión y neto"), la comisión del turno (suma del cargo de servicio al comercio) y el neto del turno (el vendido menos la comisión). El Empleado no recibe ni ve esos dos datos.
+- El panel se actualiza solo cuando termina el turno que muestra.
 
 ---
 
@@ -341,4 +344,4 @@ horario, también con el aviso de cuándo reabre.
   cargo_servicio_comercio`. La cuenta de MercadoPago del Dueño titular del comercio
   recibe automáticamente: `subtotal - cargo_servicio_comercio`.
 - `marketplace_fee` es el campo que el sistema envía en la preferencia de Checkout Pro. Es un monto absoluto en pesos, ya calculado, que MercadoPago transfiere a la cuenta dueña de la aplicación; no admite fórmulas ni desglose. La entrada de la respuesta de MercadoPago que informa esa comisión se llama `application_fee` dentro de `fee_details`: es solo el nombre con que MercadoPago la devuelve y no implica usar el mecanismo `application_fee` de la API de Pagos.
-- El panel del comercio debe mostrar en el detalle de cada pedido el cargo de servicio al comercio y, como total, lo que el comercio efectivamente factura (`subtotal - cargo_servicio_comercio`), no lo que pagó el cliente. El indicador "Facturado hoy" del panel se calcula con el mismo criterio neto.
+- El panel del comercio debe mostrar en el detalle de cada pedido el cargo de servicio al comercio y, como total, lo que el comercio efectivamente factura (`subtotal - cargo_servicio_comercio`), no lo que pagó el cliente. En el panel, el neto del turno se calcula con el mismo criterio neto y se ve solo en el desglose del Dueño.

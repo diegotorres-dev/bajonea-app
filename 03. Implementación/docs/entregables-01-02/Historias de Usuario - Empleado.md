@@ -60,7 +60,7 @@ del comercio (pedido nuevo, cancelaciones, vencimientos), con mi propia copia de
 necesito para atender al cliente (ítems, subtotal, el cargo por servicio que paga el
 cliente, total pagado, motivo de rechazo o anulación y el estado del reembolso en
 términos simples), pero no el cargo de servicio del comercio, la comisión ni los datos
-de MercadoPago.
+de MercadoPago. En el panel veo cuánto se vendió en el turno en curso (o en el último terminado), cuántos pedidos tuvo y cuántos están pendientes, sin la comisión ni el neto, que son del Dueño.
 
 ## HU-E04: Operar dentro de mis Permisos
 

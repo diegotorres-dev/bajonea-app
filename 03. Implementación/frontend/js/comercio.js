@@ -22,6 +22,7 @@ import { abrirPanelComercios, enlazarMantenerApretado, prepararPaginaComercio } 
 import { abrirHojaCambiarCuenta } from './selector-contexto.js';
 import { abrirHojaRenuncia } from './renuncia-empleado.js';
 import { montarSwitchCierre } from './cierre-comercio.js';
+import { normalizarResumenTurno, programarRecargaAlFinDelTurno, renderResumenTurno } from './turno-resumen.js';
 import { abrirEquipoComercio, enlazarEquipoComercio } from './equipo-comercio.js';
 import { initHorarios } from './comercio-form.js';
 import { ordenarFranjas, recortarHora, textoFranja, textoRango } from './horarios.js';
@@ -82,15 +83,6 @@ function normalizarPedido(pedido) {
     ? { clave: pedido.reembolsoEstado, monto: pedido.reembolsoMonto }
     : null;
   return pedido;
-}
-
-function normalizarResumen(resumen) {
-  return {
-    ventasHoy: resumen.totalFacturadoHoy,
-    etiquetaVentas: esContextoEmpleado() ? 'Ventas de hoy' : 'Facturado hoy',
-    cantidadPedidosHoy: resumen.cantidadPedidosHoy,
-    cantidadPendientes: resumen.cantidadPendientes,
-  };
 }
 
 function textoReembolso(reembolso) {
@@ -484,28 +476,6 @@ function renderHeaderDashboard(container) {
   container.appendChild(bar);
 }
 
-function renderMetricas(container, resumen) {
-  container.innerHTML = '';
-  container.className = 'stats-bar';
-
-  const metricas = [
-    { valor: formatearPrecio(resumen.ventasHoy), label: resumen.etiquetaVentas },
-    { valor: String(resumen.cantidadPedidosHoy), label: 'Pedidos hoy' },
-    { valor: String(resumen.cantidadPendientes), label: 'Pendientes' },
-  ];
-
-  metricas.forEach((metrica) => {
-    const card = crear('div', 'stats-bar__col');
-    const valor = crear('p', 'stats-bar__value');
-    valor.textContent = metrica.valor;
-    card.appendChild(valor);
-    const label = crear('p', 'stats-bar__label');
-    label.textContent = metrica.label;
-    card.appendChild(label);
-    container.appendChild(card);
-  });
-}
-
 const AVISO_COMERCIO_NO_OPERATIVO = {
   SUSPENDIDO: 'Comercio suspendido. No se aceptan pedidos nuevos.',
   CERRADO_TEMPORALMENTE: 'Comercio cerrado temporalmente. No se aceptan pedidos nuevos.',
@@ -669,11 +639,13 @@ export async function initComercioDashboard() {
 
   async function cargarResumenYPedidos() {
     const [resumen, pedidos] = await Promise.all([
-      apiFetch('/pedidos/comercio/resumen-hoy'),
+      apiFetch('/pedidos/comercio/resumen-turno'),
       apiFetch('/pedidos/comercio'),
     ]);
     pedidos.forEach(normalizarPedido);
-    renderMetricas(document.getElementById('metrics-row'), normalizarResumen(resumen));
+    const resumenTurno = normalizarResumenTurno(resumen);
+    renderResumenTurno(document.getElementById('metrics-row'), resumenTurno);
+    programarRecargaAlFinDelTurno(resumenTurno, cargarResumenYPedidos);
     renderPedidosActivos(document.getElementById('pedidos-activos-list'), document.getElementById('badge-pedidos-activos'), pedidos);
   }
 

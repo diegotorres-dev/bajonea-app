@@ -3379,6 +3379,115 @@ img {
   color: var(--color-text-muted);
 }
 
+.resumen-turno {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.turno-rotulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--color-text);
+}
+
+.turno-rotulo__punto {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.turno-rotulo__punto--en-curso {
+  background: var(--color-success);
+}
+
+.turno-rotulo__punto--inactivo {
+  background: var(--color-text-muted);
+}
+
+.turno-rotulo__texto {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.desglose-turno {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.desglose-turno__toggle {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.desglose-turno__chevron {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  transition: transform 0.15s;
+}
+
+.desglose-turno__chevron svg {
+  width: 18px;
+  height: 18px;
+}
+
+.desglose-turno__toggle--abierto .desglose-turno__chevron {
+  transform: rotate(180deg);
+}
+
+.desglose-turno__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.desglose-turno__panel[hidden] {
+  display: none;
+}
+
+.desglose-turno__linea {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.desglose-turno__etiqueta {
+  color: var(--color-text-muted);
+}
+
+.desglose-turno__valor {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
 .notification-item__fecha {
   font-size: 12px;
   color: var(--color-text-placeholder);

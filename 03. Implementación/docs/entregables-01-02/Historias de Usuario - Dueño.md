@@ -154,3 +154,7 @@ informativa.
 
 Como Dueño con un comercio suspendido, quiero poder enviar un mensaje al administrador
 explicando mi situación, para solicitar la revisión de la suspensión de ese comercio.
+
+## HU-D11: Ver Cuánto Vendí en el Turno
+
+Como Dueño, quiero ver en el panel de cada comercio cuánto se vendió en el turno en curso (o en el último turno terminado, aclarando que ya terminó), cuántos pedidos tuvo y cuántos están pendientes, y poder desplegar la comisión de plataforma y el neto del turno, para saber cuánto factura el comercio y cuánto me queda sin tener que sumar a mano. Un turno que cruza la medianoche cuenta como un solo turno, y el panel me avisa "Sin turno por ahora" cuando no hay ninguno.

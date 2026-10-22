@@ -427,7 +427,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
   });
 
   test.describe('Panel del Empleado', () => {
-    test('el panel muestra el distintivo "Empleado", "Ventas de hoy", los contadores y los pedidos activos, con la campana y el interruptor de cierre', async ({ page, request }) => {
+    test('el panel muestra el distintivo "Empleado", "Vendido en el turno", los contadores y los pedidos activos, con la campana y el interruptor de cierre', async ({ page, request }) => {
       await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
 
       await page.goto('/comercio-dashboard.html');
@@ -435,10 +435,12 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await expect(page.getByTestId('franja-comercio-nombre')).toHaveText(duenoA.nombre);
       await expect(page.getByTestId('franja-comercio-insignia-empleado')).toHaveText('Empleado');
       const metricas = page.getByTestId('metricas-dashboard');
-      await expect(metricas).toContainText('Ventas de hoy');
-      await expect(metricas).toContainText('Pedidos hoy');
+      await expect(metricas).toContainText('Vendido en el turno');
+      await expect(metricas).toContainText('Pedidos del turno');
       await expect(metricas).toContainText('Pendientes');
       await expect(metricas).not.toContainText('Facturado hoy');
+      await expect(metricas).not.toContainText('Ventas de hoy');
+      await expect(page.getByTestId('desglose-turno-toggle')).toHaveCount(0);
       await expect(page.getByTestId('btn-notificaciones')).toBeVisible();
       await expect(page.getByTestId('tarjeta-cierre-comercio')).toBeVisible();
       await expect(page.getByTestId(`pedido-item-${idsPedido.aceptado}`)).toBeVisible();
@@ -448,18 +450,18 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await expect(page.getByTestId('btn-nav-perfil')).toBeVisible();
     });
 
-    test('"Ventas de hoy" muestra el subtotal bruto de los pedidos facturados hoy, igual que el resumen del servidor', async ({ page, request }) => {
+    test('"Vendido en el turno" muestra el subtotal bruto del turno, igual que el resumen del servidor', async ({ page, request }) => {
       const sesion = await abrirComoEmpleado(page, request, empleadoDos, duenoA.comercioId);
-      const resumen = await apiConHeaders(request, 'GET', '/pedidos/comercio/resumen-hoy', sesion.token, { [HEADER]: String(duenoA.comercioId) });
+      const resumen = await apiConHeaders(request, 'GET', '/pedidos/comercio/resumen-turno', sesion.token, { [HEADER]: String(duenoA.comercioId) });
       expect(resumen.status).toBe(200);
 
       await page.goto('/comercio-dashboard.html');
 
-      await expect(page.getByTestId('metricas-dashboard')).toContainText(formatearPrecio(resumen.body.data.totalFacturadoHoy));
-      await expect(page.getByTestId('metricas-dashboard')).toContainText(String(resumen.body.data.cantidadPedidosHoy));
+      await expect(page.getByTestId('metricas-dashboard')).toContainText(formatearPrecio(resumen.body.data.vendido));
+      await expect(page.getByTestId('metrica-pedidos')).toContainText(String(resumen.body.data.cantidadPedidos));
     });
 
-    test('el Dueño sigue viendo "Facturado hoy", la campana y el interruptor de cierre', async ({ page, request }) => {
+    test('el Dueño ve "Vendido en el turno" con el desglose de comisión y neto, la campana y el interruptor de cierre', async ({ page, request }) => {
       const sesion = await login(request, duenoA.nombreUsuario, duenoA.password);
       await abrirComoUsuarioConContexto(page, sesion);
       await page.addInitScript(([id, usuarioId]) => {
@@ -468,8 +470,9 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
 
       await page.goto('/comercio-dashboard.html');
 
-      await expect(page.getByTestId('metricas-dashboard')).toContainText('Facturado hoy');
-      await expect(page.getByTestId('metricas-dashboard')).not.toContainText('Ventas de hoy');
+      await expect(page.getByTestId('metricas-dashboard')).toContainText('Vendido en el turno');
+      await expect(page.getByTestId('metricas-dashboard')).not.toContainText('Facturado hoy');
+      await expect(page.getByTestId('desglose-turno-toggle')).toBeVisible();
       await expect(page.getByTestId('btn-notificaciones')).toBeVisible();
       await expect(page.getByTestId('tarjeta-cierre-comercio')).toBeVisible();
       await expect(page.getByTestId('franja-comercio-insignia-empleado')).toHaveCount(0);
@@ -891,7 +894,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
         }
       });
 
-      await provocarPerdidaPorApi(page, request, empleado, perdido, deteccion, ['/productos', '/pedidos/comercio', '/comercios/perfil', '/pedidos/comercio/resumen-hoy']);
+      await provocarPerdidaPorApi(page, request, empleado, perdido, deteccion, ['/productos', '/pedidos/comercio', '/comercios/perfil', '/pedidos/comercio/resumen-turno']);
 
       await esperarHoja(page);
       await page.waitForTimeout(800);
@@ -1085,7 +1088,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await expect(page.getByTestId('btn-editar-datos')).toBeEnabled();
 
       expect(cabeceras['/api/v1/pedidos/comercio']).toBe(String(duenoA.comercioId));
-      expect(cabeceras['/api/v1/pedidos/comercio/resumen-hoy']).toBe(String(duenoA.comercioId));
+      expect(cabeceras['/api/v1/pedidos/comercio/resumen-turno']).toBe(String(duenoA.comercioId));
       expect(cabeceras['/api/v1/comercios/perfil']).toBe(String(duenoA.comercioId));
       expect(cabeceras['/api/v1/empleados/mis-comercios']).toBeUndefined();
       expect(cabeceras['/api/v1/clientes/perfil']).toBeUndefined();
@@ -1127,7 +1130,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
 
       await page.waitForURL('**/comercio-dashboard.html');
       await expect(page.getByTestId('franja-comercio')).toContainText('Cambiar');
-      await expect(page.getByTestId('metricas-dashboard')).toContainText('Facturado hoy');
+      await expect(page.getByTestId('metricas-dashboard')).toContainText('Vendido en el turno');
       expect(await contextoEnSesion(page)).toBeNull();
       expect(cabeceras.length).toBeGreaterThan(0);
       expect(new Set(cabeceras)).toEqual(new Set([String(duenoA.comercioId)]));
