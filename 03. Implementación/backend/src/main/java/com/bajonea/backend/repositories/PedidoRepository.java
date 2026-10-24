@@ -143,6 +143,47 @@ public interface PedidoRepository extends JpaRepository<Pedido, Integer> {
     AgregadoDeTurno agregarTurno(@Param("comercioId") Integer comercioId, @Param("turnoFecha") LocalDate turnoFecha,
             @Param("turnoHorarioId") Integer turnoHorarioId, @Param("facturables") Collection<EstadoPedido> facturables);
 
+    interface FilaEstadisticaTurno {
+        java.sql.Date getTurnoFecha();
+
+        Integer getTurnoHorarioId();
+
+        String getEstado();
+
+        Long getCantidad();
+
+        BigDecimal getSubtotal();
+
+        BigDecimal getComision();
+    }
+
+    interface FilaEstadisticaSinTurno {
+        java.sql.Date getDia();
+
+        String getEstado();
+
+        Long getCantidad();
+
+        BigDecimal getSubtotal();
+
+        BigDecimal getComision();
+    }
+
+    @Query(value = "SELECT turno_fecha AS turnoFecha, turno_horario_id AS turnoHorarioId, estado AS estado, "
+            + "COUNT(*) AS cantidad, SUM(subtotal) AS subtotal, SUM(cargo_servicio_comercio) AS comision "
+            + "FROM pedido WHERE comercio_id = :comercioId AND turno_fecha BETWEEN :desde AND :hasta "
+            + "GROUP BY turno_fecha, turno_horario_id, estado", nativeQuery = true)
+    List<FilaEstadisticaTurno> estadisticasPorTurno(@Param("comercioId") Integer comercioId, @Param("desde") LocalDate desde,
+            @Param("hasta") LocalDate hasta);
+
+    @Query(value = "SELECT DATE(fecha_pago_confirmado) AS dia, estado AS estado, "
+            + "COUNT(*) AS cantidad, SUM(subtotal) AS subtotal, SUM(cargo_servicio_comercio) AS comision "
+            + "FROM pedido WHERE comercio_id = :comercioId AND turno_fecha IS NULL "
+            + "AND fecha_pago_confirmado >= :desde AND fecha_pago_confirmado < :hastaExclusivo "
+            + "GROUP BY DATE(fecha_pago_confirmado), estado", nativeQuery = true)
+    List<FilaEstadisticaSinTurno> estadisticasSinTurno(@Param("comercioId") Integer comercioId,
+            @Param("desde") LocalDateTime desde, @Param("hastaExclusivo") LocalDateTime hastaExclusivo);
+
     long countByComercioIdAndEstado(Integer comercioId, EstadoPedido estado);
 
     @Query("select count(p) > 0 from Pedido p where p.comercio.id = :comercioId and p.estado = :estado "

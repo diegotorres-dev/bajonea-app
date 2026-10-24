@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ResumenTurnoService {
 
-    static final List<EstadoPedido> ESTADOS_FACTURADOS = List.of(
+    public static final List<EstadoPedido> ESTADOS_FACTURADOS = List.of(
             EstadoPedido.EN_PREPARACION, EstadoPedido.EN_CAMINO, EstadoPedido.LISTO_PARA_RETIRAR, EstadoPedido.ENTREGADO,
             EstadoPedido.NO_RETIRADO);
 
