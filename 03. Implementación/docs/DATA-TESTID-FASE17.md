@@ -293,3 +293,11 @@ No se agregaron `data-testid`: los tests usan el selector `.toast` que ya exist�
 | `comercio-producto-form.html` (edición, Dueño y Empleado) | `icono-precio-bloqueado` (candado a la derecha del campo precio; oculto salvo con el precio bloqueado) y `leyenda-precio-bloqueado` (texto "Se puede cambiar fuera de tu horario de atención" bajo el campo). El `409` de respaldo reutiliza `aviso-fijo` y `aviso-fijo-texto` | — |
 | `carrito.html` y `checkout.html` (paso 3) | `item-precio-unitario-{id}` (la línea "$X c/u" de cada ítem), `item-precio-anterior-{id}` (el precio viejo tachado, solo si cambió) e `item-precio-cambio-{id}` (el puntito y "Cambió el precio") | — |
 | `checkout.html` (paso 3) | `aviso-total-cambio` (el aviso arriba tras un `409 PRECIO_CAMBIO`) y `btn-confirmar-nuevo-total` (el botón "Confirmar con el nuevo total - $X"; reemplaza al `btn-confirmar-pedido` mientras los montos están actualizados) | `btn-confirmar-pedido` mientras dura el aviso (vuelve a existir si el Cliente recarga) |
+
+
+## Estadísticas del Dueño, Fase 2 T5 entrega B (2026-10-24)
+
+| Pantalla | `data-testid` nuevos | `data-testid` que desaparecen |
+|---|---|---|
+| `comercio-dashboard.html` | `btn-estadisticas` (el enlace "Ver estadísticas" debajo de `metricas-dashboard`; solo existe para el Dueño, el Empleado no lo tiene ni oculto) | — |
+| `comercio-estadisticas.html` | `estadisticas-rango` (contenedor de los chips), `estadisticas-rango-7`, `estadisticas-rango-30`, `estadisticas-periodo` ("Del 25/09 al 24/10"), `estadisticas-contenido`, `estadisticas-esqueleto`, `estadisticas-cifras`, `estadisticas-vendido`, `estadisticas-comision`, `estadisticas-neto`, `estadisticas-ticket`, `estadisticas-grafico`, `estadisticas-barra` (una por día, con `data-fecha` `AAAA-MM-DD`), `estadisticas-eje-inicio`, `estadisticas-eje-fin`, `estadisticas-detalle`, `estadisticas-detalle-pista`, `estadisticas-detalle-fecha`, `estadisticas-detalle-vendido`, `estadisticas-detalle-pedidos`, `estadisticas-detalle-vacio`, `estadisticas-detalle-turnos`, `estadisticas-turno` (una por turno del día), `estadisticas-resultados`, `estadisticas-resultado` (una por categoría, con `data-categoria`), `estadisticas-vacio`, `estadisticas-vacio-texto`, `estadisticas-ver-30`, `estadisticas-error`, `estadisticas-reintentar` | — |

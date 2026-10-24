@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Estadísticas — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <div id="top-bar-slot"></div>
+  <div id="franja-comercio-slot"></div>
+  <main class="app-main">
+    <div class="screen-body screen-body--tight">
+      <div id="estadisticas-rango-slot" data-testid="estadisticas-rango"></div>
+      <p id="estadisticas-periodo" class="estadisticas-periodo" data-testid="estadisticas-periodo"></p>
+      <div id="estadisticas-contenido" data-testid="estadisticas-contenido"></div>
+    </div>
+  </main>
+  <div id="bottom-nav-slot"></div>
+</div>
+<script type="module">
+import { initComercioEstadisticas } from './js/estadisticas.js';
+initComercioEstadisticas();
+</script>
+</body>
+</html>

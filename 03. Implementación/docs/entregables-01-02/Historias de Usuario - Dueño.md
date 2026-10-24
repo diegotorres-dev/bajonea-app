@@ -175,3 +175,17 @@ Como Dueño, quiero recibir por email, al terminar cada turno de mis comercios, 
 - Si el envío falla se reintenta a los 10, 30, 60 y 60 minutos; tras 5 intentos fallidos queda registrado como no enviado.
 - No recibo el email si mi cuenta está bloqueada, suspendida o inactiva.
 - Un Empleado no recibe este email.
+
+
+## HU-D14: Ver las Estadísticas de mi Comercio
+
+Como Dueño, quiero ver las estadísticas de mi comercio de los últimos 7 o 30 días, con lo vendido, la comisión, el neto y el ticket promedio, un gráfico de lo vendido por día y cómo terminaron mis pedidos, para entender cómo viene el negocio. Quiero tocar un día del gráfico y ver cuánto vendí en cada uno de sus turnos.
+
+**Criterios de aceptación:**
+- Entro desde el enlace "Ver estadísticas" que está debajo de las métricas del panel; un Empleado no ve ese enlace.
+- La pantalla abre con los últimos 30 días y puedo cambiar a 7 días.
+- Veo cuatro cifras: vendido, comisión, neto y ticket promedio, que coinciden con lo que calcula el sistema.
+- El gráfico tiene una barra por día; cada barra se toca o se elige con el teclado y muestra la fecha, lo vendido, los pedidos y sus turnos.
+- La lista de resultados muestra entregados, no retirados, rechazados, cancelados, anulados, sin respuesta y en curso.
+- Si no hubo pedidos, la pantalla me lo dice; con 7 días me ofrece ver los últimos 30 solo si hubo pedidos en ellos.
+- Las cifras son del comercio que tengo abierto, nunca de todos mis comercios, y se calculan con el estado actual de los pedidos (pueden diferir del email de cierre del turno).

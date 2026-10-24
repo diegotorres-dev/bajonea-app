@@ -18,7 +18,7 @@ export const TIPO_CONTEXTO = Object.freeze({
   ADMINISTRADOR: 'ADMINISTRADOR',
 });
 const HEADER_COMERCIO_ID = 'X-Comercio-Id';
-const RUTAS_DEL_DUENO = /^\/(comercios\/(perfil|redes-sociales|cerrar|abrir|equipo)|productos|pedidos\/comercio|notificaciones)(?=[/?]|$)/;
+const RUTAS_DEL_DUENO = /^\/(comercios\/(perfil|redes-sociales|cerrar|abrir|equipo|estadisticas)|productos|pedidos\/comercio|notificaciones)(?=[/?]|$)/;
 const RUTAS_DEL_DUENO_SIN_HEADER = /^\/notificaciones\/comercio\//;
 const REQUEST_TIMEOUT_MS = 15000;
 

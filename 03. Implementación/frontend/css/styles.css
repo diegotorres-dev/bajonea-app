@@ -6172,3 +6172,280 @@ button.panel-comercios__fila:focus-visible {
   text-align: center;
   color: var(--color-text-muted);
 }
+
+.enlace-estadisticas {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.enlace-estadisticas__chevron,
+.enlace-estadisticas__chevron svg {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+}
+
+.estadisticas-rango {
+  padding: 4px 0 8px;
+}
+
+.estadisticas-rango .chip {
+  height: 44px;
+  padding: 0 20px;
+  font-size: 14px;
+}
+
+.estadisticas-periodo {
+  padding: 0 0 12px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+#estadisticas-contenido {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.estadisticas-cifras {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.estadisticas-cifra {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 14px 12px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.estadisticas-cifra__valor {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.estadisticas-cifra__etiqueta {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.estadisticas-seccion {
+  margin-top: 12px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.estadisticas-grafico-bloque {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.estadisticas-grafico {
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+  height: 160px;
+  padding: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.estadisticas-barra {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 1px;
+  border: none;
+  border-radius: 4px 4px 0 0;
+  background: none;
+  cursor: pointer;
+}
+
+.estadisticas-barra:hover {
+  background: var(--color-surface-alt);
+}
+
+.estadisticas-barra:focus-visible {
+  outline: 2px solid var(--color-text);
+  outline-offset: 1px;
+}
+
+.estadisticas-barra[aria-pressed='true'] {
+  background: var(--color-primary-soft);
+}
+
+.estadisticas-barra__relleno {
+  display: block;
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  background: var(--color-primary);
+}
+
+.estadisticas-barra[aria-pressed='true'] .estadisticas-barra__relleno {
+  background: var(--color-primary-dark);
+}
+
+.estadisticas-barra__relleno--vacia {
+  height: 2px;
+  background: var(--color-border);
+}
+
+.estadisticas-eje {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.estadisticas-nota {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.estadisticas-detalle {
+  padding: 14px 16px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.estadisticas-detalle__pista,
+.estadisticas-detalle__texto {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.estadisticas-detalle__titulo {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.estadisticas-detalle__resumen {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.estadisticas-turnos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 8px 0 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.estadisticas-turnos__fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.estadisticas-turnos__nombre {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.estadisticas-turnos__monto {
+  flex-shrink: 0;
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+.estadisticas-resultados {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.estadisticas-resultados__fila {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  font-size: 14px;
+}
+
+.estadisticas-resultados__fila + .estadisticas-resultados__fila {
+  border-top: 1px solid var(--color-border);
+}
+
+.estadisticas-resultados__fila--cero {
+  color: var(--color-text-muted);
+}
+
+.estadisticas-resultados__cantidad {
+  font-weight: 600;
+}
+
+.estadisticas-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.estadisticas-vacio__texto {
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.estadisticas-error {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.estadisticas-esqueleto {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.estadisticas-esqueleto__cifra {
+  height: 70px;
+}
+
+.estadisticas-esqueleto__grafico {
+  height: 160px;
+}
+
+.estadisticas-esqueleto__lista {
+  height: 120px;
+}

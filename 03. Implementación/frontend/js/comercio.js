@@ -4,7 +4,7 @@ import { logout, construirTelefono, resolverHomePorRol, LABELS_TIPO_SOCIEDAD, LA
 import { resumenHorarioHoy, renderTopBar, showToast, pintarAvatarComercio, renderPedidoEstadoHeader, manejarBloqueoPorCambioPassword, crearBloqueMotivoRechazo } from './catalogo.js';
 import { SOPORTE_CONTACTO_URL } from './config.js';
 import { horaConDiaDe, horaMinutoDe, milisegundosHasta } from './fechas.js';
-import { limpiarAvisoFijo, mostrarAvisoFijo, bindNombreComercio, MENSAJE_NOMBRE_COMERCIO_EN_USO } from './form-utils.js';
+import { crearSvg, limpiarAvisoFijo, mostrarAvisoFijo, bindNombreComercio, MENSAJE_NOMBRE_COMERCIO_EN_USO } from './form-utils.js';
 import {
   activarComercio,
   contarNotificacionesNoLeidasActivo,
@@ -593,6 +593,19 @@ function renderPedidosActivos(listContainer, badgeContainer, pedidos) {
   listContainer.appendChild(list);
 }
 
+function montarEnlaceEstadisticas(despuesDe) {
+  const texto = crear('span');
+  texto.textContent = 'Ver estadísticas';
+  const chevron = crear('span', 'enlace-estadisticas__chevron');
+  chevron.setAttribute('aria-hidden', 'true');
+  chevron.appendChild(crearSvg([['polyline', { points: '9 6 15 12 9 18' }]], { 'aria-hidden': 'true' }));
+  const enlace = crear('a', 'enlace-estadisticas');
+  enlace.href = 'comercio-estadisticas.html';
+  enlace.setAttribute('data-testid', 'btn-estadisticas');
+  enlace.append(texto, chevron);
+  despuesDe.insertAdjacentElement('afterend', enlace);
+}
+
 export async function initComercioDashboard() {
   if (!(await exigirContextoComercio())) {
     return;
@@ -628,6 +641,10 @@ export async function initComercioDashboard() {
   }
   pintarBannerEstado();
   suscribirComercios(pintarBannerEstado);
+
+  if (esContextoDueno()) {
+    montarEnlaceEstadisticas(document.getElementById('metrics-row'));
+  }
 
   const nombreCorto = comercio.nombre;
   document.getElementById('saludo-titulo').textContent = `Hola, ${nombreCorto} 👋`;

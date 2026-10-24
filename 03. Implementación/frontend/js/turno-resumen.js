@@ -21,7 +21,7 @@ function crear(tag, className) {
   return node;
 }
 
-function formatearPrecio(valor) {
+export function formatearPrecio(valor) {
   const entero = Math.round(Number(valor));
   return `$${entero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.')}`;
 }

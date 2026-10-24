@@ -37,6 +37,17 @@ export function diaDeAyerEnZonaComercio(milisegundos = Date.now()) {
   return ayer.toISOString().slice(0, 10);
 }
 
+export function sumarDias(dia, cantidad) {
+  const [anio, mes, diaDelMes] = String(dia).split('-').map(Number);
+  return new Date(Date.UTC(anio, mes - 1, diaDelMes + cantidad)).toISOString().slice(0, 10);
+}
+
+export function diaDeLaSemanaDe(dia) {
+  const [anio, mes, diaDelMes] = String(dia).split('-').map(Number);
+  const nombre = new Date(Date.UTC(anio, mes - 1, diaDelMes)).toLocaleDateString('es-AR', { weekday: 'long', timeZone: 'UTC' });
+  return nombre.charAt(0).toUpperCase() + nombre.slice(1);
+}
+
 export function diaDe(fechaHoraDelServidor) {
   return String(fechaHoraDelServidor).slice(0, 10);
 }

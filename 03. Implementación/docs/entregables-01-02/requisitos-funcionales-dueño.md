@@ -282,6 +282,19 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
 
 ---
 
+## Estadísticas del Comercio
+
+- El Dueño ve las estadísticas de un comercio desde el panel, con el enlace "Ver estadísticas" debajo de la barra de métricas del turno. Es exclusivo del Dueño: el Empleado no ve el enlace ni puede abrir la pantalla.
+- Las estadísticas son de un solo comercio, el que el Dueño tiene abierto; nunca un total de todos sus comercios.
+- La pantalla tiene dos rangos, los últimos 7 días y los últimos 30 días (30 por defecto), y muestra cuatro cifras: lo vendido, la comisión de plataforma, el neto y el ticket promedio (lo vendido dividido por los pedidos facturados).
+- Un gráfico de barras muestra lo vendido en cada día del rango, con la fecha en los extremos. El Dueño toca una barra, o la elige con el teclado, y ve el detalle de ese día: la fecha, lo vendido, los pedidos y, debajo, cada uno de sus turnos con lo vendido y los pedidos (los pedidos pagados sin turno aparecen como "Sin turno asignado" y los turnos que cruzan la medianoche con "(día siguiente)").
+- Cada pedido cuenta en el día en que abrió su turno, igual que el panel y el email de cierre.
+- Debajo del gráfico, una lista muestra cómo terminaron los pedidos del rango: entregados, no retirados, rechazados, cancelados, anulados, sin respuesta y en curso.
+- Si no hubo pedidos en el rango, las cifras muestran un guion y la pantalla dice "No hubo pedidos en los últimos 7 días." (o 30). En el rango de 7 días ofrece el botón "Ver los últimos 30 días" solo si en 30 días sí hubo pedidos.
+- Las estadísticas son vivas: se calculan con el estado actual de los pedidos. Si un pedido en preparación se anula después, lo vendido baja. El email de cierre de turno es una foto del momento del cierre y puede diferir del número actual del mismo turno.
+
+---
+
 ## Precios de los Productos
 
 - El precio de un producto no se puede cambiar mientras el comercio está dentro de uno de sus horarios de atención (aunque el comercio esté cerrado a mano o cerrado temporalmente: cuenta el horario, no el estado). Las demás partes del producto (nombre, descripción, categoría, tags, fotos, estado) se siguen editando con normalidad, y el alta de un producto nuevo con su precio no tiene restricción. Un comercio sin horarios cargados no tiene esta restricción.
@@ -296,6 +309,7 @@ Las siguientes acciones no son delegables a un Empleado, aunque este tenga acces
 Activo al comercio:
 
 - Editar los datos fiscales y de persona jurídica.
+- Ver las estadísticas del comercio (ventas, comisión, neto y resultados de los pedidos).
 - Cambiar el nombre, la foto, la dirección y el tipo de comercio y las
   modalidades de entrega (la edición completa del perfil). De todo el perfil, el Empleado solo
   edita la descripción y el teléfono, por una ruta aparte que rechaza cualquier otro campo; el
