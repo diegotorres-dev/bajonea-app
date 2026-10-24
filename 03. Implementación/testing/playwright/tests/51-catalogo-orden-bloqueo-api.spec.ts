@@ -149,15 +149,22 @@ test.describe('Rol Empleado, E3 bloque A5b (API): orden único de bloqueo del ca
   });
 
   test('reordenar o cambiar la URL de una imagen que otro elimina a la vez da 200 o 404, nunca 5xx, y queda una sola principal', async ({ request }) => {
+    let cloudName = '';
     for (let ronda = 0; ronda < 6; ronda++) {
       const { productoId, imagenIds } = await productoNuevo(request, 3);
       const [a, b] = imagenIds;
       const base = `/productos/${productoId}/imagenes`;
+      if (!cloudName) {
+        const firma = await como(request, dueno.token, 'POST', `/productos/${productoId}/cloudinary/firma`, {});
+        expect(firma.status, JSON.stringify(firma.body)).toBe(200);
+        cloudName = firma.body.data.cloudName as string;
+      }
+      const urlDelProducto = `https://res.cloudinary.com/${cloudName}/image/upload/v1/productos/${comercioId}/${productoId}/orden-${sufijoUnico()}.png`;
 
       const respuestas = await Promise.all([
         como(request, dueno.token, 'DELETE', `${base}/${b}`),
         como(request, empleadoToken, 'PATCH', `${base}/${b}/orden`, { orden: 5 }),
-        como(request, empleadoToken, 'PATCH', `${base}/${b}/url`, { url: URL_IMAGEN }),
+        como(request, empleadoToken, 'PATCH', `${base}/${b}/url`, { url: urlDelProducto }),
         como(request, empleadoToken, 'DELETE', `${base}/${a}`),
         como(request, dueno.token, 'PATCH', `${base}/${a}/orden`, { orden: 4 }),
       ]);
