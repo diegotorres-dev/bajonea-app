@@ -315,6 +315,7 @@ horario, también con el aviso de cuándo reabre.
 - El panel muestra el turno en curso y, entre turnos, el último turno terminado, con un rótulo que lo dice ("En curso · 20:00 a 02:00 (día siguiente)", "Terminó · 12:00 a 15:00", "Terminó ayer · 20:00 a 02:00 (día siguiente)"). Sin ningún turno dice "Sin turno por ahora". Muestra tres contadores: "Vendido en el turno" (suma del subtotal, sin descontar ningún cargo, de los pedidos del turno en EN_PREPARACION, EN_CAMINO, LISTO_PARA_RETIRAR, ENTREGADO o NO_RETIRADO), "Pedidos del turno" (los que llegaron pagados al turno, sin importar cómo terminaron) y "Pendientes" (todos los que están en PENDIENTE_CONFIRMACION_COMERCIO, sean o no del turno). Sin turno, "Vendido" y "Pedidos" se muestran con un guion y "Pendientes" con su cifra.
 - Solo el Dueño ve, debajo de los contadores y plegado por defecto ("Ver comisión y neto"), la comisión del turno (suma del cargo de servicio al comercio) y el neto del turno (el vendido menos la comisión). El Empleado no recibe ni ve esos dos datos.
 - El panel se actualiza solo cuando termina el turno que muestra.
+- Al terminar cada turno el Dueño recibe por email un resumen con las cifras del turno (vendido, comisión, neto, pedidos del turno y pedidos sin responder al cierre); el Empleado no lo recibe ni ve la comisión ni el neto. Ver "Resumen por Email al Cerrar un Turno" en los requisitos del Dueño.
 
 ---
 

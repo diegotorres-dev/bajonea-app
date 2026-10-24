@@ -267,6 +267,8 @@ puede:
   (el Empleado no recibe ni ve esos dos datos). "Pedidos del turno" y "Pendientes" son los
   mismos para ambos, y el rótulo del turno ("En curso", "Terminó", "Sin turno por ahora")
   también.
+  El resumen que se manda por email al terminar un turno es solo para el Dueño: el
+  Empleado no lo recibe.
 - Aceptar, rechazar, despachar, entregar y anular pedidos. Las entregas de los pedidos En
   Camino no las confirma el comercio: las confirma el Cliente, o el sistema (aviso a los 75
   minutos y autoconfirmación a los 90). Al rechazar o anular un pedido ya pagado, la nota

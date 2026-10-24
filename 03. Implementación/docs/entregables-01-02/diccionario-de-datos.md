@@ -3,7 +3,8 @@
 **Proyecto:** Bajoneá — Plataforma de pedidos gastronómicos en línea  
 **Motor de base de datos:** MySQL (InnoDB)  
 **ORM / Migraciones:** Spring Data JPA + Hibernate / Flyway  
-**Versión del modelo:** 1.25  
+**Versión del modelo:** 1.26  
+**Cambios de la v1.26 (Fase 2, tramo T4, migración `V41`, 2026-10-22):** tabla nueva `CierreTurno` (`cierre_turno`): una fila por turno terminado de un comercio, con la foto de sus cifras (`cantidad_pedidos`, `vendido`, `comision`, `neto`, `pendientes_al_cierre`) y el estado del email de resumen que se le manda al Dueño (`email_estado`, `email_intentos`, `email_proximo_intento`, `email_envio_iniciado`, `email_fecha_envio`, `email_ultimo_error`). Enum nuevo `EstadoEmailCierreTurno`. `UNIQUE (comercio_id, turno_fecha, horario_id)`; `horario_id` es una `FOREIGN KEY` a `Horario.id` sin cascada (un turno cerrado conserva su versión de horario). No cambia ninguna otra tabla.  
 **Cambios de la v1.25 (Fase 2, tramo T3, migración `V40`, 2026-10-22):** `ItemCarrito` suma `precio_visto` (`DECIMAL(10,2) NULL`): el precio vigente del producto en el momento en que el ítem se insertó en el carrito. Se estampa solo al insertar (sumar o cambiar la cantidad no lo toca); si el precio vigente del producto es distinto, el carrito marca el ítem con `precioCambio` y el cliente ve el aviso. Los ítems anteriores a `V40` quedan con `NULL` y nunca avisan. Sin índices ni claves nuevas. Además hay cambios de comportamiento sin esquema: el precio de un producto no se puede cambiar mientras el comercio está dentro de una franja de `Horario` (`409` `PRECIO_BLOQUEADO_EN_FRANJA`, propiedad `precio.bloqueo-en-franja.habilitado`), y `POST /pedidos/cliente` acepta un `totalEsperado` opcional y responde `409` `PRECIO_CAMBIO` si no coincide con el total que se cobraría.  
 **Cambios de la v1.24 (Fase 2, tramo T2, migración `V39`, 2026-10-20):** `Pedido` suma `fecha_pago_confirmado` (`DATETIME NULL`), `turno_fecha` (`DATE NULL`) y `turno_horario_id` (`INT NULL`, `FOREIGN KEY fk_pedido_turno_horario` a `Horario.id` sin cascada), con los índices `idx_pedido_turno (comercio_id, turno_fecha, turno_horario_id)`, `idx_pedido_fecha_pago (comercio_id, fecha_pago_confirmado)` e `idx_pedido_turno_horario (turno_horario_id)`. El turno de un pedido se asigna al confirmarse el pago, con el mismo instante que la fila `PENDIENTE_CONFIRMACION_COMERCIO` del historial: es el turno en el que cayó el pago (`turno_fecha` es la fecha de apertura del turno, así que un pago de madrugada va al turno del día anterior) y, si cayó fuera de toda franja, el último turno terminado dentro de los 7 días anteriores; queda `NULL` si el comercio no tenía ninguna franja vigente. Los pedidos anteriores a la migración reciben `fecha_pago_confirmado` desde el historial en la propia migración y `turno_*` por un proceso de aplicación que corre una vez al arrancar (`turno.backfill.habilitado`). El panel del comercio deja de contar "hoy" y pasa a contar por turno (`GET /api/v1/pedidos/comercio/resumen-turno`, que reemplaza a `resumen-hoy`).  
 **Cambios de la v1.23 (Fase 2, tramo T1, migración `V38`, 2026-10-19):** `Horario` suma `vigente_desde` (`DATE NOT NULL DEFAULT '2000-01-01'`) y `vigente_hasta` (`DATE NULL`, inclusivo) con el índice `idx_horario_comercio_vigencia (comercio_id, vigente_desde, vigente_hasta)` (reemplaza a `idx_horario_comercio`) y el `CHECK chk_horario_vigencia`. Una fila es un turno: su día es el de apertura y cruza la medianoche cuando `hora_cierre < hora_apertura`; `cierre = apertura` no se permite. La edición de horarios de un comercio aprobado es versionada: cierra lo vigente con `vigente_hasta = hoy` e inserta lo nuevo con `vigente_desde = mañana`. `HistorialEdicionComercio` empieza a registrar `HORARIO` (acción `EDITAR`).  
@@ -146,6 +147,20 @@ Ciclo de vida del comercio en la plataforma.
 | `APTO_VENTA` | Aprobado, con la cuenta de MercadoPago del Dueno titular vinculada (`CuentaMercadoPago.activa = true`). Se alcanza automáticamente al vincular la cuenta (`APROBADO → APTO_VENTA`) y vuelve a `APROBADO` al desvincularla. Es el único estado en el que el comercio aparece en el catálogo público y puede recibir pedidos (migración `V12`). |
 
 > **Regla de visibilidad y venta (implementada):** el catálogo público (`GET /catalogo/comercios` y los productos de un comercio) lista los comercios con `estado = APTO_VENTA` o `CERRADO_TEMPORALMENTE`, y un pedido solo se acepta si el comercio está en `APTO_VENTA`, no está cerrado manualmente (`cerrado_manualmente = false`) y la hora actual está dentro de alguna franja de `Horario` (`ComercioService.validarAceptaPedidos`, en este orden: `CERRADO_TEMPORALMENTE` con el mismo `409` "Este comercio está cerrado en este momento" del cierre manual, resto de estados distintos de `APTO_VENTA` con "Este comercio no está aceptando pedidos en este momento", cierre manual, horario). El indicador de apertura es `estadoApertura`: `ABIERTO`, `CERRADO_HORARIO`, `CERRADO_MANUAL` (cierre manual de un `APTO_VENTA`) o `CERRADO_TEMPORALMENTE` (comercio en estado `CERRADO_TEMPORALMENTE`, con la cuenta del Dueno bloqueada; si además tiene un cierre manual previo, manda el bloqueo). `textoReapertura` se calcula para el cierre por horario y el cierre manual, y es `NULL` para un comercio en estado `CERRADO_TEMPORALMENTE` (no se promete una hora). El campo `estado` del catálogo público informa siempre `APTO_VENTA`, también para un `CERRADO_TEMPORALMENTE`; el público distingue el bloqueo de la cuenta del cierre manual por `estadoApertura` (regla del 2026-10-18, que reemplaza a la del tramo C2 de mostrar los dos casos iguales). Para el panel del Dueno un `CERRADO_TEMPORALMENTE` no es operativo (`operativo = false`, `puedeCambiarCierre = false`).
+
+---
+
+### ENUM: EstadoEmailCierreTurno
+
+Estado del email de resumen de un turno cerrado (`CierreTurno.email_estado`).
+
+| Valor | Descripción |
+|-------|-------------|
+| `PENDIENTE` | Esperando el envío: recién cerrado o a la espera del próximo intento (`email_proximo_intento`, nulo = ya). Estado inicial. |
+| `ENVIANDO` | Una corrida lo reclamó y está llamando a Resend (`email_envio_iniciado`). Si pasan más de 15 minutos sin resultado (el proceso cayó) vuelve a `PENDIENTE`. |
+| `ENVIADO` | El mail salió (o el envío está deshabilitado, como en el perfil `test`). Estado final. |
+| `FALLIDO` | Se agotaron los 5 intentos. Estado final: solo se reencola a mano. |
+| `OMITIDO` | No se envía y no se reintenta: la cuenta del Dueño no estaba `ACTIVO` en el intento, o el comercio estaba `SUSPENDIDO` o `CERRADO_TEMPORALMENTE` y no hubo pedidos ni pendientes. Estado final. |
 
 ---
 
@@ -1197,6 +1212,42 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 - Para cada comercio las filas alternan `CERRADO`, `REABIERTO`, `CERRADO`…; la última coincide con `Comercio.cerrado_manualmente`. Se escriben en la misma transacción que la bandera, con el comercio bloqueado `FOR UPDATE`.
 - Si un comercio tiene la bandera prendida y ninguna fila `CERRADO` (dato anterior a este tramo), el job lo reabre igual, escribe la fila `REABIERTO` y deja un aviso en el log.
 - Para saber cuándo se cerró el comercio: `SELECT fecha_hora FROM HistorialCierreComercio WHERE comercio_id = ? AND accion = 'CERRADO' ORDER BY fecha_hora DESC, id DESC LIMIT 1`.
+
+---
+
+### Tabla: CierreTurno
+
+**Descripción:** Foto de las cifras de un turno terminado de un comercio y estado del email de resumen que se le manda al Dueño. Una fila por turno (`comercio_id`, `turno_fecha`, `horario_id`). La crea un job que corre cada 60 segundos cuando pasaron `fin del turno + 30 minutos` y no queda ningún pedido `PENDIENTE_PAGO` creado antes del fin (con tope de espera de 120 minutos). Las cifras son las mismas que muestra el resumen del turno del panel (`vendido` = suma del `subtotal` de los pedidos facturables; `comision` = suma de su `cargo_servicio_comercio`; `neto = vendido - comision`) y no se recalculan: un pago o una aceptación posteriores al cierre no las cambian. Migración `V41`.
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `id` | INT | NO | AI | PK, AI | Identificador único del cierre. |
+| `comercio_id` | INT | NO | — | FK → Comercio.id, NN | Comercio cuyo turno se cerró. |
+| `turno_fecha` | DATE | NO | — | NN | Fecha de apertura del turno (un turno que cruza la medianoche conserva la del día en que abrió). |
+| `horario_id` | INT | NO | — | FK → Horario.id (sin cascada), NN | Versión de la fila de `Horario` que rigió ese turno. |
+| `inicio` | DATETIME | NO | — | NN | Inicio del turno, en `-03:00`. |
+| `fin` | DATETIME | NO | — | NN | Fin del turno (`23:59` vale `24:00`; un turno que cruza termina el día siguiente). |
+| `cantidad_pedidos` | INT | NO | — | NN | Pedidos del turno de cualquier estado (los que llegaron pagados a ese turno). |
+| `vendido` | DECIMAL(14,2) | NO | — | NN | Suma bruta del `subtotal` de los pedidos facturables (`EN_PREPARACION`, `EN_CAMINO`, `LISTO_PARA_RETIRAR`, `ENTREGADO`, `NO_RETIRADO`). |
+| `comision` | DECIMAL(14,2) | NO | — | NN | Suma del `cargo_servicio_comercio` de los facturables. |
+| `neto` | DECIMAL(14,2) | NO | — | NN | `vendido - comision`. No incluye los pendientes. |
+| `pendientes_al_cierre` | INT | NO | — | NN | Pedidos en `PENDIENTE_CONFIRMACION_COMERCIO` de todo el comercio (no solo del turno) al momento del cierre, igual que el contador del panel. Fuera de los montos. |
+| `fecha_cierre` | DATETIME | NO | — | NN | Instante de la corrida que creó la fila (el reloj único de la aplicación). |
+| `email_estado` | ENUM EstadoEmailCierreTurno | NO | `PENDIENTE` | NN | Estado del email de resumen. |
+| `email_intentos` | INT | NO | 0 | NN | Intentos de envío fallidos hasta ahora (sube en cada falla; al llegar a 5 el estado pasa a `FALLIDO`). |
+| `email_proximo_intento` | DATETIME | SÍ | NULL | — | A partir de cuándo se reintenta (10, 30, 60 y 60 minutos después de cada falla). `NULL` = ya. |
+| `email_envio_iniciado` | DATETIME | SÍ | NULL | — | Cuándo una corrida reclamó la fila (`ENVIANDO`). |
+| `email_fecha_envio` | DATETIME | SÍ | NULL | — | Cuándo salió el mail. |
+| `email_ultimo_error` | VARCHAR(500) | SÍ | NULL | — | Código HTTP y nombre del error de Resend del último intento fallido, o el motivo de un `OMITIDO`. |
+
+**Índices:** `PRIMARY KEY (id)` | `UNIQUE uq_cierre_turno (comercio_id, turno_fecha, horario_id)` | `INDEX idx_cierre_turno_envio (email_estado, email_proximo_intento)` | `INDEX idx_cierre_turno_horario (horario_id)` | `FOREIGN KEY fk_cierre_turno_comercio` | `FOREIGN KEY fk_cierre_turno_horario` (sin cascada).
+
+**Reglas de negocio:**
+- Generan cierre los comercios `APTO_VENTA`; los `SUSPENDIDO` y `CERRADO_TEMPORALMENTE` registran el cierre pero su fila nace `OMITIDO` si no hubo pedidos ni pendientes; `APROBADO`, `INACTIVO` y los que nunca vendieron no generan cierre. Un comercio sin franjas vigentes no tiene turnos.
+- Se cierran los turnos terminados hace al menos 30 minutos, con fin posterior a los últimos 3 días y posterior al fin del último cierre del comercio. Un comercio sin ningún cierre en los últimos 5 días (por `turno_fecha`) cierra solo su último turno terminado.
+- Un mail por Dueño y por corrida con todos sus cierres pendientes, aunque el total sea cero. El estado del envío cambia siempre con una sentencia por clave primaria que repite el estado esperado (`PENDIENTE` → `ENVIANDO` → `ENVIADO`/`PENDIENTE`/`FALLIDO`), así que dos corridas simultáneas nunca pisan el resultado una de la otra.
+- Si la cuenta del Dueño no está `ACTIVO` al momento del intento el cierre pasa a `OMITIDO` (se evalúa en cada intento).
+- Reencolar un cierre `FALLIDO`: `UPDATE cierre_turno SET email_estado = 'PENDIENTE', email_intentos = 0, email_proximo_intento = NULL, email_ultimo_error = NULL WHERE id = ? AND email_estado = 'FALLIDO'`.
 
 ---
 

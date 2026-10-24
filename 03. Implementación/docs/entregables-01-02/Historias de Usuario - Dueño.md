@@ -162,3 +162,16 @@ Como Dueño, quiero ver en el panel de cada comercio cuánto se vendió en el tu
 ## HU-D12: Cambiar Precios Fuera del Horario de Atención
 
 Como Dueño, quiero que el precio de mis productos no se pueda cambiar mientras mi comercio está en horario de atención, para que los clientes que están pidiendo no vean precios que cambian en medio de la compra. En el formulario del producto veo el campo precio deshabilitado con un candado y la leyenda "Se puede cambiar fuera de tu horario de atención", sigo editando el resto del producto, y el campo se habilita solo cuando termina el horario. Dar de alta un producto nuevo no tiene esta restricción.
+
+## HU-D13: Recibir el Resumen del Turno por Email
+
+Como Dueño, quiero recibir por email, al terminar cada turno de mis comercios, un resumen con lo que se vendió, la comisión, el neto y cuántos pedidos quedaron sin responder, para conocer el resultado del turno sin tener que entrar al panel. Si tengo varios comercios que cierran juntos, quiero un solo mensaje con un bloque por comercio; si un turno no tuvo pedidos, quiero que me avise igual. El asunto me tiene que mostrar el neto del turno. Los pedidos sin responder no se suman a los montos. Si el servicio de email falla, el sistema tiene que reintentar solo y no perder el resumen; y si mi cuenta no está activa en ese momento, no tiene que mandarme nada.
+
+**Criterios de aceptación:**
+- El email sale unos 30 minutos después del fin del turno, con las cifras que mostraba el panel.
+- Un solo email por vez con todos mis turnos cerrados; incluye los turnos sin pedidos.
+- El asunto lleva el neto del turno ("Cerró tu turno en Pizzería Popular: neto $127.116"), o "sin pedidos".
+- El cuerpo muestra vendido, comisión, neto, pedidos del turno y, si los hay, los pedidos sin responder al cierre (fuera de los montos).
+- Si el envío falla se reintenta a los 10, 30, 60 y 60 minutos; tras 5 intentos fallidos queda registrado como no enviado.
+- No recibo el email si mi cuenta está bloqueada, suspendida o inactiva.
+- Un Empleado no recibe este email.

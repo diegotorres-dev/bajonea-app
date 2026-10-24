@@ -427,4 +427,31 @@ class CierreTurnoIntegrationTest extends CierreTurnoIntegrationBase {
         job.abrirYCerrarTurnos(disponibilidadComercioService.ahora());
         assertEquals(1, cierres(dueno.comercioId()).size());
     }
+
+    @Test
+    void conElUltimoCierreDentroDeLaVentanaSoloSeCierranLosTurnosDeLosUltimos3DiasYNoLosQueQuedaronEnMedio() {
+        Dueno dueno = comercioSinHorarios();
+        horariosTodosLosDias(dueno.comercioId(), "12:00", "15:00");
+        job.abrirYCerrarTurnos(hoy().minusDays(4).atTime(15, 30));
+        assertEquals(1, cierres(dueno.comercioId()).size());
+
+        job.abrirYCerrarTurnos(almuerzoTerminado());
+
+        List<Map<String, Object>> filas = cierres(dueno.comercioId());
+        assertEquals(List.of(hoy().minusDays(4), hoy().minusDays(2), hoy().minusDays(1), hoy()),
+                filas.stream().map(fila -> fechaDe(fila.get("turno_fecha"))).toList());
+    }
+
+    @Test
+    void conElUltimoCierreFueraDeLaVentanaDeBusquedaSeTrataComoSiNuncaHubieraCerradoYSoloSeCierraElUltimoTurno() {
+        Dueno dueno = comercioSinHorarios();
+        horariosTodosLosDias(dueno.comercioId(), "12:00", "15:00");
+        job.abrirYCerrarTurnos(hoy().minusDays(10).atTime(15, 30));
+        assertEquals(1, cierres(dueno.comercioId()).size());
+
+        job.abrirYCerrarTurnos(almuerzoTerminado());
+
+        List<Map<String, Object>> filas = cierres(dueno.comercioId());
+        assertEquals(List.of(hoy().minusDays(10), hoy()), filas.stream().map(fila -> fechaDe(fila.get("turno_fecha"))).toList());
+    }
 }

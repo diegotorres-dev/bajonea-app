@@ -157,12 +157,13 @@ test.describe('Fase 2, T4 (API): cierre de turno, foto de cifras y email al DueÃ
     expect(hastaElMinuto(fila.fin)).toBe(hastaElMinuto(hoyA('15:00')));
 
     const repetida = await correr(request, AHORA);
-    const tarde = await correr(request, hoyA('18:00'));
+    await correr(request, hoyA('18:00'));
     expect(repetida.cierresCreados).toBe(0);
     expect(repetida.mailsEnviados).toBe(0);
-    expect(tarde.cierresCreados).toBe(0);
-    expect(tarde.mailsEnviados).toBe(0);
-    expect(await cierresDeTurnoTest(request, comercioId)).toHaveLength(1);
+    const despuesDeTarde = await cierresDeTurnoTest(request, comercioId);
+    expect(despuesDeTarde).toHaveLength(1);
+    expect(despuesDeTarde[0].emailFechaEnvio).toBe(fila.emailFechaEnvio);
+    expect(despuesDeTarde[0].emailIntentos).toBe(fila.emailIntentos);
   });
 
   test('las cifras de la foto son las mismas que el resumen del turno mostraba antes de cerrar', async ({ request }) => {

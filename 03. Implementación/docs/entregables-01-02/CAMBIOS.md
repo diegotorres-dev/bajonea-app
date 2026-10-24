@@ -5,6 +5,19 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
 
+## Fase 2, tramo T4: resumen por email al cerrar un turno (2026-10-24)
+
+Solo backend (sin pantallas). Al terminar cada turno de un comercio, el sistema guarda una foto de sus cifras (vendido, comisión, neto, pedidos del turno y pedidos sin responder) y le manda un email de resumen al Dueño: pasados 30 minutos del fin del turno, sin pedidos pendientes de pago creados antes de ese fin (con un máximo de espera de dos horas). Un solo email por vez con todos los turnos que cerraron, incluso con total cero; el asunto de un comercio con ventas lleva el neto. Reintenta a los 10, 30, 60 y 60 minutos y, tras 5 intentos fallidos, deja el resumen sin enviar; no lo manda si la cuenta del Dueño no está activa. El Empleado no lo recibe. Los demás cambios del tramo (tabla `cierre_turno`, job, atajos de prueba) no están en estos documentos de requisitos.
+
+| Archivo | Cambio |
+|---|---|
+| `requisitos-funcionales-dueño.md` | Sección nueva "Resumen por Email al Cerrar un Turno" |
+| `requisitos-funcionales-comercio.md` | El Dueño recibe por email el resumen del turno; el Empleado no |
+| `requisitos-funcionales-empleado.md` | El Empleado no recibe el email de resumen del turno |
+| `Historias de Usuario - Dueño.md` | HU-D13 nueva: recibir el resumen del turno por email |
+| `Historias de Usuario - Comercio.md` | HU-CO14: el resumen del turno también llega por email al Dueño |
+| `diccionario-de-datos.md` | v1.26: tabla nueva `CierreTurno` y enum `EstadoEmailCierreTurno` (migración `V41`) |
+
 ## Fase 2, tramo T2: pedido por turno y "Vendido en el turno" (2026-10-20)
 
 Backend y pantallas. Cada pedido pagado pertenece a un turno del comercio (el que contiene el instante del pago o, si cayó fuera de toda franja, el último terminado de los 7 días anteriores; un pago de madrugada en un turno que cruza la medianoche pertenece al turno del día anterior). El panel deja de contar "hoy": muestra el turno en curso o el último terminado, con un rótulo ("En curso · 20:00 a 02:00 (día siguiente)", "Terminó · 12:00 a 15:00", "Terminó ayer · …", "Sin turno por ahora") y tres contadores: "Vendido en el turno" (el subtotal bruto, igual para el Dueño y el Empleado), "Pedidos del turno" y "Pendientes" (todos los del comercio). El Dueño puede desplegar además la comisión y el neto del turno; el Empleado no los recibe. **El número principal del Dueño pasa de neto a bruto.** Migración `V39`; diccionario de datos v1.24.

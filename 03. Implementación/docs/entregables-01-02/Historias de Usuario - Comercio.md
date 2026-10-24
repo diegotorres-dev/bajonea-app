@@ -139,6 +139,7 @@ confirmado, con la fecha en que se pagaron y los contadores del turno (vendido, 
 del turno y pendientes), para gestionar solo ventas reales y tener un resumen fiel de mi
 turno. El panel me dice si el turno está en curso o ya terminó, y se actualiza solo cuando
 termina. Como Dueño puedo desplegar además la comisión y el neto del turno.
+Como Dueño recibo además, por email, el resumen de cada turno cuando termina.
 
 ## HU-CO15: Ver Quién Atendió un Pedido
 

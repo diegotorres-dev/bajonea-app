@@ -268,6 +268,20 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
 
 ---
 
+## Resumen por Email al Cerrar un Turno
+
+- Cuando termina un turno de uno de sus comercios, el Dueño recibe un email con el resumen: pasados 30 minutos desde el fin del turno, el sistema guarda una foto de las cifras del turno (vendido, comisión de plataforma, neto, pedidos del turno y pedidos sin responder) y se la manda. Las cifras son las mismas que mostraba el panel, y la foto no cambia después: un pago confirmado o un pedido aceptado pasado el cierre aparece en el panel pero no en el email.
+- Si el turno tiene un pedido todavía sin pagar creado antes de su fin, el cierre espera a que ese pedido se resuelva (se paga o vence), hasta un máximo de dos horas desde el fin del turno.
+- Un solo email por vez, con todos los turnos que cerraron: si el Dueño tiene varios comercios que cierran juntos, recibe un único mensaje con un bloque por comercio. El email se envía aunque el turno no haya tenido pedidos ("No hubo pedidos en este turno").
+- El asunto de un comercio con ventas muestra el neto del turno (por ejemplo "Cerró tu turno en Pizzería Popular: neto $127.116"); si no hubo pedidos dice "sin pedidos" y, con más de un comercio, "Cerraron los turnos de tus comercios". El cuerpo muestra "Vendido en el turno", "Comisión de Bajoneá", "Neto del turno" y "Pedidos del turno", y aclara cuántos pedidos quedaron sin responder al cerrar (no están incluidos en los montos). Los turnos que cruzan la medianoche dicen "(día siguiente)".
+- Reciben el resumen los comercios con la cuenta de cobro vinculada (listos para vender). Un comercio suspendido por el Administrador o cerrado temporalmente por el bloqueo de la cuenta solo lo recibe si hubo pedidos o pendientes; los comercios aprobados sin cuenta de cobro no lo reciben.
+- Si la cuenta del Dueño no está activa (bloqueada, suspendida o inactiva) al momento del envío, el email no se manda ni se manda después al reactivarla.
+- Si el envío falla, el sistema lo reintenta a los 10, 30, 60 y 60 minutos y, tras 5 intentos fallidos, lo deja sin enviar (queda registrado para que el equipo lo reencole). Una falla del servicio de email nunca afecta el cierre ni los demás envíos.
+- Si el comercio no tuvo ningún cierre en los últimos 5 días (comercio nuevo, recién vinculado a Mercado Pago o que volvió de una inactividad larga), el primer resumen es el del último turno terminado, no el de todos los turnos pendientes.
+- El resumen por email es solo para el Dueño: el Empleado no lo recibe.
+
+---
+
 ## Precios de los Productos
 
 - El precio de un producto no se puede cambiar mientras el comercio está dentro de uno de sus horarios de atención (aunque el comercio esté cerrado a mano o cerrado temporalmente: cuenta el horario, no el estado). Las demás partes del producto (nombre, descripción, categoría, tags, fotos, estado) se siguen editando con normalidad, y el alta de un producto nuevo con su precio no tiene restricción. Un comercio sin horarios cargados no tiene esta restricción.

@@ -15,9 +15,19 @@ import { abrirComoUsuarioConComercio } from './helpers/selector';
 import { abrirComoUsuario, prepararAprobado, prepararRechazado, reemplazarHorarios } from './helpers/multicomercio';
 import type { Dueno } from './helpers/multicomercio';
 import { sinScrollHorizontal } from './helpers/layout';
+import { diaDeLaSemanaEnZona } from './helpers/zona';
 
 const HEADER = 'X-Comercio-Id';
 const TEXTO_VIGENTE = '00:00 a 23:59';
+const DIAS_DE_LA_SEMANA = [
+  { codigo: 'DOMINGO', nombre: 'Domingo' },
+  { codigo: 'LUNES', nombre: 'Lunes' },
+  { codigo: 'MARTES', nombre: 'Martes' },
+  { codigo: 'MIERCOLES', nombre: 'Miércoles' },
+  { codigo: 'JUEVES', nombre: 'Jueves' },
+  { codigo: 'VIERNES', nombre: 'Viernes' },
+  { codigo: 'SABADO', nombre: 'Sábado' },
+];
 
 test.use({ viewport: { width: 375, height: 812 } });
 
@@ -128,12 +138,13 @@ test.describe('Edición de horarios del comercio, Fase 2 T1 entrega B', () => {
   test('el horario fijo avisa si el turno cruza la medianoche', async ({ page }) => {
     await abrirComoDueno(page);
     await abrirEdicion(page);
-    await page.getByTestId('chip-dia-franja-rapida-VIERNES').click();
+    const dia = DIAS_DE_LA_SEMANA[(diaDeLaSemanaEnZona() + 2) % 7];
+    await page.getByTestId(`chip-dia-franja-rapida-${dia.codigo}`).click();
     await page.getByTestId('input-franja-rapida-desde').fill('21:00');
     await page.getByTestId('input-franja-rapida-hasta').fill('03:00');
     await expect(page.getByTestId('leyenda-cruce-franja-rapida')).toHaveText('Cada turno termina al día siguiente a las 03:00');
     await page.getByTestId('btn-aplicar-franja-rapida').click();
-    await expect(page.getByTestId('resumen-horarios-cargados')).toContainText('Viernes: 21:00 a 03:00 (día siguiente)');
+    await expect(page.getByTestId('resumen-horarios-cargados')).toContainText(`${dia.nombre}: 21:00 a 03:00 (día siguiente)`);
   });
 
   test('cierre igual a apertura y superposición circular se rechazan cerca del campo', async ({ page }) => {
