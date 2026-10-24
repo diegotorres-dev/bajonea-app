@@ -38,6 +38,9 @@ public class ResumenTurnoService {
     private final DisponibilidadComercioService disponibilidadComercioService;
     private final TurnoPedidoService turnoPedidoService;
 
+    public record CifrasTurno(int cantidadPedidos, BigDecimal vendido, BigDecimal comision, BigDecimal neto, int pendientes) {
+    }
+
     private record Calculo(EstadoResumenTurno estado, TurnoResumenResponseDTO turno, BigDecimal vendido, BigDecimal comision,
             int cantidadPedidos, int cantidadPendientes) {
     }
@@ -72,12 +75,30 @@ public class ResumenTurnoService {
         }
 
         DisponibilidadComercioService.Turno t = turno.get();
-        AgregadoDeTurno agregado = pedidoRepository.agregarTurno(comercioId, t.inicio().toLocalDate(), t.horario().getId(),
-                ESTADOS_FACTURADOS);
+        CifrasTurno cifras = cifras(comercioId, t, pendientes);
         TurnoResumenResponseDTO turnoDto = new TurnoResumenResponseDTO(t.inicio().toLocalDate(), t.inicio(), t.fin(),
                 DisponibilidadComercioService.cruzaMedianoche(t.horario()));
-        return new Calculo(estado, turnoDto, valor(agregado.getVendido()), valor(agregado.getComision()),
-                agregado.getCantidad() == null ? 0 : agregado.getCantidad().intValue(), pendientes);
+        return new Calculo(estado, turnoDto, cifras.vendido(), cifras.comision(), cifras.cantidadPedidos(), pendientes);
+    }
+
+    /**
+     * Cifras de un turno, las mismas que muestra el panel: cantidad de pedidos del turno (de cualquier estado), vendido y
+     * comisión de los facturables, neto y los pendientes de todo el comercio. El cierre de turno las usa para guardar su
+     * foto, así el email y el panel nunca calculan distinto.
+     */
+    public CifrasTurno cifras(Integer comercioId, DisponibilidadComercioService.Turno turno) {
+        int pendientes = (int) pedidoRepository.countByComercioIdAndEstado(comercioId,
+                EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO);
+        return cifras(comercioId, turno, pendientes);
+    }
+
+    private CifrasTurno cifras(Integer comercioId, DisponibilidadComercioService.Turno turno, int pendientes) {
+        AgregadoDeTurno agregado = pedidoRepository.agregarTurno(comercioId, turno.inicio().toLocalDate(),
+                turno.horario().getId(), ESTADOS_FACTURADOS);
+        BigDecimal vendido = valor(agregado.getVendido());
+        BigDecimal comision = valor(agregado.getComision());
+        return new CifrasTurno(agregado.getCantidad() == null ? 0 : agregado.getCantidad().intValue(), vendido, comision,
+                vendido.subtract(comision), pendientes);
     }
 
     private static BigDecimal valor(BigDecimal monto) {

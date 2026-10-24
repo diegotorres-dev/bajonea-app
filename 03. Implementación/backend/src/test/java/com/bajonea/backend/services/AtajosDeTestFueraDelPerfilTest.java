@@ -54,7 +54,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
 class AtajosDeTestFueraDelPerfilTest {
 
     private static final String BASE = "/api/v1/test";
-    private static final int ATAJOS_MINIMOS = 14;
+    private static final int ATAJOS_MINIMOS = 19;
 
     @Autowired
     private ApplicationContext contexto;

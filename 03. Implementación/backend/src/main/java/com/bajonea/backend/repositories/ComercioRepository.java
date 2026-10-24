@@ -101,6 +101,16 @@ public interface ComercioRepository extends JpaRepository<Comercio, Integer> {
     @Query("SELECT c.id FROM Comercio c WHERE c.cerradoManualmente = true ORDER BY c.id")
     List<Integer> findIdsCerradosManualmente();
 
+    interface ComercioElegibleParaCierre {
+
+        Integer getId();
+
+        EstadoComercio getEstado();
+    }
+
+    @Query("SELECT c.id AS id, c.estado AS estado FROM Comercio c WHERE c.estado IN :estados ORDER BY c.id")
+    List<ComercioElegibleParaCierre> findElegiblesParaCierreDeTurno(@Param("estados") java.util.Collection<EstadoComercio> estados);
+
     interface EstadoYCierreComercio {
 
         String getEstado();

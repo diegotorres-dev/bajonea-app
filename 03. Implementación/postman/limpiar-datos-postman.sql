@@ -61,6 +61,7 @@ DELETE FROM red_social WHERE comercio_id IN (SELECT id FROM tmp_com);
 DELETE FROM producto_tag WHERE producto_id IN (SELECT id FROM producto WHERE comercio_id IN (SELECT id FROM tmp_com));
 DELETE FROM imagen_producto WHERE producto_id IN (SELECT id FROM producto WHERE comercio_id IN (SELECT id FROM tmp_com));
 DELETE FROM producto WHERE comercio_id IN (SELECT id FROM tmp_com);
+DELETE FROM cierre_turno WHERE comercio_id IN (SELECT id FROM tmp_com);
 DELETE FROM horario WHERE comercio_id IN (SELECT id FROM tmp_com);
 DELETE FROM historial_cambio_comercio WHERE historial_estado_comercio_id IN (SELECT id FROM historial_estado_comercio WHERE comercio_id IN (SELECT id FROM tmp_com));
 DELETE FROM historial_estado_comercio WHERE comercio_id IN (SELECT id FROM tmp_com);

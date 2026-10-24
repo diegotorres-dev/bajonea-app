@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -17,6 +18,7 @@ import ch.qos.logback.core.read.ListAppender;
 import com.bajonea.backend.enums.MotivoRegularizacionInvitacion;
 import com.resend.Resend;
 import com.resend.core.exception.ResendException;
+import com.resend.core.net.RequestOptions;
 import com.resend.services.emails.Emails;
 import com.resend.services.emails.model.CreateEmailOptions;
 import com.resend.services.emails.model.CreateEmailResponse;
@@ -189,5 +191,99 @@ class EmailServiceTest {
         }
         assertTrue(logs.list.get(0).getFormattedMessage().contains("nuevo@bajonea.test"));
         assertTrue(logs.list.get(1).getFormattedMessage().contains("cuenta@bajonea.test"));
+    }
+
+    @Test
+    void elResumenDeTurnoEnviadoDevuelveElIdDeResendYViajaConLaClaveDeIdempotencia() throws ResendException {
+        ReflectionTestUtils.setField(servicio, "envioHabilitado", true);
+        CreateEmailResponse respuesta = mock(CreateEmailResponse.class);
+        when(respuesta.getId()).thenReturn("id-resumen");
+        when(resend.emails()).thenReturn(emails);
+        when(emails.send(any(CreateEmailOptions.class), any(RequestOptions.class))).thenReturn(respuesta);
+
+        ResultadoEnvioEmail resultado = servicio.enviarResumenTurno("dueno@bajonea.test", "Asunto", "Cuerpo secreto", "cierre-turno-1-i0");
+
+        assertEquals(ResultadoEnvioEmail.Estado.ENVIADO, resultado.estado());
+        assertEquals("id-resumen", resultado.idResend());
+        ArgumentCaptor<RequestOptions> opciones = ArgumentCaptor.forClass(RequestOptions.class);
+        verify(emails).send(any(CreateEmailOptions.class), opciones.capture());
+        assertEquals("cierre-turno-1-i0", opciones.getValue().getIdempotencyKey());
+        assertTrue(logs.list.stream().noneMatch(e -> e.getFormattedMessage().contains("Cuerpo secreto")));
+    }
+
+    @Test
+    void elResumenDeTurnoDevuelveFallidoConElCodigoYElNombreDelErrorDeResend() throws ResendException {
+        ReflectionTestUtils.setField(servicio, "envioHabilitado", true);
+        when(resend.emails()).thenReturn(emails);
+        when(emails.send(any(CreateEmailOptions.class), any(RequestOptions.class)))
+                .thenThrow(new ResendException(429, "{\"name\":\"rate_limit_exceeded\",\"message\":\"Too many requests\"}"));
+
+        ResultadoEnvioEmail resultado = servicio.enviarResumenTurno("dueno@bajonea.test", "Asunto", "Cuerpo", "clave");
+
+        assertEquals(ResultadoEnvioEmail.Estado.FALLIDO, resultado.estado());
+        assertEquals(429, resultado.codigoHttp());
+        assertTrue(resultado.error().startsWith("429"));
+        assertFalse(resultado.salio());
+    }
+
+    @Test
+    void elResumenDeTurnoDevuelveFallidoTambienAnteUnaExcepcionInesperada() throws ResendException {
+        ReflectionTestUtils.setField(servicio, "envioHabilitado", true);
+        when(resend.emails()).thenReturn(emails);
+        when(emails.send(any(CreateEmailOptions.class), any(RequestOptions.class))).thenThrow(new IllegalStateException("caída"));
+
+        ResultadoEnvioEmail resultado = servicio.enviarResumenTurno("dueno@bajonea.test", "Asunto", "Cuerpo", "clave");
+
+        assertEquals(ResultadoEnvioEmail.Estado.FALLIDO, resultado.estado());
+        assertEquals("IllegalStateException", resultado.error());
+    }
+
+    @Test
+    void elResumenDeTurnoConElEnvioDeshabilitadoDevuelveDeshabilitadoSinLlamarAResend() {
+        ReflectionTestUtils.setField(servicio, "envioHabilitado", false);
+
+        ResultadoEnvioEmail resultado = servicio.enviarResumenTurno("dueno@bajonea.test", "Asunto", "Cuerpo secreto", "clave");
+
+        assertEquals(ResultadoEnvioEmail.Estado.DESHABILITADO, resultado.estado());
+        assertTrue(resultado.salio());
+        verifyNoInteractions(resend);
+        assertTrue(logs.list.stream().noneMatch(e -> e.getFormattedMessage().contains("Cuerpo secreto")));
+    }
+
+    @Test
+    void lasFallasSimuladasSoloAplicanConElEnvioDeshabilitadoYSeAgotan() {
+        ReflectionTestUtils.setField(servicio, "envioHabilitado", false);
+        servicio.simularFallasDeResumenTurno(2);
+
+        assertEquals(ResultadoEnvioEmail.Estado.FALLIDO, servicio.enviarResumenTurno("a@bajonea.test", "A", "C", "k1").estado());
+        assertEquals(1, servicio.fallasSimuladasRestantes());
+        assertEquals(ResultadoEnvioEmail.Estado.FALLIDO, servicio.enviarResumenTurno("a@bajonea.test", "A", "C", "k2").estado());
+        assertEquals(ResultadoEnvioEmail.Estado.DESHABILITADO, servicio.enviarResumenTurno("a@bajonea.test", "A", "C", "k3").estado());
+        assertEquals(0, servicio.fallasSimuladasRestantes());
+        verifyNoInteractions(resend);
+    }
+
+    @Test
+    void conElEnvioHabilitadoLasFallasSimuladasNoSeConsultan() throws ResendException {
+        ReflectionTestUtils.setField(servicio, "envioHabilitado", true);
+        servicio.simularFallasDeResumenTurno(3);
+        CreateEmailResponse respuesta = mock(CreateEmailResponse.class);
+        when(resend.emails()).thenReturn(emails);
+        when(emails.send(any(CreateEmailOptions.class), any(RequestOptions.class))).thenReturn(respuesta);
+
+        assertEquals(ResultadoEnvioEmail.Estado.ENVIADO, servicio.enviarResumenTurno("a@bajonea.test", "A", "C", "k").estado());
+        assertEquals(3, servicio.fallasSimuladasRestantes());
+    }
+
+    @Test
+    void losEmailsTransaccionalesSiguenTragandoLaExcepcionDeResend() throws ResendException {
+        ReflectionTestUtils.setField(servicio, "envioHabilitado", true);
+        when(resend.emails()).thenReturn(emails);
+        when(emails.send(any(CreateEmailOptions.class))).thenThrow(new ResendException(500, "{}"));
+
+        servicio.enviarVerificacion("cliente@bajonea.test", CODIGO);
+
+        verify(emails, never()).send(any(CreateEmailOptions.class), any(RequestOptions.class));
+        assertTrue(logs.list.stream().anyMatch(e -> e.getLevel() == Level.WARN));
     }
 }

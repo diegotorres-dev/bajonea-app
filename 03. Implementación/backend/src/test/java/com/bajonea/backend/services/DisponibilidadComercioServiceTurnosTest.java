@@ -205,4 +205,66 @@ class DisponibilidadComercioServiceTurnosTest {
 
         assertEquals("Reabre mañana a las 20:00", texto);
     }
+
+    @Test
+    void losTurnosTerminadosEntreIncluyenElFinExactoDeLaVentanaYExcluyenElInicio() {
+        List<Horario> horarios = List.of(franja(DiaSemana.VIERNES, "12:00", "15:00"));
+
+        assertEquals(1, service.turnosTerminadosEntre(horarios, VIERNES.atTime(14, 0), VIERNES.atTime(15, 0)).size());
+        assertEquals(0, service.turnosTerminadosEntre(horarios, VIERNES.atTime(15, 0), VIERNES.atTime(16, 0)).size());
+        assertEquals(0, service.turnosTerminadosEntre(horarios, VIERNES.atTime(14, 0), VIERNES.atTime(14, 59, 59)).size());
+    }
+
+    @Test
+    void unTurnoQueCruzaLaMedianocheTerminaElDiaSiguienteYSeBuscaDesdeElDiaAnterior() {
+        List<Horario> horarios = List.of(franja(DiaSemana.VIERNES, "20:00", "02:00"));
+        LocalDateTime sabado3 = VIERNES.plusDays(1).atTime(3, 0);
+
+        List<DisponibilidadComercioService.Turno> turnos = service.turnosTerminadosEntre(horarios, sabado3.minusHours(2), sabado3);
+
+        assertEquals(1, turnos.size());
+        assertEquals(VIERNES.atTime(20, 0), turnos.get(0).inicio());
+        assertEquals(VIERNES.plusDays(1).atTime(2, 0), turnos.get(0).fin());
+        assertEquals(0, service.turnosTerminadosEntre(horarios, VIERNES.atTime(23, 0), VIERNES.plusDays(1).atTime(1, 59)).size());
+    }
+
+    @Test
+    void losTurnosTerminadosEntreSeDevuelvenDeLosMasViejosALosMasNuevosEnVariosDias() {
+        List<Horario> horarios = List.of(franja(DiaSemana.VIERNES, "12:00", "15:00"), franja(DiaSemana.SABADO, "12:00", "15:00"),
+                franja(DiaSemana.VIERNES, "20:00", "23:59"));
+
+        List<DisponibilidadComercioService.Turno> turnos = service.turnosTerminadosEntre(horarios, VIERNES.atStartOfDay(),
+                VIERNES.plusDays(2).atStartOfDay());
+
+        assertEquals(List.of(VIERNES.atTime(15, 0), VIERNES.plusDays(1).atStartOfDay(), VIERNES.plusDays(1).atTime(15, 0)),
+                turnos.stream().map(DisponibilidadComercioService.Turno::fin).toList());
+    }
+
+    @Test
+    void unaVersionDeHorarioCerradaPorUnaEdicionSigueDandoLosTurnosDeLosDiasEnQueRigio() {
+        Horario vieja = franja(DiaSemana.VIERNES, "12:00", "15:00", LUNES.minusDays(30), VIERNES);
+        Horario nueva = franja(DiaSemana.VIERNES, "13:00", "16:00", VIERNES.plusDays(1), null);
+        List<Horario> horarios = List.of(vieja, nueva);
+
+        List<DisponibilidadComercioService.Turno> hoy = service.turnosTerminadosEntre(horarios, VIERNES.atStartOfDay(),
+                VIERNES.plusDays(1).atStartOfDay());
+        List<DisponibilidadComercioService.Turno> proximo = service.turnosTerminadosEntre(horarios,
+                VIERNES.plusDays(6).atStartOfDay(), VIERNES.plusDays(8).atStartOfDay());
+
+        assertEquals(1, hoy.size());
+        assertEquals(VIERNES.atTime(15, 0), hoy.get(0).fin());
+        assertEquals(1, proximo.size());
+        assertEquals(VIERNES.plusDays(7).atTime(16, 0), proximo.get(0).fin());
+    }
+
+    @Test
+    void unaFranjaQueCierraA2359TerminaALaMedianocheDelMismoDia() {
+        List<Horario> horarios = List.of(franja(DiaSemana.VIERNES, "09:00", "23:59"));
+
+        List<DisponibilidadComercioService.Turno> turnos = service.turnosTerminadosEntre(horarios, VIERNES.atTime(23, 59, 59),
+                VIERNES.plusDays(1).atStartOfDay());
+
+        assertEquals(1, turnos.size());
+        assertEquals(VIERNES.plusDays(1).atStartOfDay(), turnos.get(0).fin());
+    }
 }

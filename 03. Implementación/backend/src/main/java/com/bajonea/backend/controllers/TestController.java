@@ -2,15 +2,21 @@ package com.bajonea.backend.controllers;
 
 import com.bajonea.backend.config.PrecioBloqueoProperties;
 import com.bajonea.backend.dto.response.ApiResponse;
+import com.bajonea.backend.dto.response.CierreTurnoTestResponseDTO;
 import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.TipoToken;
+import com.bajonea.backend.repositories.CierreTurnoRepository;
+import com.bajonea.backend.services.CierreTurnoJob;
 import com.bajonea.backend.services.DisponibilidadComercioService;
+import com.bajonea.backend.services.EmailService;
 import com.bajonea.backend.services.InvitacionVencimientoJob;
 import com.bajonea.backend.services.ReaperturaComerciosJob;
 import com.bajonea.backend.services.TestSupportService;
 import com.bajonea.backend.services.TurnoBackfillService;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -46,6 +52,9 @@ public class TestController {
     private final InvitacionVencimientoJob invitacionVencimientoJob;
     private final TurnoBackfillService turnoBackfillService;
     private final PrecioBloqueoProperties precioBloqueoProperties;
+    private final CierreTurnoJob cierreTurnoJob;
+    private final CierreTurnoRepository cierreTurnoRepository;
+    private final EmailService emailService;
     private final Clock clock;
 
     @GetMapping("/token-verificacion")
@@ -103,6 +112,28 @@ public class TestController {
     public ResponseEntity<ApiResponse<TurnoBackfillService.ResultadoBackfill>> ejecutarBackfillDeTurnos() {
         TurnoBackfillService.ResultadoBackfill resultado = turnoBackfillService.ejecutar();
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Asignación de turnos ejecutada", resultado));
+    }
+
+    @PostMapping("/jobs/cierre-turnos")
+    public ResponseEntity<ApiResponse<CierreTurnoJob.ResultadoCorrida>> ejecutarCierreDeTurnos(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime ahora) {
+        LocalDateTime momento = ahora == null ? disponibilidadComercioService.ahora() : ahora;
+        CierreTurnoJob.ResultadoCorrida resultado = CompletableFuture.supplyAsync(() -> cierreTurnoJob.abrirYCerrarTurnos(momento)).join();
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Cierre de turnos ejecutado", resultado));
+    }
+
+    @GetMapping("/cierres-turno")
+    public ResponseEntity<ApiResponse<List<CierreTurnoTestResponseDTO>>> listarCierresDeTurno(@RequestParam Integer comercioId) {
+        List<CierreTurnoTestResponseDTO> cierres = cierreTurnoRepository.findByComercioIdOrderByIdAsc(comercioId).stream()
+                .map(CierreTurnoTestResponseDTO::de).toList();
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Cierres de turno del comercio", cierres));
+    }
+
+    @PutMapping("/email-resumen-turno/fallas")
+    public ResponseEntity<ApiResponse<Integer>> simularFallasDelEmailDeResumenDeTurno(@RequestParam int cantidad) {
+        emailService.simularFallasDeResumenTurno(cantidad);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ApiResponse<>("Fallas simuladas del email de resumen de turno", emailService.fallasSimuladasRestantes()));
     }
 
     @PutMapping("/precio-bloqueo")

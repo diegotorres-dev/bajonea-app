@@ -144,4 +144,9 @@ public interface PedidoRepository extends JpaRepository<Pedido, Integer> {
             @Param("turnoHorarioId") Integer turnoHorarioId, @Param("facturables") Collection<EstadoPedido> facturables);
 
     long countByComercioIdAndEstado(Integer comercioId, EstadoPedido estado);
+
+    @Query("select count(p) > 0 from Pedido p where p.comercio.id = :comercioId and p.estado = :estado "
+            + "and p.fechaCreacion < :antesDe")
+    boolean existsByComercioIdAndEstadoCreadoAntesDe(@Param("comercioId") Integer comercioId,
+            @Param("estado") EstadoPedido estado, @Param("antesDe") LocalDateTime antesDe);
 }

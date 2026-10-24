@@ -507,6 +507,50 @@ export async function confirmarPagoTest(request: APIRequestContext, pedidoId: nu
   }
 }
 
+export interface ResultadoCorridaCierre {
+  cierresCreados: number;
+  cierresDiferidos: number;
+  cierresRecuperados: number;
+  mailsEnviados: number;
+  cierresEnviados: number;
+  cierresOmitidos: number;
+  cierresConFalla: number;
+}
+
+export async function ejecutarCierreTurnosTest(request: APIRequestContext, ahora?: string): Promise<ResultadoCorridaCierre> {
+  const query = ahora ? `?ahora=${encodeURIComponent(ahora)}` : '';
+  const { status, body } = await apiPost(request, `/test/jobs/cierre-turnos${query}`, {});
+  if (status !== 200) {
+    throw new Error(`No se pudo ejecutar el cierre de turnos: ${status} ${JSON.stringify(body)}`);
+  }
+  return body.data as ResultadoCorridaCierre;
+}
+
+export async function cierresDeTurnoTest(request: APIRequestContext, comercioId: number): Promise<any[]> {
+  const { status, body } = await apiGet(request, `/test/cierres-turno?comercioId=${comercioId}`);
+  if (status !== 200) {
+    throw new Error(`No se pudieron leer los cierres del comercio ${comercioId}: ${status} ${JSON.stringify(body)}`);
+  }
+  return body.data as any[];
+}
+
+export async function fallasDelEmailDeResumenTest(request: APIRequestContext, cantidad: number): Promise<number> {
+  const { status, body } = await apiPut(request, `/test/email-resumen-turno/fallas?cantidad=${cantidad}`, {});
+  if (status !== 200) {
+    throw new Error(`No se pudieron fijar las fallas simuladas: ${status} ${JSON.stringify(body)}`);
+  }
+  return body.data as number;
+}
+
+export async function conFallasDelEmailDeResumen<T>(request: APIRequestContext, cantidad: number, accion: () => Promise<T>): Promise<T> {
+  await fallasDelEmailDeResumenTest(request, cantidad);
+  try {
+    return await accion();
+  } finally {
+    await fallasDelEmailDeResumenTest(request, 0);
+  }
+}
+
 export async function buscarComercioPendientePorEmail(request: APIRequestContext, adminToken: string, email: string) {
   const { body } = await apiGet(request, '/administrador/comercios/pendientes', adminToken);
   const comercio = (body.data || []).find((c: any) => c.emailCuenta === email);

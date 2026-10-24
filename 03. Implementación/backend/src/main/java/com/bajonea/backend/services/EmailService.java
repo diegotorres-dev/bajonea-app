@@ -3,8 +3,10 @@ package com.bajonea.backend.services;
 import com.bajonea.backend.enums.MotivoRegularizacionInvitacion;
 import com.resend.Resend;
 import com.resend.core.exception.ResendException;
+import com.resend.core.net.RequestOptions;
 import com.resend.services.emails.model.CreateEmailOptions;
 import com.resend.services.emails.model.CreateEmailResponse;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,6 +33,8 @@ public class EmailService {
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
     private final Resend resend;
+
+    private final AtomicInteger fallasSimuladas = new AtomicInteger();
 
     @Value("${mail.from}")
     private String remitente;
@@ -107,11 +111,38 @@ public class EmailService {
                         + "Si no esperabas este mensaje, ignoralo.");
     }
 
+    /**
+     * Resumen del cierre de un turno al Dueño. A diferencia de los demás emails devuelve el resultado, para que el
+     * proceso que lo envía pueda reintentar: nunca relanza la excepción de Resend. {@code idempotencyKey} viaja
+     * como cabecera {@code Idempotency-Key}. Con el envío deshabilitado (perfil {@code test}) no llama a Resend y
+     * responde {@code DESHABILITADO}, salvo que la prueba haya pedido fallas simuladas con
+     * {@link #simularFallasDeResumenTurno(int)}. Registra destinatario y asunto, nunca el cuerpo.
+     */
+    public ResultadoEnvioEmail enviarResumenTurno(String destinatario, String asunto, String cuerpo, String idempotencyKey) {
+        if (!envioHabilitado && fallasSimuladas.getAndUpdate(restantes -> restantes > 0 ? restantes - 1 : 0) > 0) {
+            log.warn("Falla simulada del envío del resumen de turno a {} (asunto \"{}\")", destinatario, asunto);
+            return ResultadoEnvioEmail.fallido(503, "Falla simulada");
+        }
+        return enviar(destinatario, asunto, cuerpo, idempotencyKey);
+    }
+
+    public void simularFallasDeResumenTurno(int cantidad) {
+        fallasSimuladas.set(Math.max(cantidad, 0));
+    }
+
+    public int fallasSimuladasRestantes() {
+        return fallasSimuladas.get();
+    }
+
     private void enviarTextoPlano(String destinatario, String asunto, String cuerpo) {
+        enviar(destinatario, asunto, cuerpo, null);
+    }
+
+    private ResultadoEnvioEmail enviar(String destinatario, String asunto, String cuerpo, String idempotencyKey) {
         if (!envioHabilitado) {
             log.info("Envío de email deshabilitado (email.envio-habilitado=false): no se envía a {} el asunto \"{}\"",
                     destinatario, asunto);
-            return;
+            return ResultadoEnvioEmail.deshabilitado();
         }
 
         CreateEmailOptions params = CreateEmailOptions.builder()
@@ -122,10 +153,22 @@ public class EmailService {
                 .build();
 
         try {
-            CreateEmailResponse respuesta = resend.emails().send(params);
+            CreateEmailResponse respuesta = idempotencyKey == null
+                    ? resend.emails().send(params)
+                    : resend.emails().send(params, RequestOptions.builder().setIdempotencyKey(idempotencyKey).build());
             log.info("Email enviado a {} (Resend id: {})", destinatario, respuesta.getId());
-        } catch (ResendException | RuntimeException ex) {
+            return ResultadoEnvioEmail.enviado(respuesta.getId());
+        } catch (ResendException ex) {
             log.warn("No se pudo enviar el email a {}: {}", destinatario, ex.getMessage());
+            return ResultadoEnvioEmail.fallido(ex.getStatusCode(), descripcion(ex));
+        } catch (RuntimeException ex) {
+            log.warn("No se pudo enviar el email a {}: {}", destinatario, ex.getMessage());
+            return ResultadoEnvioEmail.fallido(null, ex.getClass().getSimpleName());
         }
+    }
+
+    private static String descripcion(ResendException ex) {
+        String nombre = ex.getErrorName() != null ? ex.getErrorName() : "ResendException";
+        return ex.getStatusCode() == null ? nombre : ex.getStatusCode() + " " + nombre;
     }
 }

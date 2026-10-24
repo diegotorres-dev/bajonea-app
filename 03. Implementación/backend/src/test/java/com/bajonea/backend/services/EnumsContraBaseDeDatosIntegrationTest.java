@@ -2,6 +2,7 @@ package com.bajonea.backend.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.bajonea.backend.enums.EstadoEmailCierreTurno;
 import com.bajonea.backend.enums.EstadoPedido;
 import com.bajonea.backend.enums.MotivoTimeoutPedido;
 import com.bajonea.backend.enums.TipoNotificacion;
@@ -77,6 +78,11 @@ class EnumsContraBaseDeDatosIntegrationTest {
         assertEquals(Set.of("EMPLEADO_DESACTIVADO", "EMPLEADO_REACTIVADO"),
                 Set.of("EMPLEADO_DESACTIVADO", "EMPLEADO_REACTIVADO").stream().filter(enBase::contains).collect(java.util.stream.Collectors.toSet()),
                 "V35 tiene que haber agregado EMPLEADO_REACTIVADO al ENUM de notificacion.tipo");
+    }
+
+    @Test
+    void elEstadoDelEmailDelCierreDeTurnoCoincideConElEnumDeJava() {
+        compararConLaColumna("cierre_turno", "email_estado", EstadoEmailCierreTurno.values(), Set.of());
     }
 
     @Test

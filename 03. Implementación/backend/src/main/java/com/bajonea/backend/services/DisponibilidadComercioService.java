@@ -14,6 +14,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -120,6 +122,30 @@ public class DisponibilidadComercioService {
             }
         }
         return Optional.ofNullable(mejor);
+    }
+
+    /**
+     * Turnos cuyo fin cae en {@code (desde, hasta]}, de los más viejos a los más nuevos. Cada fila rige por la fecha de
+     * su apertura, igual que {@link #turnoDe} y {@link #ultimoTurnoTerminado}: un turno que cruza la medianoche se
+     * busca desde el día anterior a {@code desde}, y una versión de horario ya cerrada por una edición sigue dando los
+     * turnos de los días en que estuvo vigente.
+     */
+    public List<Turno> turnosTerminadosEntre(List<Horario> horarios, LocalDateTime desde, LocalDateTime hasta) {
+        List<Turno> turnos = new ArrayList<>();
+        for (LocalDate fecha = desde.toLocalDate().minusDays(1); !fecha.isAfter(hasta.toLocalDate()); fecha = fecha.plusDays(1)) {
+            DiaSemana dia = diaDe(fecha);
+            for (Horario horario : horarios) {
+                if (horario.getDiaSemana() != dia || !vigenteEn(horario, fecha)) {
+                    continue;
+                }
+                LocalDateTime fin = finDelTurno(horario, fecha);
+                if (fin.isAfter(desde) && !fin.isAfter(hasta)) {
+                    turnos.add(new Turno(horario, fecha.atTime(horario.getHoraApertura()), fin));
+                }
+            }
+        }
+        turnos.sort(Comparator.comparing(Turno::fin).thenComparing(turno -> turno.horario().getId()));
+        return turnos;
     }
 
     public boolean dentroDeFranja(List<Horario> horarios, LocalDateTime ahora) {
