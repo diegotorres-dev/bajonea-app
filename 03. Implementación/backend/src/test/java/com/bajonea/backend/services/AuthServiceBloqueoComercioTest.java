@@ -46,19 +46,19 @@ class AuthServiceBloqueoComercioTest {
 
     private UsuarioRepository usuarioRepository;
     private ComercioRepository comercioRepository;
-    private ComercioService comercioService;
+    private AptitudVentaComercioService aptitudService;
     private AuthService authService;
 
     @BeforeEach
     void preparar() {
         usuarioRepository = mock(UsuarioRepository.class);
         comercioRepository = mock(ComercioRepository.class);
-        comercioService = mock(ComercioService.class);
+        aptitudService = mock(AptitudVentaComercioService.class);
         PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
         when(passwordEncoder.matches(anyString(), any())).thenReturn(false);
         authService = new AuthService(usuarioRepository, mock(TokenRepository.class), mock(TokenService.class),
                 mock(SesionRepository.class), comercioRepository, mock(HistorialCambioNombreUsuarioRepository.class),
-                mock(CuentaMercadoPagoService.class), comercioService, passwordEncoder, mock(JwtService.class),
+                aptitudService, passwordEncoder, mock(JwtService.class),
                 mock(EmailService.class));
     }
 
@@ -96,13 +96,12 @@ class AuthServiceBloqueoComercioTest {
         loginIncorrecto();
 
         assertEquals(EstadoUsuario.BLOQUEADO, usuario.getEstado());
-        verify(comercioService).cerrarTemporalmentePorBloqueoDeCuenta(aptoVenta, MOTIVO);
-        verify(comercioService).cerrarTemporalmentePorBloqueoDeCuenta(aprobado, MOTIVO);
+        verify(aptitudService).cerrarPorBloqueo(aptoVenta, MOTIVO);
+        verify(aptitudService).cerrarPorBloqueo(aprobado, MOTIVO);
         for (Comercio otro : otros) {
-            verify(comercioService, never()).cerrarTemporalmentePorBloqueoDeCuenta(otro, MOTIVO);
+            verify(aptitudService, never()).cerrarPorBloqueo(otro, MOTIVO);
         }
-        verify(comercioService, times(2)).cerrarTemporalmentePorBloqueoDeCuenta(any(), anyString());
-        verify(comercioService, never()).registrarTransicionAutomatica(any(), any(), any(), anyString());
+        verify(aptitudService, times(2)).cerrarPorBloqueo(any(), anyString());
     }
 
     @Test
@@ -112,7 +111,7 @@ class AuthServiceBloqueoComercioTest {
         loginIncorrecto();
 
         verify(comercioRepository, never()).findByDuenoIdOrderByFechaRegistroAscIdAsc(any());
-        verify(comercioService, never()).cerrarTemporalmentePorBloqueoDeCuenta(any(), anyString());
+        verify(aptitudService, never()).cerrarPorBloqueo(any(), anyString());
     }
 
     @Test
@@ -123,7 +122,7 @@ class AuthServiceBloqueoComercioTest {
 
         assertEquals(EstadoUsuario.BLOQUEADO, usuario.getEstado());
         verify(comercioRepository, never()).findByDuenoIdOrderByFechaRegistroAscIdAsc(any());
-        verify(comercioService, never()).cerrarTemporalmentePorBloqueoDeCuenta(any(), anyString());
+        verify(aptitudService, never()).cerrarPorBloqueo(any(), anyString());
     }
 
     @Test

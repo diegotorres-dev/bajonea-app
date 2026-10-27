@@ -49,10 +49,15 @@ public class ValidadorDatosNegocioComercio {
      * de Comercio, el alta adicional y la corrección de un rechazado.
      */
     public Localidad obtenerLocalidad(String localidadId) {
+        return obtenerLocalidad(localidadId, CAMPO_LOCALIDAD);
+    }
+
+    /** Igual que {@link #obtenerLocalidad(String)} con el nombre del campo con que se informa el error por campo. */
+    public Localidad obtenerLocalidad(String localidadId, String campo) {
         Localidad localidad = localidadRepository.findById(localidadId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("La localidad indicada no existe"));
         if (!localidadesHabilitadas.contiene(localidad.getId())) {
-            throw new ValidacionCamposException(Map.of(CAMPO_LOCALIDAD, MENSAJE_LOCALIDAD_NO_HABILITADA));
+            throw new ValidacionCamposException(Map.of(campo, MENSAJE_LOCALIDAD_NO_HABILITADA));
         }
         return localidad;
     }

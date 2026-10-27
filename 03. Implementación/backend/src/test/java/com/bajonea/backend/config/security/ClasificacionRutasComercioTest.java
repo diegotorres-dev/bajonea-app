@@ -99,6 +99,11 @@ class ClasificacionRutasComercioTest {
         exclusivo("POST /api/v1/comercios/perfil/foto/firma");
         exclusivo("PUT /api/v1/comercios/perfil/foto");
         exclusivo("GET /api/v1/comercios/estadisticas");
+        exclusivo("GET /api/v1/comercios/documentos");
+        exclusivo("GET /api/v1/comercios/documentos/requisitos");
+        exclusivo("POST /api/v1/comercios/documentos");
+        exclusivo("DELETE /api/v1/comercios/documentos/{id}");
+        exclusivo("GET /api/v1/comercios/documentos/{id}/archivo");
         exclusivo("GET /api/v1/comercios/equipo");
         exclusivo("GET /api/v1/comercios/equipo/actividad");
         exclusivo("POST /api/v1/comercios/equipo/invitaciones");

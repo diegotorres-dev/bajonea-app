@@ -33,6 +33,10 @@ public class Direccion {
     private Integer id;
 
     @Setter
+    @Column(name = "nombre", length = 40)
+    private String nombre;
+
+    @Setter
     @Column(name = "calle", length = 150, nullable = false)
     private String calle;
 
@@ -47,6 +51,10 @@ public class Direccion {
     @Setter
     @Column(name = "codigo_postal", length = 10, nullable = false)
     private String codigoPostal;
+
+    @Setter
+    @Column(name = "referencia", length = 150)
+    private String referencia;
 
     @Setter
     @ManyToOne(fetch = FetchType.LAZY)

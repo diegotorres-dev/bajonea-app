@@ -26,6 +26,13 @@ import java.util.Map;
  * comercio está dentro de una franja horaria.</li>
  * <li>{@link #PRECIO_CAMBIO}: el Cliente confirma un pedido con un total esperado distinto del que se cobraría;
  * {@code data} suma {@code subtotal}, {@code cargoServicioCliente}, {@code total} e {@code items}.</li>
+ * <li>{@link #DIRECCIONES_CUPO_MAXIMO}: el Cliente intenta agregar una dirección con el máximo de direcciones
+ * activas ya cargado.</li>
+ * <li>{@link #ULTIMA_DIRECCION}: el Cliente intenta eliminar su única dirección activa.</li>
+ * <li>{@link #DOCUMENTO_CUPO_REVISION}, {@link #DOCUMENTO_CUPO_TOTAL}, {@link #DOCUMENTO_NO_ELIMINABLE},
+ * {@link #DOCUMENTO_YA_RESUELTO} y {@link #COMERCIO_ESTADO_NO_PERMITE_DOCUMENTOS}: reglas de los documentos del
+ * comercio (cupos, baja de un documento que ya no está pendiente, revisión de uno ya resuelto, subir con el
+ * comercio en un estado que no lo permite).</li>
  * </ul>
  */
 public class ConflictoComercioException extends ConflictoDeNegocioException {
@@ -43,6 +50,13 @@ public class ConflictoComercioException extends ConflictoDeNegocioException {
     public static final String PRECIO_BLOQUEADO_EN_FRANJA = "PRECIO_BLOQUEADO_EN_FRANJA";
     public static final String MENSAJE_PRECIO_BLOQUEADO_EN_FRANJA =
             "No podés cambiar precios mientras tu comercio está en horario de atención. Hacelo fuera de ese horario.";
+    public static final String DIRECCIONES_CUPO_MAXIMO = "DIRECCIONES_CUPO_MAXIMO";
+    public static final String ULTIMA_DIRECCION = "ULTIMA_DIRECCION";
+    public static final String DOCUMENTO_CUPO_REVISION = "DOCUMENTO_CUPO_REVISION";
+    public static final String DOCUMENTO_CUPO_TOTAL = "DOCUMENTO_CUPO_TOTAL";
+    public static final String DOCUMENTO_NO_ELIMINABLE = "DOCUMENTO_NO_ELIMINABLE";
+    public static final String DOCUMENTO_YA_RESUELTO = "DOCUMENTO_YA_RESUELTO";
+    public static final String COMERCIO_ESTADO_NO_PERMITE_DOCUMENTOS = "COMERCIO_ESTADO_NO_PERMITE_DOCUMENTOS";
     public static final String PRECIO_CAMBIO = "PRECIO_CAMBIO";
     public static final String MENSAJE_PRECIO_CAMBIO = "Los montos de tu pedido cambiaron. Revisá el nuevo total antes de pagar.";
 

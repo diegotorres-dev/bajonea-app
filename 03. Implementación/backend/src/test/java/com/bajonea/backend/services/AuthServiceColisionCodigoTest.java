@@ -65,8 +65,7 @@ class AuthServiceColisionCodigoTest {
                 mock(SesionRepository.class),
                 mock(ComercioRepository.class),
                 mock(HistorialCambioNombreUsuarioRepository.class),
-                mock(CuentaMercadoPagoService.class),
-                mock(ComercioService.class),
+                mock(AptitudVentaComercioService.class),
                 mock(PasswordEncoder.class),
                 mock(JwtService.class),
                 emailService);

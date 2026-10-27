@@ -52,7 +52,7 @@ class BloqueoComercioIntegrationTest {
     private AuthService authService;
 
     @Autowired
-    private ComercioService comercioService;
+    private AptitudVentaComercioService aptitudVentaComercioService;
 
     @Autowired
     private TestSupportService testSupportService;
@@ -182,7 +182,7 @@ class BloqueoComercioIntegrationTest {
             assertEquals(EstadoComercio.APTO_VENTA, enMemoria.getEstado());
             jdbcTemplate.update("UPDATE comercio SET estado = 'APROBADO' WHERE id = ?", dueno.comercioId());
 
-            boolean cerro = comercioService.cerrarTemporalmentePorBloqueoDeCuenta(enMemoria, MOTIVO_BLOQUEO);
+            boolean cerro = aptitudVentaComercioService.cerrarPorBloqueo(enMemoria, MOTIVO_BLOQUEO);
             entityManager.flush();
 
             assertFalse(cerro);
@@ -190,7 +190,7 @@ class BloqueoComercioIntegrationTest {
             assertEquals(0, filasDeHistorial(dueno.comercioId()));
 
             jdbcTemplate.update("UPDATE comercio SET estado = 'APTO_VENTA' WHERE id = ?", dueno.comercioId());
-            boolean cerroAhora = comercioService.cerrarTemporalmentePorBloqueoDeCuenta(enMemoria, MOTIVO_BLOQUEO);
+            boolean cerroAhora = aptitudVentaComercioService.cerrarPorBloqueo(enMemoria, MOTIVO_BLOQUEO);
             entityManager.flush();
 
             assertTrue(cerroAhora);

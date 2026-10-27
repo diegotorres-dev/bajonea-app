@@ -23,6 +23,7 @@ import com.bajonea.backend.entities.Persona;
 import com.bajonea.backend.entities.PersonaJuridica;
 import com.bajonea.backend.entities.Usuario;
 import com.bajonea.backend.enums.EstadoComercio;
+import com.bajonea.backend.enums.MotivoRecalculo;
 import com.bajonea.backend.enums.TipoEntidadNotificacion;
 import com.bajonea.backend.enums.TipoNotificacion;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
@@ -33,6 +34,7 @@ import com.bajonea.backend.repositories.CategoriaRepository;
 import com.bajonea.backend.repositories.ClienteRepository;
 import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.DireccionRepository;
+import com.bajonea.backend.repositories.DocumentoComercioRepository;
 import com.bajonea.backend.repositories.HistorialCambioComercioRepository;
 import com.bajonea.backend.repositories.HistorialEstadoComercioRepository;
 import com.bajonea.backend.repositories.HorarioRepository;
@@ -55,7 +57,7 @@ class AdministradorServiceResolucionTest {
     private HistorialEstadoComercioRepository historialRepository;
     private NotificacionService notificacionService;
     private ComercioService comercioService;
-    private CuentaMercadoPagoService cuentaMercadoPagoService;
+    private AptitudVentaComercioService aptitudService;
     private AdministradorService service;
     private Comercio comercio;
 
@@ -66,14 +68,14 @@ class AdministradorServiceResolucionTest {
         historialRepository = mock(HistorialEstadoComercioRepository.class);
         notificacionService = mock(NotificacionService.class);
         comercioService = mock(ComercioService.class);
-        cuentaMercadoPagoService = mock(CuentaMercadoPagoService.class);
+        aptitudService = mock(AptitudVentaComercioService.class);
         ComercioResolicitudesProperties propiedades = new ComercioResolicitudesProperties();
         propiedades.setMax(3);
 
         service = new AdministradorService(comercioRepository, mock(DireccionRepository.class), mock(HorarioRepository.class), mock(DisponibilidadComercioService.class),
                 mock(RedSocialRepository.class), administradorRepository, historialRepository, mock(ClienteRepository.class),
                 mock(CategoriaRepository.class), mock(TagRepository.class), notificacionService, mock(PedidoService.class),
-                comercioService, cuentaMercadoPagoService, mock(AprobacionPreviaDueno.class),
+                comercioService, aptitudService, mock(DocumentoComercioRepository.class), mock(AprobacionPreviaDueno.class),
                 mock(HistorialCambioComercioRepository.class), propiedades);
 
         Usuario usuario = Usuario.builder().id(DUENO_ID).build();
@@ -84,7 +86,7 @@ class AdministradorServiceResolucionTest {
         when(comercioRepository.findDuenoIdById(COMERCIO_ID)).thenReturn(Optional.of(DUENO_ID));
         when(comercioRepository.findByIdConBloqueo(COMERCIO_ID)).thenReturn(Optional.of(comercio));
         when(administradorRepository.findById(ADMIN_ID)).thenReturn(Optional.of(Administrador.builder().id(ADMIN_ID).build()));
-        when(cuentaMercadoPagoService.existeActivaConBloqueo(DUENO_ID)).thenReturn(false);
+        when(aptitudService.leerDueno(DUENO_ID)).thenReturn(new AptitudVentaComercioService.EntradasDueno(false, false));
     }
 
     private static AprobacionComercioRequestDTO rechazo(String motivo, Boolean definitivo) {
@@ -103,10 +105,9 @@ class AdministradorServiceResolucionTest {
     void elOrdenDeBloqueoEsDuenoEscalarLuegoUsuarioLuegoCuentaDeMercadoPagoLuegoComercio() {
         service.resolverAprobacion(COMERCIO_ID, ADMIN_ID, new AprobacionComercioRequestDTO(true, null));
 
-        InOrder orden = inOrder(comercioRepository, comercioService, cuentaMercadoPagoService);
+        InOrder orden = inOrder(comercioRepository, aptitudService);
         orden.verify(comercioRepository).findDuenoIdById(COMERCIO_ID);
-        orden.verify(comercioService).duenoBloqueadoConBloqueo(DUENO_ID);
-        orden.verify(cuentaMercadoPagoService).existeActivaConBloqueo(DUENO_ID);
+        orden.verify(aptitudService).leerDueno(DUENO_ID);
         orden.verify(comercioRepository).findByIdConBloqueo(COMERCIO_ID);
         verify(comercioRepository, never()).findById(anyInt());
     }
@@ -189,42 +190,49 @@ class AdministradorServiceResolucionTest {
     @Test
     void aprobarUnaReSolicitudSigueLasReglasDeSiempre() {
         comercio.setCantidadResolicitudes(2);
-        when(cuentaMercadoPagoService.existeActivaConBloqueo(DUENO_ID)).thenReturn(true);
+        AptitudVentaComercioService.EntradasDueno entradas = new AptitudVentaComercioService.EntradasDueno(false, true);
+        when(aptitudService.leerDueno(DUENO_ID)).thenReturn(entradas);
+        when(aptitudService.recalcular(comercio, entradas, MotivoRecalculo.COMERCIO_APROBADO, null, false))
+                .thenReturn(EstadoComercio.APTO_VENTA);
 
         service.resolverAprobacion(COMERCIO_ID, ADMIN_ID, new AprobacionComercioRequestDTO(true, null));
 
         assertEquals(EstadoComercio.APROBADO, comercio.getEstado());
-        verify(comercioService).activarAptoVenta(comercio, false, "Bloqueo de cuenta vigente al aprobar");
+        verify(aptitudService).recalcular(comercio, entradas, MotivoRecalculo.COMERCIO_APROBADO, null, false);
         verify(notificacionService).crearParaDueno(eq(DUENO_ID), eq(COMERCIO_ID), eq("Tu comercio Cafe fue aprobado y ya podés vender"),
                 eq(TipoNotificacion.COMERCIO_APROBADO), eq(TipoEntidadNotificacion.COMERCIO), eq(COMERCIO_ID));
     }
 
     @Test
-    void aprobarConLaCuentaDelDuenoBloqueadaPasaElFlagYNoLoDejaALaVenta() {
-        when(cuentaMercadoPagoService.existeActivaConBloqueo(DUENO_ID)).thenReturn(true);
-        when(comercioService.duenoBloqueadoConBloqueo(DUENO_ID)).thenReturn(true);
+    void aprobarConLaCuentaDelDuenoBloqueadaPasaElDetalleDelBloqueoYNoDiceQueYaPuedeVender() {
+        AptitudVentaComercioService.EntradasDueno entradas = new AptitudVentaComercioService.EntradasDueno(true, true);
+        when(aptitudService.leerDueno(DUENO_ID)).thenReturn(entradas);
+        when(aptitudService.recalcular(comercio, entradas, MotivoRecalculo.COMERCIO_APROBADO,
+                AptitudVentaComercioService.DETALLE_BLOQUEO_VIGENTE_AL_APROBAR, false))
+                .thenReturn(EstadoComercio.CERRADO_TEMPORALMENTE);
 
         service.resolverAprobacion(COMERCIO_ID, ADMIN_ID, new AprobacionComercioRequestDTO(true, null));
 
-        assertEquals(EstadoComercio.APROBADO, comercio.getEstado());
-        verify(comercioService).activarAptoVenta(comercio, true, "Bloqueo de cuenta vigente al aprobar");
-        verify(comercioService, never()).activarAptoVenta(comercio, false, "Bloqueo de cuenta vigente al aprobar");
+        verify(aptitudService).recalcular(comercio, entradas, MotivoRecalculo.COMERCIO_APROBADO,
+                AptitudVentaComercioService.DETALLE_BLOQUEO_VIGENTE_AL_APROBAR, false);
+        verify(notificacionService).crearParaDueno(eq(DUENO_ID), eq(COMERCIO_ID), eq("Tu comercio Cafe fue aprobado"),
+                eq(TipoNotificacion.COMERCIO_APROBADO), eq(TipoEntidadNotificacion.COMERCIO), eq(COMERCIO_ID));
     }
 
     @Test
-    void rechazarNoLeeElEstadoDeLaCuentaDelDueno() {
+    void rechazarNoLeeLaCuentaDelDuenoNiRecalculaLaAptitud() {
         service.resolverAprobacion(COMERCIO_ID, ADMIN_ID, rechazo("Falta algo", false));
 
-        verify(comercioService, never()).duenoBloqueadoConBloqueo(anyInt());
+        verify(aptitudService, never()).leerDueno(anyInt());
+        verify(aptitudService, never()).recalcular(any(), any(), any(), any(), anyBoolean());
     }
 
     @Test
-    void aprobarSinCuentaDeMercadoPagoNoActivaLaVentaAunqueElDuenoEsteBloqueado() {
-        when(comercioService.duenoBloqueadoConBloqueo(DUENO_ID)).thenReturn(true);
-
+    void aprobarSinCuentaDeMercadoPagoDejaElComercioAprobadoYLoAvisaSinPrometerLaVenta() {
         service.resolverAprobacion(COMERCIO_ID, ADMIN_ID, new AprobacionComercioRequestDTO(true, null));
 
         assertEquals(EstadoComercio.APROBADO, comercio.getEstado());
-        verify(comercioService, never()).activarAptoVenta(any(Comercio.class), anyBoolean(), anyString());
+        verify(notificacionService).crearParaDueno(eq(DUENO_ID), eq(COMERCIO_ID), eq("Tu comercio Cafe fue aprobado"),
+                eq(TipoNotificacion.COMERCIO_APROBADO), eq(TipoEntidadNotificacion.COMERCIO), eq(COMERCIO_ID));
     }
 }

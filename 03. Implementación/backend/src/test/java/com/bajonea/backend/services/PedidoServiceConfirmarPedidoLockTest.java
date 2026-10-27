@@ -19,6 +19,7 @@ import com.bajonea.backend.entities.ItemCarrito;
 import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.TipoEntrega;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
+import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.repositories.CarritoRepository;
 import com.bajonea.backend.repositories.ClienteRepository;
 import com.bajonea.backend.repositories.ComercioRepository;
@@ -53,9 +54,11 @@ class PedidoServiceConfirmarPedidoLockTest {
     private PedidoRepository pedidoRepository;
     private PedidoService pedidoService;
     private Comercio comercioDelCarrito;
+    private DireccionRepository direccionRepository;
 
     @BeforeEach
     void preparar() {
+        direccionRepository = mock(DireccionRepository.class);
         comercioRepository = mock(ComercioRepository.class);
         comercioService = mock(ComercioService.class);
         entityManager = mock(EntityManager.class);
@@ -67,7 +70,7 @@ class PedidoServiceConfirmarPedidoLockTest {
         PedidoTimeoutProperties timeouts = new PedidoTimeoutProperties();
         timeouts.setPagoMinutos(30);
         pedidoService = new PedidoService(pedidoRepository, mock(DetallePedidoRepository.class), carritoRepository,
-                itemCarritoRepository, clienteRepository, comercioRepository, mock(DireccionRepository.class),
+                itemCarritoRepository, clienteRepository, comercioRepository, direccionRepository,
                 mock(HistorialEstadoPedidoRepository.class), mock(UsuarioRepository.class),
                 mock(NotificacionService.class), mock(CarritoService.class), comercioService,
                 mock(ConfiguracionTarifaService.class), timeouts, mock(ReembolsoService.class),
@@ -161,5 +164,47 @@ class PedidoServiceConfirmarPedidoLockTest {
 
         verify(comercioService).validarAceptaPedidos(comercioDelCarrito, EstadoComercio.APTO_VENTA, false);
         verify(comercioService, never()).validarAceptaPedidos(comercioDelCarrito);
+    }
+
+    private PedidoRequestDTO domicilio(Integer direccionId) {
+        PedidoRequestDTO request = mock(PedidoRequestDTO.class);
+        when(request.getTipoEntrega()).thenReturn(TipoEntrega.DOMICILIO);
+        when(request.getDireccionId()).thenReturn(direccionId);
+        return request;
+    }
+
+    private static DireccionRepository.DireccionParaEntrega fila(Integer clienteId, boolean eliminada) {
+        DireccionRepository.DireccionParaEntrega fila = mock(DireccionRepository.DireccionParaEntrega.class);
+        when(fila.getClienteId()).thenReturn(clienteId);
+        when(fila.getEliminada()).thenReturn(eliminada);
+        return fila;
+    }
+
+    @Test
+    void laDireccionDeEntregaSeLeeConBloqueoCompartidoDespuesDelComercioYNuncaConFindById() {
+        when(comercioDelCarrito.isAceptaDelivery()).thenReturn(true);
+        when(direccionRepository.leerParaEntregaConBloqueoCompartido(9)).thenReturn(Optional.empty());
+
+        assertThrows(RecursoNoEncontradoException.class, () -> pedidoService.confirmarPedido(5, domicilio(9)));
+
+        InOrder orden = inOrder(comercioRepository, direccionRepository);
+        orden.verify(comercioRepository).leerEstadoConBloqueoCompartido(40);
+        orden.verify(direccionRepository).leerParaEntregaConBloqueoCompartido(9);
+        verify(direccionRepository, never()).findById(any());
+        verify(pedidoRepository, never()).save(any());
+    }
+
+    @Test
+    void unaDireccionDeOtroClienteOEliminadaCorta404SinCrearElPedido() {
+        when(comercioDelCarrito.isAceptaDelivery()).thenReturn(true);
+
+        var ajena = fila(77, false);
+        var eliminada = fila(5, true);
+        when(direccionRepository.leerParaEntregaConBloqueoCompartido(9)).thenReturn(Optional.of(ajena));
+        assertThrows(RecursoNoEncontradoException.class, () -> pedidoService.confirmarPedido(5, domicilio(9)));
+        when(direccionRepository.leerParaEntregaConBloqueoCompartido(9)).thenReturn(Optional.of(eliminada));
+        assertThrows(RecursoNoEncontradoException.class, () -> pedidoService.confirmarPedido(5, domicilio(9)));
+
+        verify(pedidoRepository, never()).save(any());
     }
 }

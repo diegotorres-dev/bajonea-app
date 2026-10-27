@@ -6,7 +6,7 @@ import com.bajonea.backend.dto.request.AnulacionPedidoRequestDTO;
 import com.bajonea.backend.dto.request.PedidoRequestDTO;
 import com.bajonea.backend.dto.request.RechazoPedidoRequestDTO;
 import com.bajonea.backend.dto.response.DetallePedidoResponseDTO;
-import com.bajonea.backend.dto.response.DireccionResponseDTO;
+import com.bajonea.backend.dto.response.DireccionEntregaResponseDTO;
 import com.bajonea.backend.dto.response.ItemCarritoResponseDTO;
 import com.bajonea.backend.dto.response.PedidoEmpleadoResponseDTO;
 import com.bajonea.backend.dto.response.PedidoResponseDTO;
@@ -18,6 +18,7 @@ import com.bajonea.backend.entities.DetallePedido;
 import com.bajonea.backend.entities.Direccion;
 import com.bajonea.backend.entities.HistorialEstadoPedido;
 import com.bajonea.backend.entities.ItemCarrito;
+import com.bajonea.backend.entities.Localidad;
 import com.bajonea.backend.entities.NotaCredito;
 import com.bajonea.backend.entities.Pedido;
 import com.bajonea.backend.enums.ActorPedido;
@@ -181,15 +182,17 @@ public class PedidoService {
         }
 
         Direccion direccion = null;
+        DireccionRepository.DireccionParaEntrega entrega = null;
         if (request.getTipoEntrega() == TipoEntrega.DOMICILIO) {
             if (request.getDireccionId() == null) {
                 throw new ConflictoDeNegocioException("La dirección es obligatoria para entrega a domicilio");
             }
-            direccion = direccionRepository.findById(request.getDireccionId())
+            entrega = direccionRepository.leerParaEntregaConBloqueoCompartido(request.getDireccionId())
                     .orElseThrow(() -> new RecursoNoEncontradoException("Dirección no encontrada"));
-            if (direccion.getCliente() == null || !direccion.getCliente().getId().equals(usuarioId) || direccion.isEliminada()) {
+            if (entrega.getClienteId() == null || !entrega.getClienteId().equals(usuarioId) || Boolean.TRUE.equals(entrega.getEliminada())) {
                 throw new RecursoNoEncontradoException("Dirección no encontrada");
             }
+            direccion = direccionRepository.getReferenceById(entrega.getId());
         }
 
         for (ItemCarrito item : items) {
@@ -227,6 +230,13 @@ public class PedidoService {
                 .cliente(cliente)
                 .comercio(comercio)
                 .direccion(direccion)
+                .entregaCalle(entrega == null ? null : entrega.getCalle())
+                .entregaNumero(entrega == null ? null : entrega.getNumero())
+                .entregaPisoDepto(entrega == null ? null : entrega.getPisoDepto())
+                .entregaCodigoPostal(entrega == null ? null : entrega.getCodigoPostal())
+                .entregaLocalidadId(entrega == null ? null : entrega.getLocalidadId())
+                .entregaLocalidad(entrega == null ? null : entityManager.getReference(Localidad.class, entrega.getLocalidadId()))
+                .entregaReferencia(entrega == null ? null : entrega.getReferencia())
                 .tipoEntrega(request.getTipoEntrega())
                 .estado(EstadoPedido.PENDIENTE_PAGO)
                 .pagoEstado(EstadoPagoPedido.PENDIENTE)
@@ -1057,6 +1067,22 @@ public class PedidoService {
                 ultimasNotasCredito(List.of(pedido)).get(pedido.getId()), null);
     }
 
+    private static DireccionEntregaResponseDTO direccionEntrega(Pedido pedido) {
+        if (pedido.getEntregaCalle() == null) {
+            return null;
+        }
+        Localidad localidad = pedido.getEntregaLocalidad();
+        return new DireccionEntregaResponseDTO(
+                pedido.getEntregaCalle(),
+                pedido.getEntregaNumero(),
+                pedido.getEntregaPisoDepto(),
+                pedido.getEntregaCodigoPostal(),
+                pedido.getEntregaLocalidadId(),
+                localidad == null ? null : localidad.getNombre(),
+                localidad == null ? null : localidad.getProvincia().getNombre(),
+                pedido.getEntregaReferencia());
+    }
+
     private PedidoResponseDTO aResponseDTOParaComercio(Pedido pedido) {
         return aResponseDTO(pedido, fechasPagoAprobado(List.of(pedido)).get(pedido.getId()),
                 ultimasNotasCredito(List.of(pedido)).get(pedido.getId()),
@@ -1069,16 +1095,7 @@ public class PedidoService {
                 .map(this::aResponseDTO)
                 .toList();
 
-        DireccionResponseDTO direccionDTO = pedido.getDireccion() == null ? null : new DireccionResponseDTO(
-                pedido.getDireccion().getId(),
-                pedido.getDireccion().getCalle(),
-                pedido.getDireccion().getNumero(),
-                pedido.getDireccion().getPisoDepto(),
-                pedido.getDireccion().getCodigoPostal(),
-                pedido.getDireccion().getLocalidad().getId(),
-                pedido.getDireccion().getLocalidad().getNombre(),
-                pedido.getDireccion().getLocalidad().getProvincia().getNombre(),
-                pedido.getDireccion().isPrincipal());
+        DireccionEntregaResponseDTO direccionDTO = direccionEntrega(pedido);
 
         return new PedidoResponseDTO(
                 pedido.getId(),

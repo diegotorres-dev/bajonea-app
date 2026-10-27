@@ -27,9 +27,9 @@ import org.springframework.transaction.annotation.Transactional;
  * → Usuario), así que {@code usuarioId} del JWT resuelve directo con
  * {@code clienteRepository.findById}, sin query intermedia — a diferencia de
  * {@code ComercioService}, donde {@code Comercio.id} es autogenerado y distinto de
- * {@code PersonaJuridica.id}. Sin CRUD de direcciones ni baja de cuenta — confirmado fuera de
- * alcance de esta fase. {@code direccion} en la respuesta (Tramo 16.3) es de solo lectura,
- * mismo criterio.
+ * {@code PersonaJuridica.id}. Sin baja de cuenta — confirmado fuera de alcance de esta fase.
+ * {@code direccion} en la respuesta (Tramo 16.3) es la dirección predeterminada activa y de solo lectura; las
+ * direcciones se administran en {@code DireccionClienteService}.
  */
 @Service
 @RequiredArgsConstructor
@@ -84,7 +84,7 @@ public class ClienteService {
 
     private ClienteResponseDTO aResponseDTO(Cliente cliente) {
         PersonaFisica personaFisica = cliente.getPersonaFisica();
-        Direccion direccion = direccionRepository.findByClienteId(cliente.getId()).orElse(null);
+        Direccion direccion = direccionRepository.findPrincipalActivaByClienteId(cliente.getId()).orElse(null);
         DireccionResponseDTO direccionDTO = direccion == null ? null : new DireccionResponseDTO(
                 direccion.getId(),
                 direccion.getCalle(),

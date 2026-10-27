@@ -87,8 +87,7 @@ public class AuthService {
     private final SesionRepository sesionRepository;
     private final ComercioRepository comercioRepository;
     private final HistorialCambioNombreUsuarioRepository historialCambioNombreUsuarioRepository;
-    private final CuentaMercadoPagoService cuentaMercadoPagoService;
-    private final ComercioService comercioService;
+    private final AptitudVentaComercioService aptitudVentaComercioService;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final EmailService emailService;
@@ -378,7 +377,7 @@ public class AuthService {
      * fila en {@code historial_estado_comercio} (sin administrador, motivo fijo). Un {@code APROBADO} (sin cuenta
      * de cobro) no está en el catálogo ni recibe pedidos, así que no hay nada que cerrar; los demás estados
      * tampoco se tocan. Los candidatos salen de una lectura común (foto de la transacción) y cada uno se vuelve a
-     * leer con bloqueo por clave primaria ({@code ComercioService.cerrarTemporalmentePorBloqueoDeCuenta}), así la
+     * leer con bloqueo por clave primaria ({@code AptitudVentaComercioService.cerrarPorBloqueo}), así la
      * decisión usa el estado real y no el de la foto; un {@code APROBADO} de la foto entra como candidato por si
      * una vinculación de Mercado Pago lo acaba de pasar a {@code APTO_VENTA}. Nunca se bloquean todos los
      * comercios del Dueño de una vez: eso esperaría la fila de un comercio pendiente que la aprobación ya tiene
@@ -393,32 +392,23 @@ public class AuthService {
         }
         for (Comercio comercio : comercioRepository.findByDuenoIdOrderByFechaRegistroAscIdAsc(usuario.getId())) {
             if (comercio.getEstado() == EstadoComercio.APROBADO || comercio.getEstado() == EstadoComercio.APTO_VENTA) {
-                comercioService.cerrarTemporalmentePorBloqueoDeCuenta(comercio, MOTIVO_BLOQUEO_CUENTA);
+                aptitudVentaComercioService.cerrarPorBloqueo(comercio, MOTIVO_BLOQUEO_CUENTA);
             }
         }
     }
 
     /**
-     * Restaura a {@code APTO_VENTA} si el Dueño sigue teniendo una cuenta de Mercado Pago activa,
-     * y a {@code APROBADO} si no. Aunque {@code propagarBloqueoAComercio} ya deja una fila de historial
-     * con el estado previo, el destino no se lee de ahí: {@code CuentaMercadoPago.activa} es la fuente
-     * de verdad real de si el comercio es apto para vender, y además cubre el caso borde de una cuenta
-     * desvinculada mientras el comercio estaba cerrado (vuelve a {@code APROBADO}, nunca a un
-     * {@code APTO_VENTA} sin cuenta que lo respalde). No re-verifica contra la API de Mercado Pago.
-     * Cada comercio restaurado deja su fila de historial, sin administrador y con el {@code motivo}
-     * recibido (recuperación de contraseña o reactivación de cuenta).
+     * Restaura los comercios que el bloqueo (o la inactivación) dejó en {@code estadoOrigenEsperado}. El destino
+     * ({@code APTO_VENTA} o {@code APROBADO}) lo decide {@code AptitudVentaComercioService}: lee la cuenta de
+     * Mercado Pago con bloqueo y evalúa la regla de seguir vendiendo; no se lee del historial. Cada comercio
+     * restaurado deja su fila de historial, sin administrador y con el {@code motivo} recibido (recuperación de
+     * contraseña o reactivación de cuenta).
      */
     private void restaurarComercioSiCorresponde(Usuario usuario, EstadoComercio estadoOrigenEsperado, String motivo) {
         if (usuario.getRol() != RolUsuario.DUENO || estadoOrigenEsperado == null) {
             return;
         }
-        boolean cuentaMpActiva = cuentaMercadoPagoService.buscarActivaPorDueno(usuario.getId()).isPresent();
-        for (Comercio comercio : comercioRepository.findByDuenoIdOrderByFechaRegistroAscIdAsc(usuario.getId())) {
-            if (comercio.getEstado() == estadoOrigenEsperado) {
-                comercioService.registrarTransicionAutomatica(comercio, estadoOrigenEsperado,
-                        cuentaMpActiva ? EstadoComercio.APTO_VENTA : EstadoComercio.APROBADO, motivo);
-            }
-        }
+        aptitudVentaComercioService.restaurar(usuario.getId(), estadoOrigenEsperado, motivo);
     }
 
     private void cerrarSesionActivaSiExiste(Usuario usuario, TipoCierreSesion motivo) {

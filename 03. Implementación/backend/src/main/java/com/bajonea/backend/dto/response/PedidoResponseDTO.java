@@ -43,7 +43,7 @@ public class PedidoResponseDTO {
     private final EstadoPedido estado;
     private final EstadoPagoPedido pagoEstado;
     private final TipoEntrega tipoEntrega;
-    private final DireccionResponseDTO direccion;
+    private final DireccionEntregaResponseDTO direccion;
     private final MotivoRechazo motivoRechazo;
     private final String comentarioRechazo;
     private final CanceladoPor canceladoPor;
@@ -70,7 +70,7 @@ public class PedidoResponseDTO {
             EstadoPedido estado,
             EstadoPagoPedido pagoEstado,
             TipoEntrega tipoEntrega,
-            DireccionResponseDTO direccion,
+            DireccionEntregaResponseDTO direccion,
             MotivoRechazo motivoRechazo,
             String comentarioRechazo,
             CanceladoPor canceladoPor,

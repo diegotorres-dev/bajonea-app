@@ -2,6 +2,7 @@ package com.bajonea.backend.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bajonea.backend.config.security.AuthenticatedUser;
 import com.bajonea.backend.dto.request.RegistroClienteRequestDTO;
@@ -133,6 +134,8 @@ class NotificacionesPorComercioIntegrationTest {
                 "el comercio A ve las suyas, leídas incluidas, y no las del pedido de B ni las del otro Dueño");
         assertEquals(List.of("Pedido de B"), mensajes(notificacionService.listar(dueno.principal(), String.valueOf(comercioB))));
         assertEquals(List.of("C rechazado"), mensajes(notificacionService.listar(dueno.principal(), String.valueOf(comercioC))));
+        assertTrue(notificacionService.listar(dueno.principal(), String.valueOf(comercioB)).stream().allMatch(n -> n.getTipo() != null),
+                "Cada aviso listado expone su tipo");
 
         assertEquals(2, notificacionService.contarNoLeidas(dueno.principal(), String.valueOf(comercioA)));
         assertEquals(1, notificacionService.contarNoLeidas(dueno.principal(), String.valueOf(comercioB)));

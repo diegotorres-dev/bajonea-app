@@ -1,9 +1,14 @@
 package com.bajonea.backend.exceptions;
 
+import com.bajonea.backend.config.DocumentacionComercioProperties;
 import com.bajonea.backend.dto.response.ApiResponse;
+import com.bajonea.backend.util.TamanoLegible;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import com.bajonea.backend.services.NombreComercioService;
 import com.bajonea.backend.dto.response.DesvinculacionBloqueadaResponseDTO;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -34,6 +39,17 @@ public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     private static final int MYSQL_ERROR_DUPLICATE_ENTRY = 1062;
+
+    private final DocumentacionComercioProperties documentacionProperties;
+
+    public GlobalExceptionHandler() {
+        this(new DocumentacionComercioProperties());
+    }
+
+    @Autowired
+    public GlobalExceptionHandler(DocumentacionComercioProperties documentacionProperties) {
+        this.documentacionProperties = documentacionProperties;
+    }
 
     /**
      * Última línea de defensa contra condiciones de carrera check-then-act sobre validaciones
@@ -115,6 +131,28 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(GeneracionTokenException.class)
     public ResponseEntity<ApiResponse<?>> handleGeneracionToken(GeneracionTokenException ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<>(ex.getMessage(), null));
+    }
+
+    @ExceptionHandler(ValidacionDocumentoException.class)
+    public ResponseEntity<ApiResponse<?>> handleValidacionDocumento(ValidacionDocumentoException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse<>(ex.getMessage(), ex.getData()));
+    }
+
+    /**
+     * Un archivo por encima del tope duro de multipart (el doble del máximo del negocio: el máximo exacto se valida en el
+     * servicio, con el tamaño real). El tamaño sale del {@code Content-Length} del pedido, que incluye unos
+     * cientos de bytes del multipart y se redondea a 0,1 MB.
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<?>> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex,
+            HttpServletRequest request) {
+        long maximo = documentacionProperties.getMaxBytes();
+        long recibido = request.getContentLengthLong();
+        String mensaje = recibido > maximo
+                ? "El archivo pesa " + TamanoLegible.formatear(recibido) + " y el máximo es " + TamanoLegible.formatear(maximo)
+                : "El archivo supera el máximo de " + TamanoLegible.formatear(maximo);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse<>(mensaje, Map.of("codigo", ValidacionDocumentoException.TAMANO_EXCEDIDO)));
     }
 
     @ExceptionHandler(ValidacionException.class)

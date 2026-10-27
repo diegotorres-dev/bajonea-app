@@ -2,6 +2,8 @@ package com.bajonea.backend.services;
 
 import com.bajonea.backend.entities.Comercio;
 import com.bajonea.backend.entities.Direccion;
+import com.bajonea.backend.entities.DocumentoComercio;
+import com.bajonea.backend.entities.DocumentoComercioArchivo;
 import com.bajonea.backend.entities.Horario;
 import com.bajonea.backend.entities.InvitacionEmpleado;
 import com.bajonea.backend.entities.Pago;
@@ -11,7 +13,10 @@ import com.bajonea.backend.entities.Usuario;
 import com.bajonea.backend.enums.CanalNotificacion;
 import com.bajonea.backend.enums.EstadoInvitacionEmpleado;
 import com.bajonea.backend.enums.EstadoToken;
+import com.bajonea.backend.enums.EstadoDocumentoComercio;
 import com.bajonea.backend.enums.MotivoHistorialEmpleado;
+import com.bajonea.backend.enums.MotivoRecalculo;
+import com.bajonea.backend.enums.TipoDocumentoComercio;
 import com.bajonea.backend.enums.TipoNotificacion;
 import com.bajonea.backend.enums.TipoToken;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
@@ -21,6 +26,8 @@ import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.entities.EmpleadoComercio;
 import com.bajonea.backend.enums.EstadoEmpleadoComercio;
 import com.bajonea.backend.repositories.DireccionRepository;
+import com.bajonea.backend.repositories.DocumentoComercioArchivoRepository;
+import com.bajonea.backend.repositories.DocumentoComercioRepository;
 import com.bajonea.backend.repositories.EmpleadoComercioRepository;
 import com.bajonea.backend.repositories.HorarioRepository;
 import com.bajonea.backend.repositories.InvitacionEmpleadoRepository;
@@ -62,6 +69,9 @@ public class TestSupportService {
     private final DireccionRepository direccionRepository;
     private final HorarioRepository horarioRepository;
     private final CuentaMercadoPagoService cuentaMercadoPagoService;
+    private final AptitudVentaComercioService aptitudVentaComercioService;
+    private final DocumentoComercioRepository documentoComercioRepository;
+    private final DocumentoComercioArchivoRepository documentoComercioArchivoRepository;
     private final PedidoService pedidoService;
     private final PedidoSchedulerService pedidoSchedulerService;
     private final PedidoRepository pedidoRepository;
@@ -101,7 +111,43 @@ public class TestSupportService {
                     "Solo un comercio APROBADO puede pasar a APTO_VENTA, estado actual: " + comercio.getEstado());
         }
         boolean duenoBloqueado = comercioService.duenoBloqueadoConBloqueo(comercio.getDueno().getId());
-        comercioService.activarAptoVenta(comercio, duenoBloqueado, ComercioService.MOTIVO_BLOQUEO_VIGENTE_AL_VINCULAR);
+        if (duenoBloqueado) {
+            comercioService.registrarTransicionAutomatica(comercio, EstadoComercio.APROBADO,
+                    EstadoComercio.CERRADO_TEMPORALMENTE, AptitudVentaComercioService.DETALLE_BLOQUEO_VIGENTE_AL_VINCULAR);
+            return;
+        }
+        comercioService.registrarTransicionAutomatica(comercio, EstadoComercio.APROBADO, EstadoComercio.APTO_VENTA,
+                "Vinculación automática de cuenta de Mercado Pago");
+    }
+
+    /**
+     * Atajo de entorno de test: deja al comercio con un documento {@code APROBADO} (un PDF mínimo de prueba, sin
+     * administrador que lo haya revisado) y recalcula su aptitud de venta por la misma regla y el mismo orden de
+     * bloqueo que la revisión real. Lo usan los pocos specs que prueban el cambio de estado con la exigencia de
+     * documentación encendida.
+     */
+    @Transactional
+    public void aprobarDocumentacion(Integer comercioId) {
+        Integer duenoId = comercioRepository.findDuenoIdById(comercioId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
+        AptitudVentaComercioService.EntradasDueno entradas = aptitudVentaComercioService.leerDueno(duenoId);
+        Comercio comercio = aptitudVentaComercioService.bloquearComercio(comercioId);
+        byte[] contenido = "%PDF-1.4\n%%EOF\n".getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        LocalDateTime ahora = LocalDateTime.now(clock);
+        DocumentoComercio documento = documentoComercioRepository.saveAndFlush(DocumentoComercio.builder()
+                .comercioId(comercioId)
+                .tipo(TipoDocumentoComercio.HABILITACION_COMERCIAL)
+                .nombreOriginal("documento-de-prueba.pdf")
+                .tipoMime("application/pdf")
+                .tamanoBytes(contenido.length)
+                .estado(EstadoDocumentoComercio.APROBADO)
+                .fechaSubida(ahora)
+                .fechaResolucion(ahora)
+                .subidoPorUsuarioId(duenoId)
+                .build());
+        documentoComercioArchivoRepository.saveAndFlush(
+                DocumentoComercioArchivo.builder().id(documento.getId()).contenido(contenido).build());
+        aptitudVentaComercioService.recalcular(comercio, entradas, MotivoRecalculo.DOCUMENTO_APROBADO, null);
     }
 
     /**
@@ -230,7 +276,8 @@ public class TestSupportService {
         boolean duenoBloqueado = comercioService.duenoBloqueadoConBloqueo(duenoId);
         cuentaMercadoPagoService.vincular(duenoId, cuentaMp, "TEST-access-token-" + duenoId,
                 "TEST-refresh-token-" + duenoId, "TEST-public-key-" + duenoId, true, LocalDateTime.now().plusDays(1));
-        comercioService.activarAptoVenta(duenoId, duenoBloqueado);
+        aptitudVentaComercioService.recalcularComerciosDelDueno(duenoId,
+                new AptitudVentaComercioService.EntradasDueno(duenoBloqueado, true), MotivoRecalculo.MP_VINCULADO);
     }
 
     /**

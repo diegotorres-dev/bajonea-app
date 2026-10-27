@@ -8,6 +8,7 @@ import com.bajonea.backend.entities.CodigoVinculacionMP;
 import com.bajonea.backend.entities.Comercio;
 import com.bajonea.backend.entities.CuentaMercadoPago;
 import com.bajonea.backend.entities.Dueno;
+import com.bajonea.backend.enums.MotivoRecalculo;
 import com.bajonea.backend.enums.EstadoPedido;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.CuentaMercadoPagoYaVinculadaException;
@@ -64,6 +65,7 @@ public class MercadoPagoOAuthService {
     private final DuenoRepository duenoRepository;
     private final CuentaMercadoPagoService cuentaMercadoPagoService;
     private final ComercioService comercioService;
+    private final AptitudVentaComercioService aptitudVentaComercioService;
     private final ComercioRepository comercioRepository;
     private final PedidoRepository pedidoRepository;
     private final PedidoTimeoutProperties timeoutProperties;
@@ -128,11 +130,14 @@ public class MercadoPagoOAuthService {
                 mercadoPagoConfig.isTestToken(),
                 LocalDateTime.now().plusSeconds(respuesta.expiresIn() != null ? respuesta.expiresIn() : 0));
 
-        comercioService.activarAptoVenta(duenoId, duenoBloqueado);
+        aptitudVentaComercioService.recalcularComerciosDelDueno(duenoId,
+                new AptitudVentaComercioService.EntradasDueno(duenoBloqueado, true), MotivoRecalculo.MP_VINCULADO);
     }
 
     /**
-     * Desvincula la cuenta de Mercado Pago del Dueño. Orden de bloqueo: cuenta, después todos los comercios del
+     * Desvincula la cuenta de Mercado Pago del Dueño. Orden de bloqueo: la fila del usuario del Dueño (compartida: el aviso
+     * de que sus comercios dejan de recibir pedidos inserta una notificación, cuya clave foránea la pide; sin tomarla antes
+     * se interbloquea con un bloqueo de cuenta, que tiene el usuario exclusivo y espera los comercios), cuenta, después todos los comercios del
      * Dueño ({@code FOR UPDATE}), después los pedidos {@code PENDIENTE_PAGO} de esos comercios
      * ({@code FOR SHARE}, filas y no un conteo). Si hay alguno, un cliente podría estar pagando contra esta
      * cuenta: se rechaza con la hora aproximada para reintentar. Si no hay, la cuenta pasa a inactiva y los
@@ -143,6 +148,7 @@ public class MercadoPagoOAuthService {
      * revalida siempre.
      */
     public void desvincular(Integer duenoId) {
+        comercioService.duenoBloqueadoConBloqueo(duenoId);
         CuentaMercadoPago cuenta = cuentaMercadoPagoService.obtenerActivaConBloqueo(duenoId);
 
         List<Integer> comercioIds = comercioRepository.findByDuenoIdConBloqueo(duenoId).stream()
@@ -164,7 +170,8 @@ public class MercadoPagoOAuthService {
         }
 
         cuentaMercadoPagoService.desvincular(cuenta);
-        comercioService.desactivarAptoVenta(duenoId);
+        aptitudVentaComercioService.recalcularComerciosDelDueno(duenoId,
+                new AptitudVentaComercioService.EntradasDueno(false, false), MotivoRecalculo.MP_DESVINCULADO);
     }
 
     /**

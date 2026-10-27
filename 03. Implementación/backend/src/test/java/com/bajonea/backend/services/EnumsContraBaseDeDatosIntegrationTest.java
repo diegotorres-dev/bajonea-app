@@ -89,4 +89,14 @@ class EnumsContraBaseDeDatosIntegrationTest {
     void elMotivoDeTimeoutDelHistorialCoincideConElEnumDeJava() {
         compararConLaColumna("historial_estado_pedido", "motivo_timeout", MotivoTimeoutPedido.values(), Set.of());
     }
+
+    @Test
+    void elTipoDelDocumentoDelComercioCoincideConElEnumDeJava() {
+        compararConLaColumna("documento_comercio", "tipo", com.bajonea.backend.enums.TipoDocumentoComercio.values(), Set.of());
+    }
+
+    @Test
+    void elEstadoDelDocumentoDelComercioCoincideConElEnumDeJava() {
+        compararConLaColumna("documento_comercio", "estado", com.bajonea.backend.enums.EstadoDocumentoComercio.values(), Set.of());
+    }
 }

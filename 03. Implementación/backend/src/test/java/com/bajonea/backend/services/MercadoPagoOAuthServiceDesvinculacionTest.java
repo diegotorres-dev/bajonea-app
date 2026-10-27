@@ -20,6 +20,7 @@ import com.bajonea.backend.entities.Comercio;
 import com.bajonea.backend.entities.CuentaMercadoPago;
 import com.bajonea.backend.entities.Dueno;
 import com.bajonea.backend.enums.EstadoPedido;
+import com.bajonea.backend.enums.MotivoRecalculo;
 import com.bajonea.backend.exceptions.CuentaMercadoPagoYaVinculadaException;
 import com.bajonea.backend.exceptions.DesvinculacionBloqueadaException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
@@ -44,6 +45,7 @@ class MercadoPagoOAuthServiceDesvinculacionTest {
 
     private CuentaMercadoPagoService cuentaService;
     private ComercioService comercioService;
+    private AptitudVentaComercioService aptitudService;
     private ComercioRepository comercioRepository;
     private PedidoRepository pedidoRepository;
     private DuenoRepository duenoRepository;
@@ -55,13 +57,14 @@ class MercadoPagoOAuthServiceDesvinculacionTest {
     void preparar() {
         cuentaService = mock(CuentaMercadoPagoService.class);
         comercioService = mock(ComercioService.class);
+        aptitudService = mock(AptitudVentaComercioService.class);
         comercioRepository = mock(ComercioRepository.class);
         pedidoRepository = mock(PedidoRepository.class);
         duenoRepository = mock(DuenoRepository.class);
         codigoRepository = mock(CodigoVinculacionMPRepository.class);
         PedidoTimeoutProperties timeouts = new PedidoTimeoutProperties();
         timeouts.setPagoMinutos(30);
-        service = new MercadoPagoOAuthService(codigoRepository, duenoRepository, cuentaService, comercioService,
+        service = new MercadoPagoOAuthService(codigoRepository, duenoRepository, cuentaService, comercioService, aptitudService,
                 comercioRepository, pedidoRepository, timeouts, mock(MercadoPagoConfig.class));
         cuenta = mock(CuentaMercadoPago.class);
         when(cuentaService.obtenerActivaConBloqueo(7)).thenReturn(cuenta);
@@ -110,12 +113,14 @@ class MercadoPagoOAuthServiceDesvinculacionTest {
 
         service.desvincular(7);
 
-        InOrder orden = inOrder(cuentaService, comercioRepository, pedidoRepository, comercioService);
+        InOrder orden = inOrder(comercioService, cuentaService, comercioRepository, pedidoRepository, aptitudService);
+        orden.verify(comercioService).duenoBloqueadoConBloqueo(7);
         orden.verify(cuentaService).obtenerActivaConBloqueo(7);
         orden.verify(comercioRepository).findByDuenoIdConBloqueo(7);
         orden.verify(pedidoRepository).findPendientesPagoDeComerciosConBloqueoCompartido(List.of(1, 2));
         orden.verify(cuentaService).desvincular(cuenta);
-        orden.verify(comercioService).desactivarAptoVenta(7);
+        orden.verify(aptitudService).recalcularComerciosDelDueno(7,
+                new AptitudVentaComercioService.EntradasDueno(false, false), MotivoRecalculo.MP_DESVINCULADO);
     }
 
     @Test
@@ -134,7 +139,7 @@ class MercadoPagoOAuthServiceDesvinculacionTest {
         assertTrue(ex.getMessage().startsWith("Hay 3 pedidos de clientes que todavía están pagando. Probá de nuevo alrededor de las "));
         assertTrue(ex.getMessage().endsWith("."));
         verify(cuentaService, never()).desvincular(any());
-        verify(comercioService, never()).desactivarAptoVenta(any());
+        verify(aptitudService, never()).recalcularComerciosDelDueno(any(), any(), any());
     }
 
     @Test
@@ -158,7 +163,8 @@ class MercadoPagoOAuthServiceDesvinculacionTest {
         RecursoNoEncontradoException ex = assertThrows(RecursoNoEncontradoException.class, () -> service.desvincular(8));
 
         assertEquals("El Dueño no tiene ninguna cuenta de Mercado Pago vinculada", ex.getMessage());
-        verifyNoInteractions(comercioRepository, pedidoRepository, comercioService);
+        verifyNoInteractions(comercioRepository, pedidoRepository, aptitudService);
+        verify(comercioService).duenoBloqueadoConBloqueo(8);
     }
 
     @Test

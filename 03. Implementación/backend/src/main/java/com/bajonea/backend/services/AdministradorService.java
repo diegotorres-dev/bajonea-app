@@ -24,6 +24,8 @@ import com.bajonea.backend.entities.Horario;
 import com.bajonea.backend.entities.PersonaFisica;
 import com.bajonea.backend.entities.RedSocial;
 import com.bajonea.backend.enums.EstadoComercio;
+import com.bajonea.backend.enums.EstadoDocumentoComercio;
+import com.bajonea.backend.enums.MotivoRecalculo;
 import com.bajonea.backend.enums.TipoEntidadNotificacion;
 import com.bajonea.backend.enums.TipoNotificacion;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
@@ -31,6 +33,7 @@ import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.exceptions.ValidacionException;
 import com.bajonea.backend.repositories.AdministradorRepository;
 import com.bajonea.backend.repositories.CategoriaRepository;
+import com.bajonea.backend.repositories.DocumentoComercioRepository;
 import com.bajonea.backend.repositories.ClienteRepository;
 import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.DireccionRepository;
@@ -83,7 +86,8 @@ public class AdministradorService {
     private final NotificacionService notificacionService;
     private final PedidoService pedidoService;
     private final ComercioService comercioService;
-    private final CuentaMercadoPagoService cuentaMercadoPagoService;
+    private final AptitudVentaComercioService aptitudVentaComercioService;
+    private final DocumentoComercioRepository documentoComercioRepository;
     private final AprobacionPreviaDueno aprobacionPreviaDueno;
     private final HistorialCambioComercioRepository historialCambioComercioRepository;
     private final ComercioResolicitudesProperties resolicitudesProperties;
@@ -240,7 +244,8 @@ public class AdministradorService {
                 comercioRepository.count(),
                 clienteRepository.count(),
                 categoriaRepository.countByActivoTrue(),
-                tagRepository.countByActivoTrue());
+                tagRepository.countByActivoTrue(),
+                documentoComercioRepository.countByEstado(EstadoDocumentoComercio.PENDIENTE));
     }
 
     /**
@@ -275,8 +280,7 @@ public class AdministradorService {
         Administrador administrador = administradorRepository.findById(administradorId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Administrador no encontrado"));
 
-        boolean duenoBloqueado = aprobar && comercioService.duenoBloqueadoConBloqueo(duenoId);
-        boolean nacePorMercadoPago = aprobar && cuentaMercadoPagoService.existeActivaConBloqueo(duenoId);
+        AptitudVentaComercioService.EntradasDueno entradasDueno = aprobar ? aptitudVentaComercioService.leerDueno(duenoId) : null;
 
         Comercio comercio = comercioRepository.findByIdConBloqueo(comercioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
@@ -303,8 +307,10 @@ public class AdministradorService {
                 .build();
         historialEstadoComercioRepository.save(historial);
 
-        if (nacePorMercadoPago) {
-            comercioService.activarAptoVenta(comercio, duenoBloqueado, ComercioService.MOTIVO_BLOQUEO_VIGENTE_AL_APROBAR);
+        EstadoComercio estadoFinal = estadoDestino;
+        if (aprobar) {
+            estadoFinal = aptitudVentaComercioService.recalcular(comercio, entradasDueno, MotivoRecalculo.COMERCIO_APROBADO,
+                    entradasDueno.bloqueado() ? AptitudVentaComercioService.DETALLE_BLOQUEO_VIGENTE_AL_APROBAR : null, false);
         }
 
         String mensaje;
@@ -312,7 +318,7 @@ public class AdministradorService {
             mensaje = "Tu comercio " + comercio.getNombre() + " fue rechazado de forma definitiva. Motivo: " + request.getMotivo();
         } else if (!aprobar) {
             mensaje = "Tu comercio " + comercio.getNombre() + " fue rechazado. Motivo: " + request.getMotivo();
-        } else if (nacePorMercadoPago) {
+        } else if (estadoFinal == EstadoComercio.APTO_VENTA) {
             mensaje = "Tu comercio " + comercio.getNombre() + " fue aprobado y ya podés vender";
         } else {
             mensaje = "Tu comercio " + comercio.getNombre() + " fue aprobado";

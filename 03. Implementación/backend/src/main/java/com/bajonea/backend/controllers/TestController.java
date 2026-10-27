@@ -1,5 +1,6 @@
 package com.bajonea.backend.controllers;
 
+import com.bajonea.backend.config.DocumentacionComercioProperties;
 import com.bajonea.backend.config.PrecioBloqueoProperties;
 import com.bajonea.backend.dto.response.ApiResponse;
 import com.bajonea.backend.dto.response.CierreTurnoTestResponseDTO;
@@ -52,6 +53,7 @@ public class TestController {
     private final InvitacionVencimientoJob invitacionVencimientoJob;
     private final TurnoBackfillService turnoBackfillService;
     private final PrecioBloqueoProperties precioBloqueoProperties;
+    private final DocumentacionComercioProperties documentacionComercioProperties;
     private final CierreTurnoJob cierreTurnoJob;
     private final CierreTurnoRepository cierreTurnoRepository;
     private final EmailService emailService;
@@ -134,6 +136,19 @@ public class TestController {
         emailService.simularFallasDeResumenTurno(cantidad);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new ApiResponse<>("Fallas simuladas del email de resumen de turno", emailService.fallasSimuladasRestantes()));
+    }
+
+    @PutMapping("/documentacion-requerida")
+    public ResponseEntity<ApiResponse<Boolean>> cambiarExigenciaDeDocumentacion(@RequestParam boolean habilitado) {
+        documentacionComercioProperties.setRequerida(habilitado);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>(
+                "Exigencia de documentación " + (habilitado ? "encendida" : "apagada"), habilitado));
+    }
+
+    @PutMapping("/comercios/{id}/documentacion-aprobada")
+    public ResponseEntity<ApiResponse<Void>> aprobarDocumentacion(@PathVariable Integer id) {
+        testSupportService.aprobarDocumentacion(id);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Documentación del comercio aprobada", null));
     }
 
     @PutMapping("/precio-bloqueo")

@@ -137,4 +137,33 @@ public class Pedido {
     @Setter
     @Column(name = "turno_horario_id")
     private Integer turnoHorarioId;
+
+    @Setter
+    @Column(name = "entrega_calle", length = 150)
+    private String entregaCalle;
+
+    @Setter
+    @Column(name = "entrega_numero", length = 10)
+    private String entregaNumero;
+
+    @Setter
+    @Column(name = "entrega_piso_depto", length = 30)
+    private String entregaPisoDepto;
+
+    @Setter
+    @Column(name = "entrega_codigo_postal", length = 10)
+    private String entregaCodigoPostal;
+
+    @Setter
+    @Column(name = "entrega_localidad_id", length = 15)
+    private String entregaLocalidadId;
+
+    @Setter
+    @Column(name = "entrega_referencia", length = 150)
+    private String entregaReferencia;
+
+    @Setter
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "entrega_localidad_id", insertable = false, updatable = false)
+    private Localidad entregaLocalidad;
 }

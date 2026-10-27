@@ -239,6 +239,7 @@ public class NotificacionService {
                 notificacion.isLeida(),
                 notificacion.getFechaCreacion(),
                 notificacion.getEntidadTipo(),
-                notificacion.getEntidadId());
+                notificacion.getEntidadId(),
+                notificacion.getTipo());
     }
 }

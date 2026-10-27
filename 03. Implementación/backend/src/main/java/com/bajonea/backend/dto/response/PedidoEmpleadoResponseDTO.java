@@ -33,7 +33,7 @@ public class PedidoEmpleadoResponseDTO {
     private final Integer comercioId;
     private final EstadoPedido estado;
     private final TipoEntrega tipoEntrega;
-    private final DireccionResponseDTO direccion;
+    private final DireccionEntregaResponseDTO direccion;
     private final MotivoRechazo motivoRechazo;
     private final String comentarioRechazo;
     private final CanceladoPor canceladoPor;
