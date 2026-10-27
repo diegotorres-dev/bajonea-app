@@ -3,7 +3,9 @@
 **Proyecto:** Bajoneá — Plataforma de pedidos gastronómicos en línea  
 **Motor de base de datos:** MySQL (InnoDB)  
 **ORM / Migraciones:** Spring Data JPA + Hibernate / Flyway  
-**Versión del modelo:** 1.26  
+**Versión del modelo:** 1.28  
+**Cambios de la v1.28 (Fase 4, documentos del comercio y nueva regla de `APTO_VENTA`, migración `V43`, 2026-10-26):** tablas nuevas `DocumentoComercio` (`documento_comercio`: metadatos de cada documento de habilitación de un comercio, con tipo, estado, motivo de rechazo y quién y cuándo lo resolvió) y `DocumentoComercioArchivo` (`documento_comercio_archivo`: el contenido binario, `LONGBLOB`, en tabla aparte para que ningún listado lo lea). Enums nuevos `TipoDocumentoComercio` (`LIBRETA_SANITARIA`, `CARNET_MANIPULACION_ALIMENTOS`, `HABILITACION_COMERCIAL`, `OTRO`; ampliable agregando valores al final) y `EstadoDocumentoComercio` (`PENDIENTE`, `APROBADO`, `RECHAZADO`). `notificacion.tipo` suma `DOCUMENTO_APROBADO`, `DOCUMENTO_RECHAZADO`, `COMERCIO_APTO_VENTA` y `COMERCIO_SIN_APTITUD` (cambio de metadatos como `V34` y `V35`; audiencia `DUENO` los cuatro). `V43` no modifica el estado de ningún comercio. Cambia la regla de `EstadoComercio.APTO_VENTA`, que ahora decide un único servicio (`AptitudVentaComercioService`): para entrar hacen falta cuenta de MercadoPago activa, al menos un documento `APROBADO` y ningún documento `PENDIENTE`; para seguir vendiendo, cuenta activa y al menos un `APROBADO`; con la cuenta del Dueno `BLOQUEADO` nada queda a la venta. La exigencia de documentos se apaga con `comercio.documentacion.requerida=false` (por defecto `true`; `false` en el perfil `test`): apagada, solo cuenta MercadoPago, como antes de esta versión. Los documentos son privados del comercio: los ve y los sube solo el Dueno y los revisa el Administrador; el Empleado no tiene acceso. Límites por propiedad: 8 MB por archivo, 5 documentos en revisión a la vez y 20 en total por comercio (los rechazados cuentan). Formatos PDF, JPG, PNG y WebP, validados por la firma de bytes. Un `RECHAZADO` no se vuelve a resolver; el Dueno solo elimina un documento propio que sigue `PENDIENTE`.  
+**Cambios de la v1.27 (Fase 3, direcciones múltiples del Cliente, migración `V42`, 2026-10-24):** `Direccion` suma `nombre` (`VARCHAR(40) NULL`, alias privado del Cliente, repetible entre direcciones) y `referencia` (`VARCHAR(150) NULL`, indicación de entrega), la columna generada `principal_activa_cliente_id` (`STORED`: vale `cliente_id` si `principal = 1` y `eliminada = 0`, si no `NULL`) con el índice único `uq_direccion_principal_cliente` (garantiza en base una sola predeterminada activa por Cliente; no la mapea la entidad JPA) y el índice `idx_direccion_cliente_activa (cliente_id, eliminada)`. `Pedido` suma la copia de la dirección de entrega: `entrega_calle`, `entrega_numero`, `entrega_piso_depto`, `entrega_codigo_postal`, `entrega_localidad_id` (sin `FOREIGN KEY` a propósito) y `entrega_referencia`, todas `NULL`; `direccion_id` se conserva como origen de la copia y las respuestas de pedido leen siempre la copia, nunca la dirección viva. El alias no se copia al pedido. Un pedido `RETIRO` no tiene copia. La migración deja una predeterminada por Cliente que no la tuviera (la de mayor `id`) y copia la dirección a los pedidos `DOMICILIO` existentes; los valores previos a una edición posterior de la dirección no se pueden reconstruir, así que esos pedidos quedan con los valores actuales. Reglas de la API (sin esquema): hasta 5 direcciones activas por Cliente (`409 DIRECCIONES_CUPO_MAXIMO`), la primera queda predeterminada, la última activa no se puede eliminar (`409 ULTIMA_DIRECCION`), eliminar la predeterminada promueve la más reciente, y al crear o editar la localidad tiene que ser Río Grande, Ushuaia o Tolhuin (las direcciones viejas fuera de esas tres se siguen leyendo y sirven para pedir).  
 **Cambios de la v1.26 (Fase 2, tramo T4, migración `V41`, 2026-10-22):** tabla nueva `CierreTurno` (`cierre_turno`): una fila por turno terminado de un comercio, con la foto de sus cifras (`cantidad_pedidos`, `vendido`, `comision`, `neto`, `pendientes_al_cierre`) y el estado del email de resumen que se le manda al Dueño (`email_estado`, `email_intentos`, `email_proximo_intento`, `email_envio_iniciado`, `email_fecha_envio`, `email_ultimo_error`). Enum nuevo `EstadoEmailCierreTurno`. `UNIQUE (comercio_id, turno_fecha, horario_id)`; `horario_id` es una `FOREIGN KEY` a `Horario.id` sin cascada (un turno cerrado conserva su versión de horario). No cambia ninguna otra tabla.  
 **Cambios de la v1.25 (Fase 2, tramo T3, migración `V40`, 2026-10-22):** `ItemCarrito` suma `precio_visto` (`DECIMAL(10,2) NULL`): el precio vigente del producto en el momento en que el ítem se insertó en el carrito. Se estampa solo al insertar (sumar o cambiar la cantidad no lo toca); si el precio vigente del producto es distinto, el carrito marca el ítem con `precioCambio` y el cliente ve el aviso. Los ítems anteriores a `V40` quedan con `NULL` y nunca avisan. Sin índices ni claves nuevas. Además hay cambios de comportamiento sin esquema: el precio de un producto no se puede cambiar mientras el comercio está dentro de una franja de `Horario` (`409` `PRECIO_BLOQUEADO_EN_FRANJA`, propiedad `precio.bloqueo-en-franja.habilitado`), y `POST /pedidos/cliente` acepta un `totalEsperado` opcional y responde `409` `PRECIO_CAMBIO` si no coincide con el total que se cobraría.  
 **Cambios de la v1.24 (Fase 2, tramo T2, migración `V39`, 2026-10-20):** `Pedido` suma `fecha_pago_confirmado` (`DATETIME NULL`), `turno_fecha` (`DATE NULL`) y `turno_horario_id` (`INT NULL`, `FOREIGN KEY fk_pedido_turno_horario` a `Horario.id` sin cascada), con los índices `idx_pedido_turno (comercio_id, turno_fecha, turno_horario_id)`, `idx_pedido_fecha_pago (comercio_id, fecha_pago_confirmado)` e `idx_pedido_turno_horario (turno_horario_id)`. El turno de un pedido se asigna al confirmarse el pago, con el mismo instante que la fila `PENDIENTE_CONFIRMACION_COMERCIO` del historial: es el turno en el que cayó el pago (`turno_fecha` es la fecha de apertura del turno, así que un pago de madrugada va al turno del día anterior) y, si cayó fuera de toda franja, el último turno terminado dentro de los 7 días anteriores; queda `NULL` si el comercio no tenía ninguna franja vigente. Los pedidos anteriores a la migración reciben `fecha_pago_confirmado` desde el historial en la propia migración y `turno_*` por un proceso de aplicación que corre una vez al arrancar (`turno.backfill.habilitado`). El panel del comercio deja de contar "hoy" y pasa a contar por turno (`GET /api/v1/pedidos/comercio/resumen-turno`, que reemplaza a `resumen-hoy`).  
@@ -138,15 +140,40 @@ Ciclo de vida del comercio en la plataforma.
 | Valor | Descripción |
 |-------|-------------|
 | `PENDIENTE` | Solicitud de alta enviada; pendiente de revisión por el Administrador. No visible en el catálogo. |
-| `APROBADO` | Aprobado por el Administrador. Todavía no es visible en el catálogo ni puede recibir pedidos: para eso el Dueno debe vincular su cuenta de MercadoPago, lo que lo pasa a `APTO_VENTA`. |
+| `APROBADO` | Aprobado por el Administrador. Todavía no es visible en el catálogo ni puede recibir pedidos: para eso tiene que cumplir los requisitos de `APTO_VENTA` (cuenta de MercadoPago vinculada y documentación aprobada, ver abajo). Un comercio que pierde la aptitud vuelve a este estado. |
 | `RECHAZADO` | Solicitud rechazada por el Administrador con motivo. El Dueno puede corregir los datos del mismo comercio y volver a solicitar su aprobación (re-solicitud, hasta 3 veces por comercio: `comercio.resolicitudes.max`); la re-solicitud lo devuelve a `PENDIENTE`. |
 | `SUSPENDIDO` | Suspendido por el Administrador. Oculto del catálogo. El Dueno titular puede enviar mensaje de soporte. |
 | `INACTIVO` | Inactivado por propagación desde el Dueno titular (3 meses sin actividad). Oculto del catálogo. |
-| `CERRADO_TEMPORALMENTE` | Cerrado automáticamente por bloqueo del Dueno titular. Solo llegan a este estado los comercios que estaban en `APTO_VENTA`: un `APROBADO` (sin cuenta de cobro) y los demás estados no se tocan. Sigue visible en el catálogo con el indicador "Cerrado temporalmente", sin hora de reapertura y sin recibir pedidos. Se restaura al recuperar la contraseña: a `APTO_VENTA` si el Dueno tiene una `CuentaMercadoPago` activa, o a `APROBADO` si no. También es el destino de un comercio que, con la cuenta del Dueno `BLOQUEADO`, iba a quedar en `APTO_VENTA` (aprobación del Administrador con cuenta de cobro vinculada, o vinculación de MercadoPago sobre un `APROBADO`): ningún comercio queda a la venta con el Dueno bloqueado. |
+| `CERRADO_TEMPORALMENTE` | Cerrado automáticamente por bloqueo del Dueno titular. Solo llegan a este estado los comercios que estaban en `APTO_VENTA`: un `APROBADO` (sin cuenta de cobro) y los demás estados no se tocan. Sigue visible en el catálogo con el indicador "Cerrado temporalmente", sin hora de reapertura y sin recibir pedidos. Se restaura al recuperar la contraseña: a `APTO_VENTA` si el Dueno sigue cumpliendo la regla de seguir vendiendo (cuenta de MercadoPago activa y al menos un documento aprobado, o solo la cuenta si la exigencia de documentos está apagada), o a `APROBADO` si no. Mientras dura el bloqueo ningún otro evento (documentos, MercadoPago) lo mueve. También es el destino de un comercio que, con la cuenta del Dueno `BLOQUEADO`, iba a quedar en `APTO_VENTA` (aprobación del Administrador con cuenta de cobro vinculada, o vinculación de MercadoPago sobre un `APROBADO`): ningún comercio queda a la venta con el Dueno bloqueado. |
 | `RECHAZO_DEFINITIVO` | Estado terminal, sin salida desde la aplicación. Se llega desde `PENDIENTE` cuando el Administrador rechaza de forma definitiva (a pedido suyo, sobre el alta original o sobre una re-solicitud) o cuando rechaza una re-solicitud y el comercio ya usó todas las que tenía (`cantidad_resolicitudes >= comercio.resolicitudes.max`; lo decide el servidor). El Dueno no puede corregirlo ni volver a solicitarlo; reabrirlo es una operación manual sobre la base (estado a `RECHAZADO`, `cantidad_resolicitudes` en 2 y una fila de historial "reabierto manualmente"). No cuenta para la elegibilidad de agregar otros comercios, pero sí como duplicado. No es visible en el catálogo ni recibe pedidos, y no lo toca el bloqueo ni la suspensión de cuenta (migración `V24`). |
-| `APTO_VENTA` | Aprobado, con la cuenta de MercadoPago del Dueno titular vinculada (`CuentaMercadoPago.activa = true`). Se alcanza automáticamente al vincular la cuenta (`APROBADO → APTO_VENTA`) y vuelve a `APROBADO` al desvincularla. Es el único estado en el que el comercio aparece en el catálogo público y puede recibir pedidos (migración `V12`). |
+| `APTO_VENTA` | Aprobado, con la cuenta de MercadoPago del Dueno titular vinculada (`CuentaMercadoPago.activa = true`) y la documentación aprobada. Es el único estado en el que el comercio aparece en el catálogo público como abierto y puede recibir pedidos (migración `V12`). **Regla (v1.28, `AptitudVentaComercioService`, única fuente):** entrar desde `APROBADO` exige cuenta de MercadoPago activa, al menos un `DocumentoComercio` `APROBADO` (de cualquier tipo) y ningún documento `PENDIENTE`; seguir en `APTO_VENTA` exige cuenta activa y al menos un documento `APROBADO`, así que subir un documento nuevo (queda `PENDIENTE`) o que rechacen uno extra no corta las ventas. Se pierde (`APTO_VENTA → APROBADO`, con aviso `COMERCIO_SIN_APTITUD`) al desvincular MercadoPago, al revocarse el último documento aprobado o al eliminarse el respaldo. Con `comercio.documentacion.requerida=false` los documentos se ignoran y solo cuenta MercadoPago. Con la cuenta del Dueno `BLOQUEADO` ningún camino deja el comercio en `APTO_VENTA`: el que cumpliría queda en `CERRADO_TEMPORALMENTE`. Un comercio que pierde la aptitud desaparece del catálogo del Cliente, igual que al desvincular MercadoPago. |
 
 > **Regla de visibilidad y venta (implementada):** el catálogo público (`GET /catalogo/comercios` y los productos de un comercio) lista los comercios con `estado = APTO_VENTA` o `CERRADO_TEMPORALMENTE`, y un pedido solo se acepta si el comercio está en `APTO_VENTA`, no está cerrado manualmente (`cerrado_manualmente = false`) y la hora actual está dentro de alguna franja de `Horario` (`ComercioService.validarAceptaPedidos`, en este orden: `CERRADO_TEMPORALMENTE` con el mismo `409` "Este comercio está cerrado en este momento" del cierre manual, resto de estados distintos de `APTO_VENTA` con "Este comercio no está aceptando pedidos en este momento", cierre manual, horario). El indicador de apertura es `estadoApertura`: `ABIERTO`, `CERRADO_HORARIO`, `CERRADO_MANUAL` (cierre manual de un `APTO_VENTA`) o `CERRADO_TEMPORALMENTE` (comercio en estado `CERRADO_TEMPORALMENTE`, con la cuenta del Dueno bloqueada; si además tiene un cierre manual previo, manda el bloqueo). `textoReapertura` se calcula para el cierre por horario y el cierre manual, y es `NULL` para un comercio en estado `CERRADO_TEMPORALMENTE` (no se promete una hora). El campo `estado` del catálogo público informa siempre `APTO_VENTA`, también para un `CERRADO_TEMPORALMENTE`; el público distingue el bloqueo de la cuenta del cierre manual por `estadoApertura` (regla del 2026-10-18, que reemplaza a la del tramo C2 de mostrar los dos casos iguales). Para el panel del Dueno un `CERRADO_TEMPORALMENTE` no es operativo (`operativo = false`, `puedeCambiarCierre = false`).
+
+---
+
+### ENUM: TipoDocumentoComercio
+
+Tipo de documento de habilitación de un comercio (`DocumentoComercio.tipo`). Se amplía agregando valores al final del ENUM (cambio de metadatos).
+
+| Valor | Etiqueta | Descripción |
+|-------|----------|-------------|
+| `LIBRETA_SANITARIA` | Libreta sanitaria | Libreta sanitaria. |
+| `CARNET_MANIPULACION_ALIMENTOS` | Carnet de manipulación de alimentos | Carnet de manipulación de alimentos. |
+| `HABILITACION_COMERCIAL` | Habilitación comercial | Habilitación comercial. |
+| `OTRO` | Otro | Cualquier otro documento; exige `descripcion` (hasta 100 caracteres). |
+
+---
+
+### ENUM: EstadoDocumentoComercio
+
+Estado de revisión de un documento (`DocumentoComercio.estado`). El Dueno ve las etiquetas "En revisión", "Aprobado" y "Rechazado"; la API devuelve el valor del enum.
+
+| Valor | Descripción |
+|-------|-------------|
+| `PENDIENTE` | Subido, esperando la revisión del Administrador. Es el único estado en el que el Dueno puede eliminarlo. Estado inicial. |
+| `APROBADO` | Aprobado por el Administrador. Cuenta para la aptitud de venta. El Administrador puede revocarlo (pasarlo a `RECHAZADO` con motivo). |
+| `RECHAZADO` | Rechazado (o revocado) por el Administrador, con motivo. Queda en el historial del comercio y cuenta para el tope de 20; no se vuelve a aprobar: el Dueno sube uno nuevo. |
 
 ---
 
@@ -556,7 +583,7 @@ Estado de procesamiento del envío de la notificación.
 
 ### ENUM: TipoNotificacion
 
-Tipo de evento que originó la notificación. Corresponde a los códigos T1–T37 de los Requisitos Funcionales del Sistema (T33 a T35 reutilizan tipos existentes, ver la nota debajo de la tabla; T36 y T37 tienen tipo propio).
+Tipo de evento que originó la notificación. Corresponde a los códigos T1–T41 de los Requisitos Funcionales del Sistema (T33 a T35 reutilizan tipos existentes, ver la nota debajo de la tabla; T36 a T41 tienen tipo propio).
 
 | Valor | Cód. | Destinatario | Canal | Descripción |
 |-------|------|-------------|-------|-------------|
@@ -593,10 +620,14 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T3
 | `EMPLEADO_DESACTIVADO` | T32 | Empleado | Push | El Dueno desactivó al empleado de un comercio puntual (**implementado en el bloque A1 de E4**): aviso personal (sin `comercio_id`, con `entidad_tipo = COMERCIO` y el id del comercio), que se conserva en la campana personal de la persona: "{Comercio} te dio de baja del equipo. Ya no tenés acceso a ese comercio." (texto provisorio). El mismo tipo sirve a T34 (**implementado en el bloque A2 de E4**: el Empleado renunció; aviso al Dueno, con `comercio_id` y `entidad_tipo = COMERCIO`, que se ve con ese comercio abierto: "{Nombre Apellido} dejó de trabajar en {Comercio}.", texto provisorio). |
 | `EMPLEADO_REACTIVADO` | T37 | Empleado | Push | **Implementado en el bloque A1 de E4 (v1.18, migración `V35`).** El Dueno reactivó directamente al empleado: aviso personal (sin `comercio_id`, con `entidad_tipo = COMERCIO` y el id del comercio): "{Comercio} te reactivó en el equipo. Ya podés volver a trabajar ahí." (texto provisorio). No hay email de reactivación. |
 | `PEDIDO_NO_RETIRADO` | T36 | Cliente | Push | El comercio (Dueño o Empleado) o el proceso automático del comercio suspendido cerró como `NO_RETIRADO` un pedido de retiro: "Tu pedido #12 no fue retirado y el comercio lo cerró. Como ya estaba preparado, no hay devolución del pago." Una sola fila, personal del Cliente (sin copias al equipo), escrita en la misma transacción que el cambio de estado (migración `V34`). |
+| `DOCUMENTO_APROBADO` | T38 | Dueno | Push | **Implementado en la Fase 4 (v1.28, migración `V43`).** El Administrador aprobó un documento del comercio: "Tu documento «Libreta sanitaria» de {Comercio} fue aprobado." Aviso del comercio (con `comercio_id` y `entidad_tipo = COMERCIO`). Sin email. |
+| `DOCUMENTO_RECHAZADO` | T39 | Dueno | Push | **Fase 4 (v1.28).** El Administrador rechazó un documento, o revocó uno aprobado, con motivo: "Tu documento «…» de {Comercio} fue rechazado. Motivo: …" o "Se revocó la aprobación de tu documento «…» de {Comercio}. Motivo: …". Con `comercio_id`. Sin email. |
+| `COMERCIO_APTO_VENTA` | T40 | Dueno | Push | **Fase 4 (v1.28).** El comercio pasó de `APROBADO` a `APTO_VENTA` (cumple la regla de aptitud de venta): "Tu comercio {Comercio} ya puede recibir pedidos." No se emite al aprobar el comercio (ya lo dice `COMERCIO_APROBADO`) ni al restaurar la cuenta. |
+| `COMERCIO_SIN_APTITUD` | T41 | Dueno | Push | **Fase 4 (v1.28).** El comercio dejó de cumplir la regla y volvió a `APROBADO`: "Tu comercio {Comercio} dejó de recibir pedidos: falta vincular Mercado Pago / falta tener un documento aprobado." También se emite si al restaurar la cuenta ya no la cumple. No se emite cuando lo cierra el bloqueo de la cuenta. |
 
 > **Reutilización de tipos para el Empleado (sin valores nuevos de ENUM; T35 implementado en el bloque A2 de E1, el resto planificado en E1 a E4):** T33 (invitación aceptada) usa `INVITACION_EMPLEADO` dirigido al Dueno, con `entidad_tipo = COMERCIO`; T34 (el empleado renunció, implementado en el bloque A2 de E4) usa `EMPLEADO_DESACTIVADO` dirigido al Dueno con otro texto; T35 (aviso de regularización a una cuenta que no se pudo invitar) usa `INVITACION_EMPLEADO` con `canal = EMAIL` y `estado = ENVIADO`, dirigido al `usuario_id` de la persona, y sirve para contar el tope de 3 por día por destinatario (24 horas corridas; la fila se escribe aunque falle el envío, porque significa "se intentó"). Los listados y el contador de la campana del Cliente filtran `canal = PUSH` para no mostrar estas filas. Las operativas (T1, T9, T13 y T30) se emiten una vez por cada Empleado `ACTIVO` además del Dueno (T1, T9 y T13 implementadas en el bloque A4 de E3; T30, en el bloque A6).
 >
-> **Audiencia por tipo (bloque A4 de E3, implementada en `TipoNotificacion.getAudiencia()`):** *equipo* (el Dueno y los Empleados `ACTIVO` del comercio, una copia cada uno): T1, T9, T13 y T30; *Dueno* (solo él, con `comercio_id`): T14, T15, T16, T25 y T33; *Cliente o Dueno* (el mismo tipo sirve a los dos, según el texto): T29, T32/T34 (`EMPLEADO_DESACTIVADO`: T32 va a la persona desactivada como aviso personal, T34 al Dueno) y T37 (`EMPLEADO_REACTIVADO`, aviso personal de la persona reactivada, v1.18); *Administrador* (hoy no se emiten): T17, T18, T19, T22 y T27; *Cliente* (aviso personal, sin comercio): todos los demás. Las copias del equipo excluyen al Cliente del pedido: un Empleado que compra en su propio comercio recibe solo sus avisos de comprador. Quien se suma o se reactiva ve solo los avisos posteriores a su activación (al activar o reactivar a un Empleado se borran, por clave primaria y en la misma transacción, sus avisos anteriores de ese comercio; la desactivación y, desde el bloque A1 de E4, la reactivación directa hacen el mismo purgado, en la misma transacción; la renuncia, desde el bloque A2, también. T32 y T37 no se purgan: son avisos personales, sin `comercio_id`).
+> **Audiencia por tipo (bloque A4 de E3, implementada en `TipoNotificacion.getAudiencia()`):** *equipo* (el Dueno y los Empleados `ACTIVO` del comercio, una copia cada uno): T1, T9, T13 y T30; *Dueno* (solo él, con `comercio_id`): T14, T15, T16, T25, T33 y T38 a T41; *Cliente o Dueno* (el mismo tipo sirve a los dos, según el texto): T29, T32/T34 (`EMPLEADO_DESACTIVADO`: T32 va a la persona desactivada como aviso personal, T34 al Dueno) y T37 (`EMPLEADO_REACTIVADO`, aviso personal de la persona reactivada, v1.18); *Administrador* (hoy no se emiten): T17, T18, T19, T22 y T27; *Cliente* (aviso personal, sin comercio): todos los demás. Las copias del equipo excluyen al Cliente del pedido: un Empleado que compra en su propio comercio recibe solo sus avisos de comprador. Quien se suma o se reactiva ve solo los avisos posteriores a su activación (al activar o reactivar a un Empleado se borran, por clave primaria y en la misma transacción, sus avisos anteriores de ese comercio; la desactivación y, desde el bloque A1 de E4, la reactivación directa hacen el mismo purgado, en la misma transacción; la renuncia, desde el bloque A2, también. T32 y T37 no se purgan: son avisos personales, sin `comercio_id`).
 
 ---
 
@@ -649,10 +680,12 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
 | `id` | INT | NO | AI | PK, AI | Identificador único de la dirección. |
+| `nombre` | VARCHAR(40) | SÍ | NULL | — | Agregada en la migración `V42`. Alias privado que el Cliente le pone a la dirección ("Casa", "Trabajo"). Repetible. Solo lo ve el Cliente: no se copia al pedido. |
 | `calle` | VARCHAR(150) | NO | — | NN | Nombre de la calle. |
 | `numero` | VARCHAR(10) | NO | — | NN | Número de puerta o altura. |
 | `piso_depto` | VARCHAR(30) | SÍ | NULL | — | Piso y/o departamento (ej. `"3° B"`). Opcional. |
 | `codigo_postal` | VARCHAR(10) | NO | — | NN | Código postal de la dirección. |
+| `referencia` | VARCHAR(150) | SÍ | NULL | — | Agregada en la migración `V42`. Indicación de entrega ("portón verde"). Se copia al pedido. |
 | `localidad_id` | VARCHAR(15) | NO | — | FK → Localidad.id, NN | Localidad donde se ubica la dirección. |
 | `cliente_id` | INT | SÍ | NULL | FK → Cliente.id | FK al cliente propietario. Mutuamente excluyente con `comercio_id`. |
 | `comercio_id` | INT | SÍ | NULL | FK → Comercio.id, UQ | FK al comercio propietario. UQ garantiza máximo una dirección por comercio. Mutuamente excluyente con `cliente_id`. |
@@ -661,12 +694,13 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | `fecha_creacion` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación del registro. |
 | `fecha_modificacion` | DATETIME | SÍ | NULL | — | Fecha y hora de la última edición de la dirección. |
 | `fecha_baja` | DATETIME | SÍ | NULL | — | Fecha y hora de la eliminación lógica. |
+| `principal_activa_cliente_id` | INT | SÍ | generada | STORED, UQ | Agregada en la migración `V42`. `cliente_id` si `principal = 1` y `eliminada = 0`, si no `NULL`. Con su índice único garantiza una sola predeterminada activa por Cliente. No la mapea la entidad JPA. |
 
-**Índices:** `PRIMARY KEY (id)` | `UNIQUE (comercio_id)` | `INDEX (cliente_id)` | `INDEX (localidad_id)`
+**Índices:** `PRIMARY KEY (id)` | `UNIQUE (comercio_id)` | `INDEX (cliente_id)` | `INDEX idx_direccion_cliente_activa (cliente_id, eliminada)` | `UNIQUE uq_direccion_principal_cliente (principal_activa_cliente_id)` | `INDEX (localidad_id)`
 
 **Reglas de negocio:**
 - Exactamente uno de `cliente_id` o `comercio_id` debe estar poblado; el otro debe ser NULL.
-- Un cliente puede tener múltiples direcciones activas. Solo una puede tener `principal = true`.
+- Un cliente puede tener hasta 5 direcciones activas (las eliminadas no cuentan). Solo una activa puede tener `principal = true` (índice único `V42`). La primera dirección queda predeterminada; al eliminar la predeterminada pasa a serlo la activa de mayor `id`; la última activa no se puede eliminar. El cambio de predeterminada se hace solo por su endpoint (`PUT /clientes/direcciones/{id}/principal`), nunca editando la dirección.
 - La dirección del comercio no puede eliminarse lógicamente.
 
 ---
@@ -1251,6 +1285,52 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 
 ---
 
+### Tabla: DocumentoComercio
+
+**Descripción:** Documento de habilitación de un comercio (libreta sanitaria, carnet de manipulación de alimentos, habilitación comercial u otro) que sube el Dueno y revisa el Administrador. Privado del comercio: lo ven solo el Dueno de ese comercio y el Administrador; el Empleado no. Sin vencimiento. Una fila por archivo subido; un documento rechazado se conserva (el Dueno sube uno nuevo) y no hay tabla de historial aparte. El contenido binario vive en `DocumentoComercioArchivo`. Migración `V43`.
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `id` | INT | NO | AI | PK, AI | Identificador único del documento. |
+| `comercio_id` | INT | NO | — | FK → Comercio.id (sin cascada), NN | Comercio al que pertenece. |
+| `tipo` | ENUM TipoDocumentoComercio | NO | — | NN | Tipo de documento. |
+| `descripcion` | VARCHAR(100) | SÍ | NULL | — | Solo para `OTRO` (obligatoria en ese caso, validada en el DTO); para los demás tipos se ignora y queda `NULL`. |
+| `nombre_original` | VARCHAR(255) | NO | — | NN | Nombre del archivo tal como lo subió el Dueno, sin rutas ni caracteres de control. Solo para mostrar (siempre con `textContent`). |
+| `tipo_mime` | VARCHAR(100) | NO | — | NN | Tipo real comprobado por la firma de bytes (`application/pdf`, `image/jpeg`, `image/png`, `image/webp`), nunca el que declara el navegador. |
+| `tamano_bytes` | INT | NO | — | NN | Tamaño del archivo (máximo 8 MB, `comercio.documentacion.max-bytes`). |
+| `estado` | ENUM EstadoDocumentoComercio | NO | `PENDIENTE` | NN | Estado del documento. |
+| `motivo_rechazo` | VARCHAR(255) | SÍ | NULL | CHECK | Obligatorio cuando `estado = RECHAZADO` (`ck_documento_comercio_motivo`); es la razón de un rechazo o de una revocación. |
+| `fecha_subida` | DATETIME | NO | — | NN | Instante de la subida (el reloj único de la aplicación). |
+| `fecha_resolucion` | DATETIME | SÍ | NULL | — | Instante de la última resolución del Administrador (una revocación pisa la fecha de la aprobación anterior). |
+| `administrador_id` | INT | SÍ | NULL | FK → Administrador.id | Administrador que resolvió por última vez. |
+| `subido_por_usuario_id` | INT | NO | — | FK → Usuario.id, NN | Usuario que lo subió: siempre el Dueno. |
+
+**Índices:** `PRIMARY KEY (id)` | `INDEX idx_documento_comercio_bandeja (estado, fecha_subida)` (bandeja de pendientes del Administrador, de la más antigua a la más nueva) | `INDEX idx_documento_comercio_conteo (comercio_id, estado)` (recuentos por comercio y estado) | `INDEX idx_documento_comercio_administrador (administrador_id)` | `INDEX idx_documento_comercio_subido_por (subido_por_usuario_id)` | `FOREIGN KEY` a `comercio`, `administrador` y `usuario`, sin cascada.
+
+**Reglas de negocio:**
+- Subir exige el comercio `APROBADO`, `APTO_VENTA` o `CERRADO_TEMPORALMENTE` (`409 COMERCIO_ESTADO_NO_PERMITE_DOCUMENTOS` en otro caso). Cupos configurables: 5 documentos `PENDIENTE` a la vez (`409 DOCUMENTO_CUPO_REVISION`) y 20 en total contando los rechazados (`409 DOCUMENTO_CUPO_TOTAL`). No se borra nada automáticamente.
+- Formatos PDF, JPG, PNG y WebP, comprobados por la firma de bytes; tamaño máximo 8 MB. Errores `400` con `DOCUMENTO_FORMATO_NO_PERMITIDO` y `DOCUMENTO_TAMANO_EXCEDIDO` (el mensaje trae el tamaño real y el máximo).
+- Transiciones del Administrador (`PUT /administrador/documentos/{id}/resolver`): aprobar solo un `PENDIENTE`; rechazar un `PENDIENTE` o un `APROBADO` (revocación), siempre con motivo; un `RECHAZADO` no se vuelve a resolver (`409 DOCUMENTO_YA_RESUELTO`).
+- El Dueno solo elimina físicamente un documento propio que sigue `PENDIENTE` (`409 DOCUMENTO_NO_ELIMINABLE` si ya fue resuelto).
+- Cualquier documento aprobado de cualquier tipo alcanza para la aptitud de venta: no hay lista de tipos obligatorios.
+- Orden de bloqueo: `usuario` del Dueno, `cuenta_mercado_pago`, `comercio` (`FOR UPDATE`), `documento_comercio` (`FOR UPDATE`, primera lectura de la fila), después el resto. Toda escritura de documentos termina recalculando la aptitud del comercio (`AptitudVentaComercioService`).
+- Avisos in-app al Dueno, sin email: `DOCUMENTO_APROBADO`, `DOCUMENTO_RECHAZADO` (con el motivo; la revocación lo dice), `COMERCIO_APTO_VENTA` y `COMERCIO_SIN_APTITUD`. Al Administrador no hay aviso: el dashboard suma `documentosPendientes` y hay una bandeja.
+
+---
+
+### Tabla: DocumentoComercioArchivo
+
+**Descripción:** Contenido binario de un `DocumentoComercio`, en tabla aparte para que los listados y los recuentos nunca lean el binario. Una fila por documento; se crea y se borra junto con él. Se entrega solo a través de la API autenticada (`GET /comercios/documentos/{id}/archivo` y `GET /administrador/documentos/{id}/archivo`), con `Content-Type` real, `Content-Disposition: inline`, `X-Content-Type-Options: nosniff` y `Cache-Control: no-store`; nunca con una URL ni un token. Migración `V43`.
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `documento_id` | INT | NO | — | PK, FK → DocumentoComercio.id (sin cascada) | Documento al que pertenece el contenido. |
+| `contenido` | LONGBLOB | NO | — | NN | Bytes del archivo (hasta 8 MB). Requiere `max_allowed_packet` de al menos 16 MB en el servidor de base de datos. |
+
+**Índices:** `PRIMARY KEY (documento_id)` | `FOREIGN KEY fk_documento_comercio_archivo_documento`.
+
+---
+
 ### Tabla: ConfiguracionTarifa
 
 **Descripción:** Historial de configuraciones de tarifas de servicio. La tarifa vigente es la del registro con `fecha_vigencia` más alta. Cada cambio genera un nuevo registro (política append-only). Los valores se congelan en cada `Pedido` al momento de su creación.
@@ -1623,7 +1703,13 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 | `id` | INT | NO | AI | PK, AI | Identificador único del pedido. Usado como `external_reference` en MercadoPago. |
 | `cliente_id` | INT | NO | — | FK → Cliente.id, NN | Cliente que realizó el pedido. |
 | `comercio_id` | INT | NO | — | FK → Comercio.id, NN | Comercio receptor del pedido. |
-| `direccion_id` | INT | SÍ | NULL | FK → Direccion.id | Dirección de entrega. Obligatorio para `DOMICILIO`; NULL para `RETIRO`. |
+| `direccion_id` | INT | SÍ | NULL | FK → Direccion.id | Dirección de la que salió la copia de entrega. Obligatorio para `DOMICILIO`; NULL para `RETIRO`. Desde la `V42` solo indica el origen: las respuestas leen la copia `entrega_*`. |
+| `entrega_calle` | VARCHAR(150) | SÍ | NULL | — | Agregada en la migración `V42`. Copia de la calle de la dirección al confirmar el pedido. NULL en `RETIRO`. |
+| `entrega_numero` | VARCHAR(10) | SÍ | NULL | — | Agregada en la migración `V42`. Copia del número. |
+| `entrega_piso_depto` | VARCHAR(30) | SÍ | NULL | — | Agregada en la migración `V42`. Copia del piso o departamento. |
+| `entrega_codigo_postal` | VARCHAR(10) | SÍ | NULL | — | Agregada en la migración `V42`. Copia del código postal. |
+| `entrega_localidad_id` | VARCHAR(15) | SÍ | NULL | — (sin FK) | Agregada en la migración `V42`. Copia de la localidad; el nombre de la localidad y la provincia se resuelven por `Localidad.id` al armar la respuesta. |
+| `entrega_referencia` | VARCHAR(150) | SÍ | NULL | — | Agregada en la migración `V42`. Copia de la referencia de entrega. El alias de la dirección no se copia. |
 | `modalidad_entrega` | ENUM ModalidadEntrega | NO | — | NN | Modalidad elegida por el cliente: `DOMICILIO` o `RETIRO`. |
 | `estado` | ENUM EstadoPedido | NO | `'PENDIENTE_PAGO'` | NN | Estado actual del pedido en su ciclo de vida. |
 | `pago_estado` | ENUM EstadoPagoPedido | NO | `'PENDIENTE'` | NN | Estado del pago asociado. Se actualiza al recibir el webhook de MercadoPago o la sincronización a pedido del Cliente; `RECHAZADO` no cancela el pedido. |
@@ -1877,6 +1963,10 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 | 65 | `HistorialEmpleadoComercio` | `actor_usuario_id` | `Usuario` | N:1 | N eventos → 1 usuario | *Implementada (`V31`).* Quien ejecutó el evento. |
 | 66 | `HistorialEdicionComercio` | `comercio_id` | `Comercio` | N:1 | N registros → 1 comercio | *Implementada (`V32`, tramo E3, bloque A1).* Registro de ediciones del catálogo y el perfil del comercio. |
 | 67 | `HistorialEdicionComercio` | `usuario_id` | `Usuario` | N:1 | N registros → 1 usuario | *Implementada (`V32`, tramo E3, bloque A1).* Quien hizo la acción. |
+| 68 | `DocumentoComercio` | `comercio_id` | `Comercio` | N:1 | N documentos → 1 comercio | Documentos de habilitación del comercio (v1.28). |
+| 69 | `DocumentoComercio` | `administrador_id` | `Administrador` | N:1 | N documentos → 1 administrador | Quien resolvió el documento por última vez; `NULL` mientras está `PENDIENTE`. |
+| 70 | `DocumentoComercio` | `subido_por_usuario_id` | `Usuario` | N:1 | N documentos → 1 usuario | Quien lo subió (siempre el Dueno). |
+| 71 | `DocumentoComercioArchivo` | `documento_id` | `DocumentoComercio` | 1:1 | 1 contenido = 1 documento | El binario del documento, en tabla aparte. |
 
 ---
 
@@ -1934,11 +2024,11 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 | Registro (sin verificar email) | `PENDIENTE` | — |
 | Verificación de email | `ACTIVO` | — |
 | 3 intentos fallidos de login o cambio de contraseña | `BLOQUEADO` | `CERRADO_TEMPORALMENTE` (solo los que estaban en `APTO_VENTA`) |
-| Recuperación de contraseña exitosa (desbloqueo) | `ACTIVO` | `APTO_VENTA` con cuenta MP activa, o `APROBADO` sin ella (si era `CERRADO_TEMPORALMENTE`) |
+| Recuperación de contraseña exitosa (desbloqueo) | `ACTIVO` | `APTO_VENTA` si sigue cumpliendo la regla de seguir vendiendo (cuenta MP activa y un documento aprobado), o `APROBADO` si no (si era `CERRADO_TEMPORALMENTE`) |
 | Suspensión por Administrador | `SUSPENDIDO` | `SUSPENDIDO` |
 | Levantamiento de suspensión por Administrador | `ACTIVO` | `APROBADO` |
 | Inactivación automática (3 meses sin actividad) | `INACTIVO` | `INACTIVO` |
-| Reactivación por token de reactivación | `ACTIVO` | `APTO_VENTA` con cuenta MP activa, o `APROBADO` sin ella (si era `INACTIVO`); confirmar dos veces el mismo código restaura una sola vez |
+| Reactivación por token de reactivación | `ACTIVO` | `APTO_VENTA` si cumple la regla de seguir vendiendo, o `APROBADO` si no (si era `INACTIVO`); confirmar dos veces el mismo código restaura una sola vez |
 | Aprobación del Administrador con el Dueno `BLOQUEADO` y cuenta MP activa | `BLOQUEADO` | `CERRADO_TEMPORALMENTE` (no `APTO_VENTA`) |
 | Vinculación de MercadoPago con el Dueno `BLOQUEADO` | `BLOQUEADO` | `CERRADO_TEMPORALMENTE` los que estaban `APROBADO` |
 
@@ -1993,6 +2083,30 @@ LISTO_PARA_RETIRAR ──[Dueño o Empleado, tras 60 min listo]─→ NO_RETIRAD
 - Reembolso total implementado (2026-09-25) para `RECHAZADO`, `EXPIRADO` y la cancelación por suspensión de comercio. Pendiente: `CANCELADO` y `ANULADO` (todavía sin endpoint real; solo cambian de estado, con un TODO en `PedidoService`) y el reembolso parcial por ítem.
 - Máximo 5 intentos de reembolso vía API de MP. Al agotar los intentos: `estado = FALLIDO`, notificación T27.
 
+### Documentos del comercio y aptitud de venta (v1.28)
+
+- **Quién:** el Dueno sube y ve los documentos de su comercio; el Administrador los revisa y los puede ver por comercio; el Empleado no los ve ni los sube.
+- **Regla de `APTO_VENTA` (única fuente: `AptitudVentaComercioService`):** entrar exige cuenta de MercadoPago activa + al menos un documento `APROBADO` + ningún documento `PENDIENTE`; seguir exige cuenta activa + al menos un `APROBADO`. Con la cuenta del Dueno `BLOQUEADO`, el comercio que cumpliría queda en `CERRADO_TEMPORALMENTE`.
+- **Interruptor:** `comercio.documentacion.requerida` (variable `COMERCIO_DOCUMENTACION_REQUERIDA`), `true` por defecto; con `false` los documentos se ignoran y la regla es la de antes de la v1.28 (solo MercadoPago).
+- **Eventos que recalculan** (`MotivoRecalculo`): documento subido, aprobado, rechazado, revocado o eliminado; MercadoPago vinculado o desvinculado; cuenta del Dueno bloqueada o restaurada; comercio aprobado. Queda previsto `SUSPENSION_LEVANTADA` para el tramo de la suspensión (no implementado).
+
+| Escenario | Resultado |
+|-----------|-----------|
+| `APROBADO` con MercadoPago sube su primer documento | `APROBADO` (en revisión) |
+| …el Administrador lo aprueba | `APTO_VENTA` (aviso `COMERCIO_APTO_VENTA`) |
+| `APTO_VENTA` sube un segundo documento, o le rechazan uno extra | `APTO_VENTA` |
+| El Administrador revoca el único aprobado | `APROBADO` (aviso `COMERCIO_SIN_APTITUD`) |
+| Revoca uno de dos aprobados | `APTO_VENTA` |
+| Desvincula MercadoPago | `APROBADO` |
+| Vuelve a vincular con documentos aprobados y ninguno en revisión | `APTO_VENTA` |
+| El Dueno elimina el documento que estaba en revisión | recalcula: puede pasar a `APTO_VENTA` |
+| MercadoPago sin documentos, o documentos sin MercadoPago | `APROBADO` |
+| Cuenta del Dueno bloqueada con el comercio `APTO_VENTA` | `CERRADO_TEMPORALMENTE`; ningún evento de documentos lo mueve; al recuperar la contraseña se evalúa la regla de seguir vendiendo |
+| Aprobar el último documento con la cuenta bloqueada | `CERRADO_TEMPORALMENTE` (sin pasar por `APTO_VENTA`) |
+| Comercio `SUSPENDIDO` | no cambia |
+
+- **Pedidos en curso** al perder la aptitud: los ya aceptados siguen su flujo; no nacen pedidos nuevos (`PedidoService.confirmarPedido` revalida `APTO_VENTA` bajo bloqueo compartido).
+
 ### Gestión del carrito
 
 - El carrito persiste entre sesiones; es el mismo registro siempre (no se crea uno nuevo por sesión).
@@ -2002,4 +2116,4 @@ LISTO_PARA_RETIRAR ──[Dueño o Empleado, tras 60 min listo]─→ NO_RETIRAD
 
 ---
 
-*Diccionario de Datos — Proyecto Bajoneá — Versión 1.12*
+*Diccionario de Datos — Proyecto Bajoneá — Versión 1.28*

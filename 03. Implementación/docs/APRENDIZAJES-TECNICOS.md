@@ -632,3 +632,25 @@ Pendientes que no son código y hay que revisar en cada entorno antes de contar 
 - **El detalle de un día necesita las dos agrupaciones.** `agrupar=DIA` no trae los turnos y `agrupar=TURNO` no rellena los días vacíos, así que la pantalla pide las dos consultas en paralelo por rango y las guarda en memoria; el cambio de rango no vuelve a pedir lo ya cargado. Si el rango de 7 días está vacío se usa la consulta de 30 (ya en memoria, porque 30 es el que abre) para decidir si se ofrece el botón.
 - **Un módulo de página no debe importar de `comercio.js` y a la vez ser importado por él.** El enlace "Ver estadísticas" se arma en `comercio.js` (no en `estadisticas.js`, que sí importa `renderBottomNavComercio` de `comercio.js`) para no dejar un ciclo de módulos.
 - **El `annotations.push` de un test no sale en el reporte JSON de Playwright** (`reportes/resultados.json` trae las anotaciones declaradas, no las agregadas en ejecución); para registrar una medida hay que imprimirla o adjuntarla.
+
+## Documentos del comercio y aptitud de venta (Fase 4, 2026-10-26)
+
+### Un archivo grande necesita `max_allowed_packet` y no se deja decir "pesa N MB" si Spring corta antes
+
+- `max_allowed_packet` de XAMPP es 1 MB: un `INSERT` de un `LONGBLOB` de 8 MB falla. Para probar sin tocar `my.ini`: `SET GLOBAL max_allowed_packet=67108864;` (vale hasta reiniciar MariaDB). En producción hay que pedir al menos 16 MB (`docs/LISTA-DE-DESPLIEGUE.md`).
+- Con `spring.servlet.multipart.max-file-size` igual al máximo del negocio, Spring rechaza el pedido antes de llegar al controlador y la excepción no trae el tamaño real; además Tomcat puede cortar la conexión sin devolver el JSON si el cuerpo que sobra supera `maxSwallowSize`. Por eso el tope duro es el doble (16 MB) y el máximo del negocio se valida en el servicio; por encima del tope duro, el manejador usa el `Content-Length`.
+- `@Lob byte[]` lo mapea Hibernate como `tinyblob` y la validación del esquema falla contra un `LONGBLOB`: se usa `@JdbcTypeCode(SqlTypes.LONGVARBINARY)`.
+- `ContentDisposition.inline().filename(nombre, UTF_8)` de Spring 6.2 genera `filename="=?UTF-8?Q?…?="; filename*=UTF-8''…` también para nombres con acentos, y para un nombre ASCII no necesariamente `filename="x.pdf"`: no comparar la cabecera entera en los tests.
+
+### El bloqueo de la cuenta de Mercado Pago no reemplaza al del comercio
+
+- Con la cuenta activa, `SELECT … FOR UPDATE` sobre su fila ordena a todos los escritores de documentos del mismo Dueño. Sin cuenta (un comercio que todavía no vendió) el mismo `SELECT` sobre una fila inexistente toma solo un bloqueo de hueco, compatible con el de otro igual. Sin el bloqueo del comercio, seis subidas simultáneas hacen `LOCK IN SHARE MODE` del recuento y después `INSERT`: todas retienen el bloqueo compartido del rango y todas piden el de inserción, así que se interbloquean (`Deadlock found`, `500`). Un test con cuenta no lo ve; hace falta uno sin cuenta.
+
+### Mutaciones: restaurar el archivo no recompila
+
+- Una corrida de mutaciones que restaura el original con `Copy-Item` (que conserva la fecha de modificación vieja) deja la clase mutada en `target/`: Maven compara fechas y no vuelve a compilar. El backend de pruebas levantado después corría el código mutado y el estrés dio `500`. Después de mutar, tocar la fecha de los fuentes (o `mvnw clean`) antes de levantar nada. El síntoma que lo delató: el log general de MariaDB (`SET GLOBAL log_output='TABLE'; SET GLOBAL general_log=1;` y `SELECT … FROM mysql.general_log`) no mostraba ningún `select … from comercio … for update` dentro de la transacción de la subida. Apagarlo al terminar (`SET GLOBAL general_log=0;`).
+
+### La suite completa de Java y las conexiones
+
+- Cada contexto de Spring que la suite deja en caché mantiene un pool de Hikari que abre 10 conexiones de entrada. Con `max_connections=151` la suite llegaba al borde (`Max_used_connections` 152) y los últimos contextos (`TokenColisionIntegrationTest`) fallaban con "Too many connections" mientras el backend de pruebas estaba levantado. `application-test.properties` ahora fija `spring.datasource.hikari.minimum-idle=2`. Aun así, correr `mvnw test` con el backend de pruebas detenido.
+- Varias pruebas viejas insertan comercios con nombre fijo y confirman (`Segundo comercio A4`): una segunda corrida completa sin resetear `bajonea_test` choca con el nombre único del tramo 2 de registro. Resetear la base entre corridas completas (`entorno-test.mjs preparar` y `detener`).
