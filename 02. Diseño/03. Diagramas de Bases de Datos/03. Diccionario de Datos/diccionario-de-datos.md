@@ -3,7 +3,13 @@
 **Proyecto:** Bajoneá — Plataforma de pedidos gastronómicos en línea  
 **Motor de base de datos:** MySQL (InnoDB)  
 **ORM / Migraciones:** Spring Data JPA + Hibernate / Flyway  
-**Versión del modelo:** 1.20  
+**Versión del modelo:** 1.26  
+**Cambios de la v1.26 (Fase 2, tramo T4, migración `V41`, 2026-10-22):** tabla nueva `CierreTurno` (`cierre_turno`): una fila por turno terminado de un comercio, con la foto de sus cifras (`cantidad_pedidos`, `vendido`, `comision`, `neto`, `pendientes_al_cierre`) y el estado del email de resumen que se le manda al Dueño (`email_estado`, `email_intentos`, `email_proximo_intento`, `email_envio_iniciado`, `email_fecha_envio`, `email_ultimo_error`). Enum nuevo `EstadoEmailCierreTurno`. `UNIQUE (comercio_id, turno_fecha, horario_id)`; `horario_id` es una `FOREIGN KEY` a `Horario.id` sin cascada (un turno cerrado conserva su versión de horario). No cambia ninguna otra tabla.  
+**Cambios de la v1.25 (Fase 2, tramo T3, migración `V40`, 2026-10-22):** `ItemCarrito` suma `precio_visto` (`DECIMAL(10,2) NULL`): el precio vigente del producto en el momento en que el ítem se insertó en el carrito. Se estampa solo al insertar (sumar o cambiar la cantidad no lo toca); si el precio vigente del producto es distinto, el carrito marca el ítem con `precioCambio` y el cliente ve el aviso. Los ítems anteriores a `V40` quedan con `NULL` y nunca avisan. Sin índices ni claves nuevas. Además hay cambios de comportamiento sin esquema: el precio de un producto no se puede cambiar mientras el comercio está dentro de una franja de `Horario` (`409` `PRECIO_BLOQUEADO_EN_FRANJA`, propiedad `precio.bloqueo-en-franja.habilitado`), y `POST /pedidos/cliente` acepta un `totalEsperado` opcional y responde `409` `PRECIO_CAMBIO` si no coincide con el total que se cobraría.  
+**Cambios de la v1.24 (Fase 2, tramo T2, migración `V39`, 2026-10-20):** `Pedido` suma `fecha_pago_confirmado` (`DATETIME NULL`), `turno_fecha` (`DATE NULL`) y `turno_horario_id` (`INT NULL`, `FOREIGN KEY fk_pedido_turno_horario` a `Horario.id` sin cascada), con los índices `idx_pedido_turno (comercio_id, turno_fecha, turno_horario_id)`, `idx_pedido_fecha_pago (comercio_id, fecha_pago_confirmado)` e `idx_pedido_turno_horario (turno_horario_id)`. El turno de un pedido se asigna al confirmarse el pago, con el mismo instante que la fila `PENDIENTE_CONFIRMACION_COMERCIO` del historial: es el turno en el que cayó el pago (`turno_fecha` es la fecha de apertura del turno, así que un pago de madrugada va al turno del día anterior) y, si cayó fuera de toda franja, el último turno terminado dentro de los 7 días anteriores; queda `NULL` si el comercio no tenía ninguna franja vigente. Los pedidos anteriores a la migración reciben `fecha_pago_confirmado` desde el historial en la propia migración y `turno_*` por un proceso de aplicación que corre una vez al arrancar (`turno.backfill.habilitado`). El panel del comercio deja de contar "hoy" y pasa a contar por turno (`GET /api/v1/pedidos/comercio/resumen-turno`, que reemplaza a `resumen-hoy`).  
+**Cambios de la v1.23 (Fase 2, tramo T1, migración `V38`, 2026-10-19):** `Horario` suma `vigente_desde` (`DATE NOT NULL DEFAULT '2000-01-01'`) y `vigente_hasta` (`DATE NULL`, inclusivo) con el índice `idx_horario_comercio_vigencia (comercio_id, vigente_desde, vigente_hasta)` (reemplaza a `idx_horario_comercio`) y el `CHECK chk_horario_vigencia`. Una fila es un turno: su día es el de apertura y cruza la medianoche cuando `hora_cierre < hora_apertura`; `cierre = apertura` no se permite. La edición de horarios de un comercio aprobado es versionada: cierra lo vigente con `vigente_hasta = hoy` e inserta lo nuevo con `vigente_desde = mañana`. `HistorialEdicionComercio` empieza a registrar `HORARIO` (acción `EDITAR`).  
+**Cambios de la v1.22 (Tramo 2 de registro de Comercio, migración `V37`, 2026-10-19):** el nombre de un comercio es único en toda la plataforma. `Comercio` suma la columna generada `nombre_unico` (`STORED`, `utf8mb4_unicode_ci`) con el índice único `uq_comercio_nombre_unico`; la entidad JPA no la mapea. Se elimina la regla anterior de duplicado por nombre, dirección y piso.  
+**Cambios de la v1.21 (Tramo 1 de registro de Comercio, migración `V36`, 2026-10-18):** `PersonaJuridica.razon_social`, `condicion_iva`, `tipo_sociedad` y `fecha_inicio_actividades` pasan a ser opcionales (`NULL`); `cuit` y `domicilio_fiscal` siguen obligatorios, igual que los datos del representante. `Comercio.email` pasa a `NULL`: el email de contacto del comercio ya no se pide ni se muestra en el registro, el alta adicional, la corrección ni el perfil (los comercios ya registrados conservan el valor y solo lo ve el Administrador, de solo lectura). Las filas existentes no se tocan. La localidad Tolhuin (`94011010`, id oficial de Georef) se inserta por la migración. La API de geografía ofrece solo Tierra del Fuego (`94`) con Río Grande (`94008010`), Tolhuin (`94011010`) y Ushuaia (`94015020`), definidas por la propiedad `geografia.localidades-habilitadas`; las demás filas de `Provincia` y `Localidad` se conservan, y las direcciones ya guardadas fuera de esa lista siguen leyéndose.  
 **Cambios de la v1.20 (tramo E4, bloque A3, 2026-10-15):** cambio solo de comportamiento, sin esquema ni migración. La lista de actividad del comercio (`GET /api/v1/comercios/equipo/actividad`) suma una cuarta fuente, `EQUIPO` (último valor de `FuenteActividad`, así que los cursores anteriores siguen siendo válidos), que muestra las filas de `HistorialEmpleadoComercio`: `INVITACION` ("Invitó a {email}"), `INVITACION_CANCELADA` ("Canceló la invitación a {email}"), `ACEPTACION` ("Aceptó la invitación"), `BAJA_DUENO` ("Dio de baja a {Nombre Apellido}"), `RENUNCIA` ("Dejó de trabajar en el comercio") y `REACTIVACION` ("Reactivó a {Nombre Apellido}"); el actor es el Dueno si coincide con el Dueno del comercio, el Empleado si es cualquier otro usuario y el sistema (sin nombre ni usuario) si la fila no tiene actor; la entidad es el Empleado si la fila tiene relación y la invitación (su email) si no. Cuando alguien acepta una invitación estando inactivo se escriben las dos filas `ACEPTACION` y `REACTIVACION` (esta última con `invitacion_id`); la actividad muestra solo la `ACEPTACION`, para no repetir una misma acción. El parámetro `fuente` acepta `PEDIDO`, `EDICION`, `CIERRE` y `EQUIPO`. Sin filtro son cuatro consultas por página (una con filtro). Nuevos `GET /api/v1/administrador/comercios/{id}/equipo` (miembros con `estado`, `fechaBaja`, `motivoBaja` y `puedeReactivar`, más las invitaciones: la misma forma que ve el Dueno) y `GET /api/v1/administrador/comercios/{id}/actividad` (con `limite`, `cursor` y `fuente`), solo lectura, solo `ADMINISTRADOR`, para un comercio en cualquier estado, sin `X-Comercio-Id` y sin bloqueos; un comercio inexistente responde `404` "Comercio no encontrado". Cada invitación del listado del equipo trae `diasRestantes`, calculado por el servidor con la hora y la zona de la aplicación: solo en una invitación `PENDIENTE` vigente, los días que faltan para `fecha_vencimiento` redondeados hacia arriba con un mínimo de 1 (nulo en el resto). Sin tablas ni columnas nuevas.  
 **Cambios de la v1.19 (tramo E4, bloque A2, 2026-10-15):** cambio solo de comportamiento, sin esquema ni migración. El propio Empleado puede dejar un comercio (`PUT /api/v1/empleados/comercios/{comercioId}/renunciar`, solo rol `CLIENTE`, sin `X-Comercio-Id`): la relación pasa a `INACTIVO` con `fecha_baja`, se escribe la fila `RENUNCIA` de `HistorialEmpleadoComercio` (origen `ACTIVO`, destino `INACTIVO`, actor = el Empleado, sin `invitacion_id`), se borran sus avisos de ese comercio y el Dueno recibe el aviso T34 (`EMPLEADO_DESACTIVADO`, con `comercio_id`, `entidad_tipo = COMERCIO`: "{Nombre Apellido} dejó de trabajar en {Comercio}.", texto provisorio). Es idempotente (repetirla, o renunciar a una relación que el Dueno ya dio de baja, responde `200` sin escribir nada) y funciona con el comercio en cualquier estado. Sin relación con ese comercio (o con un comercio que no existe) responde el mismo `404` `COMERCIO_NO_DISPONIBLE` que el resolver de comercio activo. Nuevo `GET /api/v1/empleados/comercios/{comercioId}/acceso` (solo `CLIENTE`, solo lectura): informa la relación propia (`estado`, `motivoBaja` derivado de la última baja del historial, `comercioAccesible`) para que el frontend sepa por qué se perdió el acceso sin tocar el `404` idéntico. Sin tablas ni columnas nuevas.  
 **Cambios de la v1.18 (tramo E4, bloque A1, 2026-10-14):** nuevo tipo de aviso `EMPLEADO_REACTIVADO` (T37), por la migración `V35`, que agrega el valor al final del ENUM `notificacion.tipo` (cambio de metadatos, sin tocar filas); audiencia `CLIENTE_O_DUENO`, igual que `EMPLEADO_DESACTIVADO` (T32): va a la persona reactivada como aviso personal (sin `comercio_id`). El Dueno ya puede dar de baja y reactivar directamente a un miembro del equipo (`PUT /api/v1/comercios/equipo/miembros/{empleadoId}/desactivar` y `/reactivar`): escriben las filas `BAJA_DUENO` y `REACTIVACION` de `HistorialEmpleadoComercio` (la reactivación directa no lleva `invitacion_id`, a diferencia de la que produce aceptar una invitación). El listado del equipo (`MiembroEquipoResponseDTO`) suma `motivoBaja` y `puedeReactivar`, que no son columnas: se calculan de la última fila de baja del historial. Sin tablas ni columnas nuevas.  
@@ -141,6 +147,20 @@ Ciclo de vida del comercio en la plataforma.
 | `APTO_VENTA` | Aprobado, con la cuenta de MercadoPago del Dueno titular vinculada (`CuentaMercadoPago.activa = true`). Se alcanza automáticamente al vincular la cuenta (`APROBADO → APTO_VENTA`) y vuelve a `APROBADO` al desvincularla. Es el único estado en el que el comercio aparece en el catálogo público y puede recibir pedidos (migración `V12`). |
 
 > **Regla de visibilidad y venta (implementada):** el catálogo público (`GET /catalogo/comercios` y los productos de un comercio) lista los comercios con `estado = APTO_VENTA` o `CERRADO_TEMPORALMENTE`, y un pedido solo se acepta si el comercio está en `APTO_VENTA`, no está cerrado manualmente (`cerrado_manualmente = false`) y la hora actual está dentro de alguna franja de `Horario` (`ComercioService.validarAceptaPedidos`, en este orden: `CERRADO_TEMPORALMENTE` con el mismo `409` "Este comercio está cerrado en este momento" del cierre manual, resto de estados distintos de `APTO_VENTA` con "Este comercio no está aceptando pedidos en este momento", cierre manual, horario). El indicador de apertura es `estadoApertura`: `ABIERTO`, `CERRADO_HORARIO`, `CERRADO_MANUAL` (cierre manual de un `APTO_VENTA`) o `CERRADO_TEMPORALMENTE` (comercio en estado `CERRADO_TEMPORALMENTE`, con la cuenta del Dueno bloqueada; si además tiene un cierre manual previo, manda el bloqueo). `textoReapertura` se calcula para el cierre por horario y el cierre manual, y es `NULL` para un comercio en estado `CERRADO_TEMPORALMENTE` (no se promete una hora). El campo `estado` del catálogo público informa siempre `APTO_VENTA`, también para un `CERRADO_TEMPORALMENTE`; el público distingue el bloqueo de la cuenta del cierre manual por `estadoApertura` (regla del 2026-10-18, que reemplaza a la del tramo C2 de mostrar los dos casos iguales). Para el panel del Dueno un `CERRADO_TEMPORALMENTE` no es operativo (`operativo = false`, `puedeCambiarCierre = false`).
+
+---
+
+### ENUM: EstadoEmailCierreTurno
+
+Estado del email de resumen de un turno cerrado (`CierreTurno.email_estado`).
+
+| Valor | Descripción |
+|-------|-------------|
+| `PENDIENTE` | Esperando el envío: recién cerrado o a la espera del próximo intento (`email_proximo_intento`, nulo = ya). Estado inicial. |
+| `ENVIANDO` | Una corrida lo reclamó y está llamando a Resend (`email_envio_iniciado`). Si pasan más de 15 minutos sin resultado (el proceso cayó) vuelve a `PENDIENTE`. |
+| `ENVIADO` | El mail salió (o el envío está deshabilitado, como en el perfil `test`). Estado final. |
+| `FALLIDO` | Se agotaron los 5 intentos. Estado final: solo se reencola a mano. |
+| `OMITIDO` | No se envía y no se reintenta: la cuenta del Dueño no estaba `ACTIVO` en el intento, o el comercio estaba `SUSPENDIDO` o `CERRADO_TEMPORALMENTE` y no hubo pedidos ni pendientes. Estado final. |
 
 ---
 
@@ -767,12 +787,12 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
 | `id` | INT | NO | — | PK, FK → Persona.id | Mismo valor que `Persona.id`. |
-| `razon_social` | VARCHAR(150) | NO | — | NN | Nombre legal o razón social de la empresa. |
+| `razon_social` | VARCHAR(150) | SÍ | NULL | — | Nombre legal o razón social de la empresa. Opcional desde la v1.21. |
 | `cuit` | VARCHAR(11) | NO | — | NN, UQ | Clave Única de Identificación Tributaria (11 dígitos, sin guiones). Único en toda la plataforma. |
-| `condicion_iva` | ENUM CondicionIva | NO | — | NN | Situación ante el IVA según AFIP. |
-| `tipo_sociedad` | ENUM TipoPersonaJuridica | NO | — | NN | Forma jurídica con la que está constituida la empresa. |
+| `condicion_iva` | ENUM CondicionIva | SÍ | NULL | — | Situación ante el IVA según AFIP. Opcional desde la v1.21. |
+| `tipo_sociedad` | ENUM TipoPersonaJuridica | SÍ | NULL | — | Forma jurídica con la que está constituida la empresa. Opcional desde la v1.21. |
 | `domicilio_fiscal` | VARCHAR(255) | NO | — | NN | Domicilio fiscal declarado ante AFIP. Puede diferir del domicilio operativo registrado en `Direccion`. |
-| `fecha_inicio_actividades` | DATE | NO | — | NN | Fecha de inicio de actividades declarada ante AFIP. |
+| `fecha_inicio_actividades` | DATE | SÍ | NULL | — | Fecha de inicio de actividades declarada ante AFIP. Opcional desde la v1.21. |
 
 **Índices:** `PRIMARY KEY (id)` | `UNIQUE (cuit)`
 
@@ -852,11 +872,12 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 |---------|-----------|------|---------|---------------|-------------|
 | `id` | INT | NO | AI | PK, AI | Identificador único del comercio. |
 | `dueno_id` | INT | NO | — | FK → Dueno.id, NN | Dueno titular del comercio. Relación N:1: un mismo Dueno puede administrar varios comercios. |
-| `nombre` | VARCHAR(150) | NO | — | NN | Nombre comercial o de fantasía del comercio. |
+| `nombre` | VARCHAR(150) | NO | — | NN | Nombre comercial o de fantasía del comercio. Único en toda la plataforma desde la v1.22 (ver `nombre_unico`). |
+| `nombre_unico` | VARCHAR(150) | SÍ | generada | UQ, columna generada `STORED`, `utf8mb4_unicode_ci` | Agregada en la migración `V37` (2026-10-19). Vale `TRIM(REGEXP_REPLACE(nombre, '[[:space:]]+', ' '))` y es `NULL` mientras `estado = RECHAZO_DEFINITIVO`. Con esa colación el índice único ignora mayúsculas y tildes y trata la `ñ` como `n`; los espacios de más (también tabulaciones y espacios no cortantes) se colapsan. Solo `RECHAZO_DEFINITIVO` libera el nombre; un `RECHAZADO` lo conserva. La aplicación no la lee ni la escribe: la usan el índice y la consulta de disponibilidad (`NombreComercioService`), con la misma expresión. |
 | `descripcion` | TEXT | SÍ | NULL | — | Descripción libre del comercio: propuesta de valor, especialidades, etc. |
 | `foto_perfil_url` | VARCHAR(500) | NO | — | NN | URL del logo/imagen de perfil del comercio almacenada en Cloudinary. Campo propio de cada comercio: no se comparte entre los distintos comercios de un mismo Dueno, a diferencia de `Usuario.foto_perfil_url` (foto personal del Dueno/Empleado). |
 | `telefono` | VARCHAR(30) | NO | — | NN | Teléfono de contacto del comercio. Se usa para generar enlace `wa.me`. |
-| `email` | VARCHAR(150) | NO | — | NN | Email de contacto del comercio (puede ser distinto al email del Dueno titular). |
+| `email` | VARCHAR(150) | SÍ | NULL | — | Email de contacto del comercio (puede ser distinto al email del Dueno titular). Desde la v1.21 ya no se pide: los comercios nuevos quedan en `NULL` y los anteriores conservan su valor, visible solo para el Administrador. |
 | `tipo_comercio` | ENUM TipoComercio | NO | — | NN | Categoría del negocio (ver ENUM TipoComercio, 13 valores). Clasificación informativa y visual; no altera funcionalidades. |
 | `acepta_delivery` | TINYINT(1) | NO | `false` | NN | `true` si el comercio ofrece entrega a domicilio. |
 | `acepta_retiro` | TINYINT(1) | NO | `false` | NN | `true` si el comercio permite retiro en el local. |
@@ -870,9 +891,10 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 
 > **Campos eliminados en v1.1:** `motivo_rechazo`, `fecha_rechazo`, `motivo_suspension`, `fecha_suspension`, `fecha_aprobacion`, `fecha_reactivacion`. Todos se obtienen desde `HistorialEstadoComercio` con `WHERE comercio_id = ? AND estado_destino = 'RECHAZADO' ORDER BY fecha_hora DESC LIMIT 1` (o el `estado_destino` correspondiente).
 
-**Índices:** `PRIMARY KEY (id)` | `INDEX (dueno_id)` | `INDEX (estado)`
+**Índices:** `PRIMARY KEY (id)` | `INDEX (dueno_id)` | `INDEX (estado)` | `UNIQUE uq_comercio_nombre_unico (nombre_unico)`
 
 **Reglas de negocio:**
+- Nombre único (v1.22): ningún otro comercio, de cualquier Dueño y en cualquier dirección, puede tener el mismo nombre, salvo uno en `RECHAZO_DEFINITIVO`. Se valida antes de escribir en el registro, el alta adicional, la corrección y la edición del perfil (`409` "Ya existe un comercio con ese nombre. Elegí otro."), con el índice como red de seguridad ante cargas simultáneas. La cuenta de un Dueño sin verificar también retiene el nombre.
 - Implementado: un comercio puede recibir pedidos si `estado = APTO_VENTA AND cerrado_manualmente = false AND hora actual dentro de Horario` (`ComercioService.validarAceptaPedidos`, horario evaluado con offset fijo -03:00; una franja que cierra a las 23:59 se interpreta como fin del día).
 - Diseño pendiente de implementar: además `Dueno titular con Usuario.estado = ACTIVO` como condición propia (hoy se cubre por propagación de estado).
 - Cierre manual: cerrar y abrir solo se puede dentro de una franja, con el comercio `APROBADO` o `APTO_VENTA` (409 si no). Cerrar solo frena pedidos nuevos (agregar al carrito y confirmar el pedido): los pedidos en curso, los productos, los pagos y el flujo del comercio siguen igual. Cerrar o abrir dos veces seguidas no escribe una segunda fila de historial.
@@ -903,13 +925,17 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | `comercio_id` | INT | NO | — | FK → Comercio.id, NN | Comercio al que pertenece este horario. |
 | `dia_semana` | ENUM DiaSemana | NO | — | NN | Día de la semana al que aplica la franja horaria. |
 | `hora_apertura` | TIME | NO | — | NN | Hora de inicio de la franja de atención. Formato `HH:MM:SS`. |
-| `hora_cierre` | TIME | NO | — | NN | Hora de fin de la franja de atención. Formato `HH:MM:SS`. |
+| `hora_cierre` | TIME | NO | — | NN | Hora de fin de la franja de atención. Formato `HH:MM:SS`. Si es menor que la apertura, el turno termina al día siguiente. |
+| `vigente_desde` | DATE | NO | `2000-01-01` | NN | Primer día en que rige la fila. Una edición inserta lo nuevo con la fecha de mañana. |
+| `vigente_hasta` | DATE | SÍ | NULL | CHECK `>= vigente_desde` | Último día en que rige la fila (inclusivo). `NULL` mientras siga vigente. |
 
-**Índices:** `PRIMARY KEY (id)` | `INDEX (comercio_id)`
+**Índices:** `PRIMARY KEY (id)` | `INDEX idx_horario_comercio_vigencia (comercio_id, vigente_desde, vigente_hasta)`
 
 **Reglas de negocio:**
 - Se pueden definir múltiples registros por día para cubrir horarios partidos (ej. mediodía y noche).
-- El sistema compara la hora actual del servidor contra las franjas del día correspondiente para determinar si el comercio está "dentro del horario".
+- El sistema compara la hora actual del comercio (`America/Argentina/Ushuaia`) contra las franjas vigentes de hoy y contra la cola de los turnos de ayer que cruzan la medianoche para determinar si el comercio está "dentro del horario".
+- Una franja cuyo cierre es menor que su apertura es un turno que cruza la medianoche; `cierre = apertura` se rechaza (las 24 horas se cargan de 00:00 a 23:59, y `23:59` vale `24:00` en una franja que no cruza). Las franjas no pueden superponerse entre sí en una semana circular (el domingo que cruza choca con el lunes).
+- La edición (Dueño o Empleado) no modifica filas: cierra las vigentes y agrega las nuevas desde mañana. Siempre queda al menos una fila vigente en cada fecha. El registro y la corrección de un comercio rechazado siguen escribiendo sin versionado.
 
 ---
 
@@ -1115,7 +1141,7 @@ CREATE TABLE `historial_edicion_comercio` (
 Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los nombres de restricción son únicos por base y `fk_hec_comercio` ya existe en `historial_estado_comercio`.
 
 **Reglas de negocio:**
-- Se escribe desde los servicios, en la misma transacción del cambio (si el cambio falla no queda fila y si la fila no se puede escribir el cambio no se confirma), solo cuando hubo un cambio efectivo. Quien escribe toma primero la fila del usuario que actúa y después la del comercio (orden global de bloqueos): el insert toma bloqueos compartidos por sus dos claves foráneas y, sin ese orden, se cruzaría con el bloqueo de cuenta del Dueno. Cubre las escrituras delegables de productos, imágenes y perfil y las del Dueno que no se delegan (redes sociales), para que la vista del Dueno sea completa. Hoy no se escriben filas de `HORARIO`, `GRUPO_EXTRA` ni `EXTRA` (no existe edición de horarios ni extras); la fecha es la hora del comercio (UTC-03:00) sin fracciones, como en `HistorialCierreComercio`.
+- Se escribe desde los servicios, en la misma transacción del cambio (si el cambio falla no queda fila y si la fila no se puede escribir el cambio no se confirma), solo cuando hubo un cambio efectivo. Quien escribe toma primero la fila del usuario que actúa y después la del comercio (orden global de bloqueos): el insert toma bloqueos compartidos por sus dos claves foráneas y, sin ese orden, se cruzaría con el bloqueo de cuenta del Dueno. Cubre las escrituras delegables de productos, imágenes y perfil y las del Dueno que no se delegan (redes sociales), para que la vista del Dueno sea completa. Desde el tramo T1 de la Fase 2 se escriben filas de `HORARIO` (acción `EDITAR`, con la fecha desde la que rige el cambio o la cancelación del cambio programado); no se escriben de `GRUPO_EXTRA` ni `EXTRA` (no existen extras); la fecha es la hora del comercio (UTC-03:00) sin fracciones, como en `HistorialCierreComercio`.
 - La ve el Dueno completa (tramo E3) y el Administrador en solo lectura (tramo E4); el Empleado no la ve. La lista `GET /api/v1/comercios/equipo/actividad` junta esta tabla con `HistorialEstadoPedido` (todo lo que el comercio vio de sus pedidos, sea quien sea el actor: Dueno, Empleado, Cliente y sistema, incluida la transición a `PENDIENTE_CONFIRMACION_COMERCIO` que la lista muestra como "Pedido recibido"; no entran el nacimiento en `PENDIENTE_PAGO` ni su vencimiento por falta de pago, `TIMEOUT_PAGO`, y en las filas del sistema no hay nombre ni usuario) y `HistorialCierreComercio` (todas), ordenadas por `(fecha_hora, fuente, id)` descendente y paginadas por cursor; el parámetro opcional `fuente` (`PEDIDO`, `EDICION`, `CIERRE` o, desde el bloque A3 de E4, `EQUIPO`, con las filas de `HistorialEmpleadoComercio`) consulta una sola de las fuentes. Los dos índices de esta tabla y `idx_hci_comercio_fecha` de `HistorialCierreComercio` alcanzan para esa lectura; la parte de pedidos entra por `pedido.comercio_id` (`idx_pedido_comercio`) y `idx_hep_pedido_fecha`.
 
 ---
@@ -1186,6 +1212,42 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 - Para cada comercio las filas alternan `CERRADO`, `REABIERTO`, `CERRADO`…; la última coincide con `Comercio.cerrado_manualmente`. Se escriben en la misma transacción que la bandera, con el comercio bloqueado `FOR UPDATE`.
 - Si un comercio tiene la bandera prendida y ninguna fila `CERRADO` (dato anterior a este tramo), el job lo reabre igual, escribe la fila `REABIERTO` y deja un aviso en el log.
 - Para saber cuándo se cerró el comercio: `SELECT fecha_hora FROM HistorialCierreComercio WHERE comercio_id = ? AND accion = 'CERRADO' ORDER BY fecha_hora DESC, id DESC LIMIT 1`.
+
+---
+
+### Tabla: CierreTurno
+
+**Descripción:** Foto de las cifras de un turno terminado de un comercio y estado del email de resumen que se le manda al Dueño. Una fila por turno (`comercio_id`, `turno_fecha`, `horario_id`). La crea un job que corre cada 60 segundos cuando pasaron `fin del turno + 30 minutos` y no queda ningún pedido `PENDIENTE_PAGO` creado antes del fin (con tope de espera de 120 minutos). Las cifras son las mismas que muestra el resumen del turno del panel (`vendido` = suma del `subtotal` de los pedidos facturables; `comision` = suma de su `cargo_servicio_comercio`; `neto = vendido - comision`) y no se recalculan: un pago o una aceptación posteriores al cierre no las cambian. Migración `V41`.
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `id` | INT | NO | AI | PK, AI | Identificador único del cierre. |
+| `comercio_id` | INT | NO | — | FK → Comercio.id, NN | Comercio cuyo turno se cerró. |
+| `turno_fecha` | DATE | NO | — | NN | Fecha de apertura del turno (un turno que cruza la medianoche conserva la del día en que abrió). |
+| `horario_id` | INT | NO | — | FK → Horario.id (sin cascada), NN | Versión de la fila de `Horario` que rigió ese turno. |
+| `inicio` | DATETIME | NO | — | NN | Inicio del turno, en `-03:00`. |
+| `fin` | DATETIME | NO | — | NN | Fin del turno (`23:59` vale `24:00`; un turno que cruza termina el día siguiente). |
+| `cantidad_pedidos` | INT | NO | — | NN | Pedidos del turno de cualquier estado (los que llegaron pagados a ese turno). |
+| `vendido` | DECIMAL(14,2) | NO | — | NN | Suma bruta del `subtotal` de los pedidos facturables (`EN_PREPARACION`, `EN_CAMINO`, `LISTO_PARA_RETIRAR`, `ENTREGADO`, `NO_RETIRADO`). |
+| `comision` | DECIMAL(14,2) | NO | — | NN | Suma del `cargo_servicio_comercio` de los facturables. |
+| `neto` | DECIMAL(14,2) | NO | — | NN | `vendido - comision`. No incluye los pendientes. |
+| `pendientes_al_cierre` | INT | NO | — | NN | Pedidos en `PENDIENTE_CONFIRMACION_COMERCIO` de todo el comercio (no solo del turno) al momento del cierre, igual que el contador del panel. Fuera de los montos. |
+| `fecha_cierre` | DATETIME | NO | — | NN | Instante de la corrida que creó la fila (el reloj único de la aplicación). |
+| `email_estado` | ENUM EstadoEmailCierreTurno | NO | `PENDIENTE` | NN | Estado del email de resumen. |
+| `email_intentos` | INT | NO | 0 | NN | Intentos de envío fallidos hasta ahora (sube en cada falla; al llegar a 5 el estado pasa a `FALLIDO`). |
+| `email_proximo_intento` | DATETIME | SÍ | NULL | — | A partir de cuándo se reintenta (10, 30, 60 y 60 minutos después de cada falla). `NULL` = ya. |
+| `email_envio_iniciado` | DATETIME | SÍ | NULL | — | Cuándo una corrida reclamó la fila (`ENVIANDO`). |
+| `email_fecha_envio` | DATETIME | SÍ | NULL | — | Cuándo salió el mail. |
+| `email_ultimo_error` | VARCHAR(500) | SÍ | NULL | — | Código HTTP y nombre del error de Resend del último intento fallido, o el motivo de un `OMITIDO`. |
+
+**Índices:** `PRIMARY KEY (id)` | `UNIQUE uq_cierre_turno (comercio_id, turno_fecha, horario_id)` | `INDEX idx_cierre_turno_envio (email_estado, email_proximo_intento)` | `INDEX idx_cierre_turno_horario (horario_id)` | `FOREIGN KEY fk_cierre_turno_comercio` | `FOREIGN KEY fk_cierre_turno_horario` (sin cascada).
+
+**Reglas de negocio:**
+- Generan cierre los comercios `APTO_VENTA`; los `SUSPENDIDO` y `CERRADO_TEMPORALMENTE` registran el cierre pero su fila nace `OMITIDO` si no hubo pedidos ni pendientes; `APROBADO`, `INACTIVO` y los que nunca vendieron no generan cierre. Un comercio sin franjas vigentes no tiene turnos.
+- Se cierran los turnos terminados hace al menos 30 minutos, con fin posterior a los últimos 3 días y posterior al fin del último cierre del comercio. Un comercio sin ningún cierre en los últimos 5 días (por `turno_fecha`) cierra solo su último turno terminado.
+- Un mail por Dueño y por corrida con todos sus cierres pendientes, aunque el total sea cero. El estado del envío cambia siempre con una sentencia por clave primaria que repite el estado esperado (`PENDIENTE` → `ENVIANDO` → `ENVIADO`/`PENDIENTE`/`FALLIDO`), así que dos corridas simultáneas nunca pisan el resultado una de la otra.
+- Si la cuenta del Dueño no está `ACTIVO` al momento del intento el cierre pasa a `OMITIDO` (se evalúa en cada intento).
+- Reencolar un cierre `FALLIDO`: `UPDATE cierre_turno SET email_estado = 'PENDIENTE', email_intentos = 0, email_proximo_intento = NULL, email_ultimo_error = NULL WHERE id = ? AND email_estado = 'FALLIDO'`.
 
 ---
 
@@ -1526,6 +1588,7 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 | `producto_id` | INT | NO | — | FK → Producto.id, NN | Producto representado por el ítem. |
 | `cantidad` | INT | NO | — | NN | Cantidad de unidades solicitadas. Valor mínimo: 1. |
 | `nota` | VARCHAR(255) | SÍ | NULL | — | Nota o aclaración del cliente para ese ítem (ej. `"Sin cebolla"`, `"Extra salsa"`). |
+| `precio_visto` | DECIMAL(10,2) | SÍ | NULL | — | Precio vigente del producto cuando se insertó el ítem (v1.25). No se actualiza al cambiar la cantidad. Si difiere del precio vigente, el carrito informa `precioCambio`. `NULL` en los ítems anteriores a `V40`. |
 
 **Índices:** `PRIMARY KEY (id)` | `INDEX (carrito_id)` | `INDEX (producto_id)`
 
@@ -1577,15 +1640,19 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 | `cargo_servicio_comercio` | DECIMAL(10,2) | NO | — | NN | Comisión de plataforma del comercio, congelada desde la `ConfiguracionTarifa` vigente al momento del pedido. |
 | `total` | DECIMAL(10,2) | NO | — | NN | Monto total cobrado al cliente: `subtotal + cargo_servicio_cliente`. Debe coincidir con `Pago.monto`. |
 | `fecha_creacion` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación del pedido (previo al pago). Inmutable. |
+| `fecha_pago_confirmado` | DATETIME | SÍ | NULL | — | Agregada en la migración `V39` (2026-10-20). Instante en que el pago se confirmó y el pedido pasó a `PENDIENTE_CONFIRMACION_COMERCIO`; coincide con `fecha_hora` de esa fila del historial (se estampan con el mismo instante). NULL mientras el pedido no llegó pagado. Para los pedidos anteriores a la migración se completó desde `MIN(HistorialEstadoPedido.fecha_hora)` de esa fila. |
+| `turno_fecha` | DATE | SÍ | NULL | — | Agregada en la migración `V39`. Fecha de **apertura** del turno al que pertenece el pedido (un pago de madrugada en un turno que cruza la medianoche lleva la fecha del día anterior). Se asigna al confirmarse el pago. NULL si no llegó pagado o si el comercio no tenía ninguna franja vigente. |
+| `turno_horario_id` | INT | SÍ | NULL | FK → Horario.id (sin cascada) | Agregada en la migración `V39`. Versión de la franja `Horario` que definió el turno; una edición posterior de los horarios no cambia el turno de un pedido ya pagado. |
 
 > **Campos eliminados en v1.1:** `fecha_pago`, `fecha_aceptacion`, `fecha_listo`, `fecha_despacho`, `fecha_cancelacion`. Todos se derivan desde `HistorialEstadoPedido` con `SELECT fecha_hora FROM HistorialEstadoPedido WHERE pedido_id = ? AND estado = 'ESTADO_BUSCADO' ORDER BY fecha_hora DESC LIMIT 1`.
 
-**Índices:** `PRIMARY KEY (id)` | `INDEX (cliente_id)` | `INDEX (comercio_id)` | `INDEX (estado)` | `INDEX (fecha_creacion)`
+**Índices:** `PRIMARY KEY (id)` | `INDEX (cliente_id)` | `INDEX (comercio_id)` | `INDEX (estado)` | `INDEX (fecha_creacion)` | `INDEX idx_pedido_turno (comercio_id, turno_fecha, turno_horario_id)` | `INDEX idx_pedido_fecha_pago (comercio_id, fecha_pago_confirmado)` | `INDEX idx_pedido_turno_horario (turno_horario_id)`
 
 **Reglas de negocio:**
 - `cancelado_por` y `fuente_entrega` son mutuamente excluyentes: en un pedido terminal solo puede estar poblado uno de los dos. Un pedido `NO_RETIRADO` no tiene ninguno de los dos ni `fecha_entrega`.
 - Diseño pendiente de implementar: si llega un pago aprobado y el pedido ya está en `CANCELADO_POR_SISTEMA` (por timeout procesado primero), el sistema debe generar el reembolso inmediatamente. Implementado hoy: se registra una alerta `PAGO_APROBADO_SOBRE_PEDIDO_CANCELADO` en `AlertaWebhookMp` y no se modifica el pedido ni se reembolsa.
-- Un pedido llegó pagado al comercio si existe una fila de `HistorialEstadoPedido` con `estado = PENDIENTE_CONFIRMACION_COMERCIO`. El comercio solo ve esos pedidos, y la fecha de esa fila es la fecha de pago que ve el comercio y con la que se cuenta el día de hoy en su panel.
+- Un pedido llegó pagado al comercio si existe una fila de `HistorialEstadoPedido` con `estado = PENDIENTE_CONFIRMACION_COMERCIO`. El comercio solo ve esos pedidos, y la fecha de esa fila es la fecha de pago que ve el comercio. Hasta la v1.23 también era la que contaba el día de hoy en su panel; desde la v1.24 el panel cuenta por turno (`turno_fecha`, `turno_horario_id`).
+- Turno del pedido (v1.24): al confirmarse el pago se asigna `(turno_fecha, turno_horario_id)` con el mismo instante que `fecha_pago_confirmado` y que la fila del historial: el turno que contiene ese instante o, fuera de toda franja, el último turno terminado dentro de 7 días (`turno.pago-fuera-franja-dias`). "Vendido en el turno" suma el `subtotal` de los pedidos del turno en `EN_PREPARACION`, `EN_CAMINO`, `LISTO_PARA_RETIRAR`, `ENTREGADO` o `NO_RETIRADO`; "Pedidos del turno" cuenta todos los que llegaron pagados al turno sin importar cómo terminaron; la comisión (suma de `cargo_servicio_comercio`) y el neto los ve solo el Dueno; los pendientes cuentan todos los del comercio, no los del turno.
 - Los valores de `subtotal`, `cargo_servicio_cliente`, `cargo_servicio_comercio` y `total` son inmutables una vez registrados.
 - Cada cambio de estado del pedido genera un INSERT en `HistorialEstadoPedido`, que es la fuente canónica de todos los timestamps del ciclo de vida.
 
@@ -1855,7 +1922,7 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 - **Estados de la relación:** `ACTIVO`/`INACTIVO` en la base. La fila nace al aceptar la invitación, ya `ACTIVO`, o se reactiva (misma fila). Reactivar sin código solo si lo dio de baja el Dueno; si renunció o se canceló la invitación hace falta una invitación nueva. En pantalla además se ve "Pendiente" y "Vencida", derivados de `InvitacionEmpleado`.
 - **Comercio no operativo:** un Empleado ve en su selector los comercios `SUSPENDIDO` y `CERRADO_TEMPORALMENTE` con aviso. Puede despachar, entregar (también un pedido `LISTO_PARA_RETIRAR`) y anular los pedidos ya aceptados (el servidor responde `409` a todo lo demás: aceptar pedidos nuevos, tocar productos o el perfil, abrir o cerrar). Las entregas de los pedidos `EN_CAMINO` no las confirma el comercio: las confirma el Cliente o el sistema (aviso a los 75 minutos y autoconfirmación a los 90). El Dueno queda sin cambios por ahora; la diferencia se resuelve en el tramo de rediseño de la suspensión. `INACTIVO`, `RECHAZO_DEFINITIVO`, `PENDIENTE` y `RECHAZADO` no aparecen. Las relaciones no se tocan por cambios de estado del comercio.
 - **Pedido propio:** un Empleado puede pedir en su propio comercio como Cliente pero no puede gestionar sus propios pedidos (se valida por el id del usuario); no recibe la notificación de "pedido nuevo" de su propio pedido.
-- **Permisos delegables (lista blanca por ruta exacta; todo lo no clasificado queda bloqueado):** 17 escrituras (9 de productos con sus imágenes y firmas, 3 de comercio —perfil, cerrar y abrir— y 5 de pedidos: aceptar, rechazar, despachar, entregar y anular), más las lecturas del perfil reducido (sin razón social, CUIT, condición de IVA, tipo de sociedad, domicilio fiscal, fecha de inicio ni representante), productos, pedidos y ventas, y las notificaciones con el encabezado del comercio. Del comercio el Empleado edita solo la descripción, el teléfono y los horarios; el nombre, la foto, la dirección y el tipo de comercio los ve en solo lectura. Futuros delegables: extras y grupos de extras, y edición de horarios. Exclusivo del Dueno: alta adicional y corrección o re-solicitud de comercio, nombre, foto, dirección y tipo de comercio, redes sociales, todo lo de MercadoPago (incluido el enlace de pago de un pedido), datos fiscales, la gestión del equipo (invitar, reenviar, cancelar, desactivar, reactivar, actividad) y la futura documentación de habilitación.
+- **Permisos delegables (lista blanca por ruta exacta; todo lo no clasificado queda bloqueado):** 17 escrituras (9 de productos con sus imágenes y firmas, 3 de comercio —datos operativos, cerrar y abrir— más la edición de horarios y 5 de pedidos: aceptar, rechazar, despachar, entregar y anular), más las lecturas del perfil reducido (sin razón social, CUIT, condición de IVA, tipo de sociedad, domicilio fiscal, fecha de inicio ni representante), productos, pedidos y ventas, y las notificaciones con el encabezado del comercio. Del comercio el Empleado edita solo la descripción, el teléfono y los horarios; el nombre, la foto, la dirección y el tipo de comercio los ve en solo lectura. Futuros delegables: extras y grupos de extras. La edición de horarios ya es delegable desde el tramo T1 de la Fase 2 (`PUT /comercios/perfil/horarios`). Exclusivo del Dueno: alta adicional y corrección o re-solicitud de comercio, nombre, foto, dirección y tipo de comercio, redes sociales, todo lo de MercadoPago (incluido el enlace de pago de un pedido), datos fiscales, la gestión del equipo (invitar, reenviar, cancelar, desactivar, reactivar, actividad) y la futura documentación de habilitación.
 - **Sesión única:** un login en otro dispositivo cierra la sesión anterior en ambos contextos (Cliente y Empleado).
 
 ### Ciclo de vida del usuario y propagación al comercio

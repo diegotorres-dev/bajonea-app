@@ -12,12 +12,13 @@ comercios se encuentran en Requisitos Funcionales — Dueño.
 ## Perfil del Negocio
 
 - El Dueño debe poder registrar los datos propios de cada comercio que administra:
-  nombre, descripción, foto de perfil del negocio, teléfono, email de contacto del
-  negocio, dirección operativa, tipo de comercio (Restaurante, Emprendimiento,
+  nombre, descripción, foto de perfil del negocio, teléfono, dirección operativa (solo
+  Tierra del Fuego: Río Grande, Tolhuin o Ushuaia), tipo de comercio (Restaurante, Emprendimiento,
   Rotisería, Heladería, Cafetería, Panadería, Pizzería, Parrilla, Bar, Kiosco, Food
   Truck u Otro) y modalidades de entrega aceptadas (acepta_delivery, acepta_retiro —
   al menos una obligatoria). La foto de perfil del comercio es obligatoria desde el
-  alta inicial.
+  alta inicial. El nombre del comercio es único en toda la plataforma (ver los requisitos
+  del Dueño): el formulario avisa en vivo, al salir del campo, si el nombre está disponible.
 - El comercio debe definir al menos una franja horaria de atención al momento del alta,
   pudiendo agregar múltiples franjas que contemplen diferentes horarios por día.
 - El Dueño debe poder editar los datos, la foto de perfil y los horarios del comercio
@@ -25,9 +26,11 @@ comercios se encuentran en Requisitos Funcionales — Dueño.
   comercio solo la descripción, el teléfono y los horarios; el nombre, la foto, la dirección,
   el tipo de comercio, los datos fiscales, las redes sociales, MercadoPago y el equipo son
   exclusivos del Dueño (el Empleado ve el nombre, la foto, la dirección y el tipo, pero no
-  los edita). La edición de horarios se habilitará para el Empleado cuando exista esa
-  función (hoy los horarios solo se cargan en el alta y en la corrección de un comercio
-  rechazado). Ver Requisitos Funcionales — Empleado.
+  los edita). Los cambios de horarios (Dueño o Empleado) rigen desde el día siguiente: lo que
+  rige hoy no cambia, el cambio programado se ve como "Desde mañana" y se puede cancelar
+  mientras no haya empezado. Una franja puede terminar al día siguiente (por ejemplo, de
+  20:00 a 02:00); una franja no puede abrir y cerrar a la misma hora (las 24 horas se cargan
+  de 00:00 a 23:59). Ver Requisitos Funcionales — Empleado.
 - La foto de perfil del comercio es un dato propio de cada comercio, independiente de
   la foto de perfil personal de su Dueño (ver Requisitos Funcionales — Dueño). Si un
   Dueño administra varios comercios, cada uno mantiene su propia foto de negocio.
@@ -184,6 +187,7 @@ horario, también con el aviso de cuándo reabre.
   aparece en un aviso fijo en la misma pantalla (lista de productos, formulario o subida
   de fotos); el rechazo al pedir permiso de subida de una foto por esa causa no se
   confunde con el aviso del máximo de imágenes por producto.
+- El precio de un producto existente no se puede cambiar mientras el comercio está dentro de uno de sus horarios de atención (cuenta el horario, no si el comercio está abierto o cerrado a mano). En el formulario el campo precio aparece deshabilitado con un candado y la leyenda "Se puede cambiar fuera de tu horario de atención", y se habilita solo cuando termina el horario; los demás datos del producto se editan con normalidad y el alta de un producto nuevo no tiene esta restricción. Si el servidor rechaza el cambio igualmente, el mensaje aparece en un aviso fijo y el campo vuelve a su valor.
 - Cada producto puede encontrarse en uno de los siguientes estados:
   - **DISPONIBLE:** el producto es visible en el menú y puede ser agregado al carrito
     y pedido.
@@ -255,7 +259,7 @@ horario, también con el aviso de cuándo reabre.
   configurable); la espera aplica solo a este cierre, confirmar la entrega es inmediato.
   ENTREGADO queda reservado para entregas reales, así que la fuente de entrega
   COMERCIO_SIN_RETIRO deja de ser necesaria. El Cliente ve el pedido como "No retirado", el
-  pedido cuenta en el "facturado hoy" y el Cliente recibe la notificación T36 ("Tu pedido #12
+  pedido cuenta en el "Vendido en el turno" y el Cliente recibe la notificación T36 ("Tu pedido #12
   no fue retirado y el comercio lo cerró. Como ya estaba preparado, no hay devolución del
   pago."). Implementado en el tramo E3, bloque A4b (`PUT /api/v1/pedidos/comercio/{id}/no-retirado`,
   sexta acción de pedido delegable al Empleado): antes de la espera responde 409 con los
@@ -306,8 +310,12 @@ horario, también con el aviso de cuándo reabre.
 - Un Empleado no puede gestionar un pedido del que él mismo es el Cliente (aceptar, rechazar, despachar, entregar y anular responden `409` con el código `PEDIDO_PROPIO` y el mensaje "No podés gestionar tus propios pedidos"); el Dueño y cualquier otro Empleado sí. Cualquier persona del equipo puede actuar sobre un pedido que aceptó otra. La vista del Empleado marca su pedido con `esPedidoPropio` (ver `requisitos-funcionales-empleado.md`).
 - Cuando dos personas actúan a la vez sobre el mismo pedido (por ejemplo, aceptar y rechazar, o anular y despachar, o el Cliente cancelando mientras el comercio acepta), el sistema las atiende de a una: gana la primera, la segunda recibe un aviso de que el pedido ya fue resuelto, y solo la acción ganadora deja historial, aviso al cliente y reembolso. Lo mismo vale para los procesos automáticos (expiración, autoconfirmación) cuando coinciden con una acción de una persona.
 - El Dueño o un Empleado autorizado ve únicamente los pedidos que llegaron al comercio con el pago aprobado (los que pasaron por PENDIENTE_CONFIRMACION_COMERCIO). Un pedido que nunca llegó pagado no aparece en la lista, en el resumen ni en el detalle de pago, y sus acciones responden como recurso inexistente.
-- La fecha de un pedido para el comercio es la de la confirmación del pago, no la de su creación, y es la que define qué pedidos cuentan como "de hoy".
-- El panel muestra tres contadores del día: pedidos de hoy (los que llegaron pagados hoy, sin importar cómo terminaron), pendientes (los que están en PENDIENTE_CONFIRMACION_COMERCIO) y facturado hoy (suma del subtotal de los que llegaron pagados hoy y hoy están en EN_PREPARACION, EN_CAMINO, LISTO_PARA_RETIRAR, ENTREGADO o, desde el tramo E3, bloque A4b, NO_RETIRADO).
+- La fecha de un pedido para el comercio es la de la confirmación del pago, no la de su creación.
+- Cada pedido pertenece a un turno del comercio: el que contiene el instante en que se confirmó el pago o, si el pago cayó fuera de toda franja, el último turno terminado de los 7 días anteriores. Un pago de madrugada en un turno que cruza la medianoche pertenece al turno que empezó el día anterior. El turno de un pedido no cambia aunque después se editen los horarios.
+- El panel muestra el turno en curso y, entre turnos, el último turno terminado, con un rótulo que lo dice ("En curso · 20:00 a 02:00 (día siguiente)", "Terminó · 12:00 a 15:00", "Terminó ayer · 20:00 a 02:00 (día siguiente)"). Sin ningún turno dice "Sin turno por ahora". Muestra tres contadores: "Vendido en el turno" (suma del subtotal, sin descontar ningún cargo, de los pedidos del turno en EN_PREPARACION, EN_CAMINO, LISTO_PARA_RETIRAR, ENTREGADO o NO_RETIRADO), "Pedidos del turno" (los que llegaron pagados al turno, sin importar cómo terminaron) y "Pendientes" (todos los que están en PENDIENTE_CONFIRMACION_COMERCIO, sean o no del turno). Sin turno, "Vendido" y "Pedidos" se muestran con un guion y "Pendientes" con su cifra.
+- Solo el Dueño ve, debajo de los contadores y plegado por defecto ("Ver comisión y neto"), la comisión del turno (suma del cargo de servicio al comercio) y el neto del turno (el vendido menos la comisión). El Empleado no recibe ni ve esos dos datos.
+- El panel se actualiza solo cuando termina el turno que muestra.
+- Al terminar cada turno el Dueño recibe por email un resumen con las cifras del turno (vendido, comisión, neto, pedidos del turno y pedidos sin responder al cierre); el Empleado no lo recibe ni ve la comisión ni el neto. Ver "Resumen por Email al Cerrar un Turno" en los requisitos del Dueño.
 
 ---
 
@@ -338,4 +346,4 @@ horario, también con el aviso de cuándo reabre.
   cargo_servicio_comercio`. La cuenta de MercadoPago del Dueño titular del comercio
   recibe automáticamente: `subtotal - cargo_servicio_comercio`.
 - `marketplace_fee` es el campo que el sistema envía en la preferencia de Checkout Pro. Es un monto absoluto en pesos, ya calculado, que MercadoPago transfiere a la cuenta dueña de la aplicación; no admite fórmulas ni desglose. La entrada de la respuesta de MercadoPago que informa esa comisión se llama `application_fee` dentro de `fee_details`: es solo el nombre con que MercadoPago la devuelve y no implica usar el mecanismo `application_fee` de la API de Pagos.
-- El panel del comercio debe mostrar en el detalle de cada pedido el cargo de servicio al comercio y, como total, lo que el comercio efectivamente factura (`subtotal - cargo_servicio_comercio`), no lo que pagó el cliente. El indicador "Facturado hoy" del panel se calcula con el mismo criterio neto.
+- El panel del comercio debe mostrar en el detalle de cada pedido el cargo de servicio al comercio y, como total, lo que el comercio efectivamente factura (`subtotal - cargo_servicio_comercio`), no lo que pagó el cliente. En el panel, el neto del turno se calcula con el mismo criterio neto y se ve solo en el desglose del Dueño.

@@ -7,8 +7,8 @@ Usuario — Comercio.
 
 ## HU-D01: Registrarme como Dueño
 
-Como Dueño, quiero registrarme eligiendo un nombre de usuario para mi cuenta, con mis datos de persona jurídica (razón social, CUIT,
-domicilio fiscal, condición frente al IVA, tipo de sociedad e inicio de actividades)
+Como Dueño, quiero registrarme eligiendo un nombre de usuario para mi cuenta, con mis datos de persona jurídica (CUIT y domicilio fiscal; razón social,
+condición frente al IVA, tipo de sociedad e inicio de actividades son opcionales y van en una sección plegable "Datos adicionales (opcional)")
 junto con los datos de mi primer comercio (tipo de comercio, modalidades de entrega,
 horarios de atención), para solicitar mi habilitación con información completa desde
 un único flujo.
@@ -57,7 +57,9 @@ todos mis comercios aprobados comiencen a aparecer en el catálogo y a recibir p
 
 Como Dueño, quiero dar de alta comercios adicionales bajo mi cuenta sin volver a cargar
 mis datos fiscales, y elegir desde un selector sobre cuál de mis comercios estoy
-operando en cada momento, para gestionar varios negocios desde una única cuenta.
+operando en cada momento, para gestionar varios negocios desde una única cuenta. Sé que
+el nombre de cada comercio tiene que ser distinto del de cualquier otro comercio de la
+plataforma, y que el formulario me avisa en vivo si el nombre que elegí ya está tomado.
 
 ## HU-D06: Dar de Baja un Comercio
 
@@ -152,3 +154,38 @@ informativa.
 
 Como Dueño con un comercio suspendido, quiero poder enviar un mensaje al administrador
 explicando mi situación, para solicitar la revisión de la suspensión de ese comercio.
+
+## HU-D11: Ver Cuánto Vendí en el Turno
+
+Como Dueño, quiero ver en el panel de cada comercio cuánto se vendió en el turno en curso (o en el último turno terminado, aclarando que ya terminó), cuántos pedidos tuvo y cuántos están pendientes, y poder desplegar la comisión de plataforma y el neto del turno, para saber cuánto factura el comercio y cuánto me queda sin tener que sumar a mano. Un turno que cruza la medianoche cuenta como un solo turno, y el panel me avisa "Sin turno por ahora" cuando no hay ninguno.
+
+## HU-D12: Cambiar Precios Fuera del Horario de Atención
+
+Como Dueño, quiero que el precio de mis productos no se pueda cambiar mientras mi comercio está en horario de atención, para que los clientes que están pidiendo no vean precios que cambian en medio de la compra. En el formulario del producto veo el campo precio deshabilitado con un candado y la leyenda "Se puede cambiar fuera de tu horario de atención", sigo editando el resto del producto, y el campo se habilita solo cuando termina el horario. Dar de alta un producto nuevo no tiene esta restricción.
+
+## HU-D13: Recibir el Resumen del Turno por Email
+
+Como Dueño, quiero recibir por email, al terminar cada turno de mis comercios, un resumen con lo que se vendió, la comisión, el neto y cuántos pedidos quedaron sin responder, para conocer el resultado del turno sin tener que entrar al panel. Si tengo varios comercios que cierran juntos, quiero un solo mensaje con un bloque por comercio; si un turno no tuvo pedidos, quiero que me avise igual. El asunto me tiene que mostrar el neto del turno. Los pedidos sin responder no se suman a los montos. Si el servicio de email falla, el sistema tiene que reintentar solo y no perder el resumen; y si mi cuenta no está activa en ese momento, no tiene que mandarme nada.
+
+**Criterios de aceptación:**
+- El email sale unos 30 minutos después del fin del turno, con las cifras que mostraba el panel.
+- Un solo email por vez con todos mis turnos cerrados; incluye los turnos sin pedidos.
+- El asunto lleva el neto del turno ("Cerró tu turno en Pizzería Popular: neto $127.116"), o "sin pedidos".
+- El cuerpo muestra vendido, comisión, neto, pedidos del turno y, si los hay, los pedidos sin responder al cierre (fuera de los montos).
+- Si el envío falla se reintenta a los 10, 30, 60 y 60 minutos; tras 5 intentos fallidos queda registrado como no enviado.
+- No recibo el email si mi cuenta está bloqueada, suspendida o inactiva.
+- Un Empleado no recibe este email.
+
+
+## HU-D14: Ver las Estadísticas de mi Comercio
+
+Como Dueño, quiero ver las estadísticas de mi comercio de los últimos 7 o 30 días, con lo vendido, la comisión, el neto y el ticket promedio, un gráfico de lo vendido por día y cómo terminaron mis pedidos, para entender cómo viene el negocio. Quiero tocar un día del gráfico y ver cuánto vendí en cada uno de sus turnos.
+
+**Criterios de aceptación:**
+- Entro desde el enlace "Ver estadísticas" que está debajo de las métricas del panel; un Empleado no ve ese enlace.
+- La pantalla abre con los últimos 30 días y puedo cambiar a 7 días.
+- Veo cuatro cifras: vendido, comisión, neto y ticket promedio, que coinciden con lo que calcula el sistema.
+- El gráfico tiene una barra por día; cada barra se toca o se elige con el teclado y muestra la fecha, lo vendido, los pedidos y sus turnos.
+- La lista de resultados muestra entregados, no retirados, rechazados, cancelados, anulados, sin respuesta y en curso.
+- Si no hubo pedidos, la pantalla me lo dice; con 7 días me ofrece ver los últimos 30 solo si hubo pedidos en ellos.
+- Las cifras son del comercio que tengo abierto, nunca de todos mis comercios, y se calculan con el estado actual de los pedidos (pueden diferir del email de cierre del turno).

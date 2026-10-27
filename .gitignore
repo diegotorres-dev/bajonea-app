@@ -41,3 +41,5 @@ application-local.properties
 03. Implementación/docs/migracion-comercios-railway.sql
 03. Implementación/docs/migracion-datos-prueba-railway.sql
 03. Implementación/docs/db/prueba-manual-multicomercio-3b.sql
+03. Implementación/testing/playwright/tmp-capturas/
+03. Implementación/backend/run-local.ps1

@@ -67,7 +67,9 @@ vegetariano, etc.).
 Como cliente, quiero agregar, modificar y eliminar productos de mi carrito, para armar
 mi pedido de forma flexible antes de confirmarlo. Entiendo que cada carrito puede
 contener productos de un solo comercio, pero puedo tener varios pedidos activos de
-distintos comercios al mismo tiempo.
+distintos comercios al mismo tiempo. Si el comercio cambia el precio de un producto que ya
+tengo en el carrito, veo el precio anterior tachado, el nuevo al lado y el aviso "Cambió el
+precio", con los totales ya actualizados.
 
 ## HU-C09B: Elegir Extras al Armar mi Pedido
 
@@ -79,7 +81,10 @@ máximo de opciones de cada grupo, para personalizar mi pedido según mis prefer
 
 Como cliente, quiero confirmar mi carrito eligiendo la modalidad de entrega (domicilio
 o retiro en local, según las opciones que ofrezca el comercio), para concretar mi
-compra de manera simple desde la plataforma.
+compra de manera simple desde la plataforma. Si entre que armé el resumen y confirmé cambió
+el precio de algún producto o el cargo por servicio, el pedido no se crea con un monto que
+no vi: me muestran el resumen con los montos nuevos y el botón "Confirmar con el nuevo
+total", y recién ahí se crea.
 
 ## HU-C11: Pagar mi Pedido
 

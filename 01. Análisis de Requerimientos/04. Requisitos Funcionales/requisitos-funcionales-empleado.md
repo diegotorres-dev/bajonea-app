@@ -9,8 +9,8 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
 > confirmación final del dueño del proyecto. Las estructuras (`Empleado`,
 > `EmpleadoComercio`, `InvitacionEmpleado`, `HistorialEmpleadoComercio`,
 > `HistorialEdicionComercio`) están en las migraciones `V29` a `V35`. Lo que sigue
-> pendiente se lista en Alcance y Limitaciones (por ejemplo, la edición de horarios, que
-> todavía no existe para nadie, y el rediseño de la suspensión de comercios).
+> pendiente se lista en Alcance y Limitaciones (por ejemplo, el rediseño de la suspensión de
+> comercios). La edición de horarios existe desde el tramo T1 de la Fase 2.
 
 ---
 
@@ -199,7 +199,7 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
 > conjunto reducido de datos (nombre, foto, descripción, dirección del local, teléfono, email
 > de contacto, tipo de comercio, modalidades de entrega, horarios, estado, si está abierto o
 > cerrado manualmente, si puede cambiar el cierre y el texto de reapertura), la lista de
-> productos, la lista de pedidos y el resumen de pedidos del día, estos dos últimos sin los
+> productos, la lista de pedidos y el resumen del turno, estos dos últimos sin los
 > cargo de servicio del comercio ni los datos de Mercado Pago (ver Permisos Delegados). **Desde el bloque
 > A2 de E3 el servidor también le abre las 17 escrituras delegables** (productos e imágenes,
 > descripción y teléfono, abrir y cerrar, y las cinco acciones sobre pedidos), con la relación
@@ -208,7 +208,7 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
 > la entrega B de E3 (las pantallas de pedidos llegaron en la etapa 1 y las de edición del
 > comercio, productos y cierre en la etapa 2). La entrega B de E2 sumó las pantallas: selector
 > de contexto después del login, "Cambiar de cuenta" en el perfil, y un panel (Panel con
-> "Ventas de hoy", Productos, Pedidos y un Perfil con los datos operativos del comercio),
+> "Vendido en el turno", Productos, Pedidos y un Perfil con los datos operativos del comercio),
 > con el reembolso de cada pedido en términos simples ("Reembolso en proceso", "Reembolsado"
 > o "Reembolso en revisión", con el monto). Las notificaciones por comercio del Empleado
 > llegan con el aviso al equipo (bloque A4, implementado): un Cliente que manda el comercio en la
@@ -242,9 +242,9 @@ puede:
   (cualquier otro campo, como el nombre o el email, da error de datos inválidos 400 y no
   cambia nada). El Empleado no ve la razón social, el CUIT, la condición de IVA, el tipo de
   sociedad, el domicilio fiscal, la fecha de inicio de actividades ni los datos del
-  representante. La edición de horarios todavía no existe para nadie: hoy los horarios solo
-  se cargan en el alta y en la corrección de un comercio rechazado; el Empleado la tendrá
-  cuando exista.
+  representante. La edición de horarios (fila propia "Editar horarios") es igual a la del Dueño: el cambio
+  rige desde mañana, se puede cancelar mientras no empiece y, con el comercio Suspendido, el
+  Empleado no puede guardarlo.
 - Abrir y cerrar el comercio manualmente (queda registrado con rol Empleado). Puede abrir un
   cierre manual aunque lo haya hecho el Dueño; solo dentro de un horario de atención y con
   el comercio operativo (si está Suspendido o Cerrado Temporalmente, o fuera de horario,
@@ -261,10 +261,14 @@ puede:
   reembolso, en proceso, reembolsado o en revisión) con el monto. No ve el cargo de
   servicio del comercio, la comisión, el neto a cobrar por el
   comercio, ni ningún dato de MercadoPago o del detalle técnico de un reembolso. El
-  contador del panel, que para el Empleado se llama "Ventas de hoy" (el Dueño ve
-  "Facturado hoy"), suma el subtotal de los productos de los pedidos facturados, sin
-  descontar el cargo de servicio del comercio (el Dueño ve esa misma suma ya neta); los
-  contadores de pedidos de hoy y pendientes son los mismos para ambos.
+  contador "Vendido en el turno" del panel suma el subtotal de los productos de los
+  pedidos facturados del turno, sin descontar el cargo de servicio del comercio; es la
+  misma cifra que ve el Dueño, que además puede desplegar la comisión y el neto del turno
+  (el Empleado no recibe ni ve esos dos datos). "Pedidos del turno" y "Pendientes" son los
+  mismos para ambos, y el rótulo del turno ("En curso", "Terminó", "Sin turno por ahora")
+  también.
+  El resumen que se manda por email al terminar un turno es solo para el Dueño: el
+  Empleado no lo recibe.
 - Aceptar, rechazar, despachar, entregar y anular pedidos. Las entregas de los pedidos En
   Camino no las confirma el comercio: las confirma el Cliente, o el sistema (aviso a los 75
   minutos y autoconfirmación a los 90). Al rechazar o anular un pedido ya pagado, la nota
@@ -281,13 +285,12 @@ puede:
   "Entregado" queda reservado para entregas reales. Para cerrarlo tiene que haber pasado
   una espera mínima de 60 minutos desde que el pedido quedó Listo para Retirar (el valor es
   configurable); la espera aplica solo a este cierre: "Entregar" es inmediato. El Cliente
-  ve el pedido como "No retirado", el pedido cuenta en "Facturado hoy" y el Cliente recibe
+  ve el pedido como "No retirado", el pedido cuenta en "Vendido en el turno" y el Cliente recibe
   la notificación T36.
 - Recibir y ver las notificaciones operativas del comercio.
 
 **Futuros delegables** (hoy no tienen endpoint): grupos de extras y extras. Se
-clasificarán como delegables cuando existan. La edición de horarios también será delegable,
-pero hoy no existe para nadie.
+clasificarán como delegables cuando existan. La edición de horarios ya es delegable (tramo T1 de la Fase 2).
 
 ---
 
@@ -331,6 +334,7 @@ bloqueado para el Empleado por defecto.
 - El teléfono se valida en la pantalla (obligatorio y con formato argentino) antes de llamar al servidor. Si el servidor rechaza la edición por una regla de negocio (por ejemplo, con el comercio Suspendido), el mensaje aparece en un aviso fijo rojo dentro de la vista, que no se va solo.
 - "Editar datos personales" ya no abre un formulario dentro del comercio: muestra una hoja con el título "Vas a pasar a tu cuenta personal" y los botones "Continuar" y "Cancelar". "Cancelar" cierra la hoja sin cambiar nada. "Continuar" pasa a la cuenta de Cliente y lleva al perfil de Cliente, donde el Empleado elige qué editar (datos personales, contraseña, foto). Dentro del comercio el Empleado ya no tiene "Cambiar contraseña".
 - El Empleado ve el botón "+" de la lista de productos y el menú de cada producto (editar, marcar como agotado o disponible, descontinuar), y puede abrir el formulario de producto para crear o editar, con las mismas reglas que el Dueño. Con el comercio Cerrado Temporalmente puede editar productos; con el comercio Suspendido el servidor lo rechaza y el mensaje aparece en un aviso fijo (en la lista, en el formulario y también al pedir permiso para subir una foto, sin confundirse con el aviso del máximo de imágenes por producto).
+- El Empleado tampoco puede cambiar el precio de un producto mientras el comercio está dentro de uno de sus horarios de atención, igual que el Dueño: en el formulario el campo precio aparece deshabilitado con un candado y la leyenda "Se puede cambiar fuera de tu horario de atención", el resto del producto se edita con normalidad y el campo se habilita solo cuando termina el horario.
 - El panel del Empleado muestra el interruptor de cierre manual cuando el comercio está apto para vender y el servidor lo permite (dentro del horario de atención). Cerrar pide confirmación; abrir es directo; ambos quedan registrados con rol Empleado. Si el servidor rechaza el cambio por una regla de negocio, el mensaje aparece en un aviso fijo debajo del interruptor; un error de conexión sigue saliendo como aviso temporal.
 
 ## Notificaciones en Pantalla

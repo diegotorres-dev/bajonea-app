@@ -12,9 +12,13 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
 ## Registro y Datos Fiscales
 
 - El sistema debe permitir el registro de un Dueño nuevo solicitando en un mismo flujo:
-  los datos de la persona jurídica (razón social, CUIT, domicilio fiscal, condición
-  frente al IVA, tipo de sociedad e inicio de actividades) y los datos de su primer
-  comercio (ver Requisitos Funcionales — Comercio, sección Perfil del Negocio).
+  los datos de la persona jurídica (CUIT y domicilio fiscal, obligatorios; razón social,
+  condición frente al IVA, tipo de sociedad e inicio de actividades, opcionales), los datos del
+  representante y los datos de su primer comercio (ver Requisitos Funcionales — Comercio,
+  sección Perfil del Negocio). Para registrarse tiene que aceptar los Términos y Condiciones
+  y la Política de Privacidad (el servidor rechaza con 400 si `aceptaTerminos` falta o es falso;
+  la aceptación se valida y no se guarda). El alta de un comercio adicional pide la misma
+  aceptación; la corrección de un comercio rechazado no.
 - El registro del Dueño solicita también el nombre de usuario de su cuenta, que es su credencial de login (ver Requisitos Funcionales — Generales, sección Nombre de Usuario). El Dueño no tiene, en esta versión, una pantalla para ver ni cambiar su nombre de usuario.
 - Un Dueño que ya tiene una cuenta activa debe poder dar de alta un comercio adicional
   desde su panel sin volver a solicitar sus datos fiscales, ya cargados en su registro
@@ -43,9 +47,15 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   la que puede agregar un comercio nuevo (únicamente si cumple la regla de más abajo) y,
   cuando exista el módulo de soporte, contactar al soporte.
 - Un Dueño puede agregar un comercio nuevo si tiene al menos un comercio Aprobado o Apto
-  para venta, o si tiene al menos un comercio y todos están en Rechazo definitivo. Un
-  comercio en Rechazo definitivo cuenta como duplicado (mismo nombre en la misma dirección);
-  uno solo Rechazado, no.
+  para venta, o si tiene al menos un comercio y todos están en Rechazo definitivo.
+- El nombre de un comercio es único en toda la plataforma, sin importar el Dueño ni la
+  dirección. Se compara sin distinguir mayúsculas, tildes ni espacios de más (y la "ñ" cuenta
+  como "n": "Cafetería Ñandú" y "Cafeteria Nandu" son el mismo nombre). Cuentan todos los
+  estados salvo Rechazo definitivo, que libera el nombre; un comercio Rechazado lo conserva
+  (para usarlo de nuevo se corrige y se vuelve a solicitar el mismo comercio). Al registrar,
+  agregar, corregir o editar un comercio, el formulario avisa en vivo si el nombre está
+  disponible o no, y el servidor lo verifica de todos modos al guardar. Un nombre tomado
+  por una cuenta que nunca llegó a verificarse queda retenido.
 - Un Dueño con un comercio suspendido puede contactar al soporte desde su panel
   completando un formulario con su descargo. El Administrador recibe la solicitud y
   decide manualmente.
@@ -250,17 +260,62 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
 
 ---
 
+## Resumen del Turno en el Panel
+
+- El panel de cada comercio muestra el turno en curso o, entre turnos, el último turno terminado, con su horario y un rótulo ("En curso", "Terminó", "Terminó ayer", "Sin turno por ahora"), y tres contadores: "Vendido en el turno" (el subtotal de los pedidos facturados del turno, sin descontar cargos), "Pedidos del turno" y "Pendientes" (todos los del comercio).
+- El Dueño puede desplegar, debajo de los contadores, la comisión de plataforma del turno y el neto del turno (el vendido menos la comisión). La comisión y el neto son exclusivos del Dueño: un Empleado ve el mismo resumen sin esos dos datos.
+- Un pedido pertenece al turno en el que se confirmó su pago (el turno que empezó el día anterior si el pago fue de madrugada y el turno cruza la medianoche); si el pago cayó fuera de toda franja, al último turno terminado de los 7 días anteriores. Editar los horarios después no cambia el turno de los pedidos ya pagados.
+
+---
+
+## Resumen por Email al Cerrar un Turno
+
+- Cuando termina un turno de uno de sus comercios, el Dueño recibe un email con el resumen: pasados 30 minutos desde el fin del turno, el sistema guarda una foto de las cifras del turno (vendido, comisión de plataforma, neto, pedidos del turno y pedidos sin responder) y se la manda. Las cifras son las mismas que mostraba el panel, y la foto no cambia después: un pago confirmado o un pedido aceptado pasado el cierre aparece en el panel pero no en el email.
+- Si el turno tiene un pedido todavía sin pagar creado antes de su fin, el cierre espera a que ese pedido se resuelva (se paga o vence), hasta un máximo de dos horas desde el fin del turno.
+- Un solo email por vez, con todos los turnos que cerraron: si el Dueño tiene varios comercios que cierran juntos, recibe un único mensaje con un bloque por comercio. El email se envía aunque el turno no haya tenido pedidos ("No hubo pedidos en este turno").
+- El asunto de un comercio con ventas muestra el neto del turno (por ejemplo "Cerró tu turno en Pizzería Popular: neto $127.116"); si no hubo pedidos dice "sin pedidos" y, con más de un comercio, "Cerraron los turnos de tus comercios". El cuerpo muestra "Vendido en el turno", "Comisión de Bajoneá", "Neto del turno" y "Pedidos del turno", y aclara cuántos pedidos quedaron sin responder al cerrar (no están incluidos en los montos). Los turnos que cruzan la medianoche dicen "(día siguiente)".
+- Reciben el resumen los comercios con la cuenta de cobro vinculada (listos para vender). Un comercio suspendido por el Administrador o cerrado temporalmente por el bloqueo de la cuenta solo lo recibe si hubo pedidos o pendientes; los comercios aprobados sin cuenta de cobro no lo reciben.
+- Si la cuenta del Dueño no está activa (bloqueada, suspendida o inactiva) al momento del envío, el email no se manda ni se manda después al reactivarla.
+- Si el envío falla, el sistema lo reintenta a los 10, 30, 60 y 60 minutos y, tras 5 intentos fallidos, lo deja sin enviar (queda registrado para que el equipo lo reencole). Una falla del servicio de email nunca afecta el cierre ni los demás envíos.
+- Si el comercio no tuvo ningún cierre en los últimos 5 días (comercio nuevo, recién vinculado a Mercado Pago o que volvió de una inactividad larga), el primer resumen es el del último turno terminado, no el de todos los turnos pendientes.
+- El resumen por email es solo para el Dueño: el Empleado no lo recibe.
+
+---
+
+## Estadísticas del Comercio
+
+- El Dueño ve las estadísticas de un comercio desde el panel, con el enlace "Ver estadísticas" debajo de la barra de métricas del turno. Es exclusivo del Dueño: el Empleado no ve el enlace ni puede abrir la pantalla.
+- Las estadísticas son de un solo comercio, el que el Dueño tiene abierto; nunca un total de todos sus comercios.
+- La pantalla tiene dos rangos, los últimos 7 días y los últimos 30 días (30 por defecto), y muestra cuatro cifras: lo vendido, la comisión de plataforma, el neto y el ticket promedio (lo vendido dividido por los pedidos facturados).
+- Un gráfico de barras muestra lo vendido en cada día del rango, con la fecha en los extremos. El Dueño toca una barra, o la elige con el teclado, y ve el detalle de ese día: la fecha, lo vendido, los pedidos y, debajo, cada uno de sus turnos con lo vendido y los pedidos (los pedidos pagados sin turno aparecen como "Sin turno asignado" y los turnos que cruzan la medianoche con "(día siguiente)").
+- Cada pedido cuenta en el día en que abrió su turno, igual que el panel y el email de cierre.
+- Debajo del gráfico, una lista muestra cómo terminaron los pedidos del rango: entregados, no retirados, rechazados, cancelados, anulados, sin respuesta y en curso.
+- Si no hubo pedidos en el rango, las cifras muestran un guion y la pantalla dice "No hubo pedidos en los últimos 7 días." (o 30). En el rango de 7 días ofrece el botón "Ver los últimos 30 días" solo si en 30 días sí hubo pedidos.
+- Las estadísticas son vivas: se calculan con el estado actual de los pedidos. Si un pedido en preparación se anula después, lo vendido baja. El email de cierre de turno es una foto del momento del cierre y puede diferir del número actual del mismo turno.
+
+---
+
+## Precios de los Productos
+
+- El precio de un producto no se puede cambiar mientras el comercio está dentro de uno de sus horarios de atención (aunque el comercio esté cerrado a mano o cerrado temporalmente: cuenta el horario, no el estado). Las demás partes del producto (nombre, descripción, categoría, tags, fotos, estado) se siguen editando con normalidad, y el alta de un producto nuevo con su precio no tiene restricción. Un comercio sin horarios cargados no tiene esta restricción.
+- En el formulario de edición, mientras el precio está bloqueado, el campo aparece deshabilitado con un candado y la leyenda "Se puede cambiar fuera de tu horario de atención"; el precio se conserva sin cambios al guardar los demás datos. Si el horario de atención termina con el formulario abierto, el campo se habilita solo a esa hora. Si el servidor igualmente rechaza el cambio, el mensaje "No podés cambiar precios mientras tu comercio está en horario de atención. Hacelo fuera de ese horario." aparece en un aviso fijo y el campo vuelve a su valor.
+- Este bloqueo vale por igual para el Dueño y para el Empleado.
+
+---
+
 ## Permisos Exclusivos del Dueño
 
 Las siguientes acciones no son delegables a un Empleado, aunque este tenga acceso
 Activo al comercio:
 
 - Editar los datos fiscales y de persona jurídica.
-- Cambiar el nombre, la foto, la dirección y el tipo de comercio, el email de contacto y las
+- Ver las estadísticas del comercio (ventas, comisión, neto y resultados de los pedidos).
+- Cambiar el nombre, la foto, la dirección y el tipo de comercio y las
   modalidades de entrega (la edición completa del perfil). De todo el perfil, el Empleado solo
   edita la descripción y el teléfono, por una ruta aparte que rechaza cualquier otro campo; el
   Dueño también puede usarla.
 - Vincular o desvincular la cuenta de MercadoPago.
+- Ver la comisión y el neto del turno en el panel.
 - Invitar, reenviar y cancelar invitaciones, desactivar y reactivar Empleados, y ver el
   historial del equipo y la actividad del comercio.
 - Gestionar los enlaces a redes sociales del comercio.

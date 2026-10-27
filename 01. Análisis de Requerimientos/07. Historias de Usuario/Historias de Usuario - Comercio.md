@@ -10,11 +10,13 @@ Usuario — Dueño; las de invitación y permisos del rol Empleado, en Historias
 
 Como Dueño o Empleado autorizado, quiero editar los datos del negocio (nombre,
 descripción, foto de perfil del comercio, tipo de comercio, teléfono, email de
-contacto, modalidades de entrega) y, como Dueño, sus horarios de atención, para mantener
+contacto, modalidades de entrega) y sus horarios de atención, para mantener
 la información visible y actualizada. Sé que la foto de perfil del comercio es propia de
 ese negocio y obligatoria, distinta de la foto de perfil personal del Dueño. Como
 Empleado no veo la razón social, el CUIT ni los demás datos fiscales o del representante,
-y la edición de horarios se habilitará para mí cuando exista esa función.
+y puedo editar los horarios. Un cambio de horarios rige desde mañana: veo qué rige hoy y qué
+regirá desde mañana, y puedo cancelar el cambio programado. Un turno puede terminar al día
+siguiente (por ejemplo, de 20:00 a 02:00).
 
 ## HU-CO02: Gestionar mis Redes Sociales
 
@@ -35,7 +37,10 @@ Como Dueño o Empleado autorizado, quiero editar los datos de mis productos en
 cualquier momento, para mantener mi menú actualizado ante cambios de precio,
 descripción o disponibilidad. Si el sistema no me deja (por ejemplo, el comercio está
 suspendido), el motivo aparece en un aviso rojo fijo en la misma pantalla (lista,
-formulario o subida de fotos).
+formulario o subida de fotos). El precio de un producto no se puede cambiar mientras mi
+comercio está dentro de uno de sus horarios de atención: el campo aparece deshabilitado
+con un candado y la leyenda "Se puede cambiar fuera de tu horario de atención", y se
+habilita solo cuando el horario termina; el resto del producto lo sigo editando.
 
 ## HU-CO05: Gestionar el Estado de Disponibilidad de un Producto
 
@@ -130,9 +135,11 @@ Como Dueño o Empleado autorizado, veo la campana en el panel con el contador de
 ## HU-CO14: Ver Solo los Pedidos ya Pagados
 
 Como Dueño o Empleado autorizado, quiero ver únicamente los pedidos cuyo pago ya fue
-confirmado, con la fecha en que se pagaron y los contadores del día (pedidos de hoy,
-pendientes y facturado), para gestionar solo ventas reales y tener un resumen fiel de mi
-jornada.
+confirmado, con la fecha en que se pagaron y los contadores del turno (vendido, pedidos
+del turno y pendientes), para gestionar solo ventas reales y tener un resumen fiel de mi
+turno. El panel me dice si el turno está en curso o ya terminó, y se actualiza solo cuando
+termina. Como Dueño puedo desplegar además la comisión y el neto del turno.
+Como Dueño recibo además, por email, el resumen de cada turno cuando termina.
 
 ## HU-CO15: Ver Quién Atendió un Pedido
 
