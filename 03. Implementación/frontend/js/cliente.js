@@ -7,6 +7,7 @@ import { renderTopBar, renderBottomNav, pintarAvatarUsuario, showToast } from '.
 import { validarArchivoImagen, subirFotoPerfilUsuario, eliminarFotoPerfilUsuario, CloudinaryUploadError } from './cloudinary.js';
 import { abrirEditorRecorte } from './crop.js';
 import { enlazarEdicionDatosPersonales, enlazarCambioPassword } from './perfil-cuenta.js';
+import { initMisDirecciones } from './direcciones.js';
 
 const ICONS = {
   logout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
@@ -189,6 +190,25 @@ export async function initPerfil() {
   document.querySelectorAll('[data-volver-perfil]').forEach((btn) => {
     btn.addEventListener('click', () => mostrarVista('view-principal'));
   });
+
+  const parametros = new URLSearchParams(window.location.search);
+  const vieneDelCheckout = parametros.get('desde') === 'checkout';
+  const misDirecciones = initMisDirecciones({
+    contenedor: document.getElementById('direcciones-contenido'),
+    enlaceFila: document.getElementById('mis-direcciones-link'),
+    mostrarVista,
+    idVista: 'view-direcciones',
+  });
+  document.getElementById('direcciones-volver').addEventListener('click', () => {
+    if (vieneDelCheckout) {
+      window.location.href = 'checkout.html';
+      return;
+    }
+    mostrarVista('view-principal');
+  });
+  if (parametros.get('vista') === 'direcciones') {
+    misDirecciones.abrir();
+  }
 
   document.getElementById('editar-datos-link').disabled = false;
   document.getElementById('cambiar-password-link').disabled = false;

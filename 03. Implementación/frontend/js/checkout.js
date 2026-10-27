@@ -4,6 +4,22 @@ import { showToast } from './catalogo.js';
 import { crearBannerCierre, crearBotonVolverAlCatalogo, esConflictoDeCierre, estaAbiertoParaClientes } from './apertura-comercio.js';
 import { normalizarCampos } from './validators.js';
 import { crearPrecioUnitario } from './precio-cambio.js';
+import {
+  MAXIMO_DIRECCIONES,
+  MENSAJE_CUPO_LLENO,
+  RUTA_MIS_DIRECCIONES,
+  cargarDirecciones,
+  abrirFormularioDireccion,
+  crearTarjetaDireccionEntrega,
+  habilitarFlechasRadiogroup,
+  ajustarTabindexRadios,
+  FIGURAS_MAS,
+} from './direcciones.js';
+import { h, crearSvg } from './form-utils.js';
+
+const CLAVE_CHECKOUT_PENDIENTE = 'bajonea_checkout_pendiente';
+const MENSAJE_SIN_DIRECCIONES = 'No tenés una dirección registrada. Agregá una para recibir tu pedido a domicilio.';
+const MENSAJE_DIRECCION_INEXISTENTE = 'La dirección que elegiste ya no existe. Elegí otra para continuar con tu pedido.';
 
 const ICONS = {
   truck: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
@@ -87,6 +103,8 @@ export async function initCheckout() {
   let currentStep = 0;
   let tipoEntregaSeleccionado = null;
   let montosActualizados = false;
+  let direcciones = [];
+  let direccionElegida = null;
 
   function mostrarPaso(index) {
     steps.forEach((step, i) => step.classList.toggle('is-hidden', i !== index));
@@ -124,16 +142,11 @@ export async function initCheckout() {
     return;
   }
 
-  const [comercios, cliente] = await Promise.all([
-    apiFetch('/catalogo/comercios', { auth: false }),
-    apiFetch('/clientes/perfil'),
-  ]);
+  const comercios = await apiFetch('/catalogo/comercios', { auth: false });
   comercios.forEach((c) => {
     normalizarCampos(c, ['nombre', 'razonSocial']);
     normalizarCampos(c.direccion, ['calle']);
   });
-  normalizarCampos(cliente, ['nombre', 'apellido']);
-  normalizarCampos(cliente.direccion, ['calle']);
   const comercio = comercios.find((c) => c.id === carrito.comercioId);
 
   if (!comercio) {
@@ -206,51 +219,141 @@ export async function initCheckout() {
   const step3Content = document.getElementById('step-3-content');
   const step4Content = document.getElementById('step-4-content');
 
+  function crearTituloEntrega() {
+    const titulo = document.createElement('h1');
+    titulo.className = 'title-md';
+    titulo.textContent = '¿Dónde recibís tu pedido?';
+    return titulo;
+  }
+
+  async function renderEntregaDomicilio() {
+    step2Content.replaceChildren(crearTituloEntrega(), h('div', { class: 'direcciones-entrega', 'aria-busy': 'true', 'data-testid': 'esqueleto-direcciones-entrega' }, [
+      h('div', { class: 'skeleton direccion-esqueleto' }),
+      h('div', { class: 'skeleton direccion-esqueleto' }),
+    ]));
+    try {
+      direcciones = await cargarDirecciones();
+    } catch (error) {
+      const reintentar = h('button', { type: 'button', class: 'btn btn-secondary', style: 'margin-top:16px;', 'data-testid': 'btn-reintentar-direcciones-entrega' }, ['Reintentar']);
+      reintentar.addEventListener('click', renderEntregaDomicilio);
+      const aviso = crear('div', 'banner banner-error');
+      aviso.setAttribute('role', 'alert');
+      aviso.style.marginTop = '16px';
+      aviso.setAttribute('data-testid', 'error-direcciones-entrega');
+      const texto = document.createElement('span');
+      texto.textContent = 'No pudimos cargar tus direcciones.';
+      aviso.appendChild(texto);
+      step2Content.replaceChildren(crearTituloEntrega(), aviso, reintentar);
+      return;
+    }
+    const previa = direccionElegida ? direcciones.find((d) => d.id === direccionElegida.id) : null;
+    direccionElegida = previa || direcciones.find((d) => d.principal) || direcciones[0] || null;
+    pintarEntregaDomicilio();
+  }
+
+  function abrirAltaDesdeCheckout() {
+    abrirFormularioDireccion({
+      alGuardar: (guardada) => {
+        if (guardada) {
+          direccionElegida = { id: guardada.id };
+        }
+        renderEntregaDomicilio();
+      },
+    });
+  }
+
+  function irAAdministrarDirecciones() {
+    try {
+      sessionStorage.setItem(CLAVE_CHECKOUT_PENDIENTE, JSON.stringify({
+        comercioId: carrito.comercioId,
+        tipoEntrega: tipoEntregaSeleccionado,
+        direccionId: direccionElegida ? direccionElegida.id : null,
+      }));
+    } catch (error) {
+      sessionStorage.removeItem(CLAVE_CHECKOUT_PENDIENTE);
+    }
+    window.location.href = `${RUTA_MIS_DIRECCIONES}&desde=checkout`;
+  }
+
+  function pintarEntregaDomicilio() {
+    const titulo = crearTituloEntrega();
+    if (direcciones.length === 0) {
+      const banner = crear('div', 'banner banner-error');
+      banner.setAttribute('role', 'alert');
+      banner.style.marginTop = '16px';
+      banner.innerHTML = ICONS.warning;
+      const text = document.createElement('span');
+      text.textContent = MENSAJE_SIN_DIRECCIONES;
+      banner.appendChild(text);
+      const agregar = h('button', { type: 'button', class: 'btn btn-primary', style: 'margin-top:16px;', 'data-testid': 'btn-agregar-primera-direccion' }, ['Agregar dirección']);
+      agregar.addEventListener('click', abrirAltaDesdeCheckout);
+      step2Content.replaceChildren(titulo, banner, agregar);
+      return;
+    }
+
+    const grupo = h('div', { class: 'direcciones-entrega', role: 'radiogroup', 'aria-label': 'Dirección de entrega', 'data-testid': 'radiogroup-direcciones' });
+    direcciones.forEach((direccion) => {
+      const tarjeta = crearTarjetaDireccionEntrega(direccion, direccionElegida && direccion.id === direccionElegida.id);
+      tarjeta.addEventListener('click', () => {
+        direccionElegida = direccion;
+        grupo.querySelectorAll('[role="radio"]').forEach((radio) => radio.setAttribute('aria-checked', String(radio === tarjeta)));
+        ajustarTabindexRadios(grupo);
+      });
+      grupo.appendChild(tarjeta);
+    });
+    ajustarTabindexRadios(grupo);
+    habilitarFlechasRadiogroup(grupo, { seleccionarAlMover: true });
+
+    const cupoLleno = direcciones.length >= MAXIMO_DIRECCIONES;
+    const agregar = h('button', {
+      type: 'button',
+      class: 'btn-punteado',
+      disabled: cupoLleno,
+      'aria-describedby': cupoLleno ? 'aviso-cupo-checkout' : null,
+      'data-testid': 'btn-agregar-otra-direccion',
+    }, [crearSvg(FIGURAS_MAS), 'Agregar otra dirección']);
+    agregar.addEventListener('click', abrirAltaDesdeCheckout);
+    const elementos = [titulo, grupo, agregar];
+    if (cupoLleno) {
+      const aviso = crear('div', 'banner banner-info');
+      aviso.id = 'aviso-cupo-checkout';
+      aviso.setAttribute('role', 'status');
+      aviso.style.marginTop = '12px';
+      aviso.setAttribute('data-testid', 'aviso-cupo-checkout');
+      const texto = document.createElement('span');
+      texto.append(`${MENSAJE_CUPO_LLENO} `);
+      const enlace = h('a', { href: `${RUTA_MIS_DIRECCIONES}&desde=checkout`, class: 'link', 'data-testid': 'enlace-mis-direcciones-cupo' }, ['Mis direcciones']);
+      enlace.addEventListener('click', (evento) => {
+        evento.preventDefault();
+        irAAdministrarDirecciones();
+      });
+      texto.appendChild(enlace);
+      aviso.appendChild(texto);
+      elementos.push(aviso);
+    }
+
+    const administrar = h('button', { type: 'button', class: 'btn-text', style: 'margin-top:12px;min-height:44px;display:block;', 'data-testid': 'enlace-administrar-direcciones' }, ['Administrar mis direcciones']);
+    administrar.addEventListener('click', irAAdministrarDirecciones);
+    elementos.push(administrar);
+
+    const confirmBtn = crear('button', 'btn btn-primary');
+    confirmBtn.type = 'button';
+    confirmBtn.style.marginTop = '16px';
+    confirmBtn.setAttribute('data-testid', 'btn-confirmar-direccion');
+    confirmBtn.textContent = 'Confirmar dirección';
+    confirmBtn.addEventListener('click', () => {
+      renderStep3();
+      mostrarPaso(2);
+    });
+    elementos.push(confirmBtn);
+    step2Content.replaceChildren(...elementos);
+  }
+
   function renderStep2() {
     step2Content.innerHTML = '';
 
     if (tipoEntregaSeleccionado === 'DOMICILIO') {
-      const h1 = document.createElement('h1');
-      h1.className = 'title-md';
-      h1.textContent = '¿A dónde enviamos tu pedido?';
-      step2Content.appendChild(h1);
-
-      if (!cliente.direccion) {
-        const banner = crear('div', 'banner banner-error');
-        banner.style.marginTop = '16px';
-        banner.innerHTML = ICONS.warning;
-        const text = document.createElement('span');
-        text.textContent = 'No tenés una dirección registrada. No podemos continuar con el envío a domicilio.';
-        banner.appendChild(text);
-        step2Content.appendChild(banner);
-        return;
-      }
-
-      const card = crear('div', 'summary-card');
-      card.style.marginTop = '16px';
-      const iconWrap = crear('div', 'summary-card__icon');
-      iconWrap.innerHTML = ICONS.pin;
-      card.appendChild(iconWrap);
-      const body = crear('div', 'summary-card__body');
-      const h3 = document.createElement('h3');
-      h3.textContent = 'Dirección de entrega';
-      body.appendChild(h3);
-      const p = document.createElement('p');
-      p.textContent = formatearDireccion(cliente.direccion);
-      body.appendChild(p);
-      card.appendChild(body);
-      step2Content.appendChild(card);
-
-      const confirmBtn = crear('button', 'btn btn-primary');
-      confirmBtn.type = 'button';
-      confirmBtn.style.marginTop = '24px';
-      confirmBtn.setAttribute('data-testid', 'btn-confirmar-direccion');
-      confirmBtn.textContent = 'Confirmar dirección';
-      confirmBtn.addEventListener('click', () => {
-        renderStep3();
-        mostrarPaso(2);
-      });
-      step2Content.appendChild(confirmBtn);
+      renderEntregaDomicilio();
     } else {
       const card = crear('div', 'summary-card');
       const iconWrap = crear('div', 'summary-card__icon');
@@ -313,10 +416,16 @@ export async function initCheckout() {
     h3.textContent = tipoEntregaSeleccionado === 'DOMICILIO' ? 'Envío a domicilio' : 'Retiro en el local';
     body.appendChild(h3);
     const p = document.createElement('p');
-    p.textContent = tipoEntregaSeleccionado === 'DOMICILIO' && cliente.direccion
-      ? formatearDireccion(cliente.direccion)
+    p.textContent = tipoEntregaSeleccionado === 'DOMICILIO' && direccionElegida
+      ? formatearDireccion(direccionElegida)
       : (comercio.direccion ? formatearDireccion(comercio.direccion) : comercio.nombre);
     body.appendChild(p);
+    if (tipoEntregaSeleccionado === 'DOMICILIO' && direccionElegida && direccionElegida.referencia) {
+      const referencia = document.createElement('p');
+      referencia.textContent = `Referencia: ${direccionElegida.referencia}`;
+      referencia.setAttribute('data-testid', 'referencia-resumen');
+      body.appendChild(referencia);
+    }
     modalidadCard.appendChild(body);
     const editBtn = crear('button', 'summary-card__edit');
     editBtn.type = 'button';
@@ -386,7 +495,7 @@ export async function initCheckout() {
           method: 'POST',
           body: {
             tipoEntrega: tipoEntregaSeleccionado,
-            direccionId: tipoEntregaSeleccionado === 'DOMICILIO' ? cliente.direccion.id : undefined,
+            direccionId: tipoEntregaSeleccionado === 'DOMICILIO' ? direccionElegida.id : undefined,
             totalEsperado: totalConCargo,
           },
         });
@@ -411,6 +520,13 @@ export async function initCheckout() {
             'aviso-total-cambio',
           );
           window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
+        if (error instanceof ApiError && error.status === 404 && tipoEntregaSeleccionado === 'DOMICILIO' && /direcci[oó]n/i.test(error.message || '')) {
+          confirmBtn.disabled = false;
+          direccionElegida = null;
+          mostrarPaso(1);
+          renderEntregaDomicilio().then(() => renderBanner(bannerSlot, 'error', MENSAJE_DIRECCION_INEXISTENTE));
           return;
         }
         if (esConflictoDeCierre(error)) {
@@ -488,4 +604,20 @@ export async function initCheckout() {
   }
 
   mostrarPaso(0);
+
+  let pendiente = null;
+  try {
+    pendiente = JSON.parse(sessionStorage.getItem(CLAVE_CHECKOUT_PENDIENTE) || 'null');
+    sessionStorage.removeItem(CLAVE_CHECKOUT_PENDIENTE);
+  } catch (error) {
+    pendiente = null;
+  }
+  if (pendiente && pendiente.comercioId === carrito.comercioId && pendiente.tipoEntrega === 'DOMICILIO' && comercio.aceptaDelivery) {
+    const opcion = opcionesContainer.querySelector('[data-testid="btn-modalidad-domicilio"]');
+    if (opcion) {
+      opcion.click();
+      direccionElegida = pendiente.direccionId ? { id: pendiente.direccionId } : null;
+      continuarBtn.click();
+    }
+  }
 }

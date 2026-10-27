@@ -504,6 +504,13 @@ export async function initPedidoDetalle() {
       modalidadTexto.textContent = '';
     }
     modalidadBody.appendChild(modalidadTexto);
+    if (pedido.tipoEntrega === 'DOMICILIO' && pedido.direccion && pedido.direccion.referencia) {
+      const referencia = document.createElement('p');
+      referencia.className = 'referencia-entrega';
+      referencia.setAttribute('data-testid', 'referencia-entrega-pedido');
+      referencia.textContent = `Referencia: ${pedido.direccion.referencia}`;
+      modalidadBody.appendChild(referencia);
+    }
     modalidadCard.appendChild(modalidadBody);
     body.appendChild(modalidadCard);
 

@@ -18,7 +18,7 @@ export const TIPO_CONTEXTO = Object.freeze({
   ADMINISTRADOR: 'ADMINISTRADOR',
 });
 const HEADER_COMERCIO_ID = 'X-Comercio-Id';
-const RUTAS_DEL_DUENO = /^\/(comercios\/(perfil|redes-sociales|cerrar|abrir|equipo|estadisticas)|productos|pedidos\/comercio|notificaciones)(?=[/?]|$)/;
+const RUTAS_DEL_DUENO = /^\/(comercios\/(perfil|redes-sociales|cerrar|abrir|equipo|estadisticas|documentos)|productos|pedidos\/comercio|notificaciones)(?=[/?]|$)/;
 const RUTAS_DEL_DUENO_SIN_HEADER = /^\/notificaciones\/comercio\//;
 const REQUEST_TIMEOUT_MS = 15000;
 
@@ -489,8 +489,9 @@ export function perderAccesoAlComercio() {
   consultarAcceso(comercioId).then((acceso) => mostrarAvisoAccesoPerdido({ nombre, acceso }));
 }
 
-export async function apiFetch(path, { method = 'GET', body, auth = true, handle401Globally = true, handle5xxGlobally = true, comercioId, sinComercio = false, conMensaje = false, handleRedGlobally = true } = {}) {
-  const headers = { 'Content-Type': 'application/json' };
+export async function apiFetch(path, { method = 'GET', body, auth = true, handle401Globally = true, handle5xxGlobally = true, comercioId, sinComercio = false, conMensaje = false, handleRedGlobally = true, comoBlob = false, timeoutMs = REQUEST_TIMEOUT_MS } = {}) {
+  const esFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+  const headers = esFormData ? {} : { 'Content-Type': 'application/json' };
   const token = getToken();
   const hadToken = Boolean(auth && token);
   if (accesoPerdido && hadToken && RUTAS_DE_COMERCIO.test(path)) {
@@ -505,14 +506,14 @@ export async function apiFetch(path, { method = 'GET', body, auth = true, handle
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   let response;
   try {
     response = await fetch(`${API_BASE_URL}${path}`, {
       method,
       headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body === undefined ? undefined : (esFormData ? body : JSON.stringify(body)),
       signal: controller.signal,
     });
   } catch (error) {
@@ -528,6 +529,10 @@ export async function apiFetch(path, { method = 'GET', body, auth = true, handle
     throw error;
   }
   clearTimeout(timeoutId);
+
+  if (comoBlob && response.ok) {
+    return response.blob();
+  }
 
   const parsed = await parseBody(response);
 

@@ -24,6 +24,7 @@ import { abrirHojaRenuncia } from './renuncia-empleado.js';
 import { montarSwitchCierre } from './cierre-comercio.js';
 import { normalizarResumenTurno, programarRecargaAlFinDelTurno, renderResumenTurno } from './turno-resumen.js';
 import { abrirEquipoComercio, enlazarEquipoComercio } from './equipo-comercio.js';
+import { montarPasosParaVender } from './pasos-vender.js';
 import { initHorarios } from './comercio-form.js';
 import { ordenarFranjas, recortarHora, textoFranja, textoRango } from './horarios.js';
 import { cerrarVariosComercios, comerciosCerrables } from './apertura-comercio.js';
@@ -644,6 +645,7 @@ export async function initComercioDashboard() {
 
   if (esContextoDueno()) {
     montarEnlaceEstadisticas(document.getElementById('metrics-row'));
+    montarPasosParaVender(document.getElementById('pasos-vender-slot'));
   }
 
   const nombreCorto = comercio.nombre;
@@ -1393,6 +1395,13 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado, opciones 
     ? formatearDireccion(pedido.direccion)
     : 'El cliente retira el pedido en tu local.';
   modalidadBody.appendChild(modalidadTexto);
+  if (pedido.tipoEntrega === 'DOMICILIO' && pedido.direccion && pedido.direccion.referencia) {
+    const referencia = document.createElement('p');
+    referencia.className = 'referencia-entrega';
+    referencia.setAttribute('data-testid', 'referencia-entrega-pedido');
+    referencia.textContent = `Referencia: ${pedido.direccion.referencia}`;
+    modalidadBody.appendChild(referencia);
+  }
   modalidadCard.appendChild(modalidadBody);
   body.appendChild(modalidadCard);
 
@@ -2365,6 +2374,10 @@ export async function initComercioPerfil() {
     abrirEquipoComercio();
   });
 
+  document.getElementById('documentacion-link').addEventListener('click', () => {
+    window.location.href = 'comercio-documentacion.html';
+  });
+
   document.getElementById('mercadopago-link').addEventListener('click', () => {
     mostrarVista('view-mercadopago');
     cargarEstadoMercadoPago();
@@ -2594,6 +2607,7 @@ export async function initComercioPerfil() {
     document.getElementById('editar-perfil-link'),
     document.getElementById('ver-legales-link'),
     document.getElementById('ver-equipo-link'),
+    document.getElementById('documentacion-link'),
     document.getElementById('mercadopago-link'),
     document.getElementById('cambiar-password-link'),
     submitBtn,

@@ -28,7 +28,7 @@
 		# Keep referrer data off of HTTP connections
 		Referrer-Policy "strict-origin-when-cross-origin"
 		# Enable strict Content Security Policy (img-src suma blob: para los previews de foto vía URL.createObjectURL())
-		Content-Security-Policy "default-src 'self'; img-src 'self' data: blob: https: *; style-src 'self' 'unsafe-inline' https: *; script-src 'self' 'unsafe-inline' https: *; font-src 'self' data: https: *; connect-src 'self' https: *; media-src 'self' https: *; object-src 'none'; frame-src 'self' https: *;"
+		Content-Security-Policy "default-src 'self'; img-src 'self' data: blob: https: *; style-src 'self' 'unsafe-inline' https: *; script-src 'self' 'unsafe-inline' https: *; font-src 'self' data: https: *; connect-src 'self' https: *; media-src 'self' https: *; object-src 'none'; frame-src 'self' blob: https: *;"
 		# Remove Server header
 		-Server
 	}

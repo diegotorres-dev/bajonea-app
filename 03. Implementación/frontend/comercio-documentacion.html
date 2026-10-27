@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Documentación — Bajoneá</title>
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <header class="app-header">
+    <button class="app-header__back app-header__back--tactil" type="button" id="btn-volver-documentacion" aria-label="Volver" data-testid="btn-volver-documentacion">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <h1 class="app-header__title" data-testid="titulo-documentacion">Documentación</h1>
+  </header>
+  <main class="app-main">
+    <div class="screen-body">
+      <div id="documentacion-aviso" data-testid="aviso-documentacion"></div>
+      <div id="documentacion-contenido" aria-live="polite" data-testid="contenido-documentacion"></div>
+    </div>
+  </main>
+</div>
+<script type="module">
+import { initComercioDocumentacion } from './js/documentos.js';
+initComercioDocumentacion();
+</script>
+</body>
+</html>

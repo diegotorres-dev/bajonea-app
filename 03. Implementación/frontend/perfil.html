@@ -24,6 +24,11 @@
             <span>Editar datos personales</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           </button>
+          <button class="profile-link" type="button" id="mis-direcciones-link" data-testid="btn-mis-direcciones" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            <span>Mis direcciones</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
           <button class="profile-link" type="button" id="cambiar-password-link" data-testid="btn-cambiar-password" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             <span>Cambiar contraseña</span>
@@ -39,6 +44,18 @@
             <span>Cerrar sesión</span>
           </button>
         </div>
+      </div>
+    </section>
+
+    <section id="view-direcciones" class="perfil-view direcciones-vista is-hidden">
+      <header class="app-header">
+        <button class="app-header__back" type="button" id="direcciones-volver" aria-label="Volver" data-testid="btn-volver-direcciones">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <span class="app-header__title">Mis direcciones</span>
+      </header>
+      <div class="screen-body">
+        <div id="direcciones-contenido" data-testid="contenido-direcciones"></div>
       </div>
     </section>
 

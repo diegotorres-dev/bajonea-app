@@ -72,23 +72,32 @@ function renderNotificacion(notificacion, enComercio) {
   body.appendChild(fecha);
 
   let href = null;
+  let textoEnlace = 'Ver pedido';
+  let testidEnlace = `btn-ver-pedido-notificacion-${notificacion.id}`;
+  const destinoDeTipo = enComercio ? DESTINO_POR_TIPO[notificacion.tipo] : null;
   if (notificacion.entidadTipo === 'PEDIDO') {
     href = enComercio
       ? `comercio-pedido-detalle.html?id=${notificacion.entidadId}`
       : `pedido-detalle.html?id=${notificacion.entidadId}`;
-    const verPedido = document.createElement('a');
-    verPedido.className = 'link notification-item__ver-pedido';
-    verPedido.href = href;
-    verPedido.setAttribute('data-testid', `btn-ver-pedido-notificacion-${notificacion.id}`);
-    verPedido.textContent = 'Ver pedido';
-    verPedido.style.display = 'inline-block';
-    verPedido.style.marginTop = '6px';
-    verPedido.addEventListener('click', async (event) => {
+  } else if (destinoDeTipo) {
+    href = destinoDeTipo.href;
+    textoEnlace = destinoDeTipo.texto;
+    testidEnlace = `btn-ver-destino-notificacion-${notificacion.id}`;
+  }
+  if (href) {
+    const enlace = document.createElement('a');
+    enlace.className = 'link notification-item__ver-pedido';
+    enlace.href = href;
+    enlace.setAttribute('data-testid', testidEnlace);
+    enlace.textContent = textoEnlace;
+    enlace.style.display = 'inline-block';
+    enlace.style.marginTop = '6px';
+    enlace.addEventListener('click', async (event) => {
       event.preventDefault();
       await marcarLeida();
       window.location.href = href;
     });
-    body.appendChild(verPedido);
+    body.appendChild(enlace);
   }
 
   item.appendChild(body);
@@ -105,6 +114,13 @@ function renderNotificacion(notificacion, enComercio) {
 
   return item;
 }
+
+const DESTINO_POR_TIPO = {
+  DOCUMENTO_APROBADO: { href: 'comercio-documentacion.html', texto: 'Ver documentación' },
+  DOCUMENTO_RECHAZADO: { href: 'comercio-documentacion.html', texto: 'Ver documentación' },
+  COMERCIO_APTO_VENTA: { href: 'comercio-dashboard.html', texto: 'Ir al panel' },
+  COMERCIO_SIN_APTITUD: { href: 'comercio-dashboard.html', texto: 'Ver qué falta' },
+};
 
 function crearAccionMarcarTodas(alMarcar) {
   const boton = crear('button', 'top-bar__accion-texto');

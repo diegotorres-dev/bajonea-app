@@ -4,6 +4,7 @@ import { logout, LABELS_TIPO_COMERCIO, LABELS_TIPO_RED_SOCIAL, LABELS_TIPO_SOCIE
 import { normalizarCampos } from './validators.js';
 import { recordarNombreDelComercio } from './admin-comercio-nombre.js';
 import { cruzaMedianoche, recortarHora, textoRango } from './horarios.js';
+import { diasDesde } from './documentos-comun.js';
 
 function normalizarComercioAdmin(comercio) {
   normalizarCampos(comercio, ['nombre', 'razonSocial']);
@@ -184,6 +185,28 @@ function mostrarModalConfirmarLogoutAdmin() {
   });
 }
 
+async function pintarTarjetaDocumentos(tarjeta, cantidad) {
+  const contador = tarjeta.querySelector('[data-count]');
+  const subtitulo = tarjeta.querySelector('[data-subtitulo]');
+  contador.textContent = String(cantidad);
+  contador.style.display = cantidad > 0 ? 'flex' : 'none';
+  tarjeta.classList.toggle('alert-card--acento', cantidad > 0);
+  if (cantidad === 0) {
+    subtitulo.textContent = 'Todo al día';
+    return;
+  }
+  subtitulo.textContent = cantidad === 1 ? '1 documento esperando revisión' : `${cantidad} documentos esperando revisión`;
+  try {
+    const pendientes = await apiFetch('/administrador/documentos/pendientes');
+    if (pendientes.length > 0) {
+      const dias = diasDesde(pendientes[0].fechaSubida);
+      subtitulo.textContent = dias < 1 ? 'El más antiguo es de hoy' : `El más antiguo lleva ${dias === 1 ? '1 día' : `${dias} días`}`;
+    }
+  } catch {
+    return;
+  }
+}
+
 export async function initAdminDashboard() {
   if (!requireAdmin()) {
     return;
@@ -211,6 +234,8 @@ export async function initAdminDashboard() {
   const contadorResolicitudes = resolicitudesLink.querySelector('[data-count]');
   contadorResolicitudes.textContent = String(metricas.resolicitudesPendientes);
   contadorResolicitudes.style.display = metricas.resolicitudesPendientes > 0 ? 'flex' : 'none';
+
+  pintarTarjetaDocumentos(document.getElementById('alert-documentos'), metricas.documentosPendientes);
 
   const tiles = [
     { icon: ICONS.store, titulo: 'Comercios', subtitulo: `${metricas.comerciosTotal} registrados`, href: 'admin-comercios.html' },
@@ -857,12 +882,18 @@ function mostrarModalDetalleComercio(comercio, onSuspendido) {
   body.appendChild(equipoSection);
   cargarResumenEquipo(equipoSection, comercio.id);
 
+  const verDocumentosBtn = crear('a', 'btn btn-secondary comercio-modal-equipo');
+  verDocumentosBtn.href = `admin-documento-revision.html?comercioId=${comercio.id}`;
+  verDocumentosBtn.setAttribute('data-testid', 'btn-ver-documentos-comercio');
+  verDocumentosBtn.textContent = 'Ver documentos';
+
   const verEquipoBtn = crear('a', 'btn btn-primary comercio-modal-equipo');
   verEquipoBtn.href = `admin-comercio-equipo.html?id=${comercio.id}`;
   verEquipoBtn.setAttribute('data-testid', 'btn-ver-equipo-comercio');
   verEquipoBtn.innerHTML = `${ICONS.users}<span>Ver equipo</span>`;
   verEquipoBtn.addEventListener('click', () => recordarNombreDelComercio(comercio.id, comercio.nombre));
   body.appendChild(verEquipoBtn);
+  body.appendChild(verDocumentosBtn);
 
   const accionesModal = crear('div', 'comercio-modal-acciones');
 

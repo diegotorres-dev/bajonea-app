@@ -21,7 +21,6 @@ const ID_TITULO_PANEL = 'panel-comercios-titulo';
 const DURACION_MANTENER_APRETADO_MS = 500;
 const TOLERANCIA_MOVIMIENTO_PX = 8;
 const FILAS_ESQUELETO = 3;
-const RUTA_CUENTA_DE_COBRO = 'comercio-perfil.html?vista=mercadopago';
 
 const ICONOS = {
   chevronAbajo: [['polyline', { points: '6 9 12 15 18 9' }]],
@@ -303,8 +302,8 @@ function crearEsqueletoFila() {
   return fila;
 }
 
-function hayOperativoSinCuentaDeCobro(comercios) {
-  return Boolean(comercios) && comercios.some((comercio) => comercio.operativo && comercio.estado === 'APROBADO');
+function comerciosConPasosPendientes(comercios) {
+  return (comercios || []).filter((comercio) => comercio.operativo && comercio.estado === 'APROBADO');
 }
 
 function pintarLista(lista, comercios, alElegir) {
@@ -365,18 +364,23 @@ export function abrirPanelComercios() {
   hoja.appendChild(titulo);
 
   const aviso = crear('div', 'banner banner-warning panel-comercios__aviso is-hidden');
-  aviso.setAttribute('data-testid', 'aviso-vincular-mercadopago');
+  aviso.setAttribute('data-testid', 'aviso-pasos-vender');
   const textoAviso = crear('span', 'panel-comercios__aviso-texto');
-  textoAviso.textContent = 'Vinculá Mercado Pago para empezar a vender';
-  const vincular = crear('button', 'btn btn-secondary banner__accion');
-  vincular.type = 'button';
-  vincular.textContent = 'Vincular cuenta';
-  vincular.setAttribute('data-testid', 'btn-aviso-vincular-mercadopago');
-  vincular.addEventListener('click', () => {
-    window.location.href = RUTA_CUENTA_DE_COBRO;
+  textoAviso.textContent = 'Te faltan pasos para empezar a vender';
+  const verPasos = crear('button', 'btn btn-secondary banner__accion');
+  verPasos.type = 'button';
+  verPasos.textContent = 'Ver pasos';
+  verPasos.setAttribute('data-testid', 'btn-aviso-pasos-vender');
+  verPasos.addEventListener('click', () => {
+    const pendientes = comerciosConPasosPendientes(getComerciosEnMemoria());
+    const destino = pendientes.find((comercio) => comercio.id === getComercioActivoId()) || pendientes[0];
+    if (destino) {
+      activarComercio(destino.id);
+    }
+    window.location.href = RUTA_DASHBOARD;
   });
   aviso.appendChild(textoAviso);
-  aviso.appendChild(vincular);
+  aviso.appendChild(verPasos);
   hoja.appendChild(aviso);
 
   const lista = crear('div', 'panel-comercios__lista');
@@ -412,7 +416,7 @@ export function abrirPanelComercios() {
 
   const repintar = (comercios) => {
     pintarLista(lista, comercios, alElegir);
-    aviso.classList.toggle('is-hidden', !hayOperativoSinCuentaDeCobro(comercios));
+    aviso.classList.toggle('is-hidden', comerciosConPasosPendientes(comercios).length === 0);
   };
   repintar(getComerciosEnMemoria());
   const desuscribir = suscribirComercios(repintar);
