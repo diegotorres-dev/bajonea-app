@@ -61,7 +61,7 @@ async function leerBody(response: APIResponse): Promise<any> {
 }
 
 const HEADER_COMERCIO_ID = 'X-Comercio-Id';
-const RUTAS_DEL_DUENO = /^\/(comercios\/(perfil|redes-sociales|cerrar|abrir)|productos|pedidos\/comercio|notificaciones)(?=[/?]|$)/;
+const RUTAS_DEL_DUENO = /^\/(comercios\/(perfil|redes-sociales|cerrar|abrir|documentos)|productos|pedidos\/comercio|notificaciones)(?=[/?]|$)/;
 const RUTAS_DEL_DUENO_SIN_HEADER = /^\/notificaciones\/comercio\//;
 const comercioActivoPorToken = new Map<string, number>();
 
@@ -497,6 +497,64 @@ export async function conBloqueoDePrecio<T>(request: APIRequestContext, accion: 
   } finally {
     await bloqueoDePrecioTest(request, false);
   }
+}
+
+export async function documentacionRequeridaTest(request: APIRequestContext, habilitado: boolean): Promise<void> {
+  const { status, body } = await apiPut(request, `/test/documentacion-requerida?habilitado=${habilitado}`, {});
+  if (status !== 200) {
+    throw new Error(`No se pudo ${habilitado ? 'encender' : 'apagar'} la exigencia de documentación: ${status} ${JSON.stringify(body)}`);
+  }
+}
+
+export async function conDocumentacionRequerida<T>(request: APIRequestContext, accion: () => Promise<T>): Promise<T> {
+  await documentacionRequeridaTest(request, true);
+  try {
+    return await accion();
+  } finally {
+    await documentacionRequeridaTest(request, false);
+  }
+}
+
+export async function aprobarDocumentacionTest(request: APIRequestContext, comercioId: number): Promise<void> {
+  const { status, body } = await apiPut(request, `/test/comercios/${comercioId}/documentacion-aprobada`, {});
+  if (status !== 200) {
+    throw new Error(`No se pudo aprobar la documentación del comercio ${comercioId}: ${status} ${JSON.stringify(body)}`);
+  }
+}
+
+export const PDF_DE_PRUEBA = Buffer.from('%PDF-1.4\n%documento de prueba de Playwright\n%%EOF\n', 'latin1');
+
+export async function subirDocumentoTest(
+  request: APIRequestContext,
+  token: string,
+  comercioId: number,
+  opciones: { tipo?: string; descripcion?: string; nombre?: string; mime?: string; contenido?: Buffer } = {},
+) {
+  const multipart: Record<string, string | { name: string; mimeType: string; buffer: Buffer }> = {
+    archivo: {
+      name: opciones.nombre ?? 'documento.pdf',
+      mimeType: opciones.mime ?? 'application/pdf',
+      buffer: opciones.contenido ?? PDF_DE_PRUEBA,
+    },
+  };
+  if (opciones.tipo !== undefined) {
+    multipart.tipo = opciones.tipo;
+  }
+  if (opciones.descripcion !== undefined) {
+    multipart.descripcion = opciones.descripcion;
+  }
+  const response = await request.post(`${API_BASE_URL}/comercios/documentos`, {
+    headers: { Authorization: `Bearer ${token}`, [HEADER_COMERCIO_ID]: String(comercioId) },
+    multipart,
+  });
+  return { status: response.status(), body: await leerBody(response) };
+}
+
+export async function descargarArchivoDocumentoTest(request: APIRequestContext, path: string, token: string, comercioId?: number) {
+  const response = await request.get(`${API_BASE_URL}${path}`, {
+    headers: { Authorization: `Bearer ${token}`, ...(comercioId !== undefined ? { [HEADER_COMERCIO_ID]: String(comercioId) } : {}) },
+  });
+  return { status: response.status(), headers: response.headers(), buffer: await response.body() };
 }
 
 export async function confirmarPagoTest(request: APIRequestContext, pedidoId: number, registrarPago = false, ahora?: string): Promise<void> {

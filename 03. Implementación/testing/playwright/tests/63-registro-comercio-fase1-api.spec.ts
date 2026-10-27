@@ -405,6 +405,9 @@ test.describe('Registro de Comercio, Fase 1: datos legales, email, términos y g
       const perfil = await apiGet(request, '/clientes/perfil', sesion.token);
       expect(perfil.status).toBe(200);
       expect(JSON.stringify(perfil.body.data.direccion)).toContain('Laguna Escondida');
+      const direcciones = await apiGet(request, '/clientes/direcciones', sesion.token);
+      expect(direcciones.status).toBe(200);
+      expect(JSON.stringify(direcciones.body.data)).toContain('Laguna Escondida');
     });
   });
 });

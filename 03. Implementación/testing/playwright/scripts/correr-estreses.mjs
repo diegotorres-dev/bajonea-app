@@ -35,6 +35,8 @@ const ESTRESES = [
   { id: 'precios', archivo: 'stress-locks-tramoPrecios.mjs', descripcion: 'Fase 2 T3: precio no modificable en franja y total esperado (ediciones de precio contra carrito, pedido, cierre, horarios y pagos)' },
   { id: 'cierres', archivo: 'stress-locks-tramoCierreTurno.mjs', descripcion: 'Fase 2 T4: cierre de turno y email al Dueño (corridas simultaneas, ediciones de horarios, pagos, suspension, bloqueo y fallas del envio)' },
   { id: 'estadisticas', archivo: 'stress-locks-tramoEstadisticas.mjs', descripcion: 'Fase 2 T5: estadisticas del Dueño (lecturas contra pagos, aceptaciones, rechazos y ediciones de horarios; dos Dueños; el escenario 4, volumen, se corre aparte con ESCENARIO=4)' },
+  { id: 'direcciones', archivo: 'stress-locks-tramoDirecciones.mjs', descripcion: 'Fase 3: direcciones del Cliente (cupo de cinco, una sola predeterminada, nunca cero activas, pedido contra edicion y baja de la direccion)' },
+  { id: 'documentos', archivo: 'stress-locks-tramoDocumentos.mjs', descripcion: 'Fase 4: documentos del comercio y regla de apto para venta (cupo, baja contra aprobacion, Mercado Pago contra aprobacion, bloqueo de cuenta contra aprobacion, revocacion contra subida)' },
   { id: 'e4', archivo: 'stress-locks-empleado-e4.mjs', descripcion: 'E4: gestión del equipo (desactivar, reactivar y renunciar; S1 a S10)' },
 ];
 

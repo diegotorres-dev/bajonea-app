@@ -155,11 +155,12 @@ test.describe('Checkout: habilitación de botón y bloqueo sin dirección', () =
     const sesion = await login(request, cliente.nombreUsuario, cliente.password);
     await apiPost(request, '/carrito/items', { productoId, cantidad: 1 }, sesion.token);
 
-    await page.route('**/api/v1/clientes/perfil', async (route) => {
-      const response = await route.fetch();
-      const json = await response.json();
-      json.data.direccion = null;
-      await route.fulfill({ response, json });
+    await page.route('**/api/v1/clientes/direcciones', async (route) => {
+      if (route.request().method() !== 'GET') {
+        await route.fallback();
+        return;
+      }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ mensaje: 'ok', data: [] }) });
     });
 
     await loginUi(page, cliente.nombreUsuario, cliente.password);

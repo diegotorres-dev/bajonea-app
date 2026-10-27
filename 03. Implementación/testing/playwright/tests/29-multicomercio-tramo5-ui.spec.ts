@@ -27,7 +27,7 @@ const HEADER = 'X-Comercio-Id';
 const MENSAJE_DESVINCULADA = 'Cuenta de Mercado Pago desvinculada correctamente';
 const TEXTO_ALCANCE_SIN_VINCULAR = 'Esta cuenta va a cobrar por todos tus comercios';
 const TEXTO_ALCANCE_VINCULADA = 'Esta cuenta cobra por todos tus comercios';
-const TEXTO_AVISO_PANEL = 'Vinculá Mercado Pago para empezar a vender';
+const TEXTO_AVISO_PANEL = 'Te faltan pasos para empezar a vender';
 const TEXTO_CONFIRMACION =
   'Tus comercios dejarán de recibir pedidos nuevos y saldrán del catálogo hasta que vuelvas a vincular una cuenta.';
 const TEXTO_NOTA_REEMBOLSO = 'Si hay que devolver el dinero de alguno de estos pedidos, lo gestiona el equipo de Bajoneá de forma manual.';
@@ -150,7 +150,7 @@ test.describe('Multi-comercio, tramo 5B: Mercado Pago con varios comercios (UI)'
     categoriaId = await crearCategoria(request, adminToken, `Cat Tramo5 UI ${sufijoUnico()}`);
   });
 
-  test('aviso del panel: aparece con un comercio APROBADO sin cuenta, el enlace abre la cuenta de cobro y desaparece al vincular sin esperar el polling', async ({ page, request }) => {
+  test('aviso del panel: aparece con un comercio APROBADO sin cuenta, el enlace lleva a los pasos del panel y desaparece al vincular sin esperar el polling', async ({ page, request }) => {
     const dueno = await prepararDueno(request, false);
     const beta = await agregarClon(request, dueno, 'Beta', 'APROBADO');
     await agregarClon(request, dueno, 'Pendiente', 'PENDIENTE');
@@ -159,17 +159,19 @@ test.describe('Multi-comercio, tramo 5B: Mercado Pago con varios comercios (UI)'
     await expect(page.getByTestId('franja-comercio')).toBeVisible();
 
     await abrirPanel(page);
-    const aviso = page.getByTestId('aviso-vincular-mercadopago');
+    const aviso = page.getByTestId('aviso-pasos-vender');
     await expect(aviso).toBeVisible();
     await expect(aviso).toContainText(TEXTO_AVISO_PANEL);
-    await expect(page.getByTestId('btn-aviso-vincular-mercadopago')).toHaveText('Vincular cuenta');
+    await expect(page.getByTestId('btn-aviso-pasos-vender')).toHaveText('Ver pasos');
     await expect(page.getByTestId(`etiqueta-estado-comercio-${dueno.comercioId}`)).toHaveCount(0);
     await expect(page.getByTestId(`etiqueta-estado-comercio-${beta}`)).toHaveCount(0);
-    await expect(page.getByTestId('franja-comercio').getByTestId('aviso-vincular-mercadopago')).toHaveCount(0);
-    await expect(page.getByTestId('btn-cerrar-aviso-vincular-mercadopago')).toHaveCount(0);
+    await expect(page.getByTestId('franja-comercio').getByTestId('aviso-pasos-vender')).toHaveCount(0);
+    await expect(page.getByTestId('btn-cerrar-aviso-pasos-vender')).toHaveCount(0);
 
-    await page.getByTestId('btn-aviso-vincular-mercadopago').click();
-    await page.waitForURL('**/comercio-perfil.html**');
+    await page.getByTestId('btn-aviso-pasos-vender').click();
+    await page.waitForURL('**/comercio-dashboard.html');
+    await expect(page.getByTestId('pasos-vender')).toBeVisible();
+    await page.goto('/comercio-perfil.html?vista=mercadopago');
     await expect(page.getByTestId('mp-estado-pendiente')).toBeVisible();
     expect(new URL(page.url()).search).toBe('');
 
@@ -191,7 +193,7 @@ test.describe('Multi-comercio, tramo 5B: Mercado Pago con varios comercios (UI)'
     await page.goto('/comercio-dashboard.html');
     await abrirPanel(page);
     await expect(page.getByTestId('fila-comercio-' + dueno.comercioId)).toBeVisible();
-    await expect(page.getByTestId('aviso-vincular-mercadopago')).toBeHidden();
+    await expect(page.getByTestId('aviso-pasos-vender')).toBeHidden();
   });
 
   test('la cuenta de cobro lista solo los comercios operativos, sin etiquetas, con el texto de cada estado', async ({ page, request }) => {
@@ -330,7 +332,7 @@ test.describe('Multi-comercio, tramo 5B: Mercado Pago con varios comercios (UI)'
     await abrirCuentaDeCobro(page, dueno);
     await expect(page.getByTestId('mp-estado-vinculado')).toBeVisible();
     await abrirPanel(page);
-    await expect(page.getByTestId('aviso-vincular-mercadopago')).toBeHidden();
+    await expect(page.getByTestId('aviso-pasos-vender')).toBeHidden();
     await page.getByTestId('btn-cerrar-panel-comercios').click();
     await expect(page.getByTestId('panel-comercios')).toHaveCount(0);
 
@@ -351,7 +353,7 @@ test.describe('Multi-comercio, tramo 5B: Mercado Pago con varios comercios (UI)'
     ]);
     await expect(page.getByTestId('franja-comercio-nombre')).toHaveText(nombres[dueno.comercioId]);
     await abrirPanel(page);
-    await expect(page.getByTestId('aviso-vincular-mercadopago')).toBeVisible();
+    await expect(page.getByTestId('aviso-pasos-vender')).toBeVisible();
     await expect(page.getByTestId(`etiqueta-estado-comercio-${dueno.comercioId}`)).toHaveCount(0);
     expect(Date.now() - inicio).toBeLessThan(12_000);
     expect(cuentaActivaDe(dueno.duenoId)).toBe('');
@@ -432,7 +434,7 @@ test.describe('Multi-comercio, tramo 5B: Mercado Pago con varios comercios (UI)'
       await expect(page.getByTestId('btn-ir-mercadopago')).toBeVisible();
       await expect(page.locator('.toast')).toHaveCount(0);
       await expect(page.getByTestId('mp-estado-pendiente')).toBeHidden();
-      expect(new URL(page.url()).search).toBe('');
+      await expect.poll(() => new URL(page.url()).search).toBe('');
     });
   });
 

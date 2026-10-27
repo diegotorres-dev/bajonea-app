@@ -327,7 +327,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await expect(page.getByTestId('btn-cambiar-cuenta')).toBeHidden();
     });
 
-    test('el perfil del Cliente que también es Empleado es una sola lista de cuatro filas, en orden, sin títulos de sección', async ({ page, request }) => {
+    test('el perfil del Cliente que también es Empleado es una sola lista de cinco filas, en orden, sin títulos de sección', async ({ page, request }) => {
       const sesion = await sesionDe(request, empleadoDos.cuenta);
       await abrirComoUsuarioConContexto(page, sesion, { contexto: { tipo: 'CLIENTE' }, ultimoContexto: 'CLIENTE' });
 
@@ -337,6 +337,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await expect(page.getByTestId('nombre-cliente-perfil')).not.toBeEmpty();
       await expect(page.getByTestId('lista-perfil').locator('.profile-link:visible')).toHaveText([
         'Editar datos personales',
+        'Mis direcciones (1)',
         'Cambiar contraseña',
         'Cambiar de cuenta',
         'Cerrar sesión',
@@ -345,7 +346,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await expect(page.getByTestId('btn-cerrar-sesion')).toHaveClass(/profile-link--danger/);
     });
 
-    test('el perfil de un Cliente sin comercios como Empleado es una lista de tres filas, sin "Cambiar de cuenta"', async ({ page, request }) => {
+    test('el perfil de un Cliente sin comercios como Empleado es una lista de cuatro filas, sin "Cambiar de cuenta"', async ({ page, request }) => {
       const sesion = await sesionDe(request, clienteSolo);
       await abrirComoUsuarioConContexto(page, sesion, { contexto: { tipo: 'CLIENTE' } });
 
@@ -354,6 +355,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
 
       await expect(page.getByTestId('lista-perfil').locator('.profile-link:visible')).toHaveText([
         'Editar datos personales',
+        'Mis direcciones (1)',
         'Cambiar contraseña',
         'Cerrar sesión',
       ]);
@@ -1238,7 +1240,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await abrirComoUsuarioConContexto(page, conComercios, { contexto: { tipo: 'CLIENTE' }, ultimoContexto: 'CLIENTE' });
       await page.goto('/perfil.html');
       await expect(page.getByTestId('btn-cambiar-cuenta')).toBeEnabled();
-      await expect(page.getByTestId('lista-perfil').locator('.profile-link:visible')).toHaveCount(4);
+      await expect(page.getByTestId('lista-perfil').locator('.profile-link:visible')).toHaveCount(5);
       await sinScrollHorizontal(page);
       await capturar(page, 'g-perfil-cliente-con-cambiar-cuenta');
 
@@ -1248,7 +1250,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
       await abrirComoUsuarioConContexto(otraPagina, sinComercios, { contexto: { tipo: 'CLIENTE' } });
       await otraPagina.goto('/perfil.html');
       await expect(otraPagina.getByTestId('btn-editar-datos')).toBeEnabled();
-      await expect(otraPagina.getByTestId('lista-perfil').locator('.profile-link:visible')).toHaveCount(3);
+      await expect(otraPagina.getByTestId('lista-perfil').locator('.profile-link:visible')).toHaveCount(4);
       await sinScrollHorizontal(otraPagina);
       await capturar(otraPagina, 'h-perfil-cliente-sin-cambiar-cuenta');
       await contextoDos.close();

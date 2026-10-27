@@ -176,7 +176,8 @@ items.push(
     status(200),
     "const d = pm.response.json().data;",
     "pm.test('Hay al menos la del pedido', () => pm.expect(d.length).to.be.above(0));",
-    todasSonDelComercio('PEDIDO', entero('pedido_m_b_id')),
+    `pm.test('Todas son del pedido de B o avisos del comercio B (aptitud de venta)', () => pm.response.json().data.forEach((n) => { const delPedido = n.entidadTipo === 'PEDIDO' && n.entidadId === ${entero('pedido_m_b_id')}; const delComercio = n.entidadTipo === 'COMERCIO' && n.entidadId === ${entero('comercio_m_b_id')}; pm.expect(delPedido || delComercio).to.eql(true); }));`,
+    "pm.test('Esta la del pedido', () => pm.expect(d.some((n) => n.entidadTipo === 'PEDIDO')).to.eql(true));",
     "pm.test('Las no leidas coinciden con el contador de mis-comercios', () => pm.expect(d.filter((n) => !n.leida).length).to.eql(" + entero('t4a_noleidas_b') + '));',
   ]),
   listarNotificaciones('[negativo] notificaciones sin header: 400', 'token_comercio_m', {}, [

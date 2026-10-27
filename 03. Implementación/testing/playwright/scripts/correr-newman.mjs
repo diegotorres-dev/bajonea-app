@@ -54,7 +54,7 @@ const resumenes = [];
 for (let vuelta = 1; vuelta <= repeticiones; vuelta += 1) {
   const exportado = path.join(os.tmpdir(), `newman-${process.pid}-${vuelta}.json`);
   const args = ['run', coleccion, '-e', entorno, '--env-var', `base_url=${base}`, '--env-var', `localidad_id=${localidadId}`, '--env-var', `admin_password=${password}`,
-    '--reporters', 'cli,json', '--reporter-json-export', exportado, '--color', 'off'];
+    '--reporters', 'cli,json', '--reporter-json-export', exportado, '--color', 'off', '--working-dir', path.resolve(aqui, '..')];
   if (!todas) {
     for (const carpeta of carpetas) args.push('--folder', carpeta);
   }
