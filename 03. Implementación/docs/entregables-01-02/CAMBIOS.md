@@ -821,3 +821,30 @@ Backend y pantallas. En el sistema: el precio de un producto no se puede cambiar
 | `Historias de Usuario - Empleado.md` | HU-E03: el precio también está bloqueado dentro del horario |
 | `Historias de Usuario - Cliente.md` | HU-C09: aviso de precio cambiado; HU-C10: reconfirmación del total |
 | `diccionario-de-datos.md` | Versión 1.25: `ItemCarrito.precio_visto` (migración `V40`) |
+
+
+## Fase 5, tramo S1: suspensión de la cuenta de un Cliente (2026-10-27)
+
+Cambios sugeridos a los documentos de requisitos, historias de usuario y diccionario (los textos finales de la Fase 5 se reescriben al cerrar S2, cuando la suspensión del comercio cambia a la opción C; acá solo lo que S1 ya fija). Los archivos de `01. Análisis de Requerimientos` no se tocaron.
+
+| Archivo | Cambio sugerido |
+|---|---|
+| `requisitos-funcionales-administrador.md` | Suspender y levantar la suspensión de un Cliente (motivo de 10 a 500 caracteres al suspender, opcional hasta 500 al levantar; vista previa de los pedidos afectados; reenviar el email de aviso si falló). El Administrador no se puede suspender ni suspender a otro Administrador; el Dueño queda para S3. |
+| `requisitos-funcionales-cliente.md` | Cuenta suspendida: no puede iniciar sesión (ve el motivo solo después de poner la contraseña correcta), una sesión abierta se corta en la siguiente acción con el motivo, el carrito se conserva, no puede pagar ni hacer pedidos, no puede reclamar (S5). Los pedidos pagados siguen su curso y los sin pagar se cancelan. Recibe un aviso y un email con el motivo al suspenderse y otro al levantarse. |
+| `requisitos-funcionales-sistema.md` | Un pago aprobado que llega sobre un pedido ya cancelado, por cualquier causa, siempre se reembolsa. Todo cambio de estado de una cuenta queda en el historial de estados del usuario. Recuperar la contraseña no levanta una suspensión; verificar el email solo activa cuentas pendientes. |
+| `requisitos-funcionales-empleado.md` | Un Empleado cuya cuenta de Cliente está suspendida no puede operar ningún comercio. |
+| `Historias de Usuario - Administrador.md` | HU-A06 y HU-A10 (levantar) pasan de "futuro" a definidas para el Cliente. |
+| `Historias de Usuario - Cliente.md` | Historia nueva: ver que mi cuenta fue suspendida y por qué. |
+| `diccionario-de-datos.md` | Versión 1.29: `Usuario.motivo_suspension` y `suspendido_desde`, `HistorialEstadoUsuario.administrador_id`, `sesion.tipo_cierre = SUSPENSION`, `nota_credito.motivo` (`SUSPENSION_CLIENTE`, `RECLAMO`), `historial_estado_pedido.motivo_timeout = SUSPENSION_CLIENTE` (migración `V44`). |
+
+### Fase 5, tramo S1, entrega B (2026-10-28)
+
+Cambios sugeridos adicionales (los archivos de `01. Análisis de Requerimientos` no se tocaron):
+
+| Archivo | Cambio sugerido |
+|---|---|
+| `requisitos-funcionales-administrador.md` | Al levantar una suspensión la cuenta vuelve al estado que tenía antes (pendiente, inactiva o activa; una cuenta bloqueada vuelve activa) y, si queda activa, se actualiza su última actividad. El listado de Clientes permite buscar por nombre o email y filtrar por estado, y muestra si el último email de aviso falló, con la acción de reenviarlo. |
+| `requisitos-funcionales-sistema.md` | El proceso de inactividad por tres meses (cuando se construya) ignora las cuentas suspendidas. Hoy no existe ese proceso en el código. |
+| `requisitos-funcionales-cliente.md` | Una cuenta suspendida ve el motivo en una hoja al intentar ingresar (después de poner la contraseña correcta) y, con una sesión abierta, en una pantalla completa que dice qué pasa con sus pedidos. Sin botón de Soporte hasta S4. |
+| `Historias de Usuario - Administrador.md` | HU-A06 y HU-A10: criterios de aceptación de la búsqueda, los filtros, el menú de acciones y los dos modales. |
+| `Historias de Usuario - Cliente.md` | La historia de "ver que mi cuenta fue suspendida y por qué": hoja en el login y pantalla completa con sesión abierta. |

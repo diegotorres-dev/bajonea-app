@@ -654,3 +654,35 @@ Pendientes que no son código y hay que revisar en cada entorno antes de contar 
 
 - Cada contexto de Spring que la suite deja en caché mantiene un pool de Hikari que abre 10 conexiones de entrada. Con `max_connections=151` la suite llegaba al borde (`Max_used_connections` 152) y los últimos contextos (`TokenColisionIntegrationTest`) fallaban con "Too many connections" mientras el backend de pruebas estaba levantado. `application-test.properties` ahora fija `spring.datasource.hikari.minimum-idle=2`. Aun así, correr `mvnw test` con el backend de pruebas detenido.
 - Varias pruebas viejas insertan comercios con nombre fijo y confirman (`Segundo comercio A4`): una segunda corrida completa sin resetear `bajonea_test` choca con el nombre único del tramo 2 de registro. Resetear la base entre corridas completas (`entorno-test.mjs preparar` y `detener`).
+
+
+## Fase 5, tramo S1 (2026-10-27)
+
+### Una lectura común antes de un `FOR UPDATE` fija el snapshot de la transacción
+
+- En MariaDB con `REPEATABLE READ`, el snapshot de la transacción se crea en la primera lectura **no bloqueante**; las lecturas bloqueantes (`FOR UPDATE`, `LOCK IN SHARE MODE`) no lo crean y siempre ven lo último confirmado. Si una transacción empieza con `findById` y recién después toma el bloqueo (`entityManager.refresh(x, PESSIMISTIC_WRITE)`), cuando el bloqueo se concede el snapshot es anterior: las lecturas comunes que siguen (`SELECT` de sesiones, historial) no ven lo que otra transacción confirmó mientras esperaba. `SuspensionUsuarioService` lo sufrió: un login simultáneo dejaba una sesión activa en una cuenta suspendida. Regla: el bloqueo es la **primera** lectura de la transacción; recién después, `refresh` o lecturas comunes.
+- Hibernate con `@DynamicUpdate` ausente escribe todas las columnas: cualquier flujo que cargue un `Usuario` sin bloquearlo y lo guarde puede pisar un `estado` cambiado en el medio. Por eso la verificación del email ahora toma la fila `FOR UPDATE` antes de leerla.
+
+### Un `CHECK` de MariaDB 10.4 y las pruebas que escriben `usuario.estado` por SQL
+
+- `ck_usuario_suspension` se escribió con `AND`/`OR` explícitos (sin comparar dos booleanos con `=`); se probó en una base descartable que acepta los casos válidos y rechaza los dos inválidos (estado `SUSPENDIDO` sin motivo y motivo sin suspensión).
+- Todo helper de prueba que ponga `SUSPENDIDO` por SQL tiene que completar `motivo_suspension` y `suspendido_desde` (`DatosPruebaEmpleado.cambiarEstadoUsuario` y el spec `35`); si no, el `UPDATE` falla con `ck_usuario_suspension`.
+
+### Un código de verificación del registro compite con el que crea la prueba
+
+- `TokenService.crear` no invalida los códigos pendientes anteriores (lo hace `AuthService.generarToken`). Un test que crea su propio código de verificación para una cuenta registrada tiene que marcar antes el del registro como `UTILIZADO`; si no, `obtenerTokenValidoPorCodigo` toma "el más reciente" y con la misma `fechaCreacion` (precisión de segundos) puede elegir el del registro.
+
+### Herramientas
+
+- `python3` en este equipo es el alias de la Microsoft Store (no corre): usar `python`. Un script de Python dentro de un heredoc con `\n` o `\\n` en cadenas escribe saltos de línea reales en el archivo destino: para editar código con barras invertidas conviene la herramienta Edit o `String.fromCharCode(10)`.
+- Un script de Node que invoca `mvnw` desde una ruta con espacios y tildes (`Bajoneá/03. Implementación`) con `shell: true` falla sin avisar: usar `execSync` con la ruta entre comillas. Un ejecutor de mutaciones tiene que exigir una corrida base verde y que Maven realmente haya corrido tests antes de dar "detectada" (la primera versión daba 15 de 15 "detectadas" sin haber corrido nada).
+- Un `A | grep` en un comando en segundo plano no muestra nada hasta que termina (buffer de la tubería): no sirve para ver el avance.
+
+### Entrega B de S1 (2026-10-28)
+
+- **Una mutación que sobrevive puede ser un test mal armado, no código sin cubrir.** M19 (el listado mira siempre el email de la suspensión) sobrevivió porque el test dejaba fallar los dos emails a la vez: con los dos caminos fallidos no se distingue cuál se lee. El test tiene que dejar uno fallido y el otro enviado.
+- **No editar fuentes mientras corre el ejecutor de mutaciones.** `mutaciones-suspension-s1.mjs` guarda el original de cada archivo y lo restaura al terminar la mutación: una edición propia en el mismo archivo durante esa ventana se pierde, y una compilación en el medio da un falso "ERROR DE COMPILACION".
+- **`abrirComoUsuario` de Playwright vuelve a escribir la sesión en cada navegación** (`addInitScript` sin condición): para probar que una pantalla limpia la sesión se mira `localStorage` mientras la pantalla está abierta, antes de navegar.
+- **Un estrés con datos propios puede necesitar una categoría sembrada.** `stress-locks-tramoE3-carrito.mjs` toma `SELECT id FROM categoria ORDER BY id LIMIT 1`: sobre `bajonea_test` recién reseteada falla con "Categoría no encontrada" hasta sembrar una (`INSERT INTO categoria (nombre, activo) VALUES ('Cat base estres', 1)`). Es preexistente (mismo origen que lo anotado para `CarritoIntegrationBase`).
+- **Una corrida de Newman que cruza la medianoche rompe las pruebas de turnos.** La carpeta 76 ("el cierre guardado tiene las mismas cifras que mostraba el panel") dio 2 fallas en una corrida completa que atravesó las 00:00 y 0 fallas al repetirla sola.
+- **El `fs.writeFileSync` de la colección de Postman puede fallar una vez con `UNKNOWN` en Windows** (archivo tomado un instante por otro proceso): reintentar.
