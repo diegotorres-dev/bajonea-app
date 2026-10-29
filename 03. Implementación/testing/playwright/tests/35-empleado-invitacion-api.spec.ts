@@ -204,7 +204,9 @@ test.describe('Invitaciones de empleado (API), tramo E1', () => {
       test(`una cuenta ${estado} da el 409 genérico y suma una fila de regularización`, async ({ request }) => {
         const comercioId = await comercioNuevo(request);
         const destinatario = await cuentaVerificada(request);
-        sql(`UPDATE usuario SET estado = '${estado}' WHERE email = '${destinatario.email}';`);
+        sql(estado === 'SUSPENDIDO'
+          ? `UPDATE usuario SET estado = 'SUSPENDIDO', motivo_suspension = 'Suspension de prueba', suspendido_desde = NOW() WHERE email = '${destinatario.email}';`
+          : `UPDATE usuario SET estado = '${estado}' WHERE email = '${destinatario.email}';`);
 
         const respuesta = await invitarEmpleado(request, dueno.token, comercioId, destinatario.email);
 
