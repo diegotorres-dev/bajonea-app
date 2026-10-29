@@ -1060,3 +1060,21 @@ Como dueño, quiero saber que mi comercio fue suspendido y cuál es el motivo, p
 **9. `diccionario-de-datos.md`**
 
 Ya está en la versión 1.30 (`V45`). Los próximos libres son `V46`, la carpeta 82 de Newman, el spec 85 de Playwright (el 84 es de S1) y la versión 1.31.
+
+## Fase 5, tramo S2, suspensión de un comercio (entrega B1, interfaz del Administrador, 2026-10-29)
+
+Texto exacto para copiar a `01. Análisis de Requerimientos` y `02. Diseño`. Se suma a los bloques de la entrega A; no los reemplaza.
+
+**1. `requisitos-funcionales-administrador.md`: agregar a la regla de suspender y levantar un comercio**
+
+- En el listado de comercios, el detalle de cada comercio muestra "Suspender" si el comercio está aprobado, apto para venta o cerrado temporalmente, y "Levantar suspensión" si está suspendido por el Administrador.
+- La ventana "Suspender" muestra, antes de confirmar, qué va a pasar con el comercio y con sus pedidos: deja de aparecer en el catálogo y la cantidad de pedidos pendientes de confirmación, en preparación, listos para retirar, en camino y sin pagar, cada uno con lo que le va a pasar (solo se muestran los que tienen pedidos). El motivo es obligatorio (de 10 a 500 caracteres) y lo ve el Dueño.
+- El detalle de un comercio suspendido muestra el estado, desde cuándo está suspendido y el motivo.
+- La ventana "Levantar suspensión" muestra desde cuándo está suspendido y el motivo, y explica que el comercio vuelve a vender si tiene cuenta de cobro activa y documentación aprobada, y si no queda aprobado sin poder vender. El mensaje para el Dueño es opcional (hasta 500 caracteres).
+- Si el comercio se suspendió junto con su Dueño, el botón "Levantar suspensión" está deshabilitado y el detalle explica que hay que levantar la suspensión del Dueño.
+- Si el email de aviso al Dueño falló, el detalle lo indica ("No se envió el email") y permite reenviarlo.
+- En la lista de reembolsos que requieren revisión, cada reembolso muestra su motivo con un nombre legible: rechazo del comercio, cancelación del cliente, anulación del comercio, suspensión del comercio, sin respuesta del comercio, suspensión de cuenta, pago tardío o reclamo.
+
+**2. `Historias de Usuario - Administrador.md`: ajuste a HU-A18 (entrega A)**
+
+Quitar "y quién lo suspendió" del primer criterio: el detalle muestra desde cuándo está suspendido y el motivo, pero no el nombre de quien lo suspendió (la respuesta del servidor no incluye ese dato).

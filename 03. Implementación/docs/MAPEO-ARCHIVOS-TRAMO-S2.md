@@ -55,3 +55,34 @@ Entrega A (backend, tests y documentación), 2026-10-29. La entrega B (pantallas
 ## Documentación
 
 `docs/diccionario-de-datos.md` (v1.30), `docs/DECISIONES.md`, `docs/APRENDIZAJES-TECNICOS.md`, `docs/CONCURRENCIA-Y-TRANSACCIONES.md`, `docs/entregables-01-02/CAMBIOS.md` (sección "Fase 5, tramo S2"), este archivo.
+
+## Entrega B1 (2026-10-29): Administrador, rendimiento del listado de Clientes y specs
+
+La entrega B se divide en dos. La B1 cubre el listado de Clientes, las etiquetas de reembolso, las pantallas del Administrador para suspender y levantar un comercio y el arreglo de los specs de Playwright. La B2 (panel del Dueño y del Empleado, selector, equipo, topes de 90 minutos en las acciones de pedidos y pantallas del Cliente) no está hecha. Pendiente de la confirmación de Diego.
+
+### Backend (solo el listado de Clientes, código de S1)
+
+| Archivo | Cambio |
+|---|---|
+| `repositories/ClienteRepository.java` | `findAllParaListadoAdmin`: una consulta con `JOIN FETCH` de persona física, persona y usuario, por id. |
+| `repositories/HistorialEstadoUsuarioRepository.java` | `findEstadoPrevioDeLaUltimaSuspension`: el estado de origen de la última suspensión de todos los Clientes suspendidos de la lista, en una sola consulta. |
+| `services/AdministradorService.java` | `listarClientes` (ahora de solo lectura) usa las dos consultas anteriores y las dos de emails fallidos: cinco consultas fijas en total. Antes recorría `findAll()` y consultaba perfil, persona, usuario e historial de a uno por cliente. La respuesta es idéntica byte a byte (comparada con 2575 clientes). |
+| `AdministradorListadoClientesConsultasIntegrationTest` (test nuevo, 2 tests) | La cantidad de consultas del listado no crece con la cantidad de Clientes ni de suspendidos (`Statistics` de Hibernate; con el código anterior falla: 7839 contra 7869 consultas), el estado previo de la suspensión y el orden por id. |
+
+### Frontend
+
+| Archivo | Qué |
+|---|---|
+| `js/admin-hojas.js` (nuevo) | Los componentes de las hojas que ya existían dentro de `admin-clientes.js` (`abrirHoja`, `cajaInformativa`, `campoTexto`, `texto`, `plural`, `fechaLegible`), ahora compartidos. `js/admin-clientes.js` los importa; sin cambios de comportamiento ni de `data-testid`. |
+| `js/admin-comercio-suspension.js` (nuevo) | El bloque "Suspendido" del detalle del comercio (chip, desde cuándo, motivo, explicación del origen `DUENO`, "No se envió el email" con "Reenviar"), la hoja "Suspender {comercio}" con la vista previa (`lineasDeLaVistaPrevia`) y la hoja "Levantar suspensión". |
+| `js/admin.js` | El modal de detalle de comercio usa `crearControlesSuspension`; se borró `mostrarModalSuspenderComercio` (el modal anterior, sin vista previa ni validación de 10 caracteres); `LABELS_MOTIVO_REEMBOLSO` suma `SUSPENSION_CLIENTE` ("Suspensión de cuenta"), `PAGO_TARDIO` ("Pago tardío") y `RECLAMO` ("Reclamo"). |
+| `css/styles.css` | `.comercio-suspension*` (bloque del detalle) y un arreglo de una regresión de S1: `.cliente-admin-row` pasó a ser una fila `flex` y las tarjetas de `admin-reembolsos.html` (que reutilizan esa clase) quedaron con el contenido en columnas de una letra y 417 px de desborde horizontal a 375 px; se agrega `.cliente-admin-row.reembolso-row { display: block }`. |
+
+El detalle del comercio suspendido vive en el modal "Ver detalle" de `admin-comercios.html` (el listado de todos los comercios, en cualquier estado), no en `admin-comercio-detalle.html`: esa pantalla solo carga las solicitudes pendientes y nunca recibe un comercio suspendido.
+
+### Tests
+
+| Archivo | Qué |
+|---|---|
+| `testing/playwright/tests/85-suspension-comercio-ui.spec.ts` (nuevo, 11 tests, 375 px) | Suspender sin pedidos y con pedidos de cada estado, validación y contador, doble clic, Escape y Cancelar, `409` por suspensión simultánea, levantar con y sin mensaje, comercio con y sin cuenta de cobro, origen `DUENO`, email fallido y reenviado, comercio no suspendible y etiquetas de reembolso. Capturas en `docs/capturas-suspension-comercio/`. |
+| Specs `24`, `26`, `40`, `43`, `45`, `47` y `56` | Actualizados al comportamiento nuevo de S2 (detalle en `docs/DECISIONES.md`, 2026-10-29, entrega B1). Helper nuevo `sentenciaEstadoComercio` en `tests/helpers/backend.ts`; `ponerEstadoComercio` (`helpers/empleado.ts`) lo usa. |
