@@ -227,13 +227,29 @@ public class AdministradorService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<ClienteAdminResponseDTO> listarClientes() {
+        List<Cliente> clientes = clienteRepository.findAllParaListadoAdmin();
+        if (clientes.isEmpty()) {
+            return List.of();
+        }
         java.util.Set<Integer> sinEmailSuspension = new java.util.HashSet<>(
                 notificacionRepository.findUsuarioIdsConUltimoEmailFallido(TipoNotificacion.CLIENTE_SUSPENDIDO));
         java.util.Set<Integer> sinEmailLevantamiento = new java.util.HashSet<>(
                 notificacionRepository.findUsuarioIdsConUltimoEmailFallido(TipoNotificacion.SUSPENSION_LEVANTADA));
-        return clienteRepository.findAll().stream()
-                .map(cliente -> aClienteAdminResponseDTO(cliente, sinEmailSuspension, sinEmailLevantamiento))
+        List<Integer> suspendidos = clientes.stream()
+                .map(cliente -> cliente.getPersonaFisica().getPersona().getUsuario())
+                .filter(usuario -> usuario.getEstado() == EstadoUsuario.SUSPENDIDO)
+                .map(Usuario::getId)
+                .toList();
+        Map<Integer, EstadoUsuario> estadosPrevios = new HashMap<>();
+        if (!suspendidos.isEmpty()) {
+            for (Object[] fila : historialEstadoUsuarioRepository.findEstadoPrevioDeLaUltimaSuspension(suspendidos)) {
+                estadosPrevios.put((Integer) fila[0], (EstadoUsuario) fila[1]);
+            }
+        }
+        return clientes.stream()
+                .map(cliente -> aClienteAdminResponseDTO(cliente, sinEmailSuspension, sinEmailLevantamiento, estadosPrevios))
                 .toList();
     }
 
@@ -409,14 +425,8 @@ public class AdministradorService {
                 ultimoEmailAvisoFallido);
     }
 
-    private EstadoUsuario estadoPrevioSuspension(Integer usuarioId) {
-        return historialEstadoUsuarioRepository.findTopByUsuarioIdAndEstadoDestinoOrderByIdDesc(usuarioId, EstadoUsuario.SUSPENDIDO)
-                .map(HistorialEstadoUsuario::getEstadoOrigen)
-                .orElse(null);
-    }
-
     private ClienteAdminResponseDTO aClienteAdminResponseDTO(Cliente cliente, java.util.Set<Integer> sinEmailSuspension,
-            java.util.Set<Integer> sinEmailLevantamiento) {
+            java.util.Set<Integer> sinEmailLevantamiento, Map<Integer, EstadoUsuario> estadosPrevios) {
         PersonaFisica personaFisica = cliente.getPersonaFisica();
         Usuario usuario = personaFisica.getPersona().getUsuario();
         boolean emailFallido = usuario.getEstado() == EstadoUsuario.SUSPENDIDO
@@ -433,7 +443,7 @@ public class AdministradorService {
                 personaFisica.getPersona().getUsuario().getMotivoSuspension(),
                 personaFisica.getPersona().getUsuario().getSuspendidoDesde(),
                 emailFallido,
-                usuario.getEstado() == EstadoUsuario.SUSPENDIDO ? estadoPrevioSuspension(usuario.getId()) : null);
+                estadosPrevios.get(usuario.getId()));
     }
 
     private RepresentanteResponseDTO aRepresentanteResponseDTO(PersonaFisica personaFisica) {
