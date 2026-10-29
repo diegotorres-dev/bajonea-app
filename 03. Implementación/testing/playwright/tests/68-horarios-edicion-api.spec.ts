@@ -10,6 +10,7 @@ import {
   obtenerCodigoInvitacionTest,
   obtenerLocalidadRioGrande,
   registrarYVerificarCliente,
+  sentenciaEstadoComercio,
   sqlTest as sql,
   sufijoUnico,
 } from './helpers/backend';
@@ -51,7 +52,7 @@ test.describe('Fase 2, T1 (API): edición versionada de los horarios', () => {
   const perfil = (request: APIRequestContext, token: string, comercioId: number) =>
     apiConHeaders(request, 'GET', '/comercios/perfil', token, conComercio(comercioId));
   const filas = (comercioId: number): number => Number(sql(`SELECT COUNT(*) FROM horario WHERE comercio_id = ${comercioId};`));
-  const estadoDe = (comercioId: number, estado: string): string => sql(`UPDATE comercio SET estado = '${estado}' WHERE id = ${comercioId};`);
+  const estadoDe = (comercioId: number, estado: string): string => sql(sentenciaEstadoComercio(comercioId, estado));
 
   test.beforeAll(async ({ request }) => {
     adminToken = (await fijarPasswordAdminYLoguear(request)).token;
@@ -135,7 +136,7 @@ test.describe('Fase 2, T1 (API): edición versionada de los horarios', () => {
     expect(hecho.actorRol).toBe('EMPLEADO');
   });
 
-  test('con el comercio SUSPENDIDO el Empleado recibe 409 COMERCIO_SUSPENDIDO y no se cambia nada; con CERRADO_TEMPORALMENTE puede', async ({ request }) => {
+  test('con el comercio SUSPENDIDO el Empleado recibe 409 COMERCIO_SUSPENDIDO y no se cambia nada; con CERRADO_TEMPORALMENTE puede; el Dueño recibe 409 con SUSPENDIDO', async ({ request }) => {
     const comercioId = await comercioDelEquipo(request);
 
     estadoDe(comercioId, 'SUSPENDIDO');
@@ -150,7 +151,8 @@ test.describe('Fase 2, T1 (API): edición versionada de los horarios', () => {
 
     estadoDe(comercioId, 'SUSPENDIDO');
     const delDueno = await editar(request, dueno.token, comercioId, [franja('SABADO', '09:00', '13:00')]);
-    expect(delDueno.status).toBe(200);
+    expect(delDueno.status).toBe(409);
+    expect(delDueno.body.data.codigo).toBe('COMERCIO_SUSPENDIDO');
   });
 
   test('sin token 401, Administrador 403, Cliente sin relación 404 con header y 400 sin header', async ({ request }) => {

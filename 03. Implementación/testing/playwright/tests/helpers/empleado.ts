@@ -5,6 +5,7 @@ import {
   apiPut,
   invitarEmpleado,
   obtenerCodigoInvitacionTest,
+  sentenciaEstadoComercio,
   sqlTest as sql,
 } from './backend';
 import type { ClienteRegistrado, SesionApi } from './backend';
@@ -38,7 +39,7 @@ export function atajoEstadoRelacion(
 }
 
 export function ponerEstadoComercio(comercioId: number, estado: string): void {
-  sql(`UPDATE comercio SET estado = '${estado}' WHERE id = ${comercioId};`);
+  sql(sentenciaEstadoComercio(comercioId, estado));
 }
 
 export interface OpcionesApertura {

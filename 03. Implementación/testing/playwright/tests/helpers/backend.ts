@@ -880,6 +880,13 @@ export function sqlTest(consulta: string): string {
   return resultado;
 }
 
+export function sentenciaEstadoComercio(comercioId: number, estado: string, extra = ''): string {
+  const suspension = estado === 'SUSPENDIDO'
+    ? "suspension_origen = 'INDIVIDUAL', suspendido_desde = NOW(), motivo_suspension = 'Suspension de prueba'"
+    : 'suspension_origen = NULL, suspendido_desde = NULL, motivo_suspension = NULL';
+  return `UPDATE comercio SET estado = '${estado}', ${suspension}${extra ? `, ${extra}` : ''} WHERE id = ${comercioId};`;
+}
+
 export async function suspenderComercio(request: APIRequestContext, adminToken: string, comercioId: number, motivo: string): Promise<void> {
   const { status, body } = await apiPut(request, `/administrador/comercios/${comercioId}/suspender`, { motivo }, adminToken);
   if (status !== 200) {

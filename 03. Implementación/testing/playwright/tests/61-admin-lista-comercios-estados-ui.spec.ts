@@ -32,7 +32,7 @@ const ESTADOS: EstadoEsperado[] = [
   { estado: 'RECHAZADO', etiqueta: 'Rechazado', clase: /status-badge--error/, permiteSuspender: false },
   { estado: 'RECHAZO_DEFINITIVO', etiqueta: 'Rechazo definitivo', clase: /status-badge--error/, permiteSuspender: false },
   { estado: 'SUSPENDIDO', etiqueta: 'Suspendido', clase: /status-badge--pendiente/, permiteSuspender: false },
-  { estado: 'CERRADO_TEMPORALMENTE', etiqueta: 'Cerrado temporalmente', clase: /status-badge--neutro/, permiteSuspender: false },
+  { estado: 'CERRADO_TEMPORALMENTE', etiqueta: 'Cerrado temporalmente', clase: /status-badge--neutro/, permiteSuspender: true },
   { estado: 'INACTIVO', etiqueta: 'Inactivo', clase: /status-badge--neutro/, permiteSuspender: false },
 ];
 

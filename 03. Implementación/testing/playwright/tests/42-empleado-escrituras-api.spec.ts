@@ -17,6 +17,7 @@ import {
   obtenerCodigoInvitacionTest,
   obtenerLocalidadRioGrande,
   registrarYVerificarCliente,
+  sentenciaEstadoComercio,
   sqlTest as sql,
   sufijoUnico,
 } from './helpers/backend';
@@ -32,7 +33,7 @@ const CAMPOS_PEDIDO_EXCLUIDOS = ['clienteId', 'pagoEstado', 'cargoServicioComerc
 const CAMPOS_FISCALES = ['cuit', 'razonSocial', 'condicionIva', 'tipoSociedad', 'domicilioFiscal', 'fechaInicioActividades', 'representante', 'motivoRechazo'];
 const todoElDia = () => [{ diaSemana: diaDeHoy(), horaApertura: '00:00', horaCierre: '23:59' }];
 const conComercio = (comercioId: number | string): Record<string, string> => ({ [HEADER]: String(comercioId) });
-const estadoDe = (comercioId: number, estado: string): string => sql(`UPDATE comercio SET estado = '${estado}' WHERE id = ${comercioId};`);
+const estadoDe = (comercioId: number, estado: string): string => sql(sentenciaEstadoComercio(comercioId, estado));
 
 function escribir(request: APIRequestContext, metodo: Metodo, ruta: string, token: string | undefined, comercioId: number | string, data?: unknown) {
   return apiConHeaders(request, metodo, ruta, token, conComercio(comercioId), data);
@@ -280,11 +281,12 @@ test.describe('Rol Empleado, E3 bloque A2 (API): escrituras delegadas', () => {
       expect(perfil.body.data.estado).toBe('CERRADO_TEMPORALMENTE');
     });
 
-    test('el Dueño sigue pudiendo editar con el comercio SUSPENDIDO (hueco conocido, pendiente del rediseño de la suspensión)', async ({ request }) => {
+    test('el Dueño tampoco puede editar con el comercio SUSPENDIDO: 409 COMERCIO_SUSPENDIDO', async ({ request }) => {
       const comercioId = await comercioDelEquipo(request);
       estadoDe(comercioId, 'SUSPENDIDO');
       const respuesta = await escribir(request, 'PUT', '/comercios/perfil/datos-operativos', dueno.token, comercioId, { descripcion: 'Dueño suspendido', telefono: '+5492964111222' });
-      expect(respuesta.status).toBe(200);
+      expect(respuesta.status).toBe(409);
+      expect(respuesta.body.data.codigo).toBe('COMERCIO_SUSPENDIDO');
     });
   });
 

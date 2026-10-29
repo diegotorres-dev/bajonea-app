@@ -212,7 +212,7 @@ test.describe('Toda devolución nace con su nota de crédito en la transacción 
   });
 
   test.describe('Suspensión del comercio', () => {
-    test('al suspender, cada pedido pagado que cancela el sistema queda con su nota y el Cliente recibe el aviso', async ({ request }) => {
+    test('al suspender nada se cancela en el acto; a los 90 minutos el sistema cancela solo lo que sigue en preparación, con su nota y su aviso', async ({ request }) => {
       const otro = await prepararAprobado(request, adminToken, localidadId, false);
       await marcarAptoVenta(request, otro.comercioId);
       const otroProducto = await crearProducto(request, otro.token, { nombre: `Producto susp ${sufijoUnico()}`, precio: 10000, categoriaId });
@@ -221,18 +221,28 @@ test.describe('Toda devolución nace con su nota de crédito en la transacción 
       const pendiente = await pedidoPagado(request, { producto: otroProducto });
       const enPreparacion = await pedidoPagado(request, { producto: otroProducto });
       expect((await otroDeCarrito(enPreparacion)).status).toBe(200);
-      const sinPago = await pedidoPagado(request, { producto: otroProducto, registrarPago: false });
+      const sinPagoRegistrado = await pedidoPagado(request, { producto: otroProducto, registrarPago: false });
 
       await suspenderComercio(request, adminToken, otro.comercioId, 'Suspensión de prueba A0b');
 
-      for (const id of [pendiente, enPreparacion]) {
-        expect(estado(id)).toBe('CANCELADO_POR_SISTEMA');
-        expect(notas(id)).toBe(1);
-        expect(motivoDeLaNota(id)).toBe('SUSPENSION_COMERCIO');
-        expect(avisos(id, 'PEDIDO_CANCELADO_SISTEMA')).toBe(1);
+      expect(estado(pendiente)).toBe('PENDIENTE_CONFIRMACION_COMERCIO');
+      expect(estado(enPreparacion)).toBe('EN_PREPARACION');
+      expect(estado(sinPagoRegistrado)).toBe('PENDIENTE_CONFIRMACION_COMERCIO');
+      for (const id of [pendiente, enPreparacion, sinPagoRegistrado]) {
+        expect(notas(id)).toBe(0);
+        expect(avisos(id, 'PEDIDO_CANCELADO_SISTEMA')).toBe(0);
       }
-      expect(estado(sinPago)).toBe('CANCELADO_POR_SISTEMA');
-      expect(notas(sinPago)).toBe(0);
+
+      expect((await apiPut(request, `/test/comercios/${otro.comercioId}/envejecer-suspension?minutos=91`, {})).status).toBe(200);
+      expect((await correrProceso(request, 'cancelar-preparacion-suspension')).status).toBe(200);
+
+      expect(estado(enPreparacion)).toBe('CANCELADO_POR_SISTEMA');
+      expect(notas(enPreparacion)).toBe(1);
+      expect(motivoDeLaNota(enPreparacion)).toBe('SUSPENSION_COMERCIO');
+      expect(avisos(enPreparacion, 'PEDIDO_CANCELADO_SISTEMA')).toBe(1);
+      expect(estado(pendiente)).toBe('PENDIENTE_CONFIRMACION_COMERCIO');
+      expect(notas(pendiente)).toBe(0);
+      expect(estado(sinPagoRegistrado)).toBe('PENDIENTE_CONFIRMACION_COMERCIO');
     });
   });
 

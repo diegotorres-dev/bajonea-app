@@ -10,6 +10,7 @@ import {
   diaDistintoDeHoy,
   fijarPasswordAdminYLoguear,
   generarCuit,
+  sentenciaEstadoComercio,
   generarDni,
   login,
   marcarAptoVenta,
@@ -810,14 +811,14 @@ test.describe('Multi-comercio, tramo 3A: corrección y re-solicitud de comercios
       const otroId = await clonarConRedes(request, base.comercioId, nombreAjeno, 'PENDIENTE');
 
       for (const estadoDelOtro of ['PENDIENTE', 'APROBADO', 'SUSPENDIDO', 'RECHAZADO']) {
-        sql(`UPDATE comercio SET estado = '${estadoDelOtro}' WHERE id = ${otroId};`);
+        sql(sentenciaEstadoComercio(otroId, estadoDelOtro));
         const { body } = await correccionDe(request, base.token, rechazadoId);
         const respuesta = await reenviar(request, base.token, rechazadoId, payloadDesde(body.data, { nombre: nombreAjeno.toUpperCase(), descripcion: `Cambio ${estadoDelOtro}` }));
         expect(respuesta.status, estadoDelOtro).toBe(409);
         expect(respuesta.body.mensaje).toBe(MENSAJE_DUPLICADO);
       }
 
-      sql(`UPDATE comercio SET estado = 'RECHAZO_DEFINITIVO' WHERE id = ${otroId};`);
+      sql(sentenciaEstadoComercio(otroId, 'RECHAZO_DEFINITIVO'));
       const { body } = await correccionDe(request, base.token, rechazadoId);
       const respuesta = await reenviar(request, base.token, rechazadoId, payloadDesde(body.data, { nombre: nombreAjeno, descripcion: 'Con el nombre liberado' }));
       expect(respuesta.status).toBe(200);
@@ -835,7 +836,7 @@ test.describe('Multi-comercio, tramo 3A: corrección y re-solicitud de comercios
       expect(contraRechazado.status).toBe(409);
       expect(contraRechazado.body.mensaje).toBe(MENSAJE_DUPLICADO);
 
-      sql(`UPDATE comercio SET estado = 'RECHAZO_DEFINITIVO' WHERE id = ${clonId};`);
+      sql(sentenciaEstadoComercio(clonId, 'RECHAZO_DEFINITIVO'));
       const contraDefinitivo = await registrarComercioAdicional(request, base.token, localidadId, { nombre, fotoPerfilUrl: foto, direccion: direccionDelClon });
       expect(contraDefinitivo.status).toBe(201);
     });
@@ -1105,8 +1106,8 @@ test.describe('Multi-comercio, tramo 3A: corrección y re-solicitud de comercios
       const clonId = await clonarConRedes(request, dueno.comercioId, `Segundo ${sufijoUnico()}`, 'PENDIENTE');
       const elegible = async () => (await apiConHeaders(request, 'GET', '/comercios/alta-adicional/elegibilidad', dueno.token)).body.data.elegible;
       const fijar = (estadoUno: string, estadoDos: string) => {
-        sql(`UPDATE comercio SET estado = '${estadoUno}' WHERE id = ${dueno.comercioId};`);
-        sql(`UPDATE comercio SET estado = '${estadoDos}' WHERE id = ${clonId};`);
+        sql(sentenciaEstadoComercio(dueno.comercioId, estadoUno));
+        sql(sentenciaEstadoComercio(clonId, estadoDos));
       };
 
       const combinaciones: Array<[string, string, boolean]> = [
@@ -1130,7 +1131,7 @@ test.describe('Multi-comercio, tramo 3A: corrección y re-solicitud de comercios
 
       sql(`DELETE FROM red_social WHERE comercio_id = ${clonId}; DELETE FROM horario WHERE comercio_id = ${clonId}; DELETE FROM direccion WHERE comercio_id = ${clonId}; DELETE FROM comercio WHERE id = ${clonId};`);
       for (const [estado, esperado] of [['RECHAZO_DEFINITIVO', true], ['RECHAZADO', false], ['PENDIENTE', false]] as const) {
-        sql(`UPDATE comercio SET estado = '${estado}' WHERE id = ${dueno.comercioId};`);
+        sql(sentenciaEstadoComercio(dueno.comercioId, estado));
         expect(await elegible(), `solo ${estado}`).toBe(esperado);
       }
     });
@@ -1143,7 +1144,7 @@ test.describe('Multi-comercio, tramo 3A: corrección y re-solicitud de comercios
       expect(conRechazado.status).toBe(409);
       expect(conRechazado.body.mensaje).toBe(MENSAJE_NO_ELEGIBLE);
 
-      sql(`UPDATE comercio SET estado = 'RECHAZO_DEFINITIVO' WHERE id = ${dueno.comercioId};`);
+      sql(sentenciaEstadoComercio(dueno.comercioId, 'RECHAZO_DEFINITIVO'));
       const conDefinitivo = await registrarComercioAdicional(request, dueno.token, localidadId, { fotoPerfilUrl: foto });
       expect(conDefinitivo.status).toBe(201);
       expect(conDefinitivo.body.data.estado).toBe('PENDIENTE');
@@ -1155,7 +1156,7 @@ test.describe('Multi-comercio, tramo 3A: corrección y re-solicitud de comercios
 
     test('el aviso al Dueño cuando se aprueba el comercio nuevo de un Dueño con todo rechazado definitivamente es el de siempre', async ({ request }) => {
       const dueno = await prepararRechazado(request);
-      sql(`UPDATE comercio SET estado = 'RECHAZO_DEFINITIVO' WHERE id = ${dueno.comercioId};`);
+      sql(sentenciaEstadoComercio(dueno.comercioId, 'RECHAZO_DEFINITIVO'));
       const foto = await subirFotoNuevoComercio(request, dueno.token);
       const alta = await registrarComercioAdicional(request, dueno.token, localidadId, { fotoPerfilUrl: foto });
       expect(alta.status).toBe(201);

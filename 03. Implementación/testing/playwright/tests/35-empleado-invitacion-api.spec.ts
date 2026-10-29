@@ -25,6 +25,7 @@ import {
   registrarCliente,
   registrarYVerificarCliente,
   reenviarInvitacion,
+  sentenciaEstadoComercio,
   sqlTest as sql,
   sufijoUnico,
   validarInvitacion,
@@ -914,11 +915,25 @@ test.describe('Invitaciones de empleado (API), tramo E1', () => {
   });
 
   test.describe('Estado del comercio al validar y aceptar', () => {
-    test('un comercio SUSPENDIDO o CERRADO_TEMPORALMENTE permite validar y aceptar', async ({ request }) => {
-      for (const estado of ['SUSPENDIDO', 'CERRADO_TEMPORALMENTE']) {
+    test('un comercio SUSPENDIDO da 409 al validar y al aceptar, y la cuenta nueva no se crea', async ({ request }) => {
+      const comercioId = await comercioNuevo(request);
+      const { email } = await invitar(request, comercioId);
+      sql(sentenciaEstadoComercio(comercioId, 'SUSPENDIDO'));
+      const codigo = await obtenerCodigoInvitacionTest(request, email, comercioId);
+
+      const validar = await validarInvitacion(request, email, codigo);
+      const { respuesta } = await aceptarConCuentaNueva(request, email, comercioId);
+
+      expect(validar.status).toBe(409);
+      expect(respuesta.status).toBe(409);
+      expect(sql(`SELECT COUNT(*) FROM empleado_comercio WHERE comercio_id = ${comercioId};`)).toBe('0');
+    });
+
+    test('un comercio CERRADO_TEMPORALMENTE permite validar y aceptar', async ({ request }) => {
+      for (const estado of ['CERRADO_TEMPORALMENTE']) {
         const comercioId = await comercioNuevo(request);
         const { email } = await invitar(request, comercioId);
-        sql(`UPDATE comercio SET estado = '${estado}' WHERE id = ${comercioId};`);
+        sql(sentenciaEstadoComercio(comercioId, estado));
         const codigo = await obtenerCodigoInvitacionTest(request, email, comercioId);
 
         const validar = await validarInvitacion(request, email, codigo);

@@ -18,6 +18,7 @@ import {
   obtenerCodigoInvitacionTest,
   obtenerLocalidadRioGrande,
   registrarYVerificarCliente,
+  sentenciaEstadoComercio,
   sqlTest as sql,
   sufijoUnico,
 } from './helpers/backend';
@@ -112,7 +113,7 @@ const CAMPOS_MIS_COMERCIOS = [
 ];
 
 const conComercio = (comercioId: number | string): Record<string, string> => ({ [HEADER]: String(comercioId) });
-const estadoDe = (comercioId: number, estado: string): string => sql(`UPDATE comercio SET estado = '${estado}' WHERE id = ${comercioId};`);
+const estadoDe = (comercioId: number, estado: string): string => sql(sentenciaEstadoComercio(comercioId, estado));
 
 function perfil(request: APIRequestContext, token: string | undefined, headers: Record<string, string> = {}) {
   return apiConHeaders(request, 'GET', '/comercios/perfil', token, headers);

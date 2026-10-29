@@ -218,7 +218,7 @@ test.describe('Rol Empleado, E4 bloque A1 (API): desactivar y reactivar al miemb
     expect(menor.body.mensaje).toBe('No se puede reactivar a esta persona');
   });
 
-  test('con el comercio suspendido se puede dar de baja pero no reactivar: 409 COMERCIO_NO_OPERATIVO', async ({ request }) => {
+  test('con el comercio suspendido no se puede dar de baja (409 COMERCIO_SUSPENDIDO) ni reactivar (409 COMERCIO_NO_OPERATIVO)', async ({ request }) => {
     const propio = await prepararAprobado(request, adminToken, localidadId);
     const m = await nuevoMiembro(request, propio);
     const otro = await nuevoMiembro(request, propio);
@@ -226,8 +226,10 @@ test.describe('Rol Empleado, E4 bloque A1 (API): desactivar y reactivar al miemb
     await suspenderComercio(request, adminToken, propio.comercioId, 'Suspension de la prueba E4');
 
     const bajaSuspendido = await baja(request, m.id, propio.token, propio.comercioId);
-    expect(bajaSuspendido.status).toBe(200);
-    expect(bajaSuspendido.body.data.estado).toBe('INACTIVO');
+    expect(bajaSuspendido.status).toBe(409);
+    expect(bajaSuspendido.body.data.codigo).toBe('COMERCIO_SUSPENDIDO');
+    expect(bajaSuspendido.body.mensaje).toBe('El comercio está suspendido: el equipo se puede ver, pero no modificar');
+    expect(sql(`SELECT estado FROM empleado_comercio WHERE empleado_id = ${m.id} AND comercio_id = ${propio.comercioId};`)).toBe('ACTIVO');
     const altaSuspendido = await alta(request, otro.id, propio.token, propio.comercioId);
     expect(altaSuspendido.status).toBe(409);
     expect(altaSuspendido.body.data.codigo).toBe('COMERCIO_NO_OPERATIVO');

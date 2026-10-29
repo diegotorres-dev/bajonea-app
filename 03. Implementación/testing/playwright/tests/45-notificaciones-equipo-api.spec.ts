@@ -244,7 +244,7 @@ test.describe('Avisos del comercio con fan-out al equipo (API), bloque A4 de E3'
     expect(delPedido(vistos, segundo, /Nuevo pedido recibido/)).toBeUndefined();
   });
 
-  test('los avisos de administración llegan solo al Dueño, no a los Empleados', async ({ request }) => {
+  test('los avisos de administración llegan al Dueño y los Empleados reciben solo el aviso corto de la suspensión', async ({ request }) => {
     const e = await escenario(request);
     const segundoComercio = await clonarComercioTest(request, e.dueno.comercioId, `Segundo A4 ${sufijoUnico()}`, 'APTO_VENTA');
     const cuentaC = await registrarYVerificarCliente(request, localidadId);
@@ -256,8 +256,11 @@ test.describe('Avisos del comercio con fan-out al equipo (API), bloque A4 de E3'
     const delDueno = await avisos(request, e.dueno.token, segundoComercio);
     expect(delDueno.some((aviso) => aviso.entidadTipo === 'COMERCIO' && /fue suspendido/.test(aviso.mensaje))).toBe(true);
     const delEmpleado = await avisos(request, c.token, segundoComercio);
-    expect(delEmpleado.some((aviso) => aviso.entidadTipo === 'COMERCIO')).toBe(false);
-    expect(Number(sql(`SELECT COUNT(*) FROM notificacion WHERE usuario_id = ${c.usuario.id} AND comercio_id IS NOT NULL;`))).toBe(0);
+    const avisosDelComercio = delEmpleado.filter((aviso) => aviso.entidadTipo === 'COMERCIO');
+    expect(avisosDelComercio).toHaveLength(1);
+    expect(avisosDelComercio[0].mensaje).toContain('Mientras dure no se aceptan pedidos nuevos');
+    expect(Number(sql(`SELECT COUNT(*) FROM notificacion WHERE usuario_id = ${c.usuario.id} AND comercio_id IS NOT NULL;`))).toBe(1);
+    expect(Number(sql(`SELECT COUNT(*) FROM notificacion WHERE usuario_id = ${c.usuario.id} AND comercio_id = ${segundoComercio} AND tipo = 'COMERCIO_SUSPENDIDO_EQUIPO';`))).toBe(1);
     const primerComercio = await avisos(request, e.dueno.token, e.dueno.comercioId);
     expect(primerComercio.some((aviso) => /fue suspendido/.test(aviso.mensaje))).toBe(false);
   });

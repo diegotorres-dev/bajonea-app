@@ -22,6 +22,7 @@ import {
   sufijoUnico,
   vincularMercadoPagoSimuladoTest,
   apiPost,
+  sentenciaEstadoComercio,
 } from './helpers/backend';
 
 const MYSQL_EXE = 'C:/xampp/mysql/bin/mysql.exe';
@@ -50,7 +51,7 @@ function historialDe(comercioId: number): string[] {
 
 function fijarEstados(comercioIds: number[], estados: string[]) {
   comercioIds.forEach((id, indice) => {
-    sql(`UPDATE comercio SET estado = '${estados[indice]}' WHERE id = ${id};`);
+    sql(sentenciaEstadoComercio(id, estados[indice]));
   });
 }
 

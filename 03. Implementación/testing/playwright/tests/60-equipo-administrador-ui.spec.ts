@@ -158,7 +158,7 @@ test.describe('Equipo del Administrador en pantalla, E4 entrega B3', () => {
       await expect(page.getByTestId('equipo-comercio-nombre')).toHaveText(comercio.nombre);
     });
 
-    test('un comercio suspendido no tiene Suspender, tiene Ver equipo y Cerrar ocupa todo el ancho; sin miembros el resumen dice 0 activos · 0 inactivos', async ({ page, request }) => {
+    test('un comercio suspendido no tiene Suspender, tiene Ver equipo y Levantar suspensión junto a Cerrar; sin miembros el resumen dice 0 activos · 0 inactivos', async ({ page, request }) => {
       const comercio = await comercioNuevo(request, 'SUSPENDIDO');
       await abrirComoAdmin(page);
       await page.goto('/admin-comercios.html');
@@ -167,8 +167,9 @@ test.describe('Equipo del Administrador en pantalla, E4 entrega B3', () => {
       await expect(page.getByTestId('btn-suspender-comercio')).toHaveCount(0);
       await expect(page.getByTestId('btn-ver-equipo-comercio')).toBeVisible();
       await expect(page.getByTestId('resumen-equipo-comercio')).toContainText('0 activos · 0 inactivos');
+      await expect(page.getByTestId('btn-levantar-suspension-comercio')).toBeVisible();
       const caja = (await page.getByTestId('btn-cerrar-modal-detalle-comercio').boundingBox())!;
-      expect(caja.width).toBeGreaterThan(280);
+      expect(caja.width).toBeGreaterThan(120);
     });
 
     test('si no se puede leer el equipo el resumen desaparece y el botón Ver equipo sigue', async ({ page, request }) => {

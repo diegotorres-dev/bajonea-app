@@ -16,6 +16,7 @@ import {
   login,
   obtenerLocalidadRioGrande,
   registrarYVerificarCliente,
+  sentenciaEstadoComercio,
   sqlTest as sql,
   sufijoUnico,
 } from './helpers/backend';
@@ -365,7 +366,8 @@ test.describe('Fase 2, T4 (API): cierre de turno, foto de cifras y email al Due√
     const sinFranjas = await escena(request, dueno, 0, []);
     await pagar(request, suspendidoConPedidos.pedidos, hoyA('13:00'));
     await pagar(request, cerradoTemporalmente.pedidos, hoyA('13:00'));
-    sql(`UPDATE comercio SET estado = 'SUSPENDIDO' WHERE id IN (${suspendidoSinPedidos.comercioId}, ${suspendidoConPedidos.comercioId});`);
+    sql(sentenciaEstadoComercio(suspendidoSinPedidos.comercioId, 'SUSPENDIDO'));
+    sql(sentenciaEstadoComercio(suspendidoConPedidos.comercioId, 'SUSPENDIDO'));
     sql(`UPDATE comercio SET estado = 'CERRADO_TEMPORALMENTE' WHERE id = ${cerradoTemporalmente.comercioId};`);
     sql(`UPDATE comercio SET estado = 'APROBADO' WHERE id = ${aprobado.comercioId};`);
 

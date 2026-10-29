@@ -13,6 +13,7 @@ import {
   login,
   obtenerLocalidadRioGrande,
   registrarYVerificarCliente,
+  sentenciaEstadoComercio,
   sqlTest as sql,
   subirDocumentoTest,
   vincularMercadoPagoSimuladoTest,
@@ -271,10 +272,10 @@ test.describe('Fase 4 (API): documentos del comercio y regla de apto para venta'
 
   test('solo se puede subir con el comercio aprobado, apto para vender o cerrado temporalmente', async ({ request }) => {
     const otro = await prepararAprobado(request, adminToken, localidadId, true, todoElDia());
-    sql(`UPDATE comercio SET estado = 'SUSPENDIDO' WHERE id = ${otro.comercioId};`);
+    sql(sentenciaEstadoComercio(otro.comercioId, 'SUSPENDIDO'));
 
     const suspendido = await subir(request, otro);
-    sql(`UPDATE comercio SET estado = 'CERRADO_TEMPORALMENTE' WHERE id = ${otro.comercioId};`);
+    sql(sentenciaEstadoComercio(otro.comercioId, 'CERRADO_TEMPORALMENTE'));
     const cerrado = await subir(request, otro);
 
     expect(suspendido.status).toBe(409);

@@ -225,10 +225,13 @@ test.describe('Actividad del comercio con todo lo que le pasa a sus pedidos (API
     expect(await delPedido(request, pedidoId)).toEqual([]);
   });
 
-  test('la cancelación por suspensión del comercio aparece como una acción del sistema y un pedido de otro comercio no aparece', async ({ request }) => {
+  test('la cancelación por suspensión del comercio, a los 90 minutos, aparece como una acción del sistema y un pedido de otro comercio no aparece', async ({ request }) => {
     const pedidoId = await pedidoPagado(request, otroProductoId);
     expect((await operar(request, otroDueno.token, otroDueno.comercioId, `/pedidos/comercio/${pedidoId}/aceptar`)).status).toBe(200);
     await suspenderComercio(request, adminToken, otroDueno.comercioId, 'Prueba de la actividad A2b');
+    expect(estadoPedido(pedidoId)).toBe('EN_PREPARACION');
+    expect((await apiPut(request, `/test/comercios/${otroDueno.comercioId}/envejecer-suspension?minutos=91`, {})).status).toBe(200);
+    expect((await correrProceso(request, 'cancelar-preparacion-suspension')).status).toBe(200);
     expect(estadoPedido(pedidoId)).toBe('CANCELADO_POR_SISTEMA');
 
     const delOtro = await actividad(request, 'limite=100', otroDueno.token, otroDueno.comercioId);

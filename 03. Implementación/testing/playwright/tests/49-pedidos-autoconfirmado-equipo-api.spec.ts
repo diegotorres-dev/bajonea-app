@@ -269,7 +269,8 @@ test.describe('Aviso T30 de pedido autoconfirmado al equipo (API), bloque A6 de 
     await agregarItemCarrito(request, e.comprador.token, e.productoId, 1);
     const retiro = await crearPedido(request, e.comprador.token, 'RETIRO');
     await confirmarPagoTest(request, retiro, true);
-    sql(`UPDATE pedido SET estado = 'LISTO_PARA_RETIRAR', suspension_retiro_expira = '${haceMinutos(5)}' WHERE id = ${retiro};`);
+    sql(`UPDATE pedido SET estado = 'LISTO_PARA_RETIRAR' WHERE id = ${retiro};`);
+    expect((await apiPut(request, `/test/comercios/${e.dueno.comercioId}/suspension?origen=INDIVIDUAL&minutos=200`, {})).status).toBe(200);
     sql(
       `INSERT INTO historial_estado_pedido (pedido_id, estado, actor_rol, actor_usuario_id, fecha_hora) VALUES ` +
         `(${retiro}, 'LISTO_PARA_RETIRAR', 'DUENO', ${e.dueno.duenoId}, '${haceMinutos(200)}');`,

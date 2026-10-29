@@ -58,7 +58,7 @@ const idsEnOrdenDeAlta = (duenoId: number): number[] =>
     .split(/\r?\n/)
     .map(Number);
 
-const noLeidasEnBase = (usuarioId: number): number => Number(sql(`SELECT COUNT(*) FROM notificacion WHERE usuario_id = ${usuarioId} AND leida = 0;`));
+const noLeidasEnBase = (usuarioId: number): number => Number(sql(`SELECT COUNT(*) FROM notificacion WHERE usuario_id = ${usuarioId} AND leida = 0 AND canal = 'PUSH';`));
 
 test.describe('Multi-comercio, tramo 4 (API): mis-comercios y notificaciones por comercio', () => {
   test.describe.configure({ mode: 'serial', timeout: 240_000 });
@@ -134,7 +134,8 @@ test.describe('Multi-comercio, tramo 4 (API): mis-comercios y notificaciones por
       expect(comercios.map((c) => c.id)).toEqual(idsEnOrdenDeAlta(dueno.duenoId));
       expect(comercios).toHaveLength(9);
       for (const c of comercios) {
-        expect(Object.keys(c).sort()).toEqual(['abiertoAhora', 'cantidadNotificacionesNoLeidas', 'cerradoManualmente', 'estado', 'fechaRegistro', 'fotoPerfilUrl', 'id', 'nombre', 'operativo', 'puedeCambiarCierre', 'textoReapertura']);
+        const camposDeSuspension = c.estado === 'SUSPENDIDO' ? ['motivoSuspension', 'suspendidoDesde'] : [];
+        expect(Object.keys(c).sort()).toEqual(['abiertoAhora', 'cantidadNotificacionesNoLeidas', 'cerradoManualmente', 'estado', 'fechaRegistro', 'fotoPerfilUrl', 'id', ...camposDeSuspension, 'nombre', 'operativo', 'puedeCambiarCierre', 'textoReapertura'].sort());
         expect(typeof c.nombre).toBe('string');
         expect(typeof c.fotoPerfilUrl).toBe('string');
         expect(typeof c.fechaRegistro).toBe('string');

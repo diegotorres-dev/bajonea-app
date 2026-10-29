@@ -92,7 +92,7 @@ test.describe('Rol Empleado, E3 bloque A5b (API): orden único de bloqueo del ca
     }
   });
 
-  test('con el comercio suspendido las firmas del Empleado dan 409 COMERCIO_SUSPENDIDO y las del Dueño siguen dando 200', async ({ request }) => {
+  test('con el comercio suspendido las firmas del Empleado y las del Dueño dan 409 COMERCIO_SUSPENDIDO', async ({ request }) => {
     const { productoId, imagenIds } = await productoNuevo(request, 1);
     ponerEstadoComercio(comercioId, 'SUSPENDIDO');
     try {
@@ -109,7 +109,8 @@ test.describe('Rol Empleado, E3 bloque A5b (API): orden único de bloqueo del ca
         como(request, dueno.token, 'POST', `/productos/${productoId}/imagenes/${imagenIds[0]}/recorte/firma`, {}),
       ]);
       for (const r of delDueno) {
-        expect(r.status, JSON.stringify(r.body)).toBe(200);
+        expect(r.status, JSON.stringify(r.body)).toBe(409);
+        expect(r.body.data.codigo).toBe('COMERCIO_SUSPENDIDO');
       }
     } finally {
       ponerEstadoComercio(comercioId, 'APTO_VENTA');

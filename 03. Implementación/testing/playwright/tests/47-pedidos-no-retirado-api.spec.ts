@@ -276,13 +276,12 @@ test.describe('Cerrar un retiro como no retirado (API), bloque A4b de E3', () =>
     await suspenderComercio(request, adminToken, dueno.comercioId, 'Suspensión de prueba A4b');
     for (const pedidoId of pendientes) {
       expect(estadoDe(pedidoId)).toBe('LISTO_PARA_RETIRAR');
-      expect(sql(`SELECT suspension_retiro_expira IS NOT NULL FROM pedido WHERE id = ${pedidoId};`)).toBe('1');
     }
 
     const cerrado = await cerrar(request, elena.token, manual);
     expect(cerrado.status, JSON.stringify(cerrado.body)).toBe(200);
 
-    const ahora = sql(`SELECT DATE_FORMAT(suspension_retiro_expira + INTERVAL 1 HOUR, '%Y-%m-%dT%H:%i:%s') FROM pedido WHERE id = ${automatico};`);
+    const ahora = sql("SELECT DATE_FORMAT(NOW() + INTERVAL 95 MINUTE, '%Y-%m-%dT%H:%i:%s');");
     const job = await apiConHeaders(request, 'POST', `/test/jobs/pedidos/autoconfirmar-retiros?ahora=${ahora}`, undefined, {}, {});
     expect(job.status).toBe(200);
 
