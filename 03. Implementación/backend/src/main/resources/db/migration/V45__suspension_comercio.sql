@@ -1,0 +1,38 @@
+ALTER TABLE `comercio`
+  ADD COLUMN `suspension_origen` enum('INDIVIDUAL','DUENO') NULL AFTER `estado`,
+  ADD COLUMN `suspendido_desde` datetime NULL AFTER `suspension_origen`,
+  ADD COLUMN `motivo_suspension` varchar(500) NULL AFTER `suspendido_desde`,
+  ADD KEY `idx_comercio_suspension` (`dueno_id`, `estado`, `suspension_origen`);
+
+UPDATE `comercio` c
+SET c.`suspension_origen` = 'INDIVIDUAL',
+    c.`suspendido_desde` = COALESCE(
+      (SELECT MAX(h.`fecha_hora`) FROM `historial_estado_comercio` h WHERE h.`comercio_id` = c.`id` AND h.`estado_destino` = 'SUSPENDIDO'),
+      c.`fecha_modificacion`,
+      c.`fecha_registro`),
+    c.`motivo_suspension` = COALESCE(
+      (SELECT NULLIF(TRIM(h.`motivo`), '') FROM `historial_estado_comercio` h WHERE h.`comercio_id` = c.`id` AND h.`estado_destino` = 'SUSPENDIDO' ORDER BY h.`id` DESC LIMIT 1),
+      'Suspendido antes de que se registrara el motivo')
+WHERE c.`estado` = 'SUSPENDIDO';
+
+ALTER TABLE `comercio`
+  ADD CONSTRAINT `ck_comercio_suspension` CHECK (
+    (`estado` = 'SUSPENDIDO' AND `suspension_origen` IS NOT NULL AND `suspendido_desde` IS NOT NULL AND `motivo_suspension` IS NOT NULL)
+    OR (`estado` <> 'SUSPENDIDO' AND `suspension_origen` IS NULL AND `suspendido_desde` IS NULL AND `motivo_suspension` IS NULL)
+  );
+
+ALTER TABLE `historial_estado_comercio`
+  ADD COLUMN `suspension_origen` enum('INDIVIDUAL','DUENO') NULL AFTER `motivo`;
+
+UPDATE `historial_estado_comercio`
+SET `suspension_origen` = 'INDIVIDUAL'
+WHERE `estado_destino` = 'SUSPENDIDO';
+
+ALTER TABLE `historial_estado_pedido`
+  MODIFY COLUMN `motivo_timeout` enum('TIMEOUT_PAGO','TIMEOUT_ENTREGA','TIMEOUT_RESPUESTA_COMERCIO','TIMEOUT_RETIRO_SUSPENSION','SUSPENSION_CLIENTE','TIMEOUT_PREPARACION_SUSPENSION') NULL;
+
+ALTER TABLE `nota_credito`
+  MODIFY COLUMN `motivo` enum('RECHAZO_COMERCIO','CANCELACION_CLIENTE','ANULACION_COMERCIO','SUSPENSION_COMERCIO','EXPIRACION_SIN_RESPUESTA','SUSPENSION_CLIENTE','RECLAMO','PAGO_TARDIO') NULL;
+
+ALTER TABLE `notificacion`
+  MODIFY COLUMN `tipo` enum('NUEVO_PEDIDO','PEDIDO_ACEPTADO','PEDIDO_RECHAZADO','PEDIDO_EN_CAMINO','PEDIDO_LISTO_RETIRO','AVISO_75MIN_SIN_CONFIRMACION','PEDIDO_AUTOCONFIRMADO','PEDIDO_CANCELADO_CLIENTE','PEDIDO_ANULADO_COMERCIO','PEDIDO_CANCELADO_SISTEMA','PEDIDO_EXPIRADO_CLIENTE','PEDIDO_EXPIRADO_COMERCIO','COMERCIO_APROBADO','COMERCIO_RECHAZADO','COMERCIO_SUSPENDIDO','NUEVO_COMERCIO_PENDIENTE','NUEVA_RESOLICITUD_COMERCIO','NUEVO_RECLAMO','RECLAMO_APROBADO','RECLAMO_RECHAZADO','NUEVO_MENSAJE_SOPORTE','PRODUCTO_REMOVIDO_CARRITO','CUENTA_INACTIVADA','COMERCIO_INACTIVADO','PEDIDO_CERRADO_TIMER_SUSPENSION','REEMBOLSO_FALLIDO_DEFINITIVO','CLIENTE_SUSPENDIDO','SUSPENSION_LEVANTADA','PEDIDO_AUTOCONFIRMADO_COMERCIO','INVITACION_EMPLEADO','EMPLEADO_DESACTIVADO','PEDIDO_NO_RETIRADO','EMPLEADO_REACTIVADO','DOCUMENTO_APROBADO','DOCUMENTO_RECHAZADO','COMERCIO_APTO_VENTA','COMERCIO_SIN_APTITUD','COMERCIO_SUSPENDIDO_EQUIPO','COMERCIO_SUSPENSION_LEVANTADA_EQUIPO') NOT NULL;
