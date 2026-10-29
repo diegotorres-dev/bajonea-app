@@ -174,7 +174,7 @@ class EscriturasEmpleadoHttpIntegrationTest {
     }
 
     @Test
-    void conElComercioSuspendidoElEmpleadoRecibe409ConSuCodigoYElDuenoSigueEditando() throws Exception {
+    void conElComercioSuspendidoElEmpleadoYElDuenoRecibenElMismo409ConSuCodigo() throws Exception {
         Escenario e = escenario("SUSPENDIDO");
 
         JsonNode conflicto = cuerpo(datosOperativos(e.tokenEmpleado(), e.dueno().comercioId(), DATOS_OK).andExpect(status().isConflict()));
@@ -183,7 +183,8 @@ class EscriturasEmpleadoHttpIntegrationTest {
         mockMvc.perform(con(post("/api/v1/productos"), e.tokenEmpleado(), e.dueno().comercioId()).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"nombre\":\"X\",\"precio\":10,\"categoriaId\":1}")).andExpect(status().isConflict());
 
-        datosOperativos(e.tokenDueno(), e.dueno().comercioId(), DATOS_OK).andExpect(status().isOk());
+        JsonNode delDueno = cuerpo(datosOperativos(e.tokenDueno(), e.dueno().comercioId(), DATOS_OK).andExpect(status().isConflict()));
+        assertEquals("COMERCIO_SUSPENDIDO", delDueno.path("data").path("codigo").asText());
     }
 
     @Test

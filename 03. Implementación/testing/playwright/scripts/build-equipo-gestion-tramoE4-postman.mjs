@@ -386,8 +386,9 @@ agregar(
   ]),
   item('Acceso: el motivo sigue siendo la baja del Dueño', req('GET', ACCESO(COM), { token: TOKEN_E3 }), ACCESO_DE('INACTIVO', 'BAJA_DUENO', true)),
 
+  item('El Dueño da de baja a Beto antes de la suspension', req('PUT', `${EQUIPO}/miembros/${E2}/desactivar`, { token: TOKEN_DUENO, comercio: COM }), [status(200), dataEs('estado', 'INACTIVO')]),
   item('Administrador suspende el comercio', req('PUT', `/administrador/comercios/${COM}/suspender`, { token: 'token_admin', body: { motivo: 'Suspension de la coleccion E4' } }), [status(200)]),
-  item('Con el comercio suspendido el Dueño igual puede dar de baja a Beto', req('PUT', `${EQUIPO}/miembros/${E2}/desactivar`, { token: TOKEN_DUENO, comercio: COM }), [status(200), dataEs('estado', 'INACTIVO')]),
+  item('Con el comercio suspendido el equipo queda en solo lectura: dar de baja da 409 COMERCIO_SUSPENDIDO', req('PUT', `${EQUIPO}/miembros/${E2}/desactivar`, { token: TOKEN_DUENO, comercio: COM }), [status(409), codigoEs('COMERCIO_SUSPENDIDO')]),
   item('Con el comercio suspendido no se reactiva: 409 COMERCIO_NO_OPERATIVO', req('PUT', `${EQUIPO}/miembros/${E2}/reactivar`, { token: TOKEN_DUENO, comercio: COM }), [
     status(409),
     codigoEs('COMERCIO_NO_OPERATIVO'),

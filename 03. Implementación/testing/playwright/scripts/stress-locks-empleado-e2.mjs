@@ -167,7 +167,9 @@ async function empleadoDe(dueno, comercioIds) {
 const LECTURAS = ['/comercios/perfil', '/productos', '/pedidos/comercio', '/pedidos/comercio/resumen-turno'];
 const leer = (empleado, comercioId, ruta) => call('GET', ruta, empleado.token, undefined, cabecera(comercioId));
 const atajoRelacion = (comercioId, empleadoId, estado) => call('PUT', `/test/comercios/${comercioId}/empleados/${empleadoId}/estado?estado=${estado}`);
-const estadoComercio = (comercioId, estado) => sql(`UPDATE comercio SET estado = '${estado}' WHERE id = ${comercioId};`);
+const estadoComercio = (comercioId, estado) => sql(estado === 'SUSPENDIDO'
+  ? `UPDATE comercio SET estado = 'SUSPENDIDO', suspension_origen = 'INDIVIDUAL', suspendido_desde = NOW(), motivo_suspension = 'Suspension de la prueba de estres' WHERE id = ${comercioId};`
+  : `UPDATE comercio SET estado = '${estado}', suspension_origen = NULL, suspendido_desde = NULL, motivo_suspension = NULL WHERE id = ${comercioId};`);
 
 function nuevoRegistro() {
   const problemas = [];

@@ -74,7 +74,7 @@ class EscriturasEmpleadoIntegrationTest {
     private ComercioService comercioService;
 
     @Autowired
-    private AdministradorService administradorService;
+    private SuspensionComercioService suspensionComercioService;
 
     @Autowired
     private CierreComercioService cierreComercioService;
@@ -405,11 +405,13 @@ class EscriturasEmpleadoIntegrationTest {
     }
 
     @Test
-    void elDuenoSigueEditandoConElComercioSuspendidoYAceptandoConCierreTemporal() {
+    void elDuenoNoEditaConElComercioSuspendidoPeroSiAceptaConCierreTemporal() {
         Escenario e = escenario("APTO_VENTA");
+        String descripcionAntes = descripcionDelComercio(e);
         datos.cambiarEstadoComercio(e.dueno().comercioId(), "SUSPENDIDO");
-        comercioService.editarDatosOperativos(e.comoDueno(EstadoComercio.SUSPENDIDO), NUEVOS_DATOS);
-        assertEquals(NUEVOS_DATOS.getDescripcion(), descripcionDelComercio(e));
+        assertThrows(ConflictoComercioException.class,
+                () -> comercioService.editarDatosOperativos(e.comoDueno(EstadoComercio.SUSPENDIDO), NUEVOS_DATOS));
+        assertEquals(descripcionAntes, descripcionDelComercio(e));
 
         datos.cambiarEstadoComercio(e.dueno().comercioId(), "CERRADO_TEMPORALMENTE");
         int pendiente = pedido(e, "PENDIENTE_CONFIRMACION_COMERCIO");
@@ -684,7 +686,7 @@ class EscriturasEmpleadoIntegrationTest {
             tareas.add(pool.submit(() -> {
                 largada.await(10, TimeUnit.SECONDS);
                 try {
-                    administradorService.suspenderComercio(e.dueno().comercioId(), administrador.id(),
+                    suspensionComercioService.suspender(e.dueno().comercioId(), administrador.id(),
                             new com.bajonea.backend.dto.request.SuspensionComercioRequestDTO("Suspension de la prueba"));
                     return null;
                 } catch (Throwable ex) {

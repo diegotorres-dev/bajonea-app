@@ -162,13 +162,20 @@ class PedidoServiceRelojTest {
     }
 
     @Test
-    void laSuspensionMarcaElPlazoDeRetiroConElRelojDeLaAplicacion() {
-        Pedido listo = pedido(15, EstadoPedido.LISTO_PARA_RETIRAR, AHORA.minusHours(1));
-        when(pedidoRepository.findIdsByComercioIdAndEstadoIn(eq(40), eq(List.of(EstadoPedido.LISTO_PARA_RETIRAR))))
-                .thenReturn(List.of(15));
+    void elTopeDePreparacionPorSuspensionSeComparaContraElRelojDeLaAplicacion() {
+        Pedido vencido = pedido(15, EstadoPedido.EN_PREPARACION, AHORA.minusHours(5));
+        ComercioRepository.EstadoYCierreComercio lectura = mock(ComercioRepository.EstadoYCierreComercio.class);
+        when(lectura.getEstado()).thenReturn(EstadoComercio.SUSPENDIDO.name());
+        when(lectura.getSuspendidoDesde()).thenReturn(AHORA.minusMinutes(91));
+        when(comercioRepository.leerEstadoConBloqueoCompartido(any())).thenReturn(Optional.of(lectura));
+        when(pedidoRepository.findIdsDeComerciosSuspendidosDesde(eq(EstadoPedido.EN_PREPARACION), any())).thenReturn(List.of(15));
 
-        pedidoService.cancelarPedidosPorSuspensionComercio(40);
+        pedidoService.cancelarPreparacionPorSuspension();
 
-        assertEquals(AHORA.plusMinutes(90), listo.getSuspensionRetiroExpira());
+        ArgumentCaptor<LocalDateTime> corte = ArgumentCaptor.forClass(LocalDateTime.class);
+        verify(pedidoRepository).findIdsDeComerciosSuspendidosDesde(eq(EstadoPedido.EN_PREPARACION), corte.capture());
+        assertEquals(AHORA.minusMinutes(90), corte.getValue());
+        assertEquals(EstadoPedido.CANCELADO_POR_SISTEMA, vencido.getEstado());
+        assertEquals(AHORA, ultimoHistorialGuardado().getFechaHora());
     }
 }

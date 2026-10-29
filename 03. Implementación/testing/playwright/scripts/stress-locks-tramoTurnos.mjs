@@ -333,7 +333,7 @@ async function escenario2(admin) {
       ...Array.from({ length: 2 }, () => cerrar(d, d.comercioId).then((r) => ({ tipo: 'cerrar', r }))),
       ...Array.from({ length: 2 }, () => abrir(empleado, d.comercioId).then((r) => ({ tipo: 'abrir', r }))),
       ...Array.from({ length: 3 }, () => loginIncorrecto(d).then((r) => ({ tipo: 'login', r }))),
-      esperar(aleatorio(30)).then(() => call('PUT', `/administrador/comercios/${d.comercioId}/suspender`, admin, { motivo: 'Suspension de estres' })).then((r) => ({ tipo: 'suspender', r })),
+      esperar(aleatorio(30)).then(() => call('PUT', `/administrador/comercios/${d.comercioId}/suspender`, admin, { motivo: 'Suspension de la prueba de estres' })).then((r) => ({ tipo: 'suspender', r })),
     ];
     const resultados = await Promise.all(tareas);
     for (const { tipo, r } of resultados) {
@@ -343,7 +343,8 @@ async function escenario2(admin) {
       else if (tipo === 'suspender') registrar(`ronda ${ronda} suspender`, r, [200, 409]);
       else registrar(`ronda ${ronda} ${tipo}`, r, [200, 401, 404, 409]);
     }
-    verificarEstampados(problemas, `ronda ${ronda}`, d, pedidos);
+    const llegaronPagados = pedidos.filter((id) => sql(`SELECT estado FROM pedido WHERE id = ${id};`) !== 'CANCELADO_POR_SISTEMA');
+    verificarEstampados(problemas, `ronda ${ronda}`, d, llegaronPagados);
   }
   console.log('Resumen (2):', resumir(resumen));
   return problemas;

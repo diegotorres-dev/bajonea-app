@@ -337,7 +337,7 @@ agregar(
       mensajeEs('El comercio está suspendido: por ahora no se puede modificar.'),
     ]),
   ),
-  item('Suspendido: el Dueño si puede editar (hueco conocido, se resuelve en el rediseño de la suspension)', req('PUT', DATOS, { token: TOKEN_DUENO, comercio: CLON, rawBody: datosOk('Dueño con comercio suspendido', '+5492964333444') }), [status(200)]),
+  item('Suspendido: el Dueño tampoco puede editar (409 COMERCIO_SUSPENDIDO)', req('PUT', DATOS, { token: TOKEN_DUENO, comercio: CLON, rawBody: datosOk('Dueño con comercio suspendido', '+5492964333444') }), [status(409), codigoEs('COMERCIO_SUSPENDIDO')]),
   ...['cerrar', 'abrir'].flatMap((accion) => [
     item(`Suspendido: la Empleada no puede ${accion} el comercio (409 COMERCIO_NO_OPERATIVO)`, req('PUT', `/comercios/${accion}`, { token: TOKEN_EMPLEADO, comercio: CLON, body: {} }), [
       status(409),

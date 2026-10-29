@@ -386,9 +386,11 @@ class PedidoAutoconfirmadoEquipoIntegrationTest {
     void elRetiroCerradoPorLaSuspensionDelComercioNoEmiteElAvisoDelEquipo() throws Exception {
         Equipo e = equipo();
         jdbcTemplate.update("INSERT INTO pedido (cliente_id, comercio_id, modalidad_entrega, estado, pago_estado, subtotal, "
-                + "cargo_servicio_cliente, cargo_servicio_comercio, total, fecha_creacion, suspension_retiro_expira) "
-                + "VALUES (?, ?, 'RETIRO', 'LISTO_PARA_RETIRAR', 'PAGADO', 10000, 200, 100, 10200, ?, ?)",
-                e.compradorId(), e.comercioId(), LocalDateTime.now(clock).minusHours(6), LocalDateTime.now(clock).minusMinutes(5));
+                + "cargo_servicio_cliente, cargo_servicio_comercio, total, fecha_creacion) "
+                + "VALUES (?, ?, 'RETIRO', 'LISTO_PARA_RETIRAR', 'PAGADO', 10000, 200, 100, 10200, ?)",
+                e.compradorId(), e.comercioId(), LocalDateTime.now(clock).minusHours(6));
+        jdbcTemplate.update("UPDATE comercio SET estado = 'SUSPENDIDO', suspension_origen = 'INDIVIDUAL', suspendido_desde = ?, "
+                + "motivo_suspension = 'Suspension de prueba' WHERE id = ?", LocalDateTime.now(clock).minusMinutes(300), e.comercioId());
         int pedidoId = jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Integer.class);
         historial(pedidoId, "LISTO_PARA_RETIRAR", "DUENO", e.dueno().id(), 200);
 

@@ -349,7 +349,7 @@ async function escenario2(admin) {
     for (let i = 0; i < 4; i++) ids.push(await pedidoListo(cliente, d, 90));
     const suspension = await call('PUT', `/administrador/comercios/${d.comercioId}/suspender`, admin, { motivo: 'Suspension de estres A4b' });
     registrar(`ronda ${ronda} suspender`, suspension, [200]);
-    sql(`UPDATE pedido SET suspension_retiro_expira = NOW() - INTERVAL 1 MINUTE WHERE comercio_id = ${d.comercioId} AND estado = 'LISTO_PARA_RETIRAR';`);
+    registrar(`ronda ${ronda} envejecer suspension`, await call('PUT', `/test/comercios/${d.comercioId}/envejecer-suspension?minutos=100`), [200]);
     const ahora = horaDelProceso();
 
     const tareas = [
@@ -409,11 +409,9 @@ async function escenario3(admin) {
     }
     for (const id of listos) {
       const estado = verificarTransicionUnica(problemas, ronda, id, ['NO_RETIRADO', 'LISTO_PARA_RETIRAR']);
-      const timer = sql(`SELECT suspension_retiro_expira IS NOT NULL FROM pedido WHERE id = ${id};`);
-      if (estado === 'LISTO_PARA_RETIRAR' && timer !== '1') problemas.push(`ronda ${ronda}: el pedido ${id} quedo listo sin cerrar y sin el plazo de la suspension`);
     }
     const estadoPreparacion = sql(`SELECT estado FROM pedido WHERE id = ${enPreparacion};`);
-    if (estadoPreparacion !== 'CANCELADO_POR_SISTEMA') problemas.push(`ronda ${ronda}: el pedido en preparacion quedo ${estadoPreparacion} y la suspension tenia que cancelarlo`);
+    if (estadoPreparacion !== 'EN_PREPARACION') problemas.push(`ronda ${ronda}: el pedido en preparacion quedo ${estadoPreparacion} y suspender no tiene que tocarlo`);
     if (contarAvisos(enPreparacion, 'PEDIDO_NO_RETIRADO') !== 0) problemas.push(`ronda ${ronda}: el pedido en preparacion recibio un aviso de no retirado`);
     if (todos.length === 0) problemas.push('sin pedidos');
   }

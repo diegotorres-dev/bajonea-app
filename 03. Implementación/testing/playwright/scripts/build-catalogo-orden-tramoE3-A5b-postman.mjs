@@ -268,7 +268,7 @@ agregar(
   item('Administrador suspende el comercio', req('PUT', `/administrador/comercios/${COM}/suspender`, { token: 'token_admin', body: { motivo: 'Suspension de la coleccion A5b' } }), [status(200)]),
   item('Comercio suspendido: la firma de subida de la Empleada da 409 COMERCIO_SUSPENDIDO', req('POST', `/productos/${PROD}/cloudinary/firma`, { token: TOKEN_EMPLEADO, comercio: COM, body: {} }), SUSPENDIDO),
   item('Comercio suspendido: la firma de recorte de la Empleada da 409 COMERCIO_SUSPENDIDO', req('POST', `/productos/${PROD}/imagenes/${IMG1}/recorte/firma`, { token: TOKEN_EMPLEADO, comercio: COM, body: {} }), SUSPENDIDO),
-  item('Comercio suspendido: la firma de subida del Dueño sigue dando 200', req('POST', `/productos/${PROD}/cloudinary/firma`, { token: TOKEN_DUENO, comercio: COM, body: {} }), [status(200)]),
+  item('Comercio suspendido: la firma de subida del Dueño tambien da 409 COMERCIO_SUSPENDIDO', req('POST', `/productos/${PROD}/cloudinary/firma`, { token: TOKEN_DUENO, comercio: COM, body: {} }), SUSPENDIDO),
 );
 
 const carpeta = { name: NOMBRE_CARPETA, item: items };

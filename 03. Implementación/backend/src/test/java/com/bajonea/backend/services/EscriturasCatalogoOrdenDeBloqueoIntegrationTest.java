@@ -348,7 +348,7 @@ class EscriturasCatalogoOrdenDeBloqueoIntegrationTest {
     }
 
     @Test
-    void conElComercioSuspendidoLasFirmasDelEmpleadoDan409YLasDelDuenoSiguenFuncionando() {
+    void conElComercioSuspendidoLasFirmasDelEmpleadoYDelDuenoDan409() {
         Escenario e = escenario();
         int productoId = producto(e);
         int imagenId = imagen(productoId, 0, true);
@@ -359,8 +359,8 @@ class EscriturasCatalogoOrdenDeBloqueoIntegrationTest {
         assertEquals(ConflictoComercioException.SUSPENDIDO, firma.getCodigo());
         assertThrows(ConflictoComercioException.class, () -> productoService.generarFirmaRecorteImagen(e.comoEmpleado(), productoId, imagenId));
 
-        assertNotNull(productoService.generarFirmaImagen(e.comoDueno(), productoId));
-        assertNotNull(productoService.generarFirmaRecorteImagen(e.comoDueno(), productoId, imagenId));
+        assertThrows(ConflictoComercioException.class, () -> productoService.generarFirmaImagen(e.comoDueno(), productoId));
+        assertThrows(ConflictoComercioException.class, () -> productoService.generarFirmaRecorteImagen(e.comoDueno(), productoId, imagenId));
     }
 
     private static void esperar(CountDownLatch latch) {

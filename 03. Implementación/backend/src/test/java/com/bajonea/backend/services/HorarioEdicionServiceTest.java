@@ -177,13 +177,15 @@ class HorarioEdicionServiceTest {
     }
 
     @Test
-    void elDuenoConElComercioSuspendidoPuedeEditar() {
+    void elDuenoConElComercioSuspendidoNoPuedeEditar() {
         comercio.setEstado(EstadoComercio.SUSPENDIDO);
         fila(DiaSemana.LUNES, "09:00", "18:00", LocalDate.of(2000, 1, 1), null);
 
-        service.editarHorarios(dueno(), List.of(franja(DiaSemana.MARTES, "10:00", "12:00")));
+        ConflictoComercioException error = assertThrows(ConflictoComercioException.class,
+                () -> service.editarHorarios(dueno(), List.of(franja(DiaSemana.MARTES, "10:00", "12:00"))));
 
-        verify(horarioRepository).save(any(Horario.class));
+        assertEquals(ConflictoComercioException.SUSPENDIDO, error.getCodigo());
+        verify(horarioRepository, never()).save(any(Horario.class));
     }
 
     @Test

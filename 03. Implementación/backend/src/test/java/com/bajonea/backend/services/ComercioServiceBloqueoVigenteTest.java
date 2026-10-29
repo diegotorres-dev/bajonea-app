@@ -37,7 +37,7 @@ class ComercioServiceBloqueoVigenteTest {
                 mock(HistorialEstadoComercioRepository.class), mock(CloudinaryService.class),
                 new DisponibilidadComercioService(mock(HorarioRepository.class), mock(HistorialCierreComercioRepository.class),
                         Clock.systemDefaultZone()),
-                usuarioRepository, mock(HistorialEdicionComercioService.class), mock(NombreComercioService.class));
+                usuarioRepository, mock(HistorialEdicionComercioService.class), mock(NombreComercioService.class), mock(ComercioActivoService.class));
     }
 
     @ParameterizedTest

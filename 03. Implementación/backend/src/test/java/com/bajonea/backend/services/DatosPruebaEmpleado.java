@@ -83,7 +83,13 @@ class DatosPruebaEmpleado {
     }
 
     void cambiarEstadoComercio(int comercioId, String estado) {
-        jdbcTemplate.update("UPDATE comercio SET estado = ? WHERE id = ?", estado, comercioId);
+        if ("SUSPENDIDO".equals(estado)) {
+            jdbcTemplate.update("UPDATE comercio SET estado = ?, suspension_origen = 'INDIVIDUAL', suspendido_desde = ?, "
+                    + "motivo_suspension = 'Suspension de prueba' WHERE id = ?", estado, LocalDateTime.now(), comercioId);
+            return;
+        }
+        jdbcTemplate.update("UPDATE comercio SET estado = ?, suspension_origen = NULL, suspendido_desde = NULL, "
+                + "motivo_suspension = NULL WHERE id = ?", estado, comercioId);
     }
 
     void hacerAdministrador(int usuarioId) {

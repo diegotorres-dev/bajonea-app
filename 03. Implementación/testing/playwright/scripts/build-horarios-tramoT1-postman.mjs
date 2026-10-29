@@ -243,7 +243,7 @@ agregar(
   editar('[seguridad] Un Empleado sin relacion y con la lista vacia recibe el 404 y no el 400', TOKEN_AJENO, [], NO_DISPONIBLE),
   item('El Administrador suspende el comercio', req('PUT', `/administrador/comercios/${COM}/suspender`, { token: 'token_admin', body: { motivo: 'Suspension de la coleccion de horarios' } }), [status(200)]),
   editar('[suspendido] La Empleada recibe 409 COMERCIO_SUSPENDIDO', TOKEN_EMPLEADO, [franja('MARTES', '10:00:00', '20:00:00')], [status(409), codigoEs('COMERCIO_SUSPENDIDO')]),
-  editar('[suspendido] El Dueño si puede editar', TOKEN_DUENO, [franja('MARTES', '10:00:00', '20:00:00')], [status(200), dataCumple('Queda una pendiente', 'pm.expect(d.pendientes.length).to.eql(1);')]),
+  editar('[suspendido] El Dueño tambien recibe 409 COMERCIO_SUSPENDIDO', TOKEN_DUENO, [franja('MARTES', '10:00:00', '20:00:00')], [status(409), codigoEs('COMERCIO_SUSPENDIDO')]),
 );
 
 const carpeta = { name: NOMBRE_CARPETA, item: items };

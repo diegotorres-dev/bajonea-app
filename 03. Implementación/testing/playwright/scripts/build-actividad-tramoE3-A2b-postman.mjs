@@ -325,10 +325,10 @@ agregar(
   pagar('suspendido'),
   item('Suspension: el Dueño acepta el pedido del segundo comercio', req('PUT', `/pedidos/comercio/${P('suspendido')}/aceptar`, { token: TOKEN_DUENO, comercio: CLON, body: {} }), [status(200)]),
   item('Suspension: el Administrador suspende el segundo comercio', req('PUT', `/administrador/comercios/${CLON}/suspender`, { token: 'token_admin', body: { motivo: 'Prueba de la actividad A2b' } }), [status(200)]),
-  actividadDelPedido('Suspension: el segundo comercio ve la cancelacion como accion del sistema', 'suspendido', [
-    textos('Canceló un pedido por la suspensión del comercio', 'Aceptó un pedido', 'Pedido recibido'),
-    roles('SISTEMA', 'DUENO', 'SISTEMA'),
-    sistemaSinNombre(0),
+  actividadDelPedido('Suspension: suspender no cancela el pedido, la actividad solo muestra lo que ya paso', 'suspendido', [
+    textos('Aceptó un pedido', 'Pedido recibido'),
+    roles('DUENO', 'SISTEMA'),
+    sistemaSinNombre(1),
   ], { comercio: CLON }),
   actividadDelPedido('Suspension: el primer comercio no ve nada de ese pedido', 'suspendido', [sinFilas]),
 );

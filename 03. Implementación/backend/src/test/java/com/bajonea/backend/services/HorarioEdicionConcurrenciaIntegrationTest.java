@@ -229,7 +229,8 @@ class HorarioEdicionConcurrenciaIntegrationTest {
             try {
                 Future<?> suspension = hilos.submit(() -> new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
                     jdbcTemplate.queryForObject("SELECT id FROM comercio WHERE id = ? FOR UPDATE", Integer.class, comercioId);
-                    jdbcTemplate.update("UPDATE comercio SET estado = 'SUSPENDIDO' WHERE id = ?", comercioId);
+                    jdbcTemplate.update("UPDATE comercio SET estado = 'SUSPENDIDO', suspension_origen = 'INDIVIDUAL', suspendido_desde = NOW(), "
+                            + "motivo_suspension = 'Suspension de prueba' WHERE id = ?", comercioId);
                     bloqueado.countDown();
                     try {
                         Thread.sleep(1500);

@@ -291,7 +291,7 @@ async function escenario2(admin) {
       { horarios: [{ diaSemana: DIA_DE_HOY(), horaApertura: '13:00', horaCierre: '16:00' }] }, cabecera(d.comercioId)).then((r) => ({ tipo: 'horarios', r })));
     if (conPagos) {
       for (const pedidoId of pedidos.slice(2)) tareas.push(pagar(pedidoId, hoyA('14:00')).then((r) => ({ tipo: 'pago', r })));
-      tareas.push(call('PUT', `/administrador/comercios/${d.comercioId}/suspender`, admin, { motivo: 'Estres T4' }).then((r) => ({ tipo: 'suspension', r })));
+      tareas.push(call('PUT', `/administrador/comercios/${d.comercioId}/suspender`, admin, { motivo: 'Suspension de la prueba de estres T4' }).then((r) => ({ tipo: 'suspension', r })));
       for (let i = 0; i < 3; i++) {
         tareas.push(call('POST', '/auth/login', null, { nombreUsuario: d.nombreUsuario, password: 'ClaveIncorrecta1' }).then((r) => ({ tipo: 'login-fallido', r })));
       }
@@ -299,7 +299,7 @@ async function escenario2(admin) {
     const resultados = await Promise.all(tareas);
     for (const { tipo, r } of resultados) {
       contar(resumen, `${tipo}:${r.status}`);
-      const permitidos = tipo === 'corrida' ? [200] : tipo === 'horarios' ? [200, 404] : tipo === 'pago' ? [200, 409] : tipo === 'suspension' ? [200, 409] : [200, 401, 409];
+      const permitidos = tipo === 'corrida' ? [200] : tipo === 'horarios' ? [200, 404, 409] : tipo === 'pago' ? [200, 409] : tipo === 'suspension' ? [200, 409] : [200, 401, 409];
       registrar(`ronda ${ronda} ${tipo}`, r, permitidos);
     }
     await correr(ahora);

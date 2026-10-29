@@ -171,29 +171,19 @@ class PedidoServiceReembolsoTest {
     }
 
     @Test
-    void suspensionDeComercioReembolsaLosPedidosPagadosQueCancelaElSistema() {
+    void elTopeDePreparacionDeLaSuspensionReembolsaElPedidoQueCancelaElSistema() {
         Pedido enPreparacion = pedido(30, EstadoPedido.EN_PREPARACION, EstadoPagoPedido.PAGADO);
-        when(pedidoRepository.findIdsByComercioIdAndEstadoIn(eq(40), eq(List.of(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, EstadoPedido.EN_PREPARACION))))
-                .thenReturn(List.of(30));
+        when(pedidoRepository.findIdsDeComerciosSuspendidosDesde(eq(EstadoPedido.EN_PREPARACION), any())).thenReturn(List.of(30));
         when(pedidoRepository.findById(30)).thenReturn(Optional.of(enPreparacion));
+        ComercioRepository.EstadoYCierreComercio lectura = mock(ComercioRepository.EstadoYCierreComercio.class);
+        when(lectura.getEstado()).thenReturn(EstadoComercio.SUSPENDIDO.name());
+        when(lectura.getSuspendidoDesde()).thenReturn(LocalDateTime.now().minusMinutes(95));
+        when(comercioRepository.leerEstadoConBloqueoCompartido(any())).thenReturn(Optional.of(lectura));
 
-        pedidoService.cancelarPedidosPorSuspensionComercio(40);
+        pedidoService.cancelarPreparacionPorSuspension(LocalDateTime.now());
 
         assertEquals(EstadoPedido.CANCELADO_POR_SISTEMA, enPreparacion.getEstado());
         verify(reembolsoService).generarNotaYReembolsarTotal(enPreparacion, MotivoNotaCredito.SUSPENSION_COMERCIO);
-    }
-
-    @Test
-    void canceladoPorSistemaSinPagoConfirmadoNuncaLlamaAlReembolso() {
-        Pedido sinPagar = pedido(31, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, EstadoPagoPedido.PENDIENTE);
-        when(pedidoRepository.findIdsByComercioIdAndEstadoIn(eq(40), eq(List.of(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, EstadoPedido.EN_PREPARACION))))
-                .thenReturn(List.of(31));
-        when(pedidoRepository.findById(31)).thenReturn(Optional.of(sinPagar));
-
-        pedidoService.cancelarPedidosPorSuspensionComercio(40);
-
-        assertEquals(EstadoPedido.CANCELADO_POR_SISTEMA, sinPagar.getEstado());
-        verifyNoInteractions(reembolsoService);
     }
 
     @Test

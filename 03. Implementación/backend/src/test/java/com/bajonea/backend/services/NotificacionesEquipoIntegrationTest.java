@@ -59,7 +59,7 @@ class NotificacionesEquipoIntegrationTest {
     private PedidoService pedidoService;
 
     @Autowired
-    private AdministradorService administradorService;
+    private SuspensionComercioService suspensionComercioService;
 
     @Autowired
     private TestSupportService testSupportService;
@@ -313,28 +313,35 @@ class NotificacionesEquipoIntegrationTest {
     }
 
     @Test
-    void losAvisosDeAdministracionLlegansoloAlDuenoYNoAlosEmpleados() throws Exception {
+    void laSuspensionDelComercioLlegaAlDuenoConMotivoYALosEmpleadosSinMotivo() throws Exception {
         Equipo e = equipo();
         Cuenta administrador = datos.registrarClienteConCredenciales();
         datos.hacerAdministrador(administrador.id());
 
-        administradorService.suspenderComercio(e.comercioId(), administrador.id(), new SuspensionComercioRequestDTO("Prueba de suspensión A4"));
+        suspensionComercioService.suspender(e.comercioId(), administrador.id(),
+                new SuspensionComercioRequestDTO("Prueba de suspension A4 con el motivo"));
 
         assertEquals(1, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND tipo = 'COMERCIO_SUSPENDIDO' "
                 + "AND comercio_id = ? AND entidad_tipo = 'COMERCIO' AND entidad_id = ?", Integer.class, e.dueno().id(), e.comercioId(), e.comercioId()));
         for (int empleado : new int[] {e.a().id(), e.b().id()}) {
-            assertEquals(0, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND comercio_id IS NOT NULL",
-                    Integer.class, empleado));
+            assertEquals(0, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND tipo = 'COMERCIO_SUSPENDIDO'",
+                    Integer.class, empleado), "el Empleado no recibe el aviso del Dueño");
+            assertEquals(1, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? "
+                    + "AND tipo = 'COMERCIO_SUSPENDIDO_EQUIPO' AND comercio_id = ? AND canal = 'PUSH'", Integer.class, empleado, e.comercioId()));
+            assertEquals(0, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND canal = 'EMAIL'",
+                    Integer.class, empleado), "los Empleados no reciben email");
         }
-        assertEquals(List.of(), mensajes(e.tokenA(), e.comercioId()));
+        List<String> delEmpleado = mensajes(e.tokenA(), e.comercioId());
+        assertEquals(1, delEmpleado.size());
+        assertTrue(!delEmpleado.get(0).contains("Prueba de suspension A4"), "el Empleado nunca ve el motivo");
         assertEquals(1, ids(e.tokenDueno(), e.comercioId()).size());
-        assertTrue(mensajes(e.tokenDueno(), e.comercioId()).get(0).contains("fue suspendido"));
+        assertTrue(mensajes(e.tokenDueno(), e.comercioId()).get(0).contains("Prueba de suspension A4 con el motivo"));
     }
 
     @Test
     void unDuenoDeVariosComerciosVeSoloLosAvisosDelComercioAbiertoYElEmpleadoDeAmbosTambien() throws Exception {
         Equipo e = equipo();
-        int segundoComercio = testSupportService.clonarComercio(e.comercioId(), "Segundo comercio A4", com.bajonea.backend.enums.EstadoComercio.APTO_VENTA);
+        int segundoComercio = testSupportService.clonarComercio(e.comercioId(), "Segundo comercio A4 " + DatosPruebaEmpleado.sufijo(), com.bajonea.backend.enums.EstadoComercio.APTO_VENTA);
         datos.vincularEmpleado(e.a().id(), segundoComercio, "ACTIVO", LocalDateTime.now().minusDays(1));
 
         int enPrimero = pedidoPagado(e.compradorId(), e.comercioId());

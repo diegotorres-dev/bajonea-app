@@ -81,6 +81,7 @@ class PedidoNoRetiradoServiceTest {
     private NotaCreditoService notaCreditoService;
     private EntityManager entityManager;
     private ComercioActivoService comercioActivoService;
+    private ComercioRepository comercioRepository;
     private PedidoTimeoutProperties timeouts;
     private PedidoService pedidoService;
     private Comercio comercio;
@@ -96,6 +97,7 @@ class PedidoNoRetiradoServiceTest {
         notaCreditoService = mock(NotaCreditoService.class);
         entityManager = mock(EntityManager.class);
         comercioActivoService = mock(ComercioActivoService.class);
+        comercioRepository = mock(ComercioRepository.class);
         timeouts = new PedidoTimeoutProperties();
         timeouts.setPagoMinutos(30);
         timeouts.setRespuestaComercioMinutos(30);
@@ -104,7 +106,7 @@ class PedidoNoRetiradoServiceTest {
         timeouts.setRetiroSuspensionMinutos(90);
 
         pedidoService = new PedidoService(pedidoRepository, mock(DetallePedidoRepository.class), mock(CarritoRepository.class),
-                mock(ItemCarritoRepository.class), mock(ClienteRepository.class), mock(ComercioRepository.class),
+                mock(ItemCarritoRepository.class), mock(ClienteRepository.class), comercioRepository,
                 mock(DireccionRepository.class), historialRepository, usuarioRepository, notificacionService,
                 mock(CarritoService.class), mock(ComercioService.class), mock(ConfiguracionTarifaService.class), timeouts,
                 reembolsoService, notaCreditoService, mock(PlatformTransactionManager.class), comercioActivoService,
@@ -376,12 +378,19 @@ class PedidoNoRetiradoServiceTest {
         verificarQueNoSeEscribioNada(pedido, EstadoPedido.NO_RETIRADO);
     }
 
+    private void comercioSuspendidoDesde(LocalDateTime desde) {
+        ComercioRepository.EstadoYCierreComercio lectura = mock(ComercioRepository.EstadoYCierreComercio.class);
+        when(lectura.getEstado()).thenReturn(desde == null ? EstadoComercio.APTO_VENTA.name() : EstadoComercio.SUSPENDIDO.name());
+        when(lectura.getSuspendidoDesde()).thenReturn(desde);
+        when(comercioRepository.leerEstadoConBloqueoCompartido(any())).thenReturn(Optional.of(lectura));
+        when(pedidoRepository.findIdsDeComerciosSuspendidosDesde(eq(EstadoPedido.LISTO_PARA_RETIRAR), any()))
+                .thenReturn(List.of(25));
+    }
+
     @Test
     void elProcesoAutomaticoDelComercioSuspendidoCierraComoNoRetiradoSinEsperaSinReembolsoYAvisaAlCliente() {
-        Pedido pedido = listoParaRetirar(25, 1);
-        pedido.setSuspensionRetiroExpira(AHORA.minusMinutes(5));
-        when(pedidoRepository.findIdsByEstadoAndSuspensionRetiroExpiraLessThan(eq(EstadoPedido.LISTO_PARA_RETIRAR), any()))
-                .thenReturn(List.of(25));
+        Pedido pedido = listoParaRetirar(25, 100);
+        comercioSuspendidoDesde(AHORA.minusMinutes(150));
 
         pedidoService.autoconfirmarRetirosPorSuspension(AHORA);
 
@@ -400,11 +409,49 @@ class PedidoNoRetiradoServiceTest {
     }
 
     @Test
+    void elTopeDelRetiroCuentaDesdeQueQuedoListoSiFuePosteriorALaSuspension() {
+        Pedido pedido = listoParaRetirar(25, 60);
+        comercioSuspendidoDesde(AHORA.minusMinutes(200));
+
+        pedidoService.autoconfirmarRetirosPorSuspension(AHORA);
+
+        verificarQueNoSeEscribioNada(pedido, EstadoPedido.LISTO_PARA_RETIRAR);
+    }
+
+    @Test
+    void elTopeDelRetiroCuentaDesdeLaSuspensionSiElPedidoYaEstabaListo() {
+        Pedido pedido = listoParaRetirar(25, 300);
+        comercioSuspendidoDesde(AHORA.minusMinutes(91));
+
+        pedidoService.autoconfirmarRetirosPorSuspension(AHORA);
+
+        assertEquals(EstadoPedido.NO_RETIRADO, pedido.getEstado());
+    }
+
+    @Test
+    void elTopeDelRetiroNoCierraNadaAUnMinutoDeCumplirse() {
+        Pedido pedido = listoParaRetirar(25, 300);
+        comercioSuspendidoDesde(AHORA.minusMinutes(89));
+
+        pedidoService.autoconfirmarRetirosPorSuspension(AHORA);
+
+        verificarQueNoSeEscribioNada(pedido, EstadoPedido.LISTO_PARA_RETIRAR);
+    }
+
+    @Test
+    void siSeLevantoLaSuspensionElProcesoAutomaticoNoTocaElRetiro() {
+        Pedido pedido = listoParaRetirar(25, 300);
+        comercioSuspendidoDesde(null);
+
+        pedidoService.autoconfirmarRetirosPorSuspension(AHORA);
+
+        verificarQueNoSeEscribioNada(pedido, EstadoPedido.LISTO_PARA_RETIRAR);
+    }
+
+    @Test
     void elProcesoAutomaticoNoTocaUnRetiroQueElComercioYaCerroComoNoRetirado() {
-        Pedido pedido = listoParaRetirar(26, 90);
-        pedido.setSuspensionRetiroExpira(AHORA.minusMinutes(5));
-        when(pedidoRepository.findIdsByEstadoAndSuspensionRetiroExpiraLessThan(eq(EstadoPedido.LISTO_PARA_RETIRAR), any()))
-                .thenReturn(List.of(26));
+        Pedido pedido = listoParaRetirar(25, 300);
+        comercioSuspendidoDesde(AHORA.minusMinutes(150));
         doAnswer(invocacion -> {
             pedido.setEstado(EstadoPedido.NO_RETIRADO);
             return null;

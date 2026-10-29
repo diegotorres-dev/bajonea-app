@@ -32,6 +32,7 @@ import com.bajonea.backend.repositories.PedidoRepository;
 import com.bajonea.backend.repositories.UsuarioRepository;
 import jakarta.persistence.EntityManager;
 import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -101,6 +102,11 @@ class PedidoServiceConfirmarPedidoLockTest {
             @Override
             public boolean getCerradoManualmente() {
                 return cerradoManualmente;
+            }
+
+            @Override
+            public LocalDateTime getSuspendidoDesde() {
+                return null;
             }
         });
     }

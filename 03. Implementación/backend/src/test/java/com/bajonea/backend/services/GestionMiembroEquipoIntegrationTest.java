@@ -328,7 +328,7 @@ class GestionMiembroEquipoIntegrationTest {
     }
 
     @Test
-    void reactivarExigeElComercioOperativoPeroDesactivarFuncionaEnCualquierEstado() throws Exception {
+    void reactivarExigeElComercioOperativoYDesactivarTambienEstaBloqueadoConElComercioSuspendido() throws Exception {
         Escena e = escena();
         desactivar(e.token(), e.dueno().comercioId(), e.empleado().id()).andExpect(status().isOk());
         datos.cambiarEstadoComercio(e.dueno().comercioId(), "SUSPENDIDO");
@@ -340,8 +340,15 @@ class GestionMiembroEquipoIntegrationTest {
 
         Escena otra = escena();
         datos.cambiarEstadoComercio(otra.dueno().comercioId(), "SUSPENDIDO");
-        desactivar(otra.token(), otra.dueno().comercioId(), otra.empleado().id()).andExpect(status().isOk());
-        assertEquals("INACTIVO", estadoRelacion(otra.relacionId()));
+        desactivar(otra.token(), otra.dueno().comercioId(), otra.empleado().id())
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.data.codigo").value("COMERCIO_SUSPENDIDO"));
+        assertEquals("ACTIVO", estadoRelacion(otra.relacionId()));
+
+        Escena cerrada = escena();
+        datos.cambiarEstadoComercio(cerrada.dueno().comercioId(), "CERRADO_TEMPORALMENTE");
+        desactivar(cerrada.token(), cerrada.dueno().comercioId(), cerrada.empleado().id()).andExpect(status().isOk());
+        assertEquals("INACTIVO", estadoRelacion(cerrada.relacionId()));
     }
 
     @Test

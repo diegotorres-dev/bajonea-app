@@ -45,6 +45,9 @@ class PedidoNoRetiradoConcurrenciaIntegrationTest {
     private PedidoService pedidoService;
 
     @Autowired
+    private SuspensionComercioService suspensionComercioService;
+
+    @Autowired
     private RegistroService registroService;
 
     @Autowired
@@ -60,6 +63,12 @@ class PedidoNoRetiradoConcurrenciaIntegrationTest {
     private MercadoPagoReembolsoClient reembolsoClient;
 
     private DatosPruebaEmpleado datos;
+    private int administradorId;
+
+    private void datosDeLaSuspension(int comercioId, int minutos) {
+        jdbcTemplate.update("UPDATE comercio SET estado = 'SUSPENDIDO', suspension_origen = 'INDIVIDUAL', suspendido_desde = ?, "
+                + "motivo_suspension = 'Suspension de prueba' WHERE id = ?", LocalDateTime.now().minusMinutes(minutos), comercioId);
+    }
 
     private record Escenario(Dueno dueno, int clienteId, List<Integer> empleados) {
 
@@ -76,6 +85,9 @@ class PedidoNoRetiradoConcurrenciaIntegrationTest {
     @BeforeEach
     void preparar() {
         datos = new DatosPruebaEmpleado(registroService, objectMapper, jdbcTemplate);
+        Cuenta administrador = datos.registrarClienteConCredenciales();
+        datos.hacerAdministrador(administrador.id());
+        administradorId = administrador.id();
     }
 
     private Escenario escenario(int cantidadEmpleados) {
@@ -239,7 +251,7 @@ class PedidoNoRetiradoConcurrenciaIntegrationTest {
         for (int ronda = 0; ronda < 8; ronda++) {
             Escenario e = escenario(1);
             int pedidoId = listoParaRetirar(e, 90);
-            jdbcTemplate.update("UPDATE pedido SET suspension_retiro_expira = ? WHERE id = ?", LocalDateTime.now().minusMinutes(5), pedidoId);
+            datosDeLaSuspension(e.dueno().comercioId(), 300);
 
             List<Object> resultados = correrAlMismoTiempo(List.of(
                     () -> {
@@ -271,7 +283,8 @@ class PedidoNoRetiradoConcurrenciaIntegrationTest {
             List<Object> resultados = correrAlMismoTiempo(List.of(
                     () -> pedidoService.cerrarComoNoRetirado(e.comercioDelEmpleado(0), pedidoId),
                     () -> {
-                        pedidoService.cancelarPedidosPorSuspensionComercio(e.dueno().comercioId());
+                        suspensionComercioService.suspender(e.dueno().comercioId(), administradorId,
+                                new com.bajonea.backend.dto.request.SuspensionComercioRequestDTO("Suspension de la prueba"));
                         return "suspension";
                     }));
 

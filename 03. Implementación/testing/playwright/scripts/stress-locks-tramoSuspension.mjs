@@ -115,7 +115,7 @@ async function comercioConProducto(admin) {
   const categoria = (await call('POST', '/categorias', admin, { nombre: `Cat Susp ${u}` })).json.data.id;
   const producto = await call('POST', '/productos', login.token, { nombre: `Prod Susp ${u}`, descripcion: 'x', precio: 10000, categoriaId: categoria }, { 'X-Comercio-Id': String(pendiente.id) });
   if (producto.status !== 201) throw new Error('producto ' + JSON.stringify(producto));
-  return { comercioId: pendiente.id, productoId: producto.json.data.id };
+  return { comercioId: pendiente.id, productoId: producto.json.data.id, duenoToken: login.token, duenoId: login.usuario.id };
 }
 
 const suspender = (admin, id) => call('PUT', `/administrador/clientes/${id}/suspender`, admin, { motivo: MOTIVO });
@@ -207,11 +207,176 @@ async function escenarioLevantarContraLogin(admin, ronda) {
   anotar('levantar-contra-login');
 }
 
+const suspenderComercio = (admin, id, motivo = MOTIVO) => call('PUT', `/administrador/comercios/${id}/suspender`, admin, { motivo });
+const levantarComercio = (admin, id) => call('PUT', `/administrador/comercios/${id}/levantar-suspension`, admin, {});
+const conComercio = (comercio) => ({ 'X-Comercio-Id': String(comercio.comercioId) });
+const estadoComercio = (id) => sql(`SELECT estado FROM comercio WHERE id = ${id};`);
+const estadoPedido = (id) => sql(`SELECT estado FROM pedido WHERE id = ${id};`);
+const notasDelPedido = (id) => Number(sql(`SELECT COUNT(*) FROM nota_credito nc JOIN pago pg ON pg.id = nc.pago_id WHERE pg.pedido_id = ${id};`));
+const historialSuspensionComercio = (id) => Number(sql(`SELECT COUNT(*) FROM historial_estado_comercio WHERE comercio_id = ${id} AND estado_destino = 'SUSPENDIDO';`));
+
+async function pedidoPagado(comercio, cliente, conAcepto = false) {
+  await call('DELETE', '/carrito', cliente.token);
+  const a = await call('POST', '/carrito/items', cliente.token, { productoId: comercio.productoId, cantidad: 1 });
+  if (a.status !== 201 && a.status !== 200) throw new Error('carrito ' + JSON.stringify(a));
+  const p = await call('POST', '/pedidos/cliente', cliente.token, { tipoEntrega: 'RETIRO' });
+  if (p.status !== 201) throw new Error('pedido ' + JSON.stringify(p));
+  const id = p.json.data.id;
+  const pago = await call('PUT', `/test/pedidos/${id}/pago-aprobado?registrarPago=true`, null, {});
+  if (pago.status !== 200) throw new Error('pago ' + JSON.stringify(pago));
+  if (conAcepto) {
+    const acepto = await call('PUT', `/pedidos/comercio/${id}/aceptar`, comercio.duenoToken, {}, conComercio(comercio));
+    if (acepto.status !== 200) throw new Error('aceptar ' + JSON.stringify(acepto));
+  }
+  return id;
+}
+
+async function escenarioComercioDobleSuspension(admin, ronda) {
+  const comercio = await comercioConProducto(admin);
+  const respuestas = await Promise.all(Array.from({ length: 4 }, () => suspenderComercio(admin, comercio.comercioId)));
+  respuestas.forEach((r, i) => registrar5xx(`comercio doble suspension #${i} (ronda ${ronda})`, r));
+  const ok = respuestas.filter((r) => r.status === 200).length;
+  exigir(ok === 1 && respuestas.filter((r) => r.status === 409).length === 3, `comercio doble suspension ronda ${ronda}: ${estadosDeRespuestas(respuestas)}`);
+  exigir(estadoComercio(comercio.comercioId) === 'SUSPENDIDO', `comercio doble suspension ronda ${ronda}: estado ${estadoComercio(comercio.comercioId)}`);
+  exigir(historialSuspensionComercio(comercio.comercioId) === 1, `comercio doble suspension ronda ${ronda}: ${historialSuspensionComercio(comercio.comercioId)} filas de historial`);
+  anotar(`comercio-doble-suspension: ${estadosDeRespuestas(respuestas)}`);
+}
+
+async function escenarioSuspenderContraAceptar(admin, ronda) {
+  const comercio = await comercioConProducto(admin);
+  const cliente = await nuevoCliente();
+  const pedidos = [];
+  for (let i = 0; i < 4; i += 1) pedidos.push(await pedidoPagado(comercio, cliente));
+  const tareas = [suspenderComercio(admin, comercio.comercioId)];
+  for (const id of pedidos) tareas.push(call('PUT', `/pedidos/comercio/${id}/aceptar`, comercio.duenoToken, {}, conComercio(comercio)));
+  const respuestas = await Promise.all(tareas);
+  respuestas.forEach((r, i) => registrar5xx(`suspender contra aceptar #${i} (ronda ${ronda})`, r));
+  exigir(respuestas[0].status === 200, `suspender contra aceptar ronda ${ronda}: la suspension dio ${respuestas[0].status}`);
+  const inesperadas = respuestas.slice(1).filter((r) => r.status !== 200 && !(r.status === 409 && r.json?.data?.codigo === 'COMERCIO_SIN_OPERACION'));
+  exigir(inesperadas.length === 0, `suspender contra aceptar ronda ${ronda}: respuestas inesperadas ${JSON.stringify(inesperadas.slice(0, 2))}`);
+  pedidos.forEach((id, i) => {
+    const aceptado = respuestas[i + 1].status === 200;
+    exigir(estadoPedido(id) === (aceptado ? 'EN_PREPARACION' : 'PENDIENTE_CONFIRMACION_COMERCIO'), `suspender contra aceptar ronda ${ronda}: pedido ${id} en ${estadoPedido(id)} con respuesta ${respuestas[i + 1].status}`);
+  });
+  anotar(`aceptar: ${respuestas.slice(1).filter((r) => r.status === 200).length} aceptados antes de la suspension`);
+}
+
+async function escenarioSuspenderContraPago(admin, ronda) {
+  const comercio = await comercioConProducto(admin);
+  const cliente = await nuevoCliente();
+  const pedidos = [];
+  for (let i = 0; i < 4; i += 1) {
+    await call('DELETE', '/carrito', cliente.token);
+    await call('POST', '/carrito/items', cliente.token, { productoId: comercio.productoId, cantidad: 1 });
+    const p = await call('POST', '/pedidos/cliente', cliente.token, { tipoEntrega: 'RETIRO' });
+    pedidos.push(p.json.data.id);
+  }
+  const tareas = [suspenderComercio(admin, comercio.comercioId)];
+  for (const id of pedidos) tareas.push(call('PUT', `/test/pedidos/${id}/pago-aprobado?registrarPago=true`, null, {}));
+  const respuestas = await Promise.all(tareas);
+  respuestas.forEach((r, i) => registrar5xx(`suspender contra pago #${i} (ronda ${ronda})`, r));
+  exigir(respuestas[0].status === 200, `suspender contra pago ronda ${ronda}: la suspension dio ${respuestas[0].status}`);
+  for (const id of pedidos) {
+    const estado = estadoPedido(id);
+    exigir(estado === 'PENDIENTE_CONFIRMACION_COMERCIO' || estado === 'CANCELADO_POR_SISTEMA', `suspender contra pago ronda ${ronda}: pedido ${id} en ${estado}`);
+    exigir(notasDelPedido(id) === (estado === 'CANCELADO_POR_SISTEMA' ? 1 : 0), `suspender contra pago ronda ${ronda}: pedido ${id} en ${estado} con ${notasDelPedido(id)} notas`);
+  }
+  anotar(`pago: ${pedidos.filter((id) => estadoPedido(id) === 'CANCELADO_POR_SISTEMA').length} cancelados y devueltos`);
+}
+
+async function escenarioSuspenderContraDespacharYAnular(admin, ronda) {
+  const comercio = await comercioConProducto(admin);
+  const cliente = await nuevoCliente();
+  const aDespachar = await pedidoPagado(comercio, cliente, true);
+  const aAnular = await pedidoPagado(comercio, cliente, true);
+  const [s, d, a] = await Promise.all([
+    suspenderComercio(admin, comercio.comercioId),
+    call('PUT', `/pedidos/comercio/${aDespachar}/despachar`, comercio.duenoToken, {}, conComercio(comercio)),
+    call('PUT', `/pedidos/comercio/${aAnular}/anular`, comercio.duenoToken, { motivo: 'SIN_STOCK' }, conComercio(comercio)),
+  ]);
+  [s, d, a].forEach((r, i) => registrar5xx(`suspender contra despachar y anular #${i} (ronda ${ronda})`, r));
+  exigir(s.status === 200 && d.status === 200 && a.status === 200, `suspender contra despachar y anular ronda ${ronda}: ${s.status} ${d.status} ${a.status}`);
+  exigir(estadoPedido(aDespachar) === 'LISTO_PARA_RETIRAR' && estadoPedido(aAnular) === 'ANULADO', `suspender contra despachar y anular ronda ${ronda}: estados ${estadoPedido(aDespachar)} y ${estadoPedido(aAnular)}`);
+  exigir(notasDelPedido(aAnular) === 1, `suspender contra despachar y anular ronda ${ronda}: ${notasDelPedido(aAnular)} notas`);
+  anotar('despachar-y-anular: ambos funcionan siempre');
+}
+
+async function escenarioComercioContraCheckout(admin, ronda) {
+  const comercio = await comercioConProducto(admin);
+  const cliente = await nuevoCliente();
+  await call('POST', '/carrito/items', cliente.token, { productoId: comercio.productoId, cantidad: 1 });
+  const tareas = [suspenderComercio(admin, comercio.comercioId)];
+  for (let i = 0; i < 20; i += 1) tareas.push(call('POST', '/pedidos/cliente', cliente.token, { tipoEntrega: 'RETIRO' }));
+  const respuestas = await Promise.all(tareas);
+  respuestas.forEach((r, i) => registrar5xx(`suspender comercio contra checkout #${i} (ronda ${ronda})`, r));
+  exigir(respuestas[0].status === 200, `suspender comercio contra checkout ronda ${ronda}: la suspension dio ${respuestas[0].status}`);
+  const nacidos = respuestas.slice(1).filter((r) => r.status === 201).length;
+  const enBase = Number(sql(`SELECT COUNT(*) FROM pedido WHERE cliente_id = ${cliente.id};`));
+  exigir(enBase === nacidos, `suspender comercio contra checkout ronda ${ronda}: ${enBase} pedidos en base y ${nacidos} respuestas 201`);
+  const despues = Number(sql(`SELECT COUNT(*) FROM pedido p JOIN comercio c ON c.id = p.comercio_id WHERE p.cliente_id = ${cliente.id} AND p.fecha_creacion > DATE_ADD(c.suspendido_desde, INTERVAL 1 SECOND);`));
+  exigir(despues === 0, `suspender comercio contra checkout ronda ${ronda}: ${despues} pedidos nacidos despues de la suspension`);
+  anotar(`checkout comercio: ${nacidos} nacidos antes`);
+}
+
+async function escenarioSuspenderContraCierre(admin, ronda) {
+  const comercio = await comercioConProducto(admin);
+  const respuestas = await Promise.all([
+    suspenderComercio(admin, comercio.comercioId),
+    call('PUT', '/comercios/cerrar', comercio.duenoToken, {}, conComercio(comercio)),
+    call('PUT', '/comercios/abrir', comercio.duenoToken, {}, conComercio(comercio)),
+    call('PUT', '/comercios/cerrar', comercio.duenoToken, {}, conComercio(comercio)),
+  ]);
+  respuestas.forEach((r, i) => registrar5xx(`suspender contra cerrar y abrir #${i} (ronda ${ronda})`, r));
+  exigir(respuestas[0].status === 200, `suspender contra cerrar y abrir ronda ${ronda}: la suspension dio ${respuestas[0].status}`);
+  const inesperadas = respuestas.slice(1).filter((r) => r.status !== 200 && !(r.status === 409 && r.json?.data?.codigo === 'COMERCIO_NO_OPERATIVO'));
+  exigir(inesperadas.length === 0, `suspender contra cerrar y abrir ronda ${ronda}: respuestas inesperadas ${JSON.stringify(inesperadas.slice(0, 2))}`);
+  exigir(estadoComercio(comercio.comercioId) === 'SUSPENDIDO', `suspender contra cerrar y abrir ronda ${ronda}: estado ${estadoComercio(comercio.comercioId)}`);
+  anotar(`cierre: ${estadosDeRespuestas(respuestas.slice(1))}`);
+}
+
+async function escenarioSuspenderContraMercadoPagoYDocumentos(admin, ronda) {
+  const comercio = await comercioConProducto(admin);
+  const respuestas = await Promise.all([
+    suspenderComercio(admin, comercio.comercioId),
+    call('POST', `/test/duenos/${comercio.duenoId}/mercadopago-simulada`, null, {}),
+    call('PUT', `/test/comercios/${comercio.comercioId}/documentacion-aprobada`, null, {}),
+  ]);
+  respuestas.forEach((r, i) => registrar5xx(`suspender contra Mercado Pago y documentos #${i} (ronda ${ronda})`, r));
+  exigir(respuestas[0].status === 200, `suspender contra Mercado Pago y documentos ronda ${ronda}: la suspension dio ${respuestas[0].status}`);
+  exigir(estadoComercio(comercio.comercioId) === 'SUSPENDIDO', `suspender contra Mercado Pago y documentos ronda ${ronda}: estado ${estadoComercio(comercio.comercioId)}`);
+  anotar('mercadopago-y-documentos: siempre queda suspendido');
+}
+
+async function escenarioLevantarContraElTope(admin, ronda) {
+  const comercio = await comercioConProducto(admin);
+  const cliente = await nuevoCliente();
+  const pedido = await pedidoPagado(comercio, cliente, true);
+  const s = await suspenderComercio(admin, comercio.comercioId);
+  exigir(s.status === 200, `levantar contra el tope ronda ${ronda}: suspender dio ${s.status}`);
+  await call('PUT', `/test/comercios/${comercio.comercioId}/envejecer-suspension?minutos=200`, null, {});
+  const [l, j] = await Promise.all([levantarComercio(admin, comercio.comercioId), call('POST', '/test/jobs/pedidos/cancelar-preparacion-suspension', null, {})]);
+  [l, j].forEach((r, i) => registrar5xx(`levantar contra el tope #${i} (ronda ${ronda})`, r));
+  exigir(l.status === 200, `levantar contra el tope ronda ${ronda}: levantar dio ${l.status}`);
+  const estado = estadoPedido(pedido);
+  exigir(estado === 'EN_PREPARACION' || estado === 'CANCELADO_POR_SISTEMA', `levantar contra el tope ronda ${ronda}: pedido en ${estado}`);
+  exigir(notasDelPedido(pedido) === (estado === 'CANCELADO_POR_SISTEMA' ? 1 : 0), `levantar contra el tope ronda ${ronda}: ${notasDelPedido(pedido)} notas con el pedido en ${estado}`);
+  exigir(estadoComercio(comercio.comercioId) === 'APTO_VENTA' || estadoComercio(comercio.comercioId) === 'APROBADO', `levantar contra el tope ronda ${ronda}: comercio en ${estadoComercio(comercio.comercioId)}`);
+  anotar(`levantar-contra-tope: pedido ${estado}`);
+}
+
 const ESCENARIOS = [
   { n: 1, nombre: 'doble suspension', corre: (ctx, ronda) => escenarioDobleSuspension(ctx.admin, ronda) },
   { n: 2, nombre: 'suspender contra login', corre: (ctx, ronda) => escenarioSuspenderContraLogin(ctx.admin, ronda) },
   { n: 3, nombre: 'suspender contra checkout', corre: (ctx, ronda) => escenarioSuspenderContraCheckout(ctx.admin, ctx.comercio, ronda), necesitaComercio: true },
   { n: 4, nombre: 'levantar contra login', corre: (ctx, ronda) => escenarioLevantarContraLogin(ctx.admin, ronda) },
+  { n: 5, nombre: 'comercio: doble suspension', corre: (ctx, ronda) => escenarioComercioDobleSuspension(ctx.admin, ronda) },
+  { n: 6, nombre: 'comercio: suspender contra aceptar', corre: (ctx, ronda) => escenarioSuspenderContraAceptar(ctx.admin, ronda) },
+  { n: 7, nombre: 'comercio: suspender contra pago', corre: (ctx, ronda) => escenarioSuspenderContraPago(ctx.admin, ronda) },
+  { n: 8, nombre: 'comercio: suspender contra despachar y anular', corre: (ctx, ronda) => escenarioSuspenderContraDespacharYAnular(ctx.admin, ronda) },
+  { n: 9, nombre: 'comercio: suspender contra checkout', corre: (ctx, ronda) => escenarioComercioContraCheckout(ctx.admin, ronda) },
+  { n: 10, nombre: 'comercio: suspender contra cerrar y abrir', corre: (ctx, ronda) => escenarioSuspenderContraCierre(ctx.admin, ronda) },
+  { n: 11, nombre: 'comercio: suspender contra Mercado Pago y documentos', corre: (ctx, ronda) => escenarioSuspenderContraMercadoPagoYDocumentos(ctx.admin, ronda) },
+  { n: 12, nombre: 'comercio: levantar contra el tope de 90 minutos', corre: (ctx, ronda) => escenarioLevantarContraElTope(ctx.admin, ronda) },
 ];
 
 async function main() {

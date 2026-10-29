@@ -584,31 +584,35 @@ class PedidoTransicionesIntegrationTest {
         assertEquals(1, notas(pedidoId));
     }
 
+    private void suspenderDesdeHace(Escenario e, int minutos) {
+        jdbcTemplate.update("UPDATE comercio SET estado = 'SUSPENDIDO', suspension_origen = 'INDIVIDUAL', suspendido_desde = ?, "
+                + "motivo_suspension = 'Suspension de prueba' WHERE id = ?", LocalDateTime.now().minusMinutes(minutos), e.dueno().comercioId());
+    }
+
     @Test
-    void laSuspensionDelComercioCreaLaNotaDeLosPedidosPagados() {
+    void elTopeDePreparacionDeLaSuspensionCreaLaNotaDelPedidoPagado() {
         Escenario e = escenario(true);
         int enPreparacion = pedido(e, "EN_PREPARACION", true, 5);
         int pendiente = pedido(e, "PENDIENTE_CONFIRMACION_COMERCIO", true, 5);
+        suspenderDesdeHace(e, 95);
 
-        pedidoService.cancelarPedidosPorSuspensionComercio(e.dueno().comercioId());
+        pedidoService.cancelarPreparacionPorSuspension(LocalDateTime.now());
 
         assertEquals("CANCELADO_POR_SISTEMA", estado(enPreparacion));
-        assertEquals("CANCELADO_POR_SISTEMA", estado(pendiente));
+        assertEquals("PENDIENTE_CONFIRMACION_COMERCIO", estado(pendiente), "el pendiente no se toca: lo rechaza el comercio o vence");
         assertEquals(1, notas(enPreparacion));
-        assertEquals(1, notas(pendiente));
+        assertEquals(0, notas(pendiente));
         assertEquals("SUSPENSION_COMERCIO", notaDe(enPreparacion).get("motivo"));
     }
 
     @Test
-    void siFallaLaNotaDeLaSuspensionNingunPedidoCambiaDeEstado() {
+    void siFallaLaNotaDelTopeDePreparacionElPedidoNoCambiaDeEstado() {
         Escenario e = escenario(true);
         int pedidoId = pedido(e, "EN_PREPARACION", true, 5);
+        suspenderDesdeHace(e, 95);
         fallarAlEscribirLaNota();
         try {
-            pedidoService.cancelarPedidosPorSuspensionComercio(e.dueno().comercioId());
-            fail("Tenía que fallar");
-        } catch (IllegalStateException esperado) {
-            assertEquals("falla simulada al escribir la nota", esperado.getMessage());
+            pedidoService.cancelarPreparacionPorSuspension(LocalDateTime.now());
         } finally {
             reset(notaCreditoService);
         }
@@ -616,6 +620,11 @@ class PedidoTransicionesIntegrationTest {
         assertEquals("EN_PREPARACION", estado(pedidoId));
         assertEquals(0, filasDeHistorial(pedidoId, "CANCELADO_POR_SISTEMA"));
         assertEquals(0, notas(pedidoId));
+
+        pedidoService.cancelarPreparacionPorSuspension(LocalDateTime.now());
+
+        assertEquals("CANCELADO_POR_SISTEMA", estado(pedidoId), "la corrida siguiente lo resuelve");
+        assertEquals(1, notas(pedidoId));
     }
 
     @Test

@@ -201,7 +201,7 @@ class PedidoServiceVistaEmpleadoTest {
         assertEquals(new BigDecimal("100"), lista.get(0).getCargoServicioComercio());
         assertEquals(77, lista.get(0).getClienteId());
         assertEquals(EstadoPagoPedido.PAGADO, lista.get(0).getPagoEstado());
-        assertEquals(25, campos.size());
+        assertEquals(27, campos.size());
     }
 
     @Test

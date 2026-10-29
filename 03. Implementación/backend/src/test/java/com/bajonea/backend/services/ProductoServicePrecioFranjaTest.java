@@ -221,11 +221,18 @@ class ProductoServicePrecioFranjaTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = EstadoComercio.class, names = {"APTO_VENTA", "APROBADO", "SUSPENDIDO", "CERRADO_TEMPORALMENTE"})
+    @EnumSource(value = EstadoComercio.class, names = {"APTO_VENTA", "APROBADO", "CERRADO_TEMPORALMENTE"})
     void esFranjaPuraYNoMiraElEstadoDelComercioParaElDueno(EstadoComercio estado) {
         estadoDelComercio(estado);
 
         assertEquals(ConflictoComercioException.PRECIO_BLOQUEADO_EN_FRANJA, bloqueada(dueno, "1200").getCodigo());
+    }
+
+    @Test
+    void conElComercioSuspendidoElGuardDeLaSuspensionVaAntesQueElDelPrecio() {
+        estadoDelComercio(EstadoComercio.SUSPENDIDO);
+
+        assertEquals(ConflictoComercioException.SUSPENDIDO, bloqueada(dueno, "1200").getCodigo());
     }
 
     @Test

@@ -172,6 +172,7 @@ class PedidoServiceCarreraTest {
     @Test
     void aceptarContraUnRechazoGanadorDaConflictoSinHistorialNiAviso() {
         Pedido pedido = pedido(11, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO);
+        estadoDelComercio(40, EstadoComercio.APTO_VENTA);
         otraTransaccionGanoLaCarrera(pedido, EstadoPedido.RECHAZADO);
 
         assertThrows(ConflictoDeNegocioException.class, () -> pedidoService.aceptarPedido(dueno(), 11));
@@ -276,12 +277,19 @@ class PedidoServiceCarreraTest {
         verificarQueLaPerdedoraNoEscribioNada(pedido, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO);
     }
 
+    private void comercioSuspendidoDesde(LocalDateTime desde) {
+        com.bajonea.backend.repositories.ComercioRepository.EstadoYCierreComercio lectura = mock(com.bajonea.backend.repositories.ComercioRepository.EstadoYCierreComercio.class);
+        when(lectura.getEstado()).thenReturn(EstadoComercio.SUSPENDIDO.name());
+        when(lectura.getSuspendidoDesde()).thenReturn(desde);
+        when(comercioRepository.leerEstadoConBloqueoCompartido(any())).thenReturn(Optional.of(lectura));
+    }
+
     @Test
     void elProcesoDeRetiroPorSuspensionNoTocaUnRetiroQueElComercioYaEntrego() {
         Pedido pedido = pedido(21, EstadoPedido.LISTO_PARA_RETIRAR);
-        pedido.setSuspensionRetiroExpira(LocalDateTime.now().minusMinutes(5));
-        when(pedidoRepository.findIdsByEstadoAndSuspensionRetiroExpiraLessThan(eq(EstadoPedido.LISTO_PARA_RETIRAR), any()))
+        when(pedidoRepository.findIdsDeComerciosSuspendidosDesde(eq(EstadoPedido.LISTO_PARA_RETIRAR), any()))
                 .thenReturn(List.of(21));
+        comercioSuspendidoDesde(LocalDateTime.now().minusHours(5));
         otraTransaccionGanoLaCarrera(pedido, EstadoPedido.ENTREGADO);
 
         pedidoService.autoconfirmarRetirosPorSuspension(LocalDateTime.now());
@@ -290,15 +298,60 @@ class PedidoServiceCarreraTest {
     }
 
     @Test
-    void laSuspensionDelComercioSaltaLosPedidosQueYaSeResolvieron() {
+    void elTopeDePreparacionSaltaLosPedidosQueElComercioYaAnulo() {
         Pedido pedido = pedido(22, EstadoPedido.EN_PREPARACION);
-        when(pedidoRepository.findIdsByComercioIdAndEstadoIn(eq(40),
-                eq(List.of(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, EstadoPedido.EN_PREPARACION)))).thenReturn(List.of(22));
+        when(pedidoRepository.findIdsDeComerciosSuspendidosDesde(eq(EstadoPedido.EN_PREPARACION), any()))
+                .thenReturn(List.of(22));
+        comercioSuspendidoDesde(LocalDateTime.now().minusHours(5));
         otraTransaccionGanoLaCarrera(pedido, EstadoPedido.ANULADO);
 
-        pedidoService.cancelarPedidosPorSuspensionComercio(40);
+        pedidoService.cancelarPreparacionPorSuspension(LocalDateTime.now());
 
         verificarQueLaPerdedoraNoEscribioNada(pedido, EstadoPedido.ANULADO);
+    }
+
+    @Test
+    void elTopeDePreparacionNoTocaUnPedidoSiSeLevantoLaSuspensionAntes() {
+        Pedido pedido = pedido(24, EstadoPedido.EN_PREPARACION);
+        when(pedidoRepository.findIdsDeComerciosSuspendidosDesde(eq(EstadoPedido.EN_PREPARACION), any()))
+                .thenReturn(List.of(24));
+        estadoDelComercio(40, EstadoComercio.APTO_VENTA);
+
+        pedidoService.cancelarPreparacionPorSuspension(LocalDateTime.now());
+
+        verificarQueLaPerdedoraNoEscribioNada(pedido, EstadoPedido.EN_PREPARACION);
+    }
+
+    @Test
+    void elTopeDePreparacionCuentaDesdeLaSuspensionVigenteYNoDesdeQueSeCreoElPedido() {
+        LocalDateTime ahora = LocalDateTime.of(2026, 10, 29, 20, 0);
+        LocalDateTime suspendidoDesde = ahora.minusMinutes(89);
+        Pedido pedido = pedido(25, EstadoPedido.EN_PREPARACION);
+        pedido.setFechaCreacion(suspendidoDesde.minusHours(3));
+        when(pedidoRepository.findIdsDeComerciosSuspendidosDesde(eq(EstadoPedido.EN_PREPARACION), any()))
+                .thenReturn(List.of(25));
+        comercioSuspendidoDesde(suspendidoDesde);
+
+        pedidoService.cancelarPreparacionPorSuspension(ahora);
+
+        verificarQueLaPerdedoraNoEscribioNada(pedido, EstadoPedido.EN_PREPARACION);
+    }
+
+    @Test
+    void elTopeDePreparacionCancelaAlPasarLosNoventaMinutosDeLaSuspensionAunqueElPedidoSeaMuyAnterior() {
+        LocalDateTime ahora = LocalDateTime.of(2026, 10, 29, 20, 0);
+        LocalDateTime suspendidoDesde = ahora.minusMinutes(91);
+        Pedido pedido = pedido(26, EstadoPedido.EN_PREPARACION);
+        pedido.setFechaCreacion(suspendidoDesde.minusHours(3));
+        when(pedidoRepository.findIdsDeComerciosSuspendidosDesde(eq(EstadoPedido.EN_PREPARACION), any()))
+                .thenReturn(List.of(26));
+        comercioSuspendidoDesde(suspendidoDesde);
+
+        pedidoService.cancelarPreparacionPorSuspension(ahora);
+
+        assertEquals(EstadoPedido.CANCELADO_POR_SISTEMA, pedido.getEstado());
+        verify(pedidoRepository).save(pedido);
+        verify(reembolsoService).generarNotaYReembolsarTotal(eq(pedido), any());
     }
 
     @Test

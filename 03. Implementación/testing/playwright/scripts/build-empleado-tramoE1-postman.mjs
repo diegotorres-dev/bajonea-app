@@ -670,11 +670,8 @@ agregar(
   invitar('Comercio suspendido: invitar a s1 en S antes de suspenderlo', COM_S, `{{${v('s1_email')}}}`, [status(201)], { preLines: identidad('s1') }),
   codigoTest('Atajo de test: código de s1 en S', 's1', COM_S, v('s1_codigo_2')),
   item('Comercio suspendido: el Administrador suspende S', req('PUT', `/administrador/comercios/${COM_S}/suspender`, { token: 'token_admin', body: { motivo: 'Suspension de prueba del rol Empleado' } }), [status(200)]),
-  validar('Comercio suspendido: validar sigue permitido', `{{${v('s1_email')}}}`, `{{${v('s1_codigo_2')}}}`, [status(200)]),
-  aceptar('Comercio suspendido: aceptar con cuenta nueva sigue permitido', cuerpoAceptar('s1'), [
-    status(200),
-    "pm.test('Cuenta creada', () => pm.expect(pm.response.json().data.cuentaCreada).to.eql(true));",
-  ]),
+  validar('Comercio suspendido: validar ya no se puede (409)', `{{${v('s1_email')}}}`, `{{${v('s1_codigo_2')}}}`, [status(409)]),
+  aceptar('Comercio suspendido: aceptar con cuenta nueva ya no se puede (409)', cuerpoAceptar('s1'), [status(409)]),
   invitar('Comercio suspendido: invitar en S ya no se puede', COM_S, 'otra.persona@bajonea.test', [status(409), mensajeEs('Este comercio no puede invitar empleados en este momento')]),
 );
 

@@ -33,6 +33,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InOrder;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -137,12 +138,44 @@ class AptitudVentaComercioServiceTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"PENDIENTE", "RECHAZADO", "SUSPENDIDO", "RECHAZO_DEFINITIVO"})
+    @CsvSource({"PENDIENTE", "RECHAZADO", "RECHAZO_DEFINITIVO"})
     void losEstadosQueNoParticipanNuncaCambian(EstadoComercio estado) {
         for (MotivoRecalculo motivo : MotivoRecalculo.values()) {
             assertEquals(estado, AptitudVentaComercioService.decidir(estado, false, true, 3, 0, true, motivo));
             assertEquals(estado, AptitudVentaComercioService.decidir(estado, true, true, 3, 0, false, motivo));
         }
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = MotivoRecalculo.class, mode = EnumSource.Mode.EXCLUDE, names = "SUSPENSION_LEVANTADA")
+    void laSuspensionPrevaleceSobreCualquierOtroEvento(MotivoRecalculo motivo) {
+        assertEquals(EstadoComercio.SUSPENDIDO, AptitudVentaComercioService.decidir(EstadoComercio.SUSPENDIDO, false, true, 3, 0, true, motivo));
+        assertEquals(EstadoComercio.SUSPENDIDO, AptitudVentaComercioService.decidir(EstadoComercio.SUSPENDIDO, true, true, 3, 0, false, motivo));
+        assertEquals(EstadoComercio.SUSPENDIDO, AptitudVentaComercioService.decidir(EstadoComercio.SUSPENDIDO, false, false, 0, 0, true, motivo));
+    }
+
+    @Test
+    void alLevantarLaSuspensionVuelveAAptoVentaSiPuedeSeguirVendiendo() {
+        MotivoRecalculo m = MotivoRecalculo.SUSPENSION_LEVANTADA;
+        assertEquals(EstadoComercio.APTO_VENTA, AptitudVentaComercioService.decidir(EstadoComercio.SUSPENDIDO, false, true, 1, 0, true, m));
+        assertEquals(EstadoComercio.APTO_VENTA, AptitudVentaComercioService.decidir(EstadoComercio.SUSPENDIDO, false, true, 1, 3, true, m),
+                "un documento nuevo en revision no frena: se usa la regla de seguir, no la de entrar");
+        assertEquals(EstadoComercio.APTO_VENTA, AptitudVentaComercioService.decidir(EstadoComercio.SUSPENDIDO, false, true, 0, 0, false, m));
+    }
+
+    @Test
+    void alLevantarLaSuspensionVuelveAAprobadoSiFaltaMercadoPagoOUnDocumentoAprobado() {
+        MotivoRecalculo m = MotivoRecalculo.SUSPENSION_LEVANTADA;
+        assertEquals(EstadoComercio.APROBADO, AptitudVentaComercioService.decidir(EstadoComercio.SUSPENDIDO, false, false, 1, 0, true, m));
+        assertEquals(EstadoComercio.APROBADO, AptitudVentaComercioService.decidir(EstadoComercio.SUSPENDIDO, false, true, 0, 1, true, m));
+        assertEquals(EstadoComercio.APROBADO, AptitudVentaComercioService.decidir(EstadoComercio.SUSPENDIDO, false, false, 0, 0, false, m));
+    }
+
+    @Test
+    void alLevantarLaSuspensionConElDuenoBloqueadoNadaQuedaAptoVenta() {
+        MotivoRecalculo m = MotivoRecalculo.SUSPENSION_LEVANTADA;
+        assertEquals(EstadoComercio.CERRADO_TEMPORALMENTE, AptitudVentaComercioService.decidir(EstadoComercio.SUSPENDIDO, true, true, 1, 0, true, m));
+        assertEquals(EstadoComercio.APROBADO, AptitudVentaComercioService.decidir(EstadoComercio.SUSPENDIDO, true, false, 1, 0, true, m));
     }
 
     @Test

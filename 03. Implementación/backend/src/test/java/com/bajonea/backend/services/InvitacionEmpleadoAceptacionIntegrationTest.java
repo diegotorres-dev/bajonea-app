@@ -727,7 +727,7 @@ class InvitacionEmpleadoAceptacionIntegrationTest {
     }
 
     @ParameterizedTest(name = "comercio {0}")
-    @CsvSource({"APROBADO", "APTO_VENTA", "CERRADO_TEMPORALMENTE", "SUSPENDIDO"})
+    @CsvSource({"APROBADO", "APTO_VENTA", "CERRADO_TEMPORALMENTE"})
     void sePuedeAceptarConElComercioEnLosEstadosPermitidos(String estadoComercio) {
         enTransaccion(status -> {
             Dueno dueno = datos.registrarDuenoAprobado();
@@ -746,7 +746,7 @@ class InvitacionEmpleadoAceptacionIntegrationTest {
     }
 
     @ParameterizedTest(name = "comercio {0}")
-    @CsvSource({"PENDIENTE", "RECHAZADO", "RECHAZO_DEFINITIVO", "INACTIVO"})
+    @CsvSource({"PENDIENTE", "RECHAZADO", "RECHAZO_DEFINITIVO", "INACTIVO", "SUSPENDIDO"})
     void conElComercioEnUnEstadoNoPermitidoDa409YElRollbackNoDejaNadaConfirmado(String estadoComercio) {
         reloj.volverAlReloj();
         Dueno dueno = datos.registrarDuenoAprobado();

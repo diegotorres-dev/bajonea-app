@@ -201,7 +201,7 @@ class SuspensionClientePagoIntegrationTest extends CarritoIntegrationBase {
 
         assertEquals("CANCELADO_POR_SISTEMA", estadoDelPedido(pedido));
         assertEquals(1, notasDelPedido(pedido));
-        assertEquals(List.of("CANCELACION_CLIENTE"), motivosDeNotas(pedido));
+        assertEquals(List.of("PAGO_TARDIO"), motivosDeNotas(pedido));
         assertTrue(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM alerta_webhook_mp WHERE pedido_id = ? AND motivo = 'PAGO_APROBADO_SOBRE_PEDIDO_CANCELADO'",
                 Integer.class, pedido) >= 1);
     }

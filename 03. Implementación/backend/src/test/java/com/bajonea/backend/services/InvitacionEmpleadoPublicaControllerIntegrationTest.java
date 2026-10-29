@@ -517,14 +517,14 @@ class InvitacionEmpleadoPublicaControllerIntegrationTest {
     }
 
     @Test
-    void validarDa409ConElComercioNoAceptableYSigueRespondiendo200ConElComercioSuspendido() throws Exception {
+    void validarDa409ConElComercioNoAceptableIncluidoElSuspendido() throws Exception {
         Dueno dueno = datos.registrarDuenoAprobado();
         try {
             String email = emailNuevo();
             int invitacion = invitar(dueno, email);
             String codigo = codigoDe(invitacion);
 
-            for (String estado : new String[] {"PENDIENTE", "RECHAZADO", "RECHAZO_DEFINITIVO", "INACTIVO"}) {
+            for (String estado : new String[] {"PENDIENTE", "RECHAZADO", "RECHAZO_DEFINITIVO", "INACTIVO", "SUSPENDIDO"}) {
                 datos.cambiarEstadoComercio(dueno.comercioId(), estado);
                 postJson(VALIDAR, cuerpo(email, codigo)).andExpect(status().isConflict())
                         .andExpect(jsonPath("$.mensaje").value("Esta invitación ya no está disponible"));
@@ -532,7 +532,7 @@ class InvitacionEmpleadoPublicaControllerIntegrationTest {
             assertEquals("PENDIENTE", estadoDe(invitacion));
             assertEquals(0, intentosDe(invitacion));
 
-            for (String estado : new String[] {"APROBADO", "APTO_VENTA", "CERRADO_TEMPORALMENTE", "SUSPENDIDO"}) {
+            for (String estado : new String[] {"APROBADO", "APTO_VENTA", "CERRADO_TEMPORALMENTE"}) {
                 datos.cambiarEstadoComercio(dueno.comercioId(), estado);
                 postJson(VALIDAR, cuerpo(email, codigo)).andExpect(status().isOk())
                         .andExpect(jsonPath("$.data.comercioNombre").value(dueno.nombreComercio()));

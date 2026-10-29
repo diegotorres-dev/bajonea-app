@@ -35,7 +35,7 @@ class CierreTurnoConcurrenciaIntegrationTest extends CierreTurnoIntegrationBase 
     private HorarioEdicionService horarioEdicionService;
 
     @Autowired
-    private AdministradorService administradorService;
+    private SuspensionComercioService suspensionComercioService;
 
     private static void sinBloqueos(List<Object> resultados) {
         for (Object resultado : resultados) {
@@ -100,7 +100,7 @@ class CierreTurnoConcurrenciaIntegrationTest extends CierreTurnoIntegrationBase 
                 return null;
             });
             tareas.add(() -> {
-                administradorService.suspenderComercio(dueno.comercioId(), administrador.id(), new SuspensionComercioRequestDTO("Prueba"));
+                suspensionComercioService.suspender(dueno.comercioId(), administrador.id(), new SuspensionComercioRequestDTO("Prueba de suspension"));
                 return null;
             });
 

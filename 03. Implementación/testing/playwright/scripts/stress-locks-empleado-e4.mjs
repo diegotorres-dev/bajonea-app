@@ -701,8 +701,8 @@ async function escenario8(admin) {
     if (modo === 'suspender' && estadoComercio !== 'SUSPENDIDO') problemas.push(`${etiqueta}: el comercio quedo ${estadoComercio} y tenia que ser SUSPENDIDO`);
     if (modo === 'bloquear' && !['CERRADO_TEMPORALMENTE', 'APTO_VENTA'].includes(estadoComercio)) problemas.push(`${etiqueta}: el comercio quedo ${estadoComercio}`);
     if (modo === 'suspender') {
-      const sinCancelar = pagados.filter((id) => estadoPedido(id) === 'PENDIENTE_CONFIRMACION_COMERCIO').length;
-      if (sinCancelar) problemas.push(`${etiqueta}: ${sinCancelar} pedidos pendientes quedaron sin cancelar por la suspension`);
+      const canceladosPorSuspender = pagados.filter((id) => estadoPedido(id) === 'CANCELADO_POR_SISTEMA').length;
+      if (canceladosPorSuspender) problemas.push(`${etiqueta}: ${canceladosPorSuspender} pedidos fueron cancelados por suspender y suspender no tiene que tocarlos`);
     }
     if (estadoRelacion(d.comercioId, escritor.id) !== 'ACTIVO') problemas.push(`${etiqueta}: el Empleado que escribe dejo de estar ACTIVO`);
   }

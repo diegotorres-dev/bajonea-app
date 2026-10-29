@@ -277,14 +277,15 @@ class HorarioEdicionIntegrationTest {
     }
 
     @Test
-    void elDuenoConElComercioSuspendidoPuedeEditar() {
+    void elDuenoConElComercioSuspendidoNoPuedeEditar() {
         Escena e = escena();
         datos.cambiarEstadoComercio(e.dueno().comercioId(), "SUSPENDIDO");
 
-        HorariosComercioResponseDTO respuesta = horarioEdicionService.editarHorarios(
-                ComercioActivo.delDueno(e.dueno().comercioId(), e.dueno().id(), EstadoComercio.SUSPENDIDO), nuevaVersion());
+        ConflictoComercioException error = org.junit.jupiter.api.Assertions.assertThrows(ConflictoComercioException.class,
+                () -> horarioEdicionService.editarHorarios(
+                        ComercioActivo.delDueno(e.dueno().comercioId(), e.dueno().id(), EstadoComercio.SUSPENDIDO), nuevaVersion()));
 
-        assertFalse(respuesta.getPendientes().isEmpty());
+        assertEquals(ConflictoComercioException.SUSPENDIDO, error.getCodigo());
     }
 
     private String login(String nombreUsuario, String clave) throws Exception {
