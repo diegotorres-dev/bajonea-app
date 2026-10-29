@@ -3967,8 +3967,8 @@ img {
 .textarea-counter {
   display: flex;
   justify-content: flex-end;
-  font-size: 11px;
-  color: var(--color-text-placeholder);
+  font-size: 12px;
+  color: var(--color-text-muted);
   margin-top: 4px;
 }
 

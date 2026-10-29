@@ -848,3 +848,121 @@ Cambios sugeridos adicionales (los archivos de `01. Análisis de Requerimientos`
 | `requisitos-funcionales-cliente.md` | Una cuenta suspendida ve el motivo en una hoja al intentar ingresar (después de poner la contraseña correcta) y, con una sesión abierta, en una pantalla completa que dice qué pasa con sus pedidos. Sin botón de Soporte hasta S4. |
 | `Historias de Usuario - Administrador.md` | HU-A06 y HU-A10: criterios de aceptación de la búsqueda, los filtros, el menú de acciones y los dos modales. |
 | `Historias de Usuario - Cliente.md` | La historia de "ver que mi cuenta fue suspendida y por qué": hoja en el login y pantalla completa con sesión abierta. |
+
+### Fase 5, tramo S1, cierre (2026-10-29): texto exacto listo para copiar y pegar
+
+Reemplaza en detalle a las dos tablas anteriores de S1 (que quedan como resumen): acá está el documento, la sección y el texto final de cada cambio. "Reemplazar" sustituye el punto indicado; "Agregar" suma puntos nuevos al final de la sección. Los archivos de `01. Análisis de Requerimientos` no se tocaron.
+
+**1. `requisitos-funcionales-generales.md`**
+
+Sección `## Autenticación` — Agregar:
+
+- El sistema debe impedir que una cuenta Suspendida inicie sesión. Solo después de comprobar que la contraseña es correcta, el sistema debe informar que la cuenta está suspendida y mostrar el motivo cargado por el Administrador; con una contraseña incorrecta debe responder el mismo mensaje genérico de siempre, sin revelar el estado de la cuenta.
+
+Sección `## Gestión de Sesiones` — Agregar:
+
+- Cuando el Administrador suspende una cuenta, el sistema debe cerrar todas sus sesiones activas y registrar el tipo de cierre como suspensión. La siguiente acción hecha con una de esas sesiones debe mostrar el aviso de cuenta suspendida con el motivo, en lugar de un cierre de sesión sin explicación.
+
+Sección `## Estados de Usuario` — Reemplazar el punto "Suspendido":
+
+- **Suspendido:** estado aplicado exclusivamente por el Administrador, con un motivo obligatorio de 10 a 500 caracteres. Conlleva invalidación inmediata de todas las sesiones activas. Solo el Administrador puede levantarlo: iniciar sesión, recuperar la contraseña o verificar el email no lo levantan. Al levantarlo, la cuenta vuelve al estado que tenía antes de la suspensión (Pendiente, Inactivo o Activo); una cuenta que estaba Bloqueada vuelve Activa, con los intentos fallidos en cero.
+
+Sección `## Estados de Usuario` — Agregar, después de la lista de estados:
+
+Todo cambio de estado de una cuenta (verificación, bloqueo, desbloqueo, suspensión, levantamiento, inactivación y reactivación) queda registrado en el historial de estados del usuario, con el estado de origen, el de destino, el motivo y, si lo hizo el Administrador, quién fue.
+
+**2. `requisitos-funcionales-cliente.md`**
+
+Sección nueva `## Cuenta Suspendida`, después de `## Registro y Perfil`:
+
+- Una cuenta de Cliente suspendida no puede iniciar sesión. Al intentarlo con la contraseña correcta, el cliente ve una hoja con el motivo de la suspensión; con una contraseña incorrecta ve el mensaje de siempre.
+- Si el cliente tenía una sesión abierta, en su siguiente acción ve una pantalla completa que dice que su cuenta fue suspendida, el motivo y qué pasa con sus pedidos, y solo puede cerrar sesión.
+- Mientras la cuenta está suspendida, el cliente no puede hacer pedidos nuevos, pagar ni iniciar reclamos. Su carrito se conserva.
+- Los pedidos que ya estaban pagados siguen su curso normal. Los pedidos sin pagar se cancelan, y un pago aprobado que llegue sobre un pedido cancelado se reembolsa por completo.
+- Al suspenderse la cuenta, el cliente recibe un aviso en la aplicación y un email con el motivo. Al levantarse la suspensión recibe otro aviso y otro email, con el mensaje opcional del Administrador.
+- Hasta el módulo de Soporte (tramo S4), la hoja y la pantalla de suspensión no tienen botón para contactar al equipo.
+
+**3. `requisitos-funcionales-administrador.md`**
+
+Sección `## Gestión de Usuarios` — Reemplazar los dos primeros puntos:
+
+- El administrador debe poder suspender la cuenta de un cliente ingresando un motivo de 10 a 500 caracteres. Antes de confirmar, el sistema debe mostrarle qué va a pasar con los pedidos del cliente. La suspensión invalida todas las sesiones activas del cliente. El administrador no puede suspenderse a sí mismo ni suspender a otro administrador; la suspensión de un Dueño queda para un tramo posterior.
+- El administrador debe poder levantar la suspensión de un cliente, con un mensaje opcional de hasta 500 caracteres para la persona. La cuenta vuelve al estado que tenía antes de la suspensión (una cuenta bloqueada vuelve activa) y, si queda activa, se actualiza su última actividad.
+- El administrador debe poder ver el listado de clientes, buscar por nombre o email, filtrar por estado (todos, suspendidos, bloqueados, inactivos y pendientes) y abrir, en cada cliente, un menú con las acciones que corresponden a su estado.
+- Si el email de aviso de una suspensión o de un levantamiento no pudo enviarse, el listado debe mostrarlo en la fila del cliente y ofrecer la acción "Reenviar email".
+
+**4. `requisitos-funcionales-sistema.md`**
+
+Sección `## Gestión de Sesiones` — Agregar:
+
+- El sistema debe registrar el cierre de una sesión por suspensión de la cuenta con un tipo de cierre propio, distinto del cierre manual, por expiración o por sesión simultánea.
+
+Sección `## Gestión de Estados de Usuario` — Reemplazar el último punto ("Al cambiar el estado de un usuario a Suspendido...") y agregar los siguientes:
+
+- Al cambiar el estado de un usuario a Suspendido por acción del Administrador, el sistema debe invalidar todas sus sesiones activas de forma inmediata y guardar el motivo y la fecha de la suspensión.
+- Todo cambio de estado de un usuario debe pasar por un único punto del sistema, que cambia el estado y escribe la fila del historial de estados del usuario en la misma transacción.
+- Una cuenta Suspendida nunca debe volver a Activa por iniciar sesión, por recuperar la contraseña ni por verificar el email. Solo la levanta el Administrador. La verificación de email solo activa cuentas Pendientes.
+- Al levantar una suspensión, el sistema debe devolver la cuenta al estado que tenía antes (el de origen de la última suspensión que figura en el historial); si no hay historial, la cuenta queda Activa.
+- Cuando el sistema cancele pedidos de un cliente suspendido, o reciba un pago aprobado sobre un pedido ya cancelado, debe generar la nota de crédito y reembolsar el total.
+- El proceso de inactivación por 3 meses sin actividad debe ignorar las cuentas Suspendidas. Hoy ese proceso no existe en el código (tramo S6).
+
+Sección `## Notificaciones` — Sin cambios de texto: T28 (cliente suspendido, con motivo) y T29 (suspensión levantada) ya figuran en la tabla; desde S1 tienen emisor.
+
+**5. `requisitos-funcionales-empleado.md`**
+
+Sección `## Restricciones` — Agregar:
+
+- Un Empleado cuya cuenta de Cliente está suspendida no puede iniciar sesión y por lo tanto no puede operar ninguno de los comercios donde trabaja. Su relación con cada comercio no cambia.
+
+**6. `Historias de Usuario - Administrador.md`**
+
+Reemplazar las tres historias HU-A08, HU-A09 y HU-A10 por:
+
+## HU-A08: Ver el Listado Completo de Clientes
+
+Como administrador, quiero visualizar todos los clientes con su estado actual, buscarlos y filtrarlos, para supervisar la base de usuarios y encontrar rápido a quien necesito.
+
+- Veo el nombre, el email y el estado de cada cliente, y un contador "Mostrando N clientes" que se actualiza con la búsqueda y los filtros.
+- Puedo buscar por nombre o por email, sin importar mayúsculas, y limpiar la búsqueda con un botón.
+- Puedo filtrar por Todos, Suspendidos, Bloqueados, Inactivos y Pendientes; el filtro activo se ve marcado.
+- Si ningún cliente coincide veo "No hay clientes con esos filtros.".
+- Si el email de aviso de una suspensión o de un levantamiento falló, la fila dice "No se envió el email".
+
+## HU-A09: Suspender un Cliente
+
+Como administrador, quiero suspender la cuenta de un cliente ingresando un motivo, para restringir su acceso ante un comportamiento que lo justifique.
+
+- Cada fila tiene un menú de acciones (botón de 44 px, navegable con teclado, que se cierra con Escape o tocando afuera) con "Suspender cuenta".
+- El modal muestra qué va a pasar con los pedidos del cliente y pide un motivo de 10 a 500 caracteres; el botón de confirmar queda deshabilitado hasta llegar a 10 y el contador muestra "N / 500 · mínimo 10".
+- El motivo se le muestra a la persona, y el modal lo avisa.
+- Si confirmo, la cuenta queda suspendida, sus sesiones se cierran, veo "Cuenta suspendida" y la fila pasa a "Suspendido". Un doble clic no suspende dos veces.
+- Si la cuenta ya estaba suspendida, el modal muestra el error y puedo cancelar sin quedar bloqueado.
+- No puedo suspender mi propia cuenta ni la de otro administrador.
+
+## HU-A10: Levantar la Suspensión de un Cliente
+
+Como administrador, quiero poder levantar la suspensión de un cliente tras revisar su descargo, para reactivar su cuenta si corresponde.
+
+- Una cuenta suspendida ofrece "Levantar suspensión" en el menú de la fila.
+- El modal muestra desde cuándo está suspendida, el motivo vigente y qué va a pasar: "Podrá ingresar y comprar de nuevo.", "Estaba bloqueada: vuelve activa.", "Vuelve a estar inactiva: tiene que reactivar su cuenta para ingresar." o "Vuelve a estar pendiente: tiene que verificar su email para ingresar.".
+- Puedo escribir un mensaje opcional de hasta 500 caracteres para la persona; el contador muestra "N / 500".
+- Si confirmo, la cuenta vuelve al estado que tenía antes, veo "Suspensión levantada" y la persona recibe un aviso y un email.
+- Si el email falló, puedo usar "Reenviar email" desde el menú de la fila.
+
+**7. `Historias de Usuario - Cliente.md`**
+
+Agregar al final:
+
+## HU-C18: Ver que mi Cuenta fue Suspendida y por qué
+
+Como cliente, quiero saber que mi cuenta fue suspendida y cuál es el motivo, para entender qué pasó con mi acceso y con mis pedidos.
+
+- Si intento ingresar con mi contraseña correcta, veo una hoja "Cuenta suspendida" con el motivo y un botón "Cerrar"; con una contraseña incorrecta veo el mensaje de siempre.
+- Si tenía la sesión abierta, en mi siguiente acción veo una pantalla completa "Tu cuenta fue suspendida" con el motivo, "Qué pasa ahora" ("Tus pedidos ya pagados siguen su curso." y "No podés hacer pedidos nuevos.") y el botón "Cerrar sesión".
+- El motivo se muestra como texto, nunca como código.
+- Recibo un aviso y un email con el motivo cuando me suspenden y otro cuando me levantan la suspensión.
+- Hasta que exista el módulo de Soporte (HU-C15), la hoja y la pantalla no tienen botón para contactar al equipo.
+
+**8. `diccionario-de-datos.md`**
+
+Ya está en la versión 1.29 (`V44`). Sin cambios. Los próximos libres son `V45`, la carpeta 81 de Newman, el spec 85 y la versión 1.30.

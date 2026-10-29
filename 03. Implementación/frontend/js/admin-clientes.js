@@ -241,12 +241,24 @@ export async function initAdminClientes() {
     items[0].focus();
   }
 
+  function emailCortable(email) {
+    const valor = String(email || '');
+    const arroba = valor.indexOf('@');
+    const parrafo = h('p', { class: 'cliente-admin-row__email' });
+    if (arroba <= 0) {
+      parrafo.textContent = valor;
+      return parrafo;
+    }
+    parrafo.append(valor.slice(0, arroba), document.createElement('wbr'), valor.slice(arroba));
+    return parrafo;
+  }
+
   function dibujarFila(cliente) {
     const punto = h('span', { class: `cliente-estado__dot ${ESTADOS_PUNTO[cliente.estado] || ''}` });
     const chipEstado = h('span', { class: 'cliente-estado', 'data-testid': 'estado-cliente' }, [punto, texto('span', '', ESTADOS_ETIQUETA[cliente.estado] || 'Estado no disponible')]);
     const cuerpo = h('div', { class: 'cliente-admin-row__cuerpo' }, [
       texto('h3', '', nombreCompleto(cliente)),
-      texto('p', 'cliente-admin-row__email', cliente.email),
+      emailCortable(cliente.email),
       chipEstado,
     ]);
     if (cliente.ultimoEmailAvisoFallido) {

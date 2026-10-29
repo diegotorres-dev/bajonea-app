@@ -95,3 +95,17 @@ Pendiente de la confirmación de Diego. El módulo de Soporte es el tramo S4: no
 2. `frontend/js/cuenta-suspendida.js`, pantalla completa de sesión abierta: contenedor `acciones-sesion-suspendida` (junto a "Cerrar sesión").
 3. `frontend/js/auth.js`: el banner de cuenta bloqueada o inactiva y el de "Tu comercio no está operativo" siguen diciendo "Contactá a soporte" en texto, sin botón.
 4. En S3 (Dueño suspendido) se va a necesitar la misma hoja y pantalla: reutilizan `cuenta-suspendida.js`.
+
+## Cierre (pulido visual, `CLAUDE.md` y documentación), 2026-10-29
+
+Pendiente de la confirmación de Diego. Sin cambios de backend ni migraciones.
+
+| Archivo | Cambio |
+|---|---|
+| `frontend/css/styles.css` | `.textarea-counter` pasa de `--color-text-placeholder` a `--color-text-muted` y de 11 a 12 px (contraste de 2,32:1 a 4,66:1; clase compartida con otros modales). |
+| `frontend/js/admin-clientes.js` | `emailCortable`: el email de cada fila lleva un `<wbr>` antes de la arroba para que el corte, si hace falta, ocurra ahí. |
+| `docs/capturas-suspension/` | Se regeneraron las 8 capturas con el spec 84 (6 cambiaron). |
+| `CLAUDE.md` | Reglas 14 y 15 de §4, ítem del tramo S1 en §1bis (con los números vigentes y los pendientes S4 y S6), entidad 31 en §5 y dos notas de alcance desactualizado. |
+| `docs/DECISIONES.md` | Entrada de cierre de S1. |
+| `docs/entregables-01-02/CAMBIOS.md` | Sección "Fase 5, tramo S1, cierre" con el texto exacto por documento. |
+| `docs/MAPEO-ARCHIVOS-TRAMO-S1.md` | Esta sección. |
