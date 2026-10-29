@@ -1,6 +1,7 @@
-import { apiFetch, ApiError, getContextoGuardado, setSesion, setContexto, clearSesion, consumirAvisoInvitacion, TIPO_CONTEXTO } from './api.js';
+import { apiFetch, ApiError, CODIGO_CUENTA_SUSPENDIDA, getContextoGuardado, setSesion, setContexto, clearSesion, consumirAvisoInvitacion, TIPO_CONTEXTO } from './api.js';
 import { consultarComerciosDelEmpleado, RUTA_SELECTOR_CONTEXTO } from './contexto.js';
 import { resolverComercioActivo, destinoDeNavegacion } from './comercio-activo.js';
+import { abrirHojaCuentaSuspendida } from './cuenta-suspendida.js';
 import { crearInputOtp } from './otp.js';
 import { subirFotoPerfilRegistroComercio, CloudinaryUploadError } from './cloudinary.js';
 import {
@@ -46,10 +47,6 @@ const MENSAJES_LOGIN_CONFLICTO = {
     antes: 'Tu cuenta está inactiva. ',
     enlace: { texto: 'Solicitá la reactivación', href: 'reactivar-cuenta.html' },
     despues: ' para volver a ingresar.',
-  },
-  'Cuenta suspendida': {
-    kind: 'error',
-    antes: 'Tu cuenta fue suspendida. Contactá a soporte para más información.',
   },
 };
 
@@ -182,6 +179,8 @@ export function initLogin() {
           warningBloqueo.style.display = 'block';
         }
         scrollAlPrimerError();
+      } else if (error instanceof ApiError && error.status === 409 && error.data && error.data.codigo === CODIGO_CUENTA_SUSPENDIDA) {
+        abrirHojaCuentaSuspendida({ motivo: error.data.motivo, alCerrar: () => usuarioInput.focus() });
       } else if (error instanceof ApiError && error.status === 409) {
         if (error.message === 'Verificá tu email antes de iniciar sesión') {
           renderBannerConEnlace(bannerSlot, 'warning', {

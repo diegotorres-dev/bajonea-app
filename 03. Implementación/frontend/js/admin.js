@@ -123,22 +123,6 @@ function labelResumenCargo(tipo) {
   return tipo === 'PORCENTAJE' ? 'Sobre el subtotal' : 'Monto fijo por pedido';
 }
 
-const LABELS_ESTADO_USUARIO = {
-  PENDIENTE: 'Pendiente',
-  ACTIVO: 'Activo',
-  BLOQUEADO: 'Bloqueado',
-  SUSPENDIDO: 'Suspendido',
-  INACTIVO: 'Inactivo',
-};
-
-const DOT_ESTADO_USUARIO = {
-  PENDIENTE: 'cliente-estado__dot--pendiente',
-  ACTIVO: 'cliente-estado__dot--activo',
-  BLOQUEADO: 'cliente-estado__dot--bloqueado',
-  SUSPENDIDO: 'cliente-estado__dot--suspendido',
-  INACTIVO: 'cliente-estado__dot--inactivo',
-};
-
 function labelTipoComercio(tipo) {
   return LABELS_TIPO_COMERCIO[tipo] || tipo;
 }
@@ -1001,61 +985,6 @@ export async function initAdminComercios() {
   comercios
     .sort((a, b) => a.nombre.localeCompare(b.nombre))
     .forEach((comercio) => container.appendChild(renderComercioAdminRow(comercio, initAdminComercios)));
-}
-
-function renderClienteAdminRow(cliente) {
-  const row = crear('div', 'cliente-admin-row');
-  row.setAttribute('data-testid', `cliente-item-${cliente.id}`);
-
-  const top = crear('div', 'cliente-admin-row__top');
-  const h3 = document.createElement('h3');
-  h3.textContent = `${cliente.nombre} ${cliente.apellido}`;
-  top.appendChild(h3);
-  const badge = crear('span', 'cliente-estado');
-  badge.setAttribute('data-testid', 'estado-cliente');
-  const dot = crear('span', `cliente-estado__dot ${DOT_ESTADO_USUARIO[cliente.estado] || ''}`);
-  badge.appendChild(dot);
-  const label = document.createElement('span');
-  label.textContent = LABELS_ESTADO_USUARIO[cliente.estado] || 'Estado no disponible';
-  badge.appendChild(label);
-  top.appendChild(badge);
-  row.appendChild(top);
-
-  row.appendChild(detailRow('DNI', cliente.dni));
-  row.appendChild(detailRow('Email', cliente.email));
-  row.appendChild(detailRow('Fecha de registro', formatearSoloFecha(cliente.fechaRegistro)));
-
-  return row;
-}
-
-export async function initAdminClientes() {
-  if (!requireAdmin()) {
-    return;
-  }
-
-  const clientes = await apiFetch('/administrador/clientes');
-  clientes.forEach((cliente) => normalizarCampos(cliente, ['nombre', 'apellido']));
-  const container = document.getElementById('clientes-content');
-  container.innerHTML = '';
-
-  if (clientes.length === 0) {
-    const wrapper = crear('div', 'state-page');
-    const icon = crear('div', 'state-page__icon');
-    icon.innerHTML = ICONS.users;
-    wrapper.appendChild(icon);
-    const h1 = document.createElement('h1');
-    h1.className = 'state-page__title';
-    h1.textContent = 'No hay clientes registrados';
-    wrapper.appendChild(h1);
-    container.appendChild(wrapper);
-    return;
-  }
-
-  const lista = crear('div', 'cliente-admin-list');
-  clientes
-    .sort((a, b) => a.nombre.localeCompare(b.nombre))
-    .forEach((cliente) => lista.appendChild(renderClienteAdminRow(cliente)));
-  container.appendChild(lista);
 }
 
 function labelCantidadProductos(cantidad) {

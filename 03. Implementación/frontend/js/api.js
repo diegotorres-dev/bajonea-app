@@ -1,3 +1,5 @@
+import { mostrarPantallaCuentaSuspendida } from './cuenta-suspendida.js';
+
 export const API_BASE_URL = 'http://localhost:8080/api/v1';
 
 const TOKEN_KEY = 'bajonea_token';
@@ -8,6 +10,7 @@ const CONTEXTO_KEY = 'bajonea_contexto';
 const ULTIMO_COMERCIO_PREFIX = 'bajonea_ultimo_comercio_';
 const ULTIMO_CONTEXTO_PREFIX = 'bajonea_ultimo_contexto_';
 const CODIGO_COMERCIO_NO_DISPONIBLE = 'COMERCIO_NO_DISPONIBLE';
+export const CODIGO_CUENTA_SUSPENDIDA = 'CUENTA_SUSPENDIDA';
 const RUTA_SELECTOR_CONTEXTO = 'seleccionar-contexto.html';
 const ESPERA_MAXIMA_COMERCIOS_MS = 4000;
 const RUTAS_DE_COMERCIO = /^\/(comercios|productos|pedidos\/comercio|notificaciones|oauth)(?=[/?]|$)/;
@@ -538,6 +541,17 @@ export async function apiFetch(path, { method = 'GET', body, auth = true, handle
 
   if (response.status >= 500 && handle5xxGlobally) {
     redirectTo('errores/500.html', true);
+    throw new ApiError(response.status, parsed.mensaje, parsed.data);
+  }
+
+  if (
+    hadToken
+    && (response.status === 401 || response.status === 409)
+    && parsed.data
+    && parsed.data.codigo === CODIGO_CUENTA_SUSPENDIDA
+  ) {
+    clearSesion();
+    mostrarPantallaCuentaSuspendida({ motivo: parsed.data.motivo, alCerrarSesion: () => redirectTo('login.html') });
     throw new ApiError(response.status, parsed.mensaje, parsed.data);
   }
 
