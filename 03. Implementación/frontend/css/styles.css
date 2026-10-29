@@ -6002,6 +6002,55 @@ button.panel-comercios__fila:focus-visible {
   gap: 12px;
 }
 
+.comercio-suspension {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comercio-suspension__encabezado {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.comercio-suspension__desde {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.comercio-suspension__motivo {
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.comercio-suspension__explicacion {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.comercio-suspension__email {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.comercio-suspension__reenviar {
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 16px;
+}
+
 .comercio-modal-acciones .btn {
   flex: 1;
   min-width: 0;
@@ -7664,7 +7713,8 @@ button.panel-comercios__fila:focus-visible {
   background: var(--color-surface-alt);
 }
 
-.cliente-admin-row--espera {
+.cliente-admin-row--espera,
+.cliente-admin-row.reembolso-row {
   display: block;
 }
 

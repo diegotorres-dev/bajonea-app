@@ -5,6 +5,7 @@ import { normalizarCampos } from './validators.js';
 import { recordarNombreDelComercio } from './admin-comercio-nombre.js';
 import { cruzaMedianoche, recortarHora, textoRango } from './horarios.js';
 import { diasDesde } from './documentos-comun.js';
+import { crearControlesSuspension } from './admin-comercio-suspension.js';
 
 function normalizarComercioAdmin(comercio) {
   normalizarCampos(comercio, ['nombre', 'razonSocial']);
@@ -761,66 +762,6 @@ export async function initAdminComercioDetalle() {
   });
 }
 
-function mostrarModalSuspenderComercio(comercio, onConfirmar) {
-  const backdrop = crear('div', 'modal-backdrop');
-  backdrop.setAttribute('data-testid', 'modal-suspender-comercio');
-  backdrop.innerHTML = `
-    <div class="product-modal-sheet">
-      <div class="product-modal-sheet__handle"><span></span></div>
-      <div class="product-modal-sheet__body">
-        <h2 style="font-size:19px;margin-bottom:6px;">Suspender comercio</h2>
-        <p class="product-modal-sheet__description" style="margin-bottom:16px;">El comercio deja de operar y sus pedidos activos se cancelan. El Dueño recibe una notificación con el motivo.</p>
-        <form class="form" id="form-suspender-comercio" novalidate>
-          <div class="field">
-            <label class="field__label" for="suspension-motivo">Motivo de la suspensión</label>
-            <div class="textarea-shell" id="suspension-motivo-shell"><textarea id="suspension-motivo" maxlength="500" placeholder="Describí el motivo de la suspensión..." data-testid="input-motivo-suspension"></textarea></div>
-            <div class="textarea-counter"><span id="suspension-contador">0/500</span></div>
-            <div id="suspension-error" class="field__error" style="display:none;" data-testid="mensaje-error-motivo-suspension">${ICONS.xCircle}<span>El motivo es obligatorio para suspender un comercio.</span></div>
-          </div>
-          <button class="btn btn-primary" type="submit" id="confirmar-suspension-btn" style="background:var(--color-error);margin-bottom:10px;" disabled data-testid="btn-confirmar-suspension">Confirmar suspensión</button>
-          <button class="btn btn-tertiary" type="button" id="cancelar-suspension-btn" data-testid="btn-cancelar-suspension">Cancelar</button>
-        </form>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(backdrop);
-
-  const textarea = backdrop.querySelector('#suspension-motivo');
-  const shell = backdrop.querySelector('#suspension-motivo-shell');
-  const contador = backdrop.querySelector('#suspension-contador');
-  const errorEl = backdrop.querySelector('#suspension-error');
-  const submitBtn = backdrop.querySelector('#confirmar-suspension-btn');
-
-  textarea.addEventListener('input', () => {
-    contador.textContent = `${textarea.value.length}/500`;
-    const valido = textarea.value.trim().length > 0;
-    submitBtn.disabled = !valido;
-    if (valido) {
-      shell.classList.remove('textarea-shell--error');
-      errorEl.style.display = 'none';
-    }
-  });
-
-  backdrop.querySelector('#cancelar-suspension-btn').addEventListener('click', () => backdrop.remove());
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
-  });
-
-  backdrop.querySelector('#form-suspender-comercio').addEventListener('submit', (event) => {
-    event.preventDefault();
-    const motivo = textarea.value.trim();
-    if (!motivo) {
-      shell.classList.add('textarea-shell--error');
-      errorEl.style.display = 'flex';
-      return;
-    }
-    backdrop.remove();
-    onConfirmar(motivo);
-  });
-}
-
 function textoResumenEquipo(activos, inactivos) {
   const textoActivos = `${activos} ${activos === 1 ? 'activo' : 'activos'}`;
   const textoInactivos = `${inactivos} ${inactivos === 1 ? 'inactivo' : 'inactivos'}`;
@@ -881,32 +822,26 @@ function mostrarModalDetalleComercio(comercio, onSuspendido) {
 
   const accionesModal = crear('div', 'comercio-modal-acciones');
 
-  if (comercio.estado === 'APROBADO' || comercio.estado === 'APTO_VENTA') {
-    const suspenderBtn = crear('button', 'btn btn-secondary');
-    suspenderBtn.type = 'button';
-    suspenderBtn.style.borderColor = 'var(--color-error)';
-    suspenderBtn.style.color = 'var(--color-error)';
-    suspenderBtn.setAttribute('data-testid', 'btn-suspender-comercio');
-    suspenderBtn.textContent = 'Suspender';
-    suspenderBtn.addEventListener('click', () => {
-      mostrarModalSuspenderComercio(comercio, async (motivo) => {
-        try {
-          await apiFetch(`/administrador/comercios/${comercio.id}/suspender`, {
-            method: 'PUT',
-            body: { motivo },
-          });
-          backdrop.remove();
-          showToast('Comercio suspendido');
-          if (onSuspendido) {
-            onSuspendido();
-          }
-        } catch (error) {
-          showToast(error instanceof ApiError ? error.message : 'No pudimos suspender el comercio', 'error');
-        }
-      });
-    });
-    accionesModal.appendChild(suspenderBtn);
+  const controles = crearControlesSuspension(comercio, {
+    alExito: async () => {
+      backdrop.remove();
+      await onSuspendido();
+      const volver = document.querySelector(`[data-testid="btn-ver-detalle-comercio-${comercio.id}"]`);
+      if (volver) volver.focus();
+    },
+    alConflicto: () => {
+      onSuspendido().catch(() => {});
+    },
+    recargarComercio: async () => {
+      const lista = await apiFetch('/administrador/comercios', { handle5xxGlobally: false, handleRedGlobally: false });
+      lista.forEach(normalizarComercioAdmin);
+      return lista.find((otro) => otro.id === comercio.id);
+    },
+  });
+  if (controles.bloque) {
+    h2.after(controles.bloque);
   }
+  controles.botones.forEach((boton) => accionesModal.appendChild(boton));
 
   const cerrarBtn = crear('button', 'btn btn-tertiary');
   cerrarBtn.type = 'button';
@@ -1802,6 +1737,9 @@ const LABELS_MOTIVO_REEMBOLSO = {
   ANULACION_COMERCIO: 'Anulación del comercio',
   SUSPENSION_COMERCIO: 'Suspensión del comercio',
   EXPIRACION_SIN_RESPUESTA: 'Sin respuesta del comercio',
+  SUSPENSION_CLIENTE: 'Suspensión de cuenta',
+  PAGO_TARDIO: 'Pago tardío',
+  RECLAMO: 'Reclamo',
 };
 
 const FILTROS_REEMBOLSOS = [
