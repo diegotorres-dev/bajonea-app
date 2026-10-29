@@ -966,3 +966,97 @@ Como cliente, quiero saber que mi cuenta fue suspendida y cuál es el motivo, pa
 **8. `diccionario-de-datos.md`**
 
 Ya está en la versión 1.29 (`V44`). Sin cambios. Los próximos libres son `V45`, la carpeta 81 de Newman, el spec 85 y la versión 1.30.
+
+
+---
+
+## Fase 5, tramo S2, suspensión de un comercio (entrega A, 2026-10-29)
+
+Texto exacto por documento para copiar a `01. Análisis de Requerimientos` y a `02. Diseño`. Los archivos de esas carpetas no se tocaron. Los requisitos de este tramo reemplazan a los del diseño anterior de la suspensión de un comercio (cancelación inmediata de los pedidos pendientes y en preparación, y paso automático de los pedidos en camino a entregados).
+
+**Aclaración sobre `EN_CAMINO`.** El código nunca marcó automáticamente como entregado un pedido `EN_CAMINO` por la suspensión del comercio: esa regla solo figuraba en los documentos de requisitos y de diseño, no en el sistema. El texto nuevo de la sección "Suspensión de Comercio — Gestión de Pedidos Activos" (bloque 1) la corrige: el pedido en camino no se modifica y sigue su camino normal (lo confirma el cliente o el sistema, con aviso a los 75 minutos y autoconfirmación a los 90).
+
+**1. `requisitos-funcionales-sistema.md`: reemplazar la sección "### Suspensión de Comercio — Gestión de Pedidos Activos" completa por:**
+
+### Suspensión de Comercio — Gestión de Pedidos Activos
+
+Suspender un comercio (por el Administrador) no cancela ni modifica ningún pedido en el momento. Los pedidos del comercio siguen su camino y el sistema aplica estas reglas, contando los plazos desde el momento en que se suspendió el comercio:
+
+- **PENDIENTE_CONFIRMACION_COMERCIO:** el comercio solo puede rechazarlo (el cliente recibe la devolución del pago en el acto); no puede aceptarlo. Si nadie lo resuelve, sigue vigente el vencimiento de 30 minutos sin respuesta, con reembolso total.
+- **EN_PREPARACION:** el comercio puede despacharlo o anularlo. Si no hace ninguna de las dos cosas, el sistema lo cancela a los 90 minutos de la suspensión (CANCELADO_POR_SISTEMA, motivo de timeout de preparación por suspensión), genera la nota de crédito y el reembolso total y avisa al cliente (T11). Si la suspensión se levanta antes, el plazo deja de correr y el pedido sigue normalmente.
+- **EN_CAMINO:** no se modifica. El pedido sigue su camino normal: lo confirma el cliente o el sistema (aviso a los 75 minutos y autoconfirmación a los 90).
+- **LISTO_PARA_RETIRAR:** el comercio puede entregarlo o cerrarlo como NO_RETIRADO (con la espera mínima del cierre manual). Si no lo hace, el sistema lo cierra como NO_RETIRADO, sin reembolso, a los 90 minutos contados desde el momento en que el pedido quedó listo o desde la suspensión del comercio, lo que haya ocurrido después (actor Sistema, motivo de timeout de retiro por suspensión, sin la espera mínima del cierre manual), y avisa al cliente (T36). Si la suspensión se levanta antes, el plazo deja de correr.
+- **PENDIENTE_PAGO:** el botón "Ir a pagar" queda bloqueado con un mensaje claro. Si el pago aprobado llega con el comercio suspendido, el sistema cancela el pedido (CANCELADO_POR_SISTEMA) y genera la devolución total en el acto (nota de crédito por suspensión del comercio). Un pedido sin pagar no se cancela por la suspensión: sigue su vencimiento normal por falta de pago.
+- **Pago aprobado sobre un pedido ya cancelado, por cualquier causa:** el sistema siempre genera la devolución total del pago (motivo suspensión del cliente, suspensión del comercio o pago tardío, según el caso). Nunca queda dinero retenido.
+
+Cada pedido se procesa en su propia transacción: si un pedido falla, los demás se procesan igual y el pedido fallido se reintenta en la corrida siguiente. Los procesos son idempotentes y vuelven a comprobar, con el comercio y el pedido bloqueados, que el comercio siga suspendido y que el pedido siga en el mismo estado.
+
+**2. `requisitos-funcionales-sistema.md`: otras frases**
+
+- En la regla de la suspensión de un comercio puntual (línea que empieza con "La suspensión de un comercio puntual por el Administrador"), agregar al final: "El Administrador puede levantar la suspensión; el comercio vuelve a Apto para Venta si cumple los requisitos para seguir vendiendo (cuenta de cobro vinculada y al menos un documento aprobado), a Aprobado si le falta alguno, o a Cerrado Temporalmente si cumple pero la cuenta del Dueño está bloqueada. El cierre manual no se modifica. Mientras el comercio esté suspendido ningún otro evento (aprobar documentos, vincular la cuenta de cobro, bloquear o restaurar la cuenta del Dueño, abrir o cerrar) lo saca de ese estado."
+- En la definición de CANCELADO_POR_SISTEMA, reemplazar "ante suspensión del comercio o por vencimiento del plazo de pago" por "por haberse cumplido los 90 minutos de un pedido en preparación de un comercio suspendido, por un pago aprobado que llega con el comercio o la cuenta del cliente suspendidos, o por vencimiento del plazo de pago".
+- En la regla de aceptar una invitación de empleado, reemplazar "con el comercio Aprobado, Apto para Venta, Cerrado Temporalmente o Suspendido, y no con el comercio Pendiente, Rechazado, con Rechazo Definitivo o Inactivo" por "con el comercio Aprobado, Apto para Venta o Cerrado Temporalmente, y no con el comercio Suspendido, Pendiente, Rechazado, con Rechazo Definitivo o Inactivo".
+- En la tabla de notificaciones: T16 (comercio suspendido) y T29 (suspensión levantada) llegan al Dueño con el motivo o el mensaje, por aviso dentro de la app y por email (un solo intento, reenviable por el Administrador). Agregar dos avisos solo dentro de la app para los Empleados Activos del comercio, sin motivo y sin email: "COMERCIO_SUSPENDIDO_EQUIPO" ("El comercio '{nombre}' fue suspendido. Mientras dure no se aceptan pedidos nuevos.") y "COMERCIO_SUSPENSION_LEVANTADA_EQUIPO" ("Levantaron la suspensión del comercio '{nombre}'. Ya vuelve a funcionar con normalidad."). Un Empleado con la cuenta suspendida queda fuera del reparto.
+- En el email del resumen de turno: un comercio suspendido recibe el resumen solo si el turno tuvo movimiento (pedidos o pendientes) y la cuenta del Dueño está activa (sin cambios de comportamiento: queda documentado).
+
+**3. `requisitos-funcionales-administrador.md`: reemplazar la línea "El administrador debe poder suspender un comercio activo ingresando un motivo…" por:**
+
+- El administrador debe poder suspender un comercio aprobado, apto para venta o cerrado temporalmente ingresando un motivo de 10 a 500 caracteres (el Dueño lo ve). La suspensión es una acción sobre ese comercio puntual: cambia su estado a Suspendido sin afectar la cuenta del Dueño ni sus demás comercios, es indefinida, no modifica ningún pedido en el momento (los pedidos siguen las reglas del sistema para un comercio suspendido) y registra la transición en el historial con el administrador, el motivo y el origen (individual o por la suspensión del Dueño).
+- Antes de suspender, el administrador debe ver cuántos pedidos tiene el comercio en cada estado (pendientes de confirmación, en preparación, listos para retirar, en camino y sin pagar).
+- El administrador debe poder levantar la suspensión de un comercio, con un mensaje opcional de hasta 500 caracteres que recibe el Dueño. Un comercio suspendido por la suspensión de su Dueño no se levanta individualmente: hay que levantar la suspensión del Dueño. Suspender individualmente un comercio suspendido por el Dueño es válido y lo pasa a suspensión individual conservando la fecha original.
+- El administrador debe poder reenviar el último email de suspensión o de levantamiento que haya fallado. El listado de comercios muestra el estado, el origen, la fecha y el motivo de la suspensión.
+
+**4. `requisitos-funcionales-dueño.md`**
+
+Reemplazar el párrafo "Con el comercio Suspendido o Cerrado Temporalmente, hoy el Dueño no tiene las restricciones…" por:
+
+Con el comercio Suspendido el Dueño entra a su panel en solo lectura. Ve el estado, el motivo y la fecha de la suspensión, sus pedidos, sus estadísticas y sus documentos; puede subir documentos y vincular su cuenta de Mercado Pago. No puede editar productos, precios, perfil, horarios ni redes sociales (conflicto 409 con el código COMERCIO_SUSPENDIDO), ni abrir ni cerrar el comercio (409 con el código COMERCIO_NO_OPERATIVO), ni aceptar pedidos nuevos (409 con el código COMERCIO_SIN_OPERACION), ni invitar, dar de baja o reactivar empleados, ni desvincular Mercado Pago. Sobre los pedidos puede: rechazar uno pendiente de confirmación, despachar o anular uno en preparación, y entregar o cerrar como No Retirado uno listo para retirar. Con el comercio Cerrado Temporalmente no tiene estas restricciones.
+
+Agregar: "El Dueño recibe un aviso dentro de la app y un email con el motivo cuando suspenden uno de sus comercios, y otro cuando levantan la suspensión (con el mensaje del equipo, si lo hay)." Reemplazar "Un Dueño con un comercio suspendido puede contactar al soporte desde su panel" por la misma frase marcada "(tramo de Soporte, todavía no disponible)".
+
+**5. `requisitos-funcionales-empleado.md`**
+
+- En la regla "Se puede aceptar una invitación con el comercio…" (línea 91): quitar "o Suspendido" de los estados en que se puede aceptar y agregar "Suspendido" a los estados en que no.
+- Reemplazar el texto desde "Por ahora el Dueño queda sin cambios en estos estados" hasta "tramo de rediseño de la suspensión)." por: "El Dueño tiene las mismas restricciones que el Empleado con el comercio Suspendido (ver Requisitos Funcionales — Dueño). Con el comercio Suspendido el equipo queda en solo lectura: no se invita, no se da de baja y no se acepta una invitación pendiente."
+- Agregar: "El Empleado recibe un aviso dentro de la app cuando suspenden el comercio y otro cuando levantan la suspensión, sin el motivo ni el mensaje y sin email. En su selector de comercios ve el estado Suspendido, pero nunca el motivo ni la fecha."
+
+**6. `requisitos-funcionales-comercio.md`: reemplazar la definición de "Suspendido" por:**
+
+- **Suspendido:** inhabilitado por el Administrador ante una infracción. Se oculta del catálogo y no recibe pedidos nuevos; el Dueño y el equipo ven el panel en solo lectura. Afecta únicamente a este comercio puntual, no a los demás comercios del mismo Dueño. Los pedidos en curso siguen su camino con los plazos de 90 minutos descritos en Requisitos Funcionales — Sistema. Solo el Administrador lo levanta.
+
+**7. `alcance-y-limitaciones.md`**
+
+- Reemplazar los bloques "Pedidos en camino durante suspensión" y "Timer de retiro durante suspensión" (líneas 194 a 200) por: "**Pedidos durante la suspensión de un comercio:** los pedidos pendientes de confirmación solo se pueden rechazar o vencen a los 30 minutos; los que están en preparación se pueden despachar o anular y, si no, el sistema los cancela con reembolso total a los 90 minutos de la suspensión; los listos para retirar se pueden entregar o cerrar como no retirados y, si no, el sistema los cierra como no retirados, sin reembolso, a los 90 minutos contados desde que quedaron listos o desde la suspensión; los que están en camino no se modifican."
+- Reemplazar la limitación "Levantar la suspensión de un comercio: no está implementado…" (línea 232) por: "**Levantar la suspensión de un comercio:** implementado (tramo S2). Un comercio suspendido por la suspensión de su Dueño no se levanta individualmente (esa suspensión es del tramo S3)."
+- Borrar la línea "Suspensión de comercio rediseñada en un tramo aparte…" (línea 248) y, en la línea 247, quitar "(2) rediseño de la suspensión de un comercio" de los tramos futuros; el hueco "el Dueño puede editar con el comercio Suspendido" quedó resuelto.
+- Agregar la limitación: "El email de aviso de suspensión o de levantamiento se envía una sola vez; si falla queda marcado y el Administrador lo reenvía a mano. La fecha de la suspensión de los comercios que ya estaban suspendidos antes del tramo se tomó de su historial."
+
+**8. Historias de usuario**
+
+Agregar al final de `Historias de Usuario - Administrador.md`:
+
+## HU-A18: Levantar la Suspensión de un Comercio
+
+Como administrador, quiero levantar la suspensión de un comercio, para que vuelva a recibir pedidos cuando el problema se resolvió.
+
+- En el modal del comercio suspendido veo desde cuándo está suspendido, el motivo y quién lo suspendió, y el botón "Levantar suspensión".
+- Puedo escribir un mensaje opcional de hasta 500 caracteres para el Dueño.
+- El comercio vuelve a Apto para Venta si cumple los requisitos, a Aprobado si le falta la cuenta de cobro o un documento aprobado, o a Cerrado Temporalmente si la cuenta del Dueño está bloqueada.
+- Si el comercio fue suspendido por la suspensión de su Dueño, no puedo levantarlo acá: veo el aviso de que hay que levantar la suspensión del Dueño.
+- Si el email al Dueño falló, puedo reenviarlo.
+
+Agregar a `Historias de Usuario - Dueño.md`:
+
+## HU-D15: Ver que mi Comercio fue Suspendido y por qué
+
+Como dueño, quiero saber que mi comercio fue suspendido y cuál es el motivo, para entender qué puedo y qué no puedo hacer mientras tanto.
+
+- Recibo un aviso dentro de la app y un email con el motivo.
+- Con el comercio suspendido entro a mi panel en solo lectura: veo mis pedidos, mis estadísticas y mis documentos, y puedo subir documentos y vincular Mercado Pago.
+- Puedo rechazar los pedidos pendientes, despachar o anular los que están en preparación y entregar o cerrar como no retirados los que están listos para retirar.
+- Los pedidos en preparación o listos para retirar que no atienda se cancelan o se cierran solos a los 90 minutos de la suspensión.
+- Recibo otro aviso y otro email cuando levantan la suspensión.
+
+**9. `diccionario-de-datos.md`**
+
+Ya está en la versión 1.30 (`V45`). Los próximos libres son `V46`, la carpeta 82 de Newman, el spec 85 de Playwright (el 84 es de S1) y la versión 1.31.
