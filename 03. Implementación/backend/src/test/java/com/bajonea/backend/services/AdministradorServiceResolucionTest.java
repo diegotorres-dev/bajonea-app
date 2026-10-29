@@ -38,6 +38,8 @@ import com.bajonea.backend.repositories.DocumentoComercioRepository;
 import com.bajonea.backend.repositories.HistorialCambioComercioRepository;
 import com.bajonea.backend.repositories.HistorialEstadoComercioRepository;
 import com.bajonea.backend.repositories.HorarioRepository;
+import com.bajonea.backend.repositories.HistorialEstadoUsuarioRepository;
+import com.bajonea.backend.repositories.NotificacionRepository;
 import com.bajonea.backend.repositories.RedSocialRepository;
 import com.bajonea.backend.repositories.TagRepository;
 import java.util.Optional;
@@ -73,7 +75,7 @@ class AdministradorServiceResolucionTest {
         propiedades.setMax(3);
 
         service = new AdministradorService(comercioRepository, mock(DireccionRepository.class), mock(HorarioRepository.class), mock(DisponibilidadComercioService.class),
-                mock(RedSocialRepository.class), administradorRepository, historialRepository, mock(ClienteRepository.class),
+                mock(RedSocialRepository.class), administradorRepository, historialRepository, mock(ClienteRepository.class), mock(NotificacionRepository.class), mock(HistorialEstadoUsuarioRepository.class),
                 mock(CategoriaRepository.class), mock(TagRepository.class), notificacionService, mock(PedidoService.class),
                 comercioService, aptitudService, mock(DocumentoComercioRepository.class), mock(AprobacionPreviaDueno.class),
                 mock(HistorialCambioComercioRepository.class), propiedades);

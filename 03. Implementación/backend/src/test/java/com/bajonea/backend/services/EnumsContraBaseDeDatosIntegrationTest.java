@@ -99,4 +99,20 @@ class EnumsContraBaseDeDatosIntegrationTest {
     void elEstadoDelDocumentoDelComercioCoincideConElEnumDeJava() {
         compararConLaColumna("documento_comercio", "estado", com.bajonea.backend.enums.EstadoDocumentoComercio.values(), Set.of());
     }
+
+    @Test
+    void elTipoDeCierreDeLaSesionCoincideConElEnumDeJava() {
+        compararConLaColumna("sesion", "tipo_cierre", com.bajonea.backend.enums.TipoCierreSesion.values(), Set.of());
+    }
+
+    @Test
+    void elMotivoDeLaNotaDeCreditoCoincideConElEnumDeJava() {
+        compararConLaColumna("nota_credito", "motivo", com.bajonea.backend.enums.MotivoNotaCredito.values(), Set.of());
+    }
+
+    @Test
+    void losEstadosDelHistorialDelUsuarioCoincidenConElEnumDeJava() {
+        compararConLaColumna("historial_estado_usuario", "estado_origen", com.bajonea.backend.enums.EstadoUsuario.values(), Set.of());
+        compararConLaColumna("historial_estado_usuario", "estado_destino", com.bajonea.backend.enums.EstadoUsuario.values(), Set.of());
+    }
 }

@@ -138,6 +138,18 @@ public class TestController {
                 .body(new ApiResponse<>("Fallas simuladas del email de resumen de turno", emailService.fallasSimuladasRestantes()));
     }
 
+    @PutMapping("/email-aviso-cuenta/fallas")
+    public ResponseEntity<ApiResponse<Void>> simularFallasDelEmailDeAvisoDeCuenta(@RequestParam int cantidad) {
+        emailService.simularFallasDeAvisoCuenta(cantidad);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Fallas simuladas del email de aviso de cuenta", null));
+    }
+
+    @GetMapping("/emails-cuenta")
+    public ResponseEntity<ApiResponse<List<java.util.Map<String, Object>>>> listarEmailsDeCuenta(@RequestParam String email) {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ApiResponse<>("Emails de aviso de cuenta del usuario", testSupportService.listarEmailsDeCuenta(email)));
+    }
+
     @PutMapping("/documentacion-requerida")
     public ResponseEntity<ApiResponse<Boolean>> cambiarExigenciaDeDocumentacion(@RequestParam boolean habilitado) {
         documentacionComercioProperties.setRequerida(habilitado);

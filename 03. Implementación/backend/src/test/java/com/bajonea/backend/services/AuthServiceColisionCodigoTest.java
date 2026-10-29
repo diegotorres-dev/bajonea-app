@@ -68,7 +68,7 @@ class AuthServiceColisionCodigoTest {
                 mock(AptitudVentaComercioService.class),
                 mock(PasswordEncoder.class),
                 mock(JwtService.class),
-                emailService);
+                emailService, mock(EstadoUsuarioService.class));
     }
 
     @Test

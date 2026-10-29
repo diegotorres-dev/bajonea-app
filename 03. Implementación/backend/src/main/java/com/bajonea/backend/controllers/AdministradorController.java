@@ -3,7 +3,9 @@ package com.bajonea.backend.controllers;
 import com.bajonea.backend.config.security.AuthenticatedUser;
 import com.bajonea.backend.dto.request.AprobacionComercioRequestDTO;
 import com.bajonea.backend.dto.request.ConfiguracionTarifaRequestDTO;
+import com.bajonea.backend.dto.request.LevantamientoSuspensionRequestDTO;
 import com.bajonea.backend.dto.request.SuspensionComercioRequestDTO;
+import com.bajonea.backend.dto.request.SuspensionUsuarioRequestDTO;
 import com.bajonea.backend.dto.response.ActividadComercioResponseDTO;
 import com.bajonea.backend.dto.response.AdministradorResponseDTO;
 import com.bajonea.backend.dto.response.ApiResponse;
@@ -14,11 +16,15 @@ import com.bajonea.backend.dto.response.EquipoComercioResponseDTO;
 import com.bajonea.backend.dto.response.MetricasAdminResponseDTO;
 import com.bajonea.backend.dto.response.NotaCreditoAdminResponseDTO;
 import com.bajonea.backend.dto.response.ReSolicitudComercioAdminResponseDTO;
+import com.bajonea.backend.dto.response.SuspensionClientePreviaResponseDTO;
+import com.bajonea.backend.dto.response.SuspensionUsuarioResponseDTO;
+import com.bajonea.backend.enums.EstadoEnvioNotificacion;
 import com.bajonea.backend.enums.EstadoNotaCredito;
 import com.bajonea.backend.services.AdministradorService;
 import com.bajonea.backend.services.ConfiguracionTarifaService;
 import com.bajonea.backend.services.EquipoComercioAdminService;
 import com.bajonea.backend.services.NotaCreditoAdminService;
+import com.bajonea.backend.services.SuspensionUsuarioService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +53,7 @@ public class AdministradorController {
     private final ConfiguracionTarifaService configuracionTarifaService;
     private final NotaCreditoAdminService notaCreditoAdminService;
     private final EquipoComercioAdminService equipoComercioAdminService;
+    private final SuspensionUsuarioService suspensionUsuarioService;
 
     @GetMapping("/comercios/pendientes")
     public ResponseEntity<ApiResponse<List<ComercioAdminResponseDTO>>> listarComerciosPendientes() {
@@ -118,6 +125,39 @@ public class AdministradorController {
             @Valid @RequestBody SuspensionComercioRequestDTO request, @AuthenticationPrincipal AuthenticatedUser administrador) {
         administradorService.suspenderComercio(comercioId, administrador.userId(), request);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Comercio suspendido correctamente", null));
+    }
+
+    @GetMapping("/clientes/{clienteId}/suspension/previa")
+    public ResponseEntity<ApiResponse<SuspensionClientePreviaResponseDTO>> vistaPreviaSuspensionCliente(@PathVariable Integer clienteId,
+            @AuthenticationPrincipal AuthenticatedUser administrador) {
+        SuspensionClientePreviaResponseDTO previa = suspensionUsuarioService.vistaPrevia(clienteId, administrador.userId());
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Vista previa obtenida correctamente", previa));
+    }
+
+    @PutMapping("/clientes/{clienteId}/suspender")
+    public ResponseEntity<ApiResponse<SuspensionUsuarioResponseDTO>> suspenderCliente(@PathVariable Integer clienteId,
+            @Valid @RequestBody SuspensionUsuarioRequestDTO request, @AuthenticationPrincipal AuthenticatedUser administrador) {
+        SuspensionUsuarioResponseDTO respuesta = suspensionUsuarioService.suspender(clienteId, administrador.userId(), request);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Cuenta suspendida correctamente", respuesta));
+    }
+
+    @PutMapping("/clientes/{clienteId}/levantar-suspension")
+    public ResponseEntity<ApiResponse<SuspensionUsuarioResponseDTO>> levantarSuspensionCliente(@PathVariable Integer clienteId,
+            @Valid @RequestBody(required = false) LevantamientoSuspensionRequestDTO request,
+            @AuthenticationPrincipal AuthenticatedUser administrador) {
+        SuspensionUsuarioResponseDTO respuesta = suspensionUsuarioService.levantar(clienteId, administrador.userId(), request);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Suspensión levantada correctamente", respuesta));
+    }
+
+    @PostMapping("/clientes/{clienteId}/suspension/reenviar-email")
+    public ResponseEntity<ApiResponse<Void>> reenviarEmailSuspensionCliente(@PathVariable Integer clienteId,
+            @AuthenticationPrincipal AuthenticatedUser administrador) {
+        EstadoEnvioNotificacion resultado = suspensionUsuarioService.reenviarEmail(clienteId, administrador.userId());
+        String mensaje = resultado == EstadoEnvioNotificacion.ENVIADO
+                ? "Email reenviado correctamente"
+                : "No se pudo reenviar el email. Probá de nuevo más tarde";
+        return ResponseEntity.status(resultado == EstadoEnvioNotificacion.ENVIADO ? HttpStatus.OK : HttpStatus.BAD_GATEWAY)
+                .body(new ApiResponse<>(mensaje, null));
     }
 
     @GetMapping("/tarifas/vigente")

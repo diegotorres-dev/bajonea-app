@@ -135,7 +135,7 @@ class CierreComercioServiceTest {
         service.cerrar(COMERCIO_ID, DUENO_ID, ActorCierre.DUENO);
 
         InOrder orden = inOrder(usuarioRepository, entityManager);
-        orden.verify(usuarioRepository).leerIdConBloqueoCompartido(DUENO_ID);
+        orden.verify(usuarioRepository).leerEstadoCuentaConBloqueoCompartido(DUENO_ID);
         orden.verify(entityManager).refresh(comercio, LockModeType.PESSIMISTIC_WRITE);
     }
 
@@ -146,7 +146,7 @@ class CierreComercioServiceTest {
         service.abrir(COMERCIO_ID, DUENO_ID, ActorCierre.EMPLEADO);
 
         InOrder orden = inOrder(usuarioRepository, entityManager);
-        orden.verify(usuarioRepository).leerIdConBloqueoCompartido(DUENO_ID);
+        orden.verify(usuarioRepository).leerEstadoCuentaConBloqueoCompartido(DUENO_ID);
         orden.verify(entityManager).refresh(comercio, LockModeType.PESSIMISTIC_WRITE);
     }
 
@@ -156,7 +156,7 @@ class CierreComercioServiceTest {
 
         service.reabrirSiVencido(COMERCIO_ID, LUNES.plusDays(2).atTime(12, 0));
 
-        verify(usuarioRepository, never()).leerIdConBloqueoCompartido(any());
+        verify(usuarioRepository, never()).leerEstadoCuentaConBloqueoCompartido(any());
     }
 
     @Test

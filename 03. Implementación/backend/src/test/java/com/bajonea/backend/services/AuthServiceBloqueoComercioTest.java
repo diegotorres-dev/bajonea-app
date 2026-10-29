@@ -59,7 +59,12 @@ class AuthServiceBloqueoComercioTest {
         authService = new AuthService(usuarioRepository, mock(TokenRepository.class), mock(TokenService.class),
                 mock(SesionRepository.class), comercioRepository, mock(HistorialCambioNombreUsuarioRepository.class),
                 aptitudService, passwordEncoder, mock(JwtService.class),
-                mock(EmailService.class));
+                mock(EmailService.class), estadoReal());
+    }
+
+    private static EstadoUsuarioService estadoReal() {
+        return new EstadoUsuarioService(mock(com.bajonea.backend.repositories.HistorialEstadoUsuarioRepository.class),
+                mock(UsuarioRepository.class), java.time.Clock.systemDefaultZone());
     }
 
     private static Comercio comercio(int id, EstadoComercio estado) {

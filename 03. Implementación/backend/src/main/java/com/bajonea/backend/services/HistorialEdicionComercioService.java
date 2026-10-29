@@ -66,8 +66,7 @@ public class HistorialEdicionComercioService {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void iniciarEscritura(ComercioActivo actor) {
-        usuarioRepository.leerIdConBloqueoCompartido(actor.actorUsuarioId())
-                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+        EstadoUsuarioService.exigirNoSuspendido(usuarioRepository, actor.actorUsuarioId());
         comercioActivoService.exigirRelacionActiva(actor);
     }
 

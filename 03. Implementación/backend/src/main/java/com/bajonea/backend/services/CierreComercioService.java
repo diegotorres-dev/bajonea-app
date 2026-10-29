@@ -6,7 +6,9 @@ import com.bajonea.backend.entities.HistorialCierreComercio;
 import com.bajonea.backend.entities.Horario;
 import com.bajonea.backend.enums.AccionCierre;
 import com.bajonea.backend.enums.ActorCierre;
+import com.bajonea.backend.enums.EstadoUsuario;
 import com.bajonea.backend.exceptions.ConflictoComercioException;
+import com.bajonea.backend.exceptions.CuentaSuspendidaException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.HistorialCierreComercioRepository;
@@ -78,7 +80,11 @@ public class CierreComercioService {
     private CierreComercioResponseDTO cambiarCierre(Integer comercioId, Integer actorUsuarioId, ActorCierre actor,
             boolean cerrar) {
         if (actor != ActorCierre.SISTEMA && actorUsuarioId != null) {
-            usuarioRepository.leerIdConBloqueoCompartido(actorUsuarioId);
+            usuarioRepository.leerEstadoCuentaConBloqueoCompartido(actorUsuarioId).ifPresent(cuenta -> {
+                if (EstadoUsuario.valueOf(cuenta.getEstado()) == EstadoUsuario.SUSPENDIDO) {
+                    throw new CuentaSuspendidaException(cuenta.getMotivoSuspension());
+                }
+            });
         }
         if (actor == ActorCierre.EMPLEADO) {
             comercioActivoService.exigirRelacionActiva(actorUsuarioId, comercioId);

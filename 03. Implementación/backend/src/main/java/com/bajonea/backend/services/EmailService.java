@@ -36,6 +36,8 @@ public class EmailService {
 
     private final AtomicInteger fallasSimuladas = new AtomicInteger();
 
+    private final AtomicInteger fallasSimuladasAvisoCuenta = new AtomicInteger();
+
     @Value("${mail.from}")
     private String remitente;
 
@@ -124,6 +126,40 @@ public class EmailService {
             return ResultadoEnvioEmail.fallido(503, "Falla simulada");
         }
         return enviar(destinatario, asunto, cuerpo, idempotencyKey);
+    }
+
+    /**
+     * Aviso de que la cuenta fue suspendida, con el motivo que cargó el Administrador. Un solo intento, sin
+     * reintento automático: devuelve el resultado para que quien lo envía deje constancia de si salió o falló y un
+     * Administrador pueda reenviarlo. La persona suspendida no puede ver la app, así que este mail es su canal.
+     */
+    public ResultadoEnvioEmail enviarCuentaSuspendida(String destinatario, String motivo) {
+        return enviarAvisoDeCuenta(destinatario, "Tu cuenta de Bajoneá fue suspendida",
+                "Tu cuenta de Bajoneá fue suspendida.\n\n"
+                        + "Motivo: " + motivo + "\n\n"
+                        + "Mientras la cuenta esté suspendida no vas a poder iniciar sesión ni hacer pedidos. "
+                        + "Los pedidos que ya pagaste siguen su curso normal y los que todavía no pagaste se cancelaron.\n\n"
+                        + "Equipo de Bajoneá");
+    }
+
+    public ResultadoEnvioEmail enviarSuspensionLevantada(String destinatario, String motivo) {
+        String detalle = motivo == null || motivo.isBlank() ? "" : "Mensaje del equipo: " + motivo + "\n\n";
+        return enviarAvisoDeCuenta(destinatario, "Tu cuenta de Bajoneá volvió a estar activa",
+                "Levantamos la suspensión de tu cuenta de Bajoneá. Ya podés iniciar sesión de nuevo.\n\n"
+                        + detalle
+                        + "Equipo de Bajoneá");
+    }
+
+    private ResultadoEnvioEmail enviarAvisoDeCuenta(String destinatario, String asunto, String cuerpo) {
+        if (!envioHabilitado && fallasSimuladasAvisoCuenta.getAndUpdate(restantes -> restantes > 0 ? restantes - 1 : 0) > 0) {
+            log.warn("Falla simulada del envío del aviso de cuenta a {} (asunto \"{}\")", destinatario, asunto);
+            return ResultadoEnvioEmail.fallido(503, "Falla simulada");
+        }
+        return enviar(destinatario, asunto, cuerpo, null);
+    }
+
+    public void simularFallasDeAvisoCuenta(int cantidad) {
+        fallasSimuladasAvisoCuenta.set(Math.max(cantidad, 0));
     }
 
     public void simularFallasDeResumenTurno(int cantidad) {

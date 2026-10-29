@@ -28,6 +28,7 @@ import com.bajonea.backend.enums.EstadoDetallePedido;
 import com.bajonea.backend.enums.EstadoEmpleadoComercio;
 import com.bajonea.backend.enums.EstadoPagoPedido;
 import com.bajonea.backend.enums.EstadoPedido;
+import com.bajonea.backend.enums.EstadoUsuario;
 import com.bajonea.backend.enums.FuenteEntrega;
 import com.bajonea.backend.enums.MotivoNotaCredito;
 import com.bajonea.backend.enums.MotivoRechazo;
@@ -38,6 +39,7 @@ import com.bajonea.backend.enums.TipoNotificacion;
 import com.bajonea.backend.exceptions.ComercioNoDisponibleException;
 import com.bajonea.backend.exceptions.ConflictoComercioException;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
+import com.bajonea.backend.exceptions.CuentaSuspendidaException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.exceptions.ValidacionException;
 import com.bajonea.backend.repositories.CarritoRepository;
@@ -127,6 +129,7 @@ public class PedidoService {
     private final ComercioActivoService comercioActivoService;
     private final EmpleadoComercioRepository empleadoComercioRepository;
     private final TurnoPedidoService turnoPedidoService;
+    private final EstadoUsuarioService estadoUsuarioService;
     private final Clock clock;
 
     private static final Logger log = LoggerFactory.getLogger(PedidoService.class);
@@ -150,7 +153,7 @@ public class PedidoService {
     static final String MENSAJE_YA_ENTREGADO = "Este pedido ya figura como entregado";
 
     public PedidoResponseDTO confirmarPedido(Integer usuarioId, PedidoRequestDTO request) {
-        usuarioRepository.leerIdConBloqueoCompartido(usuarioId);
+        estadoUsuarioService.exigirNoSuspendido(usuarioId);
         Cliente cliente = clienteRepository.findById(usuarioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Cliente no encontrado"));
 
@@ -286,9 +289,23 @@ public class PedidoService {
      * {@code fecha_pago_confirmado} y la que decide el turno del pedido.
      */
     public void confirmarPagoAprobado(Integer pedidoId, LocalDateTime instanteDelPago) {
-        PedidoBloqueado bloqueado = bloquearParaActualizarConEquipo(pedidoId, null);
+        PedidoBloqueado bloqueado = bloquearParaPago(pedidoId);
+        if (bloqueado.pedido().getEstado() != EstadoPedido.PENDIENTE_PAGO) {
+            return;
+        }
+        confirmarOCancelarPagoAprobado(bloqueado, instanteDelPago);
+    }
+
+    /**
+     * Resuelve un pago aprobado sobre un pedido que sigue en {@code PENDIENTE_PAGO}, con el pedido ya bloqueado por
+     * {@link #bloquearParaPago}: lo confirma, salvo que el Cliente haya sido suspendido antes de que el pago llegara,
+     * en cuyo caso el pedido se cancela y el pago se devuelve entero en el acto (la suspensión no tiene que dejar un
+     * pedido nuevo para el comercio ni plata retenida).
+     */
+    void confirmarOCancelarPagoAprobado(PedidoBloqueado bloqueado, LocalDateTime instanteDelPago) {
         Pedido pedido = bloqueado.pedido();
-        if (pedido.getEstado() != EstadoPedido.PENDIENTE_PAGO) {
+        if (bloqueado.estadoCliente() == EstadoUsuario.SUSPENDIDO) {
+            cancelarPagoAprobadoPorSuspensionCliente(pedido);
             return;
         }
 
@@ -314,6 +331,60 @@ public class PedidoService {
 
         // El carrito es la última hoja del orden de bloqueos: va después de todo lo demás de esta transacción.
         carritoService.vaciarSiEsDelComercio(clienteId, comercioId);
+    }
+
+    private void cancelarPagoAprobadoPorSuspensionCliente(Pedido pedido) {
+        pedido.setPagoEstado(EstadoPagoPedido.PAGADO);
+        pedido.setEstado(EstadoPedido.CANCELADO_POR_SISTEMA);
+        pedido.setCanceladoPor(CanceladoPor.SISTEMA);
+        pedidoRepository.save(pedido);
+        registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.SUSPENSION_CLIENTE);
+        boolean devolucionEnGestion = reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.SUSPENSION_CLIENTE);
+        notificarCancelacionSistema(pedido, devolucionEnGestion
+                ? "tu cuenta fue suspendida y estamos gestionando la devolución de tu pago"
+                : "tu cuenta fue suspendida");
+    }
+
+    /**
+     * Un pago aprobado que llega sobre un pedido que ya no está esperando el pago (vencido, cancelado por la suspensión
+     * del Cliente o por cualquier otra causa) nunca deja la plata retenida: se crea la nota de crédito por el total en
+     * esta misma transacción, con el pedido ya bloqueado, y la devolución a Mercado Pago sale después del commit. Es
+     * idempotente: si el pago ya tiene reembolso por el monto completo no se duplica. El motivo es
+     * {@code SUSPENSION_CLIENTE} si el Cliente está suspendido y {@code CANCELACION_CLIENTE} en cualquier otro caso.
+     */
+    void reembolsarPagoTardio(PedidoBloqueado bloqueado) {
+        MotivoNotaCredito motivo = bloqueado.estadoCliente() == EstadoUsuario.SUSPENDIDO
+                ? MotivoNotaCredito.SUSPENSION_CLIENTE
+                : MotivoNotaCredito.CANCELACION_CLIENTE;
+        reembolsoService.generarNotaYReembolsarTotal(bloqueado.pedido(), motivo);
+    }
+
+    /**
+     * Cancela, uno por transacción, los pedidos del Cliente que todavía no se pagaron cuando el Administrador lo
+     * suspende. Se ejecuta después del commit de la suspensión (nunca dentro de ella: cada pedido toma las filas de
+     * los usuarios con bloqueo compartido y esperaría a la transacción de la suspensión, que sostiene la fila del
+     * Cliente de forma exclusiva). Un pedido que otra transacción resolvió entre la lectura de los ids y el bloqueo se
+     * salta. No hay pago aprobado que devolver; si MercadoPago confirma un pago después, el webhook lo devuelve
+     * ({@link #reembolsarPagoTardio}). Devuelve cuántos canceló.
+     */
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public int cancelarPedidosSinPagarPorSuspensionCliente(Integer clienteId) {
+        int[] cancelados = {0};
+        for (Integer pedidoId : pedidoRepository.findIdsByClienteIdAndEstado(clienteId, EstadoPedido.PENDIENTE_PAGO)) {
+            enTransaccionPorPedido("cancelarPedidosSinPagarPorSuspensionCliente", pedidoId, () -> {
+                Pedido pedido = bloquearParaActualizar(pedidoId);
+                if (pedido.getEstado() != EstadoPedido.PENDIENTE_PAGO) {
+                    return;
+                }
+                pedido.setEstado(EstadoPedido.CANCELADO_POR_SISTEMA);
+                pedido.setCanceladoPor(CanceladoPor.SISTEMA);
+                pedido.setMotivo("Cuenta suspendida");
+                pedidoRepository.save(pedido);
+                registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.SUSPENSION_CLIENTE);
+                cancelados[0]++;
+            });
+        }
+        return cancelados[0];
     }
 
     /**
@@ -363,7 +434,7 @@ public class PedidoService {
      * no toma relación ni comercio (orden de bloqueo: usuario, relación, comercio, pedido).
      */
     Pedido bloquearParaActualizar(Integer pedidoId, Integer actorUsuarioId, ComercioActivo comercioActivo, boolean aceptaPedidoNuevo) {
-        return bloquear(pedidoId, actorUsuarioId, comercioActivo, aceptaPedidoNuevo, false).pedido();
+        return bloquear(pedidoId, actorUsuarioId, comercioActivo, aceptaPedidoNuevo, false, false).pedido();
     }
 
     /**
@@ -379,14 +450,35 @@ public class PedidoService {
      * suma entre (1) y (3) no tiene su usuario bloqueado y queda afuera (se sumó después del hecho).
      */
     PedidoBloqueado bloquearParaActualizarConEquipo(Integer pedidoId, Integer actorUsuarioId) {
-        return bloquear(pedidoId, actorUsuarioId, null, false, true);
+        return bloquear(pedidoId, actorUsuarioId, null, false, true, false);
     }
 
-    record PedidoBloqueado(Pedido pedido, List<Integer> equipo) {
+    /**
+     * Bloqueo para aplicar un pago aprobado (webhook, sincronización y atajos de test). Igual que
+     * {@link #bloquearParaActualizarConEquipo} pero además lee el estado del Cliente (en la misma lectura de su
+     * usuario) y el estado del comercio con {@code LOCK IN SHARE MODE} <b>antes</b> de bloquear el pedido, respetando
+     * el orden global (usuario, relaciones, comercio, pedido): quien decide qué hacer con un pago que llega mientras
+     * el Cliente o el comercio se suspende lee los estados confirmados, sin tomar el comercio después del pedido
+     * (invertiría el orden y se interbloquea con la desvinculación de Mercado Pago, que toma el comercio y después
+     * los pedidos sin pagar).
+     */
+    PedidoBloqueado bloquearParaPago(Integer pedidoId) {
+        return bloquear(pedidoId, null, null, false, true, true);
+    }
+
+    /**
+     * {@code estadoCliente} y {@code estadoComercio} solo vienen completos desde {@link #bloquearParaPago}; en los demás
+     * caminos son {@code null}.
+     */
+    record PedidoBloqueado(Pedido pedido, List<Integer> equipo, EstadoUsuario estadoCliente, EstadoComercio estadoComercio) {
+
+        PedidoBloqueado(Pedido pedido, List<Integer> equipo) {
+            this(pedido, equipo, null, null);
+        }
     }
 
     private PedidoBloqueado bloquear(Integer pedidoId, Integer actorUsuarioId, ComercioActivo comercioActivo,
-            boolean aceptaPedidoNuevo, boolean conEquipo) {
+            boolean aceptaPedidoNuevo, boolean conEquipo, boolean leerEstados) {
         ParticipantesPedido participantes = pedidoRepository.findParticipantesById(pedidoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado"));
         List<RelacionDeEmpleado> candidatos = new ArrayList<>();
@@ -407,8 +499,14 @@ public class PedidoService {
         for (RelacionDeEmpleado candidato : candidatos) {
             usuarios.add(candidato.getEmpleadoId());
         }
+        Map<Integer, EstadoUsuario> estadosUsuarios = new HashMap<>();
         for (Integer usuarioId : usuarios) {
-            usuarioRepository.leerIdConBloqueoCompartido(usuarioId);
+            usuarioRepository.leerEstadoCuentaConBloqueoCompartido(usuarioId)
+                    .ifPresent(cuenta -> estadosUsuarios.put(usuarioId, EstadoUsuario.valueOf(cuenta.getEstado())));
+        }
+        if (actorUsuarioId != null && estadosUsuarios.get(actorUsuarioId) == EstadoUsuario.SUSPENDIDO) {
+            throw new CuentaSuspendidaException(usuarioRepository.leerEstadoCuentaConBloqueoCompartido(actorUsuarioId)
+                    .map(UsuarioRepository.EstadoCuenta::getMotivoSuspension).orElse(null));
         }
         if (comercioActivo != null && comercioActivo.esEmpleado()) {
             comercioActivoService.exigirRelacionActiva(comercioActivo);
@@ -428,10 +526,16 @@ public class PedidoService {
                 }
             }
         }
+        EstadoComercio estadoComercio = null;
+        if (leerEstados) {
+            estadoComercio = comercioRepository.leerEstadoConBloqueoCompartido(participantes.getComercioId())
+                    .map(lectura -> EstadoComercio.valueOf(lectura.getEstado()))
+                    .orElse(null);
+        }
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado"));
         entityManager.refresh(pedido, LockModeType.PESSIMISTIC_WRITE);
-        return new PedidoBloqueado(pedido, equipo);
+        return new PedidoBloqueado(pedido, equipo, estadosUsuarios.get(participantes.getClienteId()), estadoComercio);
     }
 
     private Pedido obtenerPedidoDelComercioParaActualizar(ComercioActivo comercioActivo, Integer pedidoId) {

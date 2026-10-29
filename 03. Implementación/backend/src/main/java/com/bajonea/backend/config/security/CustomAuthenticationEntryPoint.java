@@ -1,6 +1,7 @@
 package com.bajonea.backend.config.security;
 
 import com.bajonea.backend.dto.response.ApiResponse;
+import com.bajonea.backend.exceptions.CuentaSuspendidaException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,6 +31,11 @@ public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint 
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding("UTF-8");
+        if (authException instanceof CuentaSuspendidaAuthenticationException suspendida) {
+            response.getWriter().write(objectMapper.writeValueAsString(new ApiResponse<>(
+                    CuentaSuspendidaException.MENSAJE, CuentaSuspendidaException.datos(suspendida.getMotivo()))));
+            return;
+        }
         response.getWriter().write(objectMapper.writeValueAsString(
                 new ApiResponse<>("No autenticado: token ausente, inválido, expirado o sesión cerrada", null)));
     }

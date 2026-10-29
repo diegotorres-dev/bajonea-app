@@ -38,8 +38,10 @@ import com.bajonea.backend.repositories.UsuarioRepository;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -311,6 +313,19 @@ public class TestSupportService {
      * {@code INVITACION_EMPLEADO}) que recibió la cuenta en las últimas 24 horas, la única forma de observar que
      * se mandaron y cuántos cuenta el tope. Un email sin cuenta no tiene filas: devuelve 0.
      */
+    public List<Map<String, Object>> listarEmailsDeCuenta(String email) {
+        return usuarioRepository.findByEmail(email.trim().toLowerCase(Locale.ROOT))
+                .map(usuario -> notificacionRepository.findByUsuarioIdAndCanalOrderByIdAsc(usuario.getId(), CanalNotificacion.EMAIL).stream()
+                        .map(notificacion -> {
+                            Map<String, Object> fila = new LinkedHashMap<>();
+                            fila.put("tipo", notificacion.getTipo().name());
+                            fila.put("estado", notificacion.getEstado().name());
+                            return fila;
+                        })
+                        .toList())
+                .orElse(List.of());
+    }
+
     public long contarEmailsRegularizacion(String email) {
         return usuarioRepository.findByEmail(email.trim().toLowerCase(Locale.ROOT))
                 .map(usuario -> notificacionRepository.countByUsuarioIdAndTipoAndCanalAndFechaCreacionAfter(usuario.getId(),

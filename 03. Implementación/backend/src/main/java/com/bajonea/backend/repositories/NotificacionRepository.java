@@ -13,6 +13,24 @@ import org.springframework.data.repository.query.Param;
 
 public interface NotificacionRepository extends JpaRepository<Notificacion, Integer> {
 
+    java.util.Optional<Notificacion> findTopByUsuarioIdAndCanalAndTipoOrderByIdDesc(Integer usuarioId,
+            com.bajonea.backend.enums.CanalNotificacion canal, com.bajonea.backend.enums.TipoNotificacion tipo);
+
+    /**
+     * Usuarios cuyo último email del tipo dado (el de mayor id) quedó {@code FALLIDO}: la base del
+     * "No se envió el email" del listado de Clientes del Administrador, en una sola consulta.
+     */
+    @Query("""
+            SELECT n.usuario.id FROM Notificacion n
+            WHERE n.canal = com.bajonea.backend.enums.CanalNotificacion.EMAIL AND n.tipo = :tipo
+              AND n.estado = com.bajonea.backend.enums.EstadoEnvioNotificacion.FALLIDO
+              AND n.id = (SELECT MAX(m.id) FROM Notificacion m WHERE m.usuario.id = n.usuario.id
+                          AND m.canal = com.bajonea.backend.enums.CanalNotificacion.EMAIL AND m.tipo = :tipo)
+            """)
+    List<Integer> findUsuarioIdsConUltimoEmailFallido(@Param("tipo") TipoNotificacion tipo);
+
+    List<Notificacion> findByUsuarioIdAndCanalOrderByIdAsc(Integer usuarioId, com.bajonea.backend.enums.CanalNotificacion canal);
+
     /**
      * Notificaciones in-app personales del usuario (campana del Cliente): canal {@code PUSH} y sin comercio. Las
      * filas {@code EMAIL} son el rastro de un correo enviado (por ejemplo los avisos de regularización de

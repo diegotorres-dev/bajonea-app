@@ -26,6 +26,7 @@ import com.bajonea.backend.enums.TipoCierreSesion;
 import com.bajonea.backend.enums.TipoToken;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.CredencialesInvalidasException;
+import com.bajonea.backend.exceptions.CuentaSuspendidaException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.exceptions.ValidacionException;
 import com.bajonea.backend.repositories.ComercioRepository;
@@ -77,6 +78,10 @@ public class AuthService {
     private static final String MOTIVO_BLOQUEO_CUENTA = "Bloqueo de cuenta por intentos fallidos";
     private static final String MOTIVO_RESTAURACION_RECUPERACION = "Restauración por recuperación de contraseña";
     private static final String MOTIVO_RESTAURACION_REACTIVACION = "Restauración por reactivación de cuenta";
+    private static final String MOTIVO_VERIFICACION_EMAIL = "Verificación de email";
+    private static final String MOTIVO_DESBLOQUEO_RECUPERACION = "Recuperación de contraseña";
+    private static final String MOTIVO_REACTIVACION_CUENTA = "Reactivación de cuenta";
+    private static final String MENSAJE_CREDENCIALES_INVALIDAS = "Usuario o contraseña incorrectos";
     private static final int MAX_CAMBIOS_NOMBRE_USUARIO = 3;
     private static final long VENTANA_CAMBIO_NOMBRE_USUARIO_DIAS = 30;
     private static final long SEGUNDOS_POR_DIA = 86400;
@@ -91,19 +96,32 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final EmailService emailService;
+    private final EstadoUsuarioService estadoUsuarioService;
 
     public LoginResponseDTO login(LoginRequestDTO request, String ipOrigen, String userAgent) {
         // findByNombreUsuarioConBloqueo (SELECT ... FOR UPDATE): serializa requests concurrentes contra
         // el mismo usuario — ver docs/CONCURRENCIA-Y-TRANSACCIONES.md, sección 1.
         Usuario usuario = usuarioRepository.findByNombreUsuarioConBloqueo(request.getNombreUsuario())
-                .orElseThrow(() -> new CredencialesInvalidasException("Usuario o contraseña incorrectos"));
+                .orElseThrow(() -> new CredencialesInvalidasException(MENSAJE_CREDENCIALES_INVALIDAS));
 
-        validarEstadoParaLogin(usuario);
+        // Una cuenta suspendida no revela su estado hasta que se prueba la contraseña, y una contraseña incorrecta
+        // en ella no suma intentos (no hay nada que bloquear): el mensaje es el mismo genérico de cualquier error.
+        boolean suspendida = usuario.getEstado() == EstadoUsuario.SUSPENDIDO;
+        if (!suspendida) {
+            validarEstadoParaLogin(usuario);
+        }
 
         if (!passwordEncoder.matches(request.getPassword(), usuario.getPasswordHash())) {
+            if (suspendida) {
+                throw new CredencialesInvalidasException(MENSAJE_CREDENCIALES_INVALIDAS);
+            }
             int intentosRestantes = registrarIntentoFallido(usuario);
             throw new CredencialesInvalidasException(
-                    "Usuario o contraseña incorrectos", Map.of("intentosRestantes", intentosRestantes));
+                    MENSAJE_CREDENCIALES_INVALIDAS, Map.of("intentosRestantes", intentosRestantes));
+        }
+
+        if (suspendida) {
+            throw new CuentaSuspendidaException(usuario.getMotivoSuspension());
         }
 
         usuario.setIntentosFallidos(0);
@@ -127,11 +145,10 @@ public class AuthService {
 
     public void verificarEmail(String token) {
         Token tokenEntity = obtenerTokenValido(token, TipoToken.VERIFICACION_EMAIL);
+        Usuario usuario = usuarioRepository.findByIdConBloqueo(tokenEntity.getUsuario().getId())
+                .orElseThrow(() -> new CredencialesInvalidasException("Token inválido o ya utilizado"));
         consumirToken(tokenEntity);
-
-        Usuario usuario = tokenEntity.getUsuario();
-        usuario.setEstado(EstadoUsuario.ACTIVO);
-        usuarioRepository.save(usuario);
+        activarSiEstabaPendiente(usuario);
     }
 
     /**
@@ -143,13 +160,22 @@ public class AuthService {
      * de entrada es el propio valor a adivinar.
      */
     public void verificarEmailConCodigo(VerificarCodigoRequestDTO request) {
+        Usuario usuario = usuarioRepository.findByEmailConBloqueo(request.getEmail()).orElse(null);
         Token tokenEntity = obtenerTokenValidoPorCodigo(
                 request.getEmail(), request.getCodigo(), TipoToken.VERIFICACION_EMAIL);
         consumirToken(tokenEntity);
+        activarSiEstabaPendiente(usuario);
+    }
 
-        Usuario usuario = tokenEntity.getUsuario();
-        usuario.setEstado(EstadoUsuario.ACTIVO);
-        usuarioRepository.save(usuario);
+    /**
+     * La verificación del email solo activa una cuenta que estaba {@code PENDIENTE}: en cualquier otro estado (una
+     * cuenta suspendida con un código viejo sin usar, por ejemplo) consume el código y no toca el estado. La fila del
+     * usuario viene bloqueada por quien llama, así una suspensión simultánea no se pisa con esta escritura.
+     */
+    private void activarSiEstabaPendiente(Usuario usuario) {
+        if (usuario != null && usuario.getEstado() == EstadoUsuario.PENDIENTE) {
+            estadoUsuarioService.cambiar(usuario, EstadoUsuario.ACTIVO, MOTIVO_VERIFICACION_EMAIL, null);
+        }
     }
 
     public void reenviarVerificacion(ReenviarVerificacionRequestDTO request) {
@@ -208,12 +234,16 @@ public class AuthService {
 
         Usuario usuario = tokenEntity.getUsuario();
         usuario.setPasswordHash(passwordEncoder.encode(request.getNuevaPassword()));
-        usuario.setEstado(EstadoUsuario.ACTIVO);
         usuario.setIntentosFallidos(0);
         usuarioRepository.save(usuario);
 
-        cerrarSesionActivaSiExiste(usuario, TipoCierreSesion.FORZADO);
-        restaurarComercioSiCorresponde(usuario, EstadoComercio.CERRADO_TEMPORALMENTE, MOTIVO_RESTAURACION_RECUPERACION);
+        // Recuperar la contraseña nunca levanta una suspensión: la cuenta suspendida cambia la contraseña y sigue
+        // suspendida (y sus comercios no se restauran).
+        if (usuario.getEstado() != EstadoUsuario.SUSPENDIDO) {
+            estadoUsuarioService.cambiar(usuario, EstadoUsuario.ACTIVO, MOTIVO_DESBLOQUEO_RECUPERACION, null);
+            cerrarSesionActivaSiExiste(usuario, TipoCierreSesion.FORZADO);
+            restaurarComercioSiCorresponde(usuario, EstadoComercio.CERRADO_TEMPORALMENTE, MOTIVO_RESTAURACION_RECUPERACION);
+        }
     }
 
     public void cambiarPasswordDesdePerfil(Integer usuarioId, CambioPasswordPerfilRequestDTO request) {
@@ -335,8 +365,7 @@ public class AuthService {
 
         Usuario usuario = tokenEntity.getUsuario();
         if (usuario.getEstado() == EstadoUsuario.INACTIVO) {
-            usuario.setEstado(EstadoUsuario.ACTIVO);
-            usuarioRepository.save(usuario);
+            estadoUsuarioService.cambiar(usuario, EstadoUsuario.ACTIVO, MOTIVO_REACTIVACION_CUENTA, null);
             restaurarComercioSiCorresponde(usuario, EstadoComercio.INACTIVO, MOTIVO_RESTAURACION_REACTIVACION);
         }
     }
@@ -363,7 +392,7 @@ public class AuthService {
         usuario.setIntentosFallidos(intentos);
 
         if (intentos >= MAX_INTENTOS_FALLIDOS) {
-            usuario.setEstado(EstadoUsuario.BLOQUEADO);
+            estadoUsuarioService.cambiar(usuario, EstadoUsuario.BLOQUEADO, MOTIVO_BLOQUEO_CUENTA, null);
             cerrarSesionActivaSiExiste(usuario, TipoCierreSesion.FORZADO);
             propagarBloqueoAComercio(usuario);
         }

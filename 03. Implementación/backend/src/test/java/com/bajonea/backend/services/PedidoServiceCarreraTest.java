@@ -92,7 +92,7 @@ class PedidoServiceCarreraTest {
                 mock(DireccionRepository.class), historialRepository, usuarioRepository, notificacionService,
                 mock(CarritoService.class), mock(ComercioService.class), mock(ConfiguracionTarifaService.class), timeouts,
                 reembolsoService, mock(NotaCreditoService.class), mock(PlatformTransactionManager.class), comercioActivoService,
-                mock(EmpleadoComercioRepository.class), mock(TurnoPedidoService.class),
+                mock(EmpleadoComercioRepository.class), mock(TurnoPedidoService.class), mock(EstadoUsuarioService.class),
                 Clock.systemDefaultZone());
         ReflectionTestUtils.setField(pedidoService, "entityManager", entityManager);
 
@@ -160,9 +160,9 @@ class PedidoServiceCarreraTest {
         pedidoService.aceptarPedido(actor, 10);
 
         InOrder orden = inOrder(usuarioRepository, comercioActivoService, comercioRepository, entityManager);
-        orden.verify(usuarioRepository).leerIdConBloqueoCompartido(5);
-        orden.verify(usuarioRepository).leerIdConBloqueoCompartido(9);
-        orden.verify(usuarioRepository).leerIdConBloqueoCompartido(12);
+        orden.verify(usuarioRepository).leerEstadoCuentaConBloqueoCompartido(5);
+        orden.verify(usuarioRepository).leerEstadoCuentaConBloqueoCompartido(9);
+        orden.verify(usuarioRepository).leerEstadoCuentaConBloqueoCompartido(12);
         orden.verify(comercioActivoService).exigirRelacionActiva(actor);
         orden.verify(comercioRepository).leerEstadoConBloqueoCompartido(40);
         orden.verify(entityManager).refresh(pedido, LockModeType.PESSIMISTIC_WRITE);

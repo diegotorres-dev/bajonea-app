@@ -20,11 +20,14 @@ import com.bajonea.backend.entities.Comercio;
 import com.bajonea.backend.entities.Direccion;
 import com.bajonea.backend.entities.HistorialCambioComercio;
 import com.bajonea.backend.entities.HistorialEstadoComercio;
+import com.bajonea.backend.entities.HistorialEstadoUsuario;
 import com.bajonea.backend.entities.Horario;
 import com.bajonea.backend.entities.PersonaFisica;
 import com.bajonea.backend.entities.RedSocial;
+import com.bajonea.backend.entities.Usuario;
 import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.EstadoDocumentoComercio;
+import com.bajonea.backend.enums.EstadoUsuario;
 import com.bajonea.backend.enums.MotivoRecalculo;
 import com.bajonea.backend.enums.TipoEntidadNotificacion;
 import com.bajonea.backend.enums.TipoNotificacion;
@@ -39,7 +42,9 @@ import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.DireccionRepository;
 import com.bajonea.backend.repositories.HistorialCambioComercioRepository;
 import com.bajonea.backend.repositories.HistorialEstadoComercioRepository;
+import com.bajonea.backend.repositories.HistorialEstadoUsuarioRepository;
 import com.bajonea.backend.repositories.HorarioRepository;
+import com.bajonea.backend.repositories.NotificacionRepository;
 import com.bajonea.backend.repositories.RedSocialRepository;
 import com.bajonea.backend.repositories.TagRepository;
 import jakarta.persistence.EntityManager;
@@ -81,6 +86,8 @@ public class AdministradorService {
     private final AdministradorRepository administradorRepository;
     private final HistorialEstadoComercioRepository historialEstadoComercioRepository;
     private final ClienteRepository clienteRepository;
+    private final NotificacionRepository notificacionRepository;
+    private final HistorialEstadoUsuarioRepository historialEstadoUsuarioRepository;
     private final CategoriaRepository categoriaRepository;
     private final TagRepository tagRepository;
     private final NotificacionService notificacionService;
@@ -218,8 +225,12 @@ public class AdministradorService {
     }
 
     public List<ClienteAdminResponseDTO> listarClientes() {
+        java.util.Set<Integer> sinEmailSuspension = new java.util.HashSet<>(
+                notificacionRepository.findUsuarioIdsConUltimoEmailFallido(TipoNotificacion.CLIENTE_SUSPENDIDO));
+        java.util.Set<Integer> sinEmailLevantamiento = new java.util.HashSet<>(
+                notificacionRepository.findUsuarioIdsConUltimoEmailFallido(TipoNotificacion.SUSPENSION_LEVANTADA));
         return clienteRepository.findAll().stream()
-                .map(this::aClienteAdminResponseDTO)
+                .map(cliente -> aClienteAdminResponseDTO(cliente, sinEmailSuspension, sinEmailLevantamiento))
                 .toList();
     }
 
@@ -442,8 +453,19 @@ public class AdministradorService {
                 otrosComercios);
     }
 
-    private ClienteAdminResponseDTO aClienteAdminResponseDTO(Cliente cliente) {
+    private EstadoUsuario estadoPrevioSuspension(Integer usuarioId) {
+        return historialEstadoUsuarioRepository.findTopByUsuarioIdAndEstadoDestinoOrderByIdDesc(usuarioId, EstadoUsuario.SUSPENDIDO)
+                .map(HistorialEstadoUsuario::getEstadoOrigen)
+                .orElse(null);
+    }
+
+    private ClienteAdminResponseDTO aClienteAdminResponseDTO(Cliente cliente, java.util.Set<Integer> sinEmailSuspension,
+            java.util.Set<Integer> sinEmailLevantamiento) {
         PersonaFisica personaFisica = cliente.getPersonaFisica();
+        Usuario usuario = personaFisica.getPersona().getUsuario();
+        boolean emailFallido = usuario.getEstado() == EstadoUsuario.SUSPENDIDO
+                ? sinEmailSuspension.contains(usuario.getId())
+                : sinEmailLevantamiento.contains(usuario.getId());
         return new ClienteAdminResponseDTO(
                 cliente.getId(),
                 personaFisica.getNombre(),
@@ -451,7 +473,11 @@ public class AdministradorService {
                 personaFisica.getDni(),
                 personaFisica.getPersona().getUsuario().getEmail(),
                 personaFisica.getPersona().getUsuario().getEstado(),
-                personaFisica.getPersona().getUsuario().getFechaRegistro());
+                personaFisica.getPersona().getUsuario().getFechaRegistro(),
+                personaFisica.getPersona().getUsuario().getMotivoSuspension(),
+                personaFisica.getPersona().getUsuario().getSuspendidoDesde(),
+                emailFallido,
+                usuario.getEstado() == EstadoUsuario.SUSPENDIDO ? estadoPrevioSuspension(usuario.getId()) : null);
     }
 
     private RepresentanteResponseDTO aRepresentanteResponseDTO(PersonaFisica personaFisica) {

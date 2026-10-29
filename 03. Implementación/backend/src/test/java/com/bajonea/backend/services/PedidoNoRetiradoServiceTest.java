@@ -108,7 +108,7 @@ class PedidoNoRetiradoServiceTest {
                 mock(DireccionRepository.class), historialRepository, usuarioRepository, notificacionService,
                 mock(CarritoService.class), mock(ComercioService.class), mock(ConfiguracionTarifaService.class), timeouts,
                 reembolsoService, notaCreditoService, mock(PlatformTransactionManager.class), comercioActivoService,
-                mock(EmpleadoComercioRepository.class), mock(TurnoPedidoService.class), RELOJ);
+                mock(EmpleadoComercioRepository.class), mock(TurnoPedidoService.class), mock(EstadoUsuarioService.class), RELOJ);
         ReflectionTestUtils.setField(pedidoService, "entityManager", entityManager);
 
         ParticipantesPedido participantes = mock(ParticipantesPedido.class);
@@ -327,9 +327,9 @@ class PedidoNoRetiradoServiceTest {
         pedidoService.cerrarComoNoRetirado(actor, 21);
 
         InOrder orden = inOrder(usuarioRepository, comercioActivoService, entityManager, historialRepository);
-        orden.verify(usuarioRepository).leerIdConBloqueoCompartido(5);
-        orden.verify(usuarioRepository).leerIdConBloqueoCompartido(9);
-        orden.verify(usuarioRepository).leerIdConBloqueoCompartido(12);
+        orden.verify(usuarioRepository).leerEstadoCuentaConBloqueoCompartido(5);
+        orden.verify(usuarioRepository).leerEstadoCuentaConBloqueoCompartido(9);
+        orden.verify(usuarioRepository).leerEstadoCuentaConBloqueoCompartido(12);
         orden.verify(comercioActivoService).exigirRelacionActiva(actor);
         orden.verify(entityManager).refresh(pedido, LockModeType.PESSIMISTIC_WRITE);
         orden.verify(historialRepository).findTopByPedidoIdAndEstadoOrderByFechaHoraDesc(21, EstadoPedido.LISTO_PARA_RETIRAR);

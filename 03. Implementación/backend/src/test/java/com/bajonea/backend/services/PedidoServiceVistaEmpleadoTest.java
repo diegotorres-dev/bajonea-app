@@ -99,7 +99,7 @@ class PedidoServiceVistaEmpleadoTest {
                 mock(ReembolsoService.class),
                 notaCreditoService,
                 mock(PlatformTransactionManager.class), mock(ComercioActivoService.class),
-                mock(EmpleadoComercioRepository.class), mock(TurnoPedidoService.class),
+                mock(EmpleadoComercioRepository.class), mock(TurnoPedidoService.class), mock(EstadoUsuarioService.class),
                 Clock.systemDefaultZone());
 
         cliente = mock(Cliente.class, Answers.RETURNS_DEEP_STUBS);

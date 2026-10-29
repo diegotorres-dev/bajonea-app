@@ -186,6 +186,11 @@ public interface PedidoRepository extends JpaRepository<Pedido, Integer> {
 
     long countByComercioIdAndEstado(Integer comercioId, EstadoPedido estado);
 
+    @Query("select p.id from Pedido p where p.cliente.id = :clienteId and p.estado = :estado order by p.id")
+    List<Integer> findIdsByClienteIdAndEstado(@Param("clienteId") Integer clienteId, @Param("estado") EstadoPedido estado);
+
+    long countByClienteIdAndEstadoIn(Integer clienteId, Collection<EstadoPedido> estados);
+
     @Query("select count(p) > 0 from Pedido p where p.comercio.id = :comercioId and p.estado = :estado "
             + "and p.fechaCreacion < :antesDe")
     boolean existsByComercioIdAndEstadoCreadoAntesDe(@Param("comercioId") Integer comercioId,

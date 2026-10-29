@@ -1,8 +1,9 @@
 package com.bajonea.backend.config.security;
 
-import com.bajonea.backend.entities.Sesion;
+import com.bajonea.backend.enums.EstadoUsuario;
 import com.bajonea.backend.enums.RolUsuario;
 import com.bajonea.backend.repositories.SesionRepository;
+import com.bajonea.backend.repositories.SesionRepository.EstadoDeSesion;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
@@ -26,6 +27,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * por el claim {@code sesionId} siga con {@code activa = true} — un JWT firmado correctamente
  * pero con la sesión cerrada (bloqueo, recuperación/cambio de contraseña, login concurrente,
  * logout) igual se rechaza con 401. Ver CLAUDE.md §7 y docs/DECISIONES.md, 2026-07-17.
+ * <p>
+ * Una cuenta suspendida nunca opera: se mira el estado del usuario en cada request, no solo la sesión. Si la cuenta
+ * está suspendida (con la sesión cerrada por la suspensión, o con un token todavía válido por cualquier motivo) la
+ * respuesta es 401 con {@code data.codigo = CUENTA_SUSPENDIDA} y el motivo. La firma del token ya está validada en ese
+ * punto, así que el motivo no se filtra a quien no tiene un token firmado por la aplicación. Una sesión cerrada por
+ * suspensión de una cuenta que después se levantó responde el 401 genérico de siempre.
  */
 
 // Filtro por el que pasan todas las peticiones antes de llegar al controller (decide si el usuario está
@@ -58,11 +65,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 throw new JwtException("Token emitido con un formato anterior");
             }
 
-            boolean sesionActiva = sesionRepository.findById(sesionId)
-                    .map(Sesion::isActiva)
-                    .orElse(false);
+            EstadoDeSesion estado = sesionRepository.leerEstadoDeSesion(sesionId).orElse(null);
+            if (estado != null && EstadoUsuario.SUSPENDIDO.name().equals(estado.getEstadoUsuario())) {
+                SecurityContextHolder.clearContext();
+                authenticationEntryPoint.commence(request, response,
+                        new CuentaSuspendidaAuthenticationException(estado.getMotivoSuspension()));
+                return;
+            }
 
-            if (!sesionActiva) {
+            if (estado == null || !estado.getActiva()) {
                 SecurityContextHolder.clearContext();
                 authenticationEntryPoint.commence(request, response,
                         new InsufficientAuthenticationException("La sesión fue cerrada"));

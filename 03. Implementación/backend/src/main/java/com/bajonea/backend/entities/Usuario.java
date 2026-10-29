@@ -49,10 +49,15 @@ public class Usuario {
     @Column(name = "rol", nullable = false)
     private RolUsuario rol;
 
-    @Setter
     @Enumerated(EnumType.STRING)
     @Column(name = "estado", nullable = false)
     private EstadoUsuario estado;
+
+    @Column(name = "motivo_suspension", length = 500)
+    private String motivoSuspension;
+
+    @Column(name = "suspendido_desde")
+    private LocalDateTime suspendidoDesde;
 
     @Setter
     @Column(name = "intentos_fallidos", nullable = false)
@@ -73,4 +78,10 @@ public class Usuario {
     @Setter
     @Column(name = "fecha_actualizacion")
     private LocalDateTime fechaActualizacion;
+
+    public void aplicarEstado(EstadoUsuario nuevoEstado, String motivoSuspensionNuevo, LocalDateTime suspendidoDesdeNuevo) {
+        this.estado = nuevoEstado;
+        this.motivoSuspension = nuevoEstado == EstadoUsuario.SUSPENDIDO ? motivoSuspensionNuevo : null;
+        this.suspendidoDesde = nuevoEstado == EstadoUsuario.SUSPENDIDO ? suspendidoDesdeNuevo : null;
+    }
 }

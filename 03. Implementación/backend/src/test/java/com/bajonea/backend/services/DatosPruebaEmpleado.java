@@ -70,7 +70,12 @@ class DatosPruebaEmpleado {
     }
 
     void cambiarEstadoUsuario(int usuarioId, String estado) {
-        jdbcTemplate.update("UPDATE usuario SET estado = ? WHERE id = ?", estado, usuarioId);
+        if ("SUSPENDIDO".equals(estado)) {
+            jdbcTemplate.update("UPDATE usuario SET estado = ?, motivo_suspension = 'Suspension de prueba', suspendido_desde = NOW() WHERE id = ?",
+                    estado, usuarioId);
+            return;
+        }
+        jdbcTemplate.update("UPDATE usuario SET estado = ?, motivo_suspension = NULL, suspendido_desde = NULL WHERE id = ?", estado, usuarioId);
     }
 
     void cambiarFechaNacimiento(int usuarioId, LocalDate fechaNacimiento) {

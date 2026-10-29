@@ -14,6 +14,12 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
 
     boolean existsByEmail(String email);
 
+    @Query("SELECT u.rol FROM Usuario u WHERE u.id = :id")
+    Optional<com.bajonea.backend.enums.RolUsuario> findRolById(@Param("id") Integer id);
+
+    @Query("SELECT u.estado FROM Usuario u WHERE u.id = :id")
+    Optional<com.bajonea.backend.enums.EstadoUsuario> findEstadoById(@Param("id") Integer id);
+
     /**
      * Id de la cuenta de un email sin cargar la entidad (ver {@code InvitacionEmpleadoRepository.InvitacionPendienteVista}):
      * quien lo usa va a bloquear la fila después y necesita leer su estado confirmado, no una copia ya cargada.
@@ -67,4 +73,20 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
      */
     @Query(value = "SELECT estado FROM usuario WHERE id = :id LOCK IN SHARE MODE", nativeQuery = true)
     Optional<String> leerEstadoConBloqueoCompartido(@Param("id") Integer id);
+
+    interface EstadoCuenta {
+
+        String getEstado();
+
+        String getMotivoSuspension();
+    }
+
+    /**
+     * Estado de la cuenta y motivo de la suspensión en la misma lectura con bloqueo compartido: lo toma quien
+     * va a actuar en nombre del usuario (checkout, pago, escrituras del Empleado) para negarse si la cuenta está
+     * suspendida, sobre el valor confirmado y no sobre la foto de la transacción.
+     */
+    @Query(value = "SELECT estado AS estado, motivo_suspension AS motivoSuspension FROM usuario WHERE id = :id LOCK IN SHARE MODE",
+            nativeQuery = true)
+    Optional<EstadoCuenta> leerEstadoCuentaConBloqueoCompartido(@Param("id") Integer id);
 }

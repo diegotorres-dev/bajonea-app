@@ -79,6 +79,7 @@ public class MercadoPagoPagoService {
     private static final BigDecimal TOLERANCIA_SPLIT = new BigDecimal("0.01");
 
     private final PedidoService pedidoService;
+    private final EstadoUsuarioService estadoUsuarioService;
     private final PagoService pagoService;
     private final CuentaMercadoPagoService cuentaMercadoPagoService;
     private final DetallePedidoRepository detallePedidoRepository;
@@ -116,6 +117,7 @@ public class MercadoPagoPagoService {
     private String backendBaseUrl;
 
     public PagoResponseDTO iniciarOReusarPago(Integer usuarioId, Integer pedidoId) {
+        estadoUsuarioService.exigirNoSuspendido(usuarioId);
         Pedido pedido = pedidoService.obtenerPedidoDelCliente(usuarioId, pedidoId);
         Pago pago = pagoService.buscarPorPedido(pedidoId).orElse(null);
         if (pedido.getPagoEstado() == EstadoPagoPedido.PAGADO) {
@@ -275,11 +277,16 @@ public class MercadoPagoPagoService {
      * simultáneas se serialicen. Un pago aprobado nunca se pisa.
      */
     private void aplicarResultadoPago(Pago pagoInicial, String paymentId, PagoMpResponse pagoMp, String ipOrigen) {
-        Pedido pedido = pedidoService.bloquearParaActualizar(pagoInicial.getPedido().getId());
+        boolean aprobado = ESTADO_APROBADO.equals(pagoMp.status());
+        // Un pago aprobado lee los estados del Cliente y del comercio y las filas del equipo antes de bloquear el pedido
+        // (orden global de bloqueos); los demás resultados solo necesitan el pedido.
+        PedidoService.PedidoBloqueado bloqueado = aprobado
+                ? pedidoService.bloquearParaPago(pagoInicial.getPedido().getId())
+                : new PedidoService.PedidoBloqueado(pedidoService.bloquearParaActualizar(pagoInicial.getPedido().getId()), List.of());
+        Pedido pedido = bloqueado.pedido();
         Pago pago = pagoInicial;
         pagoService.refrescar(pago);
 
-        boolean aprobado = ESTADO_APROBADO.equals(pagoMp.status());
         boolean yaHayPagoAprobado = pago.getFechaConfirmacion() != null;
 
         if (aprobado) {
@@ -291,9 +298,10 @@ public class MercadoPagoPagoService {
             }
             pagoService.registrarResultado(pago, paymentId, pagoMp.status(), pagoMp.paymentTypeId(), true);
             if (pedido.getEstado() == EstadoPedido.PENDIENTE_PAGO) {
-                pedidoService.confirmarPagoAprobado(pedido.getId());
+                pedidoService.confirmarOCancelarPagoAprobado(bloqueado, null);
             } else if (pedido.getPagoEstado() != EstadoPagoPedido.PAGADO) {
                 alertaWebhookMpService.registrarPagoAprobadoSobrePedidoCancelado(pedido, paymentId, ipOrigen);
+                pedidoService.reembolsarPagoTardio(bloqueado);
             }
             verificarSplitAplicado(pedido, paymentId, pagoMp, ipOrigen);
             return;

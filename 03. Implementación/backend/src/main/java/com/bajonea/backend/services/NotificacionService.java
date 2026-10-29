@@ -106,6 +106,39 @@ public class NotificacionService {
     }
 
     /**
+     * Rastro del email de un aviso de cuenta (suspensión o levantamiento): fila de canal {@code EMAIL} con
+     * {@code ENVIADO} si el proveedor lo aceptó o {@code FALLIDO} si no. Un solo intento; un Administrador puede
+     * reenviar uno fallido ({@link #marcarResultadoEmail}).
+     */
+    public Notificacion registrarResultadoEmail(Integer usuarioId, String mensaje, TipoNotificacion tipo, LocalDateTime fecha,
+            boolean salio) {
+        Notificacion notificacion = Notificacion.builder()
+                .usuario(usuarioRepository.getReferenceById(usuarioId))
+                .tipo(tipo)
+                .mensaje(truncar(mensaje))
+                .leida(false)
+                .fechaCreacion(fecha)
+                .canal(CanalNotificacion.EMAIL)
+                .estado(salio ? EstadoEnvioNotificacion.ENVIADO : EstadoEnvioNotificacion.FALLIDO)
+                .fechaEnvio(salio ? fecha : null)
+                .build();
+        return notificacionRepository.save(notificacion);
+    }
+
+    public void marcarResultadoEmail(Integer notificacionId, LocalDateTime fecha, boolean salio) {
+        Notificacion notificacion = notificacionRepository.findById(notificacionId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Notificación no encontrada"));
+        notificacion.setEstado(salio ? EstadoEnvioNotificacion.ENVIADO : EstadoEnvioNotificacion.FALLIDO);
+        notificacion.setFechaEnvio(salio ? fecha : null);
+        notificacionRepository.save(notificacion);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Optional<Notificacion> ultimoEmail(Integer usuarioId, TipoNotificacion tipo) {
+        return notificacionRepository.findTopByUsuarioIdAndCanalAndTipoOrderByIdDesc(usuarioId, CanalNotificacion.EMAIL, tipo);
+    }
+
+    /**
      * Con comercio abierto (Dueño siempre, con header obligatorio; Cliente que manda {@code X-Comercio-Id}, que se
      * trata como Empleado de ese comercio) lista los avisos del usuario sobre ese comercio. Sin comercio (el Cliente
      * sin header, y el Administrador, que ignora el header) lista solo los personales: nunca los del comercio.
