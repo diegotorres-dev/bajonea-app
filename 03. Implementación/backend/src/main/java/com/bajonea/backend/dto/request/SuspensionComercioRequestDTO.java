@@ -5,15 +5,17 @@ import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class SuspensionComercioRequestDTO {
 
-    @NotBlank
-    @Size(max = 500)
+    @NotBlank(message = "Ingresá el motivo de la suspensión")
+    @Size(min = 10, max = 500, message = "El motivo debe tener entre 10 y 500 caracteres")
     private String motivo;
+
+    public void setMotivo(String motivo) {
+        this.motivo = motivo == null ? null : motivo.trim();
+    }
 }

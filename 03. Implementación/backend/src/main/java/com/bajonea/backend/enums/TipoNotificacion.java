@@ -4,6 +4,7 @@ import static com.bajonea.backend.enums.AudienciaNotificacion.ADMINISTRADOR;
 import static com.bajonea.backend.enums.AudienciaNotificacion.CLIENTE;
 import static com.bajonea.backend.enums.AudienciaNotificacion.CLIENTE_O_DUENO;
 import static com.bajonea.backend.enums.AudienciaNotificacion.DUENO;
+import static com.bajonea.backend.enums.AudienciaNotificacion.EMPLEADOS;
 import static com.bajonea.backend.enums.AudienciaNotificacion.EQUIPO;
 
 public enum TipoNotificacion {
@@ -43,7 +44,9 @@ public enum TipoNotificacion {
     DOCUMENTO_APROBADO(DUENO),
     DOCUMENTO_RECHAZADO(DUENO),
     COMERCIO_APTO_VENTA(DUENO),
-    COMERCIO_SIN_APTITUD(DUENO);
+    COMERCIO_SIN_APTITUD(DUENO),
+    COMERCIO_SUSPENDIDO_EQUIPO(EMPLEADOS),
+    COMERCIO_SUSPENSION_LEVANTADA_EQUIPO(EMPLEADOS);
 
     private final AudienciaNotificacion audiencia;
 

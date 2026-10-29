@@ -7,5 +7,6 @@ public enum MotivoNotaCredito {
     SUSPENSION_COMERCIO,
     EXPIRACION_SIN_RESPUESTA,
     SUSPENSION_CLIENTE,
-    RECLAMO
+    RECLAMO,
+    PAGO_TARDIO
 }

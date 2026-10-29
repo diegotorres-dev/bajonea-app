@@ -17,6 +17,8 @@ import com.bajonea.backend.dto.response.MetricasAdminResponseDTO;
 import com.bajonea.backend.dto.response.NotaCreditoAdminResponseDTO;
 import com.bajonea.backend.dto.response.ReSolicitudComercioAdminResponseDTO;
 import com.bajonea.backend.dto.response.SuspensionClientePreviaResponseDTO;
+import com.bajonea.backend.dto.response.SuspensionComercioPreviaResponseDTO;
+import com.bajonea.backend.dto.response.SuspensionComercioResponseDTO;
 import com.bajonea.backend.dto.response.SuspensionUsuarioResponseDTO;
 import com.bajonea.backend.enums.EstadoEnvioNotificacion;
 import com.bajonea.backend.enums.EstadoNotaCredito;
@@ -24,6 +26,7 @@ import com.bajonea.backend.services.AdministradorService;
 import com.bajonea.backend.services.ConfiguracionTarifaService;
 import com.bajonea.backend.services.EquipoComercioAdminService;
 import com.bajonea.backend.services.NotaCreditoAdminService;
+import com.bajonea.backend.services.SuspensionComercioService;
 import com.bajonea.backend.services.SuspensionUsuarioService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -54,6 +57,7 @@ public class AdministradorController {
     private final NotaCreditoAdminService notaCreditoAdminService;
     private final EquipoComercioAdminService equipoComercioAdminService;
     private final SuspensionUsuarioService suspensionUsuarioService;
+    private final SuspensionComercioService suspensionComercioService;
 
     @GetMapping("/comercios/pendientes")
     public ResponseEntity<ApiResponse<List<ComercioAdminResponseDTO>>> listarComerciosPendientes() {
@@ -121,10 +125,35 @@ public class AdministradorController {
     }
 
     @PutMapping("/comercios/{comercioId}/suspender")
-    public ResponseEntity<ApiResponse<Void>> suspenderComercio(@PathVariable Integer comercioId,
+    public ResponseEntity<ApiResponse<SuspensionComercioResponseDTO>> suspenderComercio(@PathVariable Integer comercioId,
             @Valid @RequestBody SuspensionComercioRequestDTO request, @AuthenticationPrincipal AuthenticatedUser administrador) {
-        administradorService.suspenderComercio(comercioId, administrador.userId(), request);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Comercio suspendido correctamente", null));
+        SuspensionComercioResponseDTO respuesta = suspensionComercioService.suspender(comercioId, administrador.userId(), request);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Comercio suspendido correctamente", respuesta));
+    }
+
+    @PutMapping("/comercios/{comercioId}/levantar-suspension")
+    public ResponseEntity<ApiResponse<SuspensionComercioResponseDTO>> levantarSuspensionComercio(@PathVariable Integer comercioId,
+            @Valid @RequestBody(required = false) LevantamientoSuspensionRequestDTO request,
+            @AuthenticationPrincipal AuthenticatedUser administrador) {
+        SuspensionComercioResponseDTO respuesta = suspensionComercioService.levantar(comercioId, administrador.userId(), request);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Suspensión levantada correctamente", respuesta));
+    }
+
+    @GetMapping("/comercios/{comercioId}/suspension/previa")
+    public ResponseEntity<ApiResponse<SuspensionComercioPreviaResponseDTO>> vistaPreviaSuspensionComercio(
+            @PathVariable Integer comercioId) {
+        SuspensionComercioPreviaResponseDTO previa = suspensionComercioService.vistaPrevia(comercioId);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Vista previa obtenida correctamente", previa));
+    }
+
+    @PostMapping("/comercios/{comercioId}/suspension/reenviar-email")
+    public ResponseEntity<ApiResponse<Void>> reenviarEmailSuspensionComercio(@PathVariable Integer comercioId) {
+        EstadoEnvioNotificacion resultado = suspensionComercioService.reenviarEmail(comercioId);
+        String mensaje = resultado == EstadoEnvioNotificacion.ENVIADO
+                ? "Email reenviado correctamente"
+                : "No se pudo reenviar el email. Probá de nuevo más tarde";
+        return ResponseEntity.status(resultado == EstadoEnvioNotificacion.ENVIADO ? HttpStatus.OK : HttpStatus.BAD_GATEWAY)
+                .body(new ApiResponse<>(mensaje, null));
     }
 
     @GetMapping("/clientes/{clienteId}/suspension/previa")

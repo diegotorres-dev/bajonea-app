@@ -150,6 +150,23 @@ public class EmailService {
                         + "Equipo de Bajoneá");
     }
 
+    public ResultadoEnvioEmail enviarComercioSuspendido(String destinatario, String nombreComercio, String motivo) {
+        return enviarAvisoDeCuenta(destinatario, "Tu comercio " + nombreComercio + " fue suspendido",
+                "Tu comercio " + nombreComercio + " fue suspendido en Bajoneá.\n\n"
+                        + "Motivo: " + motivo + "\n\n"
+                        + "Mientras esté suspendido no aparece en el catálogo ni recibe pedidos nuevos, y no podés cambiar "
+                        + "sus productos ni sus datos. Podés seguir viendo tus pedidos, tus estadísticas y tus documentos.\n\n"
+                        + "Equipo de Bajoneá");
+    }
+
+    public ResultadoEnvioEmail enviarComercioSuspensionLevantada(String destinatario, String nombreComercio, String motivo) {
+        String detalle = motivo == null || motivo.isBlank() ? "" : "Mensaje del equipo: " + motivo + "\n\n";
+        return enviarAvisoDeCuenta(destinatario, "Levantamos la suspensión de tu comercio " + nombreComercio,
+                "Levantamos la suspensión de tu comercio " + nombreComercio + " en Bajoneá.\n\n"
+                        + detalle
+                        + "Equipo de Bajoneá");
+    }
+
     private ResultadoEnvioEmail enviarAvisoDeCuenta(String destinatario, String asunto, String cuerpo) {
         if (!envioHabilitado && fallasSimuladasAvisoCuenta.getAndUpdate(restantes -> restantes > 0 ? restantes - 1 : 0) > 0) {
             log.warn("Falla simulada del envío del aviso de cuenta a {} (asunto \"{}\")", destinatario, asunto);

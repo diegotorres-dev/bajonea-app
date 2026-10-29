@@ -5,6 +5,7 @@ import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.TipoComercio;
 import com.bajonea.backend.enums.TipoPersonaJuridica;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import lombok.Getter;
 
@@ -52,6 +53,8 @@ public class ComercioResponseDTO {
     private final boolean abiertoAhora;
     private final boolean puedeCambiarCierre;
     private final String textoReapertura;
+    private final LocalDateTime suspendidoDesde;
+    private final String motivoSuspension;
 
     public ComercioResponseDTO(
             Integer id,
@@ -78,8 +81,12 @@ public class ComercioResponseDTO {
             boolean cerradoManualmente,
             boolean abiertoAhora,
             boolean puedeCambiarCierre,
-            String textoReapertura) {
+            String textoReapertura,
+            LocalDateTime suspendidoDesde,
+            String motivoSuspension) {
         this.id = id;
+        this.suspendidoDesde = suspendidoDesde;
+        this.motivoSuspension = motivoSuspension;
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.fotoPerfilUrl = fotoPerfilUrl;

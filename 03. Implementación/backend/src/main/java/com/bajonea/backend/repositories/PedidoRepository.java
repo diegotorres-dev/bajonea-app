@@ -29,7 +29,6 @@ public interface PedidoRepository extends JpaRepository<Pedido, Integer> {
 
     List<Pedido> findByEstadoAndPrimerAvisoEmitidoFalse(EstadoPedido estado);
 
-    List<Pedido> findByEstadoAndSuspensionRetiroExpiraLessThan(EstadoPedido estado, LocalDateTime ahora);
 
     List<Pedido> findByComercioIdAndEstadoIn(Integer comercioId, List<EstadoPedido> estados);
 
@@ -51,9 +50,16 @@ public interface PedidoRepository extends JpaRepository<Pedido, Integer> {
     @Query("select p.id from Pedido p where p.estado = :estado and p.fechaCreacion < :corte order by p.id")
     List<Integer> findIdsByEstadoAndFechaCreacionBefore(@Param("estado") EstadoPedido estado, @Param("corte") LocalDateTime corte);
 
-    @Query("select p.id from Pedido p where p.estado = :estado and p.suspensionRetiroExpira < :ahora order by p.id")
-    List<Integer> findIdsByEstadoAndSuspensionRetiroExpiraLessThan(@Param("estado") EstadoPedido estado,
-            @Param("ahora") LocalDateTime ahora);
+    /**
+     * Ids de los pedidos en el estado dado cuyo comercio está {@code SUSPENDIDO} desde antes de {@code corte}: la
+     * base de los dos topes de la suspensión. Es solo el filtro grueso (sin bloqueo); cada pedido se vuelve a validar
+     * con el comercio y el pedido bloqueados.
+     */
+    @Query("select p.id from Pedido p where p.estado = :estado and p.comercio.estado = "
+            + "com.bajonea.backend.enums.EstadoComercio.SUSPENDIDO and p.comercio.suspendidoDesde <= :corte order by p.id")
+    List<Integer> findIdsDeComerciosSuspendidosDesde(@Param("estado") EstadoPedido estado, @Param("corte") LocalDateTime corte);
+
+    long countByComercioIdAndEstadoIn(Integer comercioId, Collection<EstadoPedido> estados);
 
     @Query("select p.id from Pedido p where p.comercio.id = :comercioId and p.estado in :estados order by p.id")
     List<Integer> findIdsByComercioIdAndEstadoIn(@Param("comercioId") Integer comercioId,

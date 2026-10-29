@@ -1,6 +1,7 @@
 package com.bajonea.backend.dto.response;
 
 import com.bajonea.backend.enums.EstadoComercio;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.LocalDateTime;
 import lombok.Getter;
 
@@ -9,7 +10,9 @@ import lombok.Getter;
  * cualquier estado, con lo mínimo que necesita el selector de comercio del frontend. {@code operativo}
  * es {@code true} para los estados en que el comercio puede operar ({@code APROBADO} y
  * {@code APTO_VENTA}); {@code cantidadNotificacionesNoLeidas} cuenta las notificaciones no leídas del
- * Dueño que pertenecen a ese comercio (las del comercio mismo y las de sus pedidos).
+ * Dueño que pertenecen a ese comercio (las del comercio mismo y las de sus pedidos). {@code suspendidoDesde} y
+ * {@code motivoSuspension} solo se serializan si tienen valor: la variante del Empleado
+ * ({@link MiComercioEmpleadoResponseDTO}) siempre los manda en {@code null}, así que el Empleado nunca ve el motivo.
  */
 @Getter
 public class MiComercioResponseDTO {
@@ -26,9 +29,18 @@ public class MiComercioResponseDTO {
     private final boolean puedeCambiarCierre;
     private final String textoReapertura;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private final LocalDateTime suspendidoDesde;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private final String motivoSuspension;
+
     public MiComercioResponseDTO(Integer id, String nombre, String fotoPerfilUrl, EstadoComercio estado,
             LocalDateTime fechaRegistro, boolean operativo, long cantidadNotificacionesNoLeidas, boolean cerradoManualmente,
-            boolean abiertoAhora, boolean puedeCambiarCierre, String textoReapertura) {
+            boolean abiertoAhora, boolean puedeCambiarCierre, String textoReapertura, LocalDateTime suspendidoDesde,
+            String motivoSuspension) {
+        this.suspendidoDesde = suspendidoDesde;
+        this.motivoSuspension = motivoSuspension;
         this.id = id;
         this.nombre = nombre;
         this.fotoPerfilUrl = fotoPerfilUrl;

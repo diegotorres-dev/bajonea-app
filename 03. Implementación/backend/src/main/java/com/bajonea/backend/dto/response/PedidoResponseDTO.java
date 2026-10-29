@@ -27,7 +27,9 @@ import lombok.Getter;
  * separado para mostrar la línea "Cargo por servicio" (Cliente) y "Cargo por servicio (1%)"
  * (Comercio). {@code reembolsoEstado}/{@code reembolsoMonto} reflejan la nota de crédito más
  * reciente del pago del pedido (nulos si nunca se generó ninguna) — el frontend los usa para
- * no afirmar un reembolso que todavía no ocurrió. {@code noRetiradoDisponibleDesde} y
+ * no afirmar un reembolso que todavía no ocurrió. {@code comercioNombre} y {@code comercioFotoUrl} vienen del
+ * pedido: el nombre y la foto del comercio se ven aunque el comercio ya no esté en el catálogo público (por
+ * ejemplo, suspendido). {@code noRetiradoDisponibleDesde} y
  * {@code noRetiradoMinutosRestantes} solo van en las respuestas del lado del comercio, para un retiro en
  * {@code LISTO_PARA_RETIRAR}: cuándo se habilita "Cerrar como no retirado" (hora del comercio) y cuántos minutos
  * faltan según el reloj del servidor, redondeado hacia arriba (0 si ya se puede). En cualquier otro caso, y en
@@ -40,6 +42,8 @@ public class PedidoResponseDTO {
     private final Integer clienteId;
     private final String nombreCliente;
     private final Integer comercioId;
+    private final String comercioNombre;
+    private final String comercioFotoUrl;
     private final EstadoPedido estado;
     private final EstadoPagoPedido pagoEstado;
     private final TipoEntrega tipoEntrega;
@@ -67,6 +71,8 @@ public class PedidoResponseDTO {
             Integer clienteId,
             String nombreCliente,
             Integer comercioId,
+            String comercioNombre,
+            String comercioFotoUrl,
             EstadoPedido estado,
             EstadoPagoPedido pagoEstado,
             TipoEntrega tipoEntrega,
@@ -92,6 +98,8 @@ public class PedidoResponseDTO {
         this.clienteId = clienteId;
         this.nombreCliente = nombreCliente;
         this.comercioId = comercioId;
+        this.comercioNombre = comercioNombre;
+        this.comercioFotoUrl = comercioFotoUrl;
         this.estado = estado;
         this.pagoEstado = pagoEstado;
         this.tipoEntrega = tipoEntrega;

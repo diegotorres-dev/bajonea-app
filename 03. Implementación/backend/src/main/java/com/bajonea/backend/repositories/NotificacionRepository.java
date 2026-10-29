@@ -13,6 +13,9 @@ import org.springframework.data.repository.query.Param;
 
 public interface NotificacionRepository extends JpaRepository<Notificacion, Integer> {
 
+    java.util.Optional<Notificacion> findTopByUsuarioIdAndCanalAndTipoAndComercioIdOrderByIdDesc(Integer usuarioId,
+            com.bajonea.backend.enums.CanalNotificacion canal, com.bajonea.backend.enums.TipoNotificacion tipo, Integer comercioId);
+
     java.util.Optional<Notificacion> findTopByUsuarioIdAndCanalAndTipoOrderByIdDesc(Integer usuarioId,
             com.bajonea.backend.enums.CanalNotificacion canal, com.bajonea.backend.enums.TipoNotificacion tipo);
 
@@ -28,6 +31,21 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Inte
                           AND m.canal = com.bajonea.backend.enums.CanalNotificacion.EMAIL AND m.tipo = :tipo)
             """)
     List<Integer> findUsuarioIdsConUltimoEmailFallido(@Param("tipo") TipoNotificacion tipo);
+
+    /**
+     * Comercios cuyo último email del tipo dado al Dueño (el de mayor id para ese usuario y comercio) quedó
+     * {@code FALLIDO}: la base del "No se envió el email" del listado de comercios del Administrador, en una sola consulta.
+     */
+    @Query("""
+            SELECT n.comercioId FROM Notificacion n
+            WHERE n.canal = com.bajonea.backend.enums.CanalNotificacion.EMAIL AND n.tipo = :tipo
+              AND n.comercioId IS NOT NULL
+              AND n.estado = com.bajonea.backend.enums.EstadoEnvioNotificacion.FALLIDO
+              AND n.id = (SELECT MAX(m.id) FROM Notificacion m WHERE m.usuario.id = n.usuario.id
+                          AND m.comercioId = n.comercioId
+                          AND m.canal = com.bajonea.backend.enums.CanalNotificacion.EMAIL AND m.tipo = :tipo)
+            """)
+    List<Integer> findComercioIdsConUltimoEmailFallido(@Param("tipo") TipoNotificacion tipo);
 
     List<Notificacion> findByUsuarioIdAndCanalOrderByIdAsc(Integer usuarioId, com.bajonea.backend.enums.CanalNotificacion canal);
 

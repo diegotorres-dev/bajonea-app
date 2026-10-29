@@ -305,7 +305,12 @@ public class PedidoService {
     void confirmarOCancelarPagoAprobado(PedidoBloqueado bloqueado, LocalDateTime instanteDelPago) {
         Pedido pedido = bloqueado.pedido();
         if (bloqueado.estadoCliente() == EstadoUsuario.SUSPENDIDO) {
-            cancelarPagoAprobadoPorSuspensionCliente(pedido);
+            cancelarPagoAprobadoPorSuspension(pedido, MotivoTimeoutPedido.SUSPENSION_CLIENTE, MotivoNotaCredito.SUSPENSION_CLIENTE,
+                    "tu cuenta fue suspendida");
+            return;
+        }
+        if (bloqueado.estadoComercio() == EstadoComercio.SUSPENDIDO) {
+            cancelarPagoAprobadoPorSuspension(pedido, null, MotivoNotaCredito.SUSPENSION_COMERCIO, "el comercio fue suspendido");
             return;
         }
 
@@ -333,16 +338,17 @@ public class PedidoService {
         carritoService.vaciarSiEsDelComercio(clienteId, comercioId);
     }
 
-    private void cancelarPagoAprobadoPorSuspensionCliente(Pedido pedido) {
+    private void cancelarPagoAprobadoPorSuspension(Pedido pedido, MotivoTimeoutPedido motivoTimeout, MotivoNotaCredito motivoNota,
+            String causa) {
         pedido.setPagoEstado(EstadoPagoPedido.PAGADO);
         pedido.setEstado(EstadoPedido.CANCELADO_POR_SISTEMA);
         pedido.setCanceladoPor(CanceladoPor.SISTEMA);
         pedidoRepository.save(pedido);
-        registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.SUSPENSION_CLIENTE);
-        boolean devolucionEnGestion = reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.SUSPENSION_CLIENTE);
+        registrarHistorial(pedido, ActorPedido.SISTEMA, null, motivoTimeout);
+        boolean devolucionEnGestion = reembolsoService.generarNotaYReembolsarTotal(pedido, motivoNota);
         notificarCancelacionSistema(pedido, devolucionEnGestion
-                ? "tu cuenta fue suspendida y estamos gestionando la devolución de tu pago"
-                : "tu cuenta fue suspendida");
+                ? causa + " y estamos gestionando la devolución de tu pago"
+                : causa);
     }
 
     /**
@@ -350,12 +356,18 @@ public class PedidoService {
      * del Cliente o por cualquier otra causa) nunca deja la plata retenida: se crea la nota de crédito por el total en
      * esta misma transacción, con el pedido ya bloqueado, y la devolución a Mercado Pago sale después del commit. Es
      * idempotente: si el pago ya tiene reembolso por el monto completo no se duplica. El motivo es
-     * {@code SUSPENSION_CLIENTE} si el Cliente está suspendido y {@code CANCELACION_CLIENTE} en cualquier otro caso.
+     * {@code SUSPENSION_CLIENTE} si el Cliente está suspendido, {@code SUSPENSION_COMERCIO} si lo está el comercio y
+     * {@code PAGO_TARDIO} en cualquier otro caso (por ejemplo, un pedido vencido).
      */
     void reembolsarPagoTardio(PedidoBloqueado bloqueado) {
-        MotivoNotaCredito motivo = bloqueado.estadoCliente() == EstadoUsuario.SUSPENDIDO
-                ? MotivoNotaCredito.SUSPENSION_CLIENTE
-                : MotivoNotaCredito.CANCELACION_CLIENTE;
+        MotivoNotaCredito motivo;
+        if (bloqueado.estadoCliente() == EstadoUsuario.SUSPENDIDO) {
+            motivo = MotivoNotaCredito.SUSPENSION_CLIENTE;
+        } else if (bloqueado.estadoComercio() == EstadoComercio.SUSPENDIDO) {
+            motivo = MotivoNotaCredito.SUSPENSION_COMERCIO;
+        } else {
+            motivo = MotivoNotaCredito.PAGO_TARDIO;
+        }
         reembolsoService.generarNotaYReembolsarTotal(bloqueado.pedido(), motivo);
     }
 
@@ -467,13 +479,25 @@ public class PedidoService {
     }
 
     /**
-     * {@code estadoCliente} y {@code estadoComercio} solo vienen completos desde {@link #bloquearParaPago}; en los demás
-     * caminos son {@code null}.
+     * Bloqueo de los procesos que aplican los topes de la suspensión del comercio: igual que {@link #bloquearParaPago}
+     * pero sin el equipo (el aviso va solo al Cliente). Lee el estado del comercio y su {@code suspendido_desde} con
+     * bloqueo compartido antes del pedido, así el proceso decide sobre lo último confirmado y no se cruza con quien
+     * levanta la suspensión (que toma el comercio {@code FOR UPDATE}).
      */
-    record PedidoBloqueado(Pedido pedido, List<Integer> equipo, EstadoUsuario estadoCliente, EstadoComercio estadoComercio) {
+    PedidoBloqueado bloquearParaTopeDeSuspension(Integer pedidoId) {
+        return bloquear(pedidoId, null, null, false, false, true);
+    }
+
+    /**
+     * {@code estadoCliente}, {@code estadoComercio} y {@code suspendidoDesde} (la fecha de la suspensión, solo con el
+     * comercio {@code SUSPENDIDO}) solo vienen completos desde {@link #bloquearParaPago} y
+     * {@link #bloquearParaTopeDeSuspension}; en los demás caminos son {@code null}.
+     */
+    record PedidoBloqueado(Pedido pedido, List<Integer> equipo, EstadoUsuario estadoCliente, EstadoComercio estadoComercio,
+            LocalDateTime suspendidoDesde) {
 
         PedidoBloqueado(Pedido pedido, List<Integer> equipo) {
-            this(pedido, equipo, null, null);
+            this(pedido, equipo, null, null, null);
         }
     }
 
@@ -508,34 +532,42 @@ public class PedidoService {
             throw new CuentaSuspendidaException(usuarioRepository.leerEstadoCuentaConBloqueoCompartido(actorUsuarioId)
                     .map(UsuarioRepository.EstadoCuenta::getMotivoSuspension).orElse(null));
         }
-        if (comercioActivo != null && comercioActivo.esEmpleado()) {
-            comercioActivoService.exigirRelacionActiva(comercioActivo);
+        if (comercioActivo != null) {
+            if (comercioActivo.esEmpleado()) {
+                comercioActivoService.exigirRelacionActiva(comercioActivo);
+            }
             if (aceptaPedidoNuevo) {
                 EstadoComercio estadoComercio = comercioRepository.leerEstadoConBloqueoCompartido(comercioActivo.comercioId())
                         .map(lectura -> EstadoComercio.valueOf(lectura.getEstado()))
                         .orElseThrow(ComercioNoDisponibleException::new);
-                ComercioActivoService.validarComercioAceptaPedidosNuevos(estadoComercio);
+                ComercioActivoService.validarComercioAceptaPedidosNuevos(comercioActivo, estadoComercio);
             }
         }
         List<Integer> equipo = new ArrayList<>();
         if (!candidatos.isEmpty()) {
             List<Integer> relacionesIds = candidatos.stream().map(RelacionDeEmpleado::getId).toList();
             for (EstadoDeRelacion relacion : empleadoComercioRepository.leerRelacionesConBloqueoCompartido(relacionesIds)) {
-                if (EstadoEmpleadoComercio.valueOf(relacion.getEstado()) == EstadoEmpleadoComercio.ACTIVO) {
+                boolean activa = EstadoEmpleadoComercio.valueOf(relacion.getEstado()) == EstadoEmpleadoComercio.ACTIVO;
+                if (activa && estadosUsuarios.get(relacion.getEmpleadoId()) != EstadoUsuario.SUSPENDIDO) {
                     equipo.add(relacion.getEmpleadoId());
                 }
             }
         }
         EstadoComercio estadoComercio = null;
+        LocalDateTime suspendidoDesde = null;
         if (leerEstados) {
-            estadoComercio = comercioRepository.leerEstadoConBloqueoCompartido(participantes.getComercioId())
-                    .map(lectura -> EstadoComercio.valueOf(lectura.getEstado()))
-                    .orElse(null);
+            ComercioRepository.EstadoYCierreComercio lectura = comercioRepository
+                    .leerEstadoConBloqueoCompartido(participantes.getComercioId()).orElse(null);
+            if (lectura != null) {
+                estadoComercio = EstadoComercio.valueOf(lectura.getEstado());
+                suspendidoDesde = lectura.getSuspendidoDesde();
+            }
         }
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado"));
         entityManager.refresh(pedido, LockModeType.PESSIMISTIC_WRITE);
-        return new PedidoBloqueado(pedido, equipo, estadosUsuarios.get(participantes.getClienteId()), estadoComercio);
+        return new PedidoBloqueado(pedido, equipo, estadosUsuarios.get(participantes.getClienteId()), estadoComercio,
+                suspendidoDesde);
     }
 
     private Pedido obtenerPedidoDelComercioParaActualizar(ComercioActivo comercioActivo, Integer pedidoId) {
@@ -872,45 +904,6 @@ public class PedidoService {
     }
 
     /**
-     * Lógica reactiva del lado de Pedido cuando un Comercio se suspende (invocada por
-     * {@code AdministradorService.suspenderComercio}). Los pedidos en curso ({@code PENDIENTE_CONFIRMACION_COMERCIO}/
-     * {@code EN_PREPARACION}) se cancelan de inmediato; los {@code LISTO_PARA_RETIRAR} no se
-     * tocan todavía — solo se les marca el vencimiento del timer de retiro, que resuelve
-     * {@link #autoconfirmarRetirosPorSuspension}. Cada pedido se toma con {@link #bloquearParaActualizar} (en id
-     * ascendente) y se vuelve a validar su estado: uno que el comercio, el Cliente o un proceso acaba de resolver
-     * se salta sin escribir nada.
-     */
-    public void cancelarPedidosPorSuspensionComercio(Integer comercioId) {
-        List<Integer> activos = pedidoRepository.findIdsByComercioIdAndEstadoIn(comercioId,
-                List.of(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, EstadoPedido.EN_PREPARACION));
-        for (Integer pedidoId : activos) {
-            Pedido pedido = bloquearParaActualizar(pedidoId);
-            if (pedido.getEstado() != EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO && pedido.getEstado() != EstadoPedido.EN_PREPARACION) {
-                continue;
-            }
-            pedido.setEstado(EstadoPedido.CANCELADO_POR_SISTEMA);
-            pedido.setCanceladoPor(CanceladoPor.SISTEMA);
-            pedidoRepository.save(pedido);
-            registrarHistorial(pedido, ActorPedido.SISTEMA, null);
-            if (pedido.getPagoEstado() == EstadoPagoPedido.PAGADO) {
-                reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.SUSPENSION_COMERCIO);
-            }
-            notificarCancelacionSistema(pedido, "el comercio fue suspendido");
-        }
-
-        List<Integer> listosParaRetirar = pedidoRepository.findIdsByComercioIdAndEstadoIn(comercioId,
-                List.of(EstadoPedido.LISTO_PARA_RETIRAR));
-        for (Integer pedidoId : listosParaRetirar) {
-            Pedido pedido = bloquearParaActualizar(pedidoId);
-            if (pedido.getEstado() != EstadoPedido.LISTO_PARA_RETIRAR) {
-                continue;
-            }
-            pedido.setSuspensionRetiroExpira(LocalDateTime.now(clock).plusMinutes(timeoutProperties.getRetiroSuspensionMinutos()));
-            pedidoRepository.save(pedido);
-        }
-    }
-
-    /**
      * Los 4 procesos automáticos eligen sin bloqueo los ids candidatos y resuelven cada pedido en su propia
      * transacción corta ({@link #enTransaccionPorPedido}): bloquean el pedido, vuelven a validar el estado y la
      * condición de tiempo con el pedido ya bloqueado y recién entonces escriben. Un pedido que otra transacción
@@ -1056,17 +1049,28 @@ public class PedidoService {
     }
 
     /**
-     * Job 4: {@code LISTO_PARA_RETIRAR} cuyo timer de suspensión venció -> cierra como {@code NO_RETIRADO} (nadie
-     * confirmó el retiro, así que no corresponde {@code ENTREGADO}), sin reembolso y sin la espera mínima del
-     * cierre manual. Avisa al Cliente con el mismo T36 que el cierre manual.
+     * Job 4: {@code LISTO_PARA_RETIRAR} de un comercio suspendido, a los {@code retiroSuspensionMinutos} (90) contados
+     * desde que el pedido quedó listo o desde que se suspendió el comercio, lo que haya pasado después ->
+     * cierra como {@code NO_RETIRADO} (nadie confirmó el retiro, así que no corresponde {@code ENTREGADO}), sin
+     * reembolso y sin la espera mínima del cierre manual. Avisa al Cliente con el mismo T36 que el cierre manual.
+     * Si se levanta la suspensión antes, el comercio ya no está {@code SUSPENDIDO} y no hace nada. Cada pedido
+     * se resuelve en su transacción, con el comercio y el pedido bloqueados y todo revalidado.
      */
     private void autoconfirmarRetirosPorSuspension(Supplier<LocalDateTime> reloj) {
-        for (Integer pedidoId : pedidoRepository.findIdsByEstadoAndSuspensionRetiroExpiraLessThan(
-                EstadoPedido.LISTO_PARA_RETIRAR, reloj.get())) {
+        long minutos = timeoutProperties.getRetiroSuspensionMinutos();
+        LocalDateTime corteInicial = reloj.get().minusMinutes(minutos);
+        for (Integer pedidoId : pedidoRepository.findIdsDeComerciosSuspendidosDesde(EstadoPedido.LISTO_PARA_RETIRAR, corteInicial)) {
             enTransaccionPorPedido("autoconfirmarRetirosPorSuspension", pedidoId, () -> {
-                Pedido pedido = bloquearParaActualizar(pedidoId);
-                if (pedido.getEstado() != EstadoPedido.LISTO_PARA_RETIRAR || pedido.getSuspensionRetiroExpira() == null
-                        || !pedido.getSuspensionRetiroExpira().isBefore(reloj.get())) {
+                PedidoBloqueado bloqueado = bloquearParaTopeDeSuspension(pedidoId);
+                Pedido pedido = bloqueado.pedido();
+                if (pedido.getEstado() != EstadoPedido.LISTO_PARA_RETIRAR || !comercioSuspendido(bloqueado)) {
+                    return;
+                }
+                LocalDateTime listoDesde = obtenerFechaEntradaAEstado(pedido, EstadoPedido.LISTO_PARA_RETIRAR);
+                LocalDateTime base = listoDesde != null && listoDesde.isAfter(bloqueado.suspendidoDesde())
+                        ? listoDesde
+                        : bloqueado.suspendidoDesde();
+                if (base.plusMinutes(minutos).isAfter(reloj.get())) {
                     return;
                 }
                 pedido.setEstado(EstadoPedido.NO_RETIRADO);
@@ -1075,6 +1079,51 @@ public class PedidoService {
                 avisarPedidoNoRetirado(pedido);
             });
         }
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public void cancelarPreparacionPorSuspension() {
+        cancelarPreparacionPorSuspension(() -> LocalDateTime.now(clock));
+    }
+
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public void cancelarPreparacionPorSuspension(LocalDateTime ahora) {
+        cancelarPreparacionPorSuspension(() -> ahora);
+    }
+
+    /**
+     * Job 5: {@code EN_PREPARACION} de un comercio suspendido que el equipo no despachó ni anuló a los
+     * {@code preparacionSuspensionMinutos} (90) de la suspensión -> {@code CANCELADO_POR_SISTEMA} con reembolso total
+     * (nota {@code SUSPENSION_COMERCIO}, motivo {@code TIMEOUT_PREPARACION_SUSPENSION}) y aviso al Cliente (T11). Si se
+     * levanta la suspensión antes el proceso se detiene. Cada pedido se resuelve en su transacción; uno que falla no
+     * frena a los demás.
+     */
+    private void cancelarPreparacionPorSuspension(Supplier<LocalDateTime> reloj) {
+        long minutos = timeoutProperties.getPreparacionSuspensionMinutos();
+        LocalDateTime corteInicial = reloj.get().minusMinutes(minutos);
+        for (Integer pedidoId : pedidoRepository.findIdsDeComerciosSuspendidosDesde(EstadoPedido.EN_PREPARACION, corteInicial)) {
+            enTransaccionPorPedido("cancelarPreparacionPorSuspension", pedidoId, () -> {
+                PedidoBloqueado bloqueado = bloquearParaTopeDeSuspension(pedidoId);
+                Pedido pedido = bloqueado.pedido();
+                if (pedido.getEstado() != EstadoPedido.EN_PREPARACION || !comercioSuspendido(bloqueado)
+                        || bloqueado.suspendidoDesde().plusMinutes(minutos).isAfter(reloj.get())) {
+                    return;
+                }
+                pedido.setEstado(EstadoPedido.CANCELADO_POR_SISTEMA);
+                pedido.setCanceladoPor(CanceladoPor.SISTEMA);
+                pedidoRepository.save(pedido);
+                registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.TIMEOUT_PREPARACION_SUSPENSION);
+                boolean devolucionEnGestion = reembolsoService.generarNotaYReembolsarTotal(pedido,
+                        MotivoNotaCredito.SUSPENSION_COMERCIO);
+                notificarCancelacionSistema(pedido, devolucionEnGestion
+                        ? "el comercio fue suspendido y estamos gestionando la devolución de tu pago"
+                        : "el comercio fue suspendido");
+            });
+        }
+    }
+
+    private static boolean comercioSuspendido(PedidoBloqueado bloqueado) {
+        return bloqueado.estadoComercio() == EstadoComercio.SUSPENDIDO && bloqueado.suspendidoDesde() != null;
     }
 
     private void enTransaccionPorPedido(String proceso, Integer pedidoId, Runnable accion) {
@@ -1206,6 +1255,8 @@ public class PedidoService {
                 pedido.getCliente().getId(),
                 pedido.getCliente().getPersonaFisica().getNombre() + " " + pedido.getCliente().getPersonaFisica().getApellido(),
                 pedido.getComercio().getId(),
+                pedido.getComercio().getNombre(),
+                pedido.getComercio().getFotoPerfilUrl(),
                 pedido.getEstado(),
                 pedido.getPagoEstado(),
                 pedido.getTipoEntrega(),

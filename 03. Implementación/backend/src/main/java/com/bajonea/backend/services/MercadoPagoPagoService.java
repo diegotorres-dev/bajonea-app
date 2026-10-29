@@ -4,6 +4,7 @@ import com.bajonea.backend.config.MercadoPagoConfig;
 import com.bajonea.backend.config.PedidoTimeoutProperties;
 import com.bajonea.backend.dto.response.PagoResponseDTO;
 import com.bajonea.backend.dto.response.PedidoResponseDTO;
+import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.EstadoPagoPedido;
 import java.util.Comparator;
 import com.bajonea.backend.entities.CuentaMercadoPago;
@@ -125,6 +126,9 @@ public class MercadoPagoPagoService {
         }
         if (pedido.getEstado() != EstadoPedido.PENDIENTE_PAGO) {
             throw new ConflictoDeNegocioException("El pedido no está esperando el pago");
+        }
+        if (pedido.getComercio().getEstado() == EstadoComercio.SUSPENDIDO) {
+            throw new ConflictoDeNegocioException("Este comercio no está disponible en este momento");
         }
 
         CuentaMercadoPago cuenta = obtenerCuentaDelComercio(pedido);

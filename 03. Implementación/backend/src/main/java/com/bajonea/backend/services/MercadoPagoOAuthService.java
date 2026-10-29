@@ -9,7 +9,9 @@ import com.bajonea.backend.entities.Comercio;
 import com.bajonea.backend.entities.CuentaMercadoPago;
 import com.bajonea.backend.entities.Dueno;
 import com.bajonea.backend.enums.MotivoRecalculo;
+import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.EstadoPedido;
+import com.bajonea.backend.exceptions.ConflictoComercioException;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.CuentaMercadoPagoYaVinculadaException;
 import com.bajonea.backend.exceptions.DesvinculacionBloqueadaException;
@@ -135,7 +137,8 @@ public class MercadoPagoOAuthService {
     }
 
     /**
-     * Desvincula la cuenta de Mercado Pago del Dueño. Orden de bloqueo: la fila del usuario del Dueño (compartida: el aviso
+     * Desvincula la cuenta de Mercado Pago del Dueño; con un comercio suyo suspendido responde {@code 409}
+     * {@code COMERCIO_SUSPENDIDO} (los reembolsos pendientes usan su token). Orden de bloqueo: la fila del usuario del Dueño (compartida: el aviso
      * de que sus comercios dejan de recibir pedidos inserta una notificación, cuya clave foránea la pide; sin tomarla antes
      * se interbloquea con un bloqueo de cuenta, que tiene el usuario exclusivo y espera los comercios), cuenta, después todos los comercios del
      * Dueño ({@code FOR UPDATE}), después los pedidos {@code PENDIENTE_PAGO} de esos comercios
@@ -151,7 +154,13 @@ public class MercadoPagoOAuthService {
         comercioService.duenoBloqueadoConBloqueo(duenoId);
         CuentaMercadoPago cuenta = cuentaMercadoPagoService.obtenerActivaConBloqueo(duenoId);
 
-        List<Integer> comercioIds = comercioRepository.findByDuenoIdConBloqueo(duenoId).stream()
+        List<Comercio> comercios = comercioRepository.findByDuenoIdConBloqueo(duenoId);
+        if (comercios.stream().anyMatch(comercio -> comercio.getEstado() == EstadoComercio.SUSPENDIDO)) {
+            throw new ConflictoComercioException(ConflictoComercioException.SUSPENDIDO,
+                    "No podés desvincular Mercado Pago mientras un comercio tuyo esté suspendido. "
+                            + "Se usa para devolver el dinero de los pedidos.");
+        }
+        List<Integer> comercioIds = comercios.stream()
                 .map(Comercio::getId)
                 .toList();
         List<PedidoRepository.PagoPendienteBloqueado> pagosPendientes = comercioIds.isEmpty()

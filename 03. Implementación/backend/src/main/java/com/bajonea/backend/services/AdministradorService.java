@@ -2,7 +2,6 @@ package com.bajonea.backend.services;
 
 import com.bajonea.backend.config.ComercioResolicitudesProperties;
 import com.bajonea.backend.dto.request.AprobacionComercioRequestDTO;
-import com.bajonea.backend.dto.request.SuspensionComercioRequestDTO;
 import com.bajonea.backend.dto.response.AdministradorResponseDTO;
 import com.bajonea.backend.dto.response.CambioComercioResponseDTO;
 import com.bajonea.backend.dto.response.ClienteAdminResponseDTO;
@@ -48,7 +47,6 @@ import com.bajonea.backend.repositories.NotificacionRepository;
 import com.bajonea.backend.repositories.RedSocialRepository;
 import com.bajonea.backend.repositories.TagRepository;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.LockModeType;
 import jakarta.persistence.PersistenceContext;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -91,8 +89,6 @@ public class AdministradorService {
     private final CategoriaRepository categoriaRepository;
     private final TagRepository tagRepository;
     private final NotificacionService notificacionService;
-    private final PedidoService pedidoService;
-    private final ComercioService comercioService;
     private final AptitudVentaComercioService aptitudVentaComercioService;
     private final DocumentoComercioRepository documentoComercioRepository;
     private final AprobacionPreviaDueno aprobacionPreviaDueno;
@@ -217,10 +213,17 @@ public class AdministradorService {
         Map<Integer, List<RedSocial>> redes = redSocialRepository.findByComercioIdInAndFechaBajaIsNull(ids).stream()
                 .sorted(Comparator.comparing(RedSocial::getId))
                 .collect(Collectors.groupingBy(r -> r.getComercio().getId()));
+        java.util.Set<Integer> sinEmailSuspension = new java.util.HashSet<>(
+                notificacionRepository.findComercioIdsConUltimoEmailFallido(TipoNotificacion.COMERCIO_SUSPENDIDO));
+        java.util.Set<Integer> sinEmailLevantamiento = new java.util.HashSet<>(
+                notificacionRepository.findComercioIdsConUltimoEmailFallido(TipoNotificacion.SUSPENSION_LEVANTADA));
         return comercios.stream()
                 .map(comercio -> construirAdminResponseDTO(comercio, direcciones.get(comercio.getId()),
                         horarios.getOrDefault(comercio.getId(), List.of()),
-                        redes.getOrDefault(comercio.getId(), List.of()), null, false, List.of()))
+                        redes.getOrDefault(comercio.getId(), List.of()), null, false, List.of(),
+                        comercio.getEstado() == EstadoComercio.SUSPENDIDO
+                                ? sinEmailSuspension.contains(comercio.getId())
+                                : sinEmailLevantamiento.contains(comercio.getId())))
                 .toList();
     }
 
@@ -340,57 +343,6 @@ public class AdministradorService {
                 tipo, TipoEntidadNotificacion.COMERCIO, comercio.getId());
     }
 
-    /**
-     * Suspensión de Comercio por Administrador (Fase 19, sumada al alcance por pedido explícito
-     * de Diego). Solo cubre la dirección Comercio -> {@code SUSPENDIDO} desde
-     * {@code APROBADO} — sin "levantar suspensión" en este tramo (no pedido, y reabre
-     * decisiones de otro alcance: a qué estado vuelve el comercio, qué pasa con los pedidos ya
-     * cancelados). Dispara la lógica reactiva de {@code PedidoService} sobre los pedidos activos
-     * de este comercio.
-     * <p>
-     * Orden de bloqueo: el usuario del Dueño (compartido) y después el comercio con {@code FOR UPDATE} <b>antes</b> de
-     * escribir nada. Sin eso, el {@code INSERT} del historial de estados tomaba un bloqueo compartido sobre el
-     * comercio (clave foránea) y el {@code UPDATE} diferido pedía después el exclusivo: una mejora de bloqueo que se
-     * interbloquea con cualquier otra operación que tome el comercio {@code FOR UPDATE} (por ejemplo, la edición de
-     * descripción y teléfono de un Empleado). Además el estado se valida sobre la fila ya bloqueada, así dos
-     * suspensiones simultáneas no pasan las dos la validación.
-     */
-    public void suspenderComercio(Integer comercioId, Integer administradorId, SuspensionComercioRequestDTO request) {
-        Comercio comercio = comercioRepository.findById(comercioId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
-
-        Administrador administrador = administradorRepository.findById(administradorId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Administrador no encontrado"));
-
-        comercioService.duenoBloqueadoConBloqueo(comercio.getDueno().getId());
-        entityManager.refresh(comercio, LockModeType.PESSIMISTIC_WRITE);
-
-        if (comercio.getEstado() != EstadoComercio.APROBADO && comercio.getEstado() != EstadoComercio.APTO_VENTA) {
-            throw new ConflictoDeNegocioException("Solo se puede suspender un comercio aprobado");
-        }
-
-        EstadoComercio estadoOrigen = comercio.getEstado();
-        comercio.setEstado(EstadoComercio.SUSPENDIDO);
-        comercio.setFechaModificacion(LocalDateTime.now());
-        comercioRepository.save(comercio);
-
-        HistorialEstadoComercio historial = HistorialEstadoComercio.builder()
-                .comercio(comercio)
-                .administrador(administrador)
-                .estadoOrigen(estadoOrigen)
-                .estadoDestino(EstadoComercio.SUSPENDIDO)
-                .motivo(request.getMotivo())
-                .fechaHora(LocalDateTime.now())
-                .build();
-        historialEstadoComercioRepository.save(historial);
-
-        notificacionService.crearParaDueno(comercio.getDueno().getId(), comercio.getId(),
-                "Tu comercio '" + comercio.getNombre() + "' fue suspendido. Motivo: " + request.getMotivo(),
-                TipoNotificacion.COMERCIO_SUSPENDIDO, TipoEntidadNotificacion.COMERCIO, comercio.getId());
-
-        pedidoService.cancelarPedidosPorSuspensionComercio(comercio.getId());
-    }
-
     private ComercioAdminResponseDTO aAdminResponseDTO(Comercio comercio, Integer duenoId, boolean esAdicional,
             List<OtroComercioDuenoResponseDTO> otrosComercios) {
         Direccion direccion = direccionRepository.findByComercioId(comercio.getId()).orElse(null);
@@ -398,12 +350,12 @@ public class AdministradorService {
         List<Horario> horarios = DisponibilidadComercioService.vigentesEn(
                 horarioRepository.findVigentesDesde(comercio.getId(), hoy), hoy);
         List<RedSocial> redes = redSocialRepository.findByComercioIdAndFechaBajaIsNull(comercio.getId());
-        return construirAdminResponseDTO(comercio, direccion, horarios, redes, duenoId, esAdicional, otrosComercios);
+        return construirAdminResponseDTO(comercio, direccion, horarios, redes, duenoId, esAdicional, otrosComercios, false);
     }
 
     private ComercioAdminResponseDTO construirAdminResponseDTO(Comercio comercio, Direccion direccion,
             List<Horario> horariosComercio, List<RedSocial> redesComercio, Integer duenoId, boolean esAdicional,
-            List<OtroComercioDuenoResponseDTO> otrosComercios) {
+            List<OtroComercioDuenoResponseDTO> otrosComercios, boolean ultimoEmailAvisoFallido) {
         DireccionResponseDTO direccionDTO = direccion == null ? null : new DireccionResponseDTO(
                 direccion.getId(),
                 direccion.getCalle(),
@@ -450,7 +402,11 @@ public class AdministradorService {
                 redesSociales,
                 duenoId,
                 esAdicional,
-                otrosComercios);
+                otrosComercios,
+                comercio.getSuspensionOrigen(),
+                comercio.getSuspendidoDesde(),
+                comercio.getMotivoSuspension(),
+                ultimoEmailAvisoFallido);
     }
 
     private EstadoUsuario estadoPrevioSuspension(Integer usuarioId) {

@@ -1,6 +1,7 @@
 package com.bajonea.backend.entities;
 
 import com.bajonea.backend.enums.EstadoComercio;
+import com.bajonea.backend.enums.OrigenSuspensionComercio;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -57,6 +58,11 @@ public class HistorialEstadoComercio {
     @Setter
     @Column(name = "motivo", length = 500)
     private String motivo;
+
+    @Setter
+    @Enumerated(EnumType.STRING)
+    @Column(name = "suspension_origen")
+    private OrigenSuspensionComercio suspensionOrigen;
 
     @Setter
     @Column(name = "fecha_hora", nullable = false)

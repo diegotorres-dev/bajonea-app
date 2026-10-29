@@ -5,6 +5,7 @@ import com.bajonea.backend.config.PrecioBloqueoProperties;
 import com.bajonea.backend.dto.response.ApiResponse;
 import com.bajonea.backend.dto.response.CierreTurnoTestResponseDTO;
 import com.bajonea.backend.enums.EstadoComercio;
+import com.bajonea.backend.enums.OrigenSuspensionComercio;
 import com.bajonea.backend.enums.TipoToken;
 import com.bajonea.backend.repositories.CierreTurnoRepository;
 import com.bajonea.backend.services.CierreTurnoJob;
@@ -76,6 +77,20 @@ public class TestController {
     public ResponseEntity<ApiResponse<Void>> marcarAptoVenta(@PathVariable Integer id) {
         testSupportService.marcarAptoVenta(id);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Comercio marcado como APTO_VENTA", null));
+    }
+
+    @PutMapping("/comercios/{id}/suspension")
+    public ResponseEntity<ApiResponse<Void>> forzarSuspensionDeComercio(@PathVariable Integer id,
+            @RequestParam(defaultValue = "INDIVIDUAL") OrigenSuspensionComercio origen,
+            @RequestParam(defaultValue = "0") long minutos, @RequestParam(defaultValue = "Suspensión de prueba") String motivo) {
+        testSupportService.forzarSuspensionDeComercio(id, origen, minutos, motivo);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Comercio suspendido para la prueba", null));
+    }
+
+    @PutMapping("/comercios/{id}/envejecer-suspension")
+    public ResponseEntity<ApiResponse<Void>> envejecerSuspension(@PathVariable Integer id, @RequestParam long minutos) {
+        testSupportService.envejecerSuspension(id, minutos);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Suspensión adelantada", null));
     }
 
     @PostMapping("/comercios/{id}/clonar")

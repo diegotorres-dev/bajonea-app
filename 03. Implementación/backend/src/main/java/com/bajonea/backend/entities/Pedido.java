@@ -90,10 +90,6 @@ public class Pedido {
     private LocalDateTime fechaEntrega;
 
     @Setter
-    @Column(name = "suspension_retiro_expira")
-    private LocalDateTime suspensionRetiroExpira;
-
-    @Setter
     @Column(name = "primer_aviso_emitido", nullable = false)
     private boolean primerAvisoEmitido;
 

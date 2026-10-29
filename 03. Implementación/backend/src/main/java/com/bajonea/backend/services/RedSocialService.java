@@ -29,6 +29,7 @@ public class RedSocialService {
     private final RedSocialRepository redSocialRepository;
     private final ComercioRepository comercioRepository;
     private final HistorialEdicionComercioService historialEdicionComercioService;
+    private final ComercioActivoService comercioActivoService;
 
     public List<RedSocialResponseDTO> listarActivas(Integer comercioId) {
         Comercio comercio = obtenerComercio(comercioId);
@@ -39,6 +40,7 @@ public class RedSocialService {
 
     public RedSocialResponseDTO agregar(ComercioActivo actor, RedSocialRequestDTO request) {
         historialEdicionComercioService.iniciarEscritura(actor);
+        comercioActivoService.exigirComercioModificable(actor);
         Comercio comercio = obtenerComercio(actor.comercioId());
         RedSocial existente = redSocialRepository.findByComercioIdAndTipo(comercio.getId(), request.getTipo())
                 .orElse(null);
@@ -78,6 +80,7 @@ public class RedSocialService {
 
     public RedSocialResponseDTO editar(ComercioActivo actor, Integer redSocialId, RedSocialRequestDTO request) {
         historialEdicionComercioService.iniciarEscritura(actor);
+        comercioActivoService.exigirComercioModificable(actor);
         Comercio comercio = obtenerComercio(actor.comercioId());
         RedSocial redSocial = obtenerRedSocialDelComercio(redSocialId, comercio);
 
@@ -94,6 +97,7 @@ public class RedSocialService {
 
     public void darDeBaja(ComercioActivo actor, Integer redSocialId) {
         historialEdicionComercioService.iniciarEscritura(actor);
+        comercioActivoService.exigirComercioModificable(actor);
         Comercio comercio = obtenerComercio(actor.comercioId());
         RedSocial redSocial = obtenerRedSocialDelComercio(redSocialId, comercio);
 

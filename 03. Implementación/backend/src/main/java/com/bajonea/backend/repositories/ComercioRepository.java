@@ -90,8 +90,8 @@ public interface ComercioRepository extends JpaRepository<Comercio, Integer> {
      * con {@code LOCK IN SHARE MODE} por la misma razón que
      * {@code PedidoRepository.findPendientesPagoDeComerciosConBloqueoCompartido}.
      */
-    @Query(value = "SELECT estado AS estado, cerrado_manualmente AS cerradoManualmente FROM comercio WHERE id = :id LOCK IN SHARE MODE",
-            nativeQuery = true)
+    @Query(value = "SELECT estado AS estado, cerrado_manualmente AS cerradoManualmente, suspendido_desde AS suspendidoDesde "
+            + "FROM comercio WHERE id = :id LOCK IN SHARE MODE", nativeQuery = true)
     Optional<EstadoYCierreComercio> leerEstadoConBloqueoCompartido(@Param("id") Integer id);
 
     /**
@@ -116,5 +116,7 @@ public interface ComercioRepository extends JpaRepository<Comercio, Integer> {
         String getEstado();
 
         boolean getCerradoManualmente();
+
+        java.time.LocalDateTime getSuspendidoDesde();
     }
 }

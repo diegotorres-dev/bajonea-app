@@ -2,6 +2,7 @@ package com.bajonea.backend.dto.response;
 
 import com.bajonea.backend.enums.CondicionIva;
 import com.bajonea.backend.enums.EstadoComercio;
+import com.bajonea.backend.enums.OrigenSuspensionComercio;
 import com.bajonea.backend.enums.TipoComercio;
 import com.bajonea.backend.enums.TipoPersonaJuridica;
 import java.time.LocalDate;
@@ -58,6 +59,10 @@ public class ComercioAdminResponseDTO {
     private final Integer duenoId;
     private final boolean esAdicional;
     private final List<OtroComercioDuenoResponseDTO> otrosComercios;
+    private final OrigenSuspensionComercio suspensionOrigen;
+    private final LocalDateTime suspendidoDesde;
+    private final String motivoSuspension;
+    private final boolean ultimoEmailAvisoFallido;
 
     public ComercioAdminResponseDTO(
             Integer id,
@@ -84,7 +89,15 @@ public class ComercioAdminResponseDTO {
             List<RedSocialResponseDTO> redesSociales,
             Integer duenoId,
             boolean esAdicional,
-            List<OtroComercioDuenoResponseDTO> otrosComercios) {
+            List<OtroComercioDuenoResponseDTO> otrosComercios,
+            OrigenSuspensionComercio suspensionOrigen,
+            LocalDateTime suspendidoDesde,
+            String motivoSuspension,
+            boolean ultimoEmailAvisoFallido) {
+        this.ultimoEmailAvisoFallido = ultimoEmailAvisoFallido;
+        this.suspensionOrigen = suspensionOrigen;
+        this.suspendidoDesde = suspendidoDesde;
+        this.motivoSuspension = motivoSuspension;
         this.id = id;
         this.nombre = nombre;
         this.descripcion = descripcion;

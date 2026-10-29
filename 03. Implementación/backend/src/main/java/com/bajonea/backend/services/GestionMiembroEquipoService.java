@@ -61,6 +61,7 @@ public class GestionMiembroEquipoService {
 
     static final String MENSAJE_MIEMBRO_NO_ENCONTRADO = "Miembro no encontrado";
     static final String MENSAJE_COMERCIO_NO_OPERATIVO = "Este comercio no puede reactivar empleados en este momento";
+    static final String MENSAJE_COMERCIO_SUSPENDIDO = "El comercio está suspendido: el equipo se puede ver, pero no modificar";
     static final String MENSAJE_RENUNCIO = "Esta persona dejó el equipo por su cuenta. Para que vuelva, invitala de nuevo.";
     static final String MENSAJE_SIN_REGISTRO_DE_BAJA = "Esta persona no se puede reactivar directamente. Para que vuelva, invitala de nuevo.";
     static final String MENSAJE_INVITACION_PENDIENTE = "Hay una invitación pendiente para esta persona. Cancelala primero.";
@@ -86,6 +87,7 @@ public class GestionMiembroEquipoService {
     public ResultadoCambio desactivar(ComercioActivo activo, Integer empleadoId) {
         bloquearUsuarios(activo.duenoId(), empleadoId, false);
         EmpleadoComercio relacion = bloquearRelacion(empleadoId, activo.comercioId());
+        exigirComercioNoSuspendido(activo.comercioId());
         if (relacion.getEstado() == EstadoEmpleadoComercio.INACTIVO) {
             return new ResultadoCambio(miembroInactivo(relacion), false);
         }
@@ -221,6 +223,15 @@ public class GestionMiembroEquipoService {
     private EmpleadoComercio bloquearRelacion(Integer empleadoId, Integer comercioId) {
         return empleadoComercioRepository.findByEmpleadoIdAndComercioIdConBloqueo(empleadoId, comercioId)
                 .orElseThrow(() -> new RecursoNoEncontradoException(MENSAJE_MIEMBRO_NO_ENCONTRADO));
+    }
+
+    private void exigirComercioNoSuspendido(Integer comercioId) {
+        String estado = comercioRepository.leerEstadoConBloqueoCompartido(comercioId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"))
+                .getEstado();
+        if (EstadoComercio.valueOf(estado) == EstadoComercio.SUSPENDIDO) {
+            throw new ConflictoComercioException(ConflictoComercioException.SUSPENDIDO, MENSAJE_COMERCIO_SUSPENDIDO);
+        }
     }
 
     private void exigirComercioOperativo(Integer comercioId) {

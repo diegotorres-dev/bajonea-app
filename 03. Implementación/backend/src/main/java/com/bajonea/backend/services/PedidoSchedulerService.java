@@ -6,7 +6,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * Los 4 jobs {@code @Scheduled} de la máquina de estados de Pedido (Fase 19). Las frecuencias
+ * Los 5 jobs {@code @Scheduled} de la máquina de estados de Pedido (Fase 19). Las frecuencias
  * de polling son fijas, tal como se definieron con Diego — no configurables. Los umbrales de
  * negocio que cada job evalúa (30/75/90/30/90 min) sí son configurables, ver
  * {@link com.bajonea.backend.config.PedidoTimeoutProperties} / {@code application.properties}.
@@ -54,10 +54,17 @@ public class PedidoSchedulerService {
         }
     }
 
+    @Scheduled(fixedDelay = 60_000)
+    public void cancelarPreparacionPorSuspension() {
+        if (habilitado) {
+            pedidoService.cancelarPreparacionPorSuspension();
+        }
+    }
+
     /**
      * Ejecución a pedido de uno de los cuatro procesos con una hora dada (la usa el controller de test). Nombres:
-     * {@code expirar-pagos}, {@code avisar-y-autoconfirmar}, {@code expirar-sin-respuesta} y
-     * {@code autoconfirmar-retiros}.
+     * {@code expirar-pagos}, {@code avisar-y-autoconfirmar}, {@code expirar-sin-respuesta},
+     * {@code autoconfirmar-retiros} y {@code cancelar-preparacion-suspension}.
      */
     public void ejecutar(String nombre, LocalDateTime ahora) {
         switch (nombre) {
@@ -65,6 +72,7 @@ public class PedidoSchedulerService {
             case "avisar-y-autoconfirmar" -> pedidoService.avisar75MinYAutoconfirmar(ahora);
             case "expirar-sin-respuesta" -> pedidoService.expirarPedidosSinRespuestaComercio(ahora);
             case "autoconfirmar-retiros" -> pedidoService.autoconfirmarRetirosPorSuspension(ahora);
+            case "cancelar-preparacion-suspension" -> pedidoService.cancelarPreparacionPorSuspension(ahora);
             default -> throw new IllegalArgumentException("Proceso de pedidos desconocido: " + nombre);
         }
     }

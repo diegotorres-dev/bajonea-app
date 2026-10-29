@@ -19,7 +19,7 @@ public class MiComercioEmpleadoResponseDTO extends MiComercioResponseDTO {
             LocalDateTime fechaRegistro, boolean operativo, long cantidadNotificacionesNoLeidas, boolean cerradoManualmente,
             boolean abiertoAhora, boolean puedeCambiarCierre, String textoReapertura, LocalDateTime fechaAlta) {
         super(id, nombre, fotoPerfilUrl, estado, fechaRegistro, operativo, cantidadNotificacionesNoLeidas, cerradoManualmente,
-                abiertoAhora, puedeCambiarCierre, textoReapertura);
+                abiertoAhora, puedeCambiarCierre, textoReapertura, null, null);
         this.fechaAlta = fechaAlta;
     }
 }

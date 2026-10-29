@@ -68,6 +68,7 @@ public class ComercioService {
     private final UsuarioRepository usuarioRepository;
     private final HistorialEdicionComercioService historialEdicionComercioService;
     private final NombreComercioService nombreComercioService;
+    private final ComercioActivoService comercioActivoService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -145,6 +146,8 @@ public class ComercioService {
         ComercioValidaciones.validarModalidadesEntrega(request.isAceptaDelivery(), request.isAceptaRetiro());
         historialEdicionComercioService.iniciarEscritura(actor);
         Comercio comercio = obtenerComercio(actor.comercioId());
+        entityManager.refresh(comercio, LockModeType.PESSIMISTIC_WRITE);
+        ComercioActivoService.validarComercioModificable(actor, comercio.getEstado());
 
         String nombreNuevo = TextoUtils.aTitleCase(request.getNombre());
         List<String> camposCambiados = new ArrayList<>();
@@ -178,14 +181,18 @@ public class ComercioService {
         return aResponseDTO(comercio);
     }
 
-    public CloudinarySignatureResponseDTO generarFirmaFotoPerfil(Integer comercioId) {
-        Comercio comercio = obtenerComercio(comercioId);
+    public CloudinarySignatureResponseDTO generarFirmaFotoPerfil(ComercioActivo actor) {
+        historialEdicionComercioService.iniciarEscritura(actor);
+        comercioActivoService.exigirComercioModificable(actor);
+        Comercio comercio = obtenerComercio(actor.comercioId());
         return cloudinaryService.generarFirmaFotoPerfilComercio(comercio.getId());
     }
 
     public ComercioResponseDTO actualizarFotoPerfil(ComercioActivo actor, FotoPerfilComercioRequestDTO request) {
         historialEdicionComercioService.iniciarEscritura(actor);
         Comercio comercio = obtenerComercio(actor.comercioId());
+        entityManager.refresh(comercio, LockModeType.PESSIMISTIC_WRITE);
+        ComercioActivoService.validarComercioModificable(actor, comercio.getEstado());
         cloudinaryService.validarFotoPerfilComercio(comercio.getId(), request.getUrl());
         boolean cambioLaFoto = !Objects.equals(comercio.getFotoPerfilUrl(), request.getUrl());
         comercio.setFotoPerfilUrl(request.getUrl());
@@ -331,7 +338,9 @@ public class ComercioService {
                 disponibilidad.cerradoManualmente(),
                 disponibilidad.abiertoAhora(),
                 disponibilidad.puedeCambiarCierre(),
-                disponibilidad.textoReapertura());
+                disponibilidad.textoReapertura(),
+                comercio.getSuspendidoDesde(),
+                comercio.getMotivoSuspension());
     }
 
     private String obtenerMotivoRechazo(Comercio comercio) {

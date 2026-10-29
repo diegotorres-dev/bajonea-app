@@ -21,6 +21,7 @@ import com.bajonea.backend.enums.TipoNotificacion;
 import com.bajonea.backend.enums.TipoToken;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.enums.EstadoComercio;
+import com.bajonea.backend.enums.OrigenSuspensionComercio;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.entities.EmpleadoComercio;
@@ -181,12 +182,12 @@ public class TestSupportService {
 
     @Transactional
     public void confirmarPagoAprobadoConRegistro(Integer pedidoId, LocalDateTime instanteDelPago) {
-        pedidoService.confirmarPagoAprobado(pedidoId, instanteDelPago);
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado"));
         Pago pago = pagoService.buscarPorPedido(pedidoId)
                 .orElseGet(() -> pagoService.crearPreferencia(pedido, "sintetica-" + pedidoId, null, null));
         pagoService.registrarResultado(pago, "sintetico-" + pedidoId, "approved", "account_money", true);
+        pedidoService.confirmarPagoAprobado(pedidoId, instanteDelPago);
     }
 
     /**
@@ -200,6 +201,36 @@ public class TestSupportService {
                 + "AND estado = 'LISTO_PARA_RETIRAR' ORDER BY fecha_hora DESC, id DESC LIMIT 1) ultimo)", minutos, pedidoId);
         if (filas == 0) {
             throw new RecursoNoEncontradoException("El pedido no tiene una fila LISTO_PARA_RETIRAR en el historial");
+        }
+    }
+
+    /**
+     * Atajo de entorno de test: deja al comercio {@code SUSPENDIDO} con el origen dado (por ejemplo {@code DUENO},
+     * que todavía no tiene un camino real) y la suspensión iniciada hace {@code minutos}, cumpliendo el
+     * {@code CHECK} de la tabla. No toca pedidos, avisos ni historial.
+     */
+    @Transactional
+    public void forzarSuspensionDeComercio(Integer comercioId, OrigenSuspensionComercio origen, long minutos, String motivo) {
+        Comercio comercio = comercioRepository.findById(comercioId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
+        LocalDateTime desde = LocalDateTime.now(clock).minusMinutes(minutos).truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        comercio.setEstado(EstadoComercio.SUSPENDIDO);
+        comercio.setSuspensionOrigen(origen);
+        comercio.setSuspendidoDesde(desde);
+        comercio.setMotivoSuspension(motivo);
+        comercioRepository.save(comercio);
+    }
+
+    /**
+     * Atajo de entorno de test: adelanta hacia el pasado {@code suspendido_desde} de un comercio suspendido, para probar
+     * los topes de 90 minutos sin esperar.
+     */
+    @Transactional
+    public void envejecerSuspension(Integer comercioId, long minutos) {
+        int filas = jdbcTemplate.update("UPDATE comercio SET suspendido_desde = DATE_SUB(suspendido_desde, INTERVAL ? MINUTE) "
+                + "WHERE id = ? AND estado = 'SUSPENDIDO'", minutos, comercioId);
+        if (filas == 0) {
+            throw new ConflictoDeNegocioException("El comercio no está suspendido");
         }
     }
 
@@ -236,6 +267,12 @@ public class TestSupportService {
                 .aceptaDelivery(origen.isAceptaDelivery())
                 .aceptaRetiro(origen.isAceptaRetiro())
                 .estado(estado != null ? estado : origen.getEstado())
+                .suspensionOrigen(estado == EstadoComercio.SUSPENDIDO || (estado == null && origen.getEstado() == EstadoComercio.SUSPENDIDO)
+                        ? OrigenSuspensionComercio.INDIVIDUAL : null)
+                .suspendidoDesde(estado == EstadoComercio.SUSPENDIDO || (estado == null && origen.getEstado() == EstadoComercio.SUSPENDIDO)
+                        ? ahora : null)
+                .motivoSuspension(estado == EstadoComercio.SUSPENDIDO || (estado == null && origen.getEstado() == EstadoComercio.SUSPENDIDO)
+                        ? "Suspensión de prueba" : null)
                 .fechaRegistro(ahora)
                 .build());
 

@@ -25,6 +25,7 @@ import com.bajonea.backend.enums.MotivoRegularizacionInvitacion;
 import com.bajonea.backend.enums.TipoEntidadNotificacion;
 import com.bajonea.backend.enums.TipoNotificacion;
 import com.bajonea.backend.exceptions.CodigoInvitacionInvalidoException;
+import com.bajonea.backend.exceptions.ConflictoComercioException;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.GeneracionTokenException;
 import com.bajonea.backend.exceptions.InvitacionNoAptaException;
@@ -123,7 +124,7 @@ public class InvitacionEmpleadoService {
     static final String MENSAJE_EDAD_CUENTA_EXISTENTE = "Tenés que tener 18 años o más para sumarte a un equipo";
 
     private static final Set<EstadoComercio> ESTADOS_ACEPTABLES = Set.of(
-            EstadoComercio.APROBADO, EstadoComercio.APTO_VENTA, EstadoComercio.CERRADO_TEMPORALMENTE, EstadoComercio.SUSPENDIDO);
+            EstadoComercio.APROBADO, EstadoComercio.APTO_VENTA, EstadoComercio.CERRADO_TEMPORALMENTE);
 
     private final InvitacionEmpleadoRepository invitacionRepository;
     private final InvitacionInsercionRepository insercionRepository;
@@ -222,6 +223,7 @@ public class InvitacionEmpleadoService {
         if (!ESTADOS_CANCELABLES.contains(invitacion.getEstado())) {
             throw new ConflictoDeNegocioException(MENSAJE_NO_CANCELABLE);
         }
+        exigirComercioNoSuspendido(activo.comercioId());
         if (masNuevaDelPar(invitacion, activo.comercioId()) != null) {
             throw new ConflictoDeNegocioException(MENSAJE_NO_CANCELABLE);
         }
@@ -533,6 +535,16 @@ public class InvitacionEmpleadoService {
     private void bloquearDueno(Integer duenoId) {
         usuarioRepository.findByIdConBloqueo(duenoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"));
+    }
+
+    private void exigirComercioNoSuspendido(Integer comercioId) {
+        String estado = comercioRepository.leerEstadoConBloqueoCompartido(comercioId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Comercio no encontrado"))
+                .getEstado();
+        if (EstadoComercio.valueOf(estado) == EstadoComercio.SUSPENDIDO) {
+            throw new ConflictoComercioException(ConflictoComercioException.SUSPENDIDO,
+                    "El comercio está suspendido: el equipo se puede ver, pero no modificar");
+        }
     }
 
     private Comercio comercioOperativo(Integer comercioId) {

@@ -16,5 +16,6 @@ public class PedidoTimeoutProperties {
     private long autoconfirmacionEnCaminoMinutos;
     private long respuestaComercioMinutos;
     private long retiroSuspensionMinutos;
+    private long preparacionSuspensionMinutos = 90;
     private long noRetiradoEsperaMinutos = 60;
 }

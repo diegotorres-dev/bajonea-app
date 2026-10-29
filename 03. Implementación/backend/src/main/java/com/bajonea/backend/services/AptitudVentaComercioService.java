@@ -40,8 +40,8 @@ import org.springframework.transaction.annotation.Transactional;
  * toma las dos primeras, el llamador bloquea el comercio ({@link #bloquearComercio}) y recién después se
  * recalcula, que lee los documentos con bloqueo compartido.
  * <p>
- * {@link MotivoRecalculo#SUSPENSION_LEVANTADA} queda previsto para el tramo de la suspensión: levantar una
- * suspensión tendrá que decidir el destino llamando a este servicio y no con un estado escrito a mano.
+ * Un comercio {@code SUSPENDIDO} no participa de ningún recálculo (documentos, Mercado Pago, bloqueo de la cuenta del
+ * Dueño): la suspensión prevalece. Solo {@link #destinoAlLevantarSuspension} decide su destino, al levantarla.
  */
 @Service
 @RequiredArgsConstructor
@@ -81,6 +81,14 @@ public class AptitudVentaComercioService {
                 }
                 return duenoBloqueado ? EstadoComercio.CERRADO_TEMPORALMENTE : EstadoComercio.APTO_VENTA;
             case APTO_VENTA:
+                if (!puedeSeguir) {
+                    return EstadoComercio.APROBADO;
+                }
+                return duenoBloqueado ? EstadoComercio.CERRADO_TEMPORALMENTE : EstadoComercio.APTO_VENTA;
+            case SUSPENDIDO:
+                if (motivo != MotivoRecalculo.SUSPENSION_LEVANTADA) {
+                    return actual;
+                }
                 if (!puedeSeguir) {
                     return EstadoComercio.APROBADO;
                 }
@@ -162,6 +170,20 @@ public class AptitudVentaComercioService {
             avisarCambio(comercio, actual, destino, dueno, conteo);
         }
         return destino;
+    }
+
+    /**
+     * Destino de un comercio {@code SUSPENDIDO} cuya suspensión se levanta, con la regla de seguir vendiendo (cuenta
+     * de Mercado Pago activa y al menos un documento aprobado; un documento en revisión no lo frena): {@code APTO_VENTA}
+     * si cumple, {@code APROBADO} si no, y {@code CERRADO_TEMPORALMENTE} si cumple pero la cuenta del Dueño está
+     * bloqueada. No escribe nada: quien levanta la suspensión escribe el estado, limpia los datos de la suspensión y
+     * deja el historial. El comercio tiene que estar bloqueado.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public EstadoComercio destinoAlLevantarSuspension(Comercio comercio, EntradasDueno dueno) {
+        Conteo conteo = contarDocumentos(comercio.getId());
+        return decidir(EstadoComercio.SUSPENDIDO, dueno.bloqueado(), dueno.cuentaMercadoPagoActiva(), conteo.aprobados(),
+                conteo.pendientes(), documentacionProperties.isRequerida(), MotivoRecalculo.SUSPENSION_LEVANTADA);
     }
 
     /**

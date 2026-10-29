@@ -60,7 +60,9 @@ public class MisComerciosService {
                             disponibilidad.cerradoManualmente(),
                             disponibilidad.abiertoAhora(),
                             disponibilidad.puedeCambiarCierre(),
-                            disponibilidad.textoReapertura());
+                            disponibilidad.textoReapertura(),
+                            comercio.getSuspendidoDesde(),
+                            comercio.getMotivoSuspension());
                 })
                 .toList();
     }

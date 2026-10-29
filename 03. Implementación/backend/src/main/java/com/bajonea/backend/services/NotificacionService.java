@@ -87,6 +87,20 @@ public class NotificacionService {
     }
 
     /**
+     * Aviso a los Empleados del comercio, sin el Dueño (que recibe el suyo, con más detalle): una copia por
+     * Empleado destinatario, en id ascendente de usuario. Mismo contrato de bloqueos que {@link #crearParaEquipo}.
+     */
+    public void crearParaEmpleados(Integer comercioId, Collection<Integer> empleadosIds, String mensaje, TipoNotificacion tipo,
+            TipoEntidadNotificacion entidadTipo, Integer entidadId) {
+        exigirAudiencia(tipo, AudienciaNotificacion.EMPLEADOS);
+        List<Notificacion> copias = new ArrayList<>(empleadosIds.size());
+        for (Integer destinatario : new TreeSet<>(empleadosIds)) {
+            copias.add(construir(destinatario, mensaje, tipo, entidadTipo, entidadId, comercioId));
+        }
+        notificacionRepository.saveAll(copias);
+    }
+
+    /**
      * Rastro de un email enviado al usuario: fila de canal {@code EMAIL} ya en {@code ENVIADO} (significa "se
      * intentó": quien envía no recibe un resultado). No aparece en la campana, que lista solo {@code PUSH}.
      * La fecha la pone quien llama, para que el tope diario se cuente con el mismo reloj con que se escribe.
@@ -112,6 +126,15 @@ public class NotificacionService {
      */
     public Notificacion registrarResultadoEmail(Integer usuarioId, String mensaje, TipoNotificacion tipo, LocalDateTime fecha,
             boolean salio) {
+        return registrarResultadoEmail(usuarioId, mensaje, tipo, fecha, salio, null);
+    }
+
+    /**
+     * Igual que la anterior para el email de un aviso sobre un comercio: la fila lleva el comercio, así que el último
+     * email fallido se busca por comercio y un Dueño con varios comercios no mezcla los de uno con los de otro.
+     */
+    public Notificacion registrarResultadoEmail(Integer usuarioId, String mensaje, TipoNotificacion tipo, LocalDateTime fecha,
+            boolean salio, Integer comercioId) {
         Notificacion notificacion = Notificacion.builder()
                 .usuario(usuarioRepository.getReferenceById(usuarioId))
                 .tipo(tipo)
@@ -121,6 +144,7 @@ public class NotificacionService {
                 .canal(CanalNotificacion.EMAIL)
                 .estado(salio ? EstadoEnvioNotificacion.ENVIADO : EstadoEnvioNotificacion.FALLIDO)
                 .fechaEnvio(salio ? fecha : null)
+                .comercioId(comercioId)
                 .build();
         return notificacionRepository.save(notificacion);
     }
@@ -131,6 +155,12 @@ public class NotificacionService {
         notificacion.setEstado(salio ? EstadoEnvioNotificacion.ENVIADO : EstadoEnvioNotificacion.FALLIDO);
         notificacion.setFechaEnvio(salio ? fecha : null);
         notificacionRepository.save(notificacion);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Optional<Notificacion> ultimoEmailDelComercio(Integer usuarioId, TipoNotificacion tipo, Integer comercioId) {
+        return notificacionRepository.findTopByUsuarioIdAndCanalAndTipoAndComercioIdOrderByIdDesc(usuarioId,
+                CanalNotificacion.EMAIL, tipo, comercioId);
     }
 
     @Transactional(readOnly = true)

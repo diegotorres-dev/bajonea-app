@@ -154,7 +154,7 @@ public class ComercioController {
     @PostMapping("/perfil/foto/firma")
     public ResponseEntity<ApiResponse<CloudinarySignatureResponseDTO>> generarFirmaFotoPerfil(
             ComercioActivo comercio) {
-        CloudinarySignatureResponseDTO response = comercioService.generarFirmaFotoPerfil(comercio.comercioId());
+        CloudinarySignatureResponseDTO response = comercioService.generarFirmaFotoPerfil(comercio);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Firma generada correctamente", response));
     }
 

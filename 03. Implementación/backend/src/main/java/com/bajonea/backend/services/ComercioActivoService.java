@@ -129,16 +129,26 @@ public class ComercioActivoService {
     }
 
     /**
+     * Para las escrituras que no toman el comercio {@code FOR UPDATE} (las redes sociales, la firma de la foto): lee el
+     * estado con bloqueo compartido, que mantiene al comercio protegido contra una suspensión concurrente hasta el
+     * commit, y aplica {@link #validarComercioModificable}. Va después de los usuarios y de la relación.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void exigirComercioModificable(ComercioActivo actor) {
+        EstadoComercio estado = comercioRepository.leerEstadoConBloqueoCompartido(actor.comercioId())
+                .map(lectura -> EstadoComercio.valueOf(lectura.getEstado()))
+                .orElseThrow(ComercioNoDisponibleException::new);
+        validarComercioModificable(actor, estado);
+    }
+
+    /**
      * Guard de las modificaciones del Empleado sobre productos, imágenes y datos operativos: con el comercio
      * {@code SUSPENDIDO} responde {@code 409} {@code COMERCIO_SUSPENDIDO}; con {@code CERRADO_TEMPORALMENTE} (y
      * con los operativos) puede editar. Un estado al que el Empleado no accede es el {@code 404} de siempre. El
-     * Dueño no tiene este guard (hueco conocido, se resuelve en el tramo de rediseño de la suspensión).
+     * Dueño tiene el mismo guard para {@code SUSPENDIDO}: con el comercio suspendido el panel es de solo lectura.
      */
     public static void validarComercioModificable(ComercioActivo actor, EstadoComercio estadoComercio) {
-        if (!actor.esEmpleado()) {
-            return;
-        }
-        if (!ESTADOS_ACCESIBLES_EMPLEADO.contains(estadoComercio)) {
+        if (actor.esEmpleado() && !ESTADOS_ACCESIBLES_EMPLEADO.contains(estadoComercio)) {
             throw new ComercioNoDisponibleException();
         }
         if (estadoComercio == EstadoComercio.SUSPENDIDO) {
@@ -148,11 +158,19 @@ public class ComercioActivoService {
     }
 
     /**
-     * Guard de aceptar pedidos nuevos del Empleado: con el comercio {@code SUSPENDIDO} o
-     * {@code CERRADO_TEMPORALMENTE} responde {@code 409} {@code COMERCIO_SIN_OPERACION}. El cierre manual (comercio
-     * operativo con la bandera encendida) no lo activa. Rechazar, despachar, entregar y anular no pasan por acá.
+     * Guard de aceptar pedidos nuevos: el Empleado, con el comercio {@code SUSPENDIDO} o {@code CERRADO_TEMPORALMENTE},
+     * y el Dueño, con el comercio {@code SUSPENDIDO}, reciben {@code 409} {@code COMERCIO_SIN_OPERACION}. El cierre
+     * manual (comercio operativo con la bandera encendida) no lo activa. Rechazar, despachar, entregar y anular no
+     * pasan por acá.
      */
-    public static void validarComercioAceptaPedidosNuevos(EstadoComercio estadoComercio) {
+    public static void validarComercioAceptaPedidosNuevos(ComercioActivo actor, EstadoComercio estadoComercio) {
+        if (!actor.esEmpleado()) {
+            if (estadoComercio == EstadoComercio.SUSPENDIDO) {
+                throw new ConflictoComercioException(ConflictoComercioException.SIN_OPERACION,
+                        "El comercio está suspendido: no podés aceptar pedidos nuevos. Sí podés rechazarlos.");
+            }
+            return;
+        }
         if (!ESTADOS_ACCESIBLES_EMPLEADO.contains(estadoComercio)) {
             throw new ComercioNoDisponibleException();
         }

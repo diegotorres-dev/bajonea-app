@@ -25,6 +25,9 @@ public interface HistorialEstadoComercioRepository extends JpaRepository<Histori
     Optional<HistorialEstadoComercio> findTopByComercioIdAndEstadoDestinoOrderByIdDesc(Integer comercioId,
             EstadoComercio estadoDestino);
 
+    Optional<HistorialEstadoComercio> findTopByComercioIdAndEstadoOrigenOrderByIdDesc(Integer comercioId,
+            EstadoComercio estadoOrigen);
+
     /**
      * Ids de los comercios (dentro de {@code comercioIds}) que alguna vez pasaron a {@code estadoDestino},
      * en una sola consulta. Usada por la bandeja del Administrador para saber si un Dueño ya tuvo otro
