@@ -138,7 +138,7 @@ export function textoDePedidoSuspendido(pedido) {
   const hasta = pedido.limiteResolucionSuspension ? ` antes de las ${horaConDiaDe(pedido.limiteResolucionSuspension)}` : '';
   switch (pedido.estado) {
     case 'PENDIENTE_CONFIRMACION_COMERCIO':
-      return 'Solo podés rechazarlo.';
+      return 'Se va a rechazar y reembolsar solo.';
     case 'EN_PREPARACION':
       return `Despachalo o anulalo${hasta}.`;
     case 'LISTO_PARA_RETIRAR':

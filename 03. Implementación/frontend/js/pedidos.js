@@ -80,7 +80,7 @@ const ESTADO_INFO = {
     dotClass: 'pedido-estado__dot--rechazado',
     iconClass: 'pedido-detail__icon--rechazado',
     icon: ICONS.xCircle,
-    texto: (nombreComercio) => `${nombreComercio} rechazó tu pedido.`,
+    texto: (nombreComercio, pedido) => (rechazadoPorSuspensionDelComercio(pedido) ? TEXTO_RECHAZADO_POR_SUSPENSION : `${nombreComercio} rechazó tu pedido.`),
   },
   CANCELADO: {
     label: 'Cancelado',
@@ -128,6 +128,7 @@ const ESTADO_INFO_DESCONOCIDO = {
 };
 
 const TEXTO_COMERCIO_NO_DISPONIBLE = 'Este comercio no está recibiendo pedidos por ahora.';
+const TEXTO_RECHAZADO_POR_SUSPENSION = 'El comercio no estaba disponible. Te devolvemos el dinero.';
 const TEXTO_CANCELADO_POR_SUSPENSION = 'El comercio fue suspendido. Te devolvemos el dinero.';
 
 const ESTADO_INFO_SIN_PAGAR = {
@@ -140,6 +141,10 @@ const ESTADO_INFO_SIN_PAGAR = {
 
 function canceladoPorSuspensionDelComercio(pedido) {
   return Boolean(pedido) && pedido.estado === 'CANCELADO_POR_SISTEMA' && pedido.reembolsoMotivo === 'SUSPENSION_COMERCIO';
+}
+
+function rechazadoPorSuspensionDelComercio(pedido) {
+  return Boolean(pedido) && pedido.estado === 'RECHAZADO' && pedido.reembolsoMotivo === 'SUSPENSION_COMERCIO';
 }
 
 function infoDeEstadoPedido(estado, pedido) {

@@ -16,7 +16,7 @@ export function lineasDeLaVistaPrevia(previa) {
   const camino = previa.pedidosEnCamino;
   const sinPagar = previa.pedidosSinPagar;
   if (pendientes > 0) {
-    lineas.push(pendientes === 1 ? '1 pedido pendiente solo se puede rechazar.' : `${pendientes} pedidos pendientes solo se pueden rechazar.`);
+    lineas.push(pendientes === 1 ? '1 pedido pendiente: se rechaza ahora y se reembolsa. No se puede deshacer.' : `${pendientes} pedidos pendientes: se rechazan ahora y se reembolsan. No se puede deshacer.`);
   }
   if (preparacion > 0) {
     lineas.push(preparacion === 1
