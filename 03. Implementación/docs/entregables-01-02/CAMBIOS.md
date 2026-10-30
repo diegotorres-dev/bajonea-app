@@ -1078,3 +1078,51 @@ Texto exacto para copiar a `01. Análisis de Requerimientos` y `02. Diseño`. Se
 **2. `Historias de Usuario - Administrador.md`: ajuste a HU-A18 (entrega A)**
 
 Quitar "y quién lo suspendió" del primer criterio: el detalle muestra desde cuándo está suspendido y el motivo, pero no el nombre de quien lo suspendió (la respuesta del servidor no incluye ese dato).
+
+## Fase 5, tramo S2, suspensión de un comercio (entrega B2, interfaz del Dueño, del Empleado y del Cliente, 2026-10-29)
+
+Texto exacto para copiar a `01. Análisis de Requerimientos` y `02. Diseño`. Se suma a los bloques de las entregas A y B1; no los reemplaza.
+
+**1. `requisitos-funcionales-dueno.md`: reemplazar la regla del comercio suspendido por esta**
+
+- Con el comercio suspendido, mi panel muestra una tarjeta "Comercio suspendido" con desde cuándo lo está y el motivo. La tarjeta es de solo lectura.
+- El comercio suspendido sigue en mi selector de comercios con la etiqueta "Suspendido" y puedo entrar a él; también aparece en la franja de arriba.
+- Con el comercio suspendido puedo ver mis pedidos y mis estadísticas, resolver los pedidos en curso, ver mi documentación y vincular Mercado Pago.
+- Con el comercio suspendido no puedo editar los datos ni la foto del comercio, los horarios, los productos, abrir o cerrar el comercio, ni desvincular Mercado Pago. Esos controles aparecen deshabilitados con la frase "El comercio está suspendido".
+- El equipo se ve pero no se puede cambiar: no puedo invitar, dar de baja ni reactivar a nadie.
+- En la lista de pedidos, una franja avisa hasta qué hora tengo para resolver los pedidos en curso. Cada pedido dice qué puedo hacer: el pendiente solo se puede rechazar; el que está en preparación se despacha o se anula antes de la hora indicada; el listo para retirar se entrega o se cierra como no retirado antes de la hora indicada; el que está en camino sigue su curso.
+- Si el comercio no tiene pedidos en curso, la franja dice solo que no tengo pedidos en curso.
+- Si me paso de la hora y el sistema ya cerró el pedido, lo veo con su estado final y un aviso del servidor, sin que se rompa la pantalla.
+- Si levantan la suspensión con la pantalla abierta, la tarjeta, la franja y los bloqueos desaparecen sin que tenga que recargar.
+
+**2. `requisitos-funcionales-empleado.md`: agregar**
+
+- Con el comercio suspendido veo el aviso "Este comercio está suspendido", sin el motivo ni desde cuándo.
+- Puedo resolver los pedidos en curso con las acciones que ya tengo (rechazar los pendientes; despachar o anular los que están en preparación; entregar o cerrar como no retirados los que están listos para retirar) y veo la hora límite de cada uno.
+- No puedo editar los datos del comercio ni sus horarios.
+
+**3. `requisitos-funcionales-cliente.md`: agregar**
+
+- Un pedido que todavía no pagué de un comercio suspendido figura como "Sin pagar" y dice "Este comercio no está recibiendo pedidos por ahora.". En su detalle el botón "Ir a pagar" está deshabilitado, se explica "Vas a poder pagar cuando el comercio vuelva a estar disponible, si el pedido no venció." y puedo cancelar el pedido. Si levantan la suspensión y el pedido no venció, "Ir a pagar" vuelve a funcionar.
+- Un pedido que ya había pagado y se canceló porque el comercio fue suspendido figura como "Cancelado" y dice "El comercio fue suspendido. Te devolvemos el dinero.".
+- Mis pedidos anteriores siguen mostrando el nombre y la foto del comercio aunque esté suspendido.
+- Si el comercio se suspende mientras armo el pedido, al confirmar veo "Este comercio no está recibiendo pedidos por ahora. Probá con otro comercio." con el botón "Volver al catálogo", y mi carrito se conserva.
+- Cancelar un pedido que todavía no pagué no genera devolución ni aviso al comercio.
+
+**4. `Historias de Usuario - Dueño.md`: ajuste a HU-D15 (entrega A)**
+
+Reemplazar el segundo criterio por: "Con el comercio suspendido entro a mi panel en solo lectura: veo mis pedidos, mis estadísticas y mi documentación, y puedo vincular Mercado Pago, pero no puedo editar el comercio, los productos ni los horarios, ni abrir o cerrar, ni desvincular Mercado Pago." (La subida de documentos con el comercio suspendido no está permitida por el servidor: ver "Preguntas" del informe de la entrega B2.)
+
+**5. `Historias de Usuario - Cliente.md`: agregar**
+
+## HU-C19: Ver un pedido de un comercio suspendido
+
+Como cliente, quiero saber qué pasó con mi pedido cuando el comercio se suspende, para decidir si lo cancelo o espero.
+
+- Si no pagué, veo el pedido como "Sin pagar", no puedo pagarlo mientras el comercio esté suspendido y puedo cancelarlo.
+- Si ya había pagado y el comercio no lo atendió a tiempo, veo el pedido cancelado y que me devuelven el dinero.
+- Si el comercio se suspende mientras armo el pedido, al confirmar veo un mensaje claro y puedo volver al catálogo con mi carrito intacto.
+
+**6. `diccionario-de-datos.md`**
+
+Ya está en la versión 1.31 (`V46`): `historial_estado_pedido.motivo_timeout` suma `CANCELACION_SIN_PAGO`. Los próximos libres son `V47`, la carpeta 83 de Newman, el spec 87 de Playwright y la versión 1.32.

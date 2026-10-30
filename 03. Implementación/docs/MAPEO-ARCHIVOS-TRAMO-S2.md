@@ -86,3 +86,49 @@ El detalle del comercio suspendido vive en el modal "Ver detalle" de `admin-come
 |---|---|
 | `testing/playwright/tests/85-suspension-comercio-ui.spec.ts` (nuevo, 11 tests, 375 px) | Suspender sin pedidos y con pedidos de cada estado, validación y contador, doble clic, Escape y Cancelar, `409` por suspensión simultánea, levantar con y sin mensaje, comercio con y sin cuenta de cobro, origen `DUENO`, email fallido y reenviado, comercio no suspendible y etiquetas de reembolso. Capturas en `docs/capturas-suspension-comercio/`. |
 | Specs `24`, `26`, `40`, `43`, `45`, `47` y `56` | Actualizados al comportamiento nuevo de S2 (detalle en `docs/DECISIONES.md`, 2026-10-29, entrega B1). Helper nuevo `sentenciaEstadoComercio` en `tests/helpers/backend.ts`; `ponerEstadoComercio` (`helpers/empleado.ts`) lo usa. |
+
+## Entrega B2 (2026-10-29): Dueño, Empleado y Cliente con el comercio suspendido
+
+Pendiente de la confirmación de Diego. Hechos con los mockups 5 (opción B), 6, 8 (opción A) y 9 (opción C) de la entrega A.
+
+### Migración
+
+| Archivo | Qué |
+|---|---|
+| `backend/src/main/resources/db/migration/V46__historial_pedido_cancelacion_sin_pago.sql` (nuevo) | Suma `CANCELACION_SIN_PAGO` al ENUM `historial_estado_pedido.motivo_timeout`. Lo escribe la cancelación de un pedido sin pagar por el Cliente y la actividad del comercio lo excluye (el comercio nunca vio ese pedido). **La numeración libre pasa a ser `V47`.** |
+
+### Backend
+
+| Archivo | Cambio |
+|---|---|
+| `dto/response/SuspensionComercioPreviaResponseDTO.java`, `services/SuspensionComercioService.java` | La vista previa trae `topePreparacionMinutos` y `topeRetiroMinutos`, leídos de `PedidoTimeoutProperties` (la misma propiedad que usan los procesos); el frontend dejó de decir "90" fijo. |
+| `dto/response/PedidoResponseDTO.java`, `PedidoEmpleadoResponseDTO.java`, `services/PedidoService.java` | `limiteResolucionSuspension` (solo en las respuestas del comercio y del Empleado, con el comercio suspendido: `EN_PREPARACION` vence a `suspendido_desde` + tope; `LISTO_PARA_RETIRAR` al posterior entre que quedó listo y la suspensión + tope; el resto `null`), `comercioNoDisponible` (pedido `PENDIENTE_PAGO` de un comercio suspendido; solo lo lee el Cliente) y `reembolsoMotivo` (motivo de la nota de crédito más reciente; el Cliente lo usa para explicar una cancelación por suspensión). El DTO del Empleado suma solo el límite. |
+| `services/PedidoService.cancelarPedido` | El Cliente puede cancelar un pedido `PENDIENTE_PAGO`: pasa a `CANCELADO` con su fila de historial (`CANCELACION_SIN_PAGO`), sin nota de crédito y sin aviso al equipo. Si un pago aprobado llega después, el flujo existente de pago tardío lo reembolsa. |
+| `repositories/HistorialEstadoPedidoRepository.java` | La actividad del comercio y la trazabilidad excluyen `CANCELACION_SIN_PAGO` (como `TIMEOUT_PAGO`). |
+| `services/ComercioService.validarAceptaPedidos`, `exceptions/ConflictoComercioException.java` | Con el comercio `SUSPENDIDO` responde `409` con el código `COMERCIO_SIN_PEDIDOS` y el texto "Este comercio no está recibiendo pedidos por ahora. Probá con otro comercio." (carrito y confirmación del pedido). Los demás estados conservan el texto genérico. |
+
+### Frontend
+
+| Archivo | Qué |
+|---|---|
+| `js/comercio-suspendido.js` (nuevo) | La tarjeta de estado del panel (`pintarTarjetaSuspension`), el bloqueo de controles con su frase (`protegerPorSuspension`, que se desbloquea solo al levantarse), la franja y el texto de cada pedido en curso. |
+| `js/comercio-activo.js`, `js/selector-comercio.js` | Un comercio `SUSPENDIDO` es seleccionable para el Dueño (`esSeleccionable`): entra por el panel en vez de volver al login, aparece en el grupo "Suspendidos" del panel "Tus comercios" y la franja lleva el chip "Suspendido". |
+| `js/comercio.js` | Tarjeta de estado en el panel; franja y textos en la lista de pedidos y en el detalle (sin "Aceptar pedido" con el comercio suspendido); la lista y el detalle se refrescan solos con el sondeo de 15 s mientras el comercio está suspendido y cuando se levanta; edición de comercio, horarios, foto y desvincular Mercado Pago bloqueados; productos en solo lectura con aviso. |
+| `js/equipo-comercio.js` | Equipo en solo lectura: sin "Invitar", sin menú por miembro ni por invitación, con aviso. |
+| `js/pedidos.js` (Cliente) | Chip "Sin pagar" y línea "Este comercio no está recibiendo pedidos por ahora." en la tarjeta; detalle con franja, "Ir a pagar" deshabilitado, la explicación y "Cancelar pedido"; texto "El comercio fue suspendido. Te devolvemos el dinero." para un pedido cancelado por la suspensión; nombre y foto del pedido desde la respuesta (un comercio suspendido ya no está en el catálogo); el detalle sondea cada 15 s mientras el pedido espera el pago. |
+| `js/apertura-comercio.js` | `esConflictoDeCierre` también reconoce el código `COMERCIO_SIN_PEDIDOS`: el carrito, el modal de producto y el checkout muestran el aviso con "Volver al catálogo". |
+| `js/admin-comercio-suspension.js` | Los minutos de la hoja "Suspender" salen de la vista previa. |
+| `css/styles.css` | `.suspension-tarjeta*`, `.suspension-franja`, `.bloqueo-suspension__texto`, `.pedido-card__suspension`, `.pedido-card__aviso-comercio`, `.pedido-detalle__suspension`, chips de "Suspendido" y `.equipo-solo-lectura`. |
+
+### Tests
+
+| Archivo | Qué |
+|---|---|
+| `SuspensionComercioServiceVistaPreviaTest` (nuevo, 2 tests) | Los topes por defecto y los configurados. |
+| `SuspensionComercioIntegrationTest` (+7 tests) | Los topes en la vista previa (con y sin cambiar la configuración), la hora límite por estado para el Dueño y el Empleado, su cálculo con topes configurados y su desaparición al levantar, `comercioNoDisponible`, el `409` con código, la cancelación de un pedido sin pagar (sin nota, sin aviso y fuera de la actividad) y el motivo del reembolso. |
+| `SuspensionComercioConcurrenciaIntegrationTest` (+5 tests con 8 repeticiones) | Despachar y anular, como Dueño y como Empleado, contra el proceso de 90 minutos (un solo ganador, una sola nota); doble clic en despachar. |
+| `ComercioServiceValidarAceptaPedidosTest` | El comercio suspendido tiene su propio texto y código. |
+| `testing/playwright/scripts/build-suspension-comercio-b2-postman.mjs` | Carpeta `82` de Newman (71 requests). Se eligió una carpeta propia y no ampliar la 81 porque necesita un comercio, un Cliente y un Empleado nuevos y recorre dos suspensiones seguidas. |
+| `testing/playwright/tests/86-suspension-comercio-paneles-ui.spec.ts` (nuevo, 16 tests a 375 px) | Todo lo de arriba en pantalla; capturas en `docs/capturas-suspension-comercio-b2/`. |
+| `testing/playwright/scripts/stress-locks-tramoSuspension.mjs` | Escenario 13: despachar, anular y doble clic contra el proceso de 90 minutos. |
+| Specs `27`, `37`, `38`, `44`, `52`, `53`, `70`, `83` | `27`: un comercio suspendido ya no queda en el login ni en "Otros" (el fixture grande usa `CERRADO_TEMPORALMENTE` y se agregan tests para el suspendido y el inactivo); `37` y `44` suman `limiteResolucionSuspension` a la lista blanca de campos del Empleado (y el constructor de la carpeta `57`); `38`, `52` y `53` pasan a los textos nuevos; `52`, `53` y `70` abren la pantalla con el comercio operativo y lo suspenden antes de la acción (pestaña vieja), porque ahora el botón viene bloqueado; `83` usa el `baseURL` de la configuración en vez del puerto fijo 5501. |
