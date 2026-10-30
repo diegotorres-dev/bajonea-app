@@ -25,7 +25,7 @@ const ETIQUETA_ESTADO = {
 };
 
 const AVISO_ESTADO = {
-  SUSPENDIDO: 'Solo podés consultarlo',
+  SUSPENDIDO: 'Comercio suspendido. Solo podés resolver pedidos en curso.',
   CERRADO_TEMPORALMENTE: 'Solo podés consultarlo',
 };
 

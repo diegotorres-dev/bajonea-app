@@ -575,6 +575,11 @@ export async function initComercioDocumentacion() {
 
     const formatos = `${textoFormatos(requisitos)} de hasta ${formatearTamano(requisitos.maxBytes)}`;
     const nodos = [];
+    if (requisitos.estadoComercio === 'SUSPENDIDO') {
+      const avisoSuspension = h('div', { class: 'banner banner-info doc-aviso-suspension', role: 'status', 'data-testid': 'aviso-comercio-suspendido' });
+      avisoSuspension.textContent = 'El comercio está suspendido. Podés subir documentos, pero no vuelve a vender hasta que se levante la suspensión.';
+      nodos.push(avisoSuspension);
+    }
 
     if (documentos.length === 0) {
       const aviso = h('div', { class: 'banner banner-info', 'data-testid': 'aviso-sin-documentos' });

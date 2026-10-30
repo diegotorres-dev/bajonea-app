@@ -6797,6 +6797,10 @@ button.panel-comercios__fila:focus-visible {
   margin-bottom: 16px;
 }
 
+.doc-aviso-suspension {
+  margin-bottom: 16px;
+}
+
 .doc-bloque-subida {
   display: flex;
   flex-direction: column;
