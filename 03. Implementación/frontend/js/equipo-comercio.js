@@ -1,6 +1,7 @@
 import { apiFetch, ApiError, getComercioActivoId } from './api.js';
 import { showToast, renderEmptyState } from './catalogo.js';
-import { getComercioActivoEnMemoria, INTERVALO_POLLING_COMERCIOS_MS } from './comercio-activo.js';
+import { getComercioActivoEnMemoria, INTERVALO_POLLING_COMERCIOS_MS, suscribirComercios } from './comercio-activo.js';
+import { comercioActivoSuspendido } from './comercio-suspendido.js';
 import { h, crearSvg, renderBanner } from './form-utils.js';
 import { fechaCortaDe } from './fechas.js';
 import { mostrarErrorCampo, limpiarErrorCampo, mapearErroresBackend } from './validators.js';
@@ -125,7 +126,7 @@ function crearFilaDeEquipo(miembro, alAbrirMenu) {
   const inactivo = miembro.estado === 'INACTIVO';
   return crearFilaMiembro(miembro, {
     estado: { info, texto: inactivo ? textoDeBaja(miembro) : info.texto },
-    accion: crearBotonMenuMiembro(miembro, alAbrirMenu),
+    accion: comercioActivoSuspendido() ? null : crearBotonMenuMiembro(miembro, alAbrirMenu),
   });
 }
 
@@ -150,7 +151,10 @@ function crearFilaInvitacion(invitacion, alAbrirMenu) {
   const email = crearLinea('equipo-fila__nombre', invitacion.email);
   email.setAttribute('data-testid', 'equipo-email');
   datos.append(email, crearEstado(info, detalle, etiqueta));
-  fila.append(crearAvatarSobre(), datos, crearAccionMenuFila(invitacion, alAbrirMenu));
+  fila.append(crearAvatarSobre(), datos);
+  if (!comercioActivoSuspendido()) {
+    fila.append(crearAccionMenuFila(invitacion, alAbrirMenu));
+  }
   return fila;
 }
 
@@ -211,7 +215,7 @@ function ocultarPestanas() {
 }
 
 function actualizarPie() {
-  elemento('equipo-footer').classList.toggle('is-hidden', pestanaActiva === PESTANA_ACTIVIDAD);
+  elemento('equipo-footer').classList.toggle('is-hidden', pestanaActiva === PESTANA_ACTIVIDAD || comercioActivoSuspendido());
 }
 
 function seleccionarPestana(id) {
@@ -263,6 +267,15 @@ function crearChipsMiembros(equipo) {
   return chips;
 }
 
+function crearAvisoSoloLectura() {
+  if (!comercioActivoSuspendido()) {
+    return null;
+  }
+  const aviso = h('div', { class: 'banner banner-warning equipo-solo-lectura', 'data-testid': 'aviso-equipo-solo-lectura' });
+  aviso.textContent = 'El comercio está suspendido: el equipo está en solo lectura.';
+  return aviso;
+}
+
 function pintarMiembros(equipo, lista) {
   const chips = crearChipsMiembros(equipo);
   const miembros = filtroMiembros === 'activos' ? miembrosActivos(equipo) : miembrosInactivos(equipo);
@@ -274,7 +287,7 @@ function pintarMiembros(equipo, lista) {
     miembros.forEach((miembro) => filas.append(crearFilaDeEquipo(miembro, abrirMenuMiembro)));
     contenido.append(filas);
   }
-  lista.replaceChildren(chips, contenido);
+  lista.replaceChildren(...[crearAvisoSoloLectura(), chips, contenido].filter(Boolean));
 }
 
 function pintarSolicitudes(equipo, lista) {
@@ -285,7 +298,7 @@ function pintarSolicitudes(equipo, lista) {
   }
   const filas = h('div', { class: 'equipo-filas', 'data-testid': 'equipo-filas' });
   invitaciones.forEach((invitacion) => filas.append(crearFilaInvitacion(invitacion, abrirMenuInvitacion)));
-  lista.replaceChildren(filas);
+  lista.replaceChildren(...[crearAvisoSoloLectura(), filas].filter(Boolean));
 }
 
 const PINTORES_DE_PESTANA = {
@@ -736,6 +749,20 @@ function abrirMenuMiembro(miembro) {
 
 export function enlazarEquipoComercio() {
   elemento('btn-invitar-equipo').addEventListener('click', () => abrirHojaInvitar());
+  let estabaSuspendido = comercioActivoSuspendido();
+  suscribirComercios(() => {
+    const suspendido = comercioActivoSuspendido();
+    if (suspendido === estabaSuspendido) {
+      return;
+    }
+    estabaSuspendido = suspendido;
+    if (vistaAbierta()) {
+      actualizarPie();
+      if (equipoActual !== null) {
+        pintarLista(equipoActual);
+      }
+    }
+  });
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden && vistaAbierta()) {
       cargar({ conEsqueleto: false });

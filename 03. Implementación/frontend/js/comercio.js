@@ -11,6 +11,7 @@ import {
   destinoDeNavegacion,
   getComercioActivoEnMemoria,
   getComerciosEnMemoria,
+  iniciarPollingComercios,
   marcarNotificacionesDelComercioLeidas,
   refrescarComercios,
   resolverComercioActivo,
@@ -25,6 +26,7 @@ import { montarSwitchCierre } from './cierre-comercio.js';
 import { normalizarResumenTurno, programarRecargaAlFinDelTurno, renderResumenTurno } from './turno-resumen.js';
 import { abrirEquipoComercio, enlazarEquipoComercio } from './equipo-comercio.js';
 import { montarPasosParaVender } from './pasos-vender.js';
+import { algunComercioSuspendido, comercioActivoSuspendido, pintarFranjaPedidos, pintarTarjetaSuspension, protegerPorSuspension, textoDePedidoSuspendido } from './comercio-suspendido.js';
 import { initHorarios } from './comercio-form.js';
 import { ordenarFranjas, recortarHora, textoFranja, textoRango } from './horarios.js';
 import { cerrarVariosComercios, comerciosCerrables } from './apertura-comercio.js';
@@ -478,7 +480,6 @@ function renderHeaderDashboard(container) {
 }
 
 const AVISO_COMERCIO_NO_OPERATIVO = {
-  SUSPENDIDO: 'Comercio suspendido. No se aceptan pedidos nuevos.',
   CERRADO_TEMPORALMENTE: 'Comercio cerrado temporalmente. No se aceptan pedidos nuevos.',
 };
 
@@ -548,6 +549,14 @@ function renderPedidoActivoCard(pedido) {
     const filaReembolso = crear('div', 'pedido-card__reembolso');
     filaReembolso.appendChild(crearChipReembolso(pedido, 'chip-reembolso-pedido'));
     card.appendChild(filaReembolso);
+  }
+
+  const textoSuspension = textoDePedidoSuspendido(pedido);
+  if (textoSuspension) {
+    const linea = crear('p', 'pedido-card__suspension');
+    linea.setAttribute('data-testid', 'texto-pedido-suspendido');
+    linea.textContent = textoSuspension;
+    card.appendChild(linea);
   }
 
   const bottom = crear('div', 'pedido-card__bottom');
@@ -627,6 +636,9 @@ export async function initComercioDashboard() {
   function pintarBannerEstado() {
     const enMemoria = getComercioActivoEnMemoria();
     if (!enMemoria) {
+      return;
+    }
+    if (pintarTarjetaSuspension(document.getElementById('banner-estado-slot'))) {
       return;
     }
     if (pintarAvisoComercioNoOperativo(document.getElementById('banner-estado-slot'))) {
@@ -722,11 +734,15 @@ export async function initComercioPedidos() {
   }
 
   const avisoComercioSlot = document.getElementById('aviso-comercio-slot');
-  pintarAvisoComercioNoOperativo(avisoComercioSlot);
-  suscribirComercios(() => pintarAvisoComercioNoOperativo(avisoComercioSlot));
-
-  const pedidos = await apiFetch('/pedidos/comercio');
+  let pedidos = await apiFetch('/pedidos/comercio');
   pedidos.forEach(normalizarPedido);
+
+  function pintarAvisoDeLaLista() {
+    if (!pintarFranjaPedidos(avisoComercioSlot, pedidos)) {
+      pintarAvisoComercioNoOperativo(avisoComercioSlot);
+    }
+  }
+  pintarAvisoDeLaLista();
 
   let filtroEstado = null;
 
@@ -776,6 +792,35 @@ export async function initComercioPedidos() {
   }
 
   renderLista();
+
+  const firmaDeLaLista = (lista) => lista.map((pedido) => `${pedido.id}|${pedido.estado}|${pedido.limiteResolucionSuspension || ''}`).join(',');
+  let estabaSuspendido = comercioActivoSuspendido();
+  let recargando = false;
+  suscribirComercios(async () => {
+    const suspendido = comercioActivoSuspendido();
+    const cambio = suspendido !== estabaSuspendido;
+    estabaSuspendido = suspendido;
+    if (!suspendido && !cambio) {
+      pintarAvisoComercioNoOperativo(avisoComercioSlot);
+      return;
+    }
+    if (recargando) {
+      return;
+    }
+    recargando = true;
+    try {
+      const recientes = await apiFetch('/pedidos/comercio');
+      recientes.forEach(normalizarPedido);
+      if (cambio || firmaDeLaLista(recientes) !== firmaDeLaLista(pedidos)) {
+        pedidos = recientes;
+        renderLista();
+      }
+    } catch {
+    } finally {
+      recargando = false;
+    }
+    pintarAvisoDeLaLista();
+  });
 }
 
 const ESTADO_DETALLE_COMERCIO = {
@@ -956,6 +1001,9 @@ function renderAccionesPendiente(container, pedido, onActualizado, avisoSlot) {
   aceptarBtn.setAttribute('data-testid', 'btn-aceptar-pedido');
   aceptarBtn.textContent = 'Aceptar pedido';
   aceptarBtn.addEventListener('click', async () => {
+    if (aceptarBtn.disabled) {
+      return;
+    }
     limpiarAvisoFijo(avisoSlot);
     setLoading(aceptarBtn, 'Aceptando...', true);
     try {
@@ -968,7 +1016,9 @@ function renderAccionesPendiente(container, pedido, onActualizado, avisoSlot) {
       setLoading(aceptarBtn, '', false, 'Aceptar pedido');
     }
   });
-  container.appendChild(aceptarBtn);
+  if (!comercioActivoSuspendido()) {
+    container.appendChild(aceptarBtn);
+  }
 
   const rechazarBtn = crear('button', 'btn btn-secondary');
   rechazarBtn.type = 'button';
@@ -1488,6 +1538,13 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado, opciones 
     if (opciones.avisoInicial) {
       mostrarAvisoFijo(avisoSlot, opciones.avisoInicial);
     }
+    const textoSuspension = tieneAcciones ? textoDePedidoSuspendido(pedido) : null;
+    if (textoSuspension) {
+      const aviso = crear('p', 'pedido-detalle__suspension');
+      aviso.setAttribute('data-testid', 'texto-pedido-suspendido');
+      aviso.textContent = textoSuspension;
+      body.appendChild(aviso);
+    }
     const accionesSlot = crear('div');
     accionesSlot.style.marginTop = '12px';
     body.appendChild(accionesSlot);
@@ -1583,6 +1640,32 @@ export async function initComercioPedidoDetalle() {
   }
 
   renderActual();
+
+  const firmaDe = (p) => `${p.estado}|${p.limiteResolucionSuspension || ''}`;
+  iniciarPollingComercios();
+  let estabaSuspendido = comercioActivoSuspendido();
+  let recargando = false;
+  suscribirComercios(async () => {
+    const suspendido = comercioActivoSuspendido();
+    const cambio = suspendido !== estabaSuspendido;
+    estabaSuspendido = suspendido;
+    if ((!suspendido && !cambio) || recargando || container.querySelector('[data-testid="aviso-accion-slot"] [data-testid="aviso-fijo"]')) {
+      return;
+    }
+    recargando = true;
+    try {
+      const recientes = await apiFetch('/pedidos/comercio');
+      recientes.forEach(normalizarPedido);
+      const vigente = recientes.find((p) => p.id === pedidoId);
+      if (vigente && (cambio || firmaDe(vigente) !== firmaDe(pedido))) {
+        pedido = vigente;
+        renderActual();
+      }
+    } catch {
+    } finally {
+      recargando = false;
+    }
+  });
 }
 
 function mostrarVista(id) {
@@ -2285,6 +2368,9 @@ async function iniciarPerfilDelEmpleado(comercio) {
   const renunciar = document.getElementById('btn-renunciar-equipo');
   renunciar.addEventListener('click', () => abrirHojaRenuncia({ id: getComercioActivoId(), nombre: comercio.nombre }));
   renunciar.disabled = false;
+
+  protegerPorSuspension(document.getElementById('editar-comercio-empleado-link'));
+  protegerPorSuspension(document.getElementById('editar-horarios-empleado-link'));
 }
 
 export async function initComercioPerfil() {
@@ -2392,6 +2478,10 @@ export async function initComercioPerfil() {
     }
   });
 
+  protegerPorSuspension(document.getElementById('btn-desvincular-mp'), {
+    cuando: algunComercioSuspendido,
+    texto: 'No se puede desvincular mientras un comercio tuyo esté suspendido',
+  });
   document.getElementById('btn-desvincular-mp').addEventListener('click', () => {
     if (document.getElementById('modal-desvincular-mp')) {
       return;
@@ -2615,6 +2705,10 @@ export async function initComercioPerfil() {
   ].forEach((boton) => {
     boton.disabled = false;
   });
+
+  protegerPorSuspension(document.getElementById('editar-perfil-link'));
+  protegerPorSuspension(document.getElementById('editar-horarios-link'));
+  protegerPorSuspension(avatarPerfil, { conTexto: false });
 }
 
 const ESTADO_PRODUCTO_BADGE = {
@@ -2883,7 +2977,7 @@ export async function initComercioProductos() {
     const section = crear('div', 'product-section');
     section.style.padding = '0';
     filtrados.forEach((producto) => {
-      section.appendChild(renderProductoRow(producto, contextoPuedeEditarCatalogo() ? abrirMenuAccion : null));
+      section.appendChild(renderProductoRow(producto, contextoPuedeEditarCatalogo() && !comercioActivoSuspendido() ? abrirMenuAccion : null));
     });
     contentEl.appendChild(section);
   }
@@ -2946,6 +3040,32 @@ export async function initComercioProductos() {
   } else {
     botonCrearProducto.classList.add('is-hidden');
   }
+
+  const avisoSuspensionProductos = document.getElementById('productos-aviso-slot');
+  let estabaSuspendido = null;
+  function pintarSoloLecturaDeProductos() {
+    const suspendido = comercioActivoSuspendido();
+    botonCrearProducto.classList.toggle('is-hidden', suspendido || !contextoPuedeEditarCatalogo());
+    if (suspendido === estabaSuspendido) {
+      return;
+    }
+    const primera = estabaSuspendido === null;
+    estabaSuspendido = suspendido;
+    if (suspendido) {
+      avisoSuspensionProductos.replaceChildren();
+      const aviso = crear('div', 'banner banner-warning');
+      aviso.setAttribute('data-testid', 'aviso-productos-suspendido');
+      aviso.textContent = 'El comercio está suspendido: los productos están en solo lectura.';
+      avisoSuspensionProductos.appendChild(aviso);
+    } else {
+      avisoSuspensionProductos.replaceChildren();
+    }
+    if (!primera) {
+      renderLista();
+    }
+  }
+  pintarSoloLecturaDeProductos();
+  suscribirComercios(pintarSoloLecturaDeProductos);
 
   renderLista();
 }

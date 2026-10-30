@@ -101,7 +101,7 @@ const ESTADO_INFO = {
     dotClass: 'pedido-estado__dot--rechazado',
     iconClass: ICON_CLASS,
     icon: ICONS.xCircle,
-    texto: () => 'Tu pedido fue cancelado automáticamente.',
+    texto: (_nombreComercio, pedido) => (canceladoPorSuspensionDelComercio(pedido) ? TEXTO_CANCELADO_POR_SUSPENSION : 'Tu pedido fue cancelado automáticamente.'),
   },
   EXPIRADO: {
     label: 'Expirado',
@@ -127,8 +127,34 @@ const ESTADO_INFO_DESCONOCIDO = {
   texto: () => 'Estamos actualizando el estado de este pedido.',
 };
 
-function infoDeEstadoPedido(estado) {
+const TEXTO_COMERCIO_NO_DISPONIBLE = 'Este comercio no está recibiendo pedidos por ahora.';
+const TEXTO_CANCELADO_POR_SUSPENSION = 'El comercio fue suspendido. Te devolvemos el dinero.';
+
+const ESTADO_INFO_SIN_PAGAR = {
+  label: 'Sin pagar',
+  dotClass: 'pedido-estado__dot--pendiente',
+  iconClass: ICON_CLASS,
+  icon: ICONS.clock,
+  texto: () => 'Todavía no pagaste este pedido.',
+};
+
+function canceladoPorSuspensionDelComercio(pedido) {
+  return Boolean(pedido) && pedido.estado === 'CANCELADO_POR_SISTEMA' && pedido.reembolsoMotivo === 'SUSPENSION_COMERCIO';
+}
+
+function infoDeEstadoPedido(estado, pedido) {
+  if (pedido && pedido.comercioNoDisponible && estado === 'PENDIENTE_PAGO') {
+    return ESTADO_INFO_SIN_PAGAR;
+  }
   return ESTADO_INFO[estado] || ESTADO_INFO_DESCONOCIDO;
+}
+
+function comercioDelPedido(pedido, comercioPorId) {
+  const enCatalogo = comercioPorId.get(pedido.comercioId);
+  if (enCatalogo) {
+    return enCatalogo;
+  }
+  return { id: pedido.comercioId, nombre: pedido.comercioNombre, fotoPerfilUrl: pedido.comercioFotoUrl, fueraDelCatalogo: true };
 }
 
 const ESTADOS_CON_REEMBOLSO = ['RECHAZADO', 'CANCELADO', 'ANULADO', 'CANCELADO_POR_SISTEMA', 'EXPIRADO'];
@@ -187,8 +213,8 @@ function formatearResumen(detalles) {
   return resto > 0 ? `${primeros.join(', ')} y ${resto} más` : primeros.join(', ');
 }
 
-function renderEstadoDot(estado) {
-  const info = infoDeEstadoPedido(estado);
+function renderEstadoDot(pedido) {
+  const info = infoDeEstadoPedido(pedido.estado, pedido);
   const span = crear('span', 'pedido-estado');
   span.setAttribute('data-testid', 'estado-pedido');
   const dot = crear('span', `pedido-estado__dot ${info.dotClass}`);
@@ -245,12 +271,21 @@ function renderPedidoCard(pedido, comercio) {
   info.appendChild(fechaEl);
   comercioRow.appendChild(info);
   top.appendChild(comercioRow);
-  top.appendChild(renderEstadoDot(pedido.estado));
+  top.appendChild(renderEstadoDot(pedido));
   card.appendChild(top);
 
   const resumen = crear('p', 'pedido-card__resumen');
   resumen.textContent = formatearResumen(pedido.detalles);
   card.appendChild(resumen);
+
+  const avisoComercio = pedido.comercioNoDisponible ? TEXTO_COMERCIO_NO_DISPONIBLE
+    : (canceladoPorSuspensionDelComercio(pedido) ? TEXTO_CANCELADO_POR_SUSPENSION : null);
+  if (avisoComercio) {
+    const aviso = crear('p', 'pedido-card__aviso-comercio');
+    aviso.setAttribute('data-testid', pedido.comercioNoDisponible ? 'aviso-comercio-no-disponible-pedido' : 'aviso-cancelado-por-suspension-pedido');
+    aviso.textContent = avisoComercio;
+    card.appendChild(aviso);
+  }
 
   const bottom = crear('div', 'pedido-card__bottom');
   const total = crear('span', 'pedido-card__total');
@@ -302,7 +337,7 @@ export async function initPedidosHistorial() {
 
   const list = crear('div', 'pedido-list');
   ordenados.forEach((pedido) => {
-    list.appendChild(renderPedidoCard(pedido, comercioPorId.get(pedido.comercioId)));
+    list.appendChild(renderPedidoCard(pedido, comercioDelPedido(pedido, comercioPorId)));
   });
   container.innerHTML = '';
   container.appendChild(list);
@@ -343,6 +378,26 @@ function renderAccionesCliente(container, pedido, onActualizado, { procesando = 
     const irAPagarBtn = crear('button', 'btn btn-primary');
     irAPagarBtn.type = 'button';
     irAPagarBtn.setAttribute('data-testid', 'btn-ir-a-pagar');
+    if (pedido.comercioNoDisponible) {
+      irAPagarBtn.disabled = true;
+      irAPagarBtn.textContent = 'Ir a pagar con Mercado Pago';
+      container.appendChild(irAPagarBtn);
+      const ayuda = crear('p', 'field__hint accion-ayuda');
+      ayuda.setAttribute('data-testid', 'ayuda-pago-comercio-no-disponible');
+      ayuda.textContent = 'Vas a poder pagar cuando el comercio vuelva a estar disponible, si el pedido no venció.';
+      container.appendChild(ayuda);
+      const cancelarSinPagar = crear('button', 'btn btn-secondary');
+      cancelarSinPagar.type = 'button';
+      cancelarSinPagar.style.marginTop = '12px';
+      cancelarSinPagar.style.borderColor = 'var(--color-error)';
+      cancelarSinPagar.style.color = 'var(--color-error)';
+      cancelarSinPagar.setAttribute('data-testid', 'btn-cancelar-pedido');
+      cancelarSinPagar.textContent = 'Cancelar pedido';
+      cancelarSinPagar.addEventListener('click', () => ejecutar(cancelarSinPagar, `/pedidos/cliente/${pedido.id}/cancelar`,
+        'Cancelando...', 'Pedido cancelado', 'No pudimos cancelar el pedido'));
+      container.appendChild(cancelarSinPagar);
+      return;
+    }
     if (procesando) {
       irAPagarBtn.disabled = true;
       irAPagarBtn.textContent = 'El pago se está procesando';
@@ -457,6 +512,7 @@ export async function initPedidoDetalle() {
   }
 
   const comercio = comercios.find((c) => c.id === pedido.comercioId);
+  const nombreDelComercio = comercio ? comercio.nombre : (pedido.comercioNombre || 'El comercio');
 
   function renderActual() {
     renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: `Pedido #${pedido.id}` });
@@ -464,7 +520,7 @@ export async function initPedidoDetalle() {
   }
 
   function renderDetalle() {
-    const info = infoDeEstadoPedido(pedido.estado);
+    const info = infoDeEstadoPedido(pedido.estado, pedido);
 
     let motivoInfo = null;
     if (pedido.estado === 'RECHAZADO' && pedido.motivoRechazo) {
@@ -479,13 +535,22 @@ export async function initPedidoDetalle() {
       iconClass: info.iconClass,
       icono: info.icon,
       label: info.label,
-      texto: info.texto(comercio ? comercio.nombre : 'El comercio', pedido),
+      texto: info.texto(nombreDelComercio, pedido),
       numeroTexto: `Pedido #${pedido.id} · ${formatearFecha(pedido.fechaCreacion)}`,
       motivoRechazo: motivoInfo,
       reembolsoTexto: textoReembolso(pedido),
     });
 
     const body = crear('div', 'screen-body screen-body--tight');
+
+    if (pedido.comercioNoDisponible) {
+      const franja = crear('div', 'banner banner-warning');
+      franja.setAttribute('role', 'status');
+      franja.setAttribute('data-testid', 'franja-comercio-no-disponible');
+      franja.style.marginBottom = '16px';
+      franja.textContent = TEXTO_COMERCIO_NO_DISPONIBLE;
+      body.appendChild(franja);
+    }
 
     const modalidadCard = crear('div', 'summary-card');
     const modalidadIcon = crear('div', 'summary-card__icon');
@@ -585,6 +650,19 @@ export async function initPedidoDetalle() {
   renderDetalle();
 
   if (!vueltaMp) {
+    window.setInterval(async () => {
+      if (document.hidden || pedido.estado !== 'PENDIENTE_PAGO') {
+        return;
+      }
+      try {
+        const vigente = await cargarPedido();
+        if (vigente && (vigente.estado !== pedido.estado || vigente.comercioNoDisponible !== pedido.comercioNoDisponible)) {
+          pedido = vigente;
+          renderActual();
+        }
+      } catch {
+      }
+    }, 15000);
     return;
   }
 

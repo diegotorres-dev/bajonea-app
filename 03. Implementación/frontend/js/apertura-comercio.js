@@ -49,7 +49,8 @@ export function etiquetaCierrePublica(comercio) {
 export function esConflictoDeCierre(error) {
   return error instanceof ApiError
     && error.status === 409
-    && MENSAJES_CONFLICTO_DE_CIERRE.some((texto) => String(error.message || '').includes(texto));
+    && (MENSAJES_CONFLICTO_DE_CIERRE.some((texto) => String(error.message || '').includes(texto))
+      || Boolean(error.data && error.data.codigo === 'COMERCIO_SIN_PEDIDOS'));
 }
 
 function llamarCierre(accion, comercioId) {

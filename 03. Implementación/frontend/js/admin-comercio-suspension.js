@@ -20,13 +20,13 @@ export function lineasDeLaVistaPrevia(previa) {
   }
   if (preparacion > 0) {
     lineas.push(preparacion === 1
-      ? '1 pedido en preparación: tiene 90 minutos para despacharlo o se cancela con reembolso.'
-      : `${preparacion} pedidos en preparación: tiene 90 minutos para despacharlos o se cancelan con reembolso.`);
+      ? `1 pedido en preparación: tiene ${previa.topePreparacionMinutos} minutos para despacharlo o se cancela con reembolso.`
+      : `${preparacion} pedidos en preparación: tiene ${previa.topePreparacionMinutos} minutos para despacharlos o se cancelan con reembolso.`);
   }
   if (listos > 0) {
     lineas.push(listos === 1
-      ? '1 pedido listo para retirar: tiene 90 minutos para entregarlo o se cierra como no retirado.'
-      : `${listos} pedidos listos para retirar: tiene 90 minutos para entregarlos o se cierran como no retirados.`);
+      ? `1 pedido listo para retirar: tiene ${previa.topeRetiroMinutos} minutos para entregarlo o se cierra como no retirado.`
+      : `${listos} pedidos listos para retirar: tiene ${previa.topeRetiroMinutos} minutos para entregarlos o se cierran como no retirados.`);
   }
   if (camino > 0) {
     lineas.push(camino === 1 ? '1 pedido en camino sigue igual.' : `${camino} pedidos en camino siguen igual.`);

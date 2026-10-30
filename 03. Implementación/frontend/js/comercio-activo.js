@@ -68,11 +68,18 @@ export async function refrescarComercios() {
   return comerciosEnMemoria;
 }
 
+export function esSeleccionable(comercio) {
+  return Boolean(comercio.operativo) || comercio.estado === 'SUSPENDIDO';
+}
+
 export function elegirDestino(comercios) {
-  const operativos = comercios.filter((comercio) => comercio.operativo);
-  if (operativos.length > 0) {
-    const operativoConId = (id) => (id === null ? undefined : operativos.find((comercio) => comercio.id === id));
-    const elegido = operativoConId(getComercioActivoId()) || operativoConId(getUltimoComercioId()) || operativos[0];
+  const seleccionables = comercios.filter(esSeleccionable);
+  if (seleccionables.length > 0) {
+    const conId = (id) => (id === null ? undefined : seleccionables.find((comercio) => comercio.id === id));
+    const elegido = conId(getComercioActivoId())
+      || conId(getUltimoComercioId())
+      || seleccionables.find((comercio) => comercio.operativo)
+      || seleccionables[0];
     return { tipo: 'operativo', comercio: elegido };
   }
   for (const estado of ORDEN_SIN_OPERATIVO) {
@@ -178,7 +185,7 @@ async function verificarComercioActivo() {
     }
     return;
   }
-  if (activo && activo.operativo) {
+  if (activo && esSeleccionable(activo)) {
     return;
   }
   clearComercioActivoId();

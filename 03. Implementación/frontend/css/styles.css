@@ -7802,3 +7802,91 @@ button.panel-comercios__fila:focus-visible {
   list-style: none;
   margin-left: -18px;
 }
+
+.suspension-tarjeta {
+  margin: 0 0 4px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+
+.suspension-tarjeta__encabezado {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.suspension-tarjeta__punto {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-error);
+  flex-shrink: 0;
+}
+
+.suspension-tarjeta__titulo {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.suspension-tarjeta__linea {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.suspension-tarjeta__motivo {
+  white-space: pre-wrap;
+}
+
+.suspension-tarjeta__ayuda {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+.suspension-franja {
+  margin: 0;
+}
+
+.bloqueo-suspension__texto {
+  margin: 0;
+  padding: 0 16px 10px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.pedido-card__suspension {
+  margin: 4px 0 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.pedido-detalle__suspension {
+  margin: 20px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.comercio-franja__chip--suspendido,
+.panel-comercios__etiqueta--suspendido {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+.equipo-solo-lectura {
+  margin-bottom: 12px;
+}
+
+.pedido-card__aviso-comercio {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
