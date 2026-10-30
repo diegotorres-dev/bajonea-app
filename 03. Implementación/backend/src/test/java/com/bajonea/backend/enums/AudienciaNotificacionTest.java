@@ -37,6 +37,8 @@ class AudienciaNotificacionTest {
         APROBADA.put(TipoNotificacion.COMERCIO_SIN_APTITUD, AudienciaNotificacion.DUENO);
         APROBADA.put(TipoNotificacion.COMERCIO_SUSPENDIDO_EQUIPO, AudienciaNotificacion.EMPLEADOS);
         APROBADA.put(TipoNotificacion.COMERCIO_SUSPENSION_LEVANTADA_EQUIPO, AudienciaNotificacion.EMPLEADOS);
+        APROBADA.put(TipoNotificacion.DUENO_SUSPENDIDO, AudienciaNotificacion.DUENO);
+        APROBADA.put(TipoNotificacion.DUENO_SUSPENSION_LEVANTADA, AudienciaNotificacion.DUENO);
 
         APROBADA.put(TipoNotificacion.NUEVO_COMERCIO_PENDIENTE, AudienciaNotificacion.ADMINISTRADOR);
         APROBADA.put(TipoNotificacion.NUEVA_RESOLICITUD_COMERCIO, AudienciaNotificacion.ADMINISTRADOR);

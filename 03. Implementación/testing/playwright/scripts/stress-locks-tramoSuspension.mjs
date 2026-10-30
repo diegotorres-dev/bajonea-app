@@ -115,7 +115,7 @@ async function comercioConProducto(admin) {
   const categoria = (await call('POST', '/categorias', admin, { nombre: `Cat Susp ${u}` })).json.data.id;
   const producto = await call('POST', '/productos', login.token, { nombre: `Prod Susp ${u}`, descripcion: 'x', precio: 10000, categoriaId: categoria }, { 'X-Comercio-Id': String(pendiente.id) });
   if (producto.status !== 201) throw new Error('producto ' + JSON.stringify(producto));
-  return { comercioId: pendiente.id, productoId: producto.json.data.id, duenoToken: login.token, duenoId: login.usuario.id };
+  return { comercioId: pendiente.id, productoId: producto.json.data.id, duenoToken: login.token, duenoId: login.usuario.id, nombreUsuario: cuerpo.nombreUsuario, password: cuerpo.password, categoriaId: categoria };
 }
 
 const suspender = (admin, id) => call('PUT', `/administrador/clientes/${id}/suspender`, admin, { motivo: MOTIVO });
@@ -442,6 +442,198 @@ async function escenarioAccionesContraElTope(admin, ronda) {
   anotar(`acciones-contra-tope: despachar ${estadoDespacho}, anular ${estadoAnulacion}, doble clic ${estadoDoble}`);
 }
 
+
+const suspenderDueno = (admin, id) => call('PUT', `/administrador/duenos/${id}/suspender`, admin, { motivo: MOTIVO });
+const levantarDueno = (admin, id) => call('PUT', `/administrador/duenos/${id}/levantar-suspension`, admin, {});
+const estadoDeCuenta = (id) => sql(`SELECT estado FROM usuario WHERE id = ${id};`);
+const comerciosOperativosDe = (duenoId) => Number(sql(`SELECT COUNT(*) FROM comercio WHERE dueno_id = ${duenoId} AND estado IN ('APROBADO','APTO_VENTA','CERRADO_TEMPORALMENTE');`));
+const rechazoDeCuenta = (r) => r.status === 401;
+
+async function comercioExtra(base, estado, conProducto = false) {
+  const r = await call('POST', `/test/comercios/${base.comercioId}/clonar?nombre=${encodeURIComponent('Extra ' + uniq())}&estado=${estado}`, null, {});
+  if (r.status !== 201) throw new Error('clonar ' + JSON.stringify(r));
+  const comercioId = r.json.data;
+  let productoId = null;
+  if (conProducto) {
+    const p = await call('POST', '/productos', base.duenoToken, { nombre: `Prod Extra ${uniq()}`, descripcion: 'x', precio: 10000, categoriaId: base.categoriaId }, { 'X-Comercio-Id': String(comercioId) });
+    if (p.status !== 201) throw new Error('producto extra ' + JSON.stringify(p));
+    productoId = p.json.data.id;
+  }
+  return { comercioId, productoId, duenoToken: base.duenoToken, duenoId: base.duenoId, categoriaId: base.categoriaId };
+}
+
+async function nuevoEmpleado(comercio) {
+  const empleado = await nuevoCliente();
+  const email = sql(`SELECT email FROM usuario WHERE id = ${empleado.id};`);
+  const inv = await call('POST', '/comercios/equipo/invitaciones', comercio.duenoToken, { email }, conComercio(comercio));
+  if (inv.status !== 201) throw new Error('invitar ' + JSON.stringify(inv));
+  const codigo = (await call('GET', `/test/invitaciones-empleado/codigo?email=${encodeURIComponent(email)}&comercioId=${comercio.comercioId}`)).json.data;
+  const ok = await call('POST', '/auth/invitaciones-empleado/aceptar', null, { email, codigo });
+  if (ok.status !== 200) throw new Error('aceptar invitacion ' + JSON.stringify(ok));
+  return empleado;
+}
+
+async function escenarioDuenoDobleSuspension(admin, ronda) {
+  const comercio = await comercioConProducto(admin);
+  const respuestas = await Promise.all(Array.from({ length: 4 }, () => suspenderDueno(admin, comercio.duenoId)));
+  respuestas.forEach((r, i) => registrar5xx(`dueno doble suspension #${i} (ronda ${ronda})`, r));
+  exigir(respuestas.filter((r) => r.status === 200).length === 1 && respuestas.filter((r) => r.status === 409).length === 3, `dueno doble suspension ronda ${ronda}: ${estadosDeRespuestas(respuestas)}`);
+  exigir(estadoDeCuenta(comercio.duenoId) === 'SUSPENDIDO', `dueno doble suspension ronda ${ronda}: estado ${estadoDeCuenta(comercio.duenoId)}`);
+  exigir(filasDeHistorial(comercio.duenoId) === 1, `dueno doble suspension ronda ${ronda}: ${filasDeHistorial(comercio.duenoId)} filas de historial de la cuenta`);
+  exigir(historialSuspensionComercio(comercio.comercioId) === 1, `dueno doble suspension ronda ${ronda}: ${historialSuspensionComercio(comercio.comercioId)} filas de historial del comercio`);
+  anotar(`dueno-doble-suspension: ${estadosDeRespuestas(respuestas)}`);
+}
+
+async function escenarioDuenoContraLogin(admin, ronda) {
+  const comercio = await comercioConProducto(admin);
+  const tareas = [suspenderDueno(admin, comercio.duenoId)];
+  for (let i = 0; i < 30; i += 1) tareas.push(call('POST', '/auth/login', null, { nombreUsuario: comercio.nombreUsuario, password: comercio.password }));
+  const respuestas = await Promise.all(tareas);
+  respuestas.forEach((r, i) => registrar5xx(`dueno contra login #${i} (ronda ${ronda})`, r));
+  exigir(respuestas[0].status === 200, `dueno contra login ronda ${ronda}: la suspension dio ${respuestas[0].status}`);
+  const inesperados = respuestas.slice(1).filter((r) => r.status !== 200 && !(r.status === 409 && r.json?.data?.codigo === 'CUENTA_SUSPENDIDA'));
+  exigir(inesperados.length === 0, `dueno contra login ronda ${ronda}: respuestas inesperadas ${JSON.stringify(inesperados.slice(0, 2))}`);
+  exigir(sesionesActivas(comercio.duenoId) === 0, `dueno contra login ronda ${ronda}: ${sesionesActivas(comercio.duenoId)} sesiones activas`);
+  exigir(estadoComercio(comercio.comercioId) === 'SUSPENDIDO', `dueno contra login ronda ${ronda}: comercio en ${estadoComercio(comercio.comercioId)}`);
+  anotar(`dueno-login: 200x${respuestas.slice(1).filter((r) => r.status === 200).length}`);
+}
+
+async function escenarioDuenoContraAprobar(admin, ronda) {
+  const comercio = await comercioConProducto(admin);
+  const pendientes = [];
+  for (let i = 0; i < 3; i += 1) pendientes.push((await comercioExtra(comercio, 'PENDIENTE')).comercioId);
+  const tareas = [suspenderDueno(admin, comercio.duenoId), ...pendientes.map((id) => call('PUT', `/administrador/comercios/${id}/resolver`, admin, { aprobar: true }))];
+  const respuestas = await Promise.all(tareas);
+  respuestas.forEach((r, i) => registrar5xx(`dueno contra aprobar #${i} (ronda ${ronda})`, r));
+  exigir(respuestas[0].status === 200, `dueno contra aprobar ronda ${ronda}: la suspension dio ${respuestas[0].status}`);
+  pendientes.forEach((id, i) => {
+    const aprobado = respuestas[i + 1].status === 200;
+    exigir(respuestas[i + 1].status === 200 || respuestas[i + 1].status === 409, `dueno contra aprobar ronda ${ronda}: aprobar dio ${respuestas[i + 1].status}`);
+    exigir(estadoComercio(id) === (aprobado ? 'SUSPENDIDO' : 'PENDIENTE'), `dueno contra aprobar ronda ${ronda}: comercio ${id} en ${estadoComercio(id)} con la aprobacion en ${respuestas[i + 1].status}`);
+  });
+  exigir(comerciosOperativosDe(comercio.duenoId) === 0, `dueno contra aprobar ronda ${ronda}: ${comerciosOperativosDe(comercio.duenoId)} comercios operativos con el Dueño suspendido`);
+  anotar(`dueno-aprobar: ${pendientes.filter((id, i) => respuestas[i + 1].status === 200).length} aprobados antes de la suspension`);
+}
+
+async function pedidoListo(comercio, cliente) {
+  const id = await pedidoPagado(comercio, cliente, true);
+  const d = await call('PUT', `/pedidos/comercio/${id}/despachar`, comercio.duenoToken, {}, conComercio(comercio));
+  if (d.status !== 200) throw new Error('despachar ' + JSON.stringify(d));
+  return id;
+}
+
+async function escenarioDuenoContraAccionesYPagos(admin, ronda) {
+  const base = await comercioConProducto(admin);
+  const comercios = [base, await comercioExtra(base, 'APTO_VENTA', true), await comercioExtra(base, 'APTO_VENTA', true)];
+  const cliente = await nuevoCliente();
+  const pendientes = [];
+  const enPreparacion = [];
+  const listos = [];
+  const sinPagar = [];
+  for (const c of comercios) {
+    for (let i = 0; i < 2; i += 1) pendientes.push(await pedidoPagado(c, cliente));
+    for (let i = 0; i < 2; i += 1) enPreparacion.push(await pedidoPagado(c, cliente, true));
+    listos.push(await pedidoListo(c, cliente));
+    await call('DELETE', '/carrito', cliente.token);
+    await call('POST', '/carrito/items', cliente.token, { productoId: c.productoId, cantidad: 1 });
+    const p = await call('POST', '/pedidos/cliente', cliente.token, { tipoEntrega: 'RETIRO' });
+    sinPagar.push(p.json.data.id);
+  }
+  const todos = [...pendientes, ...enPreparacion, ...listos, ...sinPagar];
+  const tareas = [suspenderDueno(admin, base.duenoId)];
+  for (let i = 0; i < 10; i += 1) tareas.push(call('POST', '/auth/login', null, { nombreUsuario: base.nombreUsuario, password: base.password }));
+  for (const id of sinPagar) tareas.push(call('PUT', `/test/pedidos/${id}/pago-aprobado?registrarPago=true`, null, {}));
+  comercios.forEach((c, i) => {
+    tareas.push(call('PUT', `/pedidos/comercio/${pendientes[i * 2]}/aceptar`, c.duenoToken, {}, conComercio(c)));
+    tareas.push(call('PUT', `/pedidos/comercio/${enPreparacion[i * 2]}/anular`, c.duenoToken, { motivo: 'SIN_STOCK' }, conComercio(c)));
+    tareas.push(call('PUT', `/pedidos/comercio/${enPreparacion[i * 2 + 1]}/despachar`, c.duenoToken, {}, conComercio(c)));
+  });
+  const respuestas = await Promise.all(tareas);
+  respuestas.forEach((r, i) => registrar5xx(`dueno contra acciones y pagos #${i} (ronda ${ronda})`, r));
+  exigir(respuestas[0].status === 200, `dueno contra acciones y pagos ronda ${ronda}: la suspension dio ${respuestas[0].status}`);
+  const acciones = respuestas.slice(1 + 10 + sinPagar.length);
+  const inesperadas = acciones.filter((r) => r.status !== 200 && r.status !== 409 && !rechazoDeCuenta(r));
+  exigir(inesperadas.length === 0, `dueno contra acciones y pagos ronda ${ronda}: acciones inesperadas ${JSON.stringify(inesperadas.slice(0, 2))}`);
+
+  await call('POST', '/test/jobs/pedidos/rechazar-pendientes-suspension', null, {});
+  await call('POST', '/test/jobs/pedidos/procesar-sin-atencion-suspension-dueno', null, {});
+  await call('POST', '/test/jobs/pedidos/procesar-sin-atencion-suspension-dueno', null, {});
+  for (const id of todos) {
+    const estado = estadoPedido(id);
+    exigir(!['PENDIENTE_CONFIRMACION_COMERCIO', 'EN_PREPARACION', 'LISTO_PARA_RETIRAR'].includes(estado), `dueno contra acciones y pagos ronda ${ronda}: el pedido ${id} quedo en ${estado} sin que nadie lo atienda`);
+    exigir(notasDelPedido(id) <= 1, `dueno contra acciones y pagos ronda ${ronda}: el pedido ${id} tiene ${notasDelPedido(id)} notas`);
+    if (['RECHAZADO', 'ANULADO', 'CANCELADO_POR_SISTEMA'].includes(estado)) {
+      exigir(notasDelPedido(id) === 1, `dueno contra acciones y pagos ronda ${ronda}: el pedido ${id} en ${estado} sin su nota`);
+      exigir(filasDePedido(id, estado) === 1, `dueno contra acciones y pagos ronda ${ronda}: el pedido ${id} tiene ${filasDePedido(id, estado)} filas de ${estado}`);
+    }
+  }
+  exigir(comerciosOperativosDe(base.duenoId) === 0, `dueno contra acciones y pagos ronda ${ronda}: comercios operativos con el Dueño suspendido`);
+  anotar(`dueno-acciones-y-pagos: ${todos.filter((id) => estadoPedido(id) === 'PENDIENTE_PAGO').length} sin pagar`);
+}
+
+async function escenarioDuenoLevantarContraSuspender(admin, ronda) {
+  const comercio = await comercioConProducto(admin);
+  const extra = await comercioExtra(comercio, 'APROBADO');
+  const tareas = [];
+  for (let i = 0; i < 3; i += 1) {
+    tareas.push(suspenderDueno(admin, comercio.duenoId));
+    tareas.push(levantarDueno(admin, comercio.duenoId));
+  }
+  const respuestas = await Promise.all(tareas);
+  respuestas.forEach((r, i) => registrar5xx(`dueno suspender y levantar #${i} (ronda ${ronda})`, r));
+  const cuenta = estadoDeCuenta(comercio.duenoId);
+  exigir(cuenta === 'SUSPENDIDO' || cuenta === 'ACTIVO', `dueno suspender y levantar ronda ${ronda}: cuenta en ${cuenta}`);
+  for (const id of [comercio.comercioId, extra.comercioId]) {
+    if (cuenta === 'SUSPENDIDO') exigir(estadoComercio(id) === 'SUSPENDIDO', `dueno suspender y levantar ronda ${ronda}: cuenta suspendida y comercio ${id} en ${estadoComercio(id)}`);
+    else exigir(estadoComercio(id) !== 'SUSPENDIDO', `dueno suspender y levantar ronda ${ronda}: cuenta activa y comercio ${id} suspendido`);
+  }
+  exigir(sesionesActivas(comercio.duenoId) <= 1, `dueno suspender y levantar ronda ${ronda}: ${sesionesActivas(comercio.duenoId)} sesiones activas`);
+  anotar(`dueno-suspender-y-levantar: queda ${cuenta}`);
+}
+
+async function escenarioDuenoContraSuspensionDelEmpleado(admin, ronda) {
+  const comercio = await comercioConProducto(admin);
+  const empleado = await nuevoEmpleado(comercio);
+  const cliente = await nuevoCliente();
+  const pedidos = [];
+  for (let i = 0; i < 3; i += 1) pedidos.push(await pedidoPagado(comercio, cliente, true));
+  const respuestas = await Promise.all([
+    suspenderDueno(admin, comercio.duenoId),
+    suspender(admin, empleado.id),
+    call('POST', '/test/jobs/pedidos/procesar-sin-atencion-suspension-dueno', null, {}),
+  ]);
+  respuestas.forEach((r, i) => registrar5xx(`dueno contra la suspension del Empleado #${i} (ronda ${ronda})`, r));
+  exigir(respuestas[0].status === 200 && respuestas[1].status === 200, `dueno contra la suspension del Empleado ronda ${ronda}: ${estadosDeRespuestas(respuestas)}`);
+  await call('POST', '/test/jobs/pedidos/procesar-sin-atencion-suspension-dueno', null, {});
+  await call('POST', '/test/jobs/pedidos/procesar-sin-atencion-suspension-dueno', null, {});
+  for (const id of pedidos) {
+    exigir(estadoPedido(id) === 'ANULADO', `dueno contra la suspension del Empleado ronda ${ronda}: el pedido ${id} quedo en ${estadoPedido(id)}`);
+    exigir(notasDelPedido(id) === 1, `dueno contra la suspension del Empleado ronda ${ronda}: ${notasDelPedido(id)} notas en el pedido ${id}`);
+  }
+  anotar('dueno-y-empleado: los pedidos terminan anulados con una sola nota');
+}
+
+async function escenarioDuenoVolumen(admin, ronda) {
+  const base = await comercioConProducto(admin);
+  const comercios = [base, await comercioExtra(base, 'APTO_VENTA', true), await comercioExtra(base, 'APTO_VENTA', true)];
+  const cliente = await nuevoCliente();
+  const pedidos = [];
+  for (const c of comercios) {
+    for (let i = 0; i < 6; i += 1) pedidos.push(await pedidoPagado(c, cliente));
+    for (let i = 0; i < 6; i += 1) pedidos.push(await pedidoPagado(c, cliente, true));
+    for (let i = 0; i < 4; i += 1) pedidos.push(await pedidoListo(c, cliente));
+  }
+  const inicio = Date.now();
+  const r = await suspenderDueno(admin, base.duenoId);
+  const milisegundos = Date.now() - inicio;
+  registrar5xx(`dueno volumen (ronda ${ronda})`, r);
+  exigir(r.status === 200, `dueno volumen ronda ${ronda}: la suspension dio ${r.status}`);
+  exigir(pedidos.every((id) => ['RECHAZADO', 'ANULADO', 'CANCELADO_POR_SISTEMA'].includes(estadoPedido(id))), `dueno volumen ronda ${ronda}: quedaron pedidos sin resolver`);
+  exigir(pedidos.every((id) => notasDelPedido(id) === 1), `dueno volumen ronda ${ronda}: algun pedido sin su nota unica`);
+  console.log(`  volumen ronda ${ronda}: ${pedidos.length} pedidos en 3 comercios, la suspension tardo ${milisegundos} ms`);
+  anotar(`dueno-volumen: ${pedidos.length} pedidos`);
+}
+
 const ESCENARIOS = [
   { n: 1, nombre: 'doble suspension', corre: (ctx, ronda) => escenarioDobleSuspension(ctx.admin, ronda) },
   { n: 2, nombre: 'suspender contra login', corre: (ctx, ronda) => escenarioSuspenderContraLogin(ctx.admin, ronda) },
@@ -457,6 +649,13 @@ const ESCENARIOS = [
   { n: 12, nombre: 'comercio: levantar contra el tope de 90 minutos', corre: (ctx, ronda) => escenarioLevantarContraElTope(ctx.admin, ronda) },
   { n: 13, nombre: 'comercio: despachar, anular y doble clic contra el tope de 90 minutos', corre: (ctx, ronda) => escenarioAccionesContraElTope(ctx.admin, ronda) },
   { n: 14, nombre: 'comercio: muchos pendientes contra aceptar, rechazar a mano, doble suspension y barrido', corre: (ctx, ronda) => escenarioPendientesMuchosContraAceptarRechazarYBarrido(ctx.admin, ronda) },
+  { n: 15, nombre: 'dueno: doble suspension', corre: (ctx, ronda) => escenarioDuenoDobleSuspension(ctx.admin, ronda) },
+  { n: 16, nombre: 'dueno: suspender contra login', corre: (ctx, ronda) => escenarioDuenoContraLogin(ctx.admin, ronda) },
+  { n: 17, nombre: 'dueno: suspender contra aprobar comercios pendientes', corre: (ctx, ronda) => escenarioDuenoContraAprobar(ctx.admin, ronda) },
+  { n: 18, nombre: 'dueno: suspender contra acciones sobre pedidos, pagos y logins en tres comercios', corre: (ctx, ronda) => escenarioDuenoContraAccionesYPagos(ctx.admin, ronda) },
+  { n: 19, nombre: 'dueno: suspender y levantar a la vez', corre: (ctx, ronda) => escenarioDuenoLevantarContraSuspender(ctx.admin, ronda) },
+  { n: 20, nombre: 'dueno: suspender contra la suspension de su unico Empleado y el barrido', corre: (ctx, ronda) => escenarioDuenoContraSuspensionDelEmpleado(ctx.admin, ronda) },
+  { n: 21, nombre: 'dueno: volumen (tres comercios y 48 pedidos en curso)', corre: (ctx, ronda) => escenarioDuenoVolumen(ctx.admin, ronda) },
 ];
 
 async function main() {

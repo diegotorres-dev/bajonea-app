@@ -259,7 +259,7 @@ class SuspensionClienteIntegrationTest extends CarritoIntegrationBase {
         assertEquals("No podés suspender tu propia cuenta", assertThrows(ConflictoDeNegocioException.class,
                 () -> suspensionService.suspender(administradorId, administradorId, motivo())).getMessage());
         Dueno dueno = datos.registrarDuenoAprobado();
-        assertEquals("Todavía no se puede suspender a un Dueño desde acá", assertThrows(ConflictoDeNegocioException.class,
+        assertEquals("Un Dueño se suspende desde la lista de Dueños", assertThrows(ConflictoDeNegocioException.class,
                 () -> suspender(dueno.id())).getMessage());
         assertEquals(0, filasDeHistorial(dueno.id()));
         assertThrows(RecursoNoEncontradoException.class, () -> suspender(2_000_000_000));
