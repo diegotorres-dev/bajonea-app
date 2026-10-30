@@ -353,3 +353,7 @@ No se agregaron `data-testid`: los tests usan el selector `.toast` que ya exist�
 | `pedido-detalle.html` (Cliente) | `franja-comercio-no-disponible`, `ayuda-pago-comercio-no-disponible`; `btn-ir-a-pagar` deshabilitado y `btn-cancelar-pedido` también con un pedido sin pagar; `btn-ver-comercio` no aparece si el comercio ya no está en el catálogo | — |
 | `checkout.html` y modal de producto | sin `data-testid` nuevos: el error `COMERCIO_SIN_PEDIDOS` usa `banner-cierre-comercio` y `btn-volver-al-catalogo` (los del cierre del comercio) | — |
 | `comercio-documentacion.html` (cierre de S2) | `aviso-comercio-suspendido` (arriba, solo con el comercio suspendido; la explicación `explicacion-subida-deshabilitada` ya no aparece en ese caso porque `btn-subir-documento` queda habilitado) | — |
+
+## Rechazo automático de pendientes al suspender un comercio, Fase 5 S2.1 (2026-10-30)
+
+Sin `data-testid` nuevos. El spec `88` usa los existentes: `suspender-comercio-que-va-a-pasar` (ahora con la línea "N pedidos pendientes: se rechazan ahora y se reembolsan. No se puede deshacer."), `btn-suspender-comercio`, `input-suspender-comercio-motivo`, `btn-confirmar-suspender-comercio`, `btn-cancelar-suspender-comercio`, `estado-comercio-{id}`, `pedido-item-{id}`, `estado-pedido`, `texto-pedido-suspendido` (el texto de un pendiente pasa a "Se va a rechazar y reembolsar solo."), `estado-reembolso` y `motivo-rechazo-pedido`.

@@ -1160,3 +1160,37 @@ Sin cambios de esquema ni de versión. En la tabla `DocumentoComercio`, la regla
 **6. `alcance-y-limitaciones.md`**
 
 Sin cambios. (La carrera del pago tardío con doble nota de crédito era un defecto interno ya corregido; no es una limitación visible.)
+
+## Fase 5, tramo S2.1, suspensión de un comercio (los pedidos pendientes se rechazan solos, 2026-10-30)
+
+Texto exacto para copiar a `01. Análisis de Requerimientos` y `02. Diseño`. **Reemplaza** lo que dijeron las entregas A y B2 sobre los pedidos pendientes de confirmación: antes el comercio "solo podía rechazarlos" y, si nadie lo hacía, vencían a los 30 minutos; ahora se rechazan solos, al instante, con reembolso. Los pedidos en preparación, listos para retirar y en camino no cambian.
+
+**1. `requisitos-funcionales-sistema.md`: reemplazar el punto PENDIENTE_CONFIRMACION_COMERCIO de "Suspensión de Comercio — Gestión de Pedidos Activos"**
+
+- **PENDIENTE_CONFIRMACION_COMERCIO:** al suspender el comercio, el sistema rechaza todos sus pedidos pendientes de confirmación de inmediato (RECHAZADO, cancelado por el Sistema, sin motivo de rechazo del comercio), genera la nota de crédito por el monto pagado (motivo suspensión del comercio) y pide el reembolso total, y avisa al cliente: "Tu pedido se canceló porque el comercio no está disponible. Te devolvemos el dinero." No se avisa al Dueño ni a los Empleados de cada pedido (reciben el aviso de comercio suspendido). Si el reembolso falla para un pedido, ese pedido queda rechazado y el reembolso en la pantalla de reembolsos pendientes del Administrador; los demás pedidos se procesan igual. Un proceso de seguridad que corre cada minuto rechaza los pendientes de un comercio suspendido que hayan quedado sin procesar (por ejemplo, si el servidor se cayó); es idempotente: nunca duplica la nota ni el aviso. Mientras el pedido siga pendiente (una ventana de segundos), el comercio no puede aceptarlo y sí puede rechazarlo. Levantar la suspensión no deshace los rechazos.
+- Agregar a la lista de cambios de estado automáticos: "Rechazo automático de un pedido pendiente de confirmación al suspender el comercio (actor Sistema, motivo de timeout: suspensión del comercio)".
+- En la definición de RECHAZADO agregar: "o por el Sistema cuando se suspende el comercio".
+
+**2. `requisitos-funcionales-administrador.md`: ajustar la hoja de suspender un comercio**
+
+- En "Qué va a pasar" la línea de los pendientes dice: "N pedidos pendientes: se rechazan ahora y se reembolsan. No se puede deshacer." (singular: "1 pedido pendiente: se rechaza ahora y se reembolsa. No se puede deshacer."). Las demás líneas no cambian.
+
+**3. `requisitos-funcionales-dueno.md` y `requisitos-funcionales-empleado.md`: reemplazar**
+
+- Quitar "los pedidos pendientes solo se pueden rechazar" de las reglas del comercio suspendido y poner: "Los pedidos pendientes de confirmación se rechazan solos al suspender el comercio. Si alguno todavía aparece (por unos segundos), dice 'Se va a rechazar y reembolsar solo.' y no se puede aceptar." Los pedidos en curso (preparación, listos para retirar y en camino) y la franja con la hora límite no cambian.
+
+**4. `requisitos-funcionales-cliente.md` e `Historias de Usuario - Cliente.md`: ajuste a HU-C19**
+
+- Agregar el criterio: "Si ya había pagado y el comercio todavía no había aceptado mi pedido, el pedido pasa a Rechazado con el texto 'El comercio no estaba disponible. Te devolvemos el dinero.', veo el estado del reembolso y recibo el aviso 'Tu pedido se canceló porque el comercio no está disponible. Te devolvemos el dinero.'"
+
+**5. `Historias de Usuario - Administrador.md`: ajuste a HU-A17 (suspender un comercio)**
+
+- Reemplazar el criterio de los pedidos pendientes por: "Al confirmar, los pedidos pendientes de confirmación del comercio se rechazan y se reembolsan en el acto; los demás pedidos siguen su camino con los plazos de 90 minutos."
+
+**6. `diccionario-de-datos.md`**
+
+Versión 1.32 (`V47`): `historial_estado_pedido.motivo_timeout` suma `SUSPENSION_COMERCIO` al final del ENUM (y su fila en la tabla `MotivoTimeoutPedido`). Ya está así en `docs/diccionario-de-datos.md`; copiar el mismo cambio a la copia de `02. Diseño`. Los próximos libres son `V48`, la carpeta 85 de Newman, el spec 89 de Playwright y la versión 1.33.
+
+**7. `alcance-y-limitaciones.md`**
+
+Sin cambios.

@@ -1,6 +1,6 @@
 # Mapeo de archivos — Fase 5, tramo S2 (suspensión individual de un comercio)
 
-Entrega A (backend, tests y documentación), 2026-10-29. La entrega B (pantallas y specs de Playwright de UI) no está hecha. Pendiente de la confirmación de Diego.
+Entrega A (backend, tests y documentación), 2026-10-29. Las entregas B1, B2, el cierre y la S2.1 siguen más abajo; todo el tramo S2 está hecho, commiteado y pusheado. Desde la S2.1 (2026-10-30) los pedidos pendientes de confirmación ya no quedan esperando: se rechazan solos al suspender (las secciones anteriores describen el comportamiento previo y la sección S2.1 lo reemplaza).
 
 ## Migración
 
@@ -58,7 +58,7 @@ Entrega A (backend, tests y documentación), 2026-10-29. La entrega B (pantallas
 
 ## Entrega B1 (2026-10-29): Administrador, rendimiento del listado de Clientes y specs
 
-La entrega B se divide en dos. La B1 cubre el listado de Clientes, las etiquetas de reembolso, las pantallas del Administrador para suspender y levantar un comercio y el arreglo de los specs de Playwright. La B2 (panel del Dueño y del Empleado, selector, equipo, topes de 90 minutos en las acciones de pedidos y pantallas del Cliente) no está hecha. Pendiente de la confirmación de Diego.
+La entrega B se divide en dos. La B1 cubre el listado de Clientes, las etiquetas de reembolso, las pantallas del Administrador para suspender y levantar un comercio y el arreglo de los specs de Playwright. La B2 (panel del Dueño y del Empleado, selector, equipo, topes de 90 minutos en las acciones de pedidos y pantallas del Cliente) está hecha más abajo. Hecha y commiteada.
 
 ### Backend (solo el listado de Clientes, código de S1)
 
@@ -89,7 +89,7 @@ El detalle del comercio suspendido vive en el modal "Ver detalle" de `admin-come
 
 ## Entrega B2 (2026-10-29): Dueño, Empleado y Cliente con el comercio suspendido
 
-Pendiente de la confirmación de Diego. Hechos con los mockups 5 (opción B), 6, 8 (opción A) y 9 (opción C) de la entrega A.
+Hecha y commiteada. Hechos con los mockups 5 (opción B), 6, 8 (opción A) y 9 (opción C) de la entrega A.
 
 ### Migración
 
@@ -135,7 +135,7 @@ Pendiente de la confirmación de Diego. Hechos con los mockups 5 (opción B), 6,
 
 ## Cierre (2026-10-30): documentos con el comercio suspendido, carrera del pago tardío y corridas finales
 
-Pendiente de la confirmación de Diego. Sin migraciones (`V47` es la próxima libre).
+Hecho y commiteado. Sin migraciones.
 
 ### Backend
 
@@ -164,3 +164,45 @@ Pendiente de la confirmación de Diego. Sin migraciones (`V47` es la próxima li
 | `testing/playwright/scripts/repetir-carrera-pago-suspension.sh` | Repite la carrera suspender contra pago tardío, sola y con tres procesos de Maven a la vez. |
 | `testing/playwright/tests/87-suspension-comercio-documentos-ui.spec.ts` (nuevo, 4 tests a 375 px) | El Dueño sube con el comercio suspendido, el estado no cambia al subir, aprobar ni rechazar, al levantar queda según los documentos, y el Empleado ve el texto nuevo; capturas `13` a `16` de `docs/capturas-suspension-comercio-b2/`. |
 | Specs `38`, `82`, `86` | Ajustados a la regla nueva (texto del Empleado, estados que permiten subir, subida ya no bloqueada). |
+
+## S2.1 (2026-10-30): los pendientes de confirmación se rechazan solos al suspender
+
+Reemplaza la regla de las secciones anteriores sobre los pedidos pendientes (decisión de Diego; detalle y respuestas a las verificaciones en `docs/DECISIONES.md`, 2026-10-30).
+
+### Migración
+
+| Archivo | Qué hace |
+|---|---|
+| `backend/src/main/resources/db/migration/V47__historial_pedido_rechazo_por_suspension.sql` | `historial_estado_pedido.motivo_timeout` suma `SUSPENSION_COMERCIO` al final del ENUM. |
+
+### Backend
+
+| Archivo | Cambio |
+|---|---|
+| `enums/MotivoTimeoutPedido.java` | Valor `SUSPENSION_COMERCIO`. |
+| `services/PedidoService.java` | `rechazarPendientesDelComercioSuspendido(comercioId)`, `rechazarPendientesDeComerciosSuspendidos()` y `rechazarPendientePorSuspension` (una transacción por pedido, bloqueo del orden global, revalidación, nota `SUSPENSION_COMERCIO`, aviso al Cliente). |
+| `services/SuspensionComercioService.java` | `suspender` llama al procesamiento después del commit; recibe `PedidoService` en el constructor. |
+| `services/PedidoSchedulerService.java` | Proceso `rechazarPendientesPorSuspension` (60 s) y el nombre `rechazar-pendientes-suspension` para `ejecutar`. |
+| `repositories/PedidoRepository.java` | `findIdsDeComerciosSuspendidos(estado)` (filtro grueso del barrido). |
+| `services/TextosPedidoActividad.java` | Texto del rechazo del sistema en la actividad. |
+| `services/TestSupportService.java`, `controllers/TestController.java` | Atajo `PUT /api/v1/test/comercios/{id}/reanudar-sin-procesar`. |
+
+### Frontend
+
+| Archivo | Cambio |
+|---|---|
+| `js/admin-comercio-suspension.js` | Línea de pendientes de la hoja (singular y plural). |
+| `js/comercio-suspendido.js` | Texto "Se va a rechazar y reembolsar solo." |
+| `js/pedidos.js` | Texto del Cliente para un `RECHAZADO` por la suspensión (`rechazadoPorSuspensionDelComercio`). |
+
+### Tests y scripts
+
+| Archivo | Qué cubre |
+|---|---|
+| `SuspensionComercioRechazoPendientesIntegrationTest` (nuevo, 37 tests) | Ver `docs/DECISIONES.md`. |
+| `SuspensionComercioIntegrationTest`, `SuspensionComercioPagoIntegrationTest`, `SuspensionComercioConcurrenciaIntegrationTest`, `SuspensionComercioServiceVistaPreviaTest` | Ajustados a la regla nueva (aserciones reemplazadas, no debilitadas; el constructor suma `PedidoService`). |
+| `scripts/build-suspension-comercio-s21-postman.mjs` | Carpeta `84` de Newman (73 requests, siempre después de la `83`). |
+| `scripts/build-suspension-comercio-fase5s2-postman.mjs` | Carpeta `81` ajustada (pendientes rechazados; ventana por atajo). |
+| `tests/88-suspension-comercio-pendientes-ui.spec.ts` (nuevo, 4 tests a 375 px) | Hoja, Dueño y Cliente; capturas `17` a `20` de `docs/capturas-suspension-comercio-b2/`. |
+| Specs `40`, `85`, `86` | Ajustados a la regla nueva. |
+| `scripts/stress-locks-tramoSuspension.mjs` | Escenario nuevo 14 y escenarios 6 y 7 actualizados. |
