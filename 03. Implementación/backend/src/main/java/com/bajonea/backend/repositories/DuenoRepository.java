@@ -2,6 +2,7 @@ package com.bajonea.backend.repositories;
 
 import com.bajonea.backend.entities.Dueno;
 import jakarta.persistence.LockModeType;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -15,6 +16,16 @@ public interface DuenoRepository extends JpaRepository<Dueno, Integer> {
      * patrón que {@code UsuarioRepository.findByIdConBloqueo}; tiene que ser la primera sentencia de la
      * transacción para que las lecturas siguientes vean lo confirmado por la alta anterior.
      */
+    @Query("""
+            SELECT d FROM Dueno d
+            JOIN FETCH d.personaFisica pf
+            JOIN FETCH d.personaJuridica pj
+            JOIN FETCH pj.persona p
+            JOIN FETCH p.usuario
+            ORDER BY d.id
+            """)
+    List<Dueno> findAllParaListadoAdmin();
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT d FROM Dueno d WHERE d.id = :id")
     Optional<Dueno> findByIdConBloqueo(Integer id);

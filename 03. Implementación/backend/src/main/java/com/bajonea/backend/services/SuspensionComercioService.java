@@ -65,6 +65,8 @@ public class SuspensionComercioService {
     static final String MENSAJE_SUSPENDIDO_POR_DUENO = "Este comercio está suspendido porque se suspendió a su Dueño. "
             + "Hay que levantar la suspensión del Dueño";
 
+    static final String MENSAJE_DUENO_SUSPENDIDO = "El Dueño tiene la cuenta suspendida. Levantá la suspensión primero.";
+
     private static final Set<EstadoComercio> SUSPENDIBLES = Set.of(EstadoComercio.APROBADO, EstadoComercio.APTO_VENTA,
             EstadoComercio.CERRADO_TEMPORALMENTE);
 
@@ -165,6 +167,9 @@ public class SuspensionComercioService {
             if (comercio.getSuspensionOrigen() == OrigenSuspensionComercio.DUENO) {
                 throw new ConflictoDeNegocioException(MENSAJE_SUSPENDIDO_POR_DUENO);
             }
+            if (bloqueados.estadoDueno() == EstadoUsuario.SUSPENDIDO) {
+                throw new ConflictoDeNegocioException(MENSAJE_DUENO_SUSPENDIDO);
+            }
 
             EstadoComercio destino = aptitudVentaComercioService.destinoAlLevantarSuspension(comercio, entradasDueno);
             OrigenSuspensionComercio origenLevantado = comercio.getSuspensionOrigen();
@@ -222,7 +227,7 @@ public class SuspensionComercioService {
     private record Destinatarios(Integer duenoId, List<RelacionDeEmpleado> candidatos) {
     }
 
-    private record Bloqueados(List<Integer> empleados) {
+    private record Bloqueados(List<Integer> empleados, EstadoUsuario estadoDueno) {
     }
 
     /**
@@ -263,6 +268,6 @@ public class SuspensionComercioService {
                 }
             }
         }
-        return new Bloqueados(empleados);
+        return new Bloqueados(empleados, estados.get(destinatarios.duenoId()));
     }
 }

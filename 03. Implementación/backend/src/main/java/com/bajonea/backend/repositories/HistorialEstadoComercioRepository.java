@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface HistorialEstadoComercioRepository extends JpaRepository<HistorialEstadoComercio, Integer> {
 
@@ -27,6 +28,17 @@ public interface HistorialEstadoComercioRepository extends JpaRepository<Histori
 
     Optional<HistorialEstadoComercio> findTopByComercioIdAndEstadoOrigenOrderByIdDesc(Integer comercioId,
             EstadoComercio estadoOrigen);
+
+    /**
+     * Comercios del Dueño que dejaron de estar suspendidos por el levantamiento de su cuenta desde {@code desde}: filas
+     * {@code SUSPENDIDO -> otro estado} con origen {@code DUENO}. Cada fila es {@code [comercioId, nombre]}.
+     */
+    @Query("SELECT DISTINCT h.comercio.id, h.comercio.nombre FROM HistorialEstadoComercio h "
+            + "WHERE h.comercio.dueno.id = :duenoId AND h.estadoOrigen = com.bajonea.backend.enums.EstadoComercio.SUSPENDIDO "
+            + "AND h.suspensionOrigen = com.bajonea.backend.enums.OrigenSuspensionComercio.DUENO AND h.fechaHora >= :desde "
+            + "ORDER BY h.comercio.id")
+    List<Object[]> findComerciosRestauradosPorLevantamientoDelDueno(@Param("duenoId") Integer duenoId,
+            @Param("desde") java.time.LocalDateTime desde);
 
     /**
      * Ids de los comercios (dentro de {@code comercioIds}) que alguna vez pasaron a {@code estadoDestino},

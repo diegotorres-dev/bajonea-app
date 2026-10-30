@@ -111,6 +111,28 @@ public interface EmpleadoComercioRepository extends JpaRepository<EmpleadoComerc
             + "WHERE id IN (:ids) ORDER BY id LOCK IN SHARE MODE", nativeQuery = true)
     List<EstadoDeRelacion> leerRelacionesConBloqueoCompartido(@Param("ids") Collection<Integer> ids);
 
+    /**
+     * Empleados activos de los comercios dados, en una sola consulta: la relación está {@code ACTIVO} y la cuenta del
+     * Empleado también (no suspendida, bloqueada ni inactiva). Es la definición única de "Empleado activo" de las
+     * reglas de la suspensión de un Dueño. Cada fila es {@code [comercioId, empleadoId]}.
+     */
+    @Query("""
+            SELECT ec.comercio.id, ec.empleado.id FROM EmpleadoComercio ec, Usuario u
+            WHERE u.id = ec.empleado.id AND ec.comercio.id IN :comercioIds
+              AND ec.estado = com.bajonea.backend.enums.EstadoEmpleadoComercio.ACTIVO
+              AND u.estado = com.bajonea.backend.enums.EstadoUsuario.ACTIVO
+            ORDER BY ec.comercio.id, ec.empleado.id
+            """)
+    List<Object[]> findEmpleadosActivosDeComercios(@Param("comercioIds") Collection<Integer> comercioIds);
+
+    /** Relaciones {@code ACTIVO} de los comercios dados, sin bloquear: cada fila es {@code [relacionId, empleadoId, comercioId]}. */
+    @Query("""
+            SELECT ec.id, ec.empleado.id, ec.comercio.id FROM EmpleadoComercio ec
+            WHERE ec.comercio.id IN :comercioIds AND ec.estado = com.bajonea.backend.enums.EstadoEmpleadoComercio.ACTIVO
+            ORDER BY ec.id
+            """)
+    List<Object[]> findRelacionesActivasDeComercios(@Param("comercioIds") Collection<Integer> comercioIds);
+
     interface RelacionDeEmpleado {
 
         Integer getId();

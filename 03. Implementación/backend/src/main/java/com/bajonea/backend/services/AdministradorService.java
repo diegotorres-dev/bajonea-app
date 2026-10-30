@@ -5,6 +5,7 @@ import com.bajonea.backend.dto.request.AprobacionComercioRequestDTO;
 import com.bajonea.backend.dto.response.AdministradorResponseDTO;
 import com.bajonea.backend.dto.response.CambioComercioResponseDTO;
 import com.bajonea.backend.dto.response.ClienteAdminResponseDTO;
+import com.bajonea.backend.dto.response.DuenoAdminResponseDTO;
 import com.bajonea.backend.dto.response.ComercioAdminResponseDTO;
 import com.bajonea.backend.dto.response.DireccionResponseDTO;
 import com.bajonea.backend.dto.response.HorarioResponseDTO;
@@ -17,6 +18,7 @@ import com.bajonea.backend.entities.Administrador;
 import com.bajonea.backend.entities.Cliente;
 import com.bajonea.backend.entities.Comercio;
 import com.bajonea.backend.entities.Direccion;
+import com.bajonea.backend.entities.Dueno;
 import com.bajonea.backend.entities.HistorialCambioComercio;
 import com.bajonea.backend.entities.HistorialEstadoComercio;
 import com.bajonea.backend.entities.HistorialEstadoUsuario;
@@ -39,6 +41,8 @@ import com.bajonea.backend.repositories.DocumentoComercioRepository;
 import com.bajonea.backend.repositories.ClienteRepository;
 import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.DireccionRepository;
+import com.bajonea.backend.repositories.DuenoRepository;
+import com.bajonea.backend.repositories.UsuarioRepository;
 import com.bajonea.backend.repositories.HistorialCambioComercioRepository;
 import com.bajonea.backend.repositories.HistorialEstadoComercioRepository;
 import com.bajonea.backend.repositories.HistorialEstadoUsuarioRepository;
@@ -94,6 +98,8 @@ public class AdministradorService {
     private final AprobacionPreviaDueno aprobacionPreviaDueno;
     private final HistorialCambioComercioRepository historialCambioComercioRepository;
     private final ComercioResolicitudesProperties resolicitudesProperties;
+    private final DuenoRepository duenoRepository;
+    private final UsuarioRepository usuarioRepository;
 
     /**
      * Solicitudes nuevas pendientes: comercios {@code PENDIENTE} que nunca se re-solicitaron
@@ -310,6 +316,9 @@ public class AdministradorService {
         Administrador administrador = administradorRepository.findById(administradorId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Administrador no encontrado"));
 
+        if (aprobar) {
+            exigirDuenoNoSuspendido(duenoId);
+        }
         AptitudVentaComercioService.EntradasDueno entradasDueno = aprobar ? aptitudVentaComercioService.leerDueno(duenoId) : null;
 
         Comercio comercio = comercioRepository.findByIdConBloqueo(comercioId)
@@ -357,6 +366,57 @@ public class AdministradorService {
 
         notificacionService.crearParaDueno(comercio.getDueno().getId(), comercio.getId(), mensaje,
                 tipo, TipoEntidadNotificacion.COMERCIO, comercio.getId());
+    }
+
+    static final String MENSAJE_DUENO_SUSPENDIDO = "El Dueño tiene la cuenta suspendida. Levantá la suspensión primero.";
+
+    /**
+     * Mientras la cuenta del Dueño está suspendida no se aprueba ninguno de sus comercios pendientes (rechazar sí se
+     * puede). Lee el estado con bloqueo compartido, antes de la cuenta de Mercado Pago y del comercio: la suspensión toma
+     * esa fila {@code FOR UPDATE} antes que cualquiera de las dos, así que la aprobación queda entera de un lado o del otro.
+     */
+    private void exigirDuenoNoSuspendido(Integer duenoId) {
+        String estado = usuarioRepository.leerEstadoConBloqueoCompartido(duenoId).orElse(null);
+        if (EstadoUsuario.SUSPENDIDO.name().equals(estado)) {
+            throw new ConflictoDeNegocioException(MENSAJE_DUENO_SUSPENDIDO);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<DuenoAdminResponseDTO> listarDuenos() {
+        List<Dueno> duenos = duenoRepository.findAllParaListadoAdmin();
+        if (duenos.isEmpty()) {
+            return List.of();
+        }
+        java.util.Set<Integer> sinEmailSuspension = new java.util.HashSet<>(
+                notificacionRepository.findUsuarioIdsConUltimoEmailFallido(TipoNotificacion.DUENO_SUSPENDIDO));
+        java.util.Set<Integer> sinEmailLevantamiento = new java.util.HashSet<>(
+                notificacionRepository.findUsuarioIdsConUltimoEmailFallido(TipoNotificacion.DUENO_SUSPENSION_LEVANTADA));
+        List<Integer> suspendidos = duenos.stream()
+                .map(dueno -> dueno.getPersonaJuridica().getPersona().getUsuario())
+                .filter(usuario -> usuario.getEstado() == EstadoUsuario.SUSPENDIDO)
+                .map(Usuario::getId)
+                .toList();
+        Map<Integer, EstadoUsuario> estadosPrevios = new HashMap<>();
+        if (!suspendidos.isEmpty()) {
+            for (Object[] fila : historialEstadoUsuarioRepository.findEstadoPrevioDeLaUltimaSuspension(suspendidos)) {
+                estadosPrevios.put((Integer) fila[0], (EstadoUsuario) fila[1]);
+            }
+        }
+        Map<Integer, Long> comercios = new HashMap<>();
+        for (Object[] fila : comercioRepository.contarComerciosPorDueno()) {
+            comercios.put((Integer) fila[0], (Long) fila[1]);
+        }
+        return duenos.stream().map(dueno -> {
+            Usuario usuario = dueno.getPersonaJuridica().getPersona().getUsuario();
+            PersonaFisica persona = dueno.getPersonaFisica();
+            boolean emailFallido = usuario.getEstado() == EstadoUsuario.SUSPENDIDO
+                    ? sinEmailSuspension.contains(usuario.getId())
+                    : sinEmailLevantamiento.contains(usuario.getId());
+            return new DuenoAdminResponseDTO(dueno.getId(), persona.getNombre(), persona.getApellido(), persona.getDni(),
+                    usuario.getEmail(), usuario.getEstado(), usuario.getFechaRegistro(), comercios.getOrDefault(dueno.getId(), 0L),
+                    usuario.getMotivoSuspension(), usuario.getSuspendidoDesde(), emailFallido, estadosPrevios.get(usuario.getId()));
+        }).toList();
     }
 
     private ComercioAdminResponseDTO aAdminResponseDTO(Comercio comercio, Integer duenoId, boolean esAdicional,

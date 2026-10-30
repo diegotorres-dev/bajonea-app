@@ -64,6 +64,21 @@ public interface PedidoRepository extends JpaRepository<Pedido, Integer> {
             + "com.bajonea.backend.enums.EstadoComercio.SUSPENDIDO order by p.id")
     List<Integer> findIdsDeComerciosSuspendidos(@Param("estado") EstadoPedido estado);
 
+    /**
+     * Filtro grueso del barrido de "sin atención": pedidos en los estados dados de comercios {@code SUSPENDIDO} cuyo
+     * Dueño tiene la cuenta {@code SUSPENDIDO}. Cada pedido se vuelve a validar con todo bloqueado.
+     */
+    @Query("select p.id from Pedido p where p.estado in :estados and p.comercio.estado = "
+            + "com.bajonea.backend.enums.EstadoComercio.SUSPENDIDO and exists (select u.id from Usuario u "
+            + "where u.id = p.comercio.dueno.id and u.estado = com.bajonea.backend.enums.EstadoUsuario.SUSPENDIDO) order by p.id")
+    List<Integer> findIdsDeComerciosSuspendidosConDuenoSuspendido(@Param("estados") Collection<EstadoPedido> estados);
+
+    /** Cantidad de pedidos por comercio y estado: cada fila es {@code [comercioId, estado, cantidad]}. */
+    @Query("select p.comercio.id, p.estado, count(p) from Pedido p where p.comercio.id in :comercioIds "
+            + "and p.estado in :estados group by p.comercio.id, p.estado")
+    List<Object[]> contarPorComercioYEstado(@Param("comercioIds") Collection<Integer> comercioIds,
+            @Param("estados") Collection<EstadoPedido> estados);
+
     long countByComercioIdAndEstadoIn(Integer comercioId, Collection<EstadoPedido> estados);
 
     @Query("select p.id from Pedido p where p.comercio.id = :comercioId and p.estado in :estados order by p.id")

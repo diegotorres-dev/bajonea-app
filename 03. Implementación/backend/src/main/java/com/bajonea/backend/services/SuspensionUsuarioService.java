@@ -50,7 +50,7 @@ public class SuspensionUsuarioService {
     static final String MENSAJE_NO_SUSPENDIDA = "La cuenta no está suspendida";
     static final String MENSAJE_ADMINISTRADOR = "No se puede suspender a un Administrador";
     static final String MENSAJE_PROPIA_CUENTA = "No podés suspender tu propia cuenta";
-    static final String MENSAJE_DUENO_NO_SOPORTADO = "Todavía no se puede suspender a un Dueño desde acá";
+    static final String MENSAJE_DUENO_NO_SOPORTADO = "Un Dueño se suspende desde la lista de Dueños";
 
     private static final List<EstadoPedido> EN_CURSO_PAGADOS = List.of(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO,
             EstadoPedido.EN_PREPARACION, EstadoPedido.EN_CAMINO, EstadoPedido.LISTO_PARA_RETIRAR);
@@ -125,7 +125,7 @@ public class SuspensionUsuarioService {
      * destino {@code SUSPENDIDO}). Una cuenta bloqueada vuelve {@code ACTIVO} (con los intentos en cero); si no hay
      * fila o no trae origen (una suspensión cargada a mano en la base), vuelve {@code ACTIVO}.
      */
-    private EstadoUsuario estadoAlLevantar(Integer usuarioId) {
+    EstadoUsuario estadoAlLevantar(Integer usuarioId) {
         EstadoUsuario origen = historialEstadoUsuarioRepository
                 .findTopByUsuarioIdAndEstadoDestinoOrderByIdDesc(usuarioId, EstadoUsuario.SUSPENDIDO)
                 .map(HistorialEstadoUsuario::getEstadoOrigen)

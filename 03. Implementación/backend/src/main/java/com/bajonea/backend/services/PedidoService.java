@@ -494,11 +494,21 @@ public class PedidoService {
      * {@link #bloquearParaTopeDeSuspension}; en los demás caminos son {@code null}.
      */
     record PedidoBloqueado(Pedido pedido, List<Integer> equipo, EstadoUsuario estadoCliente, EstadoComercio estadoComercio,
-            LocalDateTime suspendidoDesde) {
+            LocalDateTime suspendidoDesde, EstadoUsuario estadoDueno, List<Integer> empleadosActivos) {
 
         PedidoBloqueado(Pedido pedido, List<Integer> equipo) {
-            this(pedido, equipo, null, null, null);
+            this(pedido, equipo, null, null, null, null, List.of());
         }
+    }
+
+    /**
+     * Para decidir si un pedido de un comercio suspendido quedó sin atención: bloquea con el equipo (los usuarios del
+     * Cliente, el Dueño y los Empleados candidatos, sus relaciones), lee el estado del comercio y bloquea el pedido.
+     * {@code estadoDueno} y {@code empleadosActivos} (relación activa y cuenta {@code ACTIVO}, sin el Cliente del
+     * pedido, que no puede gestionar el suyo) vienen completos solo desde acá.
+     */
+    PedidoBloqueado bloquearParaSinAtencion(Integer pedidoId) {
+        return bloquear(pedidoId, null, null, false, true, true);
     }
 
     private PedidoBloqueado bloquear(Integer pedidoId, Integer actorUsuarioId, ComercioActivo comercioActivo,
@@ -544,12 +554,17 @@ public class PedidoService {
             }
         }
         List<Integer> equipo = new ArrayList<>();
+        List<Integer> empleadosActivos = new ArrayList<>();
         if (!candidatos.isEmpty()) {
             List<Integer> relacionesIds = candidatos.stream().map(RelacionDeEmpleado::getId).toList();
             for (EstadoDeRelacion relacion : empleadoComercioRepository.leerRelacionesConBloqueoCompartido(relacionesIds)) {
                 boolean activa = EstadoEmpleadoComercio.valueOf(relacion.getEstado()) == EstadoEmpleadoComercio.ACTIVO;
-                if (activa && estadosUsuarios.get(relacion.getEmpleadoId()) != EstadoUsuario.SUSPENDIDO) {
+                EstadoUsuario estadoEmpleado = estadosUsuarios.get(relacion.getEmpleadoId());
+                if (activa && estadoEmpleado != EstadoUsuario.SUSPENDIDO) {
                     equipo.add(relacion.getEmpleadoId());
+                }
+                if (activa && estadoEmpleado == EstadoUsuario.ACTIVO) {
+                    empleadosActivos.add(relacion.getEmpleadoId());
                 }
             }
         }
@@ -567,7 +582,7 @@ public class PedidoService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("Pedido no encontrado"));
         entityManager.refresh(pedido, LockModeType.PESSIMISTIC_WRITE);
         return new PedidoBloqueado(pedido, equipo, estadosUsuarios.get(participantes.getClienteId()), estadoComercio,
-                suspendidoDesde);
+                suspendidoDesde, estadosUsuarios.get(participantes.getDuenoId()), empleadosActivos);
     }
 
     private Pedido obtenerPedidoDelComercioParaActualizar(ComercioActivo comercioActivo, Integer pedidoId) {
@@ -1182,6 +1197,81 @@ public class PedidoService {
             rechazado[0] = true;
         });
         return rechazado[0];
+    }
+
+    static final String MOTIVO_SIN_ATENCION = "El comercio no está disponible";
+
+    private static final List<EstadoPedido> ESTADOS_QUE_NECESITAN_ATENCION =
+            List.of(EstadoPedido.EN_PREPARACION, EstadoPedido.LISTO_PARA_RETIRAR);
+
+    /**
+     * Procesa los pedidos {@code EN_PREPARACION} y {@code LISTO_PARA_RETIRAR} de un comercio {@code SUSPENDIDO} cuyo Dueño
+     * tiene la cuenta suspendida y que no tiene ningún Empleado activo (los pedidos sin atención): los de preparación se
+     * anulan y los listos para retirar se cancelan, siempre con reembolso total, uno por transacción. Se llama después de
+     * confirmada la suspensión del Dueño. Devuelve cuántos procesó.
+     */
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public int procesarPedidosSinAtencionDelComercio(Integer comercioId) {
+        int procesados = 0;
+        for (Integer pedidoId : pedidoRepository.findIdsByComercioIdAndEstadoIn(comercioId, ESTADOS_QUE_NECESITAN_ATENCION)) {
+            if (procesarPedidoSinAtencion(pedidoId)) {
+                procesados++;
+            }
+        }
+        return procesados;
+    }
+
+    /**
+     * Job 7: barrido de seguridad de los pedidos sin atención de todos los comercios suspendidos con el Dueño suspendido.
+     * La condición se vuelve a evaluar entera en cada corrida (un Empleado que deja de estar activo después, o un comercio
+     * suspendido por separado antes que su Dueño, también cuentan) y es idempotente.
+     */
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public void procesarPedidosSinAtencion() {
+        for (Integer pedidoId : pedidoRepository.findIdsDeComerciosSuspendidosConDuenoSuspendido(ESTADOS_QUE_NECESITAN_ATENCION)) {
+            procesarPedidoSinAtencion(pedidoId);
+        }
+    }
+
+    /**
+     * Una transacción por pedido: bloqueo del orden global (usuarios, relaciones, comercio compartido, pedido) y todo
+     * revalidado con las filas bloqueadas. Si el pedido ya cambió de estado, el comercio ya no está suspendido, el Dueño ya
+     * no lo está o hay un Empleado activo que lo pueda atender, no hace nada: dos ejecuciones simultáneas generan una sola
+     * nota. Un fallo en un pedido se registra y no frena a los demás.
+     */
+    private boolean procesarPedidoSinAtencion(Integer pedidoId) {
+        boolean[] procesado = {false};
+        enTransaccionPorPedido("procesarPedidosSinAtencion", pedidoId, () -> {
+            PedidoBloqueado bloqueado = bloquearParaSinAtencion(pedidoId);
+            Pedido pedido = bloqueado.pedido();
+            if (!comercioSuspendido(bloqueado) || bloqueado.estadoDueno() != EstadoUsuario.SUSPENDIDO
+                    || !bloqueado.empleadosActivos().isEmpty()) {
+                return;
+            }
+            Integer clienteId = pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId();
+            if (pedido.getEstado() == EstadoPedido.EN_PREPARACION) {
+                pedido.setEstado(EstadoPedido.ANULADO);
+                pedido.setCanceladoPor(CanceladoPor.SISTEMA);
+                pedido.setMotivo(MOTIVO_SIN_ATENCION);
+                pedidoRepository.save(pedido);
+                registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.SUSPENSION_DUENO_SIN_ATENCION);
+                reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.SUSPENSION_COMERCIO);
+                notificacionService.crearParaCliente(clienteId, TEXTO_RECHAZO_POR_SUSPENSION,
+                        TipoNotificacion.PEDIDO_ANULADO_COMERCIO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
+            } else if (pedido.getEstado() == EstadoPedido.LISTO_PARA_RETIRAR) {
+                pedido.setEstado(EstadoPedido.CANCELADO_POR_SISTEMA);
+                pedido.setCanceladoPor(CanceladoPor.SISTEMA);
+                pedidoRepository.save(pedido);
+                registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.SUSPENSION_DUENO_SIN_ATENCION);
+                reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.SUSPENSION_COMERCIO);
+                notificacionService.crearParaCliente(clienteId, TEXTO_RECHAZO_POR_SUSPENSION,
+                        TipoNotificacion.PEDIDO_CANCELADO_SISTEMA, TipoEntidadNotificacion.PEDIDO, pedido.getId());
+            } else {
+                return;
+            }
+            procesado[0] = true;
+        });
+        return procesado[0];
     }
 
     private static boolean comercioSuspendido(PedidoBloqueado bloqueado) {

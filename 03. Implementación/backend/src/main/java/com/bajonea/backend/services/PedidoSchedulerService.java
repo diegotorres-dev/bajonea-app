@@ -68,10 +68,17 @@ public class PedidoSchedulerService {
         }
     }
 
+    @Scheduled(fixedDelay = 60_000)
+    public void procesarPedidosSinAtencionPorSuspensionDeDueno() {
+        if (habilitado) {
+            pedidoService.procesarPedidosSinAtencion();
+        }
+    }
+
     /**
      * Ejecución a pedido de uno de los cuatro procesos con una hora dada (la usa el controller de test). Nombres:
      * {@code expirar-pagos}, {@code avisar-y-autoconfirmar}, {@code expirar-sin-respuesta},
-     * {@code autoconfirmar-retiros} y {@code cancelar-preparacion-suspension} y {@code rechazar-pendientes-suspension} (este último ignora la hora).
+     * {@code autoconfirmar-retiros} y {@code cancelar-preparacion-suspension}, {@code rechazar-pendientes-suspension} y {@code procesar-sin-atencion-suspension-dueno} (estos dos últimos ignoran la hora).
      */
     public void ejecutar(String nombre, LocalDateTime ahora) {
         switch (nombre) {
@@ -81,6 +88,7 @@ public class PedidoSchedulerService {
             case "autoconfirmar-retiros" -> pedidoService.autoconfirmarRetirosPorSuspension(ahora);
             case "cancelar-preparacion-suspension" -> pedidoService.cancelarPreparacionPorSuspension(ahora);
             case "rechazar-pendientes-suspension" -> pedidoService.rechazarPendientesDeComerciosSuspendidos();
+            case "procesar-sin-atencion-suspension-dueno" -> pedidoService.procesarPedidosSinAtencion();
             default -> throw new IllegalArgumentException("Proceso de pedidos desconocido: " + nombre);
         }
     }

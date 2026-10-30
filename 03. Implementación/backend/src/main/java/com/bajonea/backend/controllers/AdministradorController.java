@@ -10,6 +10,9 @@ import com.bajonea.backend.dto.response.ActividadComercioResponseDTO;
 import com.bajonea.backend.dto.response.AdministradorResponseDTO;
 import com.bajonea.backend.dto.response.ApiResponse;
 import com.bajonea.backend.dto.response.ClienteAdminResponseDTO;
+import com.bajonea.backend.dto.response.DuenoAdminResponseDTO;
+import com.bajonea.backend.dto.response.SuspensionDuenoPreviaResponseDTO;
+import com.bajonea.backend.dto.response.SuspensionDuenoResponseDTO;
 import com.bajonea.backend.dto.response.ComercioAdminResponseDTO;
 import com.bajonea.backend.dto.response.ConfiguracionTarifaResponseDTO;
 import com.bajonea.backend.dto.response.EquipoComercioResponseDTO;
@@ -27,6 +30,7 @@ import com.bajonea.backend.services.ConfiguracionTarifaService;
 import com.bajonea.backend.services.EquipoComercioAdminService;
 import com.bajonea.backend.services.NotaCreditoAdminService;
 import com.bajonea.backend.services.SuspensionComercioService;
+import com.bajonea.backend.services.SuspensionDuenoService;
 import com.bajonea.backend.services.SuspensionUsuarioService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -58,6 +62,7 @@ public class AdministradorController {
     private final EquipoComercioAdminService equipoComercioAdminService;
     private final SuspensionUsuarioService suspensionUsuarioService;
     private final SuspensionComercioService suspensionComercioService;
+    private final SuspensionDuenoService suspensionDuenoService;
 
     @GetMapping("/comercios/pendientes")
     public ResponseEntity<ApiResponse<List<ComercioAdminResponseDTO>>> listarComerciosPendientes() {
@@ -81,6 +86,12 @@ public class AdministradorController {
     public ResponseEntity<ApiResponse<List<ClienteAdminResponseDTO>>> listarClientes() {
         List<ClienteAdminResponseDTO> clientes = administradorService.listarClientes();
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Clientes obtenidos correctamente", clientes));
+    }
+
+    @GetMapping("/duenos")
+    public ResponseEntity<ApiResponse<List<DuenoAdminResponseDTO>>> listarDuenos() {
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ApiResponse<>("Dueños obtenidos correctamente", administradorService.listarDuenos()));
     }
 
     @GetMapping("/perfil")
@@ -149,6 +160,39 @@ public class AdministradorController {
     @PostMapping("/comercios/{comercioId}/suspension/reenviar-email")
     public ResponseEntity<ApiResponse<Void>> reenviarEmailSuspensionComercio(@PathVariable Integer comercioId) {
         EstadoEnvioNotificacion resultado = suspensionComercioService.reenviarEmail(comercioId);
+        String mensaje = resultado == EstadoEnvioNotificacion.ENVIADO
+                ? "Email reenviado correctamente"
+                : "No se pudo reenviar el email. Probá de nuevo más tarde";
+        return ResponseEntity.status(resultado == EstadoEnvioNotificacion.ENVIADO ? HttpStatus.OK : HttpStatus.BAD_GATEWAY)
+                .body(new ApiResponse<>(mensaje, null));
+    }
+
+    @GetMapping("/duenos/{duenoId}/suspension/previa")
+    public ResponseEntity<ApiResponse<SuspensionDuenoPreviaResponseDTO>> vistaPreviaSuspensionDueno(@PathVariable Integer duenoId,
+            @AuthenticationPrincipal AuthenticatedUser administrador) {
+        SuspensionDuenoPreviaResponseDTO previa = suspensionDuenoService.vistaPrevia(duenoId, administrador.userId());
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Vista previa obtenida correctamente", previa));
+    }
+
+    @PutMapping("/duenos/{duenoId}/suspender")
+    public ResponseEntity<ApiResponse<SuspensionDuenoResponseDTO>> suspenderDueno(@PathVariable Integer duenoId,
+            @Valid @RequestBody SuspensionUsuarioRequestDTO request, @AuthenticationPrincipal AuthenticatedUser administrador) {
+        SuspensionDuenoResponseDTO respuesta = suspensionDuenoService.suspender(duenoId, administrador.userId(), request);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Cuenta suspendida correctamente", respuesta));
+    }
+
+    @PutMapping("/duenos/{duenoId}/levantar-suspension")
+    public ResponseEntity<ApiResponse<SuspensionDuenoResponseDTO>> levantarSuspensionDueno(@PathVariable Integer duenoId,
+            @Valid @RequestBody(required = false) LevantamientoSuspensionRequestDTO request,
+            @AuthenticationPrincipal AuthenticatedUser administrador) {
+        SuspensionDuenoResponseDTO respuesta = suspensionDuenoService.levantar(duenoId, administrador.userId(), request);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Suspensión levantada correctamente", respuesta));
+    }
+
+    @PostMapping("/duenos/{duenoId}/suspension/reenviar-email")
+    public ResponseEntity<ApiResponse<Void>> reenviarEmailSuspensionDueno(@PathVariable Integer duenoId,
+            @AuthenticationPrincipal AuthenticatedUser administrador) {
+        EstadoEnvioNotificacion resultado = suspensionDuenoService.reenviarEmail(duenoId, administrador.userId());
         String mensaje = resultado == EstadoEnvioNotificacion.ENVIADO
                 ? "Email reenviado correctamente"
                 : "No se pudo reenviar el email. Probá de nuevo más tarde";

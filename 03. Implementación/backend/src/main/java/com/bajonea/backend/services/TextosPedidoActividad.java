@@ -70,6 +70,7 @@ final class TextosPedidoActividad {
             case EXPIRADO -> "Venció " + pedido + " sin respuesta del comercio";
             case RECHAZADO -> "Rechazó automáticamente " + pedido + " por la suspensión del comercio";
             case CANCELADO_POR_SISTEMA -> "Canceló " + pedido + " por la suspensión del comercio";
+            case ANULADO -> "Anuló " + pedido + " porque el comercio no tenía quién lo atendiera";
             case ENTREGADO -> motivoTimeout == MotivoTimeoutPedido.TIMEOUT_RETIRO_SUSPENSION
                     ? "Cerró automáticamente " + pedido + " listo para retirar (comercio suspendido)"
                     : "Confirmó automáticamente la entrega de " + pedido;

@@ -25,6 +25,14 @@ public interface ComercioRepository extends JpaRepository<Comercio, Integer> {
 
     long countByDuenoId(Integer duenoId);
 
+    /** Solo los ids: no carga ninguna entidad en el contexto de persistencia (para leer antes de tomar bloqueos). */
+    @Query("SELECT c.id FROM Comercio c WHERE c.dueno.id = :duenoId ORDER BY c.id")
+    List<Integer> findIdsByDuenoId(@Param("duenoId") Integer duenoId);
+
+    /** Cantidad de comercios por Dueño en una sola consulta: cada fila es {@code [duenoId, cantidad]}. */
+    @Query("SELECT c.dueno.id, COUNT(c) FROM Comercio c GROUP BY c.dueno.id")
+    List<Object[]> contarComerciosPorDueno();
+
     long countByDuenoIdAndEstadoNot(Integer duenoId, EstadoComercio estado);
 
     /**

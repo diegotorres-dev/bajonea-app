@@ -20,6 +20,7 @@ import com.bajonea.backend.util.EjecucionPostCommit;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,6 +82,44 @@ public class AvisoCuentaService {
         notificacionService.crearParaCliente(usuarioId, mensaje, TipoNotificacion.SUSPENSION_LEVANTADA);
         EjecucionPostCommit.ejecutar(() -> enviarYRegistrar(usuarioId, mensaje, TipoNotificacion.SUSPENSION_LEVANTADA,
                 () -> emailService.enviarSuspensionLevantada(email, motivo)));
+    }
+
+    /** Un comercio nombrado en los avisos de la suspensión de un Dueño. */
+    public record ComercioAvisado(Integer id, String nombre) {
+    }
+
+    /**
+     * Suspensión de la cuenta de un Dueño: un aviso dentro de la app por cada comercio que quedó suspendido (el Dueño
+     * los ve con ese comercio abierto cuando le levanten la suspensión) y un solo email, después del commit, con todos
+     * los comercios afectados y el motivo. Un solo intento, con rastro en una fila {@code DUENO_SUSPENDIDO}.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void avisarSuspensionDueno(Integer duenoId, String email, String motivo, List<ComercioAvisado> suspendidos) {
+        for (ComercioAvisado comercio : suspendidos) {
+            notificacionService.crearParaDueno(duenoId, comercio.id(),
+                    "Tu cuenta fue suspendida y tu comercio '" + comercio.nombre() + "' quedó suspendido. Motivo: " + motivo,
+                    TipoNotificacion.COMERCIO_SUSPENDIDO, TipoEntidadNotificacion.COMERCIO, comercio.id());
+        }
+        List<String> nombres = suspendidos.stream().map(ComercioAvisado::nombre).toList();
+        String mensaje = "Tu cuenta fue suspendida. Motivo: " + motivo;
+        EjecucionPostCommit.ejecutar(() -> enviarYRegistrar(duenoId, mensaje, TipoNotificacion.DUENO_SUSPENDIDO,
+                () -> emailService.enviarDuenoSuspendido(email, motivo, nombres)));
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void avisarLevantamientoDueno(Integer duenoId, String email, String motivo, List<ComercioAvisado> restaurados,
+            List<ComercioAvisado> siguenSuspendidos) {
+        for (ComercioAvisado comercio : restaurados) {
+            notificacionService.crearParaDueno(duenoId, comercio.id(),
+                    "Levantamos la suspensión de tu cuenta y tu comercio '" + comercio.nombre() + "' volvió a operar."
+                            + (motivo == null ? "" : " Mensaje del equipo: " + motivo),
+                    TipoNotificacion.SUSPENSION_LEVANTADA, TipoEntidadNotificacion.COMERCIO, comercio.id());
+        }
+        List<String> nombresRestaurados = restaurados.stream().map(ComercioAvisado::nombre).toList();
+        List<String> nombresSiguen = siguenSuspendidos.stream().map(ComercioAvisado::nombre).toList();
+        String mensaje = "Levantamos la suspensión de tu cuenta." + (motivo == null ? "" : " Mensaje del equipo: " + motivo);
+        EjecucionPostCommit.ejecutar(() -> enviarYRegistrar(duenoId, mensaje, TipoNotificacion.DUENO_SUSPENSION_LEVANTADA,
+                () -> emailService.enviarDuenoSuspensionLevantada(email, motivo, nombresRestaurados, nombresSiguen)));
     }
 
     /**
@@ -176,6 +215,50 @@ public class AvisoCuentaService {
         transaccionNueva.executeWithoutResult(
                 status -> notificacionService.marcarResultadoEmail(reenvio.notificacionId(), fecha, salio));
         return salio ? EstadoEnvioNotificacion.ENVIADO : EstadoEnvioNotificacion.FALLIDO;
+    }
+
+    /**
+     * Reenvía, con un solo intento, el último email de suspensión de la cuenta del Dueño (si sigue suspendida) o de
+     * levantamiento (si ya no lo está) cuando quedó {@code FALLIDO}. Reconstruye la lista de comercios con lo que hay en
+     * la base. El envío no corre dentro de ninguna transacción.
+     */
+    public EstadoEnvioNotificacion reenviarEmailDuenoFallido(Integer duenoId) {
+        Reenvio reenvio = transaccionNueva.execute(status -> prepararReenvioDueno(duenoId));
+        boolean salio = enviar(reenvio.envio());
+        LocalDateTime fecha = LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS);
+        transaccionNueva.executeWithoutResult(
+                status -> notificacionService.marcarResultadoEmail(reenvio.notificacionId(), fecha, salio));
+        return salio ? EstadoEnvioNotificacion.ENVIADO : EstadoEnvioNotificacion.FALLIDO;
+    }
+
+    private Reenvio prepararReenvioDueno(Integer duenoId) {
+        Usuario usuario = usuarioRepository.findById(duenoId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Dueño no encontrado"));
+        boolean suspendida = usuario.getEstado() == EstadoUsuario.SUSPENDIDO;
+        TipoNotificacion tipo = suspendida ? TipoNotificacion.DUENO_SUSPENDIDO : TipoNotificacion.DUENO_SUSPENSION_LEVANTADA;
+        Notificacion ultimo = notificacionService.ultimoEmail(duenoId, tipo)
+                .filter(email -> email.getEstado() == EstadoEnvioNotificacion.FALLIDO)
+                .orElseThrow(() -> new ConflictoDeNegocioException("No hay ningún email fallido para reenviar"));
+        String email = usuario.getEmail();
+        List<Comercio> comercios = comercioRepository.findByDuenoIdOrderByFechaRegistroAscIdAsc(duenoId);
+        if (suspendida) {
+            String motivo = usuario.getMotivoSuspension();
+            List<String> nombres = comercios.stream()
+                    .filter(c -> c.getEstado() == EstadoComercio.SUSPENDIDO
+                            && c.getSuspensionOrigen() == com.bajonea.backend.enums.OrigenSuspensionComercio.DUENO)
+                    .map(Comercio::getNombre).toList();
+            return new Reenvio(ultimo.getId(), () -> emailService.enviarDuenoSuspendido(email, motivo, nombres));
+        }
+        HistorialEstadoUsuario levantamiento = historialEstadoUsuarioRepository
+                .findTopByUsuarioIdAndEstadoOrigenOrderByIdDesc(duenoId, EstadoUsuario.SUSPENDIDO).orElse(null);
+        String motivo = levantamiento == null ? null : levantamiento.getMotivo();
+        List<String> restaurados = levantamiento == null ? List.of()
+                : historialEstadoComercioRepository
+                        .findComerciosRestauradosPorLevantamientoDelDueno(duenoId, levantamiento.getFechaHora()).stream()
+                        .map(fila -> (String) fila[1]).toList();
+        List<String> siguen = comercios.stream().filter(c -> c.getEstado() == EstadoComercio.SUSPENDIDO)
+                .map(Comercio::getNombre).toList();
+        return new Reenvio(ultimo.getId(), () -> emailService.enviarDuenoSuspensionLevantada(email, motivo, restaurados, siguen));
     }
 
     private Reenvio prepararReenvioComercio(Integer comercioId) {

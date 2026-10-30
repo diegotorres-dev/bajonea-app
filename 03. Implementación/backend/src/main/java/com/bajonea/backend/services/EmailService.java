@@ -150,6 +150,35 @@ public class EmailService {
                         + "Equipo de Bajoneá");
     }
 
+    public ResultadoEnvioEmail enviarDuenoSuspendido(String destinatario, String motivo, java.util.List<String> comercios) {
+        String detalleComercios = comercios.isEmpty()
+                ? "Todavía no tenías comercios aprobados, así que no se suspendió ninguno.\n\n"
+                : "Se suspendieron tus comercios: " + String.join(", ", comercios) + ".\n\n"
+                        + "Mientras estén suspendidos no aparecen en el catálogo ni reciben pedidos nuevos.\n\n";
+        return enviarAvisoDeCuenta(destinatario, "Tu cuenta de Bajoneá fue suspendida",
+                "Tu cuenta de Bajoneá fue suspendida.\n\n"
+                        + "Motivo: " + motivo + "\n\n"
+                        + detalleComercios
+                        + "Mientras la cuenta esté suspendida no vas a poder iniciar sesión. "
+                        + "Los pedidos que ya estaban en preparación los atiende tu equipo, si tenés Empleados; "
+                        + "si no, se cancelan y se devuelve el dinero a tus clientes.\n\n"
+                        + "Equipo de Bajoneá");
+    }
+
+    public ResultadoEnvioEmail enviarDuenoSuspensionLevantada(String destinatario, String motivo,
+            java.util.List<String> restaurados, java.util.List<String> siguenSuspendidos) {
+        String detalle = motivo == null || motivo.isBlank() ? "" : "Mensaje del equipo: " + motivo + "\n\n";
+        String volvieron = restaurados.isEmpty() ? "" : "Volvieron a operar: " + String.join(", ", restaurados) + ".\n\n";
+        String siguen = siguenSuspendidos.isEmpty() ? ""
+                : "Siguen suspendidos por separado: " + String.join(", ", siguenSuspendidos) + ".\n\n";
+        return enviarAvisoDeCuenta(destinatario, "Tu cuenta de Bajoneá volvió a estar activa",
+                "Levantamos la suspensión de tu cuenta de Bajoneá. Ya podés iniciar sesión de nuevo.\n\n"
+                        + volvieron
+                        + siguen
+                        + detalle
+                        + "Equipo de Bajoneá");
+    }
+
     public ResultadoEnvioEmail enviarComercioSuspendido(String destinatario, String nombreComercio, String motivo) {
         return enviarAvisoDeCuenta(destinatario, "Tu comercio " + nombreComercio + " fue suspendido",
                 "Tu comercio " + nombreComercio + " fue suspendido en Bajoneá.\n\n"
