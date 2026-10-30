@@ -166,7 +166,7 @@ test.describe('Fase 5, S2 (UI): suspensión individual de un comercio', () => {
     await page.getByTestId('btn-suspender-comercio').click();
     await expect(page.getByTestId('suspender-comercio-que-va-a-pasar').locator('li')).toHaveText([
       'Deja de aparecer en el catálogo.',
-      '2 pedidos pendientes solo se pueden rechazar.',
+      '2 pedidos pendientes: se rechazan ahora y se reembolsan. No se puede deshacer.',
       '1 pedido en preparación: tiene 90 minutos para despacharlo o se cancela con reembolso.',
       '1 pedido listo para retirar: tiene 90 minutos para entregarlo o se cierra como no retirado.',
       '1 pedido en camino sigue igual.',

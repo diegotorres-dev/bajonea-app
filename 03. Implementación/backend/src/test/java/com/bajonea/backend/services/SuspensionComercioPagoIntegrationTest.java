@@ -154,17 +154,20 @@ class SuspensionComercioPagoIntegrationTest extends CarritoIntegrationBase {
     }
 
     @Test
-    void unPagoQueLlegaAntesDeLaSuspensionSigueSuCursoNormal() {
+    void unPagoQueLlegaAntesDeLaSuspensionConfirmaElPedidoYLaSuspensionLoRechazaConReembolso() {
         Dueno dueno = comercioApto(true);
         int cliente = datos.registrarCliente();
         int pedido = pedidoPendientePago(cliente, dueno);
         filaDePago(pedido);
 
         mercadoPagoPagoService.procesarNotificacion(pedido, idDePago(pedido), "127.0.0.1");
+        assertEquals("PENDIENTE_CONFIRMACION_COMERCIO", estadoDelPedido(pedido));
         suspender(dueno);
 
-        assertEquals("PENDIENTE_CONFIRMACION_COMERCIO", estadoDelPedido(pedido));
-        assertEquals(0, notas(pedido));
+        assertEquals("RECHAZADO", estadoDelPedido(pedido));
+        assertEquals(List.of("SUSPENSION_COMERCIO"), motivosDeNotas(pedido));
+        assertEquals(1, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM historial_estado_pedido WHERE pedido_id = ? AND estado = 'PENDIENTE_CONFIRMACION_COMERCIO'",
+                Integer.class, pedido));
     }
 
     @Test
@@ -199,7 +202,7 @@ class SuspensionComercioPagoIntegrationTest extends CarritoIntegrationBase {
     }
 
     @RepeatedTest(8)
-    void suspenderContraUnPagoDejaOElPedidoConfirmadoOCanceladoConUnaSolaNota() {
+    void suspenderContraUnPagoDejaOElPedidoRechazadoOCanceladoConUnaSolaNota() {
         Dueno dueno = comercioApto(true);
         int cliente = datos.registrarCliente();
         int pedido = pedidoPendientePago(cliente, dueno);
@@ -221,12 +224,8 @@ class SuspensionComercioPagoIntegrationTest extends CarritoIntegrationBase {
         sinErrores(correrAlMismoTiempo(tareas));
 
         String estado = estadoDelPedido(pedido);
-        assertTrue(estado.equals("PENDIENTE_CONFIRMACION_COMERCIO") || estado.equals("CANCELADO_POR_SISTEMA"), estado);
-        if (estado.equals("CANCELADO_POR_SISTEMA")) {
-            assertEquals(List.of("SUSPENSION_COMERCIO"), motivosDeNotas(pedido));
-        } else {
-            assertEquals(0, notas(pedido));
-        }
+        assertTrue(estado.equals("RECHAZADO") || estado.equals("CANCELADO_POR_SISTEMA"), estado);
+        assertEquals(List.of("SUSPENSION_COMERCIO"), motivosDeNotas(pedido));
         assertEquals("SUSPENDIDO", jdbcTemplate.queryForObject("SELECT estado FROM comercio WHERE id = ?", String.class, dueno.comercioId()));
     }
 

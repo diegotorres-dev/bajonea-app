@@ -63,6 +63,8 @@ test.describe('Fase 5, S2 (UI B2): Dueño, Empleado y Cliente con el comercio su
   const accion = (request: APIRequestContext, token: string, pedidoId: number, ruta: string, cuerpo: unknown = {}) =>
     apiConHeaders(request, 'PUT', `/pedidos/comercio/${pedidoId}/${ruta}`, token, conComercio(), cuerpo);
   const suspender = (request: APIRequestContext) => suspenderComercio(request, adminSesion.token, dueno.comercioId, MOTIVO);
+  const suspenderConPendientesSinProcesar = (): void =>
+    void sql(`UPDATE comercio SET estado = 'SUSPENDIDO', suspension_origen = 'INDIVIDUAL', suspendido_desde = NOW(), motivo_suspension = '${MOTIVO}' WHERE id = ${dueno.comercioId};`);
   const levantar = async (request: APIRequestContext) => {
     const { status } = await apiPut(request, `/administrador/comercios/${dueno.comercioId}/levantar-suspension`, {}, adminSesion.token);
     expect(status).toBe(200);
@@ -248,9 +250,9 @@ test.describe('Fase 5, S2 (UI B2): Dueño, Empleado y Cliente con el comercio su
   });
 
   test.describe('Empleado', () => {
-    test('ve el aviso sin motivo ni Soporte, con la edición bloqueada, y puede rechazar un pedido pendiente', async ({ page, request }) => {
+    test('ve el aviso sin motivo ni Soporte, con la edición bloqueada, y puede rechazar un pedido que quedó pendiente', async ({ page, request }) => {
       const pendiente = await nuevoPedido(request, 'PENDIENTE');
-      await suspender(request);
+      suspenderConPendientesSinProcesar();
       await abrirComoEmpleada(page);
       await page.goto('/comercio-dashboard.html');
 
@@ -273,7 +275,7 @@ test.describe('Fase 5, S2 (UI B2): Dueño, Empleado y Cliente con el comercio su
       await expect(page.getByTestId('franja-pedidos-suspendido')).toBeVisible();
       await page.getByTestId(`pedido-item-${pendiente}`).click();
       await expect(page.getByTestId('btn-aceptar-pedido')).toHaveCount(0);
-      await expect(page.getByTestId('texto-pedido-suspendido')).toHaveText('Solo podés rechazarlo.');
+      await expect(page.getByTestId('texto-pedido-suspendido')).toHaveText('Se va a rechazar y reembolsar solo.');
       await page.getByTestId('btn-rechazar-pedido').click();
       await page.getByTestId('select-motivo-rechazo').selectOption('CERRADO');
       await page.getByTestId('btn-confirmar-rechazo').click();
@@ -288,7 +290,7 @@ test.describe('Fase 5, S2 (UI B2): Dueño, Empleado y Cliente con el comercio su
       const preparacion = await nuevoPedido(request, 'PREPARACION');
       const listo = await nuevoPedido(request, 'LISTO');
       const enCamino = await nuevoPedido(request, 'EN_CAMINO');
-      await suspender(request);
+      suspenderConPendientesSinProcesar();
       const hora = horaLimite(90);
       await abrirComoDueno(page);
       await page.goto('/comercio-pedidos.html');
@@ -297,7 +299,7 @@ test.describe('Fase 5, S2 (UI B2): Dueño, Empleado y Cliente con el comercio su
       await expect(franja).toContainText(`Comercio suspendido. Tenés hasta las `);
       await expect(franja).toContainText(`${hora} para resolver los pedidos en curso.`);
       const texto = (id: number) => page.getByTestId(`pedido-item-${id}`).getByTestId('texto-pedido-suspendido');
-      await expect(texto(pendiente)).toHaveText('Solo podés rechazarlo.');
+      await expect(texto(pendiente)).toHaveText('Se va a rechazar y reembolsar solo.');
       await expect(texto(preparacion)).toContainText('Despachalo o anulalo antes de las ');
       await expect(texto(preparacion)).toContainText(hora);
       await expect(texto(listo)).toContainText('Entregalo o marcalo como no retirado antes de las ');
@@ -315,12 +317,12 @@ test.describe('Fase 5, S2 (UI B2): Dueño, Empleado y Cliente con el comercio su
       const pendiente = await nuevoPedido(request, 'PENDIENTE');
       const preparacion = await nuevoPedido(request, 'PREPARACION');
       const listo = await nuevoPedido(request, 'LISTO');
-      await suspender(request);
+      suspenderConPendientesSinProcesar();
       await abrirComoDueno(page);
 
       await page.goto(`/comercio-pedido-detalle.html?id=${pendiente}`);
       await expect(page.getByTestId('btn-aceptar-pedido')).toHaveCount(0);
-      await expect(page.getByTestId('texto-pedido-suspendido')).toHaveText('Solo podés rechazarlo.');
+      await expect(page.getByTestId('texto-pedido-suspendido')).toHaveText('Se va a rechazar y reembolsar solo.');
       await captura(page, '08-detalle-pendiente-solo-rechazar');
       await page.getByTestId('btn-rechazar-pedido').click();
       await page.getByTestId('select-motivo-rechazo').selectOption('CERRADO');

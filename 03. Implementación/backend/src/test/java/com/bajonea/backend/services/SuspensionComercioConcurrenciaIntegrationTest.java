@@ -137,7 +137,7 @@ class SuspensionComercioConcurrenciaIntegrationTest extends CarritoIntegrationBa
     }
 
     @RepeatedTest(8)
-    void suspenderContraAceptarDejaElPedidoAceptadoOSinAceptarNuncaAmbas() {
+    void suspenderContraAceptarDejaElPedidoAceptadoORechazadoNuncaAmbas() {
         Dueno dueno = comercioApto(true);
         Cuenta empleado = datos.registrarClienteConCredenciales();
         datos.vincularEmpleado(empleado.id(), dueno.comercioId(), "ACTIVO", LocalDateTime.now().minusDays(1));
@@ -160,8 +160,9 @@ class SuspensionComercioConcurrenciaIntegrationTest extends CarritoIntegrationBa
         assertEquals("SUSPENDIDO", estadoComercio(dueno));
         for (int id : List.of(delDueno, delEmpleado)) {
             String estado = estadoDelPedido(id);
-            assertTrue(estado.equals("EN_PREPARACION") || estado.equals("PENDIENTE_CONFIRMACION_COMERCIO"), estado);
+            assertTrue(estado.equals("EN_PREPARACION") || estado.equals("RECHAZADO"), estado);
             assertEquals(estado.equals("EN_PREPARACION") ? 1 : 0, filas(id, "EN_PREPARACION"));
+            assertEquals(estado.equals("RECHAZADO") ? 1 : 0, notas(id));
         }
     }
 

@@ -212,6 +212,7 @@ const levantarComercio = (admin, id) => call('PUT', `/administrador/comercios/${
 const conComercio = (comercio) => ({ 'X-Comercio-Id': String(comercio.comercioId) });
 const estadoComercio = (id) => sql(`SELECT estado FROM comercio WHERE id = ${id};`);
 const estadoPedido = (id) => sql(`SELECT estado FROM pedido WHERE id = ${id};`);
+const filasDePedido = (id, estado) => Number(sql(`SELECT COUNT(*) FROM historial_estado_pedido WHERE pedido_id = ${id} AND estado = '${estado}';`));
 const notasDelPedido = (id) => Number(sql(`SELECT COUNT(*) FROM nota_credito nc JOIN pago pg ON pg.id = nc.pago_id WHERE pg.pedido_id = ${id};`));
 const historialSuspensionComercio = (id) => Number(sql(`SELECT COUNT(*) FROM historial_estado_comercio WHERE comercio_id = ${id} AND estado_destino = 'SUSPENDIDO';`));
 
@@ -256,7 +257,7 @@ async function escenarioSuspenderContraAceptar(admin, ronda) {
   exigir(inesperadas.length === 0, `suspender contra aceptar ronda ${ronda}: respuestas inesperadas ${JSON.stringify(inesperadas.slice(0, 2))}`);
   pedidos.forEach((id, i) => {
     const aceptado = respuestas[i + 1].status === 200;
-    exigir(estadoPedido(id) === (aceptado ? 'EN_PREPARACION' : 'PENDIENTE_CONFIRMACION_COMERCIO'), `suspender contra aceptar ronda ${ronda}: pedido ${id} en ${estadoPedido(id)} con respuesta ${respuestas[i + 1].status}`);
+    exigir(estadoPedido(id) === (aceptado ? 'EN_PREPARACION' : 'RECHAZADO'), `suspender contra aceptar ronda ${ronda}: pedido ${id} en ${estadoPedido(id)} con respuesta ${respuestas[i + 1].status}`);
   });
   anotar(`aceptar: ${respuestas.slice(1).filter((r) => r.status === 200).length} aceptados antes de la suspension`);
 }
@@ -278,10 +279,44 @@ async function escenarioSuspenderContraPago(admin, ronda) {
   exigir(respuestas[0].status === 200, `suspender contra pago ronda ${ronda}: la suspension dio ${respuestas[0].status}`);
   for (const id of pedidos) {
     const estado = estadoPedido(id);
-    exigir(estado === 'PENDIENTE_CONFIRMACION_COMERCIO' || estado === 'CANCELADO_POR_SISTEMA', `suspender contra pago ronda ${ronda}: pedido ${id} en ${estado}`);
-    exigir(notasDelPedido(id) === (estado === 'CANCELADO_POR_SISTEMA' ? 1 : 0), `suspender contra pago ronda ${ronda}: pedido ${id} en ${estado} con ${notasDelPedido(id)} notas`);
+    exigir(estado === 'RECHAZADO' || estado === 'CANCELADO_POR_SISTEMA', `suspender contra pago ronda ${ronda}: pedido ${id} en ${estado}`);
+    exigir(notasDelPedido(id) === 1, `suspender contra pago ronda ${ronda}: pedido ${id} en ${estado} con ${notasDelPedido(id)} notas`);
   }
-  anotar(`pago: ${pedidos.filter((id) => estadoPedido(id) === 'CANCELADO_POR_SISTEMA').length} cancelados y devueltos`);
+  anotar(`pago: ${pedidos.filter((id) => estadoPedido(id) === 'CANCELADO_POR_SISTEMA').length} cancelados y devueltos, ${pedidos.filter((id) => estadoPedido(id) === 'RECHAZADO').length} rechazados y devueltos`);
+}
+
+async function escenarioPendientesMuchosContraAceptarRechazarYBarrido(admin, ronda) {
+  const comercio = await comercioConProducto(admin);
+  const cliente = await nuevoCliente();
+  const pedidos = [];
+  for (let i = 0; i < 12; i += 1) pedidos.push(await pedidoPagado(comercio, cliente));
+  const aceptar = pedidos.slice(0, 6);
+  const rechazar = pedidos.slice(6, 8);
+  const tareas = [suspenderComercio(admin, comercio.comercioId), suspenderComercio(admin, comercio.comercioId)];
+  for (const id of aceptar) tareas.push(call('PUT', `/pedidos/comercio/${id}/aceptar`, comercio.duenoToken, {}, conComercio(comercio)));
+  for (const id of rechazar) tareas.push(call('PUT', `/pedidos/comercio/${id}/rechazar`, comercio.duenoToken, { motivo: 'SIN_STOCK' }, conComercio(comercio)));
+  tareas.push(call('POST', '/test/jobs/pedidos/rechazar-pendientes-suspension', null, {}));
+  tareas.push(call('POST', '/test/jobs/pedidos/rechazar-pendientes-suspension', null, {}));
+  const respuestas = await Promise.all(tareas);
+  respuestas.forEach((r, i) => registrar5xx(`pendientes contra aceptar, rechazar y barrido #${i} (ronda ${ronda})`, r));
+  exigir(respuestas.slice(0, 2).filter((r) => r.status === 200).length === 1, `pendientes ronda ${ronda}: las dos suspensiones dieron ${estadosDeRespuestas(respuestas.slice(0, 2))}`);
+  const inesperadas = respuestas.slice(2, 10).filter((r) => r.status !== 200 && r.status !== 409);
+  exigir(inesperadas.length === 0, `pendientes ronda ${ronda}: respuestas inesperadas ${JSON.stringify(inesperadas.slice(0, 2))}`);
+  const aceptados = pedidos.filter((id) => estadoPedido(id) === 'EN_PREPARACION');
+  const rechazados = pedidos.filter((id) => estadoPedido(id) === 'RECHAZADO');
+  exigir(aceptados.length + rechazados.length === pedidos.length, `pendientes ronda ${ronda}: ${pedidos.length - aceptados.length - rechazados.length} pedidos en otro estado`);
+  for (const id of aceptados) {
+    exigir(aceptar.includes(id), `pendientes ronda ${ronda}: el pedido ${id} quedo aceptado sin que nadie lo aceptara`);
+    exigir(notasDelPedido(id) === 0, `pendientes ronda ${ronda}: pedido aceptado ${id} con ${notasDelPedido(id)} notas`);
+  }
+  for (const id of rechazados) {
+    exigir(notasDelPedido(id) === 1, `pendientes ronda ${ronda}: pedido rechazado ${id} con ${notasDelPedido(id)} notas`);
+    exigir(filasDePedido(id, 'RECHAZADO') === 1, `pendientes ronda ${ronda}: pedido ${id} con ${filasDePedido(id, 'RECHAZADO')} filas de rechazo`);
+  }
+  const avisos = Number(sql(`SELECT COUNT(*) FROM notificacion WHERE usuario_id = ${cliente.id} AND tipo = 'PEDIDO_RECHAZADO' AND canal = 'PUSH';`));
+  exigir(avisos === rechazados.length, `pendientes ronda ${ronda}: ${avisos} avisos para ${rechazados.length} rechazados`);
+  exigir(estadoComercio(comercio.comercioId) === 'SUSPENDIDO', `pendientes ronda ${ronda}: el comercio quedo en ${estadoComercio(comercio.comercioId)}`);
+  anotar(`pendientes: ${aceptados.length} aceptados antes y ${rechazados.length} rechazados con una sola nota`);
 }
 
 async function escenarioSuspenderContraDespacharYAnular(admin, ronda) {
@@ -421,6 +456,7 @@ const ESCENARIOS = [
   { n: 11, nombre: 'comercio: suspender contra Mercado Pago y documentos', corre: (ctx, ronda) => escenarioSuspenderContraMercadoPagoYDocumentos(ctx.admin, ronda) },
   { n: 12, nombre: 'comercio: levantar contra el tope de 90 minutos', corre: (ctx, ronda) => escenarioLevantarContraElTope(ctx.admin, ronda) },
   { n: 13, nombre: 'comercio: despachar, anular y doble clic contra el tope de 90 minutos', corre: (ctx, ronda) => escenarioAccionesContraElTope(ctx.admin, ronda) },
+  { n: 14, nombre: 'comercio: muchos pendientes contra aceptar, rechazar a mano, doble suspension y barrido', corre: (ctx, ronda) => escenarioPendientesMuchosContraAceptarRechazarYBarrido(ctx.admin, ronda) },
 ];
 
 async function main() {

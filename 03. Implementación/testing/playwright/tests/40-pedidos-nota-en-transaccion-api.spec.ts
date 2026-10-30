@@ -212,7 +212,7 @@ test.describe('Toda devolución nace con su nota de crédito en la transacción 
   });
 
   test.describe('Suspensión del comercio', () => {
-    test('al suspender nada se cancela en el acto; a los 90 minutos el sistema cancela solo lo que sigue en preparación, con su nota y su aviso', async ({ request }) => {
+    test('al suspender se rechazan en el acto los pendientes con su nota y su aviso y nada más; a los 90 minutos el sistema cancela solo lo que sigue en preparación, con su nota y su aviso', async ({ request }) => {
       const otro = await prepararAprobado(request, adminToken, localidadId, false);
       await marcarAptoVenta(request, otro.comercioId);
       const otroProducto = await crearProducto(request, otro.token, { nombre: `Producto susp ${sufijoUnico()}`, precio: 10000, categoriaId });
@@ -225,11 +225,15 @@ test.describe('Toda devolución nace con su nota de crédito en la transacción 
 
       await suspenderComercio(request, adminToken, otro.comercioId, 'Suspensión de prueba A0b');
 
-      expect(estado(pendiente)).toBe('PENDIENTE_CONFIRMACION_COMERCIO');
+      expect(estado(pendiente)).toBe('RECHAZADO');
+      expect(notas(pendiente)).toBe(1);
+      expect(motivoDeLaNota(pendiente)).toBe('SUSPENSION_COMERCIO');
+      expect(avisos(pendiente, 'PEDIDO_RECHAZADO')).toBe(1);
+      expect(estado(sinPagoRegistrado)).toBe('RECHAZADO');
+      expect(notas(sinPagoRegistrado)).toBe(0);
       expect(estado(enPreparacion)).toBe('EN_PREPARACION');
-      expect(estado(sinPagoRegistrado)).toBe('PENDIENTE_CONFIRMACION_COMERCIO');
+      expect(notas(enPreparacion)).toBe(0);
       for (const id of [pendiente, enPreparacion, sinPagoRegistrado]) {
-        expect(notas(id)).toBe(0);
         expect(avisos(id, 'PEDIDO_CANCELADO_SISTEMA')).toBe(0);
       }
 
@@ -240,9 +244,9 @@ test.describe('Toda devolución nace con su nota de crédito en la transacción 
       expect(notas(enPreparacion)).toBe(1);
       expect(motivoDeLaNota(enPreparacion)).toBe('SUSPENSION_COMERCIO');
       expect(avisos(enPreparacion, 'PEDIDO_CANCELADO_SISTEMA')).toBe(1);
-      expect(estado(pendiente)).toBe('PENDIENTE_CONFIRMACION_COMERCIO');
-      expect(notas(pendiente)).toBe(0);
-      expect(estado(sinPagoRegistrado)).toBe('PENDIENTE_CONFIRMACION_COMERCIO');
+      expect(estado(pendiente)).toBe('RECHAZADO');
+      expect(notas(pendiente)).toBe(1);
+      expect(estado(sinPagoRegistrado)).toBe('RECHAZADO');
     });
   });
 

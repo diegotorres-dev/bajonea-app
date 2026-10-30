@@ -333,9 +333,9 @@ agregar(
     status(200),
     prueba('No esta el comercio', `pm.expect(pm.response.json().data.some((c) => c.id === Number(${entorno(v('com'))}))).to.eql(false);`),
   ]),
-  item('Suspender no tocó ningun pedido: la vista previa sigue igual', req('GET', ADM_COM(COM, '/suspension/previa'), { token: TOKEN_ADMIN }), [
+  item('Suspender rechazó los pendientes y no tocó los demás pedidos: la vista previa lo refleja', req('GET', ADM_COM(COM, '/suspension/previa'), { token: TOKEN_ADMIN }), [
     status(200),
-    prueba('Mismas cantidades', "const d = pm.response.json().data; pm.expect(d.estadoActual).to.eql('SUSPENDIDO'); pm.expect(d.pedidosPendientesDeConfirmacion).to.eql(3); pm.expect(d.pedidosEnPreparacion).to.eql(3); pm.expect(d.pedidosListosParaRetirar).to.eql(3); pm.expect(d.pedidosEnCamino).to.eql(1); pm.expect(d.pedidosSinPagar).to.eql(1);"),
+    prueba('Cantidades', "const d = pm.response.json().data; pm.expect(d.estadoActual).to.eql('SUSPENDIDO'); pm.expect(d.pedidosPendientesDeConfirmacion).to.eql(0); pm.expect(d.pedidosEnPreparacion).to.eql(3); pm.expect(d.pedidosListosParaRetirar).to.eql(3); pm.expect(d.pedidosEnCamino).to.eql(1); pm.expect(d.pedidosSinPagar).to.eql(1);"),
   ]),
 
   item('El Dueño ve el estado, el motivo y la fecha en sus comercios', req('GET', '/comercios/mis-comercios', { token: TOKEN_DUENO }), [
@@ -396,10 +396,19 @@ agregar(
     prueba('Sigue SUSPENDIDO', `const c = pm.response.json().data.find((x) => x.id === Number(${entorno(v('com'))})); pm.expect(c.estado).to.eql('SUSPENDIDO');`),
   ]),
 
-  accion('Pedidos - el Dueño no puede aceptar un pedido nuevo: 409 COMERCIO_SIN_OPERACION', TOKEN_DUENO, 'pend_a', 'aceptar', 409, {}, [codigoDe('COMERCIO_SIN_OPERACION')]),
-  accion('Pedidos - la Empleada tampoco: 409 COMERCIO_SIN_OPERACION', TOKEN_EMPLEADO, 'pend_b', 'aceptar', 409, {}, [codigoDe('COMERCIO_SIN_OPERACION')]),
-  estadoPedido('Pedidos - el pedido sigue pendiente de confirmacion', 'pend_a', 'PENDIENTE_CONFIRMACION_COMERCIO'),
-  accion('Pedidos - el Dueño rechaza un pedido nuevo', TOKEN_DUENO, 'pend_c', 'rechazar', 200, { motivo: 'SIN_STOCK' }, [
+  item('Pedidos - los tres pendientes de antes de la suspension quedaron rechazados con su nota', req('GET', '/pedidos/cliente', { token: TOKEN_COMPRADOR }), [
+    status(200),
+    prueba('Rechazados por el sistema con reembolso', `const d = pm.response.json().data; for (const id of [${entorno(v('ped_pend_a'))}, ${entorno(v('ped_pend_b'))}, ${entorno(v('ped_pend_c'))}].map(Number)) { const p = d.find((x) => x.id === id); pm.expect(p.estado).to.eql('RECHAZADO'); pm.expect(p.reembolsoMotivo).to.eql('SUSPENSION_COMERCIO'); pm.expect(p.reembolsoEstado).to.not.eql(null); }`),
+  ]),
+  item('Pedidos - ventana de prueba: el comercio se reanuda por atajo, sin procesar nada, para que entren pedidos nuevos', req('PUT', `/test/comercios/${COM}/reanudar-sin-procesar`, { body: {} }), [status(200)]),
+  ...crearPedido('pend_d'),
+  ...crearPedido('pend_e'),
+  ...crearPedido('pend_f'),
+  item('Pedidos - ventana de prueba: se vuelve a suspender por atajo, sin procesar los pendientes', req('PUT', `/test/comercios/${COM}/suspension`, { body: {}, query: 'origen=INDIVIDUAL&minutos=0' }), [status(200)]),
+  accion('Pedidos - el Dueño no puede aceptar un pedido nuevo: 409 COMERCIO_SIN_OPERACION', TOKEN_DUENO, 'pend_d', 'aceptar', 409, {}, [codigoDe('COMERCIO_SIN_OPERACION')]),
+  accion('Pedidos - la Empleada tampoco: 409 COMERCIO_SIN_OPERACION', TOKEN_EMPLEADO, 'pend_e', 'aceptar', 409, {}, [codigoDe('COMERCIO_SIN_OPERACION')]),
+  estadoPedido('Pedidos - el pedido que entro en la ventana sigue pendiente de confirmacion', 'pend_d', 'PENDIENTE_CONFIRMACION_COMERCIO'),
+  accion('Pedidos - el Dueño rechaza un pedido nuevo', TOKEN_DUENO, 'pend_f', 'rechazar', 200, { motivo: 'SIN_STOCK' }, [
     "pm.test('Queda RECHAZADO con reembolso', () => { const d = pm.response.json().data; pm.expect(d.estado).to.eql('RECHAZADO'); pm.expect(d.reembolsoEstado).to.not.eql(null); });",
   ]),
   accion('Pedidos - el Dueño despacha un pedido en preparacion', TOKEN_DUENO, 'prep_a', 'despachar', 200, {}, [
@@ -444,7 +453,7 @@ agregar(
     "pm.test('Con reembolso', () => pm.expect(p.reembolsoEstado).to.not.eql(null));",
   ]),
   estadoPedido('Tope de 90 minutos - el pedido en camino no se toca', 'camino', 'EN_CAMINO'),
-  estadoPedido('Tope de 90 minutos - el pedido pendiente de confirmacion no se toca', 'pend_a', 'PENDIENTE_CONFIRMACION_COMERCIO'),
+  estadoPedido('Tope de 90 minutos - el pedido pendiente de confirmacion no se toca', 'pend_d', 'PENDIENTE_CONFIRMACION_COMERCIO'),
   estadoPedido('Tope de 90 minutos - el pedido sin pagar no se toca', 'sin_pagar', 'PENDIENTE_PAGO'),
   item('Tope de 90 minutos - repetir los procesos no escribe nada nuevo', req('POST', '/test/jobs/pedidos/cancelar-preparacion-suspension', { body: {} }), [status(200)]),
   item('Tope de 90 minutos - el Cliente recibio un solo aviso de cancelacion del pedido en preparacion', req('GET', '/notificaciones', { token: TOKEN_COMPRADOR }), [
@@ -470,7 +479,7 @@ agregar(
     prueba('Aviso sin mensaje', "const n = pm.response.json().data.filter((x) => x.tipo === 'COMERCIO_SUSPENSION_LEVANTADA_EQUIPO'); pm.expect(n.length).to.eql(1); pm.expect(n[0].mensaje).to.not.include('Revisamos');"),
   ]),
   item('El Dueño vuelve a poder editar', req('PUT', '/comercios/perfil/datos-operativos', { token: TOKEN_DUENO, comercio: COM, body: { descripcion: 'Descripcion despues de levantar', telefono: '+5492964555447' } }), [status(200)]),
-  accion('Con el comercio operativo el Dueño vuelve a aceptar pedidos', TOKEN_DUENO, 'pend_a', 'aceptar', 200, {}, [
+  accion('Con el comercio operativo el Dueño vuelve a aceptar pedidos', TOKEN_DUENO, 'pend_d', 'aceptar', 200, {}, [
     "pm.test('Queda EN_PREPARACION', () => pm.expect(pm.response.json().data.estado).to.eql('EN_PREPARACION'));",
   ]),
   item('Levantar detiene el tope: la suspension vuelve a tener fecha nueva en una nueva suspension', req('PUT', `/test/comercios/${COM}/suspension`, { body: {}, query: 'origen=DUENO&minutos=200' }), [status(200)]),
@@ -523,7 +532,7 @@ const claves = ['com', 'com2', 'cat', 'cat_nombre', 'prod', 'cuit_tmp', 'dni_rep
   'd2_email', 'd2_usuario', 'd2_password', 'd2_dni', 'd2_codigo', 'd2_token', 'd2_id',
   'e_email', 'e_usuario', 'e_password', 'e_dni', 'e_codigo', 'e_token', 'e_id', 'e_inv_codigo',
   'c_email', 'c_usuario', 'c_password', 'c_dni', 'c_codigo', 'c_token', 'c_id', 'c_dir',
-  'ped_pend_a', 'ped_pend_b', 'ped_pend_c', 'ped_prep_a', 'ped_prep_b', 'ped_prep_c', 'ped_listo_a', 'ped_listo_b', 'ped_listo_c', 'ped_camino', 'ped_sin_pagar'].map(v);
+  'ped_pend_a', 'ped_pend_b', 'ped_pend_c', 'ped_pend_d', 'ped_pend_e', 'ped_pend_f', 'ped_prep_a', 'ped_prep_b', 'ped_prep_c', 'ped_listo_a', 'ped_listo_b', 'ped_listo_c', 'ped_camino', 'ped_sin_pagar'].map(v);
 const existentes = new Set(environment.values.map((x) => x.key));
 for (const key of claves) {
   if (!existentes.has(key)) environment.values.push({ key, value: '', type: 'default', enabled: true });

@@ -258,18 +258,20 @@ class SuspensionComercioIntegrationTest extends CarritoIntegrationBase {
     }
 
     @Test
-    void suspenderNoTocaLosPedidosNiElCierreManual() {
+    void suspenderRechazaLosPendientesYNoTocaLosDemasPedidosNiElCierreManual() {
         Dueno dueno = comercioApto(true);
         int cliente = datos.registrarCliente();
         jdbcTemplate.update("UPDATE comercio SET cerrado_manualmente = 1 WHERE id = ?", dueno.comercioId());
-        List<Integer> pedidos = List.of(pedido(dueno, cliente, "PENDIENTE_CONFIRMACION_COMERCIO", 5, true),
-                pedido(dueno, cliente, "EN_PREPARACION", 5, true), pedido(dueno, cliente, "EN_CAMINO", 5, false),
+        int pendiente = pedido(dueno, cliente, "PENDIENTE_CONFIRMACION_COMERCIO", 5, true);
+        List<Integer> pedidos = List.of(pedido(dueno, cliente, "EN_PREPARACION", 5, true), pedido(dueno, cliente, "EN_CAMINO", 5, false),
                 pedido(dueno, cliente, "LISTO_PARA_RETIRAR", 5, true));
         int sinPagar = pedidoPendientePago(cliente, dueno);
 
         suspender(dueno);
 
-        List<String> esperados = List.of("PENDIENTE_CONFIRMACION_COMERCIO", "EN_PREPARACION", "EN_CAMINO", "LISTO_PARA_RETIRAR");
+        assertEquals("RECHAZADO", estadoDelPedido(pendiente));
+        assertEquals(1, notas(pendiente));
+        List<String> esperados = List.of("EN_PREPARACION", "EN_CAMINO", "LISTO_PARA_RETIRAR");
         for (int i = 0; i < pedidos.size(); i++) {
             assertEquals(esperados.get(i), estadoDelPedido(pedidos.get(i)));
             assertEquals(0, notas(pedidos.get(i)));
@@ -630,10 +632,10 @@ class SuspensionComercioIntegrationTest extends CarritoIntegrationBase {
         Dueno dueno = comercioApto(true);
         Cuenta cuenta = empleado(dueno);
         int cliente = datos.registrarCliente();
+        suspender(dueno);
         int pedidoDueno = pedido(dueno, cliente, "PENDIENTE_CONFIRMACION_COMERCIO", 5, true);
         int pedidoEmpleado = pedido(dueno, cliente, "PENDIENTE_CONFIRMACION_COMERCIO", 5, true);
         int pedidoRechazado = pedido(dueno, cliente, "PENDIENTE_CONFIRMACION_COMERCIO", 5, true);
-        suspender(dueno);
 
         ConflictoComercioException delDueno = assertThrows(ConflictoComercioException.class, () -> pedidoService.aceptarPedido(comoDueno(dueno), pedidoDueno));
         ConflictoComercioException delEmpleado = assertThrows(ConflictoComercioException.class,
@@ -754,8 +756,8 @@ class SuspensionComercioIntegrationTest extends CarritoIntegrationBase {
     void unPedidoPendienteDeConfirmacionNoLoTocanLosTopesDeLaSuspension() {
         Dueno dueno = comercioApto(true);
         int cliente = datos.registrarCliente();
-        int pendiente = pedido(dueno, cliente, "PENDIENTE_CONFIRMACION_COMERCIO", 5, true);
         suspender(dueno);
+        int pendiente = pedido(dueno, cliente, "PENDIENTE_CONFIRMACION_COMERCIO", 5, true);
 
         pedidoService.cancelarPreparacionPorSuspension(LocalDateTime.now().plusDays(2));
         pedidoService.autoconfirmarRetirosPorSuspension(LocalDateTime.now().plusDays(2));

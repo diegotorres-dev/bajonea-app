@@ -27,7 +27,7 @@ class SuspensionComercioServiceVistaPreviaTest {
         when(comercio.getEstado()).thenReturn(EstadoComercio.APTO_VENTA);
         when(comercios.findById(7)).thenReturn(Optional.of(comercio));
         when(pedidos.countByComercioIdAndEstado(eq(7), any(EstadoPedido.class))).thenReturn(0L);
-        SuspensionComercioService servicio = new SuspensionComercioService(comercios, null, null, null, null, pedidos, null, null,
+        SuspensionComercioService servicio = new SuspensionComercioService(comercios, null, null, null, null, pedidos, null, null, null,
                 Clock.systemDefaultZone(), propiedades, mock(PlatformTransactionManager.class));
         return servicio.vistaPrevia(7);
     }
