@@ -28,7 +28,8 @@ public interface HistorialEstadoPedidoRepository extends JpaRepository<Historial
      * Transiciones de los pedidos del comercio que el comercio llegó a ver, de cualquier actor, para la actividad,
      * de la más nueva a la más vieja desde el cursor ({@code fecha < F} o {@code fecha = F} con {@code id <= M}).
      * {@code estados} es la lista blanca de estados visibles (los del enum menos {@code PENDIENTE_PAGO}: el comercio
-     * nunca ve el pedido antes del pago) y la expiración por falta de pago ({@code TIMEOUT_PAGO}) tampoco entra.
+     * nunca ve el pedido antes del pago) y la expiración por falta de pago ({@code TIMEOUT_PAGO}) y la cancelación del Cliente
+     * de un pedido que nunca pagó ({@code CANCELACION_SIN_PAGO}) tampoco entran.
      * Se llega por {@code pedido.comercio_id} (índice {@code idx_pedido_comercio}) y de ahí a
      * {@code idx_hep_pedido_fecha}; el nombre de quien actuó sale de {@code persona_fisica} en la misma consulta
      * (los pedidos del sistema no tienen usuario, y el Cliente tiene su ficha como cualquier otra persona).
@@ -38,7 +39,8 @@ public interface HistorialEstadoPedidoRepository extends JpaRepository<Historial
                    pf.nombre, pf.apellido, p.id, h.estado, h.motivoTimeout)
             FROM HistorialEstadoPedido h JOIN h.pedido p LEFT JOIN PersonaFisica pf ON pf.id = h.actorUsuario.id
             WHERE p.comercio.id = :comercioId AND h.estado IN :estados
-              AND (h.motivoTimeout IS NULL OR h.motivoTimeout <> com.bajonea.backend.enums.MotivoTimeoutPedido.TIMEOUT_PAGO)
+              AND (h.motivoTimeout IS NULL OR h.motivoTimeout NOT IN (com.bajonea.backend.enums.MotivoTimeoutPedido.TIMEOUT_PAGO,
+                   com.bajonea.backend.enums.MotivoTimeoutPedido.CANCELACION_SIN_PAGO))
               AND (h.fechaHora < :fecha OR (h.fechaHora = :fecha AND h.id <= :idMaximo))
             ORDER BY h.fechaHora DESC, h.id DESC
             """)
@@ -55,7 +57,8 @@ public interface HistorialEstadoPedidoRepository extends JpaRepository<Historial
                    pf.nombre, pf.apellido, p.id, h.estado, h.motivoTimeout)
             FROM HistorialEstadoPedido h JOIN h.pedido p LEFT JOIN PersonaFisica pf ON pf.id = h.actorUsuario.id
             WHERE p.id = :pedidoId AND h.estado IN :estados
-              AND (h.motivoTimeout IS NULL OR h.motivoTimeout <> com.bajonea.backend.enums.MotivoTimeoutPedido.TIMEOUT_PAGO)
+              AND (h.motivoTimeout IS NULL OR h.motivoTimeout NOT IN (com.bajonea.backend.enums.MotivoTimeoutPedido.TIMEOUT_PAGO,
+                   com.bajonea.backend.enums.MotivoTimeoutPedido.CANCELACION_SIN_PAGO))
             ORDER BY h.fechaHora ASC, h.id ASC
             """)
     List<FilaActividadPedido> trazabilidadDelPedido(@Param("pedidoId") Integer pedidoId, @Param("estados") List<EstadoPedido> estados);

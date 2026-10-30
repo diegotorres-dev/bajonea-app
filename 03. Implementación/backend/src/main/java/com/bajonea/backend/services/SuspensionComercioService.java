@@ -1,5 +1,6 @@
 package com.bajonea.backend.services;
 
+import com.bajonea.backend.config.PedidoTimeoutProperties;
 import com.bajonea.backend.dto.request.LevantamientoSuspensionRequestDTO;
 import com.bajonea.backend.dto.request.SuspensionComercioRequestDTO;
 import com.bajonea.backend.dto.response.SuspensionComercioPreviaResponseDTO;
@@ -74,13 +75,14 @@ public class SuspensionComercioService {
     private final AptitudVentaComercioService aptitudVentaComercioService;
     private final AvisoCuentaService avisoCuentaService;
     private final Clock clock;
+    private final PedidoTimeoutProperties timeoutProperties;
     private final TransactionTemplate transaccion;
 
     public SuspensionComercioService(ComercioRepository comercioRepository, EmpleadoComercioRepository empleadoComercioRepository,
             UsuarioRepository usuarioRepository, AdministradorRepository administradorRepository,
             HistorialEstadoComercioRepository historialEstadoComercioRepository, PedidoRepository pedidoRepository,
             AptitudVentaComercioService aptitudVentaComercioService, AvisoCuentaService avisoCuentaService, Clock clock,
-            PlatformTransactionManager transactionManager) {
+            PedidoTimeoutProperties timeoutProperties, PlatformTransactionManager transactionManager) {
         this.comercioRepository = comercioRepository;
         this.empleadoComercioRepository = empleadoComercioRepository;
         this.usuarioRepository = usuarioRepository;
@@ -90,6 +92,7 @@ public class SuspensionComercioService {
         this.aptitudVentaComercioService = aptitudVentaComercioService;
         this.avisoCuentaService = avisoCuentaService;
         this.clock = clock;
+        this.timeoutProperties = timeoutProperties;
         this.transaccion = new TransactionTemplate(transactionManager);
     }
 
@@ -191,7 +194,8 @@ public class SuspensionComercioService {
                 pedidoRepository.countByComercioIdAndEstado(comercioId, EstadoPedido.EN_PREPARACION),
                 pedidoRepository.countByComercioIdAndEstado(comercioId, EstadoPedido.LISTO_PARA_RETIRAR),
                 pedidoRepository.countByComercioIdAndEstado(comercioId, EstadoPedido.EN_CAMINO),
-                pedidoRepository.countByComercioIdAndEstado(comercioId, EstadoPedido.PENDIENTE_PAGO));
+                pedidoRepository.countByComercioIdAndEstado(comercioId, EstadoPedido.PENDIENTE_PAGO),
+                timeoutProperties.getPreparacionSuspensionMinutos(), timeoutProperties.getRetiroSuspensionMinutos());
     }
 
     public EstadoEnvioNotificacion reenviarEmail(Integer comercioId) {

@@ -819,14 +819,21 @@ public class PedidoService {
         PedidoBloqueado bloqueado = bloquearParaActualizarConEquipo(pedidoId, usuarioId);
         Pedido pedido = bloqueado.pedido();
 
-        if (pedido.getEstado() != EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO && pedido.getEstado() != EstadoPedido.EN_PREPARACION) {
+        EstadoPedido estadoOrigen = pedido.getEstado();
+        if (estadoOrigen != EstadoPedido.PENDIENTE_PAGO && estadoOrigen != EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO
+                && estadoOrigen != EstadoPedido.EN_PREPARACION) {
             throw new ConflictoDeNegocioException("El pedido ya no se puede cancelar");
         }
 
         pedido.setEstado(EstadoPedido.CANCELADO);
         pedido.setCanceladoPor(CanceladoPor.CLIENTE);
         pedidoRepository.save(pedido);
+        if (estadoOrigen == EstadoPedido.PENDIENTE_PAGO) {
+            registrarHistorial(pedido, ActorPedido.CLIENTE, usuarioId, MotivoTimeoutPedido.CANCELACION_SIN_PAGO);
+            return aResponseDTO(pedido);
+        }
         registrarHistorial(pedido, ActorPedido.CLIENTE, usuarioId);
+
         reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.CANCELACION_CLIENTE);
 
         notificacionService.crearParaEquipo(pedido.getComercio().getId(), pedido.getComercio().getDueno().getId(), bloqueado.equipo(),
@@ -876,7 +883,7 @@ public class PedidoService {
         Map<Integer, LocalDateTime> fechasPago = fechasPagoAprobado(pedidos);
         Map<Integer, NotaCredito> notas = ultimasNotasCredito(pedidos);
         return pedidos.stream()
-                .map(pedido -> aResponseDTO(pedido, fechasPago.get(pedido.getId()), notas.get(pedido.getId()), null))
+                .map(pedido -> aResponseDTO(pedido, fechasPago.get(pedido.getId()), notas.get(pedido.getId()), null, null))
                 .toList();
     }
 
@@ -893,7 +900,8 @@ public class PedidoService {
         LocalDateTime ahora = LocalDateTime.now(clock);
         return pedidos.stream()
                 .map(pedido -> aResponseDTO(pedido, fechasPago.get(pedido.getId()), notas.get(pedido.getId()),
-                        esperaNoRetirado(pedido, listoDesde.get(pedido.getId()), ahora)))
+                        esperaNoRetirado(pedido, listoDesde.get(pedido.getId()), ahora),
+                        limiteDeResolucionPorSuspension(pedido, listoDesde.get(pedido.getId()))))
                 .toList();
     }
 
@@ -1217,7 +1225,7 @@ public class PedidoService {
 
     private PedidoResponseDTO aResponseDTO(Pedido pedido) {
         return aResponseDTO(pedido, fechasPagoAprobado(List.of(pedido)).get(pedido.getId()),
-                ultimasNotasCredito(List.of(pedido)).get(pedido.getId()), null);
+                ultimasNotasCredito(List.of(pedido)).get(pedido.getId()), null, null);
     }
 
     private static DireccionEntregaResponseDTO direccionEntrega(Pedido pedido) {
@@ -1237,13 +1245,38 @@ public class PedidoService {
     }
 
     private PedidoResponseDTO aResponseDTOParaComercio(Pedido pedido) {
+        LocalDateTime listoDesde = obtenerFechaEntradaAEstado(pedido, EstadoPedido.LISTO_PARA_RETIRAR);
         return aResponseDTO(pedido, fechasPagoAprobado(List.of(pedido)).get(pedido.getId()),
                 ultimasNotasCredito(List.of(pedido)).get(pedido.getId()),
-                esperaNoRetirado(pedido, obtenerFechaEntradaAEstado(pedido, EstadoPedido.LISTO_PARA_RETIRAR), LocalDateTime.now(clock)));
+                esperaNoRetirado(pedido, listoDesde, LocalDateTime.now(clock)),
+                limiteDeResolucionPorSuspension(pedido, listoDesde));
+    }
+
+    /**
+     * Hora en que el proceso de los topes de una suspensión resuelve el pedido, solo para las respuestas del lado
+     * del comercio: {@code EN_PREPARACION} a los {@code preparacionSuspensionMinutos} de la suspensión y
+     * {@code LISTO_PARA_RETIRAR} a los {@code retiroSuspensionMinutos} contados desde el posterior entre que quedó
+     * listo y la suspensión (la misma cuenta de {@link #autoconfirmarRetirosPorSuspension}). Cualquier otro estado, o
+     * un comercio que no está suspendido, da {@code null}.
+     */
+    private LocalDateTime limiteDeResolucionPorSuspension(Pedido pedido, LocalDateTime listoDesde) {
+        Comercio comercio = pedido.getComercio();
+        LocalDateTime suspendidoDesde = comercio.getSuspendidoDesde();
+        if (comercio.getEstado() != EstadoComercio.SUSPENDIDO || suspendidoDesde == null) {
+            return null;
+        }
+        if (pedido.getEstado() == EstadoPedido.EN_PREPARACION) {
+            return suspendidoDesde.plusMinutes(timeoutProperties.getPreparacionSuspensionMinutos());
+        }
+        if (pedido.getEstado() == EstadoPedido.LISTO_PARA_RETIRAR) {
+            LocalDateTime base = listoDesde != null && listoDesde.isAfter(suspendidoDesde) ? listoDesde : suspendidoDesde;
+            return base.plusMinutes(timeoutProperties.getRetiroSuspensionMinutos());
+        }
+        return null;
     }
 
     private PedidoResponseDTO aResponseDTO(Pedido pedido, LocalDateTime fechaPagoAprobado, NotaCredito notaCredito,
-            EsperaNoRetirado espera) {
+            EsperaNoRetirado espera, LocalDateTime limiteResolucionSuspension) {
         List<DetallePedidoResponseDTO> detalles = detallePedidoRepository.findByPedidoId(pedido.getId()).stream()
                 .map(this::aResponseDTO)
                 .toList();
@@ -1277,7 +1310,10 @@ public class PedidoService {
                 notaCredito == null ? null : notaCredito.getEstado(),
                 notaCredito == null ? null : notaCredito.getMonto(),
                 espera == null ? null : espera.disponibleDesde(),
-                espera == null ? null : espera.minutosRestantes());
+                espera == null ? null : espera.minutosRestantes(),
+                limiteResolucionSuspension,
+                pedido.getEstado() == EstadoPedido.PENDIENTE_PAGO && pedido.getComercio().getEstado() == EstadoComercio.SUSPENDIDO,
+                notaCredito == null ? null : notaCredito.getMotivo());
     }
 
     private DetallePedidoResponseDTO aResponseDTO(DetallePedido detalle) {

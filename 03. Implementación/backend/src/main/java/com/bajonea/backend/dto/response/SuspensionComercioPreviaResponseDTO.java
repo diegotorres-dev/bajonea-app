@@ -15,10 +15,13 @@ public class SuspensionComercioPreviaResponseDTO {
     private final long pedidosListosParaRetirar;
     private final long pedidosEnCamino;
     private final long pedidosSinPagar;
+    private final long topePreparacionMinutos;
+    private final long topeRetiroMinutos;
 
     public SuspensionComercioPreviaResponseDTO(Integer comercioId, EstadoComercio estadoActual,
             OrigenSuspensionComercio suspensionOrigen, long pedidosPendientesDeConfirmacion, long pedidosEnPreparacion,
-            long pedidosListosParaRetirar, long pedidosEnCamino, long pedidosSinPagar) {
+            long pedidosListosParaRetirar, long pedidosEnCamino, long pedidosSinPagar, long topePreparacionMinutos,
+            long topeRetiroMinutos) {
         this.comercioId = comercioId;
         this.estadoActual = estadoActual;
         this.suspensionOrigen = suspensionOrigen;
@@ -27,5 +30,7 @@ public class SuspensionComercioPreviaResponseDTO {
         this.pedidosListosParaRetirar = pedidosListosParaRetirar;
         this.pedidosEnCamino = pedidosEnCamino;
         this.pedidosSinPagar = pedidosSinPagar;
+        this.topePreparacionMinutos = topePreparacionMinutos;
+        this.topeRetiroMinutos = topeRetiroMinutos;
     }
 }

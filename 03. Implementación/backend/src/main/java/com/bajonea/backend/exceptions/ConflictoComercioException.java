@@ -42,6 +42,8 @@ public class ConflictoComercioException extends ConflictoDeNegocioException {
 
     public static final String SUSPENDIDO = "COMERCIO_SUSPENDIDO";
     public static final String SIN_OPERACION = "COMERCIO_SIN_OPERACION";
+    public static final String SIN_PEDIDOS = "COMERCIO_SIN_PEDIDOS";
+    public static final String MENSAJE_SIN_PEDIDOS = "Este comercio no está recibiendo pedidos por ahora. Probá con otro comercio.";
     public static final String NO_OPERATIVO = "COMERCIO_NO_OPERATIVO";
     public static final String FUERA_DE_HORARIO = "FUERA_DE_HORARIO";
     public static final String RETIRO_EN_ESPERA = "RETIRO_EN_ESPERA";

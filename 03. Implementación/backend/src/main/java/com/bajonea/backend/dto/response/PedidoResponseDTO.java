@@ -5,6 +5,7 @@ import com.bajonea.backend.enums.EstadoNotaCredito;
 import com.bajonea.backend.enums.EstadoPagoPedido;
 import com.bajonea.backend.enums.EstadoPedido;
 import com.bajonea.backend.enums.FuenteEntrega;
+import com.bajonea.backend.enums.MotivoNotaCredito;
 import com.bajonea.backend.enums.MotivoRechazo;
 import com.bajonea.backend.enums.TipoEntrega;
 import java.math.BigDecimal;
@@ -34,6 +35,11 @@ import lombok.Getter;
  * {@code LISTO_PARA_RETIRAR}: cuándo se habilita "Cerrar como no retirado" (hora del comercio) y cuántos minutos
  * faltan según el reloj del servidor, redondeado hacia arriba (0 si ya se puede). En cualquier otro caso, y en
  * las respuestas del Cliente, valen {@code null}.
+ * {@code limiteResolucionSuspension} es, solo en las respuestas del comercio y con el comercio suspendido, la hora en que
+ * el proceso de los topes resuelve un pedido {@code EN_PREPARACION} o {@code LISTO_PARA_RETIRAR}; {@code null} en cualquier
+ * otro caso. {@code comercioNoDisponible} es {@code true} cuando el pedido espera el pago y el comercio está suspendido
+ * (la pantalla del Cliente no deja pagar). {@code reembolsoMotivo} es el motivo de la nota de crédito más reciente (nulo si
+ * nunca se generó): la pantalla del Cliente lo usa para explicar por qué se canceló un pedido ya pagado.
  */
 @Getter
 public class PedidoResponseDTO {
@@ -65,6 +71,9 @@ public class PedidoResponseDTO {
     private final BigDecimal reembolsoMonto;
     private final LocalDateTime noRetiradoDisponibleDesde;
     private final Long noRetiradoMinutosRestantes;
+    private final LocalDateTime limiteResolucionSuspension;
+    private final boolean comercioNoDisponible;
+    private final MotivoNotaCredito reembolsoMotivo;
 
     public PedidoResponseDTO(
             Integer id,
@@ -93,7 +102,10 @@ public class PedidoResponseDTO {
             EstadoNotaCredito reembolsoEstado,
             BigDecimal reembolsoMonto,
             LocalDateTime noRetiradoDisponibleDesde,
-            Long noRetiradoMinutosRestantes) {
+            Long noRetiradoMinutosRestantes,
+            LocalDateTime limiteResolucionSuspension,
+            boolean comercioNoDisponible,
+            MotivoNotaCredito reembolsoMotivo) {
         this.id = id;
         this.clienteId = clienteId;
         this.nombreCliente = nombreCliente;
@@ -121,5 +133,8 @@ public class PedidoResponseDTO {
         this.reembolsoMonto = reembolsoMonto;
         this.noRetiradoDisponibleDesde = noRetiradoDisponibleDesde;
         this.noRetiradoMinutosRestantes = noRetiradoMinutosRestantes;
+        this.limiteResolucionSuspension = limiteResolucionSuspension;
+        this.comercioNoDisponible = comercioNoDisponible;
+        this.reembolsoMotivo = reembolsoMotivo;
     }
 }

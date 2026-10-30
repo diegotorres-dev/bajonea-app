@@ -21,6 +21,7 @@ import com.bajonea.backend.enums.AccionEdicion;
 import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.EstadoUsuario;
 import com.bajonea.backend.enums.TipoEntidadEdicion;
+import com.bajonea.backend.exceptions.ConflictoComercioException;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.repositories.ComercioRepository;
@@ -238,6 +239,9 @@ public class ComercioService {
     public void validarAceptaPedidos(Comercio comercio, EstadoComercio estadoActual, boolean cerradoManualmente) {
         if (estadoActual == EstadoComercio.CERRADO_TEMPORALMENTE) {
             throw new ConflictoDeNegocioException(MENSAJE_COMERCIO_CERRADO);
+        }
+        if (estadoActual == EstadoComercio.SUSPENDIDO) {
+            throw new ConflictoComercioException(ConflictoComercioException.SIN_PEDIDOS, ConflictoComercioException.MENSAJE_SIN_PEDIDOS);
         }
         if (estadoActual != EstadoComercio.APTO_VENTA) {
             throw new ConflictoDeNegocioException("Este comercio no está aceptando pedidos en este momento");
