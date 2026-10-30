@@ -1130,6 +1130,60 @@ public class PedidoService {
         }
     }
 
+    static final String TEXTO_RECHAZO_POR_SUSPENSION =
+            "Tu pedido se canceló porque el comercio no está disponible. Te devolvemos el dinero.";
+
+    /**
+     * Rechaza y reembolsa, uno por uno, los pedidos {@code PENDIENTE_CONFIRMACION_COMERCIO} de un comercio que acaba de
+     * suspenderse. Se llama después de confirmada la transacción de la suspensión y recibe un solo comercio, así que la
+     * suspensión de un Dueño la puede llamar una vez por cada uno de sus comercios. Devuelve cuántos rechazó.
+     */
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public int rechazarPendientesDelComercioSuspendido(Integer comercioId) {
+        int rechazados = 0;
+        for (Integer pedidoId : pedidoRepository.findIdsByComercioIdAndEstadoIn(comercioId,
+                List.of(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO))) {
+            if (rechazarPendientePorSuspension(pedidoId)) {
+                rechazados++;
+            }
+        }
+        return rechazados;
+    }
+
+    /** Job 6: barrido de los pendientes de cualquier comercio suspendido que hayan quedado sin procesar. */
+    @Transactional(propagation = Propagation.SUPPORTS)
+    public void rechazarPendientesDeComerciosSuspendidos() {
+        for (Integer pedidoId : pedidoRepository.findIdsDeComerciosSuspendidos(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO)) {
+            rechazarPendientePorSuspension(pedidoId);
+        }
+    }
+
+    /**
+     * Una transacción por pedido: bloqueo del orden global (usuarios, comercio compartido, pedido) y todo revalidado con
+     * las filas bloqueadas. Si el pedido ya no está pendiente (lo resolvió alguien antes) o el comercio ya no está
+     * suspendido (se levantó), no hace nada; así dos ejecuciones simultáneas generan una sola nota. Un fallo en un
+     * pedido se registra y no frena a los demás.
+     */
+    private boolean rechazarPendientePorSuspension(Integer pedidoId) {
+        boolean[] rechazado = {false};
+        enTransaccionPorPedido("rechazarPendientesPorSuspension", pedidoId, () -> {
+            PedidoBloqueado bloqueado = bloquearParaTopeDeSuspension(pedidoId);
+            Pedido pedido = bloqueado.pedido();
+            if (pedido.getEstado() != EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO || !comercioSuspendido(bloqueado)) {
+                return;
+            }
+            pedido.setEstado(EstadoPedido.RECHAZADO);
+            pedido.setCanceladoPor(CanceladoPor.SISTEMA);
+            pedidoRepository.save(pedido);
+            registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.SUSPENSION_COMERCIO);
+            reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.SUSPENSION_COMERCIO);
+            notificacionService.crearParaCliente(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
+                    TEXTO_RECHAZO_POR_SUSPENSION, TipoNotificacion.PEDIDO_RECHAZADO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
+            rechazado[0] = true;
+        });
+        return rechazado[0];
+    }
+
     private static boolean comercioSuspendido(PedidoBloqueado bloqueado) {
         return bloqueado.estadoComercio() == EstadoComercio.SUSPENDIDO && bloqueado.suspendidoDesde() != null;
     }

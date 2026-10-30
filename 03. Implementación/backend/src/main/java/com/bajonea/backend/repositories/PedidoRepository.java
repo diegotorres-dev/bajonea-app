@@ -59,6 +59,11 @@ public interface PedidoRepository extends JpaRepository<Pedido, Integer> {
             + "com.bajonea.backend.enums.EstadoComercio.SUSPENDIDO and p.comercio.suspendidoDesde <= :corte order by p.id")
     List<Integer> findIdsDeComerciosSuspendidosDesde(@Param("estado") EstadoPedido estado, @Param("corte") LocalDateTime corte);
 
+    /** Filtro grueso del barrido de la suspensión: cada pedido se vuelve a validar con el comercio y el pedido bloqueados. */
+    @Query("select p.id from Pedido p where p.estado = :estado and p.comercio.estado = "
+            + "com.bajonea.backend.enums.EstadoComercio.SUSPENDIDO order by p.id")
+    List<Integer> findIdsDeComerciosSuspendidos(@Param("estado") EstadoPedido estado);
+
     long countByComercioIdAndEstadoIn(Integer comercioId, Collection<EstadoPedido> estados);
 
     @Query("select p.id from Pedido p where p.comercio.id = :comercioId and p.estado in :estados order by p.id")

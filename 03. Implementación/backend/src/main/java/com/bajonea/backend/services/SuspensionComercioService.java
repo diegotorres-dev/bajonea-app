@@ -39,8 +39,10 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Suspensión individual de un comercio por el Administrador y su levantamiento. Solo se suspende un comercio
- * {@code APROBADO}, {@code APTO_VENTA} o {@code CERRADO_TEMPORALMENTE}. Suspender no toca ningún pedido: los pedidos del
- * comercio siguen su camino y los dos topes de 90 minutos (preparación y retiro) los resuelven los procesos de
+ * {@code APROBADO}, {@code APTO_VENTA} o {@code CERRADO_TEMPORALMENTE}. Los pedidos pendientes de confirmación se rechazan y
+ * reembolsan solos apenas se confirma la suspensión (cada uno en su transacción, ver
+ * {@link PedidoService#rechazarPendientesDelComercioSuspendido}; un proceso programado barre los que hayan quedado). Los
+ * demás pedidos siguen su camino y los dos topes de 90 minutos (preparación y retiro) los resuelven los procesos de
  * {@link PedidoService}, que cuentan desde {@code comercio.suspendido_desde}.
  *
  * <p><b>Reglas.</b> Re-suspender uno ya suspendido solo es posible si su origen es {@code DUENO}: pasa a
@@ -74,6 +76,7 @@ public class SuspensionComercioService {
     private final PedidoRepository pedidoRepository;
     private final AptitudVentaComercioService aptitudVentaComercioService;
     private final AvisoCuentaService avisoCuentaService;
+    private final PedidoService pedidoService;
     private final Clock clock;
     private final PedidoTimeoutProperties timeoutProperties;
     private final TransactionTemplate transaccion;
@@ -81,7 +84,8 @@ public class SuspensionComercioService {
     public SuspensionComercioService(ComercioRepository comercioRepository, EmpleadoComercioRepository empleadoComercioRepository,
             UsuarioRepository usuarioRepository, AdministradorRepository administradorRepository,
             HistorialEstadoComercioRepository historialEstadoComercioRepository, PedidoRepository pedidoRepository,
-            AptitudVentaComercioService aptitudVentaComercioService, AvisoCuentaService avisoCuentaService, Clock clock,
+            AptitudVentaComercioService aptitudVentaComercioService, AvisoCuentaService avisoCuentaService,
+            PedidoService pedidoService, Clock clock,
             PedidoTimeoutProperties timeoutProperties, PlatformTransactionManager transactionManager) {
         this.comercioRepository = comercioRepository;
         this.empleadoComercioRepository = empleadoComercioRepository;
@@ -91,6 +95,7 @@ public class SuspensionComercioService {
         this.pedidoRepository = pedidoRepository;
         this.aptitudVentaComercioService = aptitudVentaComercioService;
         this.avisoCuentaService = avisoCuentaService;
+        this.pedidoService = pedidoService;
         this.clock = clock;
         this.timeoutProperties = timeoutProperties;
         this.transaccion = new TransactionTemplate(transactionManager);
@@ -98,7 +103,7 @@ public class SuspensionComercioService {
 
     public SuspensionComercioResponseDTO suspender(Integer comercioId, Integer administradorId, SuspensionComercioRequestDTO request) {
         Destinatarios destinatarios = leerDestinatarios(comercioId);
-        return transaccion.execute(status -> {
+        SuspensionComercioResponseDTO respuesta = transaccion.execute(status -> {
             Bloqueados bloqueados = bloquearUsuariosYRelaciones(destinatarios);
             Comercio comercio = aptitudVentaComercioService.bloquearComercio(comercioId);
             Administrador administrador = administradorRepository.findById(administradorId)
@@ -139,6 +144,8 @@ public class SuspensionComercioService {
             }
             return aRespuesta(comercio);
         });
+        pedidoService.rechazarPendientesDelComercioSuspendido(comercioId);
+        return respuesta;
     }
 
     public SuspensionComercioResponseDTO levantar(Integer comercioId, Integer administradorId,

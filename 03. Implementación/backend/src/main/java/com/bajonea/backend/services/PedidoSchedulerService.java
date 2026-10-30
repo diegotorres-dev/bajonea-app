@@ -61,10 +61,17 @@ public class PedidoSchedulerService {
         }
     }
 
+    @Scheduled(fixedDelay = 60_000)
+    public void rechazarPendientesPorSuspension() {
+        if (habilitado) {
+            pedidoService.rechazarPendientesDeComerciosSuspendidos();
+        }
+    }
+
     /**
      * Ejecución a pedido de uno de los cuatro procesos con una hora dada (la usa el controller de test). Nombres:
      * {@code expirar-pagos}, {@code avisar-y-autoconfirmar}, {@code expirar-sin-respuesta},
-     * {@code autoconfirmar-retiros} y {@code cancelar-preparacion-suspension}.
+     * {@code autoconfirmar-retiros} y {@code cancelar-preparacion-suspension} y {@code rechazar-pendientes-suspension} (este último ignora la hora).
      */
     public void ejecutar(String nombre, LocalDateTime ahora) {
         switch (nombre) {
@@ -73,6 +80,7 @@ public class PedidoSchedulerService {
             case "expirar-sin-respuesta" -> pedidoService.expirarPedidosSinRespuestaComercio(ahora);
             case "autoconfirmar-retiros" -> pedidoService.autoconfirmarRetirosPorSuspension(ahora);
             case "cancelar-preparacion-suspension" -> pedidoService.cancelarPreparacionPorSuspension(ahora);
+            case "rechazar-pendientes-suspension" -> pedidoService.rechazarPendientesDeComerciosSuspendidos();
             default -> throw new IllegalArgumentException("Proceso de pedidos desconocido: " + nombre);
         }
     }

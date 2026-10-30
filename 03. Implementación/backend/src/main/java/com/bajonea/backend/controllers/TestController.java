@@ -87,6 +87,12 @@ public class TestController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Comercio suspendido para la prueba", null));
     }
 
+    @PutMapping("/comercios/{id}/reanudar-sin-procesar")
+    public ResponseEntity<ApiResponse<Void>> reanudarSinProcesar(@PathVariable Integer id) {
+        testSupportService.reanudarComercioSuspendidoSinProcesar(id);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Comercio reanudado para la prueba", null));
+    }
+
     @PutMapping("/comercios/{id}/envejecer-suspension")
     public ResponseEntity<ApiResponse<Void>> envejecerSuspension(@PathVariable Integer id, @RequestParam long minutos) {
         testSupportService.envejecerSuspension(id, minutos);

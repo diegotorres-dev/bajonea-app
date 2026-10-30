@@ -222,6 +222,19 @@ public class TestSupportService {
     }
 
     /**
+     * Atajo de entorno de test: devuelve un comercio {@code SUSPENDIDO} a {@code APTO_VENTA} sin historial, sin avisos y
+     * sin procesar ningún pedido, para armar la ventana en que un pedido pendiente convive con la suspensión.
+     */
+    @Transactional
+    public void reanudarComercioSuspendidoSinProcesar(Integer comercioId) {
+        int filas = jdbcTemplate.update("UPDATE comercio SET estado = 'APTO_VENTA', suspension_origen = NULL, suspendido_desde = NULL, "
+                + "motivo_suspension = NULL WHERE id = ? AND estado = 'SUSPENDIDO'", comercioId);
+        if (filas == 0) {
+            throw new ConflictoDeNegocioException("El comercio no está suspendido");
+        }
+    }
+
+    /**
      * Atajo de entorno de test: adelanta hacia el pasado {@code suspendido_desde} de un comercio suspendido, para probar
      * los topes de 90 minutos sin esperar.
      */
