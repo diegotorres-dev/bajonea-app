@@ -160,7 +160,7 @@ test.describe('Fase 5, S2 (UI B2): Dueño, Empleado y Cliente con el comercio su
       await expect(page.getByTestId('tarjeta-cierre-comercio')).toBeVisible();
     });
 
-    test('el perfil bloquea la edición con una explicación y deja usar documentos y Mercado Pago, sin desvincular', async ({ page, request }) => {
+    test('el perfil bloquea la edición con una explicación y deja subir documentos y usar Mercado Pago, sin desvincular', async ({ page, request }) => {
       await suspender(request);
       await abrirComoDueno(page);
       await page.goto('/comercio-perfil.html');
@@ -181,8 +181,8 @@ test.describe('Fase 5, S2 (UI B2): Dueño, Empleado y Cliente con el comercio su
 
       await page.goto('/comercio-documentacion.html');
       await expect(page.getByTestId('btn-subir-documento')).toBeVisible();
-      await expect(page.getByTestId('btn-subir-documento')).toBeDisabled();
-      await expect(page.getByTestId('explicacion-subida-deshabilitada')).toHaveText('Tu comercio no puede recibir documentos en este momento.');
+      await expect(page.getByTestId('btn-subir-documento')).toBeEnabled();
+      await expect(page.getByTestId('aviso-comercio-suspendido')).toBeVisible();
 
       await levantar(request);
       await page.goto('/comercio-perfil.html');

@@ -270,16 +270,19 @@ test.describe('Fase 4 (API): documentos del comercio y regla de apto para venta'
     expect(tras.status).toBe(201);
   });
 
-  test('solo se puede subir con el comercio aprobado, apto para vender o cerrado temporalmente', async ({ request }) => {
+  test('se puede subir con el comercio aprobado, apto para vender, cerrado temporalmente o suspendido, y no con uno inactivo', async ({ request }) => {
     const otro = await prepararAprobado(request, adminToken, localidadId, true, todoElDia());
-    sql(sentenciaEstadoComercio(otro.comercioId, 'SUSPENDIDO'));
+    sql(sentenciaEstadoComercio(otro.comercioId, 'INACTIVO'));
 
+    const inactivo = await subir(request, otro);
+    sql(sentenciaEstadoComercio(otro.comercioId, 'SUSPENDIDO'));
     const suspendido = await subir(request, otro);
     sql(sentenciaEstadoComercio(otro.comercioId, 'CERRADO_TEMPORALMENTE'));
     const cerrado = await subir(request, otro);
 
-    expect(suspendido.status).toBe(409);
-    expect(suspendido.body.data.codigo).toBe('COMERCIO_ESTADO_NO_PERMITE_DOCUMENTOS');
+    expect(inactivo.status).toBe(409);
+    expect(inactivo.body.data.codigo).toBe('COMERCIO_ESTADO_NO_PERMITE_DOCUMENTOS');
+    expect(suspendido.status).toBe(201);
     expect(cerrado.status).toBe(201);
   });
 

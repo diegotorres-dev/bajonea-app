@@ -215,7 +215,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
 
       await expect(page.getByTestId(`etiqueta-estado-contexto-${suspendido}`)).toHaveText('Suspendido');
       await expect(page.getByTestId(`etiqueta-estado-contexto-${cerrado}`)).toHaveText('Cerrado temporalmente');
-      await expect(page.getByTestId(`fila-contexto-comercio-${suspendido}-subtitulo`)).toContainText('Solo podés consultarlo');
+      await expect(page.getByTestId(`fila-contexto-comercio-${suspendido}-subtitulo`)).toContainText('Comercio suspendido. Solo podés resolver pedidos en curso.');
       await expect(page.getByTestId(`etiqueta-estado-contexto-${duenoA.comercioId}`)).toHaveCount(0);
       await page.getByTestId(`fila-contexto-comercio-${suspendido}`).click();
       await page.waitForURL('**/comercio-dashboard.html');

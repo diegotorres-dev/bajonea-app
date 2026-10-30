@@ -363,12 +363,12 @@ class DocumentoComercioHttpIntegrationTest {
     }
 
     @Test
-    void soloSePuedeSubirConElComercioAprobadoAptoParaVenderOCerradoTemporalmente() throws Exception {
+    void soloSePuedeSubirConElComercioAprobadoAptoParaVenderCerradoTemporalmenteOSuspendido() throws Exception {
         for (EstadoComercio estado : EstadoComercio.values()) {
             datos.cambiarEstadoComercio(dueno.comercioId(), estado.name());
             entityManager.clear();
             boolean permitido = estado == EstadoComercio.APROBADO || estado == EstadoComercio.APTO_VENTA
-                    || estado == EstadoComercio.CERRADO_TEMPORALMENTE;
+                    || estado == EstadoComercio.CERRADO_TEMPORALMENTE || estado == EstadoComercio.SUSPENDIDO;
             ResultActions resultado = subirPdf();
             if (permitido) {
                 resultado.andExpect(status().isCreated());
@@ -377,6 +377,80 @@ class DocumentoComercioHttpIntegrationTest {
                         .andExpect(jsonPath("$.data.codigo").value("COMERCIO_ESTADO_NO_PERMITE_DOCUMENTOS"));
             }
         }
+    }
+
+    private String estadoDelComercio() {
+        return jdbcTemplate.queryForObject("SELECT estado FROM comercio WHERE id = ?", String.class, dueno.comercioId());
+    }
+
+    private long transicionesDelComercio() {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM historial_estado_comercio WHERE comercio_id = ? AND estado_origen <> 'PENDIENTE'",
+                Long.class, dueno.comercioId());
+    }
+
+    @Test
+    void conElComercioSuspendidoElDuenoSubeListaVeYEliminaSusDocumentosYElEstadoNoCambia() throws Exception {
+        testSupportService.vincularCuentaMercadoPagoSimulada(dueno.id(), null);
+        datos.cambiarEstadoComercio(dueno.comercioId(), "SUSPENDIDO");
+        entityManager.clear();
+        long antes = transicionesDelComercio();
+
+        mockMvc.perform(delDueno(get(BASE + "/requisitos")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.estadoComercio").value("SUSPENDIDO"))
+                .andExpect(jsonPath("$.data.puedeSubir").value(true));
+        int id = subirYDevolverId();
+        int otro = subirYDevolverId();
+        mockMvc.perform(delDueno(get(BASE))).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.documentos.length()").value(2));
+        mockMvc.perform(delDueno(get(BASE + "/" + id + "/archivo"))).andExpect(status().isOk());
+        mockMvc.perform(delDueno(delete(BASE + "/" + otro))).andExpect(status().isOk());
+
+        assertEquals("SUSPENDIDO", estadoDelComercio());
+        assertEquals(antes, transicionesDelComercio());
+    }
+
+    @Test
+    void conElComercioSuspendidoElAdministradorApruebaYRechazaSinMoverElEstado() throws Exception {
+        testSupportService.vincularCuentaMercadoPagoSimulada(dueno.id(), null);
+        int aprobado = subirYDevolverId();
+        int rechazado = subirYDevolverId();
+        datos.cambiarEstadoComercio(dueno.comercioId(), "SUSPENDIDO");
+        entityManager.clear();
+        long antes = transicionesDelComercio();
+
+        resolver(aprobado, "{\"aprobar\":true}");
+        resolver(rechazado, "{\"aprobar\":false,\"motivo\":\"Ilegible\"}");
+        assertEquals("SUSPENDIDO", estadoDelComercio());
+        int nuevo = subirYDevolverId();
+        resolver(nuevo, "{\"aprobar\":true}");
+        resolver(aprobado, "{\"aprobar\":false,\"motivo\":\"Venció\"}");
+
+        assertEquals("SUSPENDIDO", estadoDelComercio());
+        assertEquals(antes, transicionesDelComercio());
+        mockMvc.perform(delDueno(get(BASE + "/requisitos")))
+                .andExpect(jsonPath("$.data.estadoComercio").value("SUSPENDIDO"))
+                .andExpect(jsonPath("$.data.documentosAprobados").value(1))
+                .andExpect(jsonPath("$.data.documentosRechazados").value(2));
+    }
+
+    @Test
+    void conElComercioSuspendidoUnDuenoAjenoYElEmpleadoSiguenSinAcceso() throws Exception {
+        datos.cambiarEstadoComercio(dueno.comercioId(), "SUSPENDIDO");
+        entityManager.clear();
+        Dueno otro = datos.registrarDuenoAprobado();
+        Cuenta empleado = datos.registrarClienteConCredenciales();
+        datos.vincularEmpleado(empleado.id(), dueno.comercioId(), "ACTIVO", LocalDateTime.now().minusDays(3));
+        int id = subirYDevolverId();
+
+        mockMvc.perform(como(subida("x.pdf", "application/pdf", PDF, "LIBRETA_SANITARIA", null), RolUsuario.DUENO, otro.id())
+                .header("X-Comercio-Id", dueno.comercioId())).andExpect(status().isNotFound());
+        mockMvc.perform(como(get(BASE + "/" + id + "/archivo"), RolUsuario.DUENO, otro.id())
+                .header("X-Comercio-Id", dueno.comercioId())).andExpect(status().isNotFound());
+        mockMvc.perform(como(subida("x.pdf", "application/pdf", PDF, "LIBRETA_SANITARIA", null), RolUsuario.CLIENTE, empleado.id())
+                .header("X-Comercio-Id", dueno.comercioId())).andExpect(status().isForbidden());
+        assertEquals(1, documentosEnBase());
+        assertEquals("SUSPENDIDO", estadoDelComercio());
     }
 
     @Test

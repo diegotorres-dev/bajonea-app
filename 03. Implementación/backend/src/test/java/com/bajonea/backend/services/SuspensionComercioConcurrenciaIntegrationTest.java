@@ -6,28 +6,35 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
+import com.bajonea.backend.config.DocumentacionComercioProperties;
 import com.bajonea.backend.config.security.ComercioActivo;
 import com.bajonea.backend.dto.request.AnulacionPedidoRequestDTO;
 import com.bajonea.backend.dto.request.LevantamientoSuspensionRequestDTO;
 import com.bajonea.backend.dto.request.PedidoRequestDTO;
+import com.bajonea.backend.dto.request.ResolverDocumentoRequestDTO;
+import com.bajonea.backend.dto.request.SubirDocumentoComercioRequestDTO;
 import com.bajonea.backend.dto.request.SuspensionComercioRequestDTO;
 import com.bajonea.backend.enums.ActorCierre;
 import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.MotivoRechazo;
 import com.bajonea.backend.enums.MotivoRecalculo;
 import com.bajonea.backend.enums.RolActorComercio;
+import com.bajonea.backend.enums.TipoDocumentoComercio;
 import com.bajonea.backend.enums.TipoEntrega;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.services.DatosPruebaEmpleado.Cuenta;
 import com.bajonea.backend.services.DatosPruebaEmpleado.Dueno;
 import com.bajonea.backend.services.MercadoPagoReembolsoClient.ResultadoReembolsoMp;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.RepeatedTest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -52,13 +59,30 @@ class SuspensionComercioConcurrenciaIntegrationTest extends CarritoIntegrationBa
     @Autowired
     private TestSupportService testSupportService;
 
+    @Autowired
+    private DocumentoComercioService documentoComercioService;
+
+    @Autowired
+    private RevisionDocumentoService revisionDocumentoService;
+
+    @Autowired
+    private DocumentacionComercioProperties documentacionProperties;
+
     @MockitoBean
     private MercadoPagoReembolsoClient reembolsoClient;
 
+    private boolean documentacionRequeridaOriginal;
+
     private int administradorId;
+
+    @AfterEach
+    void restaurarDocumentacion() {
+        documentacionProperties.setRequerida(documentacionRequeridaOriginal);
+    }
 
     @BeforeEach
     void prepararAdministrador() {
+        documentacionRequeridaOriginal = documentacionProperties.isRequerida();
         administradorId = jdbcTemplate.queryForObject("SELECT id FROM administrador ORDER BY id LIMIT 1", Integer.class);
         when(reembolsoClient.solicitarReembolsoTotal(any(), any(), anyString())).thenReturn(new ResultadoReembolsoMp(true, "refund", null));
         when(emailService.enviarComercioSuspendido(anyString(), anyString(), anyString())).thenReturn(ResultadoEnvioEmail.enviado("id"));
@@ -235,6 +259,91 @@ class SuspensionComercioConcurrenciaIntegrationTest extends CarritoIntegrationBa
         sinFallosInesperados(correrAlMismoTiempo(tareas));
 
         assertEquals("SUSPENDIDO", estadoComercio(dueno));
+    }
+
+    private int subirDocumento(Dueno dueno) {
+        SubirDocumentoComercioRequestDTO request = new SubirDocumentoComercioRequestDTO();
+        request.setTipo(TipoDocumentoComercio.LIBRETA_SANITARIA);
+        request.setArchivo(new MockMultipartFile("archivo", "doc.pdf", "application/pdf",
+                "%PDF-1.4\n%suspension\n%%EOF\n".getBytes(StandardCharsets.US_ASCII)));
+        return documentoComercioService.subir(ComercioActivo.delDueno(dueno.comercioId(), dueno.id(), EstadoComercio.SUSPENDIDO), request).getId();
+    }
+
+    private void resolverDocumento(int documentoId, boolean aprobar) {
+        ResolverDocumentoRequestDTO request = new ResolverDocumentoRequestDTO();
+        request.setAprobar(aprobar);
+        request.setMotivo(aprobar ? null : "No se lee");
+        revisionDocumentoService.resolver(documentoId, administradorId, request);
+    }
+
+    private int documentos(Dueno dueno, String estado) {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM documento_comercio WHERE comercio_id = ? AND estado = ?",
+                Integer.class, dueno.comercioId(), estado);
+    }
+
+    private int transicionesDeSalidaDeSuspension(Dueno dueno) {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM historial_estado_comercio WHERE comercio_id = ? AND estado_origen = 'SUSPENDIDO'",
+                Integer.class, dueno.comercioId());
+    }
+
+    @RepeatedTest(8)
+    void subirUnDocumentoContraLevantarLaSuspensionDejaElComercioSegunSusDocumentosVigentes() {
+        documentacionProperties.setRequerida(true);
+        Dueno dueno = comercioApto(true);
+        testSupportService.aprobarDocumentacion(dueno.comercioId());
+        suspender(dueno);
+
+        List<Callable<Object>> tareas = new ArrayList<>();
+        tareas.add(() -> suspensionService.levantar(dueno.comercioId(), administradorId, new LevantamientoSuspensionRequestDTO(null)));
+        tareas.add(() -> subirDocumento(dueno));
+        sinFallosInesperados(correrAlMismoTiempo(tareas));
+
+        assertEquals("APTO_VENTA", estadoComercio(dueno));
+        assertEquals(1, documentos(dueno, "PENDIENTE"));
+        assertEquals(1, transicionesDeSalidaDeSuspension(dueno));
+    }
+
+    @RepeatedTest(8)
+    void subirUnDocumentoContraLevantarSinNingunoAprobadoDejaElComercioAprobado() {
+        documentacionProperties.setRequerida(true);
+        Dueno dueno = comercioApto(true);
+        suspender(dueno);
+
+        List<Callable<Object>> tareas = new ArrayList<>();
+        tareas.add(() -> suspensionService.levantar(dueno.comercioId(), administradorId, new LevantamientoSuspensionRequestDTO(null)));
+        tareas.add(() -> subirDocumento(dueno));
+        sinFallosInesperados(correrAlMismoTiempo(tareas));
+
+        assertEquals("APROBADO", estadoComercio(dueno));
+        assertEquals(1, documentos(dueno, "PENDIENTE"));
+        assertEquals(1, transicionesDeSalidaDeSuspension(dueno));
+    }
+
+    @RepeatedTest(8)
+    void subirYAprobarDocumentosContraSuspenderDejaElComercioSuspendidoYLosDocumentosHechos() {
+        documentacionProperties.setRequerida(true);
+        Dueno dueno = comercioApto(true);
+        testSupportService.aprobarDocumentacion(dueno.comercioId());
+        int existente = subirDocumento(dueno);
+
+        List<Callable<Object>> tareas = new ArrayList<>();
+        tareas.add(() -> {
+            suspender(dueno);
+            return null;
+        });
+        tareas.add(() -> subirDocumento(dueno));
+        tareas.add(() -> {
+            resolverDocumento(existente, true);
+            return null;
+        });
+        sinFallosInesperados(correrAlMismoTiempo(tareas));
+
+        assertEquals("SUSPENDIDO", estadoComercio(dueno));
+        assertEquals(1, documentos(dueno, "PENDIENTE"));
+        assertEquals(2, documentos(dueno, "APROBADO"));
+        assertEquals(1, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM historial_estado_comercio WHERE comercio_id = ? AND estado_destino = 'SUSPENDIDO'",
+                Integer.class, dueno.comercioId()));
+        assertEquals(0, transicionesDeSalidaDeSuspension(dueno));
     }
 
     @RepeatedTest(6)

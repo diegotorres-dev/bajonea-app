@@ -183298,6 +183298,1988 @@
           ]
         }
       ]
+    },
+    {
+      "name": "83 - Suspension de comercio Fase 5 S2 cierre (el Dueño sube documentos con el comercio suspendido, ni subir ni aprobar ni rechazar ni eliminar mueven la suspension, al levantarla el comercio queda segun los documentos vigentes)",
+      "item": [
+        {
+          "name": "Login Administrador (sesion propia de esta carpeta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{admin_usuario}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('token_admin', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: se enciende la exigencia de documentos",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/documentacion-requerida?habilitado=true",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "documentacion-requerida"
+              ],
+              "query": [
+                {
+                  "key": "habilitado",
+                  "value": "true"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Dueño Cierre",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "comercio"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Suspension Cierre SRL\",\n  \"cuit\": \"{{scd_cuit_tmp}}\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Direccion fiscal Cierre 100\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"{{scd_nombre_d}}\",\n  \"descripcion\": \"Comercio generado por la coleccion de Postman (suspension de comercio, S2 entrega Cierre)\",\n  \"telefono\": \"+5492964555447\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"nombreUsuario\": \"{{scd_d_usuario}}\",\n  \"email\": \"{{scd_d_email}}\",\n  \"password\": \"{{scd_d_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"803\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Carlos\",\n  \"apellidoRepresentante\": \"Sanchez\",\n  \"dniRepresentante\": \"{{scd_dni_rep_tmp}}\",\n  \"telefonoRepresentante\": \"+5492964701106\",\n  \"fechaNacimientoRepresentante\": \"1988-04-04\",\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/postman-suspension-b2.jpg\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/suspensionb2\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('scd_d_email', 'scd.d.' + s + '@bajonea.test');",
+                  "pm.environment.set('scd_d_usuario', ('scdd' + s).slice(0, 20));",
+                  "pm.environment.set('scd_d_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('scd_d_dni', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "const mult = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];",
+                  "let cuit = null;",
+                  "while (cuit === null) {",
+                  "  const base = '30' + String(Math.floor(10000000 + Math.random() * 89999999));",
+                  "  let suma = 0;",
+                  "  for (let i = 0; i < 10; i += 1) suma += Number(base[i]) * mult[i];",
+                  "  let dv = 11 - (suma % 11);",
+                  "  if (dv === 11) dv = 0;",
+                  "  if (dv !== 10) cuit = base + dv;",
+                  "}",
+                  "pm.environment.set('scd_cuit_tmp', cuit);",
+                  "pm.environment.set('scd_dni_rep_tmp', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "pm.environment.set('scd_nombre_d', 'Local Suspension B2 ' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Dueño Cierre",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{scd_d_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{scd_d_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('scd_d_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Dueño Cierre",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{scd_d_email}}\",\n  \"codigo\": \"{{scd_d_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Dueño Cierre",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{scd_d_usuario}}\",\n  \"password\": \"{{scd_d_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('scd_d_token', pm.response.json().data.token);",
+                  "pm.environment.set('scd_d_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador busca el comercio pendiente de Dueño Cierre",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/pendientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "pendientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.emailCuenta === pm.environment.get('scd_d_email').toLowerCase());",
+                  "pm.test('El comercio esta pendiente', () => pm.expect(c).to.exist);",
+                  "pm.environment.set('scd_com', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador aprueba el comercio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{scd_com}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{scd_com}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: cuenta de Mercado Pago simulada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/duenos/{{scd_d_id}}/mercadopago-simulada",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "duenos",
+                "{{scd_d_id}}",
+                "mercadopago-simulada"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Carla",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carla\",\n  \"apellido\": \"Suspension\",\n  \"dni\": \"{{scd_c_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551239\",\n  \"nombreUsuario\": \"{{scd_c_usuario}}\",\n  \"email\": \"{{scd_c_email}}\",\n  \"password\": \"{{scd_c_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('scd_c_email', 'scd.c.' + s + '@bajonea.test');",
+                  "pm.environment.set('scd_c_usuario', ('scdc' + s).slice(0, 20));",
+                  "pm.environment.set('scd_c_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('scd_c_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Carla",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{scd_c_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{scd_c_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('scd_c_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Carla",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{scd_c_email}}\",\n  \"codigo\": \"{{scd_c_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Carla (Cliente)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{scd_c_usuario}}\",\n  \"password\": \"{{scd_c_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('scd_c_token', pm.response.json().data.token);",
+                  "pm.environment.set('scd_c_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueño sube su primer documento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{scd_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/documentos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "documentos"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "tipo",
+                  "value": "LIBRETA_SANITARIA",
+                  "type": "text"
+                },
+                {
+                  "key": "archivo",
+                  "src": "fixtures/documento-prueba.pdf",
+                  "type": "file"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('scd_doc1', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Administrador aprueba el primer documento",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/documentos/{{scd_doc1}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "documentos",
+                "{{scd_doc1}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Con el documento aprobado y Mercado Pago, el comercio esta a la venta",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{scd_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"El comercio esta APTO_VENTA\", () => { pm.expect(pm.response.json().data.estado).to.eql('APTO_VENTA'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Administrador suspende el comercio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{scd_com}}/suspender",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{scd_com}}",
+                "suspender"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Documentacion vencida y quejas reiteradas de clientes\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El comercio quedo suspendido",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{scd_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"El comercio esta SUSPENDIDO\", () => { pm.expect(pm.response.json().data.estado).to.eql('SUSPENDIDO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspendido: los requisitos dicen que se puede subir",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{scd_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/documentos/requisitos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "documentos",
+                "requisitos"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Estado y permiso\", () => { const d = pm.response.json().data; pm.expect(d.estadoComercio).to.eql('SUSPENDIDO'); pm.expect(d.puedeSubir).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspendido: el Dueño sube un documento nuevo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{scd_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/documentos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "documentos"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "tipo",
+                  "value": "CARNET_MANIPULACION_ALIMENTOS",
+                  "type": "text"
+                },
+                {
+                  "key": "archivo",
+                  "src": "fixtures/documento-prueba.pdf",
+                  "type": "file"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.test(\"Nace en revision\", () => { const d = pm.response.json().data; pm.expect(d.estado).to.eql('PENDIENTE'); });",
+                  "pm.environment.set('scd_doc2', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Subir un documento no saca al comercio de la suspension",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{scd_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"El comercio esta SUSPENDIDO\", () => { pm.expect(pm.response.json().data.estado).to.eql('SUSPENDIDO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspendido: el Administrador aprueba el documento nuevo",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/documentos/{{scd_doc2}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "documentos",
+                "{{scd_doc2}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Aprobar un documento no saca al comercio de la suspension",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{scd_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"El comercio esta SUSPENDIDO\", () => { pm.expect(pm.response.json().data.estado).to.eql('SUSPENDIDO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspendido: ya hay dos documentos aprobados",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{scd_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/documentos/requisitos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "documentos",
+                "requisitos"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Dos aprobados\", () => { pm.expect(pm.response.json().data.documentosAprobados).to.eql(2); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspendido: el Dueño sube un tercer documento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{scd_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/documentos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "documentos"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "tipo",
+                  "value": "HABILITACION_COMERCIAL",
+                  "type": "text"
+                },
+                {
+                  "key": "archivo",
+                  "src": "fixtures/documento-prueba.pdf",
+                  "type": "file"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('scd_doc3', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspendido: el Dueño ve el archivo de su documento",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{scd_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/documentos/{{scd_doc3}}/archivo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "documentos",
+                "{{scd_doc3}}",
+                "archivo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspendido: el Administrador rechaza el tercero con motivo",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/documentos/{{scd_doc3}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "documentos",
+                "{{scd_doc3}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": false,\n  \"motivo\": \"La habilitacion esta vencida\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rechazar un documento no mueve la suspension",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{scd_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"El comercio esta SUSPENDIDO\", () => { pm.expect(pm.response.json().data.estado).to.eql('SUSPENDIDO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspendido: subir un documento OTRO sin descripcion se rechaza (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{scd_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/documentos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "documentos"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "tipo",
+                  "value": "OTRO",
+                  "type": "text"
+                },
+                {
+                  "key": "archivo",
+                  "src": "fixtures/documento-prueba.pdf",
+                  "type": "file"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspendido: subir un documento OTRO con descripcion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{scd_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/documentos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "documentos"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "tipo",
+                  "value": "OTRO",
+                  "type": "text"
+                },
+                {
+                  "key": "descripcion",
+                  "value": "Certificado de bomberos",
+                  "type": "text"
+                },
+                {
+                  "key": "archivo",
+                  "src": "fixtures/documento-prueba.pdf",
+                  "type": "file"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('scd_doc4', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspendido: el Dueño elimina el documento que sigue en revision",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{scd_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/documentos/{{scd_doc4}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "documentos",
+                "{{scd_doc4}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar un documento no mueve la suspension",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{scd_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"El comercio esta SUSPENDIDO\", () => { pm.expect(pm.response.json().data.estado).to.eql('SUSPENDIDO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Permisos: un Cliente no sube documentos del comercio (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{scd_c_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/documentos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "documentos"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "tipo",
+                  "value": "LIBRETA_SANITARIA",
+                  "type": "text"
+                },
+                {
+                  "key": "archivo",
+                  "src": "fixtures/documento-prueba.pdf",
+                  "type": "file"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Permisos: sin sesion no se sube (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/documentos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "documentos"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "tipo",
+                  "value": "LIBRETA_SANITARIA",
+                  "type": "text"
+                },
+                {
+                  "key": "archivo",
+                  "src": "fixtures/documento-prueba.pdf",
+                  "type": "file"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Administrador levanta la suspension",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{scd_com}}/levantar-suspension",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{scd_com}}",
+                "levantar-suspension"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Al levantar, con documentos aprobados y Mercado Pago, vuelve a la venta",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{scd_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"El comercio esta APTO_VENTA\", () => { pm.expect(pm.response.json().data.estado).to.eql('APTO_VENTA'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Se suspende de nuevo",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{scd_com}}/suspender",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{scd_com}}",
+                "suspender"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Documentacion vencida y quejas reiteradas de clientes\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspendido: el Administrador revoca el primer documento aprobado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/documentos/{{scd_doc1}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "documentos",
+                "{{scd_doc1}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": false,\n  \"motivo\": \"Documento revocado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Suspendido: el Administrador revoca el segundo documento aprobado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/documentos/{{scd_doc2}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "documentos",
+                "{{scd_doc2}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": false,\n  \"motivo\": \"Documento revocado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Revocar los documentos tampoco mueve la suspension",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{scd_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"El comercio esta SUSPENDIDO\", () => { pm.expect(pm.response.json().data.estado).to.eql('SUSPENDIDO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Administrador levanta la suspension sin documentos aprobados",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{scd_com}}/levantar-suspension",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{scd_com}}",
+                "levantar-suspension"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin documentos aprobados el comercio vuelve a Aprobado, no a la venta",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{scd_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{scd_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"El comercio esta APROBADO\", () => { pm.expect(pm.response.json().data.estado).to.eql('APROBADO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: se apaga la exigencia de documentos",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/documentacion-requerida?habilitado=false",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "documentacion-requerida"
+              ],
+              "query": [
+                {
+                  "key": "habilitado",
+                  "value": "false"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "event": [
