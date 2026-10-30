@@ -26,7 +26,7 @@ const todoElDia = () => [{ diaSemana: diaDeHoy(), horaApertura: '00:00', horaCie
 const CAMPOS_PASO = ['accionTexto', 'actorNombre', 'actorRol', 'actorRolTexto', 'estado', 'fechaHora', 'motivo'];
 const CAMPOS_EMPLEADO = [
   'canceladoPor', 'cargoServicioCliente', 'comentarioRechazo', 'comercioId', 'detalles', 'direccion', 'esPedidoPropio', 'estado', 'fechaCreacion', 'fechaEntrega',
-  'fechaPagoAprobado', 'fuenteEntrega', 'id', 'motivoAnulacion', 'motivoRechazo', 'noRetiradoDisponibleDesde', 'noRetiradoMinutosRestantes', 'nombreCliente', 'reembolsoEstado', 'reembolsoMonto',
+  'fechaPagoAprobado', 'fuenteEntrega', 'id', 'limiteResolucionSuspension', 'motivoAnulacion', 'motivoRechazo', 'noRetiradoDisponibleDesde', 'noRetiradoMinutosRestantes', 'nombreCliente', 'reembolsoEstado', 'reembolsoMonto',
   'subtotal', 'tipoEntrega', 'total',
 ];
 

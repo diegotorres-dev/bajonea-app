@@ -671,7 +671,7 @@ test.describe('Rol Empleado, tramo E2 (UI): acceso del Empleado', () => {
 
       await abrirComoEmpleado(page, request, empleado, suspendido);
       await page.goto('/comercio-dashboard.html');
-      await expect(page.getByTestId('mensaje-estado-comercio')).toContainText('Comercio suspendido. No se aceptan pedidos nuevos.');
+      await expect(page.getByTestId('mensaje-estado-comercio')).toContainText('Este comercio está suspendido');
       await page.goto('/comercio-perfil.html');
       await expect(page.getByTestId('empleado-estado')).toHaveText('Suspendido');
 

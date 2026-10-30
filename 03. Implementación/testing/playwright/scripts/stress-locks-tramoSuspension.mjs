@@ -364,6 +364,49 @@ async function escenarioLevantarContraElTope(admin, ronda) {
   anotar(`levantar-contra-tope: pedido ${estado}`);
 }
 
+async function escenarioAccionesContraElTope(admin, ronda) {
+  const comercio = await comercioConProducto(admin);
+  const cliente = await nuevoCliente();
+  const aDespachar = await pedidoPagado(comercio, cliente, true);
+  const aAnular = await pedidoPagado(comercio, cliente, true);
+  const dobleClic = await pedidoPagado(comercio, cliente, true);
+  const s = await suspenderComercio(admin, comercio.comercioId);
+  exigir(s.status === 200, `acciones contra el tope ronda ${ronda}: suspender dio ${s.status}`);
+  await call('PUT', `/test/comercios/${comercio.comercioId}/envejecer-suspension?minutos=200`, null, {});
+  const cabeceras = conComercio(comercio);
+  const respuestas = await Promise.all([
+    call('PUT', `/pedidos/comercio/${aDespachar}/despachar`, comercio.duenoToken, {}, cabeceras),
+    call('PUT', `/pedidos/comercio/${aAnular}/anular`, comercio.duenoToken, { motivo: 'SIN_STOCK' }, cabeceras),
+    call('PUT', `/pedidos/comercio/${dobleClic}/despachar`, comercio.duenoToken, {}, cabeceras),
+    call('PUT', `/pedidos/comercio/${dobleClic}/despachar`, comercio.duenoToken, {}, cabeceras),
+    call('POST', '/test/jobs/pedidos/cancelar-preparacion-suspension', null, {}),
+    call('POST', '/test/jobs/pedidos/cancelar-preparacion-suspension', null, {}),
+  ]);
+  respuestas.forEach((r, i) => registrar5xx(`acciones contra el tope #${i} (ronda ${ronda})`, r));
+  const [despacho, anulacion, clicUno, clicDos] = respuestas;
+  const notas = (id) => notasDelPedido(id);
+  const filas = (id, estado) => Number(sql(`SELECT COUNT(*) FROM historial_estado_pedido WHERE pedido_id = ${id} AND estado = '${estado}';`));
+
+  const estadoDespacho = estadoPedido(aDespachar);
+  exigir(estadoDespacho === 'LISTO_PARA_RETIRAR' || estadoDespacho === 'CANCELADO_POR_SISTEMA', `acciones contra el tope ronda ${ronda}: despachar quedo en ${estadoDespacho}`);
+  exigir((estadoDespacho === 'LISTO_PARA_RETIRAR') === (despacho.status === 200), `acciones contra el tope ronda ${ronda}: despachar respondio ${despacho.status} con el pedido en ${estadoDespacho}`);
+  exigir(notas(aDespachar) === (estadoDespacho === 'CANCELADO_POR_SISTEMA' ? 1 : 0), `acciones contra el tope ronda ${ronda}: ${notas(aDespachar)} notas con el pedido en ${estadoDespacho}`);
+  exigir(filas(aDespachar, 'LISTO_PARA_RETIRAR') + filas(aDespachar, 'CANCELADO_POR_SISTEMA') === 1, `acciones contra el tope ronda ${ronda}: el pedido despachado tiene mas de un cierre`);
+
+  const estadoAnulacion = estadoPedido(aAnular);
+  exigir(estadoAnulacion === 'ANULADO' || estadoAnulacion === 'CANCELADO_POR_SISTEMA', `acciones contra el tope ronda ${ronda}: anular quedo en ${estadoAnulacion}`);
+  exigir((estadoAnulacion === 'ANULADO') === (anulacion.status === 200), `acciones contra el tope ronda ${ronda}: anular respondio ${anulacion.status} con el pedido en ${estadoAnulacion}`);
+  exigir(notas(aAnular) === 1, `acciones contra el tope ronda ${ronda}: ${notas(aAnular)} notas en el pedido anulado o cancelado (debe ser una)`);
+
+  const ganadores = [clicUno, clicDos].filter((r) => r.status === 200).length;
+  const estadoDoble = estadoPedido(dobleClic);
+  exigir(estadoDoble === 'LISTO_PARA_RETIRAR' || estadoDoble === 'CANCELADO_POR_SISTEMA', `acciones contra el tope ronda ${ronda}: el doble clic quedo en ${estadoDoble}`);
+  exigir(ganadores === (estadoDoble === 'LISTO_PARA_RETIRAR' ? 1 : 0), `acciones contra el tope ronda ${ronda}: ${ganadores} despachos con exito y el pedido en ${estadoDoble}`);
+  exigir(filas(dobleClic, 'LISTO_PARA_RETIRAR') === (estadoDoble === 'LISTO_PARA_RETIRAR' ? 1 : 0), `acciones contra el tope ronda ${ronda}: el doble clic dejo ${filas(dobleClic, 'LISTO_PARA_RETIRAR')} filas de listo`);
+  exigir(notas(dobleClic) === (estadoDoble === 'CANCELADO_POR_SISTEMA' ? 1 : 0), `acciones contra el tope ronda ${ronda}: ${notas(dobleClic)} notas en el doble clic con el pedido en ${estadoDoble}`);
+  anotar(`acciones-contra-tope: despachar ${estadoDespacho}, anular ${estadoAnulacion}, doble clic ${estadoDoble}`);
+}
+
 const ESCENARIOS = [
   { n: 1, nombre: 'doble suspension', corre: (ctx, ronda) => escenarioDobleSuspension(ctx.admin, ronda) },
   { n: 2, nombre: 'suspender contra login', corre: (ctx, ronda) => escenarioSuspenderContraLogin(ctx.admin, ronda) },
@@ -377,6 +420,7 @@ const ESCENARIOS = [
   { n: 10, nombre: 'comercio: suspender contra cerrar y abrir', corre: (ctx, ronda) => escenarioSuspenderContraCierre(ctx.admin, ronda) },
   { n: 11, nombre: 'comercio: suspender contra Mercado Pago y documentos', corre: (ctx, ronda) => escenarioSuspenderContraMercadoPagoYDocumentos(ctx.admin, ronda) },
   { n: 12, nombre: 'comercio: levantar contra el tope de 90 minutos', corre: (ctx, ronda) => escenarioLevantarContraElTope(ctx.admin, ronda) },
+  { n: 13, nombre: 'comercio: despachar, anular y doble clic contra el tope de 90 minutos', corre: (ctx, ronda) => escenarioAccionesContraElTope(ctx.admin, ronda) },
 ];
 
 async function main() {

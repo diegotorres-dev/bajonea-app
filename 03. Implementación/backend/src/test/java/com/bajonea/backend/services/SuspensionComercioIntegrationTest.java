@@ -824,4 +824,159 @@ class SuspensionComercioIntegrationTest extends CarritoIntegrationBase {
         levantar(dueno, null);
         assertNotNull(invitacionService.aceptar(request));
     }
+
+    // ------------------------------------------------------------------ datos para las pantallas (entrega B2)
+
+    @Autowired
+    private com.bajonea.backend.config.PedidoTimeoutProperties timeoutProperties;
+
+    @Test
+    void laVistaPreviaDevuelveLosTopesConfiguradosYNoUnNumeroFijo() {
+        Dueno dueno = comercioApto(true);
+        long preparacionOriginal = timeoutProperties.getPreparacionSuspensionMinutos();
+        long retiroOriginal = timeoutProperties.getRetiroSuspensionMinutos();
+        try {
+            SuspensionComercioPreviaResponseDTO porDefecto = suspensionService.vistaPrevia(dueno.comercioId());
+            assertEquals(90, porDefecto.getTopePreparacionMinutos());
+            assertEquals(90, porDefecto.getTopeRetiroMinutos());
+
+            timeoutProperties.setPreparacionSuspensionMinutos(45);
+            timeoutProperties.setRetiroSuspensionMinutos(30);
+            SuspensionComercioPreviaResponseDTO configurada = suspensionService.vistaPrevia(dueno.comercioId());
+            assertEquals(45, configurada.getTopePreparacionMinutos());
+            assertEquals(30, configurada.getTopeRetiroMinutos());
+        } finally {
+            timeoutProperties.setPreparacionSuspensionMinutos(preparacionOriginal);
+            timeoutProperties.setRetiroSuspensionMinutos(retiroOriginal);
+        }
+    }
+
+    private com.bajonea.backend.dto.response.PedidoResponseDTO delDuenoPorId(Dueno dueno, int pedidoId) {
+        return pedidoService.listarPedidosComercio(dueno.comercioId()).stream().filter(p -> p.getId() == pedidoId).findFirst().orElseThrow();
+    }
+
+    @Test
+    void losPedidosDelComercioSuspendidoLlevanLaHoraLimiteSegunSuEstado() {
+        Dueno dueno = comercioApto(true);
+        int cliente = datos.registrarCliente();
+        int pendiente = pedido(dueno, cliente, "PENDIENTE_CONFIRMACION_COMERCIO", 5, true);
+        int enPreparacion = pedido(dueno, cliente, "EN_PREPARACION", 5, true);
+        int enCamino = pedido(dueno, cliente, "EN_CAMINO", 5, false);
+        int yaListo = pedido(dueno, cliente, "LISTO_PARA_RETIRAR", 600, true);
+        suspender(dueno);
+        LocalDateTime desde = (LocalDateTime) comercio(dueno).get("suspendido_desde");
+        int listoDespues = pedido(dueno, cliente, "LISTO_PARA_RETIRAR", 0, true);
+        LocalDateTime quedoListo = desde.plusMinutes(20).withNano(0);
+        jdbcTemplate.update("UPDATE historial_estado_pedido SET fecha_hora = ? WHERE pedido_id = ? AND estado = 'LISTO_PARA_RETIRAR'",
+                quedoListo, listoDespues);
+
+        assertNull(delDuenoPorId(dueno, pendiente).getLimiteResolucionSuspension());
+        assertNull(delDuenoPorId(dueno, enCamino).getLimiteResolucionSuspension());
+        assertEquals(desde.plusMinutes(90), delDuenoPorId(dueno, enPreparacion).getLimiteResolucionSuspension());
+        assertEquals(desde.plusMinutes(90), delDuenoPorId(dueno, yaListo).getLimiteResolucionSuspension());
+        assertEquals(quedoListo.plusMinutes(90), delDuenoPorId(dueno, listoDespues).getLimiteResolucionSuspension());
+
+        Cuenta cuenta = empleado(dueno);
+        var delEmpleado = pedidoService.listarPedidosComercioEmpleado(dueno.comercioId(), cuenta.id());
+        assertEquals(desde.plusMinutes(90), delEmpleado.stream().filter(p -> p.getId() == enPreparacion).findFirst().orElseThrow()
+                .getLimiteResolucionSuspension());
+        assertNull(delEmpleado.stream().filter(p -> p.getId() == pendiente).findFirst().orElseThrow().getLimiteResolucionSuspension());
+    }
+
+    @Test
+    void elLimiteSeCalculaConLosTopesConfiguradosYDesapareceAlLevantar() {
+        Dueno dueno = comercioApto(true);
+        int cliente = datos.registrarCliente();
+        int enPreparacion = pedido(dueno, cliente, "EN_PREPARACION", 5, true);
+        long original = timeoutProperties.getPreparacionSuspensionMinutos();
+        suspender(dueno);
+        LocalDateTime desde = (LocalDateTime) comercio(dueno).get("suspendido_desde");
+        try {
+            timeoutProperties.setPreparacionSuspensionMinutos(45);
+            assertEquals(desde.plusMinutes(45), delDuenoPorId(dueno, enPreparacion).getLimiteResolucionSuspension());
+        } finally {
+            timeoutProperties.setPreparacionSuspensionMinutos(original);
+        }
+
+        levantar(dueno, null);
+
+        assertNull(delDuenoPorId(dueno, enPreparacion).getLimiteResolucionSuspension());
+    }
+
+    @Test
+    void elPedidoSinPagarDelClienteSeMarcaComoComercioNoDisponibleSoloConElComercioSuspendido() {
+        Dueno dueno = comercioApto(true);
+        int cliente = datos.registrarCliente();
+        int sinPagar = pedidoPendientePago(cliente, dueno);
+        int viejo = pedido(dueno, cliente, "ENTREGADO", 5, true);
+
+        assertFalse(pedidoService.listarPedidosCliente(cliente).stream().filter(p -> p.getId() == sinPagar).findFirst().orElseThrow()
+                .isComercioNoDisponible());
+
+        suspender(dueno);
+        var lista = pedidoService.listarPedidosCliente(cliente);
+
+        assertTrue(lista.stream().filter(p -> p.getId() == sinPagar).findFirst().orElseThrow().isComercioNoDisponible());
+        var pedidoViejo = lista.stream().filter(p -> p.getId() == viejo).findFirst().orElseThrow();
+        assertFalse(pedidoViejo.isComercioNoDisponible());
+        assertEquals(dueno.nombreComercio(), pedidoViejo.getComercioNombre());
+
+        levantar(dueno, null);
+        assertFalse(pedidoService.listarPedidosCliente(cliente).stream().filter(p -> p.getId() == sinPagar).findFirst().orElseThrow()
+                .isComercioNoDisponible());
+    }
+
+    @Test
+    void confirmarUnPedidoConElComercioSuspendidoDaUnErrorClaroConSalidaYCodigoEstable() {
+        ConflictoComercioException ex = assertThrows(ConflictoComercioException.class,
+                () -> comercioService.validarAceptaPedidos(null, EstadoComercio.SUSPENDIDO, false));
+
+        assertEquals("COMERCIO_SIN_PEDIDOS", ex.getCodigo());
+        assertEquals("Este comercio no está recibiendo pedidos por ahora. Probá con otro comercio.", ex.getMessage());
+        assertFalse(ex.getMessage().contains("SUSPENDIDO"));
+    }
+
+    @Autowired
+    private com.bajonea.backend.repositories.HistorialEstadoPedidoRepository historialEstadoPedidoRepository;
+
+    private List<Integer> pedidosEnLaActividad(Dueno dueno) {
+        return historialEstadoPedidoRepository.actividadDelComercio(dueno.comercioId(),
+                java.util.Arrays.asList(com.bajonea.backend.enums.EstadoPedido.values()), LocalDateTime.now().plusDays(1), Integer.MAX_VALUE,
+                org.springframework.data.domain.PageRequest.of(0, 100)).stream().map(f -> f.pedidoId()).toList();
+    }
+
+    @Test
+    void elClientePuedeCancelarUnPedidoSinPagarDeUnComercioSuspendidoSinNotaNiAvisoNiHuellaEnLaActividad() {
+        Dueno dueno = comercioApto(true);
+        int cliente = datos.registrarCliente();
+        int sinPagar = pedidoPendientePago(cliente, dueno);
+        suspender(dueno);
+
+        var respuesta = pedidoService.cancelarPedido(cliente, sinPagar);
+
+        assertEquals(com.bajonea.backend.enums.EstadoPedido.CANCELADO, respuesta.getEstado());
+        assertEquals("CANCELADO", estadoDelPedido(sinPagar));
+        assertEquals(0, notas(sinPagar));
+        assertEquals(0, avisos(dueno.id(), "PEDIDO_CANCELADO_CLIENTE"));
+        assertEquals(1, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM historial_estado_pedido WHERE pedido_id = ? AND estado = 'CANCELADO' "
+                + "AND actor_rol = 'CLIENTE'", Integer.class, sinPagar));
+        assertFalse(pedidosEnLaActividad(dueno).contains(sinPagar), "el comercio nunca vio este pedido");
+        assertThrows(ConflictoDeNegocioException.class, () -> pedidoService.cancelarPedido(cliente, sinPagar));
+    }
+
+    @Test
+    void elPedidoPagadoCanceladoPorLaSuspensionExponeElMotivoDelReembolsoAlCliente() {
+        Dueno dueno = comercioApto(true);
+        int cliente = datos.registrarCliente();
+        int pedido = pedido(dueno, cliente, "EN_PREPARACION", 5, true);
+        suspender(dueno);
+        LocalDateTime base = (LocalDateTime) comercio(dueno).get("suspendido_desde");
+        pedidoService.cancelarPreparacionPorSuspension(base.plusMinutes(91));
+
+        var respuesta = pedidoService.listarPedidosCliente(cliente).stream().filter(p -> p.getId() == pedido).findFirst().orElseThrow();
+
+        assertEquals(com.bajonea.backend.enums.EstadoPedido.CANCELADO_POR_SISTEMA, respuesta.getEstado());
+        assertEquals(com.bajonea.backend.enums.MotivoNotaCredito.SUSPENSION_COMERCIO, respuesta.getReembolsoMotivo());
+        assertEquals(dueno.nombreComercio(), respuesta.getComercioNombre());
+    }
 }

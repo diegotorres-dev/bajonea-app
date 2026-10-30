@@ -300,4 +300,84 @@ class SuspensionComercioConcurrenciaIntegrationTest extends CarritoIntegrationBa
                 dueno.comercioId());
         assertEquals(estado.equals("SUSPENDIDO") ? 1 : 0, origen);
     }
+
+    @RepeatedTest(8)
+    void despacharContraElProcesoDeLos90MinutosTieneUnSoloGanadorComoDueno() {
+        accionContraElTope(false, false);
+    }
+
+    @RepeatedTest(8)
+    void despacharContraElProcesoDeLos90MinutosTieneUnSoloGanadorComoEmpleado() {
+        accionContraElTope(false, true);
+    }
+
+    @RepeatedTest(8)
+    void anularContraElProcesoDeLos90MinutosTieneUnSoloGanadorComoDueno() {
+        accionContraElTope(true, false);
+    }
+
+    @RepeatedTest(8)
+    void anularContraElProcesoDeLos90MinutosTieneUnSoloGanadorComoEmpleado() {
+        accionContraElTope(true, true);
+    }
+
+    private void accionContraElTope(boolean anular, boolean comoEmpleado) {
+        Dueno dueno = comercioApto(true);
+        int cliente = datos.registrarCliente();
+        int pedido = pedido(dueno, cliente, "EN_PREPARACION", 5);
+        suspender(dueno);
+        jdbcTemplate.update("UPDATE comercio SET suspendido_desde = DATE_SUB(suspendido_desde, INTERVAL 200 MINUTE) WHERE id = ?", dueno.comercioId());
+        ComercioActivo actor = ComercioActivo.delDueno(dueno.comercioId(), dueno.id(), EstadoComercio.SUSPENDIDO);
+        if (comoEmpleado) {
+            Cuenta cuenta = datos.registrarClienteConCredenciales();
+            datos.vincularEmpleado(cuenta.id(), dueno.comercioId(), "ACTIVO", LocalDateTime.now().minusDays(1));
+            actor = new ComercioActivo(dueno.comercioId(), dueno.id(), cuenta.id(), RolActorComercio.EMPLEADO, EstadoComercio.SUSPENDIDO);
+        }
+        ComercioActivo elActor = actor;
+
+        List<Callable<Object>> tareas = new ArrayList<>();
+        tareas.add(() -> anular
+                ? pedidoService.anularPedido(elActor, pedido, new AnulacionPedidoRequestDTO(MotivoRechazo.SIN_STOCK, null))
+                : pedidoService.avanzarAEntregaEnCurso(elActor, pedido));
+        tareas.add(() -> {
+            pedidoService.cancelarPreparacionPorSuspension(LocalDateTime.now());
+            return null;
+        });
+        sinFallosInesperados(correrAlMismoTiempo(tareas));
+
+        String estado = estadoDelPedido(pedido);
+        if (estado.equals("CANCELADO_POR_SISTEMA")) {
+            assertEquals(1, notas(pedido));
+            assertEquals(1, filas(pedido, "CANCELADO_POR_SISTEMA"));
+            assertEquals(0, filas(pedido, anular ? "ANULADO" : "LISTO_PARA_RETIRAR"));
+        } else if (anular) {
+            assertEquals("ANULADO", estado);
+            assertEquals(1, notas(pedido));
+            assertEquals(0, filas(pedido, "CANCELADO_POR_SISTEMA"));
+        } else {
+            assertEquals("LISTO_PARA_RETIRAR", estado);
+            assertEquals(0, notas(pedido));
+            assertEquals(1, filas(pedido, "LISTO_PARA_RETIRAR"));
+            assertEquals(0, filas(pedido, "CANCELADO_POR_SISTEMA"));
+        }
+    }
+
+    @RepeatedTest(8)
+    void elDobleClicEnDespacharEjecutaUnaSolaVezConElComercioSuspendido() {
+        Dueno dueno = comercioApto(true);
+        int cliente = datos.registrarCliente();
+        int pedido = pedido(dueno, cliente, "EN_PREPARACION", 5);
+        suspender(dueno);
+        ComercioActivo actor = ComercioActivo.delDueno(dueno.comercioId(), dueno.id(), EstadoComercio.SUSPENDIDO);
+
+        List<Callable<Object>> tareas = new ArrayList<>();
+        tareas.add(() -> pedidoService.avanzarAEntregaEnCurso(actor, pedido));
+        tareas.add(() -> pedidoService.avanzarAEntregaEnCurso(actor, pedido));
+        List<Object> resultados = correrAlMismoTiempo(tareas);
+        sinFallosInesperados(resultados);
+
+        assertEquals(1, resultados.stream().filter(r -> !(r instanceof Exception)).count());
+        assertEquals("LISTO_PARA_RETIRAR", estadoDelPedido(pedido));
+        assertEquals(1, filas(pedido, "LISTO_PARA_RETIRAR"));
+    }
 }

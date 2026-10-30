@@ -122,10 +122,10 @@ test.describe('Fase 4 (UI): documentos del comercio, entrega B', () => {
       await captura(page, '01-panel-momento-1');
     });
 
-    test('"Vincular ahora" usa el flujo de vinculación existente', async ({ page, request }) => {
+    test('"Vincular ahora" usa el flujo de vinculación existente', async ({ page, request, baseURL }) => {
       const dueno = await nuevoDueno(request, false);
       await page.route('**/oauth/mercadopago/iniciar', (ruta) =>
-        ruta.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ mensaje: 'ok', data: { url: 'http://localhost:5501/comercio-perfil.html?vista=mercadopago' } }) }),
+        ruta.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ mensaje: 'ok', data: { url: `${baseURL}/comercio-perfil.html?vista=mercadopago` } }) }),
       );
       await abrirDueno(page, dueno, '/comercio-dashboard.html');
       await page.getByTestId('btn-pasos-vincular-mp').click();

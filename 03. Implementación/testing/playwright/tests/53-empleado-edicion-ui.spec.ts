@@ -197,8 +197,10 @@ test.describe('Edición del comercio, productos y cierre para el Empleado, E3 en
       ponerEstadoComercio(dueno.comercioId, 'SUSPENDIDO');
       const mensaje = (await apiConHeaders(request, 'PUT', '/comercios/perfil/datos-operativos', elena.sesion.token, conComercio(), { descripcion: 'x', telefono: '+5492964111111' })).body.mensaje as string;
       expect(mensaje.length).toBeGreaterThan(10);
+      ponerEstadoComercio(dueno.comercioId, 'APTO_VENTA');
       await abrirComoEmpleado(page);
       await abrirEdicionDelComercio(page);
+      ponerEstadoComercio(dueno.comercioId, 'SUSPENDIDO');
 
       await page.getByTestId('input-empleado-descripcion').fill('Intento con el comercio suspendido');
       await page.getByTestId('btn-guardar-datos-comercio').click();
@@ -343,10 +345,12 @@ test.describe('Edición del comercio, productos y cierre para el Empleado, E3 en
       const respuesta = await apiConHeaders(request, 'PATCH', `/productos/${productoId}/estado`, elena.sesion.token, conComercio(), { estado: 'AGOTADO' });
       expect(respuesta.status).toBe(409);
       expect(respuesta.body.data.codigo).toBe('COMERCIO_SUSPENDIDO');
+      ponerEstadoComercio(dueno.comercioId, 'APTO_VENTA');
       await abrirComoEmpleado(page);
       await page.goto('/comercio-productos.html');
       await expect(page.getByTestId(`btn-acciones-producto-${productoId}`)).toBeVisible();
 
+      ponerEstadoComercio(dueno.comercioId, 'SUSPENDIDO');
       await page.getByTestId(`btn-acciones-producto-${productoId}`).click();
       await page.getByTestId('btn-cambiar-estado-producto').click();
 
@@ -480,7 +484,7 @@ test.describe('Edición del comercio, productos y cierre para el Empleado, E3 en
       await abrirComoEmpleado(page);
       await page.goto('/comercio-dashboard.html');
 
-      await expect(page.getByTestId('aviso-comercio-no-operativo')).toBeVisible();
+      await expect(page.getByTestId('tarjeta-comercio-suspendido')).toBeVisible();
       await expect(page.getByTestId('tarjeta-cierre-comercio')).toHaveCount(0);
     });
 

@@ -219,9 +219,9 @@ test.describe('Edición de horarios del comercio, Fase 2 T1 entrega B', () => {
   });
 
   test('con el comercio suspendido el Empleado recibe el aviso fijo y no se guarda nada', async ({ page, request }) => {
-    ponerEstadoComercio(dueno.comercioId, 'SUSPENDIDO');
     await abrirComoEmpleado(page);
     await abrirEdicion(page);
+    ponerEstadoComercio(dueno.comercioId, 'SUSPENDIDO');
     await cargarFranjas(page, [{ dia: 'MARTES', desde: '10:00', hasta: '18:00' }]);
     await page.getByTestId('btn-guardar-horarios').click();
     await expect(page.getByTestId('mensaje-banner-editar-horarios').getByTestId('aviso-fijo')).toBeVisible();

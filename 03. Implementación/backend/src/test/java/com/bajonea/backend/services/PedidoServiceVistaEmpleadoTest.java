@@ -59,7 +59,7 @@ class PedidoServiceVistaEmpleadoTest {
 
     private static final Set<String> CAMPOS_EMPLEADO = Set.of("id", "nombreCliente", "comercioId", "estado", "tipoEntrega",
             "direccion", "motivoRechazo", "comentarioRechazo", "canceladoPor", "fuenteEntrega", "motivoAnulacion", "fechaCreacion",
-            "fechaPagoAprobado", "fechaEntrega", "detalles", "subtotal", "cargoServicioCliente", "total", "reembolsoEstado", "reembolsoMonto", "esPedidoPropio", "noRetiradoDisponibleDesde", "noRetiradoMinutosRestantes");
+            "fechaPagoAprobado", "fechaEntrega", "detalles", "subtotal", "cargoServicioCliente", "total", "reembolsoEstado", "reembolsoMonto", "esPedidoPropio", "noRetiradoDisponibleDesde", "noRetiradoMinutosRestantes", "limiteResolucionSuspension");
     private static final Set<String> CAMPOS_EXCLUIDOS = Set.of("clienteId", "pagoEstado", "cargoServicioComercio");
 
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
@@ -201,7 +201,7 @@ class PedidoServiceVistaEmpleadoTest {
         assertEquals(new BigDecimal("100"), lista.get(0).getCargoServicioComercio());
         assertEquals(77, lista.get(0).getClienteId());
         assertEquals(EstadoPagoPedido.PAGADO, lista.get(0).getPagoEstado());
-        assertEquals(27, campos.size());
+        assertEquals(30, campos.size());
     }
 
     @Test

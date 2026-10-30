@@ -116,12 +116,22 @@ class ComercioServiceValidarAceptaPedidosTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = EstadoComercio.class, names = { "PENDIENTE", "APROBADO", "RECHAZADO", "SUSPENDIDO", "INACTIVO", "RECHAZO_DEFINITIVO" })
+    @EnumSource(value = EstadoComercio.class, names = { "PENDIENTE", "APROBADO", "RECHAZADO", "INACTIVO", "RECHAZO_DEFINITIVO" })
     void losDemasEstadosSigueDandoElTextoGenerico(EstadoComercio estado) {
         ConflictoDeNegocioException ex = assertThrows(ConflictoDeNegocioException.class,
                 () -> service.validarAceptaPedidos(comercio, estado, false));
 
         assertEquals(TEXTO_NO_ACEPTA, ex.getMessage());
+    }
+
+    @Test
+    void conElComercioSuspendidoDaUnTextoConSalidaYUnCodigoEstable() {
+        com.bajonea.backend.exceptions.ConflictoComercioException ex = assertThrows(
+                com.bajonea.backend.exceptions.ConflictoComercioException.class,
+                () -> service.validarAceptaPedidos(comercio, EstadoComercio.SUSPENDIDO, false));
+
+        assertEquals("Este comercio no está recibiendo pedidos por ahora. Probá con otro comercio.", ex.getMessage());
+        assertEquals("COMERCIO_SIN_PEDIDOS", ex.getCodigo());
     }
 
     @Test

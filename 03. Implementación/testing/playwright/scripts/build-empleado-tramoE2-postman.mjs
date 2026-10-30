@@ -448,6 +448,7 @@ const CAMPOS_PEDIDO = [
   'fechaPagoAprobado',
   'fuenteEntrega',
   'id',
+  'limiteResolucionSuspension',
   'motivoAnulacion',
   'motivoRechazo',
   'noRetiradoDisponibleDesde',

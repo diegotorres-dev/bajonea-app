@@ -13,6 +13,7 @@ import {
   sufijoUnico,
 } from './helpers/backend';
 import type { SesionApi } from './helpers/backend';
+import { ponerEstadoComercio } from './helpers/empleado';
 import { loginUi, prepararAprobado, prepararRechazado, registrarPendiente } from './helpers/multicomercio';
 
 const CORS = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' };
@@ -69,7 +70,7 @@ async function armarGrande(request: APIRequestContext): Promise<Grande> {
   const d = await clon('Delta', 'RECHAZO_DEFINITIVO');
   const p = await clon('Pendiente', 'PENDIENTE');
   const r = await clon('Rechazado', 'RECHAZADO');
-  const s = await clon('Suspendido', 'SUSPENDIDO');
+  const s = await clon('Cerrado', 'CERRADO_TEMPORALMENTE');
   const sesion = await login(request, dueno.nombreUsuario, dueno.password);
   const nombres = await nombresDe(request, sesion.token);
   insertarNotificaciones(dueno.duenoId, b, 2, 'Aviso B');
@@ -174,9 +175,18 @@ test.describe('Multi-comercio, tramo 4B: selector de comercio del Dueño (UI)', 
       await page.waitForURL(`**/comercio-rechazo-definitivo.html?id=${dueno.comercioId}`);
     });
 
-    test('con solo un comercio suspendido se queda en el login con el aviso de siempre', async ({ page, request }) => {
+    test('con solo un comercio suspendido entra a su panel, que muestra la suspensión', async ({ page, request }) => {
       const dueno = await prepararAprobado(request, adminToken, localidadId);
       await suspenderComercio(request, adminToken, dueno.comercioId, MOTIVO);
+      await loginUi(page, dueno.nombreUsuario, dueno.password);
+      await page.waitForURL('**/comercio-dashboard.html');
+      await expect(page.getByTestId('tarjeta-comercio-suspendido')).toBeVisible();
+      expect((await comercioActivoEnSesion(page))?.comercioId).toBe(dueno.comercioId);
+    });
+
+    test('con solo un comercio inactivo se queda en el login con el aviso de siempre', async ({ page, request }) => {
+      const dueno = await prepararAprobado(request, adminToken, localidadId);
+      ponerEstadoComercio(dueno.comercioId, 'INACTIVO');
       await loginUi(page, dueno.nombreUsuario, dueno.password);
       await expect(page.getByTestId('mensaje-banner')).toContainText('no está operativo');
       expect(page.url()).toContain('/login.html');
@@ -284,7 +294,7 @@ test.describe('Multi-comercio, tramo 4B: selector de comercio del Dueño (UI)', 
       await expect(panel.getByTestId(`subtitulo-comercio-${grande.r}`)).toHaveText('1 notificación');
       await expect(panel.getByTestId(`etiqueta-estado-comercio-${grande.d}`)).toHaveText('Definitivo');
       await expect(panel.getByTestId(`subtitulo-comercio-${grande.d}`)).toHaveText('Sin más intentos');
-      await expect(panel.getByTestId(`etiqueta-estado-comercio-${grande.s}`)).toHaveText('Suspendido');
+      await expect(panel.getByTestId(`etiqueta-estado-comercio-${grande.s}`)).toHaveText('Cerrado temporalmente');
       await expect(panel.getByTestId(`subtitulo-comercio-${grande.s}`)).toHaveCount(0);
     });
 
@@ -533,9 +543,15 @@ test.describe('Multi-comercio, tramo 4B: selector de comercio del Dueño (UI)', 
       await pagina.clock.install();
       await pagina.goto('/comercio-dashboard.html');
       await expect(pagina.getByTestId('franja-comercio')).toBeVisible();
-      await suspenderComercio(request, adminToken, dueno.comercioId, MOTIVO);
+      ponerEstadoComercio(dueno.comercioId, 'INACTIVO');
       await pagina.clock.fastForward(15_000);
-      await expect.poll(async () => (await comercioActivoEnSesion(pagina))?.comercioId).toBe(segundo);
+      await expect.poll(async () => {
+        try {
+          return (await comercioActivoEnSesion(pagina))?.comercioId;
+        } catch {
+          return undefined;
+        }
+      }).toBe(segundo);
       await expect(pagina.getByTestId('franja-comercio-nombre')).not.toHaveText('');
       await contexto.close();
     });
@@ -549,9 +565,9 @@ test.describe('Multi-comercio, tramo 4B: selector de comercio del Dueño (UI)', 
       await pagina.clock.install();
       await pagina.goto('/comercio-dashboard.html');
       await expect(pagina.getByTestId('franja-comercio')).toBeVisible();
-      await suspenderComercio(request, adminToken, dueno.comercioId, MOTIVO);
+      ponerEstadoComercio(dueno.comercioId, 'INACTIVO');
       await pagina.clock.fastForward(15_000);
-      await pagina.waitForURL('**/login.html');
+      await expect.poll(() => pagina.url(), { timeout: 20_000 }).toContain('/login.html');
       await contexto.close();
     });
 

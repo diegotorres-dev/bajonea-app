@@ -24,7 +24,6 @@ import { sinScrollHorizontal } from './helpers/layout';
 
 const HEADER = 'X-Comercio-Id';
 const TEXTO_PROPIO = 'Hiciste este pedido como cliente. No podés gestionarlo desde acá.';
-const AVISO_SUSPENDIDO = 'Comercio suspendido. No se aceptan pedidos nuevos.';
 const AVISO_CERRADO = 'Comercio cerrado temporalmente. No se aceptan pedidos nuevos.';
 const TEXTO_MODAL_NO_RETIRADO = 'El cliente no pasó a buscarlo y no se le devuelve el pago, porque el pedido ya estaba preparado.';
 
@@ -166,7 +165,8 @@ test.describe('Pedidos del comercio en pantalla para el Dueño y el Empleado, E3
 
       ponerEstadoComercio(dueno.comercioId, 'SUSPENDIDO');
       await page.goto('/comercio-pedidos.html');
-      await expect(page.getByTestId('aviso-comercio-no-operativo')).toHaveText(AVISO_SUSPENDIDO);
+      await expect(page.getByTestId('franja-pedidos-suspendido-texto')).toContainText('Comercio suspendido.');
+      await expect(page.getByTestId('aviso-comercio-no-operativo')).toHaveCount(0);
       await sinScrollHorizontal(page);
 
       ponerEstadoComercio(dueno.comercioId, 'CERRADO_TEMPORALMENTE');
@@ -180,7 +180,7 @@ test.describe('Pedidos del comercio en pantalla para el Dueño y el Empleado, E3
       await abrirComoEmpleado(page, elena);
       await page.goto('/comercio-dashboard.html');
 
-      await expect(page.getByTestId('aviso-comercio-no-operativo')).toHaveText(AVISO_SUSPENDIDO);
+      await expect(page.getByTestId('tarjeta-comercio-suspendido')).toContainText('Este comercio está suspendido');
     });
   });
 
@@ -410,12 +410,14 @@ test.describe('Pedidos del comercio en pantalla para el Dueño y el Empleado, E3
       ponerEstadoComercio(dueno.comercioId, 'SUSPENDIDO');
       const mensaje = (await accion(request, elena.sesion.token, pedidoId, 'aceptar')).body.mensaje as string;
       expect(mensaje.length).toBeGreaterThan(10);
+      ponerEstadoComercio(dueno.comercioId, 'APTO_VENTA');
       await page.clock.install();
       await abrirComoEmpleado(page, elena);
       await page.goto(`/comercio-pedido-detalle.html?id=${pedidoId}`);
 
       await expect(page.getByTestId('btn-aceptar-pedido')).toBeEnabled();
       await expect(page.getByTestId('recorrido-paso').first()).toBeVisible();
+      ponerEstadoComercio(dueno.comercioId, 'SUSPENDIDO');
       await page.getByTestId('btn-aceptar-pedido').click();
 
       const aviso = page.getByTestId('aviso-fijo');
