@@ -41,6 +41,8 @@ import org.springframework.web.multipart.MultipartFile;
  * <p>
  * Toda escritura sigue el orden de bloqueo usuario del Dueño, cuenta de Mercado Pago, comercio ({@code FOR UPDATE}),
  * documento ({@code FOR UPDATE}) y termina recalculando la aptitud de venta con {@link AptitudVentaComercioService}.
+ * Con el comercio {@code SUSPENDIDO} el Dueño puede subir documentos (para corregir lo que motivó la suspensión),
+ * pero el recálculo no mueve un comercio suspendido: solo levantar la suspensión lo saca de ahí.
  * El archivo se valida (tamaño, firma de bytes) antes de abrir la transacción: nada que pueda rechazarse sin
  * mirar la base retiene un bloqueo.
  */
@@ -49,7 +51,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class DocumentoComercioService {
 
     static final Set<EstadoComercio> ESTADOS_QUE_PERMITEN_SUBIR = Set.of(EstadoComercio.APROBADO,
-            EstadoComercio.APTO_VENTA, EstadoComercio.CERRADO_TEMPORALMENTE);
+            EstadoComercio.APTO_VENTA, EstadoComercio.CERRADO_TEMPORALMENTE, EstadoComercio.SUSPENDIDO);
 
     private static final Set<EstadoComercio> ESTADOS_CON_COMERCIO_APROBADO = Set.of(EstadoComercio.APROBADO,
             EstadoComercio.APTO_VENTA, EstadoComercio.CERRADO_TEMPORALMENTE, EstadoComercio.SUSPENDIDO,

@@ -167,7 +167,7 @@ public class ReembolsoService {
             log.info("Pedido {}: el pago no está aprobado y confirmado (mp_estado={}), no se reembolsa", pedidoId, pago.getMpEstado());
             return PreparacionReembolso.SIN_NOTA;
         }
-        if (notaCreditoService.montoCubierto(pago.getId()).compareTo(pago.getMonto()) >= 0) {
+        if (montoCubiertoConfirmado(pago.getId()).compareTo(pago.getMonto()) >= 0) {
             log.info("Pedido {}: el pago ya tiene reembolso registrado por el monto completo, no se duplica", pedidoId);
             return new PreparacionReembolso(null, true);
         }
@@ -184,6 +184,17 @@ public class ReembolsoService {
         NotaCredito nota = notaCreditoService.crear(pago, pago.getMonto(), motivo);
         return new PreparacionReembolso(new IntentoReembolso(nota.getId(), pago.getIdTransaccionMp(), cuenta.get().getAccessToken(),
                 pago.getMonto(), nota.getIntentos() + 1, pedidoId, motivo), true);
+    }
+
+    /**
+     * Monto ya cubierto por notas confirmadas, leído en una transacción nueva. La transacción que llama puede haber
+     * fijado su foto (REPEATABLE READ) antes de esperar el bloqueo del pago, y una consulta común no vería la nota que
+     * otra transacción confirmó mientras tanto: se crearía una segunda nota para el mismo pago. La transacción nueva
+     * toma una foto actual sin pedir ningún bloqueo (una lectura bloqueante sobre un pago sin notas toma un bloqueo de
+     * intervalo del índice que se cruza con las notas de otros pagos).
+     */
+    private BigDecimal montoCubiertoConfirmado(Integer pagoId) {
+        return transaccionNueva.execute(status -> notaCreditoService.montoCubierto(pagoId));
     }
 
     private static boolean esPagoReembolsable(Pago pago) {
