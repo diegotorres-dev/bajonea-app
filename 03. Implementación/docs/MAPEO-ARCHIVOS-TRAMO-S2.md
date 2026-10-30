@@ -132,3 +132,35 @@ Pendiente de la confirmación de Diego. Hechos con los mockups 5 (opción B), 6,
 | `testing/playwright/tests/86-suspension-comercio-paneles-ui.spec.ts` (nuevo, 16 tests a 375 px) | Todo lo de arriba en pantalla; capturas en `docs/capturas-suspension-comercio-b2/`. |
 | `testing/playwright/scripts/stress-locks-tramoSuspension.mjs` | Escenario 13: despachar, anular y doble clic contra el proceso de 90 minutos. |
 | Specs `27`, `37`, `38`, `44`, `52`, `53`, `70`, `83` | `27`: un comercio suspendido ya no queda en el login ni en "Otros" (el fixture grande usa `CERRADO_TEMPORALMENTE` y se agregan tests para el suspendido y el inactivo); `37` y `44` suman `limiteResolucionSuspension` a la lista blanca de campos del Empleado (y el constructor de la carpeta `57`); `38`, `52` y `53` pasan a los textos nuevos; `52`, `53` y `70` abren la pantalla con el comercio operativo y lo suspenden antes de la acción (pestaña vieja), porque ahora el botón viene bloqueado; `83` usa el `baseURL` de la configuración en vez del puerto fijo 5501. |
+
+## Cierre (2026-10-30): documentos con el comercio suspendido, carrera del pago tardío y corridas finales
+
+Pendiente de la confirmación de Diego. Sin migraciones (`V47` es la próxima libre).
+
+### Backend
+
+| Archivo | Cambio |
+|---|---|
+| `services/DocumentoComercioService.java` | `ESTADOS_QUE_PERMITEN_SUBIR` suma `SUSPENDIDO`; el Javadoc de la clase explica que el recálculo no mueve un comercio suspendido. Es el único cambio de la regla: `AptitudVentaComercioService` ya excluía a `SUSPENDIDO` del recálculo de documentos. |
+| `services/ReembolsoService.java` | `prepararIntento` lee el monto ya cubierto con `montoCubiertoConfirmado` (transacción nueva, foto actual, sin bloqueos) en vez de una consulta común dentro de la transacción del webhook: corrige la doble nota de crédito de dos webhooks simultáneos (ver `docs/DECISIONES.md`, 2026-10-30). |
+
+### Frontend
+
+| Archivo | Cambio |
+|---|---|
+| `frontend/js/documentos.js`, `css/styles.css` | Aviso `aviso-comercio-suspendido` arriba de la pantalla de documentación con el comercio suspendido (`.doc-aviso-suspension` le da el margen). |
+| `frontend/js/selector-contexto.js` | El comercio suspendido dice "Comercio suspendido. Solo podés resolver pedidos en curso." en la hoja "Cambiar de cuenta" y en el selector del Empleado. |
+
+### Tests y scripts
+
+| Archivo | Qué |
+|---|---|
+| `DocumentoComercioHttpIntegrationTest` (+3) | Subir, listar, ver, descargar y eliminar con el comercio suspendido; el Administrador aprueba, rechaza y revoca sin mover el estado; `404` para el Dueño ajeno y `403` para el Empleado. |
+| `SuspensionComercioConcurrenciaIntegrationTest` (+3 con 8 repeticiones) | Subir contra levantar la suspensión (con y sin documento aprobado) y subir y aprobar contra suspender. |
+| `ReembolsoFotoDeLaTransaccionIntegrationTest` (nuevo, 1 test) | Fija la foto vieja de una transacción y comprueba que no se crea una segunda nota. |
+| `ReembolsoServiceTest`, `ReembolsoServiceReintentoTest` | Sin cambios netos (se ajustaron y se volvieron a su forma original al descartar el primer intento de arreglo). |
+| `testing/playwright/scripts/build-suspension-comercio-cierre-postman.mjs` | Carpeta `83` de Newman (43 requests, multipart con el PDF de prueba). |
+| `testing/playwright/scripts/mutaciones-suspension-s2-cierre.mjs` | Mutaciones C1 a C4 con corrida base obligatoria. |
+| `testing/playwright/scripts/repetir-carrera-pago-suspension.sh` | Repite la carrera suspender contra pago tardío, sola y con tres procesos de Maven a la vez. |
+| `testing/playwright/tests/87-suspension-comercio-documentos-ui.spec.ts` (nuevo, 4 tests a 375 px) | El Dueño sube con el comercio suspendido, el estado no cambia al subir, aprobar ni rechazar, al levantar queda según los documentos, y el Empleado ve el texto nuevo; capturas `13` a `16` de `docs/capturas-suspension-comercio-b2/`. |
+| Specs `38`, `82`, `86` | Ajustados a la regla nueva (texto del Empleado, estados que permiten subir, subida ya no bloqueada). |

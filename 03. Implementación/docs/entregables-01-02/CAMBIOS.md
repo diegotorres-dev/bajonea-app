@@ -1126,3 +1126,37 @@ Como cliente, quiero saber qué pasó con mi pedido cuando el comercio se suspen
 **6. `diccionario-de-datos.md`**
 
 Ya está en la versión 1.31 (`V46`): `historial_estado_pedido.motivo_timeout` suma `CANCELACION_SIN_PAGO`. Los próximos libres son `V47`, la carpeta 83 de Newman, el spec 87 de Playwright y la versión 1.32.
+
+## Fase 5, tramo S2, suspensión de un comercio (cierre: documentos con el comercio suspendido, 2026-10-30)
+
+Texto exacto para copiar a `01. Análisis de Requerimientos` y `02. Diseño`. **Corrige** lo que dijeron las entregas A y B2 sobre la documentación: con el comercio suspendido el Dueño sí puede subir documentos.
+
+**1. `requisitos-funcionales-dueno.md`: reemplazar el punto "Con el comercio suspendido puedo ver mis pedidos…" por este**
+
+- Con el comercio suspendido puedo ver mis pedidos y mis estadísticas, resolver los pedidos en curso, ver y subir documentos de mi documentación y vincular Mercado Pago.
+- Con el comercio suspendido no puedo editar los datos ni la foto del comercio, los horarios, los productos, abrir o cerrar el comercio, ni desvincular Mercado Pago.
+
+**Agregar (documentación):**
+
+- Con el comercio suspendido puedo subir documentos para corregir lo que motivó la suspensión. La pantalla de documentación me avisa: "El comercio está suspendido. Podés subir documentos, pero no vuelve a vender hasta que se levante la suspensión."
+- Subir un documento, eliminarlo o que el Administrador lo apruebe, rechace o revoque no saca al comercio de la suspensión: solo la levanta el Administrador. Al levantarla, el comercio vuelve a vender si tengo Mercado Pago vinculado y al menos un documento aprobado (un documento en revisión no lo impide); si no, queda aprobado pero sin poder vender hasta cumplirlo.
+
+**2. `requisitos-funcionales-empleado.md`: reemplazar**
+
+- En la hoja "Cambiar de cuenta" un comercio suspendido dice "Comercio suspendido. Solo podés resolver pedidos en curso."
+
+**3. `requisitos-funcionales-administrador.md`: agregar**
+
+- Puedo aprobar, rechazar y revocar documentos de un comercio suspendido; eso no cambia su estado. El comercio solo sale de la suspensión cuando yo la levanto.
+
+**4. `Historias de Usuario - Dueño.md`: ajuste a HU-D15**
+
+Reemplazar el segundo criterio por: "Con el comercio suspendido entro a mi panel en solo lectura: veo mis pedidos, mis estadísticas y mi documentación, puedo subir documentos y vincular Mercado Pago, pero no puedo editar el comercio, los productos ni los horarios, ni abrir o cerrar, ni desvincular Mercado Pago." Y agregar el criterio: "Subir documentos con el comercio suspendido no lo saca de la suspensión; solo la levanta el Administrador."
+
+**5. `diccionario-de-datos.md` / `02. Diseño`**
+
+Sin cambios de esquema ni de versión. En la tabla `DocumentoComercio`, la regla "Subir exige el comercio `APROBADO`, `APTO_VENTA` o `CERRADO_TEMPORALMENTE`" pasa a "… `CERRADO_TEMPORALMENTE` o `SUSPENDIDO`" (ya está así en `docs/diccionario-de-datos.md`; copiar el mismo cambio a la copia de `02. Diseño`).
+
+**6. `alcance-y-limitaciones.md`**
+
+Sin cambios. (La carrera del pago tardío con doble nota de crédito era un defecto interno ya corregido; no es una limitación visible.)
