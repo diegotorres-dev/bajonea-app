@@ -735,3 +735,21 @@ Pendientes que no son código y hay que revisar en cada entorno antes de contar 
 - **Riesgo:** desde la S2.1 la suspensión real rechaza los pendientes en el acto, así que ya no hay forma de ver un pedido pendiente dentro de un comercio suspendido con solo suspender por la API. Esa ventana existe de verdad (entre el commit de la suspensión y el rechazo de cada pedido, o si el servidor cae), y los guards de aceptar (`409` `COMERCIO_SIN_OPERACION`), el rechazo a mano y el barrido hay que probarlos igual.
 - **Qué hacer:** en Newman usar el atajo nuevo `PUT /api/v1/test/comercios/{id}/reanudar-sin-procesar` (vuelve un comercio `SUSPENDIDO` a `APTO_VENTA` por SQL, sin historial, sin avisos y sin procesar pedidos), crear los pedidos y volver a suspender por el atajo `PUT /api/v1/test/comercios/{id}/suspension` (que tampoco procesa nada); en Playwright, `UPDATE comercio SET estado = 'SUSPENDIDO', suspension_origen = 'INDIVIDUAL', suspendido_desde = NOW(), ...` después de crear los pedidos (el spec `86` lo tiene como `suspenderConPendientesSinProcesar`); en Java, crear el pedido por SQL después de `suspender` (como en `SuspensionComercioIntegrationTest`) o un `@MockitoSpyBean` de `PedidoRepository` que devuelva una lista vieja de ids para probar la revalidación dentro de la transacción.
 - **Origen:** tramo S2.1, `docs/DECISIONES.md`, 2026-10-30.
+
+## Fase 5, tramo S3 (2026-10-30)
+
+### Una mutación con un texto que aparece dos veces muta el primer método, no el que querías
+
+El ejecutor de mutaciones reemplaza la **primera** aparición del texto. M6 ("un endpoint de comercio puede anular un pedido listo para retirar") empezaba con `if (pedido.getEstado() != EstadoPedido.EN_PREPARACION) {` seguido de la línea del `throw`, y ese par aparece igual en `avanzarAEntregaEnCurso` (despachar) y en `anularPedido`: la mutación tocaba despachar y "sobrevivía" porque el test solo probaba anular. Se detectó porque el test pasaba también con la mutación aplicada a mano sobre anular. Regla: el texto de una mutación tiene que incluir una línea que sea única del método (acá, la constante `MENSAJE_NO_SE_ANULA_SIN_ACEPTAR`), y cuando una mutación sobrevive hay que reproducirla a mano antes de dar el test por insuficiente. Quedaron M6 (anular) y M6B (despachar), las dos detectadas.
+
+### Con la vista abierta de la petición, leer entidades antes del bloqueo las deja "frescas" para siempre
+
+`spring.jpa.open-in-view` está activo: el servicio y su `TransactionTemplate` comparten el contexto de persistencia con el controller. Si antes de tomar los bloqueos se cargan las entidades `Comercio` del Dueño, la lista que se lee después del bloqueo devuelve esas mismas instancias con su estado viejo (Hibernate no refresca lo que ya tiene cargado) y una aprobación confirmada en el medio no se vería. Por eso `SuspensionDuenoService` lee antes solo ids (`findIdsByDuenoId`, `findRelacionesActivasDeComercios`) y las entidades recién después del bloqueo, con `refresh(PESSIMISTIC_WRITE)` en cada comercio que va a cambiar.
+
+### `REQUIRES_NEW` dentro de una transacción (o de su `afterCommit`) necesita una segunda conexión
+
+Ver `docs/CONCURRENCIA-Y-TRANSACCIONES.md`, "Aviso sobre el pool de conexiones". El síntoma no es un `Deadlock found` sino `HikariPool-1 - Connection is not available, request timed out after 30000ms (total=10, active=10)`: los hilos que esperan una fila bloqueada retienen conexiones y el que tiene que liberar la fila necesita una más. Se ve en un volcado de hilos (`jstack`) como hilos de `AuthService.login` en lectura de socket y otros en `HikariPool.getConnection` dentro de `ReembolsoService.montoCubiertoConfirmado` o `AvisoCuentaService.enviarYRegistrar`. Para los estreses con ráfagas conviene arrancar el backend de prueba con un pool mayor.
+
+### Los tokens de una cuenta con ráfagas de inicios de sesión se invalidan entre sí
+
+La sesión es única por cuenta: en un escenario que dispara inicios de sesión de la misma cuenta mientras usa su token, el token deja de servir con un `401` genérico ("sesión cerrada") y no con `CUENTA_SUSPENDIDA`, aunque la cuenta esté suspendida. No es un defecto: el escenario 18 acepta cualquier `401` de las acciones del Dueño.

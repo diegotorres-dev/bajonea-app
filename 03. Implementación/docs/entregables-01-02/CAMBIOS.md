@@ -1194,3 +1194,37 @@ Versión 1.32 (`V47`): `historial_estado_pedido.motivo_timeout` suma `SUSPENSION
 **7. `alcance-y-limitaciones.md`**
 
 Sin cambios.
+
+## Cambios sugeridos a los requisitos e historias — Fase 5, tramo S3 (suspensión de la cuenta de un Dueño), 2026-10-30
+
+(Listos para copiar. No se editó `01. Análisis de Requerimientos`.)
+
+**1. `Historias de Usuario - Administrador.md`: historia nueva "Suspender y levantar la suspensión de la cuenta de un Dueño"**
+
+- Como Administrador, quiero suspender la cuenta de un Dueño con un motivo y levantar la suspensión después, para frenar a un Dueño que incumple las condiciones sin tener que suspender uno por uno sus comercios.
+- Criterios: el motivo es obligatorio (10 a 500 caracteres) y se le muestra al Dueño; antes de confirmar veo, por cada comercio del Dueño, si se suspende o queda como está (y por qué), cuántos pedidos tiene por estado, cuántos Empleados activos tiene y qué va a pasar con sus pedidos en preparación o listos para retirar (los atiende el equipo con un tope de 90 minutos, o se anulan o cancelan ahora con reembolso porque nadie puede atenderlos). Al confirmar: la cuenta pasa a suspendida y se cierra su sesión; sus comercios aprobados, a la venta o cerrados temporalmente pasan a suspendidos (los pendientes, rechazados e inactivos no cambian, ni los que ya estaban suspendidos por separado); los pedidos pendientes de confirmación se rechazan y se reembolsan en el acto. No puedo suspender a un Administrador ni a mí mismo. Mientras la cuenta esté suspendida no puedo aprobar un comercio pendiente del Dueño (sí rechazarlo) ni levantar la suspensión de un comercio suspendido por separado. Al levantar, la cuenta vuelve al estado que tenía antes (una bloqueada vuelve activa) y solo se restauran los comercios que la suspensión del Dueño había suspendido, cada uno según tenga cuenta de cobro y documentos aprobados; los pedidos ya rechazados, anulados o cancelados no se restauran. Puedo escribir un mensaje opcional al levantar.
+- Listado: veo todos los Dueños con su estado, el motivo y la fecha de la suspensión, cuántos comercios tienen y, si el email de aviso falló, un aviso para reenviarlo.
+
+**2. `Historias de Usuario - Dueño.md`: ajuste**
+
+- Si la suspensión de mi cuenta alcanza a un comercio, recibo **un solo email** con el motivo y la lista de mis comercios afectados (no uno por comercio) y, al levantarla, otro con los comercios que volvieron a operar y los que siguen suspendidos por separado. No puedo iniciar sesión mientras dure; el mensaje de la pantalla de inicio muestra el motivo. Los pedidos que estaban en preparación los atiende mi equipo (con el tope de 90 minutos); si no tengo Empleados activos se anulan o cancelan y se devuelve el dinero a mis clientes.
+
+**3. `Historias de Usuario - Empleado.md`: ajuste**
+
+- Si la cuenta del Dueño está suspendida y yo sigo activo, puedo despachar, entregar, cerrar o anular los pedidos en curso del comercio (no aceptar pedidos nuevos ni editar nada), con el mismo tope de 90 minutos. Recibo un aviso dentro de la app por cada comercio suspendido o restaurado, sin el motivo ni email. Si mi cuenta está suspendida, bloqueada o inactiva no cuento como equipo activo.
+
+**4. `Historias de Usuario - Cliente.md`: ajuste**
+
+- Si el comercio donde tengo un pedido en preparación o listo para retirar queda sin quien lo atienda por la suspensión de su Dueño, el pedido se anula o se cancela y recibo el aviso "Tu pedido se canceló porque el comercio no está disponible. Te devolvemos el dinero." con el reembolso total; un pedido en camino no se toca.
+
+**5. `requisitos-funcionales.md`**
+
+- Agregar el requisito: "El sistema permitirá al Administrador suspender y levantar la suspensión de la cuenta de un Dueño, con la cascada descrita en la historia del Administrador, un único email al Dueño por suspensión y por levantamiento, y el procesamiento automático (con barrido de seguridad) de los pedidos que quedan sin atención."
+
+**6. `diccionario-de-datos.md`**
+
+Versión 1.33 (`V48`): `historial_estado_pedido.motivo_timeout` suma `SUSPENSION_DUENO_SIN_ATENCION` y `notificacion.tipo` suma `DUENO_SUSPENDIDO` y `DUENO_SUSPENSION_LEVANTADA`, al final de cada ENUM. Ya está así en `docs/diccionario-de-datos.md`; copiar el mismo cambio a la copia de `02. Diseño`. Los próximos libres son `V49`, `V50`, la carpeta 86 de Newman y el spec 89.
+
+**7. `alcance-y-limitaciones.md`**
+
+Sin cambios.
