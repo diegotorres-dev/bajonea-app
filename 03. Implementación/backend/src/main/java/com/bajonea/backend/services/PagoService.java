@@ -4,9 +4,8 @@ import com.bajonea.backend.dto.response.PagoResponseDTO;
 import com.bajonea.backend.entities.Pago;
 import com.bajonea.backend.entities.Pedido;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
+import com.bajonea.backend.repositories.PagoInsercionRepository;
 import com.bajonea.backend.repositories.PagoRepository;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -28,12 +27,7 @@ public class PagoService {
 
     private final PagoRepository pagoRepository;
 
-    @PersistenceContext
-    private EntityManager entityManager;
-
-    public void refrescar(Pago pago) {
-        entityManager.refresh(pago);
-    }
+    private final PagoInsercionRepository pagoInsercionRepository;
 
     public Optional<Pago> buscarPorPedido(Integer pedidoId) {
         return pagoRepository.findByPedidoId(pedidoId);
@@ -45,6 +39,18 @@ public class PagoService {
 
     public Pago obtenerPorPedido(Integer pedidoId) {
         return buscarPorPedido(pedidoId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("El pedido no tiene ningún pago asociado"));
+    }
+
+    /**
+     * Guarda la preferencia del pedido si todavía no tiene pago, sin leer antes (ver {@link PagoInsercionRepository}), y
+     * devuelve la fila que quedó, bloqueada: la propia o la que otra solicitud guardó primero. Exige el pedido ya
+     * bloqueado por quien llama.
+     */
+    public Pago crearPreferenciaSiNoExiste(Pedido pedido, String mpPreferenciaId, String initPoint, String sandboxInitPoint) {
+        pagoInsercionRepository.crearSiNoExiste(pedido.getId(), pedido.getTotal(), mpPreferenciaId, initPoint, sandboxInitPoint,
+                LocalDateTime.now());
+        return pagoRepository.findByPedidoIdParaActualizar(pedido.getId())
                 .orElseThrow(() -> new RecursoNoEncontradoException("El pedido no tiene ningún pago asociado"));
     }
 

@@ -10,6 +10,7 @@ import org.apache.hc.core5.util.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -30,19 +31,30 @@ public class MercadoPagoReembolsoClient {
 
     private static final Logger log = LoggerFactory.getLogger(MercadoPagoReembolsoClient.class);
 
-    private static final String URL_REEMBOLSOS = "https://api.mercadopago.com/v1/payments/{paymentId}/refunds";
+    private static final String BASE_POR_DEFECTO = "https://api.mercadopago.com";
+    private static final String PATH_REEMBOLSOS = "/v1/payments/{paymentId}/refunds";
     private static final int TIMEOUT_MP_MS = 5000;
     private static final int LARGO_MAXIMO_CUERPO_ERROR = 300;
 
     private final RestClient restClient;
+    private final String urlReembolsos;
 
+    /**
+     * La base de la API solo la cambian las pruebas ({@code MERCADOPAGO_API_BASE_URL}, hacia un servidor local que simula
+     * Mercado Pago); en el servidor final no debe estar definida.
+     */
     @Autowired
-    public MercadoPagoReembolsoClient() {
-        this(crearRestClient());
+    public MercadoPagoReembolsoClient(@Value("${MERCADOPAGO_API_BASE_URL:" + BASE_POR_DEFECTO + "}") String baseApi) {
+        this(crearRestClient(), baseApi);
     }
 
     MercadoPagoReembolsoClient(RestClient restClient) {
+        this(restClient, BASE_POR_DEFECTO);
+    }
+
+    private MercadoPagoReembolsoClient(RestClient restClient, String baseApi) {
         this.restClient = restClient;
+        this.urlReembolsos = baseApi + PATH_REEMBOLSOS;
     }
 
     private static RestClient crearRestClient() {
@@ -60,7 +72,7 @@ public class MercadoPagoReembolsoClient {
     public ResultadoReembolsoMp solicitarReembolsoTotal(String paymentId, String accessToken, String idempotencyKey) {
         try {
             ReembolsoMpResponse respuesta = restClient.post()
-                    .uri(URL_REEMBOLSOS, paymentId)
+                    .uri(urlReembolsos, paymentId)
                     .header("Authorization", "Bearer " + accessToken)
                     .header("X-Idempotency-Key", idempotencyKey)
                     .contentType(MediaType.APPLICATION_JSON)

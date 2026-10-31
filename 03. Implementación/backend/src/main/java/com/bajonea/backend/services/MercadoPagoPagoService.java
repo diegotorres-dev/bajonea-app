@@ -31,16 +31,20 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import java.util.function.Supplier;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
@@ -63,10 +67,17 @@ import org.springframework.web.client.RestClientResponseException;
  * {@code pedidoId} es solo una clave de búsqueda, nunca se confía en él a ciegas:
  * {@link #procesarNotificacion} valida que el {@code external_reference} que devuelve la propia
  * respuesta de MercadoPago coincida con el Pedido antes de tocar ningún estado.
+ *
+ * <p>Ninguna llamada a MercadoPago ocurre dentro de una transacción (regla 17 de CLAUDE.md). Cada operación va en tres
+ * pasos: (1) una transacción corta que lee lo necesario (el pedido, el pago, el token de la cuenta del comercio) y
+ * devuelve valores simples; (2) la llamada HTTP, sin conexión de base de datos tomada; (3) otra transacción corta que
+ * toma los bloqueos en el orden global y como <b>primera lectura de datos que se deciden</b> (el pedido, después el
+ * pago), revalida con lo último confirmado y aplica el cambio de manera idempotente. Los reembolsos, avisos y emails
+ * que resultan salen después de esa transacción por la cola de efectos posteriores. Cada transacción empieza vaciando
+ * el contexto de persistencia ({@code entityManager.clear()}): con el EntityManager abierto por pedido HTTP, una
+ * entidad leída en el paso 1 se reutilizaría con su estado viejo en el paso 3.
  */
 @Service
-@RequiredArgsConstructor
-@Transactional
 public class MercadoPagoPagoService {
 
     private static final Logger log = LoggerFactory.getLogger(MercadoPagoPagoService.class);
@@ -88,6 +99,26 @@ public class MercadoPagoPagoService {
     private final AlertaWebhookMpService alertaWebhookMpService;
     private final PedidoTimeoutProperties timeoutProperties;
     private final Clock clock;
+    private final TransactionTemplate transaccion;
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    public MercadoPagoPagoService(PedidoService pedidoService, EstadoUsuarioService estadoUsuarioService, PagoService pagoService,
+            CuentaMercadoPagoService cuentaMercadoPagoService, DetallePedidoRepository detallePedidoRepository,
+            MercadoPagoConfig mercadoPagoConfig, AlertaWebhookMpService alertaWebhookMpService,
+            PedidoTimeoutProperties timeoutProperties, Clock clock, PlatformTransactionManager transactionManager) {
+        this.pedidoService = pedidoService;
+        this.estadoUsuarioService = estadoUsuarioService;
+        this.pagoService = pagoService;
+        this.cuentaMercadoPagoService = cuentaMercadoPagoService;
+        this.detallePedidoRepository = detallePedidoRepository;
+        this.mercadoPagoConfig = mercadoPagoConfig;
+        this.alertaWebhookMpService = alertaWebhookMpService;
+        this.timeoutProperties = timeoutProperties;
+        this.clock = clock;
+        this.transaccion = new TransactionTemplate(transactionManager);
+    }
 
     private static final ZoneOffset ZONA_PREFERENCIA = ZoneOffset.of("-03:00");
     private static final DateTimeFormatter FORMATO_FECHA_MP = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSxxx");
@@ -117,12 +148,30 @@ public class MercadoPagoPagoService {
     @Value("${app.backend-base-url}")
     private String backendBaseUrl;
 
+    /**
+     * "Ir a pagar". Paso 1: valida y decide qué hay que hacer (transacción corta). Paso 2: la llamada a Mercado Pago
+     * (buscar el mejor pago de una preferencia ya creada, o crear la preferencia), sin transacción. Paso 3: guarda
+     * el resultado con el pedido bloqueado (transacción corta).
+     */
     public PagoResponseDTO iniciarOReusarPago(Integer usuarioId, Integer pedidoId) {
+        PreparacionPago preparacion = enTransaccion(() -> prepararPago(usuarioId, pedidoId));
+        if (preparacion.respuestaDirecta() != null) {
+            return preparacion.respuestaDirecta();
+        }
+        if (preparacion.solicitudNueva() == null) {
+            PagoMpResponse mejor = buscarMejorPagoOFallar(pedidoId, preparacion.accessToken());
+            return enTransaccion(() -> resolverPagoExistente(usuarioId, pedidoId, mejor, preparacion.esSandbox()));
+        }
+        PreferenciaResponse respuesta = crearPreferenciaEnMercadoPago(pedidoId, preparacion.solicitudNueva(), preparacion.accessToken());
+        return enTransaccion(() -> guardarPreferencia(usuarioId, pedidoId, respuesta, preparacion.esSandbox()));
+    }
+
+    private PreparacionPago prepararPago(Integer usuarioId, Integer pedidoId) {
         estadoUsuarioService.exigirNoSuspendido(usuarioId);
         Pedido pedido = pedidoService.obtenerPedidoDelCliente(usuarioId, pedidoId);
         Pago pago = pagoService.buscarPorPedido(pedidoId).orElse(null);
         if (pedido.getPagoEstado() == EstadoPagoPedido.PAGADO) {
-            return pagoService.aResponseDTOSinLink(pago, pedido, true, false);
+            return PreparacionPago.respuesta(pagoService.aResponseDTOSinLink(pago, pedido, true, false));
         }
         if (pedido.getEstado() != EstadoPedido.PENDIENTE_PAGO) {
             throw new ConflictoDeNegocioException("El pedido no está esperando el pago");
@@ -132,30 +181,51 @@ public class MercadoPagoPagoService {
         }
 
         CuentaMercadoPago cuenta = obtenerCuentaDelComercio(pedido);
-
         if (pago != null && pago.getMpPreferenciaId() != null) {
-            PagoMpResponse mejor = buscarMejorPagoOFallar(pedidoId, cuenta.getAccessToken());
-            if (mejor != null && mejor.id() != null) {
-                validarYAplicarResultado(pago, String.valueOf(mejor.id()), mejor, null);
-                if (pedido.getPagoEstado() == EstadoPagoPedido.PAGADO) {
-                    return pagoService.aResponseDTOSinLink(pago, pedido, true, false);
-                }
-                if (!ESTADO_APROBADO.equals(mejor.status()) && !ESTADOS_RECHAZO.contains(mejor.status())) {
-                    return pagoService.aResponseDTOSinLink(pago, pedido, false, true);
-                }
-            }
-            return pagoService.aResponseDTO(pago, pedido, esSandbox(cuenta));
+            return new PreparacionPago(null, null, cuenta.getAccessToken(), esSandbox(cuenta));
         }
-
-        PreferenciaResponse respuesta = crearPreferenciaEnMercadoPago(pedido, cuenta);
-        Pago nuevo = pagoService.crearPreferencia(pedido, respuesta.id(), respuesta.initPoint(), respuesta.sandboxInitPoint());
-        return pagoService.aResponseDTO(nuevo, pedido, esSandbox(cuenta));
+        return new PreparacionPago(null, construirPreferencia(pedido), cuenta.getAccessToken(), esSandbox(cuenta));
     }
 
+    private PagoResponseDTO resolverPagoExistente(Integer usuarioId, Integer pedidoId, PagoMpResponse mejor, boolean esSandbox) {
+        Pedido pedido = pedidoService.obtenerPedidoDelCliente(usuarioId, pedidoId);
+        if (mejor != null && mejor.id() != null) {
+            validarYAplicarResultado(pedidoId, String.valueOf(mejor.id()), mejor, null);
+            Pago pago = pagoService.obtenerPorPedido(pedidoId);
+            if (pedido.getPagoEstado() == EstadoPagoPedido.PAGADO) {
+                return pagoService.aResponseDTOSinLink(pago, pedido, true, false);
+            }
+            if (!ESTADO_APROBADO.equals(mejor.status()) && !ESTADOS_RECHAZO.contains(mejor.status())) {
+                return pagoService.aResponseDTOSinLink(pago, pedido, false, true);
+            }
+        }
+        return pagoService.aResponseDTO(pagoService.obtenerPorPedido(pedidoId), pedido, esSandbox);
+    }
+
+    /**
+     * Guarda la preferencia que se acaba de crear en Mercado Pago. Con el pedido bloqueado vuelve a mirar si sigue
+     * esperando el pago; si otra solicitud simultánea ya guardó su preferencia se usa esa y la que se creó de más se
+     * descarta (vence sola junto con el pedido). El alta no lee antes de insertar: un {@code FOR UPDATE} sobre un pago que
+     * todavía no existe toma un bloqueo de intervalo y dos altas de pedidos vecinos se interbloquean.
+     */
+    private PagoResponseDTO guardarPreferencia(Integer usuarioId, Integer pedidoId, PreferenciaResponse respuesta, boolean esSandbox) {
+        Pedido pedido = pedidoService.bloquearParaActualizar(pedidoId);
+        if (!pedido.getCliente().getId().equals(usuarioId)) {
+            throw new RecursoNoEncontradoException("Pedido no encontrado");
+        }
+        if (pedido.getEstado() != EstadoPedido.PENDIENTE_PAGO) {
+            throw new ConflictoDeNegocioException("El pedido no está esperando el pago");
+        }
+        Pago pago = pagoService.crearPreferenciaSiNoExiste(pedido, respuesta.id(), respuesta.initPoint(), respuesta.sandboxInitPoint());
+        return pagoService.aResponseDTO(pago, pedido, esSandbox);
+    }
+
+    @Transactional
     public PagoResponseDTO consultarComoCliente(Integer usuarioId, Integer pedidoId) {
         return consultar(pedidoService.obtenerPedidoDelCliente(usuarioId, pedidoId));
     }
 
+    @Transactional
     public PagoResponseDTO consultarComoComercio(Integer comercioId, Integer pedidoId) {
         return consultar(pedidoService.obtenerPedidoDelComercio(comercioId, pedidoId));
     }
@@ -218,16 +288,23 @@ public class MercadoPagoPagoService {
      * puede venir {@code null} sin afectar el resto del procesamiento.
      */
     public void procesarNotificacion(Integer pedidoIdBusqueda, String paymentId, String ipOrigen) {
-        Pago pago = pagoService.buscarPorPedido(pedidoIdBusqueda).orElse(null);
-        if (pago == null) {
-            log.warn("Webhook de MercadoPago para pedidoId={} sin ninguna preferencia de pago creada por Bajoneá — se ignora", pedidoIdBusqueda);
+        String accessToken = enTransaccion(() -> {
+            Pago pago = pagoService.buscarPorPedido(pedidoIdBusqueda).orElse(null);
+            if (pago == null) {
+                log.warn("Webhook de MercadoPago para pedidoId={} sin ninguna preferencia de pago creada por Bajoneá — se ignora", pedidoIdBusqueda);
+                return null;
+            }
+            return obtenerCuentaDelComercio(pago.getPedido()).getAccessToken();
+        });
+        if (accessToken == null) {
             return;
         }
-        Pedido pedido = pago.getPedido();
-        CuentaMercadoPago cuenta = obtenerCuentaDelComercio(pedido);
 
-        PagoMpResponse pagoMp = obtenerPagoEnMercadoPago(paymentId, cuenta.getAccessToken());
-        validarYAplicarResultado(pago, paymentId, pagoMp, ipOrigen);
+        PagoMpResponse pagoMp = obtenerPagoEnMercadoPago(paymentId, accessToken);
+        enTransaccion(() -> {
+            validarYAplicarResultado(pedidoIdBusqueda, paymentId, pagoMp, ipOrigen);
+            return null;
+        });
     }
 
     /**
@@ -237,59 +314,72 @@ public class MercadoPagoPagoService {
      * el {@code paymentId} que manda el frontend: se cruza el {@code external_reference}.
      */
     public PedidoResponseDTO sincronizarPago(Integer usuarioId, Integer pedidoId, String paymentId, String ipOrigen) {
-        Pedido pedido = pedidoService.obtenerPedidoDelCliente(usuarioId, pedidoId);
-        if (pedido.getEstado() != EstadoPedido.PENDIENTE_PAGO) {
-            return pedidoService.obtenerDetalleCliente(pedido);
-        }
-        Pago pago = pagoService.buscarPorPedido(pedidoId).orElse(null);
-        if (pago == null) {
-            return pedidoService.obtenerDetalleCliente(pedido);
+        PreparacionSincronizacion preparacion = enTransaccion(() -> {
+            Pedido pedido = pedidoService.obtenerPedidoDelCliente(usuarioId, pedidoId);
+            if (pedido.getEstado() != EstadoPedido.PENDIENTE_PAGO) {
+                return new PreparacionSincronizacion(pedidoService.obtenerDetalleCliente(pedido), null);
+            }
+            if (pagoService.buscarPorPedido(pedidoId).isEmpty()) {
+                return new PreparacionSincronizacion(pedidoService.obtenerDetalleCliente(pedido), null);
+            }
+            return new PreparacionSincronizacion(null, obtenerCuentaDelComercio(pedido).getAccessToken());
+        });
+        if (preparacion.respuestaDirecta() != null) {
+            return preparacion.respuestaDirecta();
         }
 
-        CuentaMercadoPago cuenta = obtenerCuentaDelComercio(pedido);
         PagoMpResponse pagoMp;
         String idPago;
         if (paymentId != null && !paymentId.isBlank()) {
             idPago = paymentId;
-            pagoMp = obtenerPagoEnMercadoPago(idPago, cuenta.getAccessToken());
+            pagoMp = obtenerPagoEnMercadoPago(idPago, preparacion.accessToken());
         } else {
-            pagoMp = buscarMejorPagoPorReferencia(pedidoId, cuenta.getAccessToken());
+            pagoMp = buscarMejorPagoPorReferencia(pedidoId, preparacion.accessToken());
             if (pagoMp == null || pagoMp.id() == null) {
-                return pedidoService.obtenerDetalleCliente(pedido);
+                return enTransaccion(() -> pedidoService.obtenerDetalleCliente(pedidoService.obtenerPedidoDelCliente(usuarioId, pedidoId)));
             }
             idPago = String.valueOf(pagoMp.id());
         }
 
-        validarYAplicarResultado(pago, idPago, pagoMp, ipOrigen);
-        return pedidoService.obtenerDetalleCliente(pedido);
+        return enTransaccion(() -> {
+            Pedido pedido = pedidoService.obtenerPedidoDelCliente(usuarioId, pedidoId);
+            validarYAplicarResultado(pedidoId, idPago, pagoMp, ipOrigen);
+            return pedidoService.obtenerDetalleCliente(pedido);
+        });
     }
 
-    private void validarYAplicarResultado(Pago pago, String paymentId, PagoMpResponse pagoMp, String ipOrigen) {
-        Pedido pedido = pago.getPedido();
-        if (!pedido.getId().toString().equals(pagoMp.externalReference())) {
+    private void validarYAplicarResultado(Integer pedidoId, String paymentId, PagoMpResponse pagoMp, String ipOrigen) {
+        if (!pedidoId.toString().equals(pagoMp.externalReference())) {
             log.warn("MercadoPago: paymentId={} tiene external_reference={} que no coincide con pedidoId={} — se ignora",
-                    paymentId, pagoMp.externalReference(), pedido.getId());
-            alertaWebhookMpService.registrarExternalReferenceMismatch(pedido, paymentId, pagoMp.externalReference(), ipOrigen);
+                    paymentId, pagoMp.externalReference(), pedidoId);
+            pagoService.buscarPorPedido(pedidoId).ifPresent(pago -> alertaWebhookMpService
+                    .registrarExternalReferenceMismatch(pago.getPedido(), paymentId, pagoMp.externalReference(), ipOrigen));
             return;
         }
-        aplicarResultadoPago(pago, paymentId, pagoMp, ipOrigen);
+        aplicarResultadoPago(pedidoId, paymentId, pagoMp, ipOrigen);
     }
 
     /**
      * Rutina única de "aplicar el resultado de un pago a un pedido", compartida por el webhook y
-     * la sincronización. Corre con el pedido bloqueado (FOR UPDATE) para que dos ejecuciones
-     * simultáneas se serialicen. Un pago aprobado nunca se pisa.
+     * la sincronización. Es la parte que decide, así que empieza por los bloqueos: el pedido (con los usuarios
+     * involucrados, el estado del comercio y el equipo, en el orden global) y después el pago, los dos
+     * {@code FOR UPDATE}. Todo lo que se decide después se lee de esas filas ya bloqueadas, es decir, de lo último
+     * confirmado, y no de una foto vieja de la transacción. Es idempotente: el mismo pago aprobado dos veces, o un
+     * resultado viejo después de uno nuevo, no hace nada dos veces ni retrocede un estado. Un pago aprobado nunca se pisa.
      */
-    private void aplicarResultadoPago(Pago pagoInicial, String paymentId, PagoMpResponse pagoMp, String ipOrigen) {
+    private void aplicarResultadoPago(Integer pedidoId, String paymentId, PagoMpResponse pagoMp, String ipOrigen) {
         boolean aprobado = ESTADO_APROBADO.equals(pagoMp.status());
         // Un pago aprobado lee los estados del Cliente y del comercio y las filas del equipo antes de bloquear el pedido
         // (orden global de bloqueos); los demás resultados solo necesitan el pedido.
         PedidoService.PedidoBloqueado bloqueado = aprobado
-                ? pedidoService.bloquearParaPago(pagoInicial.getPedido().getId())
-                : new PedidoService.PedidoBloqueado(pedidoService.bloquearParaActualizar(pagoInicial.getPedido().getId()), List.of());
+                ? pedidoService.bloquearParaPago(pedidoId)
+                : new PedidoService.PedidoBloqueado(pedidoService.bloquearParaActualizar(pedidoId), List.of());
         Pedido pedido = bloqueado.pedido();
-        Pago pago = pagoInicial;
-        pagoService.refrescar(pago);
+        Pago pago = pagoService.buscarPorPedidoParaActualizar(pedidoId).orElse(null);
+        if (pago == null) {
+            log.warn("MercadoPago: el pedidoId={} no tiene un pago asociado al aplicar el resultado de paymentId={} — se ignora", pedidoId, paymentId);
+            return;
+        }
 
         boolean yaHayPagoAprobado = pago.getFechaConfirmacion() != null;
 
@@ -318,6 +408,15 @@ public class MercadoPagoPagoService {
         if (ESTADOS_RECHAZO.contains(pagoMp.status())) {
             pedidoService.marcarPagoRechazado(pedido.getId());
         }
+    }
+
+    private <T> T enTransaccion(Supplier<T> accion) {
+        return transaccion.execute(estado -> {
+            if (estado.isNewTransaction()) {
+                entityManager.clear();
+            }
+            return accion.get();
+        });
     }
 
     /**
@@ -403,7 +502,8 @@ public class MercadoPagoPagoService {
         return cuenta.isEsCuentaPrueba();
     }
 
-    private PreferenciaResponse crearPreferenciaEnMercadoPago(Pedido pedido, CuentaMercadoPago cuenta) {
+    /** Arma el pedido de preferencia con lo que hay en la base (transacción corta); la llamada a Mercado Pago es aparte. */
+    private PreferenciaRequest construirPreferencia(Pedido pedido) {
         List<DetallePedido> detalles = detallePedidoRepository.findByPedidoId(pedido.getId());
 
         List<ItemPreferencia> items = new ArrayList<>();
@@ -435,13 +535,15 @@ public class MercadoPagoPagoService {
         String vigenteDesde = ahora.truncatedTo(ChronoUnit.SECONDS).format(FORMATO_FECHA_MP);
         String vigenteHasta = ahora.plus(restante).format(FORMATO_FECHA_MP);
 
-        PreferenciaRequest request = new PreferenciaRequest(items, backUrls, notificationUrl, "approved", pedidoIdStr, marketplaceFee,
+        return new PreferenciaRequest(items, backUrls, notificationUrl, "approved", pedidoIdStr, marketplaceFee,
                 true, vigenteDesde, vigenteHasta);
+    }
 
+    private PreferenciaResponse crearPreferenciaEnMercadoPago(Integer pedidoId, PreferenciaRequest request, String accessToken) {
         try {
             PreferenciaResponse respuesta = restClient.post()
                     .uri(apiBaseUrl + PATH_CREAR_PREFERENCIA)
-                    .header("Authorization", "Bearer " + cuenta.getAccessToken())
+                    .header("Authorization", "Bearer " + accessToken)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(request)
                     .retrieve()
@@ -452,7 +554,7 @@ public class MercadoPagoPagoService {
             return respuesta;
         } catch (RestClientResponseException ex) {
             log.error("Error creando preferencia en Mercado Pago para pedidoId={}: {} {}",
-                    pedido.getId(), ex.getStatusCode(), ex.getResponseBodyAsString());
+                    pedidoId, ex.getStatusCode(), ex.getResponseBodyAsString());
             throw new ConflictoDeNegocioException("No se pudo generar el link de pago con Mercado Pago: " + ex.getStatusText());
         }
     }
@@ -483,6 +585,16 @@ public class MercadoPagoPagoService {
         } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             throw new IllegalStateException("HmacSHA256 no disponible en esta JVM", e);
         }
+    }
+
+    private record PreparacionPago(PagoResponseDTO respuestaDirecta, PreferenciaRequest solicitudNueva, String accessToken, boolean esSandbox) {
+
+        static PreparacionPago respuesta(PagoResponseDTO respuesta) {
+            return new PreparacionPago(respuesta, null, null, false);
+        }
+    }
+
+    private record PreparacionSincronizacion(PedidoResponseDTO respuestaDirecta, String accessToken) {
     }
 
     private record ItemPreferencia(

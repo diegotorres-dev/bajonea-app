@@ -34,10 +34,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -51,16 +56,17 @@ import org.springframework.web.util.UriComponentsBuilder;
  * viaje de ida y vuelta con MP y la transición automática de {@code Comercio.estado}.
  */
 @Service
-@RequiredArgsConstructor
-@Transactional
 public class MercadoPagoOAuthService {
 
     private static final String URL_AUTORIZACION_MP = "https://auth.mercadopago.com.ar/authorization";
-    private static final String URL_TOKEN_MP = "https://api.mercadopago.com/oauth/token";
+    private static final String PATH_TOKEN_MP = "/oauth/token";
+    private static final int TIMEOUT_CONEXION_MS = 5000;
+    private static final int TIMEOUT_LECTURA_MS = 10000;
     private static final int CODE_VERIFIER_BYTES = 32;
     private static final int STATE_BYTES = 24;
     private static final List<EstadoPedido> ESTADOS_EN_CURSO = List.of(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO,
             EstadoPedido.EN_PREPARACION, EstadoPedido.EN_CAMINO, EstadoPedido.LISTO_PARA_RETIRAR);
+    private static final String MENSAJE_INTENTO_INVALIDO = "El intento de vinculación con Mercado Pago no es válido o ya fue usado";
     private static final DateTimeFormatter FORMATO_HORA = DateTimeFormatter.ofPattern("HH:mm");
 
     private final CodigoVinculacionMPRepository codigoVinculacionMPRepository;
@@ -73,9 +79,45 @@ public class MercadoPagoOAuthService {
     private final PedidoTimeoutProperties timeoutProperties;
     private final MercadoPagoConfig mercadoPagoConfig;
 
-    private final RestClient restClient = RestClient.create();
+    private final TransactionTemplate transaccion;
+    private final RestClient restClient = crearRestClient();
     private final SecureRandom secureRandom = new SecureRandom();
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    /**
+     * Base de la API de Mercado Pago. Solo las pruebas la cambian (variable de entorno {@code MERCADOPAGO_API_BASE_URL}, hacia
+     * un servidor local que simula la API); en el servidor final no debe estar definida.
+     */
+    @Value("${MERCADOPAGO_API_BASE_URL:https://api.mercadopago.com}")
+    private String apiBaseUrl;
+
+    public MercadoPagoOAuthService(CodigoVinculacionMPRepository codigoVinculacionMPRepository, DuenoRepository duenoRepository,
+            CuentaMercadoPagoService cuentaMercadoPagoService, ComercioService comercioService,
+            AptitudVentaComercioService aptitudVentaComercioService, ComercioRepository comercioRepository,
+            PedidoRepository pedidoRepository, PedidoTimeoutProperties timeoutProperties, MercadoPagoConfig mercadoPagoConfig,
+            PlatformTransactionManager transactionManager) {
+        this.codigoVinculacionMPRepository = codigoVinculacionMPRepository;
+        this.duenoRepository = duenoRepository;
+        this.cuentaMercadoPagoService = cuentaMercadoPagoService;
+        this.comercioService = comercioService;
+        this.aptitudVentaComercioService = aptitudVentaComercioService;
+        this.comercioRepository = comercioRepository;
+        this.pedidoRepository = pedidoRepository;
+        this.timeoutProperties = timeoutProperties;
+        this.mercadoPagoConfig = mercadoPagoConfig;
+        this.transaccion = new TransactionTemplate(transactionManager);
+    }
+
+    private static RestClient crearRestClient() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(TIMEOUT_CONEXION_MS);
+        factory.setReadTimeout(TIMEOUT_LECTURA_MS);
+        return RestClient.builder().requestFactory(factory).build();
+    }
+
+    @Transactional
     public String iniciarVinculacion(Integer duenoId) {
         Dueno dueno = duenoRepository.findById(duenoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Dueño no encontrado"));
@@ -111,29 +153,45 @@ public class MercadoPagoOAuthService {
                 .toUriString();
     }
 
+    /**
+     * Vuelta del Dueño desde Mercado Pago. Paso 1: valida el intento y lee lo que hace falta (transacción corta, sin
+     * marcarlo como usado). Paso 2: el intercambio del código por los tokens, sin transacción. Paso 3: en otra
+     * transacción corta marca el intento como usado (si otra vuelta con el mismo intento o un intento nuevo del Dueño
+     * ya lo consumió o lo borró, da {@code 409}), toma el usuario del Dueño y vincula la cuenta. Si el intercambio
+     * falla, el intento queda sin usar, como antes.
+     */
     public void procesarCallback(String code, String state) {
-        CodigoVinculacionMP intento = codigoVinculacionMPRepository.findByIdentificadorIntentoAndUsadoFalse(state)
-                .orElseThrow(() -> new ConflictoDeNegocioException(
-                        "El intento de vinculación con Mercado Pago no es válido o ya fue usado"));
+        IntentoValidado intento = transaccion.execute(estado -> {
+            entityManager.clear();
+            CodigoVinculacionMP encontrado = codigoVinculacionMPRepository.findByIdentificadorIntentoAndUsadoFalse(state)
+                    .orElseThrow(() -> new ConflictoDeNegocioException(MENSAJE_INTENTO_INVALIDO));
+            return new IntentoValidado(encontrado.getId(), encontrado.getDueno().getId(), encontrado.getCodigoVerificacion());
+        });
 
-        intento.setUsado(true);
-        codigoVinculacionMPRepository.save(intento);
+        TokenResponse respuesta = intercambiarCodigoPorToken(code, intento.codigoVerificacion());
 
-        TokenResponse respuesta = intercambiarCodigoPorToken(code, intento.getCodigoVerificacion());
+        transaccion.executeWithoutResult(estado -> {
+            entityManager.clear();
+            if (codigoVinculacionMPRepository.marcarUsadoSiNoLoEstaba(intento.id()) == 0) {
+                throw new ConflictoDeNegocioException(MENSAJE_INTENTO_INVALIDO);
+            }
+            Integer duenoId = intento.duenoId();
+            boolean duenoBloqueado = comercioService.duenoBloqueadoConBloqueo(duenoId);
+            cuentaMercadoPagoService.vincular(
+                    duenoId,
+                    String.valueOf(respuesta.userId()),
+                    respuesta.accessToken(),
+                    respuesta.refreshToken(),
+                    respuesta.publicKey(),
+                    mercadoPagoConfig.isTestToken(),
+                    LocalDateTime.now().plusSeconds(respuesta.expiresIn() != null ? respuesta.expiresIn() : 0));
 
-        Integer duenoId = intento.getDueno().getId();
-        boolean duenoBloqueado = comercioService.duenoBloqueadoConBloqueo(duenoId);
-        cuentaMercadoPagoService.vincular(
-                duenoId,
-                String.valueOf(respuesta.userId()),
-                respuesta.accessToken(),
-                respuesta.refreshToken(),
-                respuesta.publicKey(),
-                mercadoPagoConfig.isTestToken(),
-                LocalDateTime.now().plusSeconds(respuesta.expiresIn() != null ? respuesta.expiresIn() : 0));
+            aptitudVentaComercioService.recalcularComerciosDelDueno(duenoId,
+                    new AptitudVentaComercioService.EntradasDueno(duenoBloqueado, true), MotivoRecalculo.MP_VINCULADO);
+        });
+    }
 
-        aptitudVentaComercioService.recalcularComerciosDelDueno(duenoId,
-                new AptitudVentaComercioService.EntradasDueno(duenoBloqueado, true), MotivoRecalculo.MP_VINCULADO);
+    private record IntentoValidado(Integer id, Integer duenoId, String codigoVerificacion) {
     }
 
     /**
@@ -150,6 +208,7 @@ public class MercadoPagoOAuthService {
      * desvinculada. Lo que el usuario vio en el modal de confirmación no se compara: solo esta regla se
      * revalida siempre.
      */
+    @Transactional
     public void desvincular(Integer duenoId) {
         comercioService.duenoBloqueadoConBloqueo(duenoId);
         CuentaMercadoPago cuenta = cuentaMercadoPagoService.obtenerActivaConBloqueo(duenoId);
@@ -239,6 +298,7 @@ public class MercadoPagoOAuthService {
         return creacionMasReciente.plusMinutes(timeoutProperties.getPagoMinutos());
     }
 
+    @Transactional
     public CuentaMercadoPagoResponseDTO consultarEstado(Integer duenoId) {
         return cuentaMercadoPagoService.buscarActivaPorDueno(duenoId)
                 .map(cuenta -> new CuentaMercadoPagoResponseDTO(true, cuenta.getMpUserId(), cuenta.getFechaVinculacion()))
@@ -257,7 +317,7 @@ public class MercadoPagoOAuthService {
 
         try {
             TokenResponse respuesta = restClient.post()
-                    .uri(URL_TOKEN_MP)
+                    .uri(apiBaseUrl + PATH_TOKEN_MP)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(request)
                     .retrieve()

@@ -38,6 +38,7 @@ import com.bajonea.backend.repositories.PersonaRepository;
 import com.bajonea.backend.repositories.RedSocialRepository;
 import com.bajonea.backend.validation.NombreUsuarioPolicy;
 import com.bajonea.backend.repositories.UsuarioRepository;
+import com.bajonea.backend.util.EjecucionPostCommit;
 import com.bajonea.backend.util.TextoUtils;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -321,7 +322,9 @@ public class RegistroService {
         Token token = tokenService.crear(usuario, TipoToken.VERIFICACION_EMAIL,
                 LocalDateTime.now().plusHours(EXPIRACION_VERIFICACION_EMAIL_HORAS));
 
-        emailService.enviarVerificacion(usuario.getEmail(), token.getToken());
+        String email = usuario.getEmail();
+        String codigo = token.getToken();
+        EjecucionPostCommit.ejecutar(() -> emailService.enviarVerificacion(email, codigo));
     }
 
     private UsuarioResponseDTO aResponseDTO(Usuario usuario) {

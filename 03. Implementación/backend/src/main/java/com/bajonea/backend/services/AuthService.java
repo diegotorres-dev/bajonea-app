@@ -40,6 +40,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import com.bajonea.backend.util.EjecucionPostCommit;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -189,7 +190,9 @@ public class AuthService {
         Token token = generarToken(usuario, TipoToken.VERIFICACION_EMAIL,
                 LocalDateTime.now().plusHours(EXPIRACION_VERIFICACION_EMAIL_HORAS));
 
-        emailService.enviarVerificacion(usuario.getEmail(), token.getToken());
+        String email = usuario.getEmail();
+        String codigo = token.getToken();
+        EjecucionPostCommit.ejecutar(() -> emailService.enviarVerificacion(email, codigo));
     }
 
     /**
@@ -204,7 +207,9 @@ public class AuthService {
         usuarioRepository.findByEmail(request.getEmail()).ifPresent(usuario -> {
             Token token = generarToken(usuario, TipoToken.RECUPERACION_PASSWORD,
                     LocalDateTime.now().plusMinutes(EXPIRACION_RECUPERACION_PASSWORD_MIN));
-            emailService.enviarRecuperacionPassword(usuario.getEmail(), token.getToken());
+            String email = usuario.getEmail();
+            String codigo = token.getToken();
+            EjecucionPostCommit.ejecutar(() -> emailService.enviarRecuperacionPassword(email, codigo));
         });
     }
 
@@ -342,7 +347,9 @@ public class AuthService {
         usuarioRepository.findByEmail(request.getEmail()).ifPresent(usuario -> {
             Token token = generarToken(usuario, TipoToken.REACTIVACION_CUENTA,
                     LocalDateTime.now().plusHours(EXPIRACION_REACTIVACION_CUENTA_HORAS));
-            emailService.enviarReactivacionCuenta(usuario.getEmail(), token.getToken());
+            String email = usuario.getEmail();
+            String codigo = token.getToken();
+            EjecucionPostCommit.ejecutar(() -> emailService.enviarReactivacionCuenta(email, codigo));
         });
     }
 

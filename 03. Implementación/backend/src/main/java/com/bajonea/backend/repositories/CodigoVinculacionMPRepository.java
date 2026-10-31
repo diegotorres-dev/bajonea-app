@@ -13,4 +13,8 @@ public interface CodigoVinculacionMPRepository extends JpaRepository<CodigoVincu
     @Modifying
     @Query("DELETE FROM CodigoVinculacionMP c WHERE c.dueno.id = :duenoId AND c.usado = false")
     void eliminarIntentosPendientesDelDueno(Integer duenoId);
+
+    @Modifying
+    @Query("UPDATE CodigoVinculacionMP c SET c.usado = true WHERE c.id = :id AND c.usado = false")
+    int marcarUsadoSiNoLoEstaba(Integer id);
 }
