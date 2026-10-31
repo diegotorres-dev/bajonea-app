@@ -482,7 +482,10 @@ public class AdministradorService {
                 comercio.getSuspensionOrigen(),
                 comercio.getSuspendidoDesde(),
                 comercio.getMotivoSuspension(),
-                ultimoEmailAvisoFallido);
+                ultimoEmailAvisoFallido,
+                comercio.getDueno().getId(),
+                (comercio.getDueno().getPersonaFisica().getNombre() + " " + comercio.getDueno().getPersonaFisica().getApellido()).trim(),
+                comercio.getDueno().getPersonaJuridica().getPersona().getUsuario().getEstado() == EstadoUsuario.SUSPENDIDO);
     }
 
     private ClienteAdminResponseDTO aClienteAdminResponseDTO(Cliente cliente, java.util.Set<Integer> sinEmailSuspension,

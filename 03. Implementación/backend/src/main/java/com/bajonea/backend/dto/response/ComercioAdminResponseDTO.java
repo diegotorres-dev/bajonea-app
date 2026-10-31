@@ -63,6 +63,9 @@ public class ComercioAdminResponseDTO {
     private final LocalDateTime suspendidoDesde;
     private final String motivoSuspension;
     private final boolean ultimoEmailAvisoFallido;
+    private final Integer duenoUsuarioId;
+    private final String duenoNombre;
+    private final boolean duenoSuspendido;
 
     public ComercioAdminResponseDTO(
             Integer id,
@@ -93,8 +96,14 @@ public class ComercioAdminResponseDTO {
             OrigenSuspensionComercio suspensionOrigen,
             LocalDateTime suspendidoDesde,
             String motivoSuspension,
-            boolean ultimoEmailAvisoFallido) {
+            boolean ultimoEmailAvisoFallido,
+            Integer duenoUsuarioId,
+            String duenoNombre,
+            boolean duenoSuspendido) {
         this.ultimoEmailAvisoFallido = ultimoEmailAvisoFallido;
+        this.duenoUsuarioId = duenoUsuarioId;
+        this.duenoNombre = duenoNombre;
+        this.duenoSuspendido = duenoSuspendido;
         this.suspensionOrigen = suspensionOrigen;
         this.suspendidoDesde = suspendidoDesde;
         this.motivoSuspension = motivoSuspension;
