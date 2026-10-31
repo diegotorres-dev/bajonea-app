@@ -78,3 +78,39 @@ Ninguna transacción pide una segunda conexión mientras sostiene la primera. De
 ### Documentación
 
 `DECISIONES.md`, este archivo, `CONCURRENCIA-Y-TRANSACCIONES.md`, `APRENDIZAJES-TECNICOS.md`, `LISTA-DE-DESPLIEGUE.md` y la regla 16 de `CLAUDE.md`.
+
+## Entrega B (2026-10-30): pantallas del Administrador para Dueños, comercios suspendidos con su Dueño y ajustes de interfaz
+
+Sin migraciones. Dos datos nuevos en la API (sin consultas por fila: salen de lo que los listados ya traían) y el resto es frontend.
+
+### Backend
+
+| Archivo | Cambio |
+|---|---|
+| `dto/response/ComercioAdminResponseDTO.java`, `services/AdministradorService.java` | La fila del listado de comercios suma `duenoUsuarioId` (el id para "Ir al Dueño"), `duenoNombre` y `duenoSuspendido` (si la cuenta del Dueño está suspendida). `duenoId` sigue valiendo `null` fuera de las solicitudes pendientes. |
+| `dto/response/MiembroEquipoResponseDTO.java` | Suma `cuentaSuspendida`: si el Administrador suspendió la cuenta del miembro. Nunca viaja el motivo. |
+
+### Frontend
+
+| Archivo | Qué |
+|---|---|
+| `admin-duenos.html`, `js/admin-duenos.js` (nuevos) | Lista de Dueños con buscador, filtros (Todos, Suspendidos, Bloqueados), fila con "email · N comercios", estado, "Desde el … · motivo", "No se envió el email · Reenviar" y botón de acciones; con `?id=N` muestra solo a ese Dueño, lo resalta y ofrece "Ver todos". |
+| `js/admin-dueno-suspension.js` (nuevo) | Hoja de acciones, hoja "Suspender a {nombre}" (vista previa por comercio con "Se suspende" o "Queda como está" y las líneas de pedidos según haya o no Empleados activos; cuerpo con scroll y pie fijo) y hoja "Levantar a {nombre}" (qué comercios vuelven y cuáles siguen suspendidos por separado, calculado de la misma vista previa). Funciones puras exportadas (`subtituloDeSuspender`, `lineasDePedidos`) para probar el texto en todos los casos. |
+| `js/admin-comercio-suspension.js`, `js/admin.js` | Bloque del comercio suspendido por el Dueño con su explicación, "Ir al Dueño" y el botón "Suspender solo este comercio" (misma hoja de suspender, con título y aviso propios, sin vista previa); caja naranja y "Levantar suspensión" deshabilitado cuando el comercio se suspendió por separado y el Dueño sigue suspendido. Entrada "Dueños" en la grilla del panel. |
+| `js/equipo-vistas.js` | Etiqueta "Cuenta suspendida" y fila atenuada para un miembro con la cuenta suspendida (la ven el Dueño y el Administrador). |
+| `js/selector-contexto.js` | Con el comercio `CERRADO_TEMPORALMENTE` la hoja del Empleado dice "No se aceptan pedidos nuevos." (antes "Solo podés consultarlo", que no era cierto: el Empleado puede editar productos, descripción y teléfono y rechazar, despachar, entregar y anular pedidos). |
+| `js/pedidos.js` | Un pedido anulado o cancelado por el sistema con reembolso por falta de atención (`canceladoPor = SISTEMA` y motivo de nota `SUSPENSION_COMERCIO`) se ve como "Cancelado" con "El comercio no estaba disponible. Te devolvemos el dinero." (antes decía "{comercio} anuló tu pedido."); el texto de la cancelación por la suspensión de un comercio es el mismo. |
+| `js/comercio.js` | El detalle de un pedido `ANULADO` con `canceladoPor = SISTEMA` dice "Este pedido se anuló automáticamente." para el Dueño y el Empleado (antes "Anulaste este pedido." / "El comercio anuló este pedido."). |
+| `css/styles.css` | Clases `dueno-hoja*`, `dueno-comercio*`, `dueno-restauracion*`, `dueno-admin-row*`, `cliente-admin-row--destacada`, `dueno-destacado`, `comercio-suspension__aviso-dueno`, `comercio-suspension__enlace-dueno`, `comercio-suspension__aparte*` y `equipo-fila--suspendida`/`equipo-fila__suspendida`. |
+
+### Tests
+
+| Archivo | Qué |
+|---|---|
+| `AdministradorListadoComerciosIntegrationTest` (+1), `AdministradorListadoComerciosConsultasIntegrationTest` (nuevo, 2), `GestionMiembroEquipoIntegrationTest` (+1) | Los campos nuevos de la API y que el listado de comercios hace las mismas consultas con 1 o con muchos Dueños (suspendidos o no). |
+| `testing/playwright/tests/89-suspension-dueno-lista-ui.spec.ts` (nuevo, 11 tests) | Lista de Dueños, hojas de acciones, de suspender y de levantar, email fallido, cascada con y sin Empleados, textos de la vista previa, validación, doble clic, error del servidor, Dueño suspendido en el login. |
+| `testing/playwright/tests/90-suspension-dueno-comercios-ui.spec.ts` (nuevo, 9 tests) | Comercio suspendido por el Dueño y por separado con el Dueño suspendido, "Suspender solo este comercio", "Ir al Dueño", levantar con un comercio que vuelve y dos que siguen, cruce de roles (Empleado, Dueño y Cliente), etiqueta "Cuenta suspendida" y texto del selector. |
+| `85-suspension-comercio-ui.spec.ts`, `86-suspension-comercio-paneles-ui.spec.ts` | Ajustados a los textos nuevos. |
+| `testing/playwright/scripts/build-suspension-dueno-fase5s3b-postman.mjs` (nuevo) | Carpeta `86` de Newman (27 requests, 43 assertions). |
+
+Capturas en `docs/capturas-suspension-dueno/` (13).

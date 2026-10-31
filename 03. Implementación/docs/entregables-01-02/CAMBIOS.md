@@ -1228,3 +1228,41 @@ Versión 1.33 (`V48`): `historial_estado_pedido.motivo_timeout` suma `SUSPENSION
 **7. `alcance-y-limitaciones.md`**
 
 Sin cambios.
+
+## Cambios de interfaz sugeridos — Fase 5, tramo S3 entrega B (pantallas del Administrador para Dueños), 2026-10-30
+
+(Listos para copiar. No se editó `01. Análisis de Requerimientos`. Sin migraciones: el diccionario de datos queda en la versión 1.33. Los próximos libres son `V49`, `V50`, la carpeta 87 de Newman, el spec 91 y el diccionario v1.34.)
+
+**1. `Historias de Usuario - Administrador.md`: ajuste a la historia "Suspender y levantar la suspensión de la cuenta de un Dueño"**
+
+- Hay una pantalla "Dueños" en el panel, con el mismo formato que la de Clientes: buscador por nombre o email, filtros Todos, Suspendidos y Bloqueados, y por cada Dueño su nombre, el email, cuántos comercios tiene, el estado y, si está suspendido, desde cuándo y por qué. Si el email de aviso falló, la fila lo dice y puedo reenviarlo ("Reenviar").
+- Desde el menú de cada Dueño abro una hoja con la acción que corresponde (suspender o levantar la suspensión).
+- Al suspender, la hoja dice "No va a poder ingresar" y cuántos de sus comercios se suspenden; por cada comercio muestro si "Se suspende" o "Queda como está" (con el motivo en lenguaje claro: ya estaba suspendido aparte, todavía no está aprobado, fue rechazado o está inactivo) y qué pasa con sus pedidos: los pendientes se rechazan y se reembolsan ahora; los que están en preparación o listos para retirar los resuelven sus Empleados en el tope de minutos configurado, o, si no tiene Empleados activos, se anulan o cancelan y se reembolsan ahora; los que están en camino siguen igual.
+- Al levantar, la hoja muestra desde cuándo y por qué estaba suspendido, qué comercios se restablecen y cuáles siguen suspendidos por separado (esos se levantan después desde su ficha), y aclara que los pedidos rechazados o anulados no vuelven. Puedo dejar un mensaje opcional.
+- En la ficha de un comercio suspendido junto con su Dueño veo que "no se puede levantar solo este comercio", un enlace "Ir al Dueño" que me lleva a su fila, y puedo "Suspender solo este comercio": pasa a una suspensión propia que sigue aunque levanten la suspensión del Dueño. En la ficha de un comercio suspendido por separado, mientras el Dueño siga suspendido, veo el aviso "Primero levantá la suspensión del Dueño; después podés levantar este comercio" y el botón de levantar está deshabilitado.
+
+**2. `Historias de Usuario - Dueño.md`: ajuste**
+
+- En mi equipo, la persona cuya cuenta suspendió el Administrador aparece con la etiqueta "Cuenta suspendida" y la fila atenuada, sin el motivo. Sigue figurando en el equipo hasta que yo decida otra cosa, pero no cuenta como equipo activo para atender pedidos.
+- Un pedido que el sistema anuló porque mi comercio quedó sin quien lo atienda dice "Este pedido se anuló automáticamente." (con el motivo "El comercio no está disponible") y no "Anulaste este pedido.".
+
+**3. `Historias de Usuario - Empleado.md`: ajuste**
+
+- Cuando el comercio está cerrado temporalmente por el bloqueo de la cuenta del Dueño, la hoja "Cambiar de cuenta" dice "No se aceptan pedidos nuevos." (antes decía "Solo podés consultarlo", que no era cierto: puedo editar productos, la descripción y el teléfono y rechazar, despachar, entregar y anular pedidos, pero no aceptar pedidos nuevos ni abrir o cerrar el comercio).
+- Un pedido anulado por el sistema por falta de atención dice "Este pedido se anuló automáticamente." en lugar de "El comercio anuló este pedido.".
+
+**4. `Historias de Usuario - Cliente.md`: ajuste**
+
+- Un pedido que se anuló o canceló porque el comercio quedó sin quien lo atienda figura como "Cancelado" (no "Anulado") y dice "El comercio no estaba disponible. Te devolvemos el dinero.". Es el mismo texto para el pedido cancelado por la suspensión del comercio (reemplaza a "El comercio fue suspendido. Te devolvemos el dinero.").
+
+**5. `requisitos-funcionales.md`**
+
+- Agregar: "El Administrador dispondrá de una pantalla de Dueños para ver su estado, buscar y filtrar, suspender y levantar la suspensión de su cuenta (con una vista previa del efecto sobre sus comercios y pedidos) y reenviar el email de aviso si falló, y la ficha de cada comercio indicará si su suspensión depende de la del Dueño."
+
+**6. `diccionario-de-datos.md`**
+
+Sin cambios (sin migraciones). La API del listado de comercios del Administrador suma `duenoUsuarioId`, `duenoNombre` y `duenoSuspendido`, y la del equipo suma `cuentaSuspendida` (no son columnas).
+
+**7. `alcance-y-limitaciones.md`**
+
+Sin cambios.
