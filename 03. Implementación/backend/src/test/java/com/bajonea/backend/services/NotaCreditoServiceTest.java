@@ -1,8 +1,10 @@
 package com.bajonea.backend.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -68,6 +70,36 @@ class NotaCreditoServiceTest {
                 nota(4, "999.00", EstadoNotaCredito.FALLIDO)));
 
         assertEquals(0, new BigDecimal("170.00").compareTo(service.montoCubierto(3)));
+    }
+
+    private NotaCreditoRepository.EstadoYMonto fila(String estado, String monto) {
+        return new NotaCreditoRepository.EstadoYMonto() {
+            @Override
+            public String getEstado() {
+                return estado;
+            }
+
+            @Override
+            public BigDecimal getMonto() {
+                return new BigDecimal(monto);
+            }
+        };
+    }
+
+    @Test
+    void otrasNotasCubrenElPagoSoloCuandoLasNotasVivasDeLasDemasLlegaAlMontoCompleto() {
+        Pago pago = Pago.builder().id(3).monto(new BigDecimal("1700.00")).build();
+        when(repository.leerOtrasDelPagoConBloqueo(3, 9)).thenReturn(List.of(fila("FALLIDO", "1700.00")));
+        assertFalse(service.otrasNotasCubrenElPago(pago, 9));
+
+        when(repository.leerOtrasDelPagoConBloqueo(3, 9)).thenReturn(List.of(fila("PENDIENTE", "1000.00")));
+        assertFalse(service.otrasNotasCubrenElPago(pago, 9));
+
+        when(repository.leerOtrasDelPagoConBloqueo(3, 9)).thenReturn(List.of(fila("PROCESADO", "1700.00")));
+        assertTrue(service.otrasNotasCubrenElPago(pago, 9));
+
+        when(repository.leerOtrasDelPagoConBloqueo(3, 9)).thenReturn(List.of(fila("PENDIENTE_REVISION_MANUAL", "1000.00"), fila("PENDIENTE", "700.00")));
+        assertTrue(service.otrasNotasCubrenElPago(pago, 9));
     }
 
     @Test

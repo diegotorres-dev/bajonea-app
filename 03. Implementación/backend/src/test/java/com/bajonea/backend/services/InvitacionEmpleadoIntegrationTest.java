@@ -28,6 +28,7 @@ import com.bajonea.backend.exceptions.InvitacionNoAptaException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.repositories.InvitacionInsercionRepository;
 import com.bajonea.backend.services.DatosPruebaEmpleado.Dueno;
+import com.bajonea.backend.util.ColaPostTransaccion;
 import com.bajonea.backend.util.EjecucionPostCommit;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
@@ -187,6 +188,7 @@ class InvitacionEmpleadoIntegrationTest {
                 sincronizacion.afterCommit();
             }
         }
+        ColaPostTransaccion.ejecutarPendientes();
     }
 
     private void sinEmailsDeInvitacion() {

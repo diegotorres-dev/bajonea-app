@@ -84,7 +84,6 @@ class ReembolsoServiceTest {
 
     private void darPago(Pago pago) {
         when(pagoService.buscarPorPedidoParaActualizar(PEDIDO_ID)).thenReturn(Optional.of(pago));
-        when(notaCreditoService.montoCubierto(PAGO_ID)).thenReturn(BigDecimal.ZERO);
     }
 
     private CuentaMercadoPago cuentaActiva() {
@@ -204,12 +203,15 @@ class ReembolsoServiceTest {
     void siElPagoYaTieneLaNotaPorElMontoCompletoLaAnulacionNoCreaOtraPeroInformaQueHayDevolucion() {
         Pago pago = pagoAprobado();
         when(pagoService.buscarPorPedidoParaActualizar(PEDIDO_ID)).thenReturn(Optional.of(pago));
-        when(notaCreditoService.montoCubierto(PAGO_ID)).thenReturn(MONTO);
+        when(cuentaService.buscarActivaPorDueno(DUENO_ID)).thenReturn(Optional.of(cuentaActiva()));
+        NotaCredito propia = notaPendiente(pago);
+        when(notaCreditoService.crear(pago, MONTO, MotivoNotaCredito.ANULACION_COMERCIO)).thenReturn(propia);
+        when(notaCreditoService.otrasNotasCubrenElPago(pago, propia.getId())).thenReturn(true);
         abrirTransaccionSimulada();
 
         assertTrue(reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.ANULACION_COMERCIO));
 
-        verify(notaCreditoService, never()).crear(any(), any(), any());
+        verify(notaCreditoService).eliminar(propia);
         assertTrue(TransactionSynchronizationManager.getSynchronizations().isEmpty());
     }
 
