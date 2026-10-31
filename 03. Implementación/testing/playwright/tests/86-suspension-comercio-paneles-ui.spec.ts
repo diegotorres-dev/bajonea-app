@@ -33,7 +33,7 @@ const CARPETA_CAPTURAS = path.resolve(__dirname, '../../../docs/capturas-suspens
 const MOTIVO = 'Reiteradas quejas de clientes por demoras y pedidos incompletos';
 const HEADER = 'X-Comercio-Id';
 const TEXTO_SIN_PEDIDOS = 'Este comercio no está recibiendo pedidos por ahora.';
-const TEXTO_SUSPENDIDO_DEVOLUCION = 'El comercio fue suspendido. Te devolvemos el dinero.';
+const TEXTO_SUSPENDIDO_DEVOLUCION = 'El comercio no estaba disponible. Te devolvemos el dinero.';
 const todoElDia = () => [{ diaSemana: diaDeHoy(), horaApertura: '00:00', horaCierre: '23:59' }];
 
 type EstadoDeseado = 'PENDIENTE' | 'PREPARACION' | 'LISTO' | 'EN_CAMINO';

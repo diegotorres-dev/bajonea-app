@@ -393,6 +393,26 @@ class GestionMiembroEquipoIntegrationTest {
     }
 
     @Test
+    void elListadoDelEquipoInformaSiLaCuentaDelMiembroEstaSuspendidaSinRevelarElMotivo() throws Exception {
+        Dueno dueno = datos.registrarDuenoAprobado();
+        String token = tokenDe(dueno);
+        Cuenta normal = datos.registrarClienteConCredenciales();
+        Cuenta suspendida = datos.registrarClienteConCredenciales();
+        LocalDateTime alta = LocalDateTime.now().minusDays(3);
+        datos.vincularEmpleado(normal.id(), dueno.comercioId(), "ACTIVO", alta);
+        datos.vincularEmpleado(suspendida.id(), dueno.comercioId(), "ACTIVO", alta);
+        datos.cambiarEstadoUsuario(suspendida.id(), "SUSPENDIDO");
+
+        JsonNode a = miembro(token, dueno.comercioId(), normal.id());
+        JsonNode b = miembro(token, dueno.comercioId(), suspendida.id());
+
+        assertFalse(a.path("cuentaSuspendida").asBoolean());
+        assertTrue(b.path("cuentaSuspendida").asBoolean());
+        assertEquals("ACTIVO", b.path("estado").asText());
+        assertFalse(b.has("motivoSuspension"));
+    }
+
+    @Test
     void elListadoDelEquipoInformaElMotivoDeBajaYSiSePuedeReactivarConUnaSolaConsulta() throws Exception {
         Dueno dueno = datos.registrarDuenoAprobado();
         String token = tokenDe(dueno);

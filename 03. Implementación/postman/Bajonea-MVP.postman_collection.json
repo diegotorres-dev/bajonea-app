@@ -194447,6 +194447,1206 @@
           ]
         }
       ]
+    },
+    {
+      "name": "86 - Suspension de un Dueno S3 entrega B (el listado de comercios informa al Dueno y su suspension, el equipo informa las cuentas suspendidas)",
+      "item": [
+        {
+          "name": "Login Administrador (sesion propia de esta carpeta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{admin_usuario}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('token_admin', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro del Dueño",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "comercio"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Suspension S3B SRL\",\n  \"cuit\": \"{{sd3b_cuit_tmp}}\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Direccion fiscal S3B 100\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"{{sd3b_nombre_com}}\",\n  \"descripcion\": \"Comercio generado por la coleccion de Postman (suspension de Dueño, S3 entrega B)\",\n  \"telefono\": \"+5492964555447\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"nombreUsuario\": \"{{sd3b_d_usuario}}\",\n  \"email\": \"{{sd3b_d_email}}\",\n  \"password\": \"{{sd3b_d_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"803\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Carlos\",\n  \"apellidoRepresentante\": \"Sanchez\",\n  \"dniRepresentante\": \"{{sd3b_dni_rep_tmp}}\",\n  \"telefonoRepresentante\": \"+5492964701106\",\n  \"fechaNacimientoRepresentante\": \"1988-04-04\",\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/postman-suspension-s3b.jpg\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/suspensions3b\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('sd3b_d_email', 'sd3b.d.' + s + '@bajonea.test');",
+                  "pm.environment.set('sd3b_d_usuario', ('sd3bd' + s).slice(0, 20));",
+                  "pm.environment.set('sd3b_d_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('sd3b_d_dni', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "const mult = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];",
+                  "let cuit = null;",
+                  "while (cuit === null) {",
+                  "  const base = '30' + String(Math.floor(10000000 + Math.random() * 89999999));",
+                  "  let suma = 0;",
+                  "  for (let i = 0; i < 10; i += 1) suma += Number(base[i]) * mult[i];",
+                  "  let dv = 11 - (suma % 11);",
+                  "  if (dv === 11) dv = 0;",
+                  "  if (dv !== 10) cuit = base + dv;",
+                  "}",
+                  "pm.environment.set('sd3b_cuit_tmp', cuit);",
+                  "pm.environment.set('sd3b_dni_rep_tmp', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "pm.environment.set('sd3b_nombre_com', 'Local Suspension S3B ' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion del Dueño",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{sd3b_d_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{sd3b_d_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('sd3b_d_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta del Dueño",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{sd3b_d_email}}\",\n  \"codigo\": \"{{sd3b_d_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del Dueño",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{sd3b_d_usuario}}\",\n  \"password\": \"{{sd3b_d_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('sd3b_d_token', pm.response.json().data.token);",
+                  "pm.environment.set('sd3b_d_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Administrador busca el comercio pendiente",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/pendientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "pendientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.emailCuenta === pm.environment.get('sd3b_d_email').toLowerCase());",
+                  "pm.test('El comercio esta pendiente', () => pm.expect(c).to.exist);",
+                  "pm.environment.set('sd3b_com', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Administrador aprueba el comercio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{sd3b_com}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{sd3b_com}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: el comercio pasa a APTO_VENTA",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/comercios/{{sd3b_com}}/apto-venta",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "comercios",
+                "{{sd3b_com}}",
+                "apto-venta"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El listado de comercios informa al Dueño y que su cuenta no esta suspendida",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => String(x.id) === String(pm.environment.get('sd3b_com')));",
+                  "pm.test('El comercio esta en el listado', () => pm.expect(c).to.exist);",
+                  "pm.test(\"Dueño\", () => { pm.expect(c.duenoSuspendido).to.eql(false); pm.expect(c.duenoUsuarioId).to.eql(Number(pm.environment.get('sd3b_d_id'))); pm.expect(c.duenoNombre).to.eql('Carlos Sanchez'); pm.expect(c.duenoId).to.eql(null); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro de la persona que va a ser Empleada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Empleada\",\n  \"apellido\": \"Suspension\",\n  \"dni\": \"{{sd3b_e_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551239\",\n  \"nombreUsuario\": \"{{sd3b_e_usuario}}\",\n  \"email\": \"{{sd3b_e_email}}\",\n  \"password\": \"{{sd3b_e_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('sd3b_e_email', 'sd3b.e.' + s + '@bajonea.test');",
+                  "pm.environment.set('sd3b_e_usuario', ('sd3be' + s).slice(0, 20));",
+                  "pm.environment.set('sd3b_e_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('sd3b_e_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion de la persona",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{sd3b_e_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{sd3b_e_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('sd3b_e_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta de la persona",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{sd3b_e_email}}\",\n  \"codigo\": \"{{sd3b_e_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login de la persona",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{sd3b_e_usuario}}\",\n  \"password\": \"{{sd3b_e_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('sd3b_e_token', pm.response.json().data.token);",
+                  "pm.environment.set('sd3b_e_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueño invita a la persona al equipo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sd3b_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{sd3b_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{sd3b_e_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: codigo de la invitacion",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/invitaciones-empleado/codigo?email={{sd3b_e_email}}&comercioId={{sd3b_com}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "invitaciones-empleado",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{sd3b_e_email}}"
+                },
+                {
+                  "key": "comercioId",
+                  "value": "{{sd3b_com}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('sd3b_inv_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La persona acepta la invitacion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{sd3b_e_email}}\",\n  \"codigo\": \"{{sd3b_inv_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Antes de suspender, el equipo no marca la cuenta como suspendida",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sd3b_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{sd3b_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const m = pm.response.json().data.miembros.find((x) => String(x.empleadoId) === String(pm.environment.get('sd3b_e_id')));",
+                  "pm.test('El Empleado esta en el equipo', () => pm.expect(m).to.exist);",
+                  "pm.test(\"Sin suspension\", () => { pm.expect(m.cuentaSuspendida).to.eql(false); pm.expect(m.estado).to.eql('ACTIVO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Administrador suspende la cuenta del Empleado (es un Cliente)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/clientes/{{sd3b_e_id}}/suspender",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "clientes",
+                "{{sd3b_e_id}}",
+                "suspender"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Uso indebido de la cuenta del comercio\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueño ve la cuenta suspendida sin el motivo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sd3b_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{sd3b_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const m = pm.response.json().data.miembros.find((x) => String(x.empleadoId) === String(pm.environment.get('sd3b_e_id')));",
+                  "pm.test('El Empleado esta en el equipo', () => pm.expect(m).to.exist);",
+                  "pm.test(\"Suspendida sin motivo\", () => { pm.expect(m.cuentaSuspendida).to.eql(true); pm.expect(m.estado).to.eql('ACTIVO'); pm.expect(JSON.stringify(m)).to.not.include('Uso indebido'); pm.expect(m).to.not.have.property('motivoSuspension'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Administrador ve lo mismo en el equipo del comercio",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{sd3b_com}}/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{sd3b_com}}",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const m = pm.response.json().data.miembros.find((x) => String(x.empleadoId) === String(pm.environment.get('sd3b_e_id')));",
+                  "pm.test('El Empleado esta en el equipo', () => pm.expect(m).to.exist);",
+                  "pm.test(\"Suspendida\", () => { pm.expect(m.cuentaSuspendida).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Administrador levanta la suspension del Empleado",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/clientes/{{sd3b_e_id}}/levantar-suspension",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "clientes",
+                "{{sd3b_e_id}}",
+                "levantar-suspension"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Levantada la suspension, el equipo ya no la marca",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sd3b_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{sd3b_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const m = pm.response.json().data.miembros.find((x) => String(x.empleadoId) === String(pm.environment.get('sd3b_e_id')));",
+                  "pm.test('El Empleado esta en el equipo', () => pm.expect(m).to.exist);",
+                  "pm.test(\"Normal\", () => { pm.expect(m.cuentaSuspendida).to.eql(false); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Administrador suspende la cuenta del Dueño",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/duenos/{{sd3b_d_id}}/suspender",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "duenos",
+                "{{sd3b_d_id}}",
+                "suspender"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"Documentacion vencida y quejas reiteradas de clientes\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El listado de comercios marca al Dueño suspendido y el comercio suspendido por el Dueño",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => String(x.id) === String(pm.environment.get('sd3b_com')));",
+                  "pm.test('El comercio esta en el listado', () => pm.expect(c).to.exist);",
+                  "pm.test(\"Dueño suspendido\", () => { pm.expect(c.duenoSuspendido).to.eql(true); pm.expect(c.estado).to.eql('SUSPENDIDO'); pm.expect(c.suspensionOrigen).to.eql('DUENO'); pm.expect(c.duenoNombre).to.eql('Carlos Sanchez'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La vista previa de un Dueño suspendido muestra el comercio con su origen",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/duenos/{{sd3b_d_id}}/suspension/previa",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "duenos",
+                "{{sd3b_d_id}}",
+                "suspension",
+                "previa"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Origen\", () => { const c = pm.response.json().data.comercios[0]; pm.expect(c.estadoActual).to.eql('SUSPENDIDO'); pm.expect(c.suspensionOrigen).to.eql('DUENO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Administrador levanta la suspension del Dueño",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/duenos/{{sd3b_d_id}}/levantar-suspension",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "duenos",
+                "{{sd3b_d_id}}",
+                "levantar-suspension"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Levantada la suspension, el listado ya no marca al Dueño",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => String(x.id) === String(pm.environment.get('sd3b_com')));",
+                  "pm.test('El comercio esta en el listado', () => pm.expect(c).to.exist);",
+                  "pm.test(\"Dueño activo y, sin cuenta de cobro, el comercio vuelve aprobado\", () => { pm.expect(c.duenoSuspendido).to.eql(false); pm.expect(c.estado).to.eql('APROBADO'); pm.expect(c.suspensionOrigen).to.eql(null); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "event": [

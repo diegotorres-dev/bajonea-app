@@ -159,6 +159,26 @@ class AdministradorListadoComerciosIntegrationTest {
     }
 
     @Test
+    void cadaFilaInformaElDuenoYSiSuCuentaEstaSuspendida() throws Exception {
+        Dueno suspendido = duenoPorEstado.get(EstadoComercio.APROBADO);
+        Dueno activo = duenoPorEstado.get(EstadoComercio.APTO_VENTA);
+        datos.cambiarEstadoUsuario(suspendido.id(), "SUSPENDIDO");
+
+        JsonNode comercios = listado(tokenAdministrador());
+
+        JsonNode filaSuspendido = fila(comercios, suspendido.comercioId());
+        assertEquals(true, filaSuspendido.path("duenoSuspendido").asBoolean());
+        assertEquals(suspendido.id(), filaSuspendido.path("duenoUsuarioId").asInt());
+        assertTrue(!filaSuspendido.path("duenoNombre").asText().isBlank());
+        JsonNode filaActivo = fila(comercios, activo.comercioId());
+        assertEquals(false, filaActivo.path("duenoSuspendido").asBoolean());
+        assertEquals(activo.id(), filaActivo.path("duenoUsuarioId").asInt());
+        for (Dueno dueno : duenoPorEstado.values()) {
+            assertTrue(fila(comercios, dueno.comercioId()).path("duenoId").isNull());
+        }
+    }
+
+    @Test
     void lasPantallasDeSolicitudesSiguenMostrandoSoloLosPendientes() throws Exception {
         String token = tokenAdministrador();
         Dueno pendiente = duenoPorEstado.get(EstadoComercio.PENDIENTE);

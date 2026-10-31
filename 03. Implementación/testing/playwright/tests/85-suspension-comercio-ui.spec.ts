@@ -278,13 +278,16 @@ test.describe('Fase 5, S2 (UI): suspensión individual de un comercio', () => {
 
     await expect(page.getByTestId('suspension-comercio-estado')).toHaveText('Suspendido');
     await expect(page.getByTestId('suspension-comercio-motivo')).toHaveText('Se suspendió al Dueño');
+    await expect(page.getByTestId('suspension-comercio-junto-dueno')).toHaveText('Suspendido junto con el Dueño');
     await expect(page.getByTestId('suspension-comercio-explicacion')).toHaveText(
-      'Se suspendió junto con el Dueño. Para reactivarlo hay que levantar la suspensión del Dueño.',
+      'No se puede levantar solo este comercio. Para reactivarlo hay que levantar la suspensión del Dueño.',
     );
+    await expect(page.getByTestId('enlace-ir-al-dueno')).toHaveAttribute('href', `admin-duenos.html?id=${dueno.duenoId}`);
     const levantar = page.getByTestId('btn-levantar-suspension-comercio');
     await expect(levantar).toBeDisabled();
     await expect(levantar).toHaveAttribute('aria-describedby', 'suspension-comercio-explicacion');
     await expect(page.getByTestId('btn-suspender-comercio')).toHaveCount(0);
+    await expect(page.getByTestId('btn-suspender-solo-comercio')).toBeVisible();
     await captura(page, '05-detalle-suspendido-por-el-dueno');
     await sinScrollHorizontal(page);
     expect(estadoDe(dueno.comercioId)).toBe('SUSPENDIDO');
