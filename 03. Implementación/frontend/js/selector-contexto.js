@@ -26,7 +26,7 @@ const ETIQUETA_ESTADO = {
 
 const AVISO_ESTADO = {
   SUSPENDIDO: 'Comercio suspendido. Solo podés resolver pedidos en curso.',
-  CERRADO_TEMPORALMENTE: 'Solo podés consultarlo',
+  CERRADO_TEMPORALMENTE: 'No se aceptan pedidos nuevos.',
 };
 
 function crear(tag, className) {

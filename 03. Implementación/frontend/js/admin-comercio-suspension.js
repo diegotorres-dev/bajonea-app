@@ -6,7 +6,10 @@ import { abrirHoja, cajaInformativa, campoTexto, fechaLegible, texto } from './a
 
 const MIN_MOTIVO = 10;
 const ESTADOS_SUSPENDIBLES = ['APROBADO', 'APTO_VENTA', 'CERRADO_TEMPORALMENTE'];
-const EXPLICACION_ORIGEN_DUENO = 'Se suspendió junto con el Dueño. Para reactivarlo hay que levantar la suspensión del Dueño.';
+const EXPLICACION_ORIGEN_DUENO = 'No se puede levantar solo este comercio. Para reactivarlo hay que levantar la suspensión del Dueño.';
+const EXPLICACION_DUENO_SUSPENDIDO = 'El Dueño tiene la cuenta suspendida. Primero levantá la suspensión del Dueño; después podés levantar este comercio.';
+const AYUDA_SUSPENDER_APARTE = 'Va a seguir suspendido aunque levanten la suspensión del Dueño. Después lo vas a poder levantar desde acá.';
+const AVISO_SUSPENDER_APARTE = 'Va a seguir suspendido aunque levanten la suspensión del Dueño.';
 
 export function lineasDeLaVistaPrevia(previa) {
   const lineas = ['Deja de aparecer en el catálogo.'];
@@ -40,9 +43,13 @@ export function lineasDeLaVistaPrevia(previa) {
   return lineas;
 }
 
-function abrirModalSuspender(comercio, opener, { alExito, alConflicto }) {
+function abrirModalSuspender(comercio, opener, { alExito, alConflicto }, { aparte = false } = {}) {
   const { caja, items } = cajaInformativa('Qué va a pasar', [], 'suspender-comercio-que-va-a-pasar');
-  items.appendChild(texto('li', 'cliente-modal__espera', 'Cargando…', { 'data-testid': 'suspender-comercio-previa-cargando' }));
+  if (aparte) {
+    items.appendChild(texto('li', '', AVISO_SUSPENDER_APARTE));
+  } else {
+    items.appendChild(texto('li', 'cliente-modal__espera', 'Cargando…', { 'data-testid': 'suspender-comercio-previa-cargando' }));
+  }
   const { campo, area } = campoTexto({
     id: 'suspender-comercio-motivo',
     etiqueta: 'Motivo (lo va a ver el Dueño)',
@@ -55,7 +62,7 @@ function abrirModalSuspender(comercio, opener, { alExito, alConflicto }) {
   const formulario = h('form', { class: 'form', novalidate: true }, [campo, aviso, confirmar, cancelar]);
   const { hoja, fondo, overflowPrevio } = abrirHoja({
     id: 'suspender-comercio',
-    titulo: `Suspender ${comercio.nombre}`,
+    titulo: aparte ? 'Suspender solo este comercio' : `Suspender ${comercio.nombre}`,
     testid: 'modal-suspender-comercio',
     hijos: [caja, formulario],
   });
@@ -73,16 +80,18 @@ function abrirModalSuspender(comercio, opener, { alExito, alConflicto }) {
     if (devolver) devolverFoco(opener);
   }
 
-  apiFetch(`/administrador/comercios/${comercio.id}/suspension/previa`, { handle5xxGlobally: false, handleRedGlobally: false })
-    .then((previa) => {
-      if (cerrado) return;
-      items.replaceChildren(...lineasDeLaVistaPrevia(previa).map((linea) => texto('li', '', linea)));
-    })
-    .catch((error) => {
-      if (cerrado) return;
-      items.replaceChildren(texto('li', '', 'Deja de aparecer en el catálogo.'));
-      mostrarAvisoFijo(aviso, `${mensajeDeError(error, 'No pudimos calcular el detalle.')} Igual podés suspender el comercio.`);
-    });
+  if (!aparte) {
+    apiFetch(`/administrador/comercios/${comercio.id}/suspension/previa`, { handle5xxGlobally: false, handleRedGlobally: false })
+      .then((previa) => {
+        if (cerrado) return;
+        items.replaceChildren(...lineasDeLaVistaPrevia(previa).map((linea) => texto('li', '', linea)));
+      })
+      .catch((error) => {
+        if (cerrado) return;
+        items.replaceChildren(texto('li', '', 'Deja de aparecer en el catálogo.'));
+        mostrarAvisoFijo(aviso, `${mensajeDeError(error, 'No pudimos calcular el detalle.')} Igual podés suspender el comercio.`);
+      });
+  }
 
   area.addEventListener('input', () => {
     confirmar.disabled = ocupado || area.value.trim().length < MIN_MOTIVO;
@@ -194,6 +203,11 @@ function abrirModalLevantar(comercio, opener, { alExito, alConflicto }) {
   });
 }
 
+function enlaceAlDueno(comercio) {
+  const enlace = texto('a', 'comercio-suspension__enlace-dueno', 'Ir al Dueño', { href: `admin-duenos.html?id=${comercio.duenoUsuarioId}`, 'data-testid': 'enlace-ir-al-dueno' });
+  return enlace;
+}
+
 function pintarBloque(bloque, comercio, recargarComercio) {
   const chip = h('span', { class: 'status-badge status-badge--pendiente', 'data-testid': 'suspension-comercio-estado' });
   chip.textContent = 'Suspendido';
@@ -202,11 +216,20 @@ function pintarBloque(bloque, comercio, recargarComercio) {
     encabezado.appendChild(texto('span', 'comercio-suspension__desde', `desde ${fechaLegible(comercio.suspendidoDesde)}`, { 'data-testid': 'suspension-comercio-desde' }));
   }
   const hijos = [encabezado];
+  if (comercio.suspensionOrigen === 'DUENO') {
+    hijos.push(texto('p', 'comercio-suspension__motivo', 'Suspendido junto con el Dueño', { 'data-testid': 'suspension-comercio-junto-dueno' }));
+  }
   if (comercio.motivoSuspension) {
     hijos.push(texto('p', 'comercio-suspension__motivo', comercio.motivoSuspension, { 'data-testid': 'suspension-comercio-motivo' }));
   }
   if (comercio.suspensionOrigen === 'DUENO') {
     hijos.push(texto('p', 'comercio-suspension__explicacion', EXPLICACION_ORIGEN_DUENO, { id: 'suspension-comercio-explicacion', 'data-testid': 'suspension-comercio-explicacion' }));
+    hijos.push(enlaceAlDueno(comercio));
+  } else if (comercio.duenoSuspendido) {
+    hijos.push(h('div', { class: 'comercio-suspension__aviso-dueno', 'data-testid': 'aviso-dueno-suspendido' }, [
+      texto('p', '', EXPLICACION_DUENO_SUSPENDIDO, { id: 'aviso-dueno-suspendido-texto' }),
+      enlaceAlDueno(comercio),
+    ]));
   }
   if (comercio.ultimoEmailAvisoFallido) {
     const reenviar = texto('button', 'btn btn-secondary comercio-suspension__reenviar', 'Reenviar', { type: 'button', 'data-testid': 'btn-reenviar-email-comercio' });
@@ -244,7 +267,7 @@ function pintarBloque(bloque, comercio, recargarComercio) {
 }
 
 export function crearControlesSuspension(comercio, { alExito, alConflicto, recargarComercio }) {
-  const controles = { bloque: null, botones: [] };
+  const controles = { bloque: null, aparte: null, botones: [] };
   if (comercio.estado === 'SUSPENDIDO') {
     controles.bloque = h('div', { class: 'comercio-suspension', 'data-testid': 'suspension-comercio' });
     pintarBloque(controles.bloque, comercio, recargarComercio);
@@ -252,6 +275,15 @@ export function crearControlesSuspension(comercio, { alExito, alConflicto, recar
     if (comercio.suspensionOrigen === 'DUENO') {
       levantar.disabled = true;
       levantar.setAttribute('aria-describedby', 'suspension-comercio-explicacion');
+      const suspenderAparte = texto('button', 'btn btn-secondary doc-peligro-borde', 'Suspender solo este comercio', { type: 'button', 'aria-describedby': 'suspension-comercio-aparte-ayuda', 'data-testid': 'btn-suspender-solo-comercio' });
+      suspenderAparte.addEventListener('click', () => abrirModalSuspender(comercio, suspenderAparte, { alExito, alConflicto }, { aparte: true }));
+      controles.aparte = h('div', { class: 'comercio-suspension__aparte' }, [
+        suspenderAparte,
+        texto('p', 'comercio-suspension__aparte-ayuda', AYUDA_SUSPENDER_APARTE, { id: 'suspension-comercio-aparte-ayuda', 'data-testid': 'suspension-comercio-aparte-ayuda' }),
+      ]);
+    } else if (comercio.duenoSuspendido) {
+      levantar.disabled = true;
+      levantar.setAttribute('aria-describedby', 'aviso-dueno-suspendido-texto');
     } else {
       levantar.addEventListener('click', () => abrirModalLevantar(comercio, levantar, { alExito, alConflicto }));
     }

@@ -1402,7 +1402,9 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado, opciones 
     iconClass: info.iconClass,
     icono: info.icon,
     label: info.label,
-    texto: pedido.vistaReducida && info.textoEmpleado ? info.textoEmpleado : info.texto,
+    texto: pedido.estado === 'ANULADO' && pedido.canceladoPor === 'SISTEMA'
+      ? 'Este pedido se anuló automáticamente.'
+      : (pedido.vistaReducida && info.textoEmpleado ? info.textoEmpleado : info.texto),
     numeroTexto: `Pedido #${pedido.id} · ${formatearFecha(pedido.fechaPagoAprobado)}`,
     motivoRechazo: motivoInfo,
   });

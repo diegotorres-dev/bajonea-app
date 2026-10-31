@@ -129,7 +129,15 @@ const ESTADO_INFO_DESCONOCIDO = {
 
 const TEXTO_COMERCIO_NO_DISPONIBLE = 'Este comercio no está recibiendo pedidos por ahora.';
 const TEXTO_RECHAZADO_POR_SUSPENSION = 'El comercio no estaba disponible. Te devolvemos el dinero.';
-const TEXTO_CANCELADO_POR_SUSPENSION = 'El comercio fue suspendido. Te devolvemos el dinero.';
+const TEXTO_CANCELADO_POR_SUSPENSION = TEXTO_RECHAZADO_POR_SUSPENSION;
+
+const ESTADO_INFO_SIN_ATENCION = {
+  label: 'Cancelado',
+  dotClass: 'pedido-estado__dot--rechazado',
+  iconClass: ICON_CLASS,
+  icon: ICONS.xCircle,
+  texto: () => TEXTO_CANCELADO_POR_SUSPENSION,
+};
 
 const ESTADO_INFO_SIN_PAGAR = {
   label: 'Sin pagar',
@@ -140,7 +148,8 @@ const ESTADO_INFO_SIN_PAGAR = {
 };
 
 function canceladoPorSuspensionDelComercio(pedido) {
-  return Boolean(pedido) && pedido.estado === 'CANCELADO_POR_SISTEMA' && pedido.reembolsoMotivo === 'SUSPENSION_COMERCIO';
+  return Boolean(pedido) && (pedido.estado === 'CANCELADO_POR_SISTEMA' || pedido.estado === 'ANULADO')
+    && pedido.canceladoPor === 'SISTEMA' && pedido.reembolsoMotivo === 'SUSPENSION_COMERCIO';
 }
 
 function rechazadoPorSuspensionDelComercio(pedido) {
@@ -150,6 +159,9 @@ function rechazadoPorSuspensionDelComercio(pedido) {
 function infoDeEstadoPedido(estado, pedido) {
   if (pedido && pedido.comercioNoDisponible && estado === 'PENDIENTE_PAGO') {
     return ESTADO_INFO_SIN_PAGAR;
+  }
+  if (canceladoPorSuspensionDelComercio(pedido)) {
+    return ESTADO_INFO_SIN_ATENCION;
   }
   return ESTADO_INFO[estado] || ESTADO_INFO_DESCONOCIDO;
 }
@@ -530,6 +542,8 @@ export async function initPedidoDetalle() {
     let motivoInfo = null;
     if (pedido.estado === 'RECHAZADO' && pedido.motivoRechazo) {
       motivoInfo = { motivoLabel: MOTIVO_RECHAZO_LABEL[pedido.motivoRechazo] || 'Motivo no disponible', comentario: pedido.comentarioRechazo };
+    } else if (canceladoPorSuspensionDelComercio(pedido)) {
+      motivoInfo = null;
     } else if (pedido.estado === 'ANULADO' && pedido.motivoRechazo) {
       motivoInfo = { motivoLabel: MOTIVO_RECHAZO_LABEL[pedido.motivoRechazo] || 'Motivo no disponible', comentario: pedido.comentarioRechazo };
     } else if (pedido.estado === 'ANULADO' && pedido.motivoAnulacion) {

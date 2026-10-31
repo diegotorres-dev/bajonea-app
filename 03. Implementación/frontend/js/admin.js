@@ -225,6 +225,7 @@ export async function initAdminDashboard() {
   const tiles = [
     { icon: ICONS.store, titulo: 'Comercios', subtitulo: `${metricas.comerciosTotal} registrados`, href: 'admin-comercios.html' },
     { icon: ICONS.users, titulo: 'Clientes', subtitulo: `${metricas.clientesTotal} registrados`, href: 'admin-clientes.html' },
+    { icon: ICONS.users, titulo: 'Dueños', subtitulo: 'Cuentas y suspensiones', href: 'admin-duenos.html' },
     { icon: ICONS.tag, titulo: 'Categorías', subtitulo: `${metricas.categoriasActivas} activas`, href: 'admin-categorias.html' },
     { icon: ICONS.hash, titulo: 'Tags', subtitulo: `${metricas.tagsActivos} activos`, href: 'admin-tags.html' },
     { icon: ICONS.percent, titulo: 'Tarifas', subtitulo: 'Cargos y comisiones', href: 'admin-tarifas.html' },
@@ -840,6 +841,9 @@ function mostrarModalDetalleComercio(comercio, onSuspendido) {
   });
   if (controles.bloque) {
     h2.after(controles.bloque);
+  }
+  if (controles.aparte) {
+    controles.bloque.after(controles.aparte);
   }
   controles.botones.forEach((boton) => accionesModal.appendChild(boton));
 

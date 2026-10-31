@@ -153,7 +153,8 @@ export function crearAvatarSobre() {
 }
 
 export function crearFilaMiembro(miembro, { accion = null, estado = null, etiqueta = null, lineaDesde = '', apagado = false } = {}) {
-  const fila = h('div', { class: 'equipo-fila', 'data-testid': `equipo-miembro-${miembro.empleadoId}`, 'data-estado': miembro.estado });
+  const suspendida = Boolean(miembro.cuentaSuspendida);
+  const fila = h('div', { class: `equipo-fila${suspendida ? ' equipo-fila--suspendida' : ''}`, 'data-testid': `equipo-miembro-${miembro.empleadoId}`, 'data-estado': miembro.estado });
   const datos = h('div', { class: 'equipo-fila__datos' });
   const nombre = crearLinea('equipo-fila__nombre', nombreCompleto(miembro));
   nombre.setAttribute('data-testid', 'equipo-nombre');
@@ -171,7 +172,12 @@ export function crearFilaMiembro(miembro, { accion = null, estado = null, etique
   if (etiqueta) {
     datos.append(etiqueta);
   }
-  fila.append(crearAvatarIniciales(miembro, apagado), datos);
+  if (suspendida) {
+    const aviso = crearLinea('equipo-fila__suspendida', 'Cuenta suspendida');
+    aviso.setAttribute('data-testid', 'equipo-cuenta-suspendida');
+    datos.append(aviso);
+  }
+  fila.append(crearAvatarIniciales(miembro, apagado || suspendida), datos);
   if (accion) {
     fila.append(accion);
   }

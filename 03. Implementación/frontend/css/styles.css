@@ -5448,6 +5448,24 @@ button.panel-comercios__fila:focus-visible {
   color: var(--color-text-muted);
 }
 
+.equipo-fila--suspendida .equipo-fila__nombre,
+.equipo-fila--suspendida .equipo-fila__email,
+.equipo-fila--suspendida .equipo-fila__estado {
+  opacity: 0.6;
+}
+
+.equipo-fila__suspendida {
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-error);
+}
+
 .equipo-esqueleto__fila {
   display: flex;
   align-items: center;
@@ -7891,6 +7909,261 @@ button.panel-comercios__fila:focus-visible {
 .pedido-card__aviso-comercio {
   margin: 0 0 8px;
   font-size: 13px;
+  line-height: 1.4;
+  color: var(--color-text-muted);
+}
+
+.product-modal-sheet.dueno-hoja {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.dueno-hoja .product-modal-sheet__body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.dueno-hoja__form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.dueno-hoja__cuerpo {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+}
+
+.dueno-hoja__cuerpo::-webkit-scrollbar {
+  display: none;
+}
+
+.dueno-hoja__pie {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.dueno-hoja__pie .btn,
+.dueno-hoja__acciones .btn {
+  width: 100%;
+}
+
+.dueno-hoja__acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dueno-hoja__lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.dueno-hoja__nota {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.dueno-comercio {
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+
+.dueno-comercio__encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.dueno-comercio__nombre {
+  min-width: 0;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.dueno-comercio__chip {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.dueno-comercio__chip--suspende {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+}
+
+.dueno-comercio__chip--queda {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+.dueno-comercio__lineas {
+  margin: 0;
+  padding-left: 18px;
+  list-style: disc;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.dueno-restauracion {
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.dueno-restauracion--vuelve {
+  background: var(--color-success-bg);
+  border-color: var(--color-success);
+}
+
+.dueno-restauracion--sigue {
+  background: var(--color-warning-bg);
+  border-color: var(--color-warning);
+}
+
+.dueno-restauracion__titulo {
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-success);
+}
+
+.dueno-restauracion__fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.dueno-restauracion__nombre {
+  min-width: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.dueno-restauracion__estado {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.dueno-restauracion--vuelve .dueno-restauracion__estado {
+  color: var(--color-success);
+}
+
+.dueno-restauracion--sigue .dueno-restauracion__estado {
+  color: var(--color-text);
+}
+
+.dueno-restauracion__explicacion {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.dueno-admin-row__suspension {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.dueno-admin-row__reenviar {
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.dueno-admin-row__reenviar:disabled {
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.cliente-admin-row--destacada {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-soft);
+}
+
+.dueno-destacado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dueno-destacado .cliente-modal__caja-titulo {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.dueno-destacado .btn {
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 14px;
+}
+
+.comercio-suspension__aviso-dueno {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--color-warning);
+  border-radius: var(--radius-md);
+  background: var(--color-warning-bg);
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comercio-suspension__enlace-dueno {
+  align-self: flex-start;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.comercio-suspension__aparte {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.comercio-suspension__aparte-ayuda {
+  font-size: 12px;
   line-height: 1.4;
   color: var(--color-text-muted);
 }
