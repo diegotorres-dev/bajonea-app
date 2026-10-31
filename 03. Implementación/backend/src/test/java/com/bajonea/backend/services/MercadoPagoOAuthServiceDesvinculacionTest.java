@@ -65,7 +65,8 @@ class MercadoPagoOAuthServiceDesvinculacionTest {
         PedidoTimeoutProperties timeouts = new PedidoTimeoutProperties();
         timeouts.setPagoMinutos(30);
         service = new MercadoPagoOAuthService(codigoRepository, duenoRepository, cuentaService, comercioService, aptitudService,
-                comercioRepository, pedidoRepository, timeouts, mock(MercadoPagoConfig.class));
+                comercioRepository, pedidoRepository, timeouts, mock(MercadoPagoConfig.class),
+                mock(org.springframework.transaction.PlatformTransactionManager.class));
         cuenta = mock(CuentaMercadoPago.class);
         when(cuentaService.obtenerActivaConBloqueo(7)).thenReturn(cuenta);
     }

@@ -26,6 +26,7 @@ const ESTRESES = [
   { id: 'a3', archivo: 'stress-locks-tramoE3-A3.mjs', descripcion: 'E3 A3: pedido propio y trazabilidad' },
   { id: 'a4', archivo: 'stress-locks-tramoE3-A4.mjs', descripcion: 'E3 A4: avisos con fan-out' },
   { id: 'carrito', archivo: 'stress-locks-tramoE3-carrito.mjs', descripcion: 'E3 carrito (necesita el backend con MERCADOPAGO_API_BASE_URL apuntando al stub)', requiereStubMp: true },
+  { id: 's32', archivo: 'stress-locks-tramoS32.mjs', descripcion: 'S3.2: ráfaga de webhooks de Mercado Pago (pagos distintos y repetidos, sincronizaciones, cancelaciones y "Ir a pagar" simultáneos; necesita el backend con MERCADOPAGO_API_BASE_URL apuntando al stub; sin Connection is not available)', requiereStubMp: true },
   { id: 'a4b', archivo: 'stress-locks-tramoE3-A4b.mjs', descripcion: 'E3 A4b: no retirado' },
   { id: 'a6', archivo: 'stress-locks-tramoE3-A6.mjs', descripcion: 'E3 A6: T30 al equipo' },
   { id: 'a5', archivo: 'stress-locks-tramoE3-A5.mjs', descripcion: 'E3 A5 y A5b: desactivación contra las 18 escrituras, Dueño y Empleado a la vez, matriz de 49 combinaciones de producto e imagen y escrituras de imagen' },

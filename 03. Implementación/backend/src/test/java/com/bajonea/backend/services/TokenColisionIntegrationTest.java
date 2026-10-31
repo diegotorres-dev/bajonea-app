@@ -3,6 +3,7 @@ package com.bajonea.backend.services;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.bajonea.backend.dto.request.ReactivacionCuentaRequestDTO;
@@ -20,6 +21,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.sql.DataSource;
@@ -98,7 +100,7 @@ class TokenColisionIntegrationTest {
             UsuarioResponseDTO usuario = registroService.registrarCliente(clienteJson());
 
             assertTokenDelUsuario(usuario.getId(), CODIGO_NUEVO, TipoToken.VERIFICACION_EMAIL);
-            verify(emailService).enviarVerificacion(usuario.getEmail(), CODIGO_NUEVO);
+            verifyNoInteractions(emailService);
         });
     }
 
@@ -111,7 +113,7 @@ class TokenColisionIntegrationTest {
             UsuarioResponseDTO usuario = registroService.registrarCliente(clienteJson());
 
             assertTokenDelUsuario(usuario.getId(), CODIGO_NUEVO, TipoToken.VERIFICACION_EMAIL);
-            verify(emailService).enviarVerificacion(usuario.getEmail(), CODIGO_NUEVO);
+            verifyNoInteractions(emailService);
         });
     }
 
@@ -156,9 +158,7 @@ class TokenColisionIntegrationTest {
             assertTokenDelUsuario(usuario.getId(), "880010", TipoToken.VERIFICACION_EMAIL);
             assertTokenDelUsuario(usuario.getId(), "880011", TipoToken.RECUPERACION_PASSWORD);
             assertTokenDelUsuario(usuario.getId(), "880012", TipoToken.REACTIVACION_CUENTA);
-            verify(emailService).enviarVerificacion(usuario.getEmail(), "880010");
-            verify(emailService).enviarRecuperacionPassword(usuario.getEmail(), "880011");
-            verify(emailService).enviarReactivacionCuenta(usuario.getEmail(), "880012");
+            verifyNoInteractions(emailService);
         });
     }
 
@@ -180,6 +180,22 @@ class TokenColisionIntegrationTest {
             assertTokenDelUsuario(usuario.getId(), "880011", TipoToken.RECUPERACION_PASSWORD);
             assertTokenDelUsuario(usuario.getId(), "880012", TipoToken.REACTIVACION_CUENTA);
         });
+    }
+
+    @Test
+    void elEmailSaleDespuesDelCommitConElCodigoDelTokenYNoSaleSiLaTransaccionSeRevierte() {
+        when(generador.generar()).thenReturn(CODIGO_NUEVO);
+        AtomicReference<UsuarioResponseDTO> usuario = new AtomicReference<>();
+        try {
+            new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+                usuario.set(registroService.registrarCliente(clienteJson()));
+                verifyNoInteractions(emailService);
+            });
+
+            verify(emailService).enviarVerificacion(usuario.get().getEmail(), CODIGO_NUEVO);
+        } finally {
+            jdbcTemplate.update("UPDATE token SET intentos_fallidos = ? WHERE token = ?", MARCA_FILA_DE_PRUEBA, CODIGO_NUEVO);
+        }
     }
 
     @Test
