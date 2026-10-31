@@ -93,6 +93,29 @@ public class NotaCreditoService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+    /**
+     * Si las demás notas del pago (todas menos {@code notaCreditoIdPropia}) ya cubren el monto completo. Se llama con la
+     * nota propia recién insertada y la fila del pago bloqueada, y la lectura es bloqueante a propósito: lee lo último
+     * confirmado aunque la transacción que llama haya fijado su foto (REPEATABLE READ) antes de esperar el bloqueo del
+     * pago, y una consulta común no vería la nota que otra transacción confirmó mientras tanto. Va después de insertar y
+     * no antes porque una lectura bloqueante sobre un pago sin notas toma un bloqueo de intervalo del índice
+     * ({@code idx_nota_credito_pago}) que bloquea el insert de las notas de otros pagos que caen en el mismo intervalo, y
+     * dos transacciones que lo hacen antes de insertar se interbloquean; con la fila propia ya insertada ese intervalo ya
+     * no hace esperar a nadie. No pide ninguna conexión nueva.
+     */
+    public boolean otrasNotasCubrenElPago(Pago pago, Integer notaCreditoIdPropia) {
+        BigDecimal cubierto = notaCreditoRepository.leerOtrasDelPagoConBloqueo(pago.getId(), notaCreditoIdPropia).stream()
+                .filter(nota -> ESTADOS_QUE_CUBREN_EL_PAGO.contains(EstadoNotaCredito.valueOf(nota.getEstado())))
+                .map(NotaCreditoRepository.EstadoYMonto::getMonto)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return cubierto.compareTo(pago.getMonto()) >= 0;
+    }
+
+    public void eliminar(NotaCredito notaCredito) {
+        notaCreditoRepository.delete(notaCredito);
+        notaCreditoRepository.flush();
+    }
+
     public NotaCredito marcarEnProceso(Integer notaCreditoId) {
         NotaCredito notaCredito = obtener(notaCreditoId);
         notaCredito.setEstado(EstadoNotaCredito.PENDIENTE);

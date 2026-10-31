@@ -26,14 +26,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Avisos de la suspensión de una cuenta y de su levantamiento (T28 y T29): el aviso dentro de la app se crea en la
- * transacción de la suspensión; el email sale una sola vez, recién cuando esa transacción se confirma, y deja una
+ * transacción de la suspensión; el email sale una sola vez, recién cuando esa transacción se confirmó y soltó su conexión
+ * ({@link com.bajonea.backend.util.ColaPostTransaccion}; nunca dentro de ella), y deja una
  * fila de canal {@code EMAIL} en {@code notificacion} con {@code ENVIADO} o {@code FALLIDO}. No hay reintento
  * automático: un Administrador puede reenviar el último email fallido ({@link #reenviarEmailFallido}). La persona
  * suspendida no puede ver el aviso dentro de la app mientras dure la suspensión, así que el email es su canal real.
@@ -50,7 +50,7 @@ public class AvisoCuentaService {
     private final ComercioRepository comercioRepository;
     private final HistorialEstadoComercioRepository historialEstadoComercioRepository;
     private final Clock clock;
-    private final TransactionTemplate transaccionNueva;
+    private final TransactionTemplate transaccion;
 
     public AvisoCuentaService(NotificacionService notificacionService, EmailService emailService,
             UsuarioRepository usuarioRepository, HistorialEstadoUsuarioRepository historialEstadoUsuarioRepository,
@@ -63,8 +63,7 @@ public class AvisoCuentaService {
         this.comercioRepository = comercioRepository;
         this.historialEstadoComercioRepository = historialEstadoComercioRepository;
         this.clock = clock;
-        this.transaccionNueva = new TransactionTemplate(transactionManager);
-        this.transaccionNueva.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        this.transaccion = new TransactionTemplate(transactionManager);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -174,7 +173,7 @@ public class AvisoCuentaService {
         boolean salio = enviar(envio);
         LocalDateTime fecha = LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS);
         try {
-            transaccionNueva.executeWithoutResult(
+            transaccion.executeWithoutResult(
                     status -> notificacionService.registrarResultadoEmail(usuarioId, mensaje, tipo, fecha, salio, comercioId));
         } catch (RuntimeException ex) {
             log.error("No se pudo registrar el resultado del email {} del usuarioId={}", tipo, usuarioId, ex);
@@ -196,10 +195,10 @@ public class AvisoCuentaService {
      * transacción.
      */
     public EstadoEnvioNotificacion reenviarEmailFallido(Integer usuarioId) {
-        Reenvio reenvio = transaccionNueva.execute(status -> prepararReenvio(usuarioId));
+        Reenvio reenvio = transaccion.execute(status -> prepararReenvio(usuarioId));
         boolean salio = enviar(reenvio.envio());
         LocalDateTime fecha = LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS);
-        transaccionNueva.executeWithoutResult(
+        transaccion.executeWithoutResult(
                 status -> notificacionService.marcarResultadoEmail(reenvio.notificacionId(), fecha, salio));
         return salio ? EstadoEnvioNotificacion.ENVIADO : EstadoEnvioNotificacion.FALLIDO;
     }
@@ -209,10 +208,10 @@ public class AvisoCuentaService {
      * (si ya no lo está) cuando quedó {@code FALLIDO}. El envío no corre dentro de ninguna transacción.
      */
     public EstadoEnvioNotificacion reenviarEmailComercioFallido(Integer comercioId) {
-        Reenvio reenvio = transaccionNueva.execute(status -> prepararReenvioComercio(comercioId));
+        Reenvio reenvio = transaccion.execute(status -> prepararReenvioComercio(comercioId));
         boolean salio = enviar(reenvio.envio());
         LocalDateTime fecha = LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS);
-        transaccionNueva.executeWithoutResult(
+        transaccion.executeWithoutResult(
                 status -> notificacionService.marcarResultadoEmail(reenvio.notificacionId(), fecha, salio));
         return salio ? EstadoEnvioNotificacion.ENVIADO : EstadoEnvioNotificacion.FALLIDO;
     }
@@ -223,10 +222,10 @@ public class AvisoCuentaService {
      * la base. El envío no corre dentro de ninguna transacción.
      */
     public EstadoEnvioNotificacion reenviarEmailDuenoFallido(Integer duenoId) {
-        Reenvio reenvio = transaccionNueva.execute(status -> prepararReenvioDueno(duenoId));
+        Reenvio reenvio = transaccion.execute(status -> prepararReenvioDueno(duenoId));
         boolean salio = enviar(reenvio.envio());
         LocalDateTime fecha = LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS);
-        transaccionNueva.executeWithoutResult(
+        transaccion.executeWithoutResult(
                 status -> notificacionService.marcarResultadoEmail(reenvio.notificacionId(), fecha, salio));
         return salio ? EstadoEnvioNotificacion.ENVIADO : EstadoEnvioNotificacion.FALLIDO;
     }

@@ -4,9 +4,10 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
- * Ejecuta una acción con efecto hacia afuera (un email) recién cuando la transacción en curso se confirma,
- * para no mandar un código de una transacción que después se revierte. Sin transacción en curso corre en
- * el acto. Misma idea que la llamada a Mercado Pago de {@code ReembolsoService.generarNotaYReembolsarTotal}.
+ * Ejecuta una acción con efecto hacia afuera (un email, un pedido a Mercado Pago) recién cuando la transacción en curso
+ * se confirma, para no mandar un código de una transacción que después se revierte, y recién cuando la transacción más
+ * externa soltó su conexión ({@link ColaPostTransaccion}), para que la acción no mantenga una conexión tomada ni pida una
+ * segunda mientras tanto. Sin transacción en curso corre en el acto.
  */
 public final class EjecucionPostCommit {
 
@@ -18,7 +19,7 @@ public final class EjecucionPostCommit {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    accion.run();
+                    ColaPostTransaccion.encolar(accion);
                 }
             });
             return;

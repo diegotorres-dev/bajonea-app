@@ -9,14 +9,13 @@ import com.bajonea.backend.enums.MotivoNotaCredito;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.services.MercadoPagoReembolsoClient.ResultadoReembolsoMp;
+import com.bajonea.backend.util.EjecucionPostCommit;
 import java.math.BigDecimal;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -49,7 +48,7 @@ public class ReembolsoService {
     private final NotaCreditoService notaCreditoService;
     private final CuentaMercadoPagoService cuentaMercadoPagoService;
     private final MercadoPagoReembolsoClient reembolsoClient;
-    private final TransactionTemplate transaccionNueva;
+    private final TransactionTemplate transaccion;
 
     public ReembolsoService(PagoService pagoService, NotaCreditoService notaCreditoService,
             CuentaMercadoPagoService cuentaMercadoPagoService, MercadoPagoReembolsoClient reembolsoClient,
@@ -58,8 +57,7 @@ public class ReembolsoService {
         this.notaCreditoService = notaCreditoService;
         this.cuentaMercadoPagoService = cuentaMercadoPagoService;
         this.reembolsoClient = reembolsoClient;
-        this.transaccionNueva = new TransactionTemplate(transactionManager);
-        this.transaccionNueva.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        this.transaccion = new TransactionTemplate(transactionManager);
     }
 
     /**
@@ -84,14 +82,11 @@ public class ReembolsoService {
         PreparacionReembolso preparacion = prepararIntento(pedidoId, motivo);
         IntentoReembolso intento = preparacion.intento();
         if (intento != null) {
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    try {
-                        solicitarYRegistrar(intento);
-                    } catch (RuntimeException ex) {
-                        log.error("Reembolso del pedidoId={} ({}) terminó con un error inesperado", pedidoId, motivo, ex);
-                    }
+            EjecucionPostCommit.ejecutar(() -> {
+                try {
+                    solicitarYRegistrar(intento);
+                } catch (RuntimeException ex) {
+                    log.error("Reembolso del pedidoId={} ({}) terminó con un error inesperado", pedidoId, motivo, ex);
                 }
             });
         }
@@ -107,7 +102,7 @@ public class ReembolsoService {
      * transacción abierta, para que la llamada a MercadoPago quede fuera de ella.
      */
     public void reintentarNotaCredito(Integer notaCreditoId) {
-        IntentoReembolso intento = transaccionNueva.execute(status -> prepararReintento(notaCreditoId));
+        IntentoReembolso intento = transaccion.execute(status -> prepararReintento(notaCreditoId));
         solicitarYRegistrar(intento);
     }
 
@@ -115,7 +110,7 @@ public class ReembolsoService {
         String idempotencyKey = "nc-" + intento.notaCreditoId() + "-" + intento.numeroIntento();
         ResultadoReembolsoMp resultado = reembolsoClient.solicitarReembolsoTotal(intento.paymentId(), intento.accessToken(), idempotencyKey);
 
-        transaccionNueva.executeWithoutResult(status -> {
+        transaccion.executeWithoutResult(status -> {
             if (resultado.exitoso()) {
                 notaCreditoService.registrarReembolsoExitoso(intento.notaCreditoId(), resultado.refundId());
                 log.info("Reembolso total del pedidoId={} ({}) procesado: refundId={}, monto={}",
@@ -167,34 +162,25 @@ public class ReembolsoService {
             log.info("Pedido {}: el pago no está aprobado y confirmado (mp_estado={}), no se reembolsa", pedidoId, pago.getMpEstado());
             return PreparacionReembolso.SIN_NOTA;
         }
-        if (montoCubiertoConfirmado(pago.getId()).compareTo(pago.getMonto()) >= 0) {
-            log.info("Pedido {}: el pago ya tiene reembolso registrado por el monto completo, no se duplica", pedidoId);
-            return new PreparacionReembolso(null, true);
-        }
 
         Integer duenoId = pago.getPedido().getComercio().getDueno().getId();
         Optional<CuentaMercadoPago> cuenta = cuentaMercadoPagoService.buscarActivaPorDueno(duenoId);
+        NotaCredito nota = cuenta.isEmpty()
+                ? notaCreditoService.crearPendienteRevisionManual(pago, pago.getMonto(), motivo, ERROR_CUENTA_DESVINCULADA)
+                : notaCreditoService.crear(pago, pago.getMonto(), motivo);
+
+        if (notaCreditoService.otrasNotasCubrenElPago(pago, nota.getId())) {
+            notaCreditoService.eliminar(nota);
+            log.info("Pedido {}: el pago ya tiene reembolso registrado por el monto completo, no se duplica", pedidoId);
+            return new PreparacionReembolso(null, true);
+        }
         if (cuenta.isEmpty()) {
-            NotaCredito nota = notaCreditoService.crearPendienteRevisionManual(pago, pago.getMonto(), motivo, ERROR_CUENTA_DESVINCULADA);
             log.warn("Pedido {}: cuenta de Mercado Pago del comercio desvinculada, nota de crédito {} queda pendiente de revisión manual",
                     pedidoId, nota.getId());
             return new PreparacionReembolso(null, true);
         }
-
-        NotaCredito nota = notaCreditoService.crear(pago, pago.getMonto(), motivo);
         return new PreparacionReembolso(new IntentoReembolso(nota.getId(), pago.getIdTransaccionMp(), cuenta.get().getAccessToken(),
                 pago.getMonto(), nota.getIntentos() + 1, pedidoId, motivo), true);
-    }
-
-    /**
-     * Monto ya cubierto por notas confirmadas, leído en una transacción nueva. La transacción que llama puede haber
-     * fijado su foto (REPEATABLE READ) antes de esperar el bloqueo del pago, y una consulta común no vería la nota que
-     * otra transacción confirmó mientras tanto: se crearía una segunda nota para el mismo pago. La transacción nueva
-     * toma una foto actual sin pedir ningún bloqueo (una lectura bloqueante sobre un pago sin notas toma un bloqueo de
-     * intervalo del índice que se cruza con las notas de otros pagos).
-     */
-    private BigDecimal montoCubiertoConfirmado(Integer pagoId) {
-        return transaccionNueva.execute(status -> notaCreditoService.montoCubierto(pagoId));
     }
 
     private static boolean esPagoReembolsable(Pago pago) {
