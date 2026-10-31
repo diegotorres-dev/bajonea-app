@@ -759,3 +759,25 @@ El ejecutor de mutaciones reemplaza la **primera** aparición del texto. M6 ("un
 ### Los tokens de una cuenta con ráfagas de inicios de sesión se invalidan entre sí
 
 La sesión es única por cuenta: en un escenario que dispara inicios de sesión de la misma cuenta mientras usa su token, el token deja de servir con un `401` genérico ("sesión cerrada") y no con `CUENTA_SUSPENDIDA`, aunque la cuenta esté suspendida. No es un defecto: el escenario 18 acepta cualquier `401` de las acciones del Dueño.
+
+### Con `open-in-view` activo una petición HTTP retiene su conexión durante una llamada externa (S3.2, 2026-10-31)
+
+- **Síntoma:** las transacciones de `MercadoPagoPagoService` ya estaban partidas en tres pasos (leer, llamar a Mercado Pago, aplicar) y la prueba de servicios con un pool de 3 conexiones pasaba; pero `LlamadasExternasPorHttpIntegrationTest` (los mismos flujos por HTTP real) fallaba con `Connection is not available, request timed out (total=3, active=3)` mientras la llamada externa estaba en curso.
+- **Causa:** `spring.jpa.open-in-view` activo (el valor por defecto de Spring Boot). El `EntityManager` de la petición vive hasta el final del pedido y Spring configura Hibernate con `DELAYED_ACQUISITION_AND_HOLD`, así que la conexión que toma la primera consulta se retiene también entre dos transacciones. Una prueba que llama al servicio directamente no pasa por el filtro y no ve nada.
+- **Qué se hizo:** `spring.jpa.open-in-view=false`. Cada transacción abre su `EntityManager` y lo cierra al terminar; los reads sin transacción del controller o de un filtro piden y sueltan la conexión en el acto. Las corridas completas (Java, Newman, Playwright) no mostraron ninguna `LazyInitializationException`.
+- **Cómo no volver a caer:** probar el flujo por HTTP con un pool diminuto, no solo el servicio. La prueba que lo detecta es la de `RANDOM_PORT`.
+- **Consecuencia sobre notas anteriores:** las notas de este archivo que hablan de "con `open-in-view` la entidad ya está en el contexto de persistencia" siguen siendo ciertas para quien lo vuelva a activar; con el valor actual cada transacción parte de un `EntityManager` limpio. Los `refresh` que hacen efectivos los bloqueos se mantienen (no estorban).
+
+### `SELECT ... FOR UPDATE` sobre una clave que todavía no existe interbloquea dos altas vecinas (S3.2)
+
+- Guardar la preferencia de pago leyendo antes la fila de `pago` con `FOR UPDATE` (`uq_pago_pedido`) tomaba un bloqueo de intervalo sobre la clave ausente: dos pedidos de ids cercanos caían en el mismo intervalo, los dos lo obtenían y los dos esperaban al insertar (`Deadlock found`). Mismo patrón que el del carrito: insertar con `INSERT ... ON DUPLICATE KEY UPDATE pedido_id = pedido_id` y leer después la fila, que ya existe, con `FOR UPDATE` (`PagoInsercionRepository`). Lo detectó `LlamadasExternasFueraDeTransaccionIntegrationTest` con el pool de 3.
+
+### Tiempos de espera y la base de las URL de Mercado Pago (S3.2)
+
+- El intercambio de tokens del OAuth usaba `RestClient.create()` (sin ningún tiempo de espera); ahora 5 s de conexión y 10 s de lectura. Una lectura que se pasa del tiempo no llega como `ResourceAccessException` sino como `RestClientException` ("Error while extracting response"); las pruebas esperan `RestClientException`.
+- `MercadoPagoOAuthService` y `MercadoPagoReembolsoClient` apuntaban a `https://api.mercadopago.com` fijo; ahora respetan `MERCADOPAGO_API_BASE_URL` (solo para pruebas) como `MercadoPagoPagoService`. Con el backend apuntando al simulado, los reembolsos de los estreses y de Newman llegan al simulado y no a Mercado Pago.
+- Resend (SDK 4.13.0): `OkHttpClient` por defecto, 10 s de conexión, lectura y escritura, sin forma de inyectar otro. El envío corre fuera de la transacción.
+
+### Pendiente cerrado: lecturas con foto vieja en el camino del webhook (S3.2)
+
+El pendiente anotado en el tramo S2 y S3.1 queda resuelto con la auditoría de `docs/CONCURRENCIA-Y-TRANSACCIONES.md` ("Llamadas externas fuera de la transacción"): la transacción de aplicar el resultado empieza por los bloqueos (pedido y pago `FOR UPDATE`) y parte de un contexto de persistencia vacío; lo único que se lee con una consulta común después de esperar son los horarios del turno, los nombres del Cliente para el aviso y la cuenta de Mercado Pago del Dueño en el reembolso, y ninguno puede duplicar o perder plata.

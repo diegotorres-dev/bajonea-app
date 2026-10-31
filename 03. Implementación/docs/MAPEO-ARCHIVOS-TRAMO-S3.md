@@ -114,3 +114,31 @@ Sin migraciones. Dos datos nuevos en la API (sin consultas por fila: salen de lo
 | `testing/playwright/scripts/build-suspension-dueno-fase5s3b-postman.mjs` (nuevo) | Carpeta `86` de Newman (27 requests, 43 assertions). |
 
 Capturas en `docs/capturas-suspension-dueno/` (13).
+
+## S3.2: llamadas externas fuera de las transacciones (2026-10-31)
+
+### Backend
+
+| Archivo | Qué |
+|---|---|
+| `services/MercadoPagoPagoService.java` | Ya no es `@Transactional` de clase: tres pasos (leer, llamar a Mercado Pago, bloquear y aplicar) con `TransactionTemplate` y `entityManager.clear()`; "Ir a pagar" revalida el pedido y guarda la preferencia con el pedido bloqueado; `consultarComo*` con `@Transactional` propio. |
+| `services/MercadoPagoOAuthService.java` | Ya no es `@Transactional` de clase: `procesarCallback` en tres pasos y con `UPDATE ... WHERE usado = 0`; cliente HTTP con 5 s y 10 s de espera; base de la API configurable. |
+| `repositories/CodigoVinculacionMPRepository.java` | `marcarUsadoSiNoLoEstaba`. |
+| `services/MercadoPagoReembolsoClient.java` | Base de la API configurable (`MERCADOPAGO_API_BASE_URL`). |
+| `services/PagoService.java`, `repositories/PagoInsercionRepository.java` (nuevo) | `crearPreferenciaSiNoExiste` (alta sin leer antes, sin bloqueo de intervalo); se eliminó `refrescar`. |
+| `services/AuthService.java`, `services/RegistroService.java` | Los emails de verificación, recuperación y reactivación salen con `EjecucionPostCommit`. |
+| `resources/application.properties` | `spring.jpa.open-in-view=false`. |
+
+### Tests
+
+| Archivo | Qué |
+|---|---|
+| `LlamadasExternasFueraDeTransaccionIntegrationTest` (nuevo, 9 tests) | Pool de 3 conexiones: webhook (2 repeticiones), sincronización, preferencia, vuelta del OAuth, email de registro y de recuperación sin retener la conexión; tiempos de espera de Mercado Pago y del OAuth. |
+| `LlamadasExternasPorHttpIntegrationTest` (nuevo, 3 tests) | Lo mismo por HTTP real (webhook, preferencia, recuperación de contraseña); es el que detecta `open-in-view`. |
+| `WebhookConcurrenciaIntegrationTest` (nuevo, 75 tests) | Las carreras del webhook (8 repeticiones cada una) y los casos de resultado viejo y de pago con otro id. |
+| `MercadoPagoSimulado` (nuevo) | Servidor de Mercado Pago con demora configurable y contadores. |
+| `TokenColisionIntegrationTest` (+1) | El email no sale en una transacción que se revierte y sale después del commit. |
+| `MercadoPagoOAuthServiceDesvinculacionTest` | Constructor con el gestor de transacciones. |
+| `testing/playwright/scripts/mp-simulado.mjs` (nuevo) | Mercado Pago simulado para Newman y los estreses (con endpoint de control). |
+| `testing/playwright/scripts/build-webhook-mp-tramoS32-postman.mjs` (nuevo) | Carpeta `87` de Newman (62 requests). |
+| `testing/playwright/scripts/stress-locks-tramoS32.mjs` (nuevo; id `s32` del runner) | Ráfaga de webhooks, cancelaciones y "Ir a pagar" simultáneos. |
