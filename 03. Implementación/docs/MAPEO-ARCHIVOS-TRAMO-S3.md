@@ -48,3 +48,33 @@
 ### Documentación
 
 `DECISIONES.md`, este archivo, `CONCURRENCIA-Y-TRANSACCIONES.md`, `APRENDIZAJES-TECNICOS.md`, `entregables-01-02/CAMBIOS.md`, `diccionario-de-datos.md` (v1.33) y la numeración en `CLAUDE.md`.
+
+## S3.1 (2026-10-30): conexiones anidadas y pool
+
+Ninguna transacción pide una segunda conexión mientras sostiene la primera. Detalle del diseño en `docs/CONCURRENCIA-Y-TRANSACCIONES.md` ("Regla de las conexiones") y de la decisión en `docs/DECISIONES.md`.
+
+### Código
+
+| Archivo | Cambio |
+|---|---|
+| `util/ColaPostTransaccion.java` (nuevo) | Cola por hilo de los efectos hacia afuera (email, pedido a Mercado Pago, registro de su resultado) y contador de transacciones abiertas del hilo; los corre cuando termina la última. Sin un gestor que la vacíe (pruebas unitarias con la sincronización simulada) la acción corre en el acto. |
+| `util/EjecucionPostCommit.java` | El `afterCommit` ya no corre la acción: la encola en `ColaPostTransaccion`. |
+| `config/GestorTransacciones.java` (nuevo) | `JpaTransactionManager` que avisa a la cola cuándo empieza (`doBegin`) y cuándo termina (`doCleanupAfterCompletion`, después de soltar la conexión) cada transacción del hilo. |
+| `config/TransaccionesConfig.java` (nuevo) | Registra ese gestor en lugar del que arma Spring Boot (mismos personalizadores). |
+| `services/ReembolsoService.java` | Se fue `montoCubiertoConfirmado` (la transacción `REQUIRES_NEW` dentro de la del pedido). `prepararIntento` inserta la nota y verifica después, con una lectura bloqueante de las demás notas del pago, que no haya otra que ya cubra el monto (si la hay, borra la propia). La llamada a Mercado Pago y el registro de su resultado van por `EjecucionPostCommit` y una transacción normal (`REQUIRED`, ya no `REQUIRES_NEW`). |
+| `services/NotaCreditoService.java`, `repositories/NotaCreditoRepository.java` | `otrasNotasCubrenElPago` (consulta nativa `FOR UPDATE` de estado y monto de las demás notas del pago) y `eliminar`. |
+| `services/AvisoCuentaService.java` | `enviarYRegistrar` y los reenvíos usan una transacción normal en lugar de `REQUIRES_NEW`: el email sale cuando la transacción de negocio ya terminó y el rastro se escribe en una transacción corta propia. Los llamadores (suspensión de Cliente, de comercio y de Dueño, y sus levantamientos y reenvíos) no cambiaron. |
+| `application.properties`, `application-test.properties` | El pool de Hikari con valores explícitos (20 conexiones, 15 s de espera, 5 ociosas, keepalive y fugas); el perfil de test conserva el tamaño y la espera por defecto (10 y 30 s). |
+
+### Tests
+
+| Archivo | Qué |
+|---|---|
+| `ConexionesAnidadasPoolDiminutoIntegrationTest.java` (nuevo, 7 ejecuciones) | Pool de 3 conexiones y 4 s de espera: 12 webhooks (6 pagos, 2 cada uno) con una nota por pago, 9 suspensiones de Clientes con email y 5 de Dueños. Con el código anterior las 7 ejecuciones fallan con `Connection is not available`. |
+| `EfectosPosterioresSinTransaccionIntegrationTest.java` (nuevo, 6 tests) | El email de la suspensión de un Cliente, de un Dueño y de un comercio y el pedido a Mercado Pago salen sin transacción ni recursos atados al hilo y después del commit; un email que falla deja la suspensión y una fila `FALLIDO` con un solo intento; una transacción que se revierte no manda nada. |
+| `ReembolsoServiceTest`, `NotaCreditoServiceTest` | Ajustes al nuevo `prepararIntento` y pruebas de `otrasNotasCubrenElPago`. |
+| `ReembolsoFotoDeLaTransaccionIntegrationTest` | Sin cambios: sigue fallando sin la verificación de notas y pasando con ella. |
+
+### Documentación
+
+`DECISIONES.md`, este archivo, `CONCURRENCIA-Y-TRANSACCIONES.md`, `APRENDIZAJES-TECNICOS.md`, `LISTA-DE-DESPLIEGUE.md` y la regla 16 de `CLAUDE.md`.
