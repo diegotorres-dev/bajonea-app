@@ -91,7 +91,7 @@ test.describe('Edición del comercio, productos y cierre para el Empleado, E3 en
   });
 
   test.describe('Perfil del Empleado', () => {
-    test('es una lista plana de seis filas, con la única sección "Mi lugar en el equipo", sin "Cambiar contraseña" ni su vista, y sin ids repetidos en la página', async ({ page }) => {
+    test('es una lista plana de siete filas, con la única sección "Mi lugar en el equipo", sin "Cambiar contraseña" ni su vista, y sin ids repetidos en la página', async ({ page }) => {
       await abrirComoEmpleado(page);
       await page.goto('/comercio-perfil.html');
       await expect(page.getByTestId('btn-ver-datos-comercio')).toBeEnabled();
@@ -102,6 +102,7 @@ test.describe('Edición del comercio, productos y cierre para el Empleado, E3 en
         'Editar horarios',
         'Editar datos personales',
         'Cambiar de cuenta',
+        'Mis consultas a Soporte',
         'Cerrar sesión',
       ]);
       await expect(page.locator('.profile-section__title')).toHaveText(['Mi lugar en el equipo']);

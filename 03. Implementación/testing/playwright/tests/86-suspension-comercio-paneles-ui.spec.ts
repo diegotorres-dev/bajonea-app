@@ -129,7 +129,7 @@ test.describe('Fase 5, S2 (UI B2): Dueño, Empleado y Cliente con el comercio su
   });
 
   test.describe('Dueño', () => {
-    test('el panel muestra la tarjeta con la fecha y el motivo, el chip en la franja y el selector, sin cierre ni Soporte, y vuelve a la normalidad al levantar', async ({ page, request }) => {
+    test('el panel muestra la tarjeta con la fecha y el motivo, el chip en la franja y el selector, sin cierre y con el enlace a Soporte, y vuelve a la normalidad al levantar', async ({ page, request }) => {
       await suspender(request);
       await abrirComoDueno(page);
       await page.goto('/comercio-dashboard.html');
@@ -142,7 +142,7 @@ test.describe('Fase 5, S2 (UI B2): Dueño, Empleado y Cliente con el comercio su
       await expect(page.getByTestId('franja-comercio-chip-suspendido')).toBeVisible();
       await expect(page.getByTestId('tarjeta-cierre-comercio')).toHaveCount(0);
       await expect(page.getByTestId('pasos-vender')).toHaveCount(0);
-      await expect(page.getByText(/soporte/i)).toHaveCount(0);
+      await expect(page.getByTestId('enlace-soporte-comercio-suspendido')).toHaveAttribute('href', 'soporte.html?tipo=APELACION_COMERCIO');
       await sinScrollHorizontal(page);
       await captura(page, '01-panel-dueno-suspendido');
 
@@ -250,7 +250,7 @@ test.describe('Fase 5, S2 (UI B2): Dueño, Empleado y Cliente con el comercio su
   });
 
   test.describe('Empleado', () => {
-    test('ve el aviso sin motivo ni Soporte, con la edición bloqueada, y puede rechazar un pedido que quedó pendiente', async ({ page, request }) => {
+    test('ve el aviso sin motivo y con el enlace a Soporte, con la edición bloqueada, y puede rechazar un pedido que quedó pendiente', async ({ page, request }) => {
       const pendiente = await nuevoPedido(request, 'PENDIENTE');
       suspenderConPendientesSinProcesar();
       await abrirComoEmpleada(page);
@@ -261,7 +261,7 @@ test.describe('Fase 5, S2 (UI B2): Dueño, Empleado y Cliente con el comercio su
       await expect(page.getByTestId('motivo-comercio-suspendido')).toHaveCount(0);
       await expect(page.getByTestId('desde-comercio-suspendido')).toHaveCount(0);
       await expect(page.getByText(MOTIVO)).toHaveCount(0);
-      await expect(page.getByText(/soporte/i)).toHaveCount(0);
+      await expect(page.getByTestId('enlace-soporte-comercio-suspendido')).toHaveAttribute('href', 'soporte.html?tipo=APELACION_COMERCIO');
       await expect(page.getByTestId('franja-comercio-chip-suspendido')).toBeVisible();
       await sinScrollHorizontal(page);
       await captura(page, '06-panel-empleado-suspendido');

@@ -426,13 +426,13 @@ test.describe('Fase 5, S3 (UI B): lista de Dueños y hojas de suspender y levant
     expect(estadoUsuario(sinDocumentos.duenoId)).toBe('ACTIVO');
   });
 
-  test('un Dueño suspendido que intenta ingresar ve la hoja de cuenta suspendida con el motivo y sin botón de Soporte', async ({ page, request }) => {
+  test('un Dueño suspendido que intenta ingresar ve la hoja de cuenta suspendida con el motivo y el botón de Soporte', async ({ page, request }) => {
     const dueno = await nuevoDueno(request);
     await suspenderPorApi(request, dueno);
     await loginUi(page, dueno.nombreUsuario, dueno.password);
     await expect(page.getByTestId('titulo-cuenta-suspendida')).toHaveText('Cuenta suspendida');
     await expect(page.getByTestId('motivo-cuenta-suspendida')).toContainText(MOTIVO);
-    await expect(page.getByText(/soporte/i)).toHaveCount(0);
+    await expect(page.getByTestId('btn-contactar-soporte-cuenta-suspendida')).toHaveAttribute('href', 'soporte.html?tipo=APELACION_CUENTA');
     await captura(page, '09-login-dueno-suspendido');
     await sinScrollHorizontal(page);
   });

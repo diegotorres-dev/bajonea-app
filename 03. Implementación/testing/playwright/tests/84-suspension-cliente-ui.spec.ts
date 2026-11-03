@@ -106,8 +106,9 @@ test.describe('Fase 5, S1 (UI): suspensión de cuentas del Cliente', () => {
     await expect(page.getByTestId('acciones-cuenta-suspendida')).toBeVisible();
     await captura(page, '01-login-hoja-cuenta-suspendida');
 
+    await expect(page.getByTestId('btn-contactar-soporte-cuenta-suspendida')).toHaveAttribute('href', 'soporte.html?tipo=APELACION_CUENTA');
     await page.keyboard.press('Tab');
-    await expect(page.getByTestId('btn-cerrar-cuenta-suspendida')).toBeFocused();
+    await expect(page.getByTestId('btn-contactar-soporte-cuenta-suspendida')).toBeFocused();
 
     await page.getByTestId('btn-cerrar-cuenta-suspendida').click();
     await expect(hoja).toHaveCount(0);
@@ -166,13 +167,18 @@ test.describe('Fase 5, S1 (UI): suspensión de cuentas del Cliente', () => {
     await expect(page.getByTestId('que-pasa-pedidos-nuevos')).toHaveText('No podés hacer pedidos nuevos.');
     await expect(pantalla).not.toContainText('carrito');
     await expect(page.getByTestId('btn-cerrar-sesion-suspendida')).toBeFocused();
-    expect(await page.evaluate(() => localStorage.getItem('bajonea_token'))).toBeNull();
-    expect(await page.evaluate(() => localStorage.getItem('bajonea_usuario'))).toBeNull();
+    expect(await page.evaluate(() => localStorage.getItem('bajonea_token'))).not.toBeNull();
+    await expect(page.getByTestId('btn-contactar-soporte-sesion-suspendida')).toHaveAttribute('href', 'soporte.html?tipo=APELACION_CUENTA');
+    await expect(page.getByTestId('btn-mis-consultas-sesion-suspendida')).toHaveAttribute('href', 'mis-consultas.html');
     await captura(page, '02-sesion-suspendida-pantalla-completa');
     await sinScrollHorizontal(page);
 
+    await page.evaluate(() => window.addEventListener('pagehide', () => {
+      sessionStorage.setItem('sesionAlSalir', `${localStorage.getItem('bajonea_token')}|${localStorage.getItem('bajonea_usuario')}`);
+    }));
     await page.getByTestId('btn-cerrar-sesion-suspendida').click();
     await page.waitForURL('**/login.html');
+    expect(await page.evaluate(() => sessionStorage.getItem('sesionAlSalir'))).toBe('null|null');
   });
 
   test('sesión abierta: la pantalla aparece desde cualquier página del Cliente', async ({ page, request }) => {
