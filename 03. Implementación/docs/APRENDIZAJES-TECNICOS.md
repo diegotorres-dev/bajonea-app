@@ -781,3 +781,32 @@ La sesión es única por cuenta: en un escenario que dispara inicios de sesión 
 ### Pendiente cerrado: lecturas con foto vieja en el camino del webhook (S3.2)
 
 El pendiente anotado en el tramo S2 y S3.1 queda resuelto con la auditoría de `docs/CONCURRENCIA-Y-TRANSACCIONES.md` ("Llamadas externas fuera de la transacción"): la transacción de aplicar el resultado empieza por los bloqueos (pedido y pago `FOR UPDATE`) y parte de un contexto de persistencia vacío; lo único que se lee con una consulta común después de esperar son los horarios del turno, los nombres del Cliente para el aviso y la cuenta de Mercado Pago del Dueño en el reembolso, y ninguno puede duplicar o perder plata.
+
+
+## Soporte (Fase 5, tramo S4, 2026-11-03)
+
+### Un limite sin indice unico parcial: la fila de contador como cerrojo
+
+- MariaDB 10.4 no tiene indices unicos parciales, asi que "como maximo 3 consultas abiertas por email" no se puede delegar a una restriccion. Se resuelve con una fila de `soporte_limite` por clave, creada con `INSERT ... ON DUPLICATE KEY UPDATE clave = clave` y leida con `SELECT ... FOR UPDATE`: la fila bloqueada serializa a todos los que cuentan bajo esa clave. Antes del primer `SELECT COUNT(*)` comun hay que haber tomado todos los cerrojos: la foto de lectura de la transaccion se fija con la primera lectura comun, y un conteo tomado antes del cerrojo ve un estado viejo (REPEATABLE READ).
+- Una lectura con bloqueo (`FOR UPDATE`) devuelve el estado confirmado, pero Hibernate devuelve la entidad que ya esta cargada en la sesion sin refrescarla: si la transaccion cargo la consulta antes (para autenticar), el turno se valida sobre una copia vieja. Las consultas de autenticacion devuelven solo el id y recien despues se toma la fila con el bloqueo.
+- Los errores de negocio no se lanzan dentro de la transaccion (`ResultadoSoporte`): revertir una transaccion que acaba de crear una fila de contador nueva interbloquea a las que esperaban esa clave (todas piden el bloqueo compartido para detectar el duplicado y despues el exclusivo); y un intento fallido tiene que confirmarse junto con el error.
+
+### El UNIQUE de un codigo generado al azar, sin un `save` de JPA
+
+- Un `save` que viola un `UNIQUE` deja la transaccion marcada como solo-rollback aunque se capture la excepcion, y el reintento con otro codigo termina revertido. El alta de la consulta es un `INSERT` por JDBC (`TicketSoporteInsercionRepository`): InnoDB deshace solo la sentencia fallida y el servicio reintenta en la misma transaccion y con la misma conexion. Mismo patron que `TokenInsercionRepository` e `InvitacionInsercionRepository`.
+
+### Una cuenta suspendida y el filtro JWT
+
+- `JwtAuthenticationFilter` corta con 401 a toda cuenta `SUSPENDIDO`, y la suspension cierra su sesion (`tipo_cierre = SUSPENSION`). Para que Soporte funcione con la cuenta suspendida, el filtro deja pasar las rutas de `/api/v1/soporte/` cuando la sesion sigue activa **o** se cerro por la suspension (no por logout ni por otro motivo: una sesion cerrada a mano sigue dando 401). El resto de la API sigue respondiendo `CUENTA_SUSPENDIDA`.
+
+### Pruebas de API desde una sola maquina con limites por IP
+
+- Todas las peticiones de Newman, Playwright y los estreses llegan desde `127.0.0.1`: el limite de 10 consultas por IP y por dia se agotaria en la segunda corrida. El perfil `test` activa `server.forward-headers-strategy=native` y las pruebas mandan `X-Forwarded-For` con una IP propia (Tomcat lo honra solo desde sus proxies de confianza por defecto: loopback y redes privadas). En las pruebas de Java con `MockMvc` se usa `setRemoteAddr`. En produccion eso NO se activa asi (ver `docs/LISTA-DE-DESPLIEGUE.md`).
+
+### Datos unicos de las pruebas sin colisiones
+
+- Los generadores de DNI, CUIT y sufijos al azar (`ThreadLocalRandom`) repetian de vez en cuando un valor y rompian un test (`WebhookConcurrenciaIntegrationTest` con un DNI repetido). `DatosUnicos` es un contador atomico que arranca en un punto distinto en cada corrida y avanza de a uno: dentro de una corrida nunca repite, ni entre hilos ni entre clases. Lo usan ahora todas las clases de prueba que generaban DNI, CUIT o sufijos (quedan al azar solo los codigos de invitacion de 6 digitos de `ActividadEquipoIntegrationTest` y un numero de `EscriturasEmpleadoIntegrationTest`, que no chocan con ninguna restriccion de unicidad).
+
+### Estres `a0` y el rechazo del sistema por la suspension (S2.1)
+
+- Desde S2.1 un pedido `PENDIENTE_CONFIRMACION_COMERCIO` de un comercio que se suspende se rechaza solo (`RECHAZADO`, actor `SISTEMA`, `motivo_timeout = SUSPENSION_COMERCIO`) con una nota de credito de motivo `SUSPENSION_COMERCIO` y no `RECHAZO_COMERCIO`. La expectativa del estres decia que todo `RECHAZADO` genera una nota `RECHAZO_COMERCIO`: ahora el motivo esperado de la nota depende de quien rechazo (actor y motivo de la fila de historial). La verificacion sigue exigiendo exactamente una nota y su motivo; solo se corrigio la regla de cual es el motivo.

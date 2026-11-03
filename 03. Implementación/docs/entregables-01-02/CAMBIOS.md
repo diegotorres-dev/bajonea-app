@@ -1266,3 +1266,24 @@ Sin cambios (sin migraciones). La API del listado de comercios del Administrador
 **7. `alcance-y-limitaciones.md`**
 
 Sin cambios.
+
+
+## Cambios de interfaz sugeridos — Fase 5, tramo S4 entrega A (Soporte: backend listo, pantallas para la entrega B), 2026-11-03
+
+La entrega A deja los endpoints, los límites y los emails de Soporte. Estos son los cambios de pantalla que la entrega B tiene que construir y los que habría que reflejar en los documentos de requisitos, historias de usuario y diagramas de `01.` y `02.` (no se editan acá: Diego los copia).
+
+| Dónde | Cambio sugerido |
+|---|---|
+| **Perfil (Cliente, Dueño y Empleado)** | Fila nueva **"Mis consultas a Soporte"** con un contador de las consultas que esperan la respuesta de la persona (`GET /api/v1/soporte/mis-consultas/contador`). Abre la lista (`GET /soporte/mis-consultas`) y el detalle de cada consulta (`GET /soporte/mis-consultas/{id}`), con los mensajes en una conversación, el campo para escribir solo cuando `puedeResponder` es verdadero y el `aviso` que manda el servidor cuando no (turno de Soporte o consulta cerrada) |
+| **Formulario "Contactar a Soporte"** (con y sin sesión) | **Tipo de consulta en un desplegable** (`APELACION_CUENTA`, `APELACION_COMERCIO`, `NO_PUEDO_ENTRAR`, `COMERCIO_RECHAZADO_DOCUMENTOS_COBROS`, `OTRA`), email (solo sin sesión; con sesión se usa el de la cuenta) y mensaje de 10 a 1000 caracteres con contador. Debajo del botón, el texto **"Si tenés dudas sobre tus datos, leé nuestra Política de privacidad."** con enlace a `privacidad.html`. **No se menciona que se guarda la IP.** Al enviar se muestra el código de la consulta (viene en la respuesta) con el aviso "Guardalo: con tu email y el código podés ver la respuesta" |
+| **Pantalla "Ver mi consulta"** (`soporte-consulta.html`, nombre fijo: lo usa el botón de los emails) | Lee el código y el email del fragmento de la URL (`#codigo=…&email=…`), **limpia la URL con `history.replaceState` antes de consultar** y llama a `POST /soporte/publico/consultas/ver`. También permite escribir el email y el código a mano. Con el error `404` muestra siempre el mismo texto; con el `429` el de "demasiados intentos". Enlace "¿Perdiste el código?" que pide el email y llama a `POST /soporte/publico/codigos/reenviar` (la respuesta es siempre la misma). Todo texto de la conversación se pinta con `textContent` |
+| **Login, pantalla de sesión suspendida y banners** | Botón **"Contactar a Soporte"** en la hoja de cuenta suspendida del login y en la pantalla de sesión suspendida (con la sesión de la cuenta suspendida, que sigue sirviendo para las rutas de Soporte, usa `POST /soporte/consultas`), y en los banners de cuenta bloqueada, cuenta inactiva y "Tu comercio no está operativo" de `js/auth.js` (hoy dicen "Contactá a soporte" en texto; sin sesión usa `POST /soporte/publico/consultas`). Contenedores ya identificados: `acciones-cuenta-suspendida` y `acciones-sesion-suspendida` de `js/cuenta-suspendida.js` |
+| **Panel del Administrador** | Tarjeta **"Soporte"** con `consultasSoporteEsperando` (de `GET /administrador/metricas`) que lleva a la bandeja |
+| **Bandeja de Soporte del Administrador** | Pestañas **Esperan / Respondidas / Cerradas** (`GET /administrador/soporte?estado=ESPERAN|RESPONDIDAS|CERRADAS`, los que esperan primero y los más viejos arriba), buscador por email (`&email=`), tipo, email, hace cuánto, chip "Cuenta suspendida" y chip "Email sin enviar". Detalle (`GET /administrador/soporte/{id}`): conversación completa, tarjeta de la **cuenta asociada** si el email coincide con un usuario (nombre, estado, rol, si es Empleado) con el botón **"Ver cuenta"** (`usuarioId`), campo de respuesta (deshabilitado fuera de turno), **"Cerrar consulta"** y **"Reenviar email"** cuando el último mensaje de Soporte tiene `emailPendienteDeReenvio` |
+
+### Requisitos e historias de usuario
+
+- Requisito nuevo (todos los roles): una persona puede escribirle a Soporte con o sin sesión, también con la cuenta suspendida; la conversación es por turnos, con un máximo de 20 mensajes, y solo Soporte la cierra.
+- Requisito nuevo (Administrador): bandeja de consultas con filtros, respuesta por turnos, cierre y reenvío del email de una respuesta que no salió.
+- Requisitos no funcionales: límites (3 consultas por día y 3 abiertas por email, 10 por día por IP, 5 intentos fallidos por hora por email y 10 por IP, 3 reenvíos de códigos por hora); nada se borra; los emails no se reintentan solos.
+- Casos de uso y DFD: agregar el almacén de datos "Consultas a Soporte" y los flujos Persona ↔ Soporte (con y sin sesión) y Administrador ↔ Soporte; la tabla `Soporte` del modelo anterior desaparece (ver `diccionario-de-datos.md` v1.34).

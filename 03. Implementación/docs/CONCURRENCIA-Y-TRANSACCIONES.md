@@ -533,3 +533,41 @@ Los 18 estreses del runner (`correr-estreses.mjs`, incluidos `carrito` con el ba
 | Resultado viejo después de uno nuevo; pago aprobado con otro id | `WebhookConcurrenciaIntegrationTest` |
 | Ráfaga de webhooks con el pool por defecto, cancelaciones, "Ir a pagar" simultáneo | `stress-locks-tramoS32.mjs` (id `s32`) |
 | Webhook repetido, fuera de orden, de otro pedido, tardío con un solo reembolso, sincronización | Carpeta `87` de Newman (con `scripts/mp-simulado.mjs`) |
+
+
+## Soporte — Fase 5, tramo S4 (2026-11-03)
+
+**Dónde queda Soporte en el orden global de bloqueos.** Es una hoja nueva al final: `usuario` (compartido, solo al crear con sesión) → `empleado_comercio` → `dueno`/`cuenta_mercado_pago` → `comercio` → `documento_comercio` → `producto`/`pedido` → `pago` → `carrito` → **`soporte_limite` → `ticket_soporte` → `ticket_soporte_mensaje`**. Ninguna transacción de Soporte toma una fila de otro módulo y vuelve a una de Soporte, ni al revés: crear con sesión toma la fila de `usuario` con `LOCK IN SHARE MODE` antes que nada (la clave foránea de `ticket_soporte.usuario_id` la tomaría igual al insertar, pero después de los contadores), y las demás operaciones no tocan ninguna otra tabla con bloqueo.
+
+**Una fila de contador es el cerrojo.** MariaDB 10.4 no tiene índices únicos parciales, así que "como máximo 3 consultas por email" y "como máximo 5 intentos por hora" no se pueden delegar a la base. Cada clave (`CREAR_EMAIL|…`, `CREAR_IP|…`, `INTENTO_EMAIL|…`, `INTENTO_IP|…`, `REENVIO_EMAIL|…`, `REENVIO_IP|…`) es una fila de `soporte_limite` que se crea con `INSERT ... ON DUPLICATE KEY UPDATE clave = clave` (sin leer antes una clave ausente: ver `docs/APRENDIZAJES-TECNICOS.md`) y se lee con `SELECT ... FOR UPDATE`. Quien la tiene bloqueada cuenta y decide solo. **Siempre el email antes que la IP**, en todos los flujos, y todos los cerrojos se toman antes de la primera lectura común de la transacción: así el `SELECT COUNT(*)` de las consultas fija su foto de lectura recién cuando ya tiene el cerrojo y ve todo lo que confirmaron las transacciones anteriores.
+
+| Operación | Qué toma, en orden |
+|---|---|
+| Crear una consulta (con o sin sesión) | [usuario S] → `CREAR_EMAIL` X → `CREAR_IP` X → cuenta las consultas del email (24 h y abiertas) y de la IP → inserta la consulta y su primer mensaje |
+| Ver o responder sin sesión | `INTENTO_EMAIL` X → `INTENTO_IP` X → busca la consulta por email y código (solo el id) → si no la encuentra suma el fallo a las dos filas; si la encuentra y escribe, `ticket_soporte` X → inserta el mensaje |
+| Reenviar códigos | `REENVIO_EMAIL` X → `REENVIO_IP` X → suma el pedido → lee las consultas abiertas |
+| Responder con sesión | busca por id y dueño (solo el id) → `ticket_soporte` X → inserta el mensaje |
+| Responder o cerrar (Administrador) | `ticket_soporte` X → inserta el mensaje o cierra |
+| Reenviar un email que no salió | sin bloqueos: lee, envía sin transacción y marca por clave primaria en una transacción corta aparte |
+| Listados y detalles | sin bloqueos (lecturas) |
+
+**Las escrituras de la consulta autentican con el id y recién después la toman.** Cargar la entidad antes del `FOR UPDATE` deja una copia vieja en la sesión de Hibernate y la lectura con bloqueo devuelve esa copia en lugar del estado confirmado (el turno validado sobre la copia vieja dejaría pasar dos mensajes). Por eso las consultas de autenticación (`findIdByEmailAndCodigo`, `findIdDelUsuarioPorId`) devuelven solo el id.
+
+**Nada lanza una excepción desde dentro de la transacción.** Los límites superados, la consulta inexistente y el mensaje fuera de turno se devuelven como `ResultadoSoporte` y se lanzan después del commit. Dos razones: (1) el conteo de un intento fallido tiene que confirmarse junto con la respuesta de error; (2) revertir una transacción que acaba de crear una fila de contador deja a las otras que esperaban esa clave nueva en el caso clásico de `INSERT ... ON DUPLICATE KEY` (todas piden el bloqueo compartido y después el exclusivo: interbloqueo).
+
+**El código de la consulta.** 8 caracteres de un alfabeto de 31 (sin 0, O, 1, I ni L) con `SecureRandom`. El alta usa JDBC (`TicketSoporteInsercionRepository`) y no JPA: un `save` que viola el `UNIQUE` del código marcaría la transacción como solo-rollback aunque se capture la excepción. Con JDBC solo se deshace la sentencia que falló y el servicio reintenta con otro código dentro de la misma transacción (hasta 10 veces; si no hay manera, `503` y no queda nada guardado). No abre otra conexión.
+
+**Los emails.** Todos salen con `EjecucionPostCommit` (regla 16 y 17 de `CLAUDE.md`): no salen si la transacción se revierte, no corren con una conexión tomada y el resultado de la respuesta de Soporte se marca en `email_enviado` con una transacción corta propia. Un solo intento, sin reintentos.
+
+**Casos conocidos que no se corrigen.** (1) Dos Administradores que tocan "Reenviar email" a la vez pueden mandar el mismo email dos veces (el envío corre sin bloqueo y el resultado se marca por clave primaria): sin consecuencia, la persona recibe el aviso repetido. (2) Quien conozca el email de otra persona puede gastarle los 5 intentos por hora de su acceso con código (el límite es por email, como se pidió): la persona sigue pudiendo entrar a su consulta con sesión desde el Perfil. (3) Cualquiera puede mandar a un email ajeno hasta 3 emails "Recibimos tu consulta" por día (con el límite por email y por IP). (4) El reenvío de códigos manda el email en el mismo pedido, así que una respuesta con consultas abiertas tarda un poco más que una sin ninguna: es un canal lateral de tiempo para saber si un email tiene consultas abiertas; la solución sería mandar el email en segundo plano.
+
+**Cómo se prueba.**
+
+| Qué | Prueba |
+|---|---|
+| Diez creaciones del mismo email (como máximo 3) y veinte de la misma IP (como máximo 10), 8 repeticiones | `SoporteConcurrenciaIntegrationTest` |
+| Dos respuestas de Soporte, respuesta contra cierre (de Soporte y de la persona), tres mensajes de la persona, el mensaje 20 disputado, intentos fallidos simultáneos por email y por IP, reenvíos simultáneos, 8 repeticiones de cada una | `SoporteConcurrenciaIntegrationTest` |
+| Ningún email con una conexión tomada (pool de 3, email de 1,5 s) | `SoporteEmailsPoolDiminutoIntegrationTest` |
+| Emails después del commit, ninguno si se revierte, sin reintentos, sin datos personales en el log | `SoporteEmailsIntegrationTest`, `EmailServiceSoporteTest` |
+| Colisión del código (reintento y agotamiento) | `SoporteColisionDeCodigoIntegrationTest` |
+| Ráfagas mezcladas con y sin sesión, respuestas, cierres y accesos erróneos con el pool por defecto | `stress-locks-tramoSoporte.mjs` (id `soporte`, escenario 22) |

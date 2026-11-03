@@ -3,7 +3,8 @@
 **Proyecto:** Bajoneá — Plataforma de pedidos gastronómicos en línea  
 **Motor de base de datos:** MySQL (InnoDB)  
 **ORM / Migraciones:** Spring Data JPA + Hibernate / Flyway  
-**Versión del modelo:** 1.33
+**Versión del modelo:** 1.34
+**Cambios de la v1.34 (Fase 5, tramo S4, Soporte, migración `V49`, 2026-11-03):** se elimina la tabla `Soporte` (mensajes de descargo de usuarios suspendidos: nunca tuvo entidad ni código ni filas) y el ENUM `ResolucionSoporte`; las reemplazan `TicketSoporte` (`ticket_soporte`: una consulta de una persona a Soporte, con su código de 8 caracteres, el email, el usuario si escribió con sesión, el tipo, el estado por turnos, la IP y el contador de mensajes), `MensajeSoporte` (`ticket_soporte_mensaje`: cada mensaje de la conversación, con el autor y, para los de Soporte, si el email que avisa a la persona salió) y `SoporteLimite` (`soporte_limite`: una fila por clave de contador de los límites, que además sirve de cerrojo por email y por IP). Tres ENUM nuevos: `TipoTicketSoporte`, `EstadoTicketSoporte` y `AutorMensajeSoporte`. Ver "Soporte (v1.34)" más abajo.
 **Cambios de la v1.33 (Fase 5, tramo S3, suspensión de la cuenta de un Dueño, migración `V48`, 2026-10-30):** `historial_estado_pedido.motivo_timeout` suma `SUSPENSION_DUENO_SIN_ATENCION` y `notificacion.tipo` suma `DUENO_SUSPENDIDO` y `DUENO_SUSPENSION_LEVANTADA` (los tres al final del ENUM, cambio de metadatos, sin tablas ni columnas nuevas). Cambios de comportamiento: suspender la cuenta de un Dueño suspende sus comercios `APROBADO`, `APTO_VENTA` y `CERRADO_TEMPORALMENTE` (origen `DUENO`); un pedido `EN_PREPARACION` de un comercio sin Empleados activos se anula y uno `LISTO_PARA_RETIRAR` se cancela (`CANCELADO_POR_SISTEMA`) con reembolso total; ver "Suspensión de la cuenta de un Dueño (v1.33)" más abajo.
 **Cambios de la v1.32 (Fase 5, tramo S2.1, migración `V47`, 2026-10-30):** `historial_estado_pedido.motivo_timeout` suma `SUSPENSION_COMERCIO` al final del ENUM (cambio de metadatos, sin datos que reescribir): lo escribe el rechazo automático de un pedido `PENDIENTE_CONFIRMACION_COMERCIO` cuando se suspende su comercio (estado `RECHAZADO`, `actor_rol = SISTEMA`, `pedido.cancelado_por = SISTEMA`, nota de crédito `SUSPENSION_COMERCIO` por el monto pagado). `pedido.motivo_rechazo` queda `NULL` en ese rechazo.
 **Cambios de la v1.31 (Fase 5, tramo S2, entrega B2, migración `V46`, 2026-10-29):** `historial_estado_pedido.motivo_timeout` suma `CANCELACION_SIN_PAGO` al final del ENUM (cambio de metadatos): lo escribe la cancelación que hace el Cliente de un pedido que todavía no pagó (`PENDIENTE_PAGO` pasa a `CANCELADO`, sin nota de crédito y sin aviso al equipo); la actividad del comercio y la trazabilidad lo excluyen, como `TIMEOUT_PAGO`, porque el comercio nunca vio ese pedido. Cambios de comportamiento sin esquema: un pedido `PENDIENTE_PAGO` de un comercio `SUSPENDIDO` se puede cancelar pero no pagar, y las respuestas de pedido suman `limiteResolucionSuspension`, `comercioNoDisponible` y `reembolsoMotivo` (solo API, no son columnas).
@@ -557,14 +558,38 @@ Estado de un reclamo iniciado por un cliente sobre un pedido.
 
 ---
 
-### ENUM: ResolucionSoporte
+### ENUM: TipoTicketSoporte
 
-Resolución de un ticket de soporte determinada por el Administrador.
+Motivo de una consulta a Soporte, elegido por la persona al escribirla.
 
 | Valor | Descripción |
 |-------|-------------|
-| `REACTIVADO` | El Administrador levantó la suspensión del usuario tras revisar el mensaje. |
-| `SUSPENSION_MANTENIDA` | El Administrador mantuvo la suspensión tras revisar el mensaje. |
+| `APELACION_CUENTA` | La persona quiere apelar la suspensión o el bloqueo de su cuenta. |
+| `APELACION_COMERCIO` | El Dueño quiere apelar la suspensión o el rechazo de un comercio. |
+| `NO_PUEDO_ENTRAR` | La persona no puede iniciar sesión. |
+| `COMERCIO_RECHAZADO_DOCUMENTOS_COBROS` | Consulta sobre el rechazo de un comercio, la documentación o la cuenta de cobro. |
+| `OTRA` | Cualquier otro motivo. |
+
+---
+
+### ENUM: EstadoTicketSoporte
+
+Turno de una consulta a Soporte. Empieza hablando la persona; cada mensaje pasa el turno al otro lado.
+
+| Valor | Descripción |
+|-------|-------------|
+| `ESPERA_SOPORTE` | Le toca a Soporte responder. Es el estado inicial. |
+| `ESPERA_PERSONA` | Soporte respondió: le toca a la persona. |
+| `CERRADO` | Terminada: la cerró Soporte o llegó al mensaje número 20. No se reabre. |
+
+---
+
+### ENUM: AutorMensajeSoporte
+
+| Valor | Descripción |
+|-------|-------------|
+| `PERSONA` | Mensaje de quien consulta (con o sin sesión). |
+| `SOPORTE` | Mensaje del Administrador. |
 
 ---
 
@@ -1472,22 +1497,54 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 
 ---
 
-### Tabla: Soporte
+### Tabla: TicketSoporte
 
-**Descripción:** Mensajes de descargo enviados por usuarios suspendidos al Administrador. Permite al usuario contestar la suspensión y solicitar su revisión. El Administrador puede levantar la suspensión o mantenerla.
+**Descripción:** Una consulta de una persona a Soporte (v1.34). Se escribe con sesión (desde el Perfil, también con la cuenta suspendida) o sin sesión (con el email y el código de la consulta). La conversación es por turnos y tiene como máximo 20 mensajes; solo el Administrador la cierra, salvo que llegue al mensaje 20, y una cerrada no se reabre. Nada se borra nunca.
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
-| `id` | INT | NO | AI | PK, AI | Identificador único del mensaje de soporte. |
-| `usuario_id` | INT | NO | — | FK → Usuario.id, NN | Usuario que envió el mensaje (debe estar en estado `SUSPENDIDO`). |
-| `mensaje_descargo` | TEXT | NO | — | NN | Texto libre con el descargo o justificación del usuario. |
-| `fecha_envio` | DATETIME | NO | `NOW()` | NN | Fecha y hora en que el usuario envió el mensaje. |
-| `atendido` | TINYINT(1) | NO | `false` | NN | `true` una vez que un Administrador revisó y resolvió el mensaje. |
-| `administrador_id` | INT | SÍ | NULL | FK → Administrador.id | Administrador que atendió el mensaje. NULL mientras está sin atender. |
-| `resolucion` | ENUM ResolucionSoporte | SÍ | NULL | — | Resolución del ticket: `REACTIVADO` o `SUSPENSION_MANTENIDA`. NULL mientras no fue atendido. |
-| `fecha_resolucion` | DATETIME | SÍ | NULL | — | Fecha y hora de resolución por el Administrador. NULL mientras no fue atendido. |
+| `id` | INT | NO | AI | PK, AI | Identificador único de la consulta. |
+| `codigo` | VARCHAR(8) `ascii_bin` | NO | — | NN, UQ | Código de 8 caracteres del alfabeto `23456789ABCDEFGHJKMNPQRSTUVWXYZ` (sin 0, O, 1, I ni L), con aleatoriedad criptográfica. Se guarda sin hash a propósito: hace falta reenviarlo por email. Por sí solo no da acceso: hace falta el email que coincida. |
+| `email` | VARCHAR(254) | NO | — | NN | Email de quien consulta, en minúsculas. Con sesión es el de la cuenta. |
+| `usuario_id` | INT | SÍ | NULL | FK → Usuario.id | La cuenta, si escribió con sesión; NULL si escribió sin sesión. |
+| `tipo` | ENUM TipoTicketSoporte | NO | — | NN | Motivo elegido. |
+| `estado` | ENUM EstadoTicketSoporte | NO | `'ESPERA_SOPORTE'` | NN | Turno de la conversación. |
+| `ip` | VARCHAR(45) | NO | — | NN | IP desde la que se creó (`request.getRemoteAddr()`; detrás de un proxy hace falta `server.forward-headers-strategy`, ver `docs/LISTA-DE-DESPLIEGUE.md`). Sirve para el límite de consultas por IP. |
+| `cantidad_mensajes` | INT | NO | 0 | NN, `CHECK BETWEEN 0 AND 20` | Mensajes de la conversación (los de ambos lados). Nace en 1 con el primero. |
+| `creado_en` | DATETIME | NO | — | NN | Alta, con el reloj único de la aplicación. |
+| `actualizado_en` | DATETIME | NO | — | NN | Último mensaje o cierre. Ordena la bandeja del Administrador. |
+| `cerrado_en` | DATETIME | SÍ | NULL | `CHECK` | NULL mientras esté abierta; completo si y solo si `estado = 'CERRADO'` (`ck_ticket_soporte_cierre`). |
 
-**Índices:** `PRIMARY KEY (id)` | `INDEX (usuario_id)` | `INDEX (atendido)`
+**Índices:** `PRIMARY KEY (id)` | `UNIQUE uq_ticket_soporte_codigo (codigo)` | `idx_ticket_soporte_email_codigo (email, codigo)` | `idx_ticket_soporte_email_creado (email, creado_en)` | `idx_ticket_soporte_estado_actualizado (estado, actualizado_en)` | `idx_ticket_soporte_ip_creado (ip, creado_en)` | `idx_ticket_soporte_usuario (usuario_id, estado)`
+
+---
+
+### Tabla: MensajeSoporte
+
+**Descripción:** Cada mensaje de una consulta (`ticket_soporte_mensaje`). Solo se modifica `email_enviado`, y por clave primaria.
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `id` | INT | NO | AI | PK, AI | Identificador único del mensaje. |
+| `ticket_id` | INT | NO | — | FK → TicketSoporte.id, NN | Consulta a la que pertenece. |
+| `autor` | ENUM AutorMensajeSoporte | NO | — | NN | Quién lo escribió. |
+| `texto` | VARCHAR(1000) | NO | — | NN | Texto tal cual lo escribió quien consulta (la primera vez de 10 a 1000 caracteres; las respuestas de 1 a 1000). Nunca se interpreta como HTML. |
+| `creado_en` | DATETIME | NO | — | NN | Fecha y hora. |
+| `email_enviado` | TINYINT(1) | NO | 0 | NN | En un mensaje de `SOPORTE`: si el email "Soporte respondió tu consulta" salió (un solo intento, sin reintentos automáticos; el Administrador puede reenviarlo a mano). En un mensaje de `PERSONA` es siempre 1 (no se avisa a nadie). |
+
+**Índices:** `PRIMARY KEY (id)` | `idx_ticket_soporte_mensaje_ticket (ticket_id, id)`
+
+---
+
+### Tabla: SoporteLimite
+
+**Descripción:** Contadores de los límites de Soporte (`soporte_limite`), una fila por clave. No es una entidad JPA: se maneja por JDBC con `INSERT ... ON DUPLICATE KEY UPDATE` y `SELECT ... FOR UPDATE`, y la fila bloqueada es el cerrojo que serializa todo lo que cuenta o decide bajo esa clave (MariaDB 10.4 no tiene índices únicos parciales).
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `clave` | VARCHAR(300) `utf8mb4_bin` | NO | — | PK | `<TIPO>\|<valor>`: `CREAR_EMAIL` y `CREAR_IP` (solo cerrojo: las consultas se cuentan en `ticket_soporte`), `INTENTO_EMAIL` e `INTENTO_IP` (accesos fallidos con email y código), `REENVIO_EMAIL` y `REENVIO_IP` (pedidos de reenvío de códigos). |
+| `cantidad` | INT | NO | 0 | NN | Cuántos van en la ventana vigente. |
+| `ventana_inicio` | DATETIME | NO | — | NN | Inicio de la ventana de una hora (ventana fija; arranca con el primer evento). |
 
 ---
 
@@ -1936,8 +1993,8 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 | 16 | `Token` | `usuario_id` | `Usuario` | N:1 | N tokens → 1 usuario | Tokens de seguridad generados para el usuario. |
 | 17 | `Sesion` | `usuario_id` | `Usuario` | N:1 | N sesiones → 1 usuario | Historial de sesiones del usuario. |
 | 18 | `Notificacion` | `usuario_id` | `Usuario` | N:1 | N notificaciones → 1 usuario | Notificaciones emitidas al usuario. |
-| 19 | `Soporte` | `usuario_id` | `Usuario` | N:1 | N mensajes → 1 usuario | Mensajes de soporte enviados por el usuario. |
-| 20 | `Soporte` | `administrador_id` | `Administrador` | N:1 | N mensajes → 1 administrador | Administrador que atendió el mensaje. |
+| 19 | `TicketSoporte` | `usuario_id` | `Usuario` | N:1 | N consultas → 1 usuario | Consultas escritas con sesión (NULL si se escribieron sin sesión). |
+| 20 | `MensajeSoporte` | `ticket_id` | `TicketSoporte` | N:1 | N mensajes → 1 consulta | Conversación de la consulta (máximo 20). |
 | 21 | `Reclamo` | `pedido_id` | `Pedido` | 1:1 | 1 reclamo ↔ 1 pedido | Un reclamo por pedido (UNIQUE). |
 | 22 | `Reclamo` | `administrador_id` | `Administrador` | N:1 | N reclamos → 1 administrador | Administrador que resolvió el reclamo. |
 | 23 | `HistorialEstadoComercio` | `comercio_id` | `Comercio` | N:1 | N registros → 1 comercio | Historial de transiciones de estado del comercio. |
@@ -2163,6 +2220,16 @@ LISTO_PARA_RETIRAR ──[Dueño o Empleado, tras 60 min listo]─→ NO_RETIRAD
 ---
 
 *Diccionario de Datos — Proyecto Bajoneá — Versión 1.28*
+
+### Soporte (v1.34)
+
+- **Quién y cómo.** Cualquier persona le escribe al Administrador, con sesión (`POST /api/v1/soporte/consultas`, "Mis consultas" dentro del Perfil, sin código, también con la cuenta suspendida: el filtro JWT deja pasar las rutas de `/api/v1/soporte/` a una cuenta suspendida si su sesión sigue activa o se cerró por la suspensión) o sin sesión (`/api/v1/soporte/publico/...`, con el email y el código). El Administrador usa `/api/v1/administrador/soporte`.
+- **Turnos.** Habla primero la persona; cada mensaje pasa el turno; fuera de turno no se escribe, de ningún lado (`409`). El mensaje número 20 cierra la consulta sola (como los turnos alternan, siempre lo escribe Soporte). Solo Soporte cierra; una cerrada no acepta nada más. Estado y turno se revalidan sobre la fila de la consulta bloqueada con `FOR UPDATE`.
+- **Límites.** Por email: 3 consultas por día (ventana de 24 horas, cuentan también las cerradas) y 3 abiertas a la vez; por IP: 10 por día; accesos fallidos (email y código que no coinciden): 5 por hora por email y 10 por hora por IP; reenvíos de códigos: 3 por hora por email y por IP. Se responde `429` con el mensaje de cada límite. Los accesos correctos no cuentan, pero con el límite superado ni el código correcto entra.
+- **Acceso sin sesión.** Email (sin distinguir mayúsculas) y código (sin guiones ni espacios, en mayúsculas). Si no coinciden, siempre `404` "No encontramos una consulta con esos datos. Revisá el email y el código.", sea cual sea el dato incorrecto.
+- **Emails** (un solo intento, después del commit, sin reintentos; nada de lo que se registra en el log lleva emails ni códigos): "Recibimos tu consulta" (con el código), "Soporte respondió tu consulta" (el resultado queda en `email_enviado`) y "Tus códigos de consulta" (el reenvío; respuesta siempre igual, haya o no consultas abiertas). El botón "Ver mi consulta" lleva a `soporte-consulta.html#codigo=...&email=...`: en el fragmento y no en la query, para que no viajen a servidores, registros ni al encabezado `Referer`.
+- **Administrador.** Bandeja con los filtros `ESPERAN`, `RESPONDIDAS` y `CERRADAS` (las que esperan, más viejas primero), búsqueda por email, marca de cuenta suspendida y de email sin enviar, detalle con la cuenta asociada si el email coincide con un usuario (id, nombre, estado, rol y si es Empleado), responder, cerrar y reenviar el último email que no salió. Las métricas del panel suman `consultasSoporteEsperando`.
+- **Concurrencia.** Orden de bloqueo: usuario (compartido, solo al crear con sesión) → filas de `soporte_limite` (el email antes que la IP) → fila de `ticket_soporte` (primera lectura de la consulta) → mensaje. Los errores de negocio se devuelven como resultado y se lanzan después del commit, para no revertir nunca una transacción con contadores nuevos. Ver `docs/CONCURRENCIA-Y-TRANSACCIONES.md`.
 
 ### Suspensión de la cuenta de un Dueño (v1.33)
 
