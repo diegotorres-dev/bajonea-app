@@ -95,6 +95,7 @@ public class AdministradorService {
     private final NotificacionService notificacionService;
     private final AptitudVentaComercioService aptitudVentaComercioService;
     private final DocumentoComercioRepository documentoComercioRepository;
+    private final com.bajonea.backend.repositories.TicketSoporteRepository ticketSoporteRepository;
     private final AprobacionPreviaDueno aprobacionPreviaDueno;
     private final HistorialCambioComercioRepository historialCambioComercioRepository;
     private final ComercioResolicitudesProperties resolicitudesProperties;
@@ -281,7 +282,8 @@ public class AdministradorService {
                 clienteRepository.count(),
                 categoriaRepository.countByActivoTrue(),
                 tagRepository.countByActivoTrue(),
-                documentoComercioRepository.countByEstado(EstadoDocumentoComercio.PENDIENTE));
+                documentoComercioRepository.countByEstado(EstadoDocumentoComercio.PENDIENTE),
+                ticketSoporteRepository.countByEstado(com.bajonea.backend.enums.EstadoTicketSoporte.ESPERA_SOPORTE));
     }
 
     /**

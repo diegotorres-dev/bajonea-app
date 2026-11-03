@@ -83,6 +83,11 @@ public class SecurityConfig {
      * operación del Comercio siguen cerrados al Dueño por los matchers {@code hasRole("DUENO")} de más abajo; solo
      * las rutas exactas de {@link DelegacionEmpleado} se abren por delante a {@code DUENO} y {@code CLIENTE}, y
      * ahí la autorización real es el resolver de comercio activo. El Administrador sigue recibiendo {@code 403}.
+     * {@code /api/v1/soporte/publico/**} (tramo S4, Soporte) son cuatro rutas exactas públicas: quien necesita Soporte muchas
+     * veces no puede iniciar sesión. El acceso a una consulta es el email más su código, con límite de intentos por email y por
+     * IP en la base de datos ({@code SoporteLimiteService}). El resto de {@code /api/v1/soporte/**} exige sesión de cualquier
+     * rol, y {@link JwtAuthenticationFilter} lo deja pasar también con la cuenta suspendida.
+     * <p>
      * {@code GET /api/v1/empleados/mis-comercios} es del Cliente: lo consulta quien ya tiene sesión de Cliente. Lo
      * mismo {@code PUT /api/v1/empleados/comercios/{comercioId}/renunciar} y
      * {@code GET /api/v1/empleados/comercios/{comercioId}/acceso} (tramo E4): rutas exactas solo para {@code CLIENTE}, así
@@ -105,6 +110,10 @@ public class SecurityConfig {
             "/api/v1/auth/reactivar-cuenta/confirmar",
             "/api/v1/auth/invitaciones-empleado/validar",
             "/api/v1/auth/invitaciones-empleado/aceptar",
+            "/api/v1/soporte/publico/consultas",
+            "/api/v1/soporte/publico/consultas/ver",
+            "/api/v1/soporte/publico/consultas/responder",
+            "/api/v1/soporte/publico/codigos/reenviar",
             "/api/v1/catalogo/**",
             "/api/v1/geografia/**",
             "/api/v1/health",
@@ -130,6 +139,7 @@ public class SecurityConfig {
                     if (environment.acceptsProfiles(Profiles.of(TEST_PROFILE))) {
                         auth.requestMatchers("/api/v1/test/**").permitAll();
                     }
+                    auth.requestMatchers("/api/v1/soporte/**").authenticated();
                     auth.requestMatchers(HttpMethod.GET, "/api/v1/empleados/mis-comercios").hasRole("CLIENTE");
                     auth.requestMatchers(HttpMethod.PUT, "/api/v1/empleados/comercios/{comercioId}/renunciar").hasRole("CLIENTE");
                     auth.requestMatchers(HttpMethod.GET, "/api/v1/empleados/comercios/{comercioId}/acceso").hasRole("CLIENTE");

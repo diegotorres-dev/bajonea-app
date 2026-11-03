@@ -128,6 +128,11 @@ public class GlobalExceptionHandler {
                 new DesvinculacionBloqueadaResponseDTO(ex.getCantidadPagosPendientes(), ex.getPuedeReintentarDesde())));
     }
 
+    @ExceptionHandler(LimiteSoporteException.class)
+    public ResponseEntity<ApiResponse<?>> handleLimiteSoporte(LimiteSoporteException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(new ApiResponse<>(ex.getMessage(), null));
+    }
+
     @ExceptionHandler(ServicioNoDisponibleException.class)
     public ResponseEntity<ApiResponse<?>> handleServicioNoDisponible(ServicioNoDisponibleException ex) {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(new ApiResponse<>(ex.getMessage(), null));

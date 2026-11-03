@@ -2,6 +2,7 @@ package com.bajonea.backend.config.security;
 
 import com.bajonea.backend.enums.EstadoUsuario;
 import com.bajonea.backend.enums.RolUsuario;
+import com.bajonea.backend.enums.TipoCierreSesion;
 import com.bajonea.backend.repositories.SesionRepository;
 import com.bajonea.backend.repositories.SesionRepository.EstadoDeSesion;
 import io.jsonwebtoken.Claims;
@@ -33,6 +34,10 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * respuesta es 401 con {@code data.codigo = CUENTA_SUSPENDIDA} y el motivo. La firma del token ya está validada en ese
  * punto, así que el motivo no se filtra a quien no tiene un token firmado por la aplicación. Una sesión cerrada por
  * suspensión de una cuenta que después se levantó responde el 401 genérico de siempre.
+ * <p>
+ * Excepción (tramo S4, Soporte): las rutas de {@code /api/v1/soporte/} sí pasan con la cuenta suspendida, siempre que la
+ * sesión siga activa o haya sido cerrada justamente por la suspensión ({@code tipo_cierre = SUSPENSION}); una sesión cerrada
+ * por logout o por otro motivo sigue dando 401. Una cuenta suspendida es quien más necesita escribirle a Soporte.
  */
 
 // Filtro por el que pasan todas las peticiones antes de llegar al controller (decide si el usuario está
@@ -40,6 +45,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final String PREFIJO_SOPORTE = "/api/v1/soporte/";
 
     private final JwtService jwtService;
     private final SesionRepository sesionRepository;
@@ -66,14 +73,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             EstadoDeSesion estado = sesionRepository.leerEstadoDeSesion(sesionId).orElse(null);
-            if (estado != null && EstadoUsuario.SUSPENDIDO.name().equals(estado.getEstadoUsuario())) {
+            boolean suspendidaConAccesoASoporte = estado != null
+                    && EstadoUsuario.SUSPENDIDO.name().equals(estado.getEstadoUsuario())
+                    && request.getRequestURI().startsWith(PREFIJO_SOPORTE)
+                    && (estado.getActiva() || TipoCierreSesion.SUSPENSION.name().equals(estado.getTipoCierre()));
+            if (estado != null && EstadoUsuario.SUSPENDIDO.name().equals(estado.getEstadoUsuario()) && !suspendidaConAccesoASoporte) {
                 SecurityContextHolder.clearContext();
                 authenticationEntryPoint.commence(request, response,
                         new CuentaSuspendidaAuthenticationException(estado.getMotivoSuspension()));
                 return;
             }
 
-            if (estado == null || !estado.getActiva()) {
+            if (estado == null || (!estado.getActiva() && !suspendidaConAccesoASoporte)) {
                 SecurityContextHolder.clearContext();
                 authenticationEntryPoint.commence(request, response,
                         new InsufficientAuthenticationException("La sesión fue cerrada"));

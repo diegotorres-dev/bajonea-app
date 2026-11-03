@@ -1,6 +1,7 @@
 package com.bajonea.backend.services;
 
 import com.bajonea.backend.enums.MotivoRegularizacionInvitacion;
+import com.bajonea.backend.util.SoporteEnlaces;
 import com.resend.Resend;
 import com.resend.core.exception.ResendException;
 import com.resend.core.net.RequestOptions;
@@ -37,6 +38,8 @@ public class EmailService {
     private final AtomicInteger fallasSimuladas = new AtomicInteger();
 
     private final AtomicInteger fallasSimuladasAvisoCuenta = new AtomicInteger();
+
+    private final AtomicInteger fallasSimuladasSoporte = new AtomicInteger();
 
     @Value("${mail.from}")
     private String remitente;
@@ -196,6 +199,54 @@ public class EmailService {
                         + "Equipo de Bajoneá");
     }
 
+    /**
+     * Emails del módulo de Soporte. A diferencia de los demás no registran el destinatario ni el asunto en el log (el
+     * destinatario es el email de quien consulta y los códigos van en el cuerpo): solo queda constancia de si salió o falló.
+     * Devuelven el resultado para que quien los envía pueda dejar marcado si el email salió. Cada uno es un solo intento,
+     * sin reintento automático. El enlace "Ver mi consulta" lleva el código y el email en el fragmento de la URL.
+     */
+    public ResultadoEnvioEmail enviarSoporteConsultaRecibida(String destinatario, String codigo) {
+        return enviarSoporte(destinatario, "Recibimos tu consulta — Bajoneá",
+                "Recibimos tu consulta y vamos a responderte lo antes posible.\n\n"
+                        + "El código de tu consulta es: " + codigo + "\n\n"
+                        + "Ver mi consulta: " + SoporteEnlaces.enlaceConsulta(frontendBaseUrl, codigo, destinatario) + "\n\n"
+                        + "Guardá el código: con tu email y ese código podés ver la respuesta y seguir la conversación "
+                        + "aunque no puedas iniciar sesión.\n\n"
+                        + "Equipo de Bajoneá");
+    }
+
+    public ResultadoEnvioEmail enviarSoporteRespuesta(String destinatario, String codigo) {
+        return enviarSoporte(destinatario, "Soporte respondió tu consulta — Bajoneá",
+                "Soporte respondió tu consulta " + codigo + ".\n\n"
+                        + "Ver mi consulta: " + SoporteEnlaces.enlaceConsulta(frontendBaseUrl, codigo, destinatario) + "\n\n"
+                        + "Equipo de Bajoneá");
+    }
+
+    public ResultadoEnvioEmail enviarSoporteCodigos(String destinatario, java.util.List<String> codigos) {
+        StringBuilder lista = new StringBuilder();
+        for (String codigo : codigos) {
+            lista.append(codigo).append(": ").append(SoporteEnlaces.enlaceConsulta(frontendBaseUrl, codigo, destinatario)).append("\n");
+        }
+        return enviarSoporte(destinatario, "Tus códigos de consulta — Bajoneá",
+                "Estos son los códigos de tus consultas abiertas en Bajoneá:\n\n"
+                        + lista + "\n"
+                        + "Con tu email y el código podés ver la respuesta y seguir la conversación.\n\n"
+                        + "Si no pediste este email, podés ignorarlo.\n\n"
+                        + "Equipo de Bajoneá");
+    }
+
+    private ResultadoEnvioEmail enviarSoporte(String destinatario, String asunto, String cuerpo) {
+        if (!envioHabilitado && fallasSimuladasSoporte.getAndUpdate(restantes -> restantes > 0 ? restantes - 1 : 0) > 0) {
+            log.warn("Falla simulada del envío de un email de Soporte");
+            return ResultadoEnvioEmail.fallido(503, "Falla simulada");
+        }
+        return enviar(destinatario, asunto, cuerpo, null, false);
+    }
+
+    public void simularFallasDeSoporte(int cantidad) {
+        fallasSimuladasSoporte.set(Math.max(cantidad, 0));
+    }
+
     private ResultadoEnvioEmail enviarAvisoDeCuenta(String destinatario, String asunto, String cuerpo) {
         if (!envioHabilitado && fallasSimuladasAvisoCuenta.getAndUpdate(restantes -> restantes > 0 ? restantes - 1 : 0) > 0) {
             log.warn("Falla simulada del envío del aviso de cuenta a {} (asunto \"{}\")", destinatario, asunto);
@@ -221,9 +272,18 @@ public class EmailService {
     }
 
     private ResultadoEnvioEmail enviar(String destinatario, String asunto, String cuerpo, String idempotencyKey) {
+        return enviar(destinatario, asunto, cuerpo, idempotencyKey, true);
+    }
+
+    private ResultadoEnvioEmail enviar(String destinatario, String asunto, String cuerpo, String idempotencyKey,
+            boolean registrarDestinatario) {
         if (!envioHabilitado) {
-            log.info("Envío de email deshabilitado (email.envio-habilitado=false): no se envía a {} el asunto \"{}\"",
-                    destinatario, asunto);
+            if (registrarDestinatario) {
+                log.info("Envío de email deshabilitado (email.envio-habilitado=false): no se envía a {} el asunto \"{}\"",
+                        destinatario, asunto);
+            } else {
+                log.info("Envío de email deshabilitado (email.envio-habilitado=false): no se envía un email de Soporte");
+            }
             return ResultadoEnvioEmail.deshabilitado();
         }
 
@@ -238,13 +298,25 @@ public class EmailService {
             CreateEmailResponse respuesta = idempotencyKey == null
                     ? resend.emails().send(params)
                     : resend.emails().send(params, RequestOptions.builder().setIdempotencyKey(idempotencyKey).build());
-            log.info("Email enviado a {} (Resend id: {})", destinatario, respuesta.getId());
+            if (registrarDestinatario) {
+                log.info("Email enviado a {} (Resend id: {})", destinatario, respuesta.getId());
+            } else {
+                log.info("Email de Soporte enviado (Resend id: {})", respuesta.getId());
+            }
             return ResultadoEnvioEmail.enviado(respuesta.getId());
         } catch (ResendException ex) {
-            log.warn("No se pudo enviar el email a {}: {}", destinatario, ex.getMessage());
+            if (registrarDestinatario) {
+                log.warn("No se pudo enviar el email a {}: {}", destinatario, ex.getMessage());
+            } else {
+                log.warn("No se pudo enviar un email de Soporte: {}", descripcion(ex));
+            }
             return ResultadoEnvioEmail.fallido(ex.getStatusCode(), descripcion(ex));
         } catch (RuntimeException ex) {
-            log.warn("No se pudo enviar el email a {}: {}", destinatario, ex.getMessage());
+            if (registrarDestinatario) {
+                log.warn("No se pudo enviar el email a {}: {}", destinatario, ex.getMessage());
+            } else {
+                log.warn("No se pudo enviar un email de Soporte: {}", ex.getClass().getSimpleName());
+            }
             return ResultadoEnvioEmail.fallido(null, ex.getClass().getSimpleName());
         }
     }

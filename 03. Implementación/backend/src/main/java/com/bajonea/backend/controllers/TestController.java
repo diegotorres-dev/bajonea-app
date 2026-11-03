@@ -165,6 +165,12 @@ public class TestController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Fallas simuladas del email de aviso de cuenta", null));
     }
 
+    @PutMapping("/email-soporte/fallas")
+    public ResponseEntity<ApiResponse<Void>> simularFallasDelEmailDeSoporte(@RequestParam int cantidad) {
+        emailService.simularFallasDeSoporte(cantidad);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Fallas simuladas del email de Soporte", null));
+    }
+
     @GetMapping("/emails-cuenta")
     public ResponseEntity<ApiResponse<List<java.util.Map<String, Object>>>> listarEmailsDeCuenta(@RequestParam String email) {
         return ResponseEntity.status(HttpStatus.OK)
