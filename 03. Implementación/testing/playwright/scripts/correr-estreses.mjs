@@ -39,6 +39,7 @@ const ESTRESES = [
   { id: 'direcciones', archivo: 'stress-locks-tramoDirecciones.mjs', descripcion: 'Fase 3: direcciones del Cliente (cupo de cinco, una sola predeterminada, nunca cero activas, pedido contra edicion y baja de la direccion)' },
   { id: 'suspension', archivo: 'stress-locks-tramoSuspension.mjs', descripcion: 'Fase 5 S1 y S2: suspension de cuentas (doble suspension, contra login y checkout) y de comercios (doble suspension, contra aceptar, pago, despachar y anular, checkout, cierre manual, Mercado Pago y documentos, y levantar contra el tope de 90 minutos; sin 5xx, sin sesiones activas, sin pedidos nacidos despues de la suspension)' },
   { id: 'documentos', archivo: 'stress-locks-tramoDocumentos.mjs', descripcion: 'Fase 4: documentos del comercio y regla de apto para venta (cupo, baja contra aprobacion, Mercado Pago contra aprobacion, bloqueo de cuenta contra aprobacion, revocacion contra subida)' },
+  { id: 'soporte', archivo: 'stress-locks-tramoSoporte.mjs', descripcion: 'Fase 5 S4 (escenario 22): Soporte (rafagas de consultas con y sin sesion, respuestas de la persona y de Soporte, cierres, accesos con codigos erroneos, reenvios y el mensaje 20 disputado; limites por email e IP exactos; sin 5xx ni Connection is not available)' },
   { id: 'e4', archivo: 'stress-locks-empleado-e4.mjs', descripcion: 'E4: gestión del equipo (desactivar, reactivar y renunciar; S1 a S10)' },
 ];
 
@@ -109,7 +110,7 @@ function contarEnElLog(patron) {
 
 const loc = await verificarEntorno();
 const nube = process.env.CLOUDINARY_CLOUD_NAME || 'demo';
-const inicioLog = { deadlocks: contarEnElLog(/Deadlock found/g), timeouts: contarEnElLog(/Lock wait timeout/g) };
+const inicioLog = { deadlocks: contarEnElLog(/Deadlock found/g), timeouts: contarEnElLog(/Lock wait timeout/g), conexiones: contarEnElLog(/Connection is not available/g) };
 console.log(`Estreses contra ${BASE} (localidad ${loc}, log del backend ${LOG_BACKEND}, ${elegidos.length} scripts)\n`);
 
 const resultados = [];
@@ -133,9 +134,10 @@ for (const estres of elegidos) {
 
 const deadlocks = contarEnElLog(/Deadlock found/g) - inicioLog.deadlocks;
 const timeouts = contarEnElLog(/Lock wait timeout/g) - inicioLog.timeouts;
+const conexiones = contarEnElLog(/Connection is not available/g) - inicioLog.conexiones;
 console.log('\nResumen');
 for (const r of resultados) console.log(`${r.id.padEnd(8)} ${r.problemas.length === 0 ? 'OK ' : 'MAL'} ${r.segundos.toFixed(0).padStart(5)} s  ${r.archivo}`);
-console.log(`Log del backend durante toda la corrida: ${deadlocks} "Deadlock found", ${timeouts} "Lock wait timeout"`);
+console.log(`Log del backend durante toda la corrida: ${deadlocks} "Deadlock found", ${timeouts} "Lock wait timeout", ${conexiones} "Connection is not available"`);
 const total = resultados.reduce((a, r) => a + r.segundos, 0);
 console.log(`Tiempo total: ${(total / 60).toFixed(1)} min`);
-process.exitCode = resultados.some((r) => r.problemas.length) || deadlocks || timeouts ? 1 : 0;
+process.exitCode = resultados.some((r) => r.problemas.length) || deadlocks || timeouts || conexiones ? 1 : 0;

@@ -79,7 +79,7 @@ class AdministradorServiceResolucionTest {
         service = new AdministradorService(comercioRepository, mock(DireccionRepository.class), mock(HorarioRepository.class), mock(DisponibilidadComercioService.class),
                 mock(RedSocialRepository.class), administradorRepository, historialRepository, mock(ClienteRepository.class), mock(NotificacionRepository.class), mock(HistorialEstadoUsuarioRepository.class),
                 mock(CategoriaRepository.class), mock(TagRepository.class), notificacionService,
-                aptitudService, mock(DocumentoComercioRepository.class), mock(AprobacionPreviaDueno.class),
+                aptitudService, mock(DocumentoComercioRepository.class), mock(com.bajonea.backend.repositories.TicketSoporteRepository.class), mock(AprobacionPreviaDueno.class),
                 mock(HistorialCambioComercioRepository.class), propiedades, mock(DuenoRepository.class), mock(UsuarioRepository.class));
 
         Usuario usuario = Usuario.builder().id(DUENO_ID).build();
