@@ -61,3 +61,45 @@
 ## Documentación
 
 `docs/DECISIONES.md`, `docs/CONCURRENCIA-Y-TRANSACCIONES.md`, `docs/APRENDIZAJES-TECNICOS.md`, `docs/LISTA-DE-DESPLIEGUE.md`, `docs/entregables-01-02/CAMBIOS.md`, `docs/diccionario-de-datos.md` (v1.34) y su copia de `02. Diseño` (sin commitear).
+
+---
+
+# Entrega B (pantallas, specs y capturas) — 2026-11-03
+
+Sin migraciones ni tablas nuevas. Números: Playwright specs `91`, `92` y `93` (el próximo libre es `94`), carpeta `88` de Newman ampliada (166 requests; la próxima libre sigue siendo `89`), diccionario sin cambios de versión (v1.34, con el tope de accesos fallidos corregido a 30). Última migración `V49`; la próxima, `V50` (Reclamos).
+
+## Backend y pruebas del límite
+
+| Archivo | Qué cambió |
+|---|---|
+| `config/SoporteProperties.java` | `intentosFallidosPorHoraEmail` pasa de 5 a 30 (la IP queda en 10) |
+| `SoporteLimitesIntegrationTest` (16), `SoporteConcurrenciaIntegrationTest` | Los accesos fallidos se reparten en IP distintas para llegar a 30 por email; test nuevo de 29 intentos que todavía entran |
+| `build-soporte-fase5s4-postman.mjs`, `stress-locks-tramoSoporte.mjs` | Carpeta `88` con 30 intentos desde tres IP y el 31 desde una cuarta; estrés con 40 accesos al mismo email |
+
+## Frontend
+
+| Archivo | Qué es |
+|---|---|
+| `soporte.html` + `js/soporte.js` | Formulario público (con sesión, el email viene de la cuenta y queda bloqueado) y pantalla de "Recibimos tu consulta" con el código |
+| `soporte-consulta.html` + `js/soporte-consulta.js` | Ver y responder: sin sesión (fragmento `#codigo=…&email=…` que se lee y se borra con `history.replaceState`, o formulario con email y código, o reenvío del código) y con sesión (`?id=N`) |
+| `mis-consultas.html` + `js/soporte-mis-consultas.js` | Lista de las consultas del usuario; `enlazarMisConsultas` pinta la fila y el contador en los Perfiles |
+| `admin-soporte.html` + `js/admin-soporte.js` | Bandeja (Esperan / Respondidas / Cerradas) y detalle con cuenta asociada, responder, cerrar con confirmación y reenviar el email |
+| `js/soporte-comun.js` | Tipos y estados, normalización del código, hilo de mensajes, caja de respuesta con contador y avisos |
+| `perfil.html`, `comercio-perfil.html`, `js/cliente.js`, `js/comercio.js` | Fila "Mis consultas a Soporte" con contador (Cliente, Dueño en una sección "Ayuda" y Empleado dentro de su lista) |
+| `js/admin.js` | Entrada "Soporte" en la grilla de gestión con `consultasSoporteEsperando` |
+| `js/admin-clientes.js` | `?id=N` resalta un Cliente y muestra "Ver todos" (lo usa "Ver cuenta"; `admin-duenos.html` ya lo tenía) |
+| `js/cuenta-suspendida.js`, `js/api.js` | Botones "Contactar a Soporte" y "Mis consultas"; la pantalla de sesión suspendida **ya no borra la sesión** hasta "Cerrar sesión" (Soporte con sesión la necesita) |
+| `js/auth.js` | Enlace a Soporte en los avisos de cuenta bloqueada y de comercio no operativo del login |
+| `js/comercio-suspendido.js` | Enlace a Soporte en la tarjeta de comercio suspendido (Dueño y Empleado) |
+| `css/styles.css` | Estilos `soporte-*` y `profile-link__contador` |
+
+## Pruebas
+
+| Archivo | Tests |
+|---|---|
+| `tests/91-soporte-sin-sesion-ui.spec.ts` | 23: formulario, éxito, copiar código, fragmento, acceso manual, dato incorrecto, reenvío, turnos, tope de 20, límites, HTML literal |
+| `tests/92-soporte-con-sesion-ui.spec.ts` | 16: Perfil de Cliente, Dueño y Empleado, Mis consultas, conversación, consulta ajena, cuenta suspendida, botones desde login y avisos |
+| `tests/93-soporte-administrador-ui.spec.ts` | 13: panel, bandeja, detalle con y sin cuenta, responder, cerrar con confirmación, email fallido |
+| `tests/helpers/soporte.ts` | IP por prueba (`X-Forwarded-For`), creación de consultas, capturas con reintento de escritura |
+| Specs `84`, `86`, `89` y `90` | Ajustados: ya no afirman "sin Soporte"; el `84` espera que la sesión se mantenga en la pantalla de suspensión y se borre al cerrar; el `90` espera el foco del botón tras suspender (causa del inestable `90:157`) y espera con `expect.poll` el conteo de Dueños |
+| `docs/capturas-soporte/` | 31 capturas a 375 px |
