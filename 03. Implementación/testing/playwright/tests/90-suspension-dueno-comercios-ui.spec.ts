@@ -97,6 +97,7 @@ test.describe('Fase 5, S3 (UI B): comercios suspendidos con su Dueño, equipo y 
     let comercioC: number;
 
     test.beforeAll(async ({ request }) => {
+      await nuevoDueno(request);
       dueno = await nuevoDueno(request);
       comercioA = dueno.comercioId;
       comercioB = await agregarComercioApto(request, dueno, `Segundo ${sufijoUnico()}`);
@@ -135,7 +136,7 @@ test.describe('Fase 5, S3 (UI B): comercios suspendidos con su Dueño, equipo y 
       await page.getByTestId('btn-ver-todos-duenos').click();
       await expect(page.getByTestId('dueno-destacado-aviso')).toHaveCount(0);
       expect(page.url()).not.toContain('id=');
-      expect(await page.locator('[data-testid^="dueno-item-"]').count()).toBeGreaterThan(1);
+      await expect.poll(() => page.locator('[data-testid^="dueno-item-"]').count()).toBeGreaterThan(1);
     });
 
     test('un comercio suspendido por separado, con el Dueño suspendido, no se puede levantar hasta levantar al Dueño', async ({ page }) => {
@@ -174,6 +175,7 @@ test.describe('Fase 5, S3 (UI B): comercios suspendidos con su Dueño, equipo y 
       await page.getByTestId('btn-confirmar-suspender-comercio').dblclick();
       await expect(page.locator('.toast')).toContainText('Comercio suspendido');
       await expect(page.getByTestId(`estado-comercio-${comercioA}`)).toHaveText('Suspendido');
+      await expect(page.getByTestId(`btn-ver-detalle-comercio-${comercioA}`)).toBeFocused();
       expect(origenComercio(comercioA)).toBe('INDIVIDUAL');
       expect(sql(`SELECT motivo_suspension FROM comercio WHERE id = ${comercioA};`)).toBe(MOTIVO_APARTE);
       expect(sql(`SELECT suspendido_desde FROM comercio WHERE id = ${comercioA};`)).toBe(desdeAntes);
@@ -249,7 +251,7 @@ test.describe('Fase 5, S3 (UI B): comercios suspendidos con su Dueño, equipo y 
       await expect(page.getByTestId('titulo-comercio-suspendido')).toHaveText('Este comercio está suspendido');
       await expect(page.getByTestId('motivo-comercio-suspendido')).toHaveCount(0);
       await expect(page.getByText(MOTIVO_DUENO)).toHaveCount(0);
-      await expect(page.getByText(/soporte/i)).toHaveCount(0);
+      await expect(page.getByTestId('enlace-soporte-comercio-suspendido')).toHaveAttribute('href', 'soporte.html?tipo=APELACION_COMERCIO');
 
       const cabecera = { 'X-Comercio-Id': String(dueno.comercioId) };
       expect((await apiConHeaders(request, 'PUT', `/pedidos/comercio/${aDespachar}/despachar`, empleado.token, cabecera, {})).status).toBe(200);
