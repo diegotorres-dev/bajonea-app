@@ -38,6 +38,13 @@ class SoporteLimitesIntegrationTest extends SoporteIntegrationBase {
         }
     }
 
+    private void fallarDesdeIpsDistintas(String email, int veces) {
+        for (int i = 0; i < veces; i++) {
+            String ip = ipNueva();
+            assertThrows(RecursoNoEncontradoException.class, () -> soporte.verSinSesion(acceso(email, "ZZZZZZZZ"), ip));
+        }
+    }
+
     @Test
     void laCuartaConsultaDelDiaDeUnEmailSeRechazaConSuMensaje() {
         String email = emailNuevo();
@@ -118,11 +125,11 @@ class SoporteLimitesIntegrationTest extends SoporteIntegrationBase {
     }
 
     @Test
-    void despuesDeCincoIntentosFallidosElSextoSeBloqueaAunqueElCodigoSeaCorrecto() {
+    void despuesDeTreintaIntentosFallidosElSiguienteSeBloqueaAunqueElCodigoSeaCorrecto() {
         String email = emailNuevo();
         ConsultaSoporteCreadaResponseDTO creada = crear(email, ipNueva());
+        fallarDesdeIpsDistintas(email, 30);
         String ip = ipNueva();
-        fallar(email, ip, 5);
 
         LimiteSoporteException ex = assertThrows(LimiteSoporteException.class,
                 () -> soporte.verSinSesion(acceso(email, creada.getCodigo()), ip));
@@ -167,11 +174,33 @@ class SoporteLimitesIntegrationTest extends SoporteIntegrationBase {
     }
 
     @Test
+    void conVeintinueveIntentosFallidosElDelCodigoCorrectoTodaviaEntra() {
+        String email = emailNuevo();
+        ConsultaSoporteCreadaResponseDTO creada = crear(email, ipNueva());
+        fallarDesdeIpsDistintas(email, 29);
+
+        assertDoesNotThrow(() -> soporte.verSinSesion(acceso(email, creada.getCodigo()), ipNueva()));
+    }
+
+    @Test
+    void alguienQueSoloConoceElEmailNoPuedeDejarSinAccesoPorCodigoMasQueUnaHora() {
+        String email = emailNuevo();
+        ConsultaSoporteCreadaResponseDTO creada = crear(email, ipNueva());
+        fallarDesdeIpsDistintas(email, 30);
+        assertThrows(LimiteSoporteException.class, () -> soporte.verSinSesion(acceso(email, creada.getCodigo()), ipNueva()));
+
+        jdbcTemplate.update("UPDATE soporte_limite SET ventana_inicio = ventana_inicio - INTERVAL 2 HOUR WHERE clave = ?",
+                "INTENTO_EMAIL|" + email);
+
+        assertDoesNotThrow(() -> soporte.verSinSesion(acceso(email, creada.getCodigo()), ipNueva()));
+    }
+
+    @Test
     void cuandoPasaLaVentanaDeUnaHoraSePuedeVolverAIntentar() {
         String email = emailNuevo();
         ConsultaSoporteCreadaResponseDTO creada = crear(email, ipNueva());
         String ip = ipNueva();
-        fallar(email, ip, 5);
+        fallar(email, ip, 10);
         assertThrows(LimiteSoporteException.class, () -> soporte.verSinSesion(acceso(email, creada.getCodigo()), ip));
 
         jdbcTemplate.update("UPDATE soporte_limite SET ventana_inicio = ventana_inicio - INTERVAL 2 HOUR WHERE clave IN (?, ?)",

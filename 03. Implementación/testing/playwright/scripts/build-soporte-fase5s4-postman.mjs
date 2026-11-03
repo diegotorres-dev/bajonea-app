@@ -77,7 +77,7 @@ const responderSoporte = (nombre, clave, texto, estado, extra = []) =>
 agregar(
   item('Prepara emails e IPs unicos de la corrida', req('GET', '/health'), [status(200)], [
     'const r = () => Math.floor(Math.random() * 250) + 1;',
-    "for (const k of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n']) pm.environment.set('" + v('ip_') + "' + k, '172.' + r() + '.' + r() + '.' + r());",
+    "for (const k of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's']) pm.environment.set('" + v('ip_') + "' + k, '172.' + r() + '.' + r() + '.' + r());",
     emailNuevo('p1'), emailNuevo('p2'), emailNuevo('lim'), emailNuevo('int'), emailNuevo('rep'), emailNuevo('vacio'), emailNuevo('tope'), emailNuevo('fall'),
     "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
     guardar(v('cli_email'), "'soporte.cli.' + s + '@bajonea.test'"),
@@ -234,11 +234,12 @@ agregar(
   ]),
   crearSinSesion('Intentos - crea una consulta para probar el acceso', 'int', 'f', {}),
 );
-for (let n = 1; n <= 5; n += 1) {
-  agregar(ver(`Intentos - codigo incorrecto ${n} de 5: 404`, E('int'), 'ZZZZZZZZ', 'g', 404, [mensajeDe(NO_ENCONTRADA)]));
+const IPS_DE_INTENTOS = ['g', 'o', 'p'];
+for (let n = 1; n <= 30; n += 1) {
+  agregar(ver(`Intentos - codigo incorrecto ${n} de 30: 404`, E('int'), 'ZZZZZZZZ', IPS_DE_INTENTOS[Math.floor((n - 1) / 10)], 404, [mensajeDe(NO_ENCONTRADA)]));
 }
 agregar(
-  ver('Intentos - el sexto intento: 429', E('int'), 'ZZZZZZZZ', 'g', 429, [mensajeDe(INTENTOS)]),
+  ver('Intentos - el intento 31: 429', E('int'), 'ZZZZZZZZ', 'q', 429, [mensajeDe(INTENTOS)]),
   ver('Intentos - ni el codigo correcto entra con el limite superado: 429', E('int'), C('int'), 'h', 429, [mensajeDe(INTENTOS)]),
   responderPersona('Intentos - tampoco se puede responder: 429', 'int', 'h', 'Hola', 429, [mensajeDe(INTENTOS)]),
   crearSinSesion('Reenvio - crea una consulta abierta', 'rep', 'i', {}),

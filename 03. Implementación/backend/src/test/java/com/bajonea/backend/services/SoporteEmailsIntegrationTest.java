@@ -147,12 +147,13 @@ class SoporteEmailsIntegrationTest extends SoporteIntegrationBase {
         try {
             ConsultaSoporteCreadaResponseDTO creada = soporte.crearSinSesion(pedido(email, com.bajonea.backend.enums.TipoTicketSoporte.OTRA, secreto), ip);
             soporte.verSinSesion(acceso(email, creada.getCodigo()), ip);
-            for (int i = 0; i < 6; i++) {
+            String ipDeLosFallos = ipNueva();
+            for (int i = 0; i < 11; i++) {
                 int intento = i;
-                if (i < 5) {
-                    assertThrows(RecursoNoEncontradoException.class, () -> soporte.verSinSesion(acceso(otroEmail, "ZZZZZZZ" + intento), ip));
+                if (i < 10) {
+                    assertThrows(RecursoNoEncontradoException.class, () -> soporte.verSinSesion(acceso(otroEmail, "ZZZZZZZ" + intento), ipDeLosFallos));
                 } else {
-                    assertThrows(LimiteSoporteException.class, () -> soporte.verSinSesion(acceso(otroEmail, "ZZZZZZZ" + intento), ip));
+                    assertThrows(LimiteSoporteException.class, () -> soporte.verSinSesion(acceso(otroEmail, "ZZZZZZZ" + intento), ipDeLosFallos));
                 }
             }
             soporteAdmin.responder(creada.getId(), texto(secreto + " respuesta"));

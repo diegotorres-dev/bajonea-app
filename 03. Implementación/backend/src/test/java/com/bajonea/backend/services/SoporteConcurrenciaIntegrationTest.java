@@ -209,10 +209,10 @@ class SoporteConcurrenciaIntegrationTest extends SoporteIntegrationBase {
     }
 
     @RepeatedTest(8)
-    void losIntentosFallidosSimultaneosDeUnEmailNoPasanDeCinco() {
+    void losIntentosFallidosSimultaneosDeUnEmailNoPasanDeTreinta() {
         String email = emailNuevo();
         List<Callable<Object>> tareas = new ArrayList<>();
-        for (int i = 0; i < 12; i++) {
+        for (int i = 0; i < 40; i++) {
             String ip = ipNueva();
             tareas.add(() -> soporte.verSinSesion(acceso(email, "ZZZZZZZZ"), ip));
         }
@@ -220,9 +220,9 @@ class SoporteConcurrenciaIntegrationTest extends SoporteIntegrationBase {
         List<Object> resultados = correrAlMismoTiempo(tareas);
 
         sinOtrosErrores(resultados, RecursoNoEncontradoException.class, LimiteSoporteException.class);
-        assertEquals(5, contar(resultados, RecursoNoEncontradoException.class));
-        assertEquals(7, contar(resultados, LimiteSoporteException.class));
-        assertEquals(5, jdbcTemplate.queryForObject("SELECT cantidad FROM soporte_limite WHERE clave = ?", Integer.class, "INTENTO_EMAIL|" + email));
+        assertEquals(30, contar(resultados, RecursoNoEncontradoException.class));
+        assertEquals(10, contar(resultados, LimiteSoporteException.class));
+        assertEquals(30, jdbcTemplate.queryForObject("SELECT cantidad FROM soporte_limite WHERE clave = ?", Integer.class, "INTENTO_EMAIL|" + email));
     }
 
     @RepeatedTest(8)

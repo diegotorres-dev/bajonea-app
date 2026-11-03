@@ -161,12 +161,11 @@ class SoporteHttpIntegrationTest extends SoporteIntegrationBase {
                 .andExpect(jsonPath("$.mensaje").value("Ya enviaste 3 consultas hoy. Probá de nuevo mañana o esperá la respuesta de Soporte."));
 
         String emailIntentos = emailNuevo();
-        String ip = ipNueva();
-        for (int i = 0; i < 5; i++) {
-            mockMvc.perform(desde(post(PUBLICO + "/consultas/ver"), ip).content("{\"email\":\"" + emailIntentos + "\",\"codigo\":\"ZZZZZZZZ\"}"))
+        for (int i = 0; i < 30; i++) {
+            mockMvc.perform(desde(post(PUBLICO + "/consultas/ver"), ipNueva()).content("{\"email\":\"" + emailIntentos + "\",\"codigo\":\"ZZZZZZZZ\"}"))
                     .andExpect(status().isNotFound());
         }
-        mockMvc.perform(desde(post(PUBLICO + "/consultas/ver"), ip).content("{\"email\":\"" + emailIntentos + "\",\"codigo\":\"ZZZZZZZZ\"}"))
+        mockMvc.perform(desde(post(PUBLICO + "/consultas/ver"), ipNueva()).content("{\"email\":\"" + emailIntentos + "\",\"codigo\":\"ZZZZZZZZ\"}"))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(jsonPath("$.mensaje").value("Hiciste demasiados intentos. Probá de nuevo en una hora."));
     }

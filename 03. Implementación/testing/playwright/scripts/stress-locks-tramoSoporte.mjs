@@ -179,7 +179,7 @@ async function rondaDeAccesosIncorrectos(consultas, ronda) {
   const emailObjetivo = `stress.soporte.x${uniq()}@bajonea.test`;
   const ipObjetivo = ip();
   const tareas = [];
-  for (let i = 0; i < 14; i += 1) tareas.push(esperar(aleatorio(20)).then(() => verPublica(emailObjetivo, 'ZZZZZZZZ', ip())).then((r) => ({ r, grupo: 'email' })));
+  for (let i = 0; i < 40; i += 1) tareas.push(esperar(aleatorio(20)).then(() => verPublica(emailObjetivo, 'ZZZZZZZZ', ip())).then((r) => ({ r, grupo: 'email' })));
   for (let i = 0; i < 16; i += 1) tareas.push(esperar(aleatorio(20)).then(() => verPublica(`stress.soporte.y${uniq()}@bajonea.test`, 'ZZZZZZZZ', ipObjetivo)).then((r) => ({ r, grupo: 'ip' })));
   if (consultas.length > 0) {
     const c = consultas[0];
@@ -192,13 +192,13 @@ async function rondaDeAccesosIncorrectos(consultas, ronda) {
     exigir([200, 404, 429].includes(r.status), `ronda ${ronda}: acceso ${grupo} dio ${r.status}`);
   });
   const porEmail = resultados.filter((x) => x.grupo === 'email');
-  exigir(porEmail.filter((x) => x.r.status === 404).length === 5, `ronda ${ronda}: ${porEmail.filter((x) => x.r.status === 404).length} fallos aceptados para un email (esperados 5)`);
+  exigir(porEmail.filter((x) => x.r.status === 404).length === 30, `ronda ${ronda}: ${porEmail.filter((x) => x.r.status === 404).length} fallos aceptados para un email (esperados 30)`);
   const porIp = resultados.filter((x) => x.grupo === 'ip');
   exigir(porIp.filter((x) => x.r.status === 404).length === 10, `ronda ${ronda}: ${porIp.filter((x) => x.r.status === 404).length} fallos aceptados para una IP (esperados 10)`);
   const reenvios = resultados.filter((x) => x.grupo === 'reenvio');
   exigir(reenvios.filter((x) => x.r.status === 200).length === 3, `ronda ${ronda}: ${reenvios.filter((x) => x.r.status === 200).length} reenvios aceptados (esperados 3)`);
   const contadorEmail = Number(sql(`SELECT cantidad FROM soporte_limite WHERE clave = 'INTENTO_EMAIL|${emailObjetivo}';`));
-  exigir(contadorEmail === 5, `ronda ${ronda}: el contador de intentos del email vale ${contadorEmail}`);
+  exigir(contadorEmail === 30, `ronda ${ronda}: el contador de intentos del email vale ${contadorEmail}`);
   const contadorIp = Number(sql(`SELECT cantidad FROM soporte_limite WHERE clave = 'INTENTO_IP|${ipObjetivo}';`));
   exigir(contadorIp === 10, `ronda ${ronda}: el contador de intentos de la IP vale ${contadorIp}`);
 }

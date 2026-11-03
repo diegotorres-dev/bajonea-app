@@ -14,7 +14,7 @@ public class SoporteProperties {
     private int consultasPorDiaEmail = 3;
     private int consultasAbiertasEmail = 3;
     private int consultasPorDiaIp = 10;
-    private int intentosFallidosPorHoraEmail = 5;
+    private int intentosFallidosPorHoraEmail = 30;
     private int intentosFallidosPorHoraIp = 10;
     private int reenviosPorHoraEmail = 3;
     private int reenviosPorHoraIp = 3;

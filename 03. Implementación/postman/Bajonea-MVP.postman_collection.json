@@ -198254,7 +198254,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "const r = () => Math.floor(Math.random() * 250) + 1;",
-                  "for (const k of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n']) pm.environment.set('so_ip_' + k, '172.' + r() + '.' + r() + '.' + r());",
+                  "for (const k of ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's']) pm.environment.set('so_ip_' + k, '172.' + r() + '.' + r() + '.' + r());",
                   "pm.environment.set('so_p1_email', 'soporte.p1.' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36) + '@bajonea.test');",
                   "pm.environment.set('so_p2_email', 'soporte.p2.' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36) + '@bajonea.test');",
                   "pm.environment.set('so_lim_email', 'soporte.lim.' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36) + '@bajonea.test');",
@@ -201922,7 +201922,7 @@
           ]
         },
         {
-          "name": "Intentos - codigo incorrecto 1 de 5: 404",
+          "name": "Intentos - codigo incorrecto 1 de 30: 404",
           "request": {
             "method": "POST",
             "header": [
@@ -201972,7 +201972,7 @@
           ]
         },
         {
-          "name": "Intentos - codigo incorrecto 2 de 5: 404",
+          "name": "Intentos - codigo incorrecto 2 de 30: 404",
           "request": {
             "method": "POST",
             "header": [
@@ -202022,7 +202022,7 @@
           ]
         },
         {
-          "name": "Intentos - codigo incorrecto 3 de 5: 404",
+          "name": "Intentos - codigo incorrecto 3 de 30: 404",
           "request": {
             "method": "POST",
             "header": [
@@ -202072,7 +202072,7 @@
           ]
         },
         {
-          "name": "Intentos - codigo incorrecto 4 de 5: 404",
+          "name": "Intentos - codigo incorrecto 4 de 30: 404",
           "request": {
             "method": "POST",
             "header": [
@@ -202122,7 +202122,7 @@
           ]
         },
         {
-          "name": "Intentos - codigo incorrecto 5 de 5: 404",
+          "name": "Intentos - codigo incorrecto 5 de 30: 404",
           "request": {
             "method": "POST",
             "header": [
@@ -202172,13 +202172,1263 @@
           ]
         },
         {
-          "name": "Intentos - el sexto intento: 429",
+          "name": "Intentos - codigo incorrecto 6 de 30: 404",
           "request": {
             "method": "POST",
             "header": [
               {
                 "key": "X-Forwarded-For",
                 "value": "{{so_ip_g}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 7 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_g}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 8 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_g}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 9 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_g}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 10 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_g}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 11 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_o}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 12 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_o}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 13 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_o}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 14 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_o}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 15 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_o}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 16 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_o}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 17 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_o}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 18 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_o}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 19 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_o}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 20 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_o}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 21 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_p}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 22 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_p}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 23 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_p}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 24 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_p}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 25 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_p}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 26 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_p}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 27 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_p}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 28 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_p}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 29 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_p}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - codigo incorrecto 30 de 30: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_p}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/soporte/publico/consultas/ver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "soporte",
+                "publico",
+                "consultas",
+                "ver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{so_int_email}}\",\n  \"codigo\": \"ZZZZZZZZ\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"No encontramos una consulta con esos datos. Revisá el email y el código.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Intentos - el intento 31: 429",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Forwarded-For",
+                "value": "{{so_ip_q}}"
               },
               {
                 "key": "Content-Type",
