@@ -7,7 +7,6 @@ import com.bajonea.backend.dto.response.UsuarioResponseDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
@@ -165,18 +164,18 @@ class DatosPruebaEmpleado {
     }
 
     static String sufijo() {
-        return String.valueOf(ThreadLocalRandom.current().nextLong(1_000_000_000L, 9_999_999_999L));
+        return String.valueOf(DatosUnicos.siguienteSufijo());
     }
 
     static String claveAleatoria() {
-        return "Pw" + ThreadLocalRandom.current().nextLong(1_000_000_000L, 9_999_999_999L);
+        return "Pw" + DatosUnicos.siguienteSufijo();
     }
 
     static String dniAleatorio() {
-        return String.valueOf(ThreadLocalRandom.current().nextInt(30_000_000, 99_999_999));
+        return String.valueOf(DatosUnicos.siguienteDni());
     }
 
     private static String cuitAleatorio() {
-        return "20" + ThreadLocalRandom.current().nextLong(100_000_000L, 999_999_999L);
+        return "20" + DatosUnicos.siguienteCuit();
     }
 }

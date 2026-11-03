@@ -17,7 +17,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -246,14 +245,14 @@ class CierreComercioIntegrationTest {
     }
 
     private static String sufijo() {
-        return String.valueOf(ThreadLocalRandom.current().nextLong(1_000_000_000L, 9_999_999_999L));
+        return String.valueOf(DatosUnicos.siguienteSufijo());
     }
 
     private static String dniAleatorio() {
-        return String.valueOf(ThreadLocalRandom.current().nextInt(30_000_000, 99_999_999));
+        return String.valueOf(DatosUnicos.siguienteDni());
     }
 
     private static String cuitAleatorio() {
-        return "20" + ThreadLocalRandom.current().nextLong(100_000_000L, 999_999_999L);
+        return "20" + DatosUnicos.siguienteCuit();
     }
 }

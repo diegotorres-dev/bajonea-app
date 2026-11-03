@@ -23,7 +23,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.Map;
-import java.util.concurrent.ThreadLocalRandom;
 import javax.sql.DataSource;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -308,15 +307,15 @@ class TokenColisionIntegrationTest {
     }
 
     private static String sufijo() {
-        return String.valueOf(ThreadLocalRandom.current().nextLong(1_000_000_000L, 9_999_999_999L));
+        return String.valueOf(DatosUnicos.siguienteSufijo());
     }
 
     private static String dniAleatorio() {
-        return String.valueOf(ThreadLocalRandom.current().nextInt(30_000_000, 99_999_999));
+        return String.valueOf(DatosUnicos.siguienteDni());
     }
 
     private static String cuitAleatorio() {
-        return "20" + ThreadLocalRandom.current().nextLong(100_000_000L, 999_999_999L);
+        return "20" + DatosUnicos.siguienteCuit();
     }
 
     private static String nombreUsuarioAleatorio() {

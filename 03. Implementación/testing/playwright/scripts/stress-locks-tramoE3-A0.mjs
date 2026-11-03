@@ -218,11 +218,11 @@ const TRANSICIONES = {
   LISTO_PARA_RETIRAR: ['ENTREGADO', 'NO_RETIRADO'],
 };
 const MOTIVO_DE_NOTA = {
-  RECHAZADO: 'RECHAZO_COMERCIO',
-  EXPIRADO: 'EXPIRACION_SIN_RESPUESTA',
-  ANULADO: 'ANULACION_COMERCIO',
-  CANCELADO: 'CANCELACION_CLIENTE',
-  CANCELADO_POR_SISTEMA: 'SUSPENSION_COMERCIO',
+  RECHAZADO: (fila) => (fila.actor === 'SISTEMA' && fila.motivo === 'SUSPENSION_COMERCIO' ? 'SUSPENSION_COMERCIO' : 'RECHAZO_COMERCIO'),
+  EXPIRADO: () => 'EXPIRACION_SIN_RESPUESTA',
+  ANULADO: () => 'ANULACION_COMERCIO',
+  CANCELADO: () => 'CANCELACION_CLIENTE',
+  CANCELADO_POR_SISTEMA: () => 'SUSPENSION_COMERCIO',
 };
 const GENERAN_NOTA = new Set(Object.keys(MOTIVO_DE_NOTA));
 const AVISOS_POR_FILA = {
@@ -287,7 +287,8 @@ function invariantesDelPedido(pedidoId) {
   const terminal = filas.find((f) => GENERAN_NOTA.has(f.estado));
   if (terminal && notas === 1) {
     const motivo = sql(`SELECT n.motivo FROM nota_credito n JOIN pago p ON p.id = n.pago_id WHERE p.pedido_id = ${pedidoId};`);
-    if (motivo !== MOTIVO_DE_NOTA[terminal.estado]) errores.push(`pedido ${pedidoId}: ${terminal.estado} con una nota de motivo ${motivo} (se esperaba ${MOTIVO_DE_NOTA[terminal.estado]})`);
+    const esperadoMotivo = MOTIVO_DE_NOTA[terminal.estado](terminal);
+    if (motivo !== esperadoMotivo) errores.push(`pedido ${pedidoId}: ${terminal.estado} con una nota de motivo ${motivo} (se esperaba ${esperadoMotivo})`);
   }
   return errores;
 }

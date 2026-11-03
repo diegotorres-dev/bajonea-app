@@ -201,7 +201,7 @@ class LlamadasExternasFueraDeTransaccionIntegrationTest extends SuspensionDuenoT
             String url = oauthService.iniciarVinculacion(dueno.id());
             estados.add(UriComponentsBuilder.fromUriString(url).build().getQueryParams().getFirst("state"));
         }
-        long base = System.nanoTime() % 1_000_000_000L;
+        long base = DatosUnicos.siguienteSufijo() * 1000;
         MERCADO_PAGO.demora(DEMORA_EXTERNA_MS);
         try {
             List<Callable<Object>> tareas = new ArrayList<>();
@@ -305,7 +305,7 @@ class LlamadasExternasFueraDeTransaccionIntegrationTest extends SuspensionDuenoT
         try {
             long inicio = System.nanoTime();
             org.junit.jupiter.api.Assertions.assertThrows(org.springframework.web.client.RestClientException.class,
-                    () -> oauthService.procesarCallback("c" + (System.nanoTime() % 1_000_000_000L), estado));
+                    () -> oauthService.procesarCallback("c" + DatosUnicos.siguienteSufijo(), estado));
             long ms = (System.nanoTime() - inicio) / 1_000_000;
             assertTrue(ms < 11500, "el intercambio de tokens tiene que cortarse a los 10 segundos y tardó " + ms + " ms");
         } finally {
