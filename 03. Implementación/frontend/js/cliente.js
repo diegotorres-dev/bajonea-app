@@ -1,4 +1,5 @@
 import { apiFetch, ApiError, getUsuario } from './api.js';
+import { enlazarMisConsultas } from './soporte-mis-consultas.js';
 import { exigirContextoCliente, consultarComerciosDelEmpleado } from './contexto.js';
 import { abrirHojaCambiarCuenta } from './selector-contexto.js';
 import { logout } from './auth.js';
@@ -97,6 +98,7 @@ export async function initPerfil() {
   renderBottomNav(document.getElementById('bottom-nav-slot'), 'perfil');
 
   document.getElementById('cerrar-sesion-link').addEventListener('click', mostrarModalConfirmarLogout);
+  enlazarMisConsultas(document.getElementById('mis-consultas-link'));
 
   const cambiarCuentaLink = document.getElementById('cambiar-cuenta-link');
   cambiarCuentaLink.addEventListener('click', () => abrirHojaCambiarCuenta());

@@ -41,6 +41,7 @@ const MENSAJES_LOGIN_CONFLICTO = {
     antes: 'Tu cuenta está bloqueada por intentos fallidos. ',
     enlace: { texto: 'Recuperá tu contraseña', href: 'recuperar-password.html' },
     despues: ' para desbloquearla.',
+    ayuda: { texto: 'Contactar a Soporte', href: 'soporte.html?tipo=NO_PUEDO_ENTRAR', testid: 'enlace-soporte-cuenta-bloqueada' },
   },
   'Cuenta inactiva. Solicitá la reactivación de tu cuenta': {
     kind: 'warning',
@@ -50,15 +51,21 @@ const MENSAJES_LOGIN_CONFLICTO = {
   },
 };
 
-function renderBannerConEnlace(slot, kind, { antes, enlace = null, despues = '' }) {
+function crearAncla({ texto, href, testid = null }) {
+  const ancla = document.createElement('a');
+  ancla.className = 'link';
+  ancla.href = href;
+  ancla.textContent = texto;
+  if (testid) ancla.setAttribute('data-testid', testid);
+  return ancla;
+}
+
+function renderBannerConEnlace(slot, kind, { antes, enlace = null, despues = '', ayuda = null }) {
   renderBannerTexto(slot, kind, antes);
   if (!enlace) return;
   const contenido = slot.querySelector('.banner > div');
-  const ancla = document.createElement('a');
-  ancla.className = 'link';
-  ancla.href = enlace.href;
-  ancla.textContent = enlace.texto;
-  contenido.append(ancla, despues);
+  contenido.append(crearAncla(enlace), despues);
+  if (ayuda) contenido.append(' ', crearAncla(ayuda));
 }
 
 export async function resolverHomePorRol(usuario) {
@@ -143,7 +150,11 @@ export function initLogin() {
       if (destino) {
         window.location.href = destino;
       } else {
-        renderBanner(bannerSlot, 'warning', 'Tu comercio no está operativo en este momento. Contactá a soporte para más información.');
+        renderBannerConEnlace(bannerSlot, 'warning', {
+          antes: 'Tu comercio no está operativo en este momento. ',
+          enlace: { texto: 'Contactar a Soporte', href: 'soporte.html?tipo=APELACION_COMERCIO', testid: 'enlace-soporte-comercio-no-operativo' },
+          despues: ' para más información.',
+        });
       }
     } catch {
       renderBanner(bannerSlot, 'error', 'No pudimos verificar el estado de tu comercio. Intentá nuevamente.');

@@ -1,4 +1,5 @@
 import { apiFetch, ApiError, clearSesion, contextoPuedeCerrarComercio, contextoPuedeEditarCatalogo, contextoPuedeGestionarPedidos, esContextoComercio, esContextoDueno, esContextoEmpleado, getComercioActivoId, getUsuario, setContexto, TIPO_CONTEXTO } from './api.js';
+import { enlazarMisConsultas } from './soporte-mis-consultas.js';
 import { exigirContextoComercio, exigirDueno } from './contexto.js';
 import { logout, construirTelefono, resolverHomePorRol, LABELS_TIPO_SOCIEDAD, LABELS_CONDICION_IVA } from './auth.js';
 import { resumenHorarioHoy, renderTopBar, showToast, pintarAvatarComercio, renderPedidoEstadoHeader, manejarBloqueoPorCambioPassword, crearBloqueMotivoRechazo } from './catalogo.js';
@@ -2217,8 +2218,9 @@ function prepararVistasDelPerfil(esEmpleado) {
     return;
   }
   const lista = document.getElementById('lista-perfil-empleado');
+  lista.appendChild(document.getElementById('mis-consultas-link'));
   lista.appendChild(document.getElementById('cerrar-sesion-link'));
-  quitar('seccion-mi-comercio', 'seccion-sesion', 'view-editar-perfil', 'view-datos-legales', 'view-equipo', 'view-mercadopago', 'view-cambiar-password');
+  quitar('seccion-mi-comercio', 'seccion-soporte', 'seccion-sesion', 'view-editar-perfil', 'view-datos-legales', 'view-equipo', 'view-mercadopago', 'view-cambiar-password');
   document.getElementById('seccion-lista-empleado').classList.remove('is-hidden');
   document.getElementById('seccion-mi-lugar-equipo').classList.remove('is-hidden');
 }
@@ -2384,6 +2386,7 @@ export async function initComercioPerfil() {
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarPerfil: false, mostrarCampana: false, centrarLogo: true });
   renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'perfil');
   document.getElementById('cerrar-sesion-link').addEventListener('click', mostrarModalConfirmarLogout);
+  enlazarMisConsultas(document.getElementById('mis-consultas-link'));
   if (!(await prepararPaginaComercio({ slotFranja: document.getElementById('franja-comercio-slot') }))) {
     return;
   }

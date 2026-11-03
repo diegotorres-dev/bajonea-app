@@ -34,6 +34,7 @@ const ICONS = {
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>',
   logoutIcon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
   refund: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>',
+  chat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>',
   percent: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="5" x2="5" y2="19"/><circle cx="6.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="17.5" r="2.5"/></svg>',
 };
 
@@ -230,6 +231,13 @@ export async function initAdminDashboard() {
     { icon: ICONS.hash, titulo: 'Tags', subtitulo: `${metricas.tagsActivos} activos`, href: 'admin-tags.html' },
     { icon: ICONS.percent, titulo: 'Tarifas', subtitulo: 'Cargos y comisiones', href: 'admin-tarifas.html' },
     { icon: ICONS.refund, titulo: 'Reembolsos', subtitulo: 'Revisión manual', href: 'admin-reembolsos.html' },
+    {
+      icon: ICONS.chat,
+      titulo: 'Soporte',
+      subtitulo: metricas.consultasSoporteEsperando === 0 ? 'Sin consultas esperando' : `${metricas.consultasSoporteEsperando} ${metricas.consultasSoporteEsperando === 1 ? 'espera' : 'esperan'} tu respuesta`,
+      subtituloTestid: 'contador-soporte-esperando',
+      href: 'admin-soporte.html',
+    },
   ];
 
   const grid = document.getElementById('gestion-grid');
@@ -247,6 +255,7 @@ export async function initAdminDashboard() {
     card.appendChild(h3);
     const p = document.createElement('p');
     p.textContent = tile.subtitulo;
+    if (tile.subtituloTestid) p.setAttribute('data-testid', tile.subtituloTestid);
     card.appendChild(p);
     grid.appendChild(card);
   });

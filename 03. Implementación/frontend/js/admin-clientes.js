@@ -66,6 +66,11 @@ function normalizarBusqueda(valor) {
   return String(valor || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 }
 
+function idDestacadoDeLaUrl() {
+  const valor = new URLSearchParams(window.location.search).get('id');
+  return valor && /^\d+$/.test(valor) ? Number(valor) : null;
+}
+
 function nombreCompleto(cliente) {
   return `${cliente.nombre} ${cliente.apellido}`.trim();
 }
@@ -78,7 +83,7 @@ export async function initAdminClientes() {
   }
 
   const contenedor = document.getElementById('clientes-content');
-  const estado = { clientes: [], busqueda: '', filtro: 'TODOS', menuAbierto: null };
+  const estado = { clientes: [], busqueda: '', filtro: 'TODOS', menuAbierto: null, destacado: idDestacadoDeLaUrl() };
 
   const entrada = h('input', {
     type: 'search',
@@ -111,8 +116,9 @@ export async function initAdminClientes() {
   const contador = texto('p', 'cliente-contador', '', { role: 'status', 'aria-live': 'polite', 'data-testid': 'contador-clientes' });
   const lista = h('div', { class: 'cliente-admin-list', id: 'clientes-lista', 'data-testid': 'clientes-lista' });
   const avisoCarga = h('div', { 'data-testid': 'aviso-clientes' });
+  const avisoDestacado = h('div', { 'data-testid': 'aviso-cliente-destacado' });
 
-  contenedor.replaceChildren(buscador, filtros, contador, avisoCarga, lista);
+  contenedor.replaceChildren(buscador, filtros, contador, avisoDestacado, avisoCarga, lista);
 
   function esperar() {
     lista.replaceChildren(...[0, 1, 2, 3].map(() => h('div', { class: 'cliente-admin-row cliente-admin-row--espera', 'aria-hidden': 'true' }, [
@@ -123,6 +129,10 @@ export async function initAdminClientes() {
   }
 
   function visibles() {
+    if (estado.destacado !== null) {
+      const unico = estado.clientes.filter((cliente) => cliente.id === estado.destacado);
+      if (unico.length > 0) return unico;
+    }
     const consulta = normalizarBusqueda(estado.busqueda);
     return estado.clientes
       .filter((cliente) => estado.filtro === 'TODOS' || cliente.estado === estado.filtro)
@@ -239,6 +249,22 @@ export async function initAdminClientes() {
     return parrafo;
   }
 
+  function dibujarAvisoDestacado(mostrados) {
+    avisoDestacado.replaceChildren();
+    if (estado.destacado === null || mostrados.length !== 1 || mostrados[0].id !== estado.destacado) return;
+    const verTodos = texto('button', 'btn btn-secondary', 'Ver todos', { type: 'button', 'data-testid': 'btn-ver-todos-clientes' });
+    verTodos.addEventListener('click', () => {
+      estado.destacado = null;
+      window.history.replaceState(null, '', window.location.pathname);
+      dibujarLista();
+      entrada.focus();
+    });
+    avisoDestacado.append(h('div', { class: 'cliente-modal__caja dueno-destacado', 'data-testid': 'cliente-destacado-aviso' }, [
+      texto('p', 'cliente-modal__caja-titulo', `Mostrando a ${nombreCompleto(mostrados[0])}`),
+      verTodos,
+    ]));
+  }
+
   function dibujarFila(cliente) {
     const punto = h('span', { class: `cliente-estado__dot ${ESTADOS_PUNTO[cliente.estado] || ''}` });
     const chipEstado = h('span', { class: 'cliente-estado', 'data-testid': 'estado-cliente' }, [punto, texto('span', '', ESTADOS_ETIQUETA[cliente.estado] || 'Estado no disponible')]);
@@ -258,7 +284,8 @@ export async function initAdminClientes() {
       'aria-expanded': 'false',
       'data-testid': `btn-acciones-cliente-${cliente.id}`,
     }, [iconoTresPuntos()]);
-    const fila = h('div', { class: 'cliente-admin-row', 'data-testid': `cliente-item-${cliente.id}` }, [cuerpo, boton]);
+    const destacada = estado.destacado === cliente.id;
+    const fila = h('div', { class: `cliente-admin-row${destacada ? ' cliente-admin-row--destacada' : ''}`, 'data-testid': `cliente-item-${cliente.id}` }, [cuerpo, boton]);
     boton.addEventListener('click', () => abrirMenu(cliente, boton, fila));
     return fila;
   }
@@ -266,6 +293,7 @@ export async function initAdminClientes() {
   function dibujarLista() {
     cerrarMenu();
     const mostrados = visibles();
+    dibujarAvisoDestacado(mostrados);
     contador.textContent = `Mostrando ${mostrados.length} ${plural(mostrados.length, 'cliente', 'clientes')}`;
     if (estado.clientes.length === 0) {
       lista.replaceChildren(h('div', { class: 'state-page', 'data-testid': 'clientes-sin-registros' }, [

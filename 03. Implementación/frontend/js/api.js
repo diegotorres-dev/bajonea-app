@@ -550,8 +550,13 @@ export async function apiFetch(path, { method = 'GET', body, auth = true, handle
     && parsed.data
     && parsed.data.codigo === CODIGO_CUENTA_SUSPENDIDA
   ) {
-    clearSesion();
-    mostrarPantallaCuentaSuspendida({ motivo: parsed.data.motivo, alCerrarSesion: () => redirectTo('login.html') });
+    mostrarPantallaCuentaSuspendida({
+      motivo: parsed.data.motivo,
+      alCerrarSesion: () => {
+        clearSesion();
+        redirectTo('login.html');
+      },
+    });
     throw new ApiError(response.status, parsed.mensaje, parsed.data);
   }
 

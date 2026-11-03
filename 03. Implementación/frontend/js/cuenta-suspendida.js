@@ -74,8 +74,9 @@ export function abrirHojaCuentaSuspendida({ motivo, alCerrar = null }) {
   const titulo = crearTexto('h2', 'modal-sheet__title', 'Cuenta suspendida', { id: 'hoja-cuenta-suspendida-titulo', 'data-testid': 'titulo-cuenta-suspendida' });
   const caja = cajaMotivo(motivo, 'motivo-cuenta-suspendida');
   const acciones = crear('div', 'suspension-acciones', { 'data-testid': 'acciones-cuenta-suspendida' });
-  const cerrar = crearTexto('button', 'btn btn-primary', 'Cerrar', { type: 'button', 'data-testid': 'btn-cerrar-cuenta-suspendida' });
-  acciones.appendChild(cerrar);
+  const soporte = crearTexto('a', 'btn btn-primary', 'Contactar a Soporte', { href: 'soporte.html?tipo=APELACION_CUENTA', 'data-testid': 'btn-contactar-soporte-cuenta-suspendida' });
+  const cerrar = crearTexto('button', 'btn btn-tertiary', 'Cerrar', { type: 'button', 'data-testid': 'btn-cerrar-cuenta-suspendida' });
+  acciones.append(soporte, cerrar);
   const hoja = crear('div', 'modal-sheet', { role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': 'hoja-cuenta-suspendida-titulo' });
   hoja.append(icono, titulo);
   if (caja) hoja.appendChild(caja);
@@ -114,8 +115,10 @@ export function mostrarPantallaCuentaSuspendida({ motivo, alCerrarSesion }) {
   queSePasa.append(crearTexto('h2', 'suspension-que-pasa__titulo', 'Qué pasa ahora', { id: 'suspension-que-pasa-titulo' }), lista);
 
   const acciones = crear('div', 'suspension-acciones', { 'data-testid': 'acciones-sesion-suspendida' });
-  const cerrarSesion = crearTexto('button', 'btn btn-primary', 'Cerrar sesión', { type: 'button', 'data-testid': 'btn-cerrar-sesion-suspendida' });
-  acciones.appendChild(cerrarSesion);
+  const soporte = crearTexto('a', 'btn btn-primary', 'Contactar a Soporte', { href: 'soporte.html?tipo=APELACION_CUENTA', 'data-testid': 'btn-contactar-soporte-sesion-suspendida' });
+  const misConsultas = crearTexto('a', 'btn btn-secondary', 'Mis consultas', { href: 'mis-consultas.html', 'data-testid': 'btn-mis-consultas-sesion-suspendida' });
+  const cerrarSesion = crearTexto('button', 'btn btn-tertiary', 'Cerrar sesión', { type: 'button', 'data-testid': 'btn-cerrar-sesion-suspendida' });
+  acciones.append(soporte, misConsultas, cerrarSesion);
 
   const contenido = crear('div', 'suspension-pantalla__contenido');
   contenido.append(icono, titulo);

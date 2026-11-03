@@ -54,6 +54,11 @@ export function pintarTarjetaSuspension(slot) {
       ? 'No recibe pedidos nuevos y no podés editarlo. Podés resolver los pedidos en curso, subir documentos y vincular Mercado Pago.'
       : 'No recibe pedidos nuevos. Podés resolver los pedidos en curso.',
   ));
+  tarjeta.append(h('a', {
+    class: 'suspension-soporte',
+    href: 'soporte.html?tipo=APELACION_COMERCIO',
+    'data-testid': 'enlace-soporte-comercio-suspendido',
+  }, ['Contactar a Soporte']));
   slot.replaceChildren(tarjeta);
   return true;
 }
