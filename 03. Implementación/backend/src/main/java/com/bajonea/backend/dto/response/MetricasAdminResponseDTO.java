@@ -22,6 +22,7 @@ public class MetricasAdminResponseDTO {
     private final long tagsActivos;
     private final long documentosPendientes;
     private final long consultasSoporteEsperando;
+    private final long reclamosPendientes;
 
     public MetricasAdminResponseDTO(
             long comerciosPendientes,
@@ -31,7 +32,8 @@ public class MetricasAdminResponseDTO {
             long categoriasActivas,
             long tagsActivos,
             long documentosPendientes,
-            long consultasSoporteEsperando) {
+            long consultasSoporteEsperando,
+            long reclamosPendientes) {
         this.comerciosPendientes = comerciosPendientes;
         this.resolicitudesPendientes = resolicitudesPendientes;
         this.comerciosTotal = comerciosTotal;
@@ -40,5 +42,6 @@ public class MetricasAdminResponseDTO {
         this.tagsActivos = tagsActivos;
         this.documentosPendientes = documentosPendientes;
         this.consultasSoporteEsperando = consultasSoporteEsperando;
+        this.reclamosPendientes = reclamosPendientes;
     }
 }

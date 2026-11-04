@@ -215,6 +215,12 @@ public class TestController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Historial del pedido retrocedido", null));
     }
 
+    @PutMapping("/pedidos/{id}/envejecer-entrega")
+    public ResponseEntity<ApiResponse<Void>> envejecerEntrega(@PathVariable Integer id, @RequestParam long dias) {
+        testSupportService.envejecerEntrega(id, dias);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Fecha de entrega del pedido retrocedida", null));
+    }
+
     @PostMapping("/jobs/pedidos/{nombre}")
     public ResponseEntity<ApiResponse<Void>> ejecutarProcesoDePedidos(@PathVariable String nombre,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime ahora) {

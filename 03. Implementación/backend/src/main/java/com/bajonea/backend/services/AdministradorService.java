@@ -101,6 +101,7 @@ public class AdministradorService {
     private final ComercioResolicitudesProperties resolicitudesProperties;
     private final DuenoRepository duenoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final com.bajonea.backend.repositories.ReclamoRepository reclamoRepository;
 
     /**
      * Solicitudes nuevas pendientes: comercios {@code PENDIENTE} que nunca se re-solicitaron
@@ -283,7 +284,8 @@ public class AdministradorService {
                 categoriaRepository.countByActivoTrue(),
                 tagRepository.countByActivoTrue(),
                 documentoComercioRepository.countByEstado(EstadoDocumentoComercio.PENDIENTE),
-                ticketSoporteRepository.countByEstado(com.bajonea.backend.enums.EstadoTicketSoporte.ESPERA_SOPORTE));
+                ticketSoporteRepository.countByEstado(com.bajonea.backend.enums.EstadoTicketSoporte.ESPERA_SOPORTE),
+                reclamoRepository.countByEstado(com.bajonea.backend.enums.EstadoReclamo.PENDIENTE));
     }
 
     /**

@@ -10,6 +10,7 @@ import com.bajonea.backend.dto.response.DireccionEntregaResponseDTO;
 import com.bajonea.backend.dto.response.ItemCarritoResponseDTO;
 import com.bajonea.backend.dto.response.PedidoEmpleadoResponseDTO;
 import com.bajonea.backend.dto.response.PedidoResponseDTO;
+import com.bajonea.backend.dto.response.ReclamoPedidoResponseDTO;
 import com.bajonea.backend.entities.Carrito;
 import com.bajonea.backend.entities.Cliente;
 import com.bajonea.backend.entities.Comercio;
@@ -130,6 +131,7 @@ public class PedidoService {
     private final EmpleadoComercioRepository empleadoComercioRepository;
     private final TurnoPedidoService turnoPedidoService;
     private final EstadoUsuarioService estadoUsuarioService;
+    private final ReclamoVistaService reclamoVistaService;
     private final Clock clock;
 
     private static final Logger log = LoggerFactory.getLogger(PedidoService.class);
@@ -897,8 +899,10 @@ public class PedidoService {
         List<Pedido> pedidos = pedidoRepository.findByClienteId(usuarioId);
         Map<Integer, LocalDateTime> fechasPago = fechasPagoAprobado(pedidos);
         Map<Integer, NotaCredito> notas = ultimasNotasCredito(pedidos);
+        Map<Integer, ReclamoPedidoResponseDTO> reclamos = reclamoVistaService.paraCliente(pedidos);
         return pedidos.stream()
-                .map(pedido -> aResponseDTO(pedido, fechasPago.get(pedido.getId()), notas.get(pedido.getId()), null, null))
+                .map(pedido -> aResponseDTO(pedido, fechasPago.get(pedido.getId()), notas.get(pedido.getId()), null, null,
+                        reclamos.get(pedido.getId())))
                 .toList();
     }
 
@@ -913,10 +917,12 @@ public class PedidoService {
         Map<Integer, NotaCredito> notas = ultimasNotasCredito(pedidos);
         Map<Integer, LocalDateTime> listoDesde = fechasListoParaRetirar(pedidos);
         LocalDateTime ahora = LocalDateTime.now(clock);
+        Map<Integer, ReclamoPedidoResponseDTO> reclamos = reclamoVistaService.paraDueno(pedidos);
         return pedidos.stream()
                 .map(pedido -> aResponseDTO(pedido, fechasPago.get(pedido.getId()), notas.get(pedido.getId()),
                         esperaNoRetirado(pedido, listoDesde.get(pedido.getId()), ahora),
-                        limiteDeResolucionPorSuspension(pedido, listoDesde.get(pedido.getId()))))
+                        limiteDeResolucionPorSuspension(pedido, listoDesde.get(pedido.getId())),
+                        reclamos.get(pedido.getId())))
                 .toList();
     }
 
@@ -1361,6 +1367,9 @@ public class PedidoService {
     private Map<Integer, NotaCredito> ultimasNotasCredito(List<Pedido> pedidos) {
         Map<Integer, NotaCredito> ultimas = new HashMap<>();
         for (NotaCredito nota : notaCreditoService.listarPorPedidos(pedidos.stream().map(Pedido::getId).toList())) {
+            if (nota.getMotivo() == MotivoNotaCredito.RECLAMO) {
+                continue;
+            }
             ultimas.merge(nota.getPago().getPedido().getId(), nota,
                     (actual, nueva) -> nueva.getId() > actual.getId() ? nueva : actual);
         }
@@ -1369,7 +1378,8 @@ public class PedidoService {
 
     private PedidoResponseDTO aResponseDTO(Pedido pedido) {
         return aResponseDTO(pedido, fechasPagoAprobado(List.of(pedido)).get(pedido.getId()),
-                ultimasNotasCredito(List.of(pedido)).get(pedido.getId()), null, null);
+                ultimasNotasCredito(List.of(pedido)).get(pedido.getId()), null, null,
+                reclamoVistaService.paraCliente(List.of(pedido)).get(pedido.getId()));
     }
 
     private static DireccionEntregaResponseDTO direccionEntrega(Pedido pedido) {
@@ -1393,7 +1403,8 @@ public class PedidoService {
         return aResponseDTO(pedido, fechasPagoAprobado(List.of(pedido)).get(pedido.getId()),
                 ultimasNotasCredito(List.of(pedido)).get(pedido.getId()),
                 esperaNoRetirado(pedido, listoDesde, LocalDateTime.now(clock)),
-                limiteDeResolucionPorSuspension(pedido, listoDesde));
+                limiteDeResolucionPorSuspension(pedido, listoDesde),
+                reclamoVistaService.paraDueno(List.of(pedido)).get(pedido.getId()));
     }
 
     /**
@@ -1420,7 +1431,7 @@ public class PedidoService {
     }
 
     private PedidoResponseDTO aResponseDTO(Pedido pedido, LocalDateTime fechaPagoAprobado, NotaCredito notaCredito,
-            EsperaNoRetirado espera, LocalDateTime limiteResolucionSuspension) {
+            EsperaNoRetirado espera, LocalDateTime limiteResolucionSuspension, ReclamoPedidoResponseDTO reclamo) {
         List<DetallePedidoResponseDTO> detalles = detallePedidoRepository.findByPedidoId(pedido.getId()).stream()
                 .map(this::aResponseDTO)
                 .toList();
@@ -1457,7 +1468,8 @@ public class PedidoService {
                 espera == null ? null : espera.minutosRestantes(),
                 limiteResolucionSuspension,
                 pedido.getEstado() == EstadoPedido.PENDIENTE_PAGO && pedido.getComercio().getEstado() == EstadoComercio.SUSPENDIDO,
-                notaCredito == null ? null : notaCredito.getMotivo());
+                notaCredito == null ? null : notaCredito.getMotivo(),
+                reclamo);
     }
 
     private DetallePedidoResponseDTO aResponseDTO(DetallePedido detalle) {

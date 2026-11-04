@@ -205,6 +205,19 @@ public class TestSupportService {
     }
 
     /**
+     * Atajo de entorno de test: retrocede {@code dias} la fecha de entrega de un pedido entregado, para probar el plazo
+     * de 7 días de un reclamo sin esperar.
+     */
+    @Transactional
+    public void envejecerEntrega(Integer pedidoId, long dias) {
+        int filas = jdbcTemplate.update("UPDATE pedido SET fecha_entrega = DATE_SUB(fecha_entrega, INTERVAL ? DAY) "
+                + "WHERE id = ? AND fecha_entrega IS NOT NULL", dias, pedidoId);
+        if (filas == 0) {
+            throw new RecursoNoEncontradoException("El pedido no tiene fecha de entrega");
+        }
+    }
+
+    /**
      * Atajo de entorno de test: deja al comercio {@code SUSPENDIDO} con el origen dado (por ejemplo {@code DUENO},
      * que todavía no tiene un camino real) y la suspensión iniciada hace {@code minutos}, cumpliendo el
      * {@code CHECK} de la tabla. No toca pedidos, avisos ni historial.

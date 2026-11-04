@@ -39,7 +39,9 @@ import lombok.Getter;
  * el proceso de los topes resuelve un pedido {@code EN_PREPARACION} o {@code LISTO_PARA_RETIRAR}; {@code null} en cualquier
  * otro caso. {@code comercioNoDisponible} es {@code true} cuando el pedido espera el pago y el comercio está suspendido
  * (la pantalla del Cliente no deja pagar). {@code reembolsoMotivo} es el motivo de la nota de crédito más reciente (nulo si
- * nunca se generó): la pantalla del Cliente lo usa para explicar por qué se canceló un pedido ya pagado.
+ * nunca se generó): la pantalla del Cliente lo usa para explicar por qué se canceló un pedido ya pagado. Los dos campos
+ * de reembolso describen solo las notas de pedidos que no son de un reclamo: {@code reclamo} (bloque propio, por rol, nulo si el
+ * pedido no se puede reclamar ni tiene reclamo) es la única fuente de lo que le pasa a un reclamo.
  */
 @Getter
 public class PedidoResponseDTO {
@@ -75,6 +77,9 @@ public class PedidoResponseDTO {
     private final boolean comercioNoDisponible;
     private final MotivoNotaCredito reembolsoMotivo;
 
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private final ReclamoPedidoResponseDTO reclamo;
+
     public PedidoResponseDTO(
             Integer id,
             Integer clienteId,
@@ -105,7 +110,8 @@ public class PedidoResponseDTO {
             Long noRetiradoMinutosRestantes,
             LocalDateTime limiteResolucionSuspension,
             boolean comercioNoDisponible,
-            MotivoNotaCredito reembolsoMotivo) {
+            MotivoNotaCredito reembolsoMotivo,
+            ReclamoPedidoResponseDTO reclamo) {
         this.id = id;
         this.clienteId = clienteId;
         this.nombreCliente = nombreCliente;
@@ -136,5 +142,6 @@ public class PedidoResponseDTO {
         this.limiteResolucionSuspension = limiteResolucionSuspension;
         this.comercioNoDisponible = comercioNoDisponible;
         this.reembolsoMotivo = reembolsoMotivo;
+        this.reclamo = reclamo;
     }
 }

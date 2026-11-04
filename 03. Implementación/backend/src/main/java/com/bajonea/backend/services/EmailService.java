@@ -7,6 +7,7 @@ import com.resend.core.exception.ResendException;
 import com.resend.core.net.RequestOptions;
 import com.resend.services.emails.model.CreateEmailOptions;
 import com.resend.services.emails.model.CreateEmailResponse;
+import java.math.BigDecimal;
 import java.util.concurrent.atomic.AtomicInteger;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -197,6 +198,25 @@ public class EmailService {
                 "Levantamos la suspensión de tu comercio " + nombreComercio + " en Bajoneá.\n\n"
                         + detalle
                         + "Equipo de Bajoneá");
+    }
+
+    /**
+     * Email al Cliente cuando se resuelve su reclamo (un solo intento, sin reintento automático): si se aprobó dice el
+     * monto que se le devuelve y que puede tardar unos días en acreditarse; si se rechazó, el motivo.
+     */
+    public ResultadoEnvioEmail enviarReclamoResuelto(String destinatario, Integer pedidoId, boolean aprobado, BigDecimal monto,
+            String motivoRechazo) {
+        if (aprobado) {
+            return enviar(destinatario, "Aprobamos tu reclamo del pedido #" + pedidoId + " — Bajoneá",
+                    "Revisamos tu reclamo del pedido #" + pedidoId + " y lo aprobamos.\n\n"
+                            + "Te vamos a devolver " + ResumenTurnoMensajeBuilder.monto(monto) + ". "
+                            + "El reembolso puede tardar unos días en acreditarse, según tu medio de pago.\n\n"
+                            + "Equipo de Bajoneá", null);
+        }
+        return enviar(destinatario, "Resolvimos tu reclamo del pedido #" + pedidoId + " — Bajoneá",
+                "Revisamos tu reclamo del pedido #" + pedidoId + " y no pudimos aprobarlo.\n\n"
+                        + "Motivo: " + motivoRechazo + "\n\n"
+                        + "Equipo de Bajoneá", null);
     }
 
     /**
