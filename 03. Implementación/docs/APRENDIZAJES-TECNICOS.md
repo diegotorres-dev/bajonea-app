@@ -810,3 +810,21 @@ El pendiente anotado en el tramo S2 y S3.1 queda resuelto con la auditoría de `
 ### Estres `a0` y el rechazo del sistema por la suspension (S2.1)
 
 - Desde S2.1 un pedido `PENDIENTE_CONFIRMACION_COMERCIO` de un comercio que se suspende se rechaza solo (`RECHAZADO`, actor `SISTEMA`, `motivo_timeout = SUSPENSION_COMERCIO`) con una nota de credito de motivo `SUSPENSION_COMERCIO` y no `RECHAZO_COMERCIO`. La expectativa del estres decia que todo `RECHAZADO` genera una nota `RECHAZO_COMERCIO`: ahora el motivo esperado de la nota depende de quien rechazo (actor y motivo de la fila de historial). La verificacion sigue exigiendo exactamente una nota y su motivo; solo se corrigio la regla de cual es el motivo.
+
+## Paso 0 de S5 (2026-11-04): lista de pruebas inestables y dos pruebas corregidas
+
+**Lista completa de inestables conocidos hoy** (ninguno es del código de producción; todos pasan al repetirlos de a uno en el mismo entorno donde fallaron):
+
+| Prueba | Causa | Estado |
+|---|---|---|
+| `27-multicomercio-tramo4-selector:507`, `:536` y `:559` | Dependen de adelantar 15 segundos de reloj simulado (sondeo del selector, "una sola consulta de polling por ciclo", "si ya no queda ningún comercio operativo…"). Con la máquina cargada (corrida completa de 35 a 40 minutos) el primero queda con una consulta de menos y el segundo recibe `errores/timeout.html`, porque el tiempo máximo de la llamada también corre con el reloj simulado. | Sin corregir. |
+| `04-carrito:86` | La preparación sube una imagen al Cloudinary real; un `ECONNRESET` de la red corta el `beforeAll` y, como el spec es serial, los 4 tests siguientes no corren. El spec completo pasa 5/5 repetido. | Sin corregir (depende de la red). |
+| `TokenEspacioLlenoIntegrationTest` (Java) | Exige que queden más de 499000 códigos pares libres; sobre una base con restos de varias corridas de Playwright o de Newman hay códigos ocupados y el relleno da menos. Pasa 1/1 sobre una base reseteada. | Sin corregir: la suite de Java se corre sobre una base reseteada (ver la receta del bloque A5). |
+| `25-multicomercio-tramo3b…:751` ("íconos sin tamaño") | **Corregida.** Medía el tamaño de los `svg` justo después de que un elemento fuera visible, sin esperar a que se aplicaran los estilos. Ahora espera `readyState` completo, que todas las hojas de estilo tengan `sheet`, `document.fonts.ready` y, hasta 3 s, que la medición dé bien (`expect.poll`); la aserción final sigue siendo la misma y falla si un ícono queda grande, vacío o la página se desborda. Pasó 6 de 6 repetido y el spec completo 20/20. | Cerrada. |
+| `SoporteColisionDeCodigoIntegrationTest` (Java) | **Corregida.** Creaba consultas con códigos fijos (`CCCC2222`, `EEEE4444`) que quedaban en la base, así que repetir la clase sobre la misma base chocaba con las filas de la corrida anterior. Ahora cada corrida usa códigos aleatorios del alfabeto real de `CodigoConsultaGenerador`; la colisión que verifica (el generador simulado devuelve el mismo código varias veces) sigue intacta. Pasó 2/2 dos veces seguidas sobre la misma base. | Cerrada. |
+
+Otros inestables históricos que siguen en la lista del README de Playwright: `01-registro-y-verificacion:100`, `14-perfil-comercio:124`, `36-empleado-invitacion-ui:541`, `51:151`, `53:304` (subida real a Cloudinary con tope de 5 s) y `06:89`.
+
+**Lo que parecían "20 tests que no corrieron" en la entrega B de S4** eran los tests seriales del spec `53` que quedan sin correr detrás del primer fallo (el `53` afirmaba la lista exacta de filas del perfil y la fila "Mis consultas a Soporte" la cambió; ya se había actualizado). Corrido completo sobre una base reseteada: 21/21.
+
+**Los otros tests de S4 con datos persistentes:** se revisaron las clases de Soporte; el resto usa emails y direcciones IP únicos por prueba (`SoporteIntegrationBase.emailNuevo` e `ipNueva`) y códigos de acceso inexistentes (`ZZZZZZZZ`), que no dejan filas que choquen en otra corrida. No se encontró otro caso.
