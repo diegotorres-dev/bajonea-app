@@ -19,10 +19,14 @@ class SoporteColisionDeCodigoIntegrationTest extends SoporteIntegrationBase {
     @MockitoBean
     private CodigoConsultaGenerador generador;
 
+    private static String codigoNuevo() {
+        return new CodigoConsultaGenerador().generar();
+    }
+
     @Test
     void conUnaColisionReintentaConOtroCodigoYLaConsultaQuedaCompleta() {
-        String repetido = "CCCC2222";
-        String libre = "DDDD3333";
+        String repetido = codigoNuevo();
+        String libre = codigoNuevo();
         when(generador.generar()).thenReturn(repetido);
         ConsultaSoporteCreadaResponseDTO primera = crear(emailNuevo(), ipNueva());
         assertEquals(repetido, primera.getCodigo());
@@ -39,7 +43,7 @@ class SoporteColisionDeCodigoIntegrationTest extends SoporteIntegrationBase {
 
     @Test
     void siTodosLosCodigosColisionanNoQuedaNingunaConsultaMediaHecha() {
-        String repetido = "EEEE4444";
+        String repetido = codigoNuevo();
         when(generador.generar()).thenReturn(repetido);
         crear(emailNuevo(), ipNueva());
         String email = emailNuevo();

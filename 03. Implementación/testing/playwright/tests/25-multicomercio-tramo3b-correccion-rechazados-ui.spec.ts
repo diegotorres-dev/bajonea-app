@@ -734,15 +734,30 @@ test.describe('Multi-comercio, tramo 3B: corrección de comercios rechazados (UI
 
   test.describe('maquetación', () => {
     async function verificarMaquetacion(page: Page, pantalla: string) {
-      const medidas = await page.evaluate(() => ({
-        desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        iconosGrandes: Array.from(document.querySelectorAll('svg'))
-          .filter((svg) => svg.getBoundingClientRect().width > 72 || svg.getBoundingClientRect().height > 72)
-          .map((svg) => `${svg.getBoundingClientRect().width}x${svg.getBoundingClientRect().height}`),
-        iconosVacios: Array.from(document.querySelectorAll('svg'))
-          .filter((svg) => svg.getBoundingClientRect().width === 0 && svg.getClientRects().length > 0)
-          .length,
-      }));
+      await page.waitForFunction(
+        () =>
+          document.readyState === 'complete' &&
+          Array.from(document.querySelectorAll('link[rel="stylesheet"]')).every((enlace) => (enlace as HTMLLinkElement).sheet !== null),
+      );
+      await page.evaluate(() => document.fonts.ready);
+      const medir = () =>
+        page.evaluate(() => ({
+          desborde: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+          iconosGrandes: Array.from(document.querySelectorAll('svg'))
+            .filter((svg) => svg.getBoundingClientRect().width > 72 || svg.getBoundingClientRect().height > 72)
+            .map((svg) => `${svg.getBoundingClientRect().width}x${svg.getBoundingClientRect().height}`),
+          iconosVacios: Array.from(document.querySelectorAll('svg'))
+            .filter((svg) => svg.getBoundingClientRect().width === 0 && svg.getClientRects().length > 0)
+            .length,
+        }));
+      await expect
+        .poll(async () => {
+          const m = await medir();
+          return m.desborde <= 0 && m.iconosGrandes.length === 0 && m.iconosVacios === 0;
+        }, { timeout: 3000 })
+        .toBe(true)
+        .catch(() => undefined);
+      const medidas = await medir();
       expect(medidas.desborde, `desborde horizontal en ${pantalla}`).toBeLessThanOrEqual(0);
       expect(medidas.iconosGrandes, `íconos sin tamaño en ${pantalla}`).toEqual([]);
       expect(medidas.iconosVacios, `íconos colapsados en ${pantalla}`).toBe(0);
