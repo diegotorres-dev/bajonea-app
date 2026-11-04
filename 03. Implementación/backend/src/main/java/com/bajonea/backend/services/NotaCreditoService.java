@@ -36,16 +36,26 @@ public class NotaCreditoService {
     private final NotaCreditoRepository notaCreditoRepository;
 
     public NotaCredito crear(Pago pago, BigDecimal monto, MotivoNotaCredito motivo) {
-        return guardarNueva(pago, monto, motivo, EstadoNotaCredito.PENDIENTE, null);
+        return guardarNueva(pago, monto, motivo, EstadoNotaCredito.PENDIENTE, null, null);
     }
 
     public NotaCredito crearPendienteRevisionManual(Pago pago, BigDecimal monto, MotivoNotaCredito motivo, String motivoRevision) {
-        return guardarNueva(pago, monto, motivo, EstadoNotaCredito.PENDIENTE_REVISION_MANUAL, motivoRevision);
+        return guardarNueva(pago, monto, motivo, EstadoNotaCredito.PENDIENTE_REVISION_MANUAL, motivoRevision, null);
     }
 
-    private NotaCredito guardarNueva(Pago pago, BigDecimal monto, MotivoNotaCredito motivo, EstadoNotaCredito estado, String ultimoError) {
+    public NotaCredito crearDeReclamo(Pago pago, BigDecimal monto, Integer reclamoId) {
+        return guardarNueva(pago, monto, MotivoNotaCredito.RECLAMO, EstadoNotaCredito.PENDIENTE, null, reclamoId);
+    }
+
+    public NotaCredito crearDeReclamoPendienteRevisionManual(Pago pago, BigDecimal monto, Integer reclamoId, String motivoRevision) {
+        return guardarNueva(pago, monto, MotivoNotaCredito.RECLAMO, EstadoNotaCredito.PENDIENTE_REVISION_MANUAL, motivoRevision, reclamoId);
+    }
+
+    private NotaCredito guardarNueva(Pago pago, BigDecimal monto, MotivoNotaCredito motivo, EstadoNotaCredito estado, String ultimoError,
+            Integer reclamoId) {
         NotaCredito notaCredito = NotaCredito.builder()
                 .pago(pago)
+                .reclamoId(reclamoId)
                 .monto(monto)
                 .motivo(motivo)
                 .estado(estado)
@@ -66,6 +76,13 @@ public class NotaCreditoService {
             return List.of();
         }
         return notaCreditoRepository.findByPagoPedidoIdIn(pedidoIds);
+    }
+
+    public List<NotaCredito> listarPorReclamos(Collection<Integer> reclamoIds) {
+        if (reclamoIds.isEmpty()) {
+            return List.of();
+        }
+        return notaCreditoRepository.findByReclamoIdIn(reclamoIds);
     }
 
     public List<NotaCredito> listarPorEstado(EstadoNotaCredito estado) {
@@ -109,6 +126,23 @@ public class NotaCreditoService {
                 .map(NotaCreditoRepository.EstadoYMonto::getMonto)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         return cubierto.compareTo(pago.getMonto()) >= 0;
+    }
+
+    /**
+     * Lo que cubren las otras notas del pago (todas menos la propia), leído con bloqueo. Se llama con la nota propia ya
+     * insertada y la fila del pago bloqueada, por el mismo motivo que {@link #otrasNotasCubrenElPago}.
+     */
+    public BigDecimal montoCubiertoPorOtrasConBloqueo(Integer pagoId, Integer notaCreditoIdPropia) {
+        return notaCreditoRepository.leerOtrasDelPagoConBloqueo(pagoId, notaCreditoIdPropia).stream()
+                .filter(nota -> ESTADOS_QUE_CUBREN_EL_PAGO.contains(EstadoNotaCredito.valueOf(nota.getEstado())))
+                .map(NotaCreditoRepository.EstadoYMonto::getMonto)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public NotaCredito ajustarMonto(Integer notaCreditoId, BigDecimal monto) {
+        NotaCredito notaCredito = obtener(notaCreditoId);
+        notaCredito.setMonto(monto);
+        return notaCreditoRepository.save(notaCredito);
     }
 
     public void eliminar(NotaCredito notaCredito) {

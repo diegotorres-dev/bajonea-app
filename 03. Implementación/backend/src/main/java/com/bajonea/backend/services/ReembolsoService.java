@@ -6,11 +6,14 @@ import com.bajonea.backend.entities.Pago;
 import com.bajonea.backend.entities.Pedido;
 import com.bajonea.backend.enums.EstadoNotaCredito;
 import com.bajonea.backend.enums.MotivoNotaCredito;
+import com.bajonea.backend.enums.TipoResolucionReclamo;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
+import com.bajonea.backend.exceptions.ValidacionCamposException;
 import com.bajonea.backend.services.MercadoPagoReembolsoClient.ResultadoReembolsoMp;
 import com.bajonea.backend.util.EjecucionPostCommit;
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,6 +97,61 @@ public class ReembolsoService {
     }
 
     /**
+     * Crea la nota de crédito de un reclamo aprobado (reembolso total o parcial) y deja pedida la llamada a Mercado Pago
+     * para después del commit. Exige una transacción abierta con el pedido y el pago ya bloqueados y devuelve la nota con
+     * el monto definitivo: en un reembolso total es lo que queda por reembolsar del pago ({@code saldo}) y en uno parcial
+     * el monto pedido, que tiene que ser menor que ese saldo. El saldo se lee <b>después</b> de insertar la nota propia, con
+     * las demás notas del pago bloqueadas (ver {@link NotaCreditoService#otrasNotasCubrenElPago}: una lectura bloqueante
+     * antes del insert toma un bloqueo de intervalo que interbloquea a dos reclamos de pedidos distintos); si algo no
+     * cierra se lanza una excepción y la transacción deshace también la nota, así que el servidor nunca deja una nota que
+     * pase el saldo. Con la cuenta del Dueño desvinculada la nota queda {@code PENDIENTE_REVISION_MANUAL}.
+     */
+    public NotaCredito generarNotaDeReclamo(Pago pago, TipoResolucionReclamo tipo, BigDecimal montoPedido, Integer reclamoId) {
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new IllegalStateException("La nota de crédito de un reclamo se crea dentro de la transacción de su resolución");
+        }
+        if (!esPagoReembolsable(pago)) {
+            throw new ConflictoDeNegocioException("El pago del pedido no está aprobado en Mercado Pago: no hay nada que reembolsar");
+        }
+        boolean total = tipo == TipoResolucionReclamo.REEMBOLSO_TOTAL;
+        BigDecimal montoProvisorio = total ? pago.getMonto() : montoPedido;
+        Integer pedidoId = pago.getPedido().getId();
+        Integer duenoId = pago.getPedido().getComercio().getDueno().getId();
+        Optional<CuentaMercadoPago> cuenta = cuentaMercadoPagoService.buscarActivaPorDueno(duenoId);
+        NotaCredito nota = cuenta.isEmpty()
+                ? notaCreditoService.crearDeReclamoPendienteRevisionManual(pago, montoProvisorio, reclamoId, ERROR_CUENTA_DESVINCULADA)
+                : notaCreditoService.crearDeReclamo(pago, montoProvisorio, reclamoId);
+
+        BigDecimal saldo = pago.getMonto().subtract(notaCreditoService.montoCubiertoPorOtrasConBloqueo(pago.getId(), nota.getId()));
+        if (total) {
+            if (saldo.signum() <= 0) {
+                throw new ConflictoDeNegocioException("Este pedido ya no tiene nada para reembolsar");
+            }
+            nota = notaCreditoService.ajustarMonto(nota.getId(), saldo);
+        } else if (montoPedido.compareTo(saldo) == 0) {
+            throw new ValidacionCamposException(Map.of("monto", "Para devolver todo, elegí reembolso total."));
+        } else if (montoPedido.compareTo(saldo) > 0) {
+            throw new ValidacionCamposException(Map.of("monto",
+                    "El monto supera lo que queda por reembolsar ($" + saldo.toPlainString() + ")."));
+        }
+        if (cuenta.isEmpty()) {
+            log.warn("Pedido {}: cuenta de Mercado Pago del comercio desvinculada, la nota de crédito {} del reclamo {} queda pendiente de revisión manual",
+                    pedidoId, nota.getId(), reclamoId);
+            return nota;
+        }
+        IntentoReembolso intento = new IntentoReembolso(nota.getId(), pago.getIdTransaccionMp(), cuenta.get().getAccessToken(),
+                nota.getMonto(), pago.getMonto(), nota.getIntentos() + 1, pedidoId, MotivoNotaCredito.RECLAMO);
+        EjecucionPostCommit.ejecutar(() -> {
+            try {
+                solicitarYRegistrar(intento);
+            } catch (RuntimeException ex) {
+                log.error("Reembolso del reclamo {} (pedidoId={}) terminó con un error inesperado", reclamoId, pedidoId, ex);
+            }
+        });
+        return nota;
+    }
+
+    /**
      * Reintento manual (Administrador) de una nota que quedó en {@code PENDIENTE_REVISION_MANUAL} o
      * {@code FALLIDO}. Mismo flujo que el reembolso original, pero sobre la nota existente en vez de
      * crear una nueva. A diferencia de la llamada a Mercado Pago que sigue a un cambio de estado, acá sí se lanzan las
@@ -108,16 +166,19 @@ public class ReembolsoService {
 
     private void solicitarYRegistrar(IntentoReembolso intento) {
         String idempotencyKey = "nc-" + intento.notaCreditoId() + "-" + intento.numeroIntento();
-        ResultadoReembolsoMp resultado = reembolsoClient.solicitarReembolsoTotal(intento.paymentId(), intento.accessToken(), idempotencyKey);
+        boolean parcial = intento.monto().compareTo(intento.montoPago()) < 0;
+        ResultadoReembolsoMp resultado = parcial
+                ? reembolsoClient.solicitarReembolsoParcial(intento.paymentId(), intento.accessToken(), idempotencyKey, intento.monto())
+                : reembolsoClient.solicitarReembolsoTotal(intento.paymentId(), intento.accessToken(), idempotencyKey);
 
         transaccion.executeWithoutResult(status -> {
             if (resultado.exitoso()) {
                 notaCreditoService.registrarReembolsoExitoso(intento.notaCreditoId(), resultado.refundId());
-                log.info("Reembolso total del pedidoId={} ({}) procesado: refundId={}, monto={}",
+                log.info("Reembolso del pedidoId={} ({}) procesado: refundId={}, monto={}",
                         intento.pedidoId(), intento.motivo(), resultado.refundId(), intento.monto());
             } else {
                 notaCreditoService.registrarReembolsoFallido(intento.notaCreditoId(), resultado.error());
-                log.error("Reembolso total del pedidoId={} ({}) FALLIDO: {}", intento.pedidoId(), intento.motivo(), resultado.error());
+                log.error("Reembolso del pedidoId={} ({}) FALLIDO: {}", intento.pedidoId(), intento.motivo(), resultado.error());
             }
         });
     }
@@ -148,7 +209,7 @@ public class ReembolsoService {
         int numeroIntento = nota.getIntentos() + 1;
         notaCreditoService.marcarEnProceso(nota.getId());
         return new IntentoReembolso(nota.getId(), pago.getIdTransaccionMp(), cuenta.getAccessToken(), nota.getMonto(),
-                numeroIntento, pedidoId, nota.getMotivo());
+                pago.getMonto(), numeroIntento, pedidoId, nota.getMotivo());
     }
 
     private PreparacionReembolso prepararIntento(Integer pedidoId, MotivoNotaCredito motivo) {
@@ -180,10 +241,10 @@ public class ReembolsoService {
             return new PreparacionReembolso(null, true);
         }
         return new PreparacionReembolso(new IntentoReembolso(nota.getId(), pago.getIdTransaccionMp(), cuenta.get().getAccessToken(),
-                pago.getMonto(), nota.getIntentos() + 1, pedidoId, motivo), true);
+                pago.getMonto(), pago.getMonto(), nota.getIntentos() + 1, pedidoId, motivo), true);
     }
 
-    private static boolean esPagoReembolsable(Pago pago) {
+    static boolean esPagoReembolsable(Pago pago) {
         return ESTADO_PAGO_APROBADO.equals(pago.getMpEstado())
                 && pago.getFechaConfirmacion() != null
                 && pago.getIdTransaccionMp() != null;
@@ -195,6 +256,6 @@ public class ReembolsoService {
     }
 
     private record IntentoReembolso(Integer notaCreditoId, String paymentId, String accessToken, BigDecimal monto,
-            int numeroIntento, Integer pedidoId, MotivoNotaCredito motivo) {
+            BigDecimal montoPago, int numeroIntento, Integer pedidoId, MotivoNotaCredito motivo) {
     }
 }
