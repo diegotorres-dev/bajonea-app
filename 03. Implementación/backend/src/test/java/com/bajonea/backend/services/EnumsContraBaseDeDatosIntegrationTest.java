@@ -115,4 +115,11 @@ class EnumsContraBaseDeDatosIntegrationTest {
         compararConLaColumna("historial_estado_usuario", "estado_origen", com.bajonea.backend.enums.EstadoUsuario.values(), Set.of());
         compararConLaColumna("historial_estado_usuario", "estado_destino", com.bajonea.backend.enums.EstadoUsuario.values(), Set.of());
     }
+
+    @Test
+    void losEnumsDeReclamoCoincidenConLaBase() {
+        compararConLaColumna("reclamo", "motivo", com.bajonea.backend.enums.MotivoReclamo.values(), Set.of());
+        compararConLaColumna("reclamo", "estado", com.bajonea.backend.enums.EstadoReclamo.values(), Set.of());
+        compararConLaColumna("reclamo", "tipo_resolucion", com.bajonea.backend.enums.TipoResolucionReclamo.values(), Set.of());
+    }
 }

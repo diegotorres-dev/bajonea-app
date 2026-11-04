@@ -5,7 +5,10 @@ import com.sun.net.httpserver.HttpServer;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,6 +27,7 @@ final class MercadoPagoSimulado {
 
     static final int BASE_ID_PAGO = 300000;
 
+    private static final Pattern MONTO = Pattern.compile("\"amount\"\\s*:\\s*([0-9.]+)");
     private static final Pattern CODIGO_OAUTH = Pattern.compile("\"code\"\\s*:\\s*\"c(\\d+)\"");
 
     private final HttpServer servidor;
@@ -34,6 +38,9 @@ final class MercadoPagoSimulado {
     private final AtomicInteger reembolsos = new AtomicInteger();
     private final AtomicInteger tokens = new AtomicInteger();
     private final Map<Integer, String> estadosPorPedido = new ConcurrentHashMap<>();
+    private final List<String> cuerposDeReembolsos = new CopyOnWriteArrayList<>();
+    private final List<String> clavesDeReembolsos = new CopyOnWriteArrayList<>();
+    private final AtomicReference<String> fallaDeReembolsos = new AtomicReference<>();
 
     MercadoPagoSimulado() {
         try {
@@ -78,6 +85,18 @@ final class MercadoPagoSimulado {
         return reembolsos.get();
     }
 
+    List<String> cuerposDeReembolsos() {
+        return List.copyOf(cuerposDeReembolsos);
+    }
+
+    List<String> clavesDeReembolsos() {
+        return List.copyOf(clavesDeReembolsos);
+    }
+
+    void reembolsosFallanCon(String cuerpoDelError) {
+        fallaDeReembolsos.set(cuerpoDelError);
+    }
+
     int tokensEmitidos() {
         return tokens.get();
     }
@@ -108,7 +127,20 @@ final class MercadoPagoSimulado {
                         + "\",\"sandbox_init_point\":\"https://mp.test/sandbox/" + n + "\"}";
             } else if (metodo.equals("POST") && ruta.matches("/v1/payments/\\d+/refunds")) {
                 int n = reembolsos.incrementAndGet();
-                cuerpo = "{\"id\":" + (900000 + n) + ",\"status\":\"approved\"}";
+                String cuerpoPedido = new String(pedido, StandardCharsets.UTF_8);
+                cuerposDeReembolsos.add(cuerpoPedido);
+                clavesDeReembolsos.add(String.valueOf(intercambio.getRequestHeaders().getFirst("X-Idempotency-Key")));
+                String falla = fallaDeReembolsos.get();
+                if (falla != null) {
+                    byte[] error = falla.getBytes(StandardCharsets.UTF_8);
+                    intercambio.getResponseHeaders().add("Content-Type", "application/json");
+                    intercambio.sendResponseHeaders(400, error.length);
+                    intercambio.getResponseBody().write(error);
+                    return;
+                }
+                Matcher monto = MONTO.matcher(cuerpoPedido);
+                cuerpo = "{\"id\":" + (900000 + n) + ",\"status\":\"approved\""
+                        + (monto.find() ? ",\"amount\":" + monto.group(1) : "") + "}";
             } else if (metodo.equals("POST") && ruta.equals("/oauth/token")) {
                 Matcher codigo = CODIGO_OAUTH.matcher(new String(pedido, StandardCharsets.UTF_8));
                 if (!codigo.find()) {

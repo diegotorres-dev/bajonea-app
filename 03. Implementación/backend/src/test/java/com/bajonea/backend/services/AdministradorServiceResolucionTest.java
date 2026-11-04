@@ -80,7 +80,8 @@ class AdministradorServiceResolucionTest {
                 mock(RedSocialRepository.class), administradorRepository, historialRepository, mock(ClienteRepository.class), mock(NotificacionRepository.class), mock(HistorialEstadoUsuarioRepository.class),
                 mock(CategoriaRepository.class), mock(TagRepository.class), notificacionService,
                 aptitudService, mock(DocumentoComercioRepository.class), mock(com.bajonea.backend.repositories.TicketSoporteRepository.class), mock(AprobacionPreviaDueno.class),
-                mock(HistorialCambioComercioRepository.class), propiedades, mock(DuenoRepository.class), mock(UsuarioRepository.class));
+                mock(HistorialCambioComercioRepository.class), propiedades, mock(DuenoRepository.class), mock(UsuarioRepository.class),
+                mock(com.bajonea.backend.repositories.ReclamoRepository.class));
 
         Usuario usuario = Usuario.builder().id(DUENO_ID).build();
         Dueno dueno = Dueno.builder().id(DUENO_ID)

@@ -110,7 +110,7 @@ class PedidoNoRetiradoServiceTest {
                 mock(DireccionRepository.class), historialRepository, usuarioRepository, notificacionService,
                 mock(CarritoService.class), mock(ComercioService.class), mock(ConfiguracionTarifaService.class), timeouts,
                 reembolsoService, notaCreditoService, mock(PlatformTransactionManager.class), comercioActivoService,
-                mock(EmpleadoComercioRepository.class), mock(TurnoPedidoService.class), mock(EstadoUsuarioService.class), RELOJ);
+                mock(EmpleadoComercioRepository.class), mock(TurnoPedidoService.class), mock(EstadoUsuarioService.class), mock(ReclamoVistaService.class), RELOJ);
         ReflectionTestUtils.setField(pedidoService, "entityManager", entityManager);
 
         ParticipantesPedido participantes = mock(ParticipantesPedido.class);
