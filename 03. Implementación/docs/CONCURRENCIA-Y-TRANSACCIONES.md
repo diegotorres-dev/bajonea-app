@@ -571,3 +571,34 @@ Los 18 estreses del runner (`correr-estreses.mjs`, incluidos `carrito` con el ba
 | Emails después del commit, ninguno si se revierte, sin reintentos, sin datos personales en el log | `SoporteEmailsIntegrationTest`, `EmailServiceSoporteTest` |
 | Colisión del código (reintento y agotamiento) | `SoporteColisionDeCodigoIntegrationTest` |
 | Ráfagas mezcladas con y sin sesión, respuestas, cierres y accesos erróneos con el pool por defecto | `stress-locks-tramoSoporte.mjs` (id `soporte`, escenario 22) |
+
+## Reclamos — Fase 5, tramo S5 (2026-11-04)
+
+**Dónde queda el reclamo en el orden global.** `reclamo` es una hoja que va **después de `pago`** y antes de las hojas de Soporte: `usuario` (compartido, id ascendente) → `empleado_comercio` → `dueno`/`cuenta_mercado_pago` → `comercio` → `documento_comercio` → `producto`/`pedido` (`FOR UPDATE`) → `pago` (`FOR UPDATE`) → **`reclamo` (`FOR UPDATE`)** → inserts (`nota_credito`, `notificacion`, historiales) → `carrito`. Ninguna otra operación toma un reclamo antes que su pedido, así que el orden no puede cruzarse. Crear y resolver toman exactamente la misma secuencia (`PedidoService.bloquearParaActualizar` reutilizado: usuarios compartidos, pedido), así que se serializan por el pedido.
+
+| Operación | Qué toma, en orden |
+|---|---|
+| Crear un reclamo (Cliente) | pedido ajeno → `404` sin bloqueo (lectura simple) → usuarios (Cliente, Dueño) S → pedido X (primera lectura bloqueante) → pago X → revalida con las filas bloqueadas (existente, estado, pago, fecha, plazo, motivo contra modalidad) → inserta el reclamo (el `UNIQUE uq_reclamo_pedido` es la red) |
+| Resolver (Administrador) | **lectura previa del id del pedido** en una transacción de solo lectura propia y corta (no sostiene conexión) → usuarios (Administrador, Cliente, Dueño) S → pedido X → pago X (solo con reembolso) → reclamo X (consulta bloqueante, nunca `findById`) → revalida que siga `PENDIENTE` → nota de crédito (insert, después lectura bloqueante de las demás notas del pago) → actualiza el reclamo → avisos → commit → llamada a Mercado Pago y emails (`EjecucionPostCommit`) |
+| Reintento del reembolso de una nota | sin cambios: nota X → pago X (ver `ReembolsoService.reintentarNotaCredito`). Manda el monto de la nota |
+| Bandeja, detalle, bloque por rol | sin bloqueos |
+
+**Tres decisiones que salieron de errores posibles.**
+
+1. **El Administrador entra por el id del reclamo, pero el orden empieza por el pedido.** Como el pedido va antes que el reclamo y el id del pedido hay que saberlo para tomarlo, se lee en una transacción propia, corta y de solo lectura (sin conexión retenida, regla 16): un valor suelto, nunca una entidad. Lo decidido nunca se apoya en esa lectura: se revalida todo con las filas ya bloqueadas.
+2. **La foto de la transacción.** `bloquearParaActualizar` empieza con una lectura simple de los participantes del pedido, y esa lectura fija la foto (REPEATABLE READ) **antes** de esperar el bloqueo. Si otro Administrador resuelve el reclamo mientras la segunda transacción espera, una lectura simple del reclamo vería `PENDIENTE` y duplicaría la resolución. Por eso el reclamo se lee con `@Lock(PESSIMISTIC_WRITE)` (`ReclamoRepository.findByIdParaActualizar`), que lee lo último confirmado, y se revalida el estado. `ReclamoFotoDeLaTransaccionIntegrationTest` lo prueba sin azar (una conexión aparte sostiene el pedido, otra hace la operación, se escribe lo que "otra pestaña" confirmó y se suelta) y las mutaciones M1, M2 y M3 lo detectan.
+3. **El saldo se lee después de insertar la nota propia, no antes.** Una lectura bloqueante sobre un pago sin notas toma un bloqueo de intervalo del índice `idx_nota_credito_pago` y dos resoluciones de pedidos distintos se interbloquean al insertar (el mismo caso que `NotaCreditoService.otrasNotasCubrenElPago`, ver `docs/APRENDIZAJES-TECNICOS.md`). `ReembolsoService.generarNotaDeReclamo` inserta la nota con el monto provisorio (el del pedido, o el total del pago), lee las demás notas con bloqueo, calcula el saldo (`pago.monto` menos las notas vivas: `PENDIENTE`, `PROCESADO`, `PENDIENTE_REINTENTO` y `PENDIENTE_REVISION_MANUAL`; las `FALLIDO` no cuentan) y, si algo no cierra, lanza la excepción y la transacción deshace también la nota: el servidor nunca deja una nota que pase el saldo. El reembolso total ajusta el monto de la nota al saldo.
+
+**Un reclamo por pedido sin bloquear un intervalo.** La creación no usa una lectura bloqueante que no encuentra nada (en un índice único toma un bloqueo de intervalo y dos creaciones de pedidos distintos se interbloquearían): lee con una consulta simple y confía en `uq_reclamo_pedido`. La que llega segunda ve la foto vieja, choca con el único, la transacción se deshace entera y el servicio traduce el error (`DataIntegrityViolationException` con el nombre del índice) al mismo `409` que un reclamo ya existente. Un único de MariaDB admite varios nulos, así que `nota_credito.reclamo_id` (`UNIQUE`) deja una sola nota por reclamo y todas las demás notas (con `NULL`) no se tocan (`elUnicoDeReclamoId...` lo verifica contra la base).
+
+**Llamadas externas.** La llamada a Mercado Pago (reembolso total o parcial) y los emails salen por `EjecucionPostCommit` (reglas 16 y 17): después del commit, sin conexión tomada, y no salen si la transacción se revierte. El resultado de Mercado Pago se registra en una transacción corta aparte (`solicitarYRegistrar`). Una falla deja el reclamo `APROBADO` y la nota `FALLIDO` con el motivo; el reintento (`admin-reembolsos`) manda el monto de la nota.
+
+**Cómo se prueba.**
+
+| Qué | Prueba |
+|---|---|
+| Diez creaciones del mismo pedido; dos resoluciones del mismo reclamo; total contra parcial contra rechazo; resolución contra reintento de su nota; resolución contra la suspensión del Cliente y del Dueño; creación contra la suspensión del Cliente; seis resoluciones y ocho creaciones de pedidos distintos a la vez (8 repeticiones de cada una) | `ReclamoConcurrenciaIntegrationTest` |
+| La creación y la resolución esperan el bloqueo del pedido y deciden con lo último confirmado | `ReclamoFotoDeLaTransaccionIntegrationTest` |
+| Ni el email ni Mercado Pago con una conexión tomada (pool de 3 conexiones, 1,5 s de latencia en cada uno) | `ReclamoPoolDiminutoIntegrationTest` |
+| Ráfagas de creaciones y resoluciones mezcladas, reintentos con falla simulada y suspensión del Cliente, pool por defecto de 10 | `stress-locks-tramoReclamos.mjs` (id `reclamos`, escenario 23) |
+| Mutaciones (corrida base verde obligatoria) | `mutaciones-reclamos-s5.mjs` |
