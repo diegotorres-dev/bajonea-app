@@ -5,6 +5,8 @@ const BASE_ID_PAGO = 100000;
 const DEMORA_MS = Number(process.env.MP_STUB_DEMORA_MS || 60);
 
 const estados = new Map();
+const reembolsos = [];
+let fallaDeReembolsos = null;
 const contadores = { consultas: 0, preferencias: 0, reembolsos: 0, tokens: 0 };
 
 const pago = (pedidoId) => ({
@@ -33,9 +35,25 @@ const servidor = createServer((req, res) => {
       estados.set(Number(control[1]), url.searchParams.get('estado') || 'approved');
       return responder({ pedido: Number(control[1]), estado: estados.get(Number(control[1])) }, 200, 0);
     }
+    if (url.pathname === '/__control/reembolsos' && req.method === 'GET') return responder({ reembolsos }, 200, 0);
+    if (url.pathname === '/__control/reembolsos/falla' && req.method === 'PUT') {
+      fallaDeReembolsos = url.searchParams.get('mensaje');
+      return responder({ falla: fallaDeReembolsos }, 200, 0);
+    }
     if (req.method === 'POST' && /^\/v1\/payments\/\d+\/refunds$/.test(url.pathname)) {
       contadores.reembolsos += 1;
-      return responder({ id: 900000 + contadores.reembolsos, status: 'approved' });
+      const texto = Buffer.concat(cuerpoPedido).toString('utf8');
+      let cuerpo = {};
+      try {
+        cuerpo = texto ? JSON.parse(texto) : {};
+      } catch {
+        cuerpo = {};
+      }
+      reembolsos.push({ pago: Number(url.pathname.split('/')[3]), amount: cuerpo.amount ?? null, clave: req.headers['x-idempotency-key'] || null });
+      if (fallaDeReembolsos) return responder({ message: fallaDeReembolsos, error: 'bad_request', status: 400 }, 400);
+      const respuesta = { id: 900000 + contadores.reembolsos, status: 'approved' };
+      if (cuerpo.amount !== undefined) respuesta.amount = cuerpo.amount;
+      return responder(respuesta);
     }
     if (req.method === 'POST' && url.pathname === '/checkout/preferences') {
       contadores.preferencias += 1;
