@@ -3,7 +3,7 @@ import { readFileSync, mkdirSync, existsSync, unlinkSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { resolverAdminPassword } from './lib/admin-password.mjs';
+import { resolverAdminPassword, leerSecretosLocales } from './lib/admin-password.mjs';
 
 const aqui = path.dirname(fileURLToPath(import.meta.url));
 const postman = path.resolve(aqui, '../../../postman');
@@ -44,6 +44,13 @@ async function localidadRioGrande() {
   return localidades.find((l) => /r[ií]o grande/i.test(l.nombre)).id;
 }
 
+let secretos;
+try {
+  secretos = leerSecretosLocales();
+} catch (error) {
+  console.error(error.message);
+  process.exit(2);
+}
 const password = resolverAdminPassword();
 const localidadId = await localidadRioGrande();
 mkdirSync(reportes, { recursive: true });
@@ -53,7 +60,7 @@ const resumenes = [];
 
 for (let vuelta = 1; vuelta <= repeticiones; vuelta += 1) {
   const exportado = path.join(os.tmpdir(), `newman-${process.pid}-${vuelta}.json`);
-  const args = ['run', coleccion, '-e', entorno, '--env-var', `base_url=${base}`, '--env-var', `localidad_id=${localidadId}`, '--env-var', `admin_password=${password}`,
+  const args = ['run', coleccion, '-e', entorno, '--env-var', `base_url=${base}`, '--env-var', `localidad_id=${localidadId}`, '--env-var', `admin_password=${password}`, ...Object.entries(secretos).filter(([clave]) => clave !== 'admin_password').flatMap(([clave, valor]) => ['--env-var', `${clave}=${valor}`]),
     '--reporters', 'cli,json', '--reporter-json-export', exportado, '--color', 'off', '--working-dir', path.resolve(aqui, '..')];
   if (!todas) {
     for (const carpeta of carpetas) args.push('--folder', carpeta);
