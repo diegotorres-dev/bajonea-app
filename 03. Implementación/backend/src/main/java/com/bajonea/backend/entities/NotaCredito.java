@@ -41,6 +41,9 @@ public class NotaCredito {
     @JoinColumn(name = "pago_id", nullable = false)
     private Pago pago;
 
+    @Column(name = "reclamo_id", updatable = false)
+    private Integer reclamoId;
+
     @Setter
     @Column(name = "monto", precision = 10, scale = 2, nullable = false)
     private BigDecimal monto;

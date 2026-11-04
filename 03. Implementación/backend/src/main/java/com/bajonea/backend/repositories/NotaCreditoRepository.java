@@ -18,6 +18,8 @@ public interface NotaCreditoRepository extends JpaRepository<NotaCredito, Intege
 
     List<NotaCredito> findByPagoPedidoIdIn(Collection<Integer> pedidoIds);
 
+    List<NotaCredito> findByReclamoIdIn(Collection<Integer> reclamoIds);
+
     List<NotaCredito> findByEstado(EstadoNotaCredito estado);
 
     List<NotaCredito> findByEstadoInOrderByFechaEmisionDesc(Collection<EstadoNotaCredito> estados);

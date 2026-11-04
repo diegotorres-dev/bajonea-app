@@ -12,6 +12,8 @@ public interface PagoRepository extends JpaRepository<Pago, Integer> {
 
     Optional<Pago> findByPedidoId(Integer pedidoId);
 
+    java.util.List<Pago> findByPedidoIdIn(java.util.Collection<Integer> pedidoIds);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select p from Pago p where p.pedido.id = :pedidoId")
     Optional<Pago> findByPedidoIdParaActualizar(@Param("pedidoId") Integer pedidoId);
