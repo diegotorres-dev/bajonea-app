@@ -22,6 +22,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * El Cliente reclama un pedido ya entregado. Un reclamo por pedido ({@code UNIQUE uq_reclamo_pedido}). La creación toma
@@ -42,13 +43,15 @@ public class ReclamoService {
     private final ReclamoRepository reclamoRepository;
     private final ReclamoVistaService vistaService;
     private final PoliticaReclamo politica;
+    private final ReclamoFotoService fotoService;
     private final Clock clock;
     private final TransactionTemplate transaccion;
     private final TransactionTemplate transaccionDeLectura;
 
     public ReclamoService(PedidoService pedidoService, PagoService pagoService, PedidoRepository pedidoRepository,
-            ReclamoRepository reclamoRepository, ReclamoVistaService vistaService, PoliticaReclamo politica, Clock clock,
-            PlatformTransactionManager transactionManager) {
+            ReclamoRepository reclamoRepository, ReclamoVistaService vistaService, PoliticaReclamo politica,
+            ReclamoFotoService fotoService, Clock clock, PlatformTransactionManager transactionManager) {
+        this.fotoService = fotoService;
         this.pedidoService = pedidoService;
         this.pagoService = pagoService;
         this.pedidoRepository = pedidoRepository;
@@ -62,8 +65,13 @@ public class ReclamoService {
     }
 
     public ReclamoPedidoResponseDTO crear(Integer usuarioId, Integer pedidoId, ReclamoRequestDTO request) {
+        return crear(usuarioId, pedidoId, request, List.of());
+    }
+
+    public ReclamoPedidoResponseDTO crear(Integer usuarioId, Integer pedidoId, ReclamoRequestDTO request, List<MultipartFile> fotosRecibidas) {
+        List<ReclamoFotoService.FotoValidada> fotos = fotoService.validar(fotosRecibidas);
         try {
-            transaccion.executeWithoutResult(estado -> crearBloqueado(usuarioId, pedidoId, request));
+            transaccion.executeWithoutResult(estado -> crearBloqueado(usuarioId, pedidoId, request, fotos));
         } catch (DataIntegrityViolationException ex) {
             if (esChoqueDelUnicoPorPedido(ex)) {
                 throw new ConflictoDeNegocioException(PoliticaReclamo.MENSAJE_YA_EXISTE);
@@ -77,7 +85,7 @@ public class ReclamoService {
         });
     }
 
-    private void crearBloqueado(Integer usuarioId, Integer pedidoId, ReclamoRequestDTO request) {
+    private void crearBloqueado(Integer usuarioId, Integer pedidoId, ReclamoRequestDTO request, List<ReclamoFotoService.FotoValidada> fotos) {
         pedidoService.obtenerPedidoDelCliente(usuarioId, pedidoId);
         Pedido pedido = pedidoService.bloquearParaActualizar(pedidoId, usuarioId);
         Pago pago = pagoService.buscarPorPedidoParaActualizar(pedidoId).orElse(null);
@@ -93,13 +101,14 @@ public class ReclamoService {
         if (request.getMotivo() == MotivoReclamo.NO_RECIBI_PEDIDO && pedido.getTipoEntrega() != TipoEntrega.DOMICILIO) {
             throw new ValidacionCamposException(Map.of("motivo", PoliticaReclamo.MENSAJE_NO_RECIBI_EN_RETIRO));
         }
-        reclamoRepository.saveAndFlush(Reclamo.builder()
+        Reclamo reclamo = reclamoRepository.saveAndFlush(Reclamo.builder()
                 .pedidoId(pedidoId)
                 .motivo(request.getMotivo())
                 .descripcion(request.getDescripcion())
                 .fechaCreacion(ahora)
                 .estado(EstadoReclamo.PENDIENTE)
                 .build());
+        fotoService.guardar(reclamo.getId(), fotos, ahora);
     }
 
     private static boolean esChoqueDelUnicoPorPedido(Throwable ex) {

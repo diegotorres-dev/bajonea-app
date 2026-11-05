@@ -62,6 +62,9 @@ public final class ReclamoAdminResponseDTO {
             String ultimoError) {
     }
 
+    public record Foto(Integer id, Integer orden, String nombre, String tipoContenido, Integer tamanoBytes) {
+    }
+
     public record Detalle(
             Integer id,
             EstadoReclamo estado,
@@ -76,6 +79,7 @@ public final class ReclamoAdminResponseDTO {
             Boolean reembolsoEnProceso,
             PedidoDelReclamo pedido,
             BigDecimal saldoReembolsable,
-            Reembolso reembolso) {
+            Reembolso reembolso,
+            List<Foto> fotos) {
     }
 }

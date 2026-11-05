@@ -34,12 +34,14 @@ public class ReclamoVistaService {
     private final PagoRepository pagoRepository;
     private final NotaCreditoService notaCreditoService;
     private final PoliticaReclamo politica;
+    private final ReclamoFotoService fotoService;
     private final Clock clock;
 
     public Map<Integer, ReclamoPedidoResponseDTO> paraCliente(List<Pedido> pedidos) {
         List<Integer> ids = pedidos.stream().map(Pedido::getId).toList();
         Map<Integer, Reclamo> reclamos = reclamosPorPedido(ids);
         Map<Integer, NotaCredito> notas = notasPorReclamo(reclamos);
+        Map<Integer, Integer> fotos = fotoService.contarPorReclamo(reclamos.values().stream().map(Reclamo::getId).toList());
         List<Integer> entregadosSinReclamo = pedidos.stream()
                 .filter(p -> p.getEstado() == EstadoPedido.ENTREGADO && !reclamos.containsKey(p.getId()))
                 .map(Pedido::getId).toList();
@@ -52,13 +54,13 @@ public class ReclamoVistaService {
         for (Pedido pedido : pedidos) {
             Reclamo reclamo = reclamos.get(pedido.getId());
             if (reclamo != null) {
-                vista.put(pedido.getId(), deCliente(pedido, reclamo, notas.get(reclamo.getId())));
+                vista.put(pedido.getId(), deCliente(pedido, reclamo, notas.get(reclamo.getId()), fotos.getOrDefault(reclamo.getId(), 0)));
             } else if (pedido.getEstado() == EstadoPedido.ENTREGADO) {
                 Pago pago = pagos.get(pedido.getId());
                 boolean puede = politica.motivoDeNoElegible(pedido, pago, ahora) == null;
                 vista.put(pedido.getId(), new ReclamoPedidoResponseDTO(puede, politica.fechaLimite(pedido),
                         puede ? politica.motivosDisponibles(pedido) : null, null, null, null, null, null, null, null, null, null,
-                        politica.avisoPlazoVencido(pedido, pago, ahora)));
+                        politica.avisoPlazoVencido(pedido, pago, ahora), null));
             }
         }
         return vista;
@@ -87,17 +89,17 @@ public class ReclamoVistaService {
         return notas;
     }
 
-    private ReclamoPedidoResponseDTO deCliente(Pedido pedido, Reclamo reclamo, NotaCredito nota) {
+    private ReclamoPedidoResponseDTO deCliente(Pedido pedido, Reclamo reclamo, NotaCredito nota, int cantidadFotos) {
         return new ReclamoPedidoResponseDTO(false, politica.fechaLimite(pedido), null, reclamo.getId(), reclamo.getMotivo(),
                 reclamo.getEstado(), reclamo.getFechaCreacion(), reclamo.getTipoResolucion(), reclamo.getMontoAprobado(),
                 reclamo.getEstado() == EstadoReclamo.RECHAZADO ? reclamo.getNotaResolucion() : null, reclamo.getFechaResolucion(),
-                enProceso(reclamo, nota), null);
+                enProceso(reclamo, nota), null, cantidadFotos);
     }
 
     private ReclamoPedidoResponseDTO deDueno(Reclamo reclamo, NotaCredito nota) {
         return new ReclamoPedidoResponseDTO(null, null, null, null, reclamo.getMotivo(), reclamo.getEstado(),
                 reclamo.getFechaCreacion(), reclamo.getTipoResolucion(), reclamo.getMontoAprobado(), null,
-                reclamo.getFechaResolucion(), enProceso(reclamo, nota), null);
+                reclamo.getFechaResolucion(), enProceso(reclamo, nota), null, null);
     }
 
     static Boolean enProceso(Reclamo reclamo, NotaCredito nota) {

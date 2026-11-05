@@ -46,6 +46,14 @@ public class GlobalExceptionHandler {
         this(new DocumentacionComercioProperties());
     }
 
+    private com.bajonea.backend.config.ReclamoFotosProperties reclamoFotosProperties =
+            new com.bajonea.backend.config.ReclamoFotosProperties();
+
+    @Autowired(required = false)
+    public void setReclamoFotosProperties(com.bajonea.backend.config.ReclamoFotosProperties reclamoFotosProperties) {
+        this.reclamoFotosProperties = reclamoFotosProperties;
+    }
+
     @Autowired
     public GlobalExceptionHandler(DocumentacionComercioProperties documentacionProperties) {
         this.documentacionProperties = documentacionProperties;
@@ -143,6 +151,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ApiResponse<>(ex.getMessage(), null));
     }
 
+    @ExceptionHandler(ValidacionFotoReclamoException.class)
+    public ResponseEntity<ApiResponse<?>> handleValidacionFotoReclamo(ValidacionFotoReclamoException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse<>(ex.getMessage(), ex.getData()));
+    }
+
     @ExceptionHandler(ValidacionDocumentoException.class)
     public ResponseEntity<ApiResponse<?>> handleValidacionDocumento(ValidacionDocumentoException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse<>(ex.getMessage(), ex.getData()));
@@ -156,6 +169,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiResponse<?>> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex,
             HttpServletRequest request) {
+        if (request.getRequestURI() != null && request.getRequestURI().endsWith("/reclamo")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponse<>(
+                    "Las fotos pesan demasiado. Cada foto puede tener hasta " + TamanoLegible.formatear(reclamoFotosProperties.getMaxBytes()),
+                    Map.of("codigo", ValidacionFotoReclamoException.TAMANO_EXCEDIDO)));
+        }
         long maximo = documentacionProperties.getMaxBytes();
         long recibido = request.getContentLengthLong();
         String mensaje = recibido > maximo

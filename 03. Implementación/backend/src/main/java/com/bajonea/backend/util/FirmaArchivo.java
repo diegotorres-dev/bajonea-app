@@ -40,6 +40,19 @@ public final class FirmaArchivo {
         return Optional.empty();
     }
 
+    public static Optional<String> detectarImagen(byte[] contenido) {
+        return detectar(contenido).filter(tipo -> !PDF.equals(tipo));
+    }
+
+    public static boolean esHeic(byte[] contenido) {
+        if (contenido == null || contenido.length < 12 || !coincide(contenido, 4, new byte[] {'f', 't', 'y', 'p'})) {
+            return false;
+        }
+        String marca = new String(contenido, 8, 4, java.nio.charset.StandardCharsets.US_ASCII);
+        return marca.equals("heic") || marca.equals("heix") || marca.equals("hevc") || marca.equals("hevx")
+                || marca.equals("heim") || marca.equals("heis") || marca.equals("mif1") || marca.equals("msf1");
+    }
+
     private static boolean empiezaCon(byte[] contenido, byte[] firma) {
         return contenido.length >= firma.length && coincide(contenido, 0, firma);
     }

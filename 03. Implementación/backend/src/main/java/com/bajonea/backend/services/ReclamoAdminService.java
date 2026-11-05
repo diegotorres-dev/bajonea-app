@@ -70,6 +70,7 @@ public class ReclamoAdminService {
     private final ReembolsoService reembolsoService;
     private final AvisoReclamoService avisos;
     private final PoliticaReclamo politica;
+    private final ReclamoFotoService fotoService;
     private final Clock clock;
     private final TransactionTemplate transaccion;
     private final TransactionTemplate transaccionDeLectura;
@@ -77,7 +78,8 @@ public class ReclamoAdminService {
     public ReclamoAdminService(ReclamoRepository reclamoRepository, PedidoRepository pedidoRepository,
             DetallePedidoRepository detallePedidoRepository, PedidoService pedidoService, PagoService pagoService,
             NotaCreditoService notaCreditoService, ReembolsoService reembolsoService, AvisoReclamoService avisos,
-            PoliticaReclamo politica, Clock clock, PlatformTransactionManager transactionManager) {
+            PoliticaReclamo politica, Clock clock, PlatformTransactionManager transactionManager, ReclamoFotoService fotoService) {
+        this.fotoService = fotoService;
         this.reclamoRepository = reclamoRepository;
         this.pedidoRepository = pedidoRepository;
         this.detallePedidoRepository = detallePedidoRepository;
@@ -118,6 +120,10 @@ public class ReclamoAdminService {
     public ReclamoAdminResponseDTO.Detalle detalle(Integer id) {
         return transaccionDeLectura.execute(estado -> armarDetalle(reclamoRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException(MENSAJE_NO_ENCONTRADO))));
+    }
+
+    public ReclamoFotoService.FotoDescargable foto(Integer reclamoId, Integer fotoId) {
+        return transaccionDeLectura.execute(estado -> fotoService.descargar(reclamoId, fotoId));
     }
 
     public ReclamoAdminResponseDTO.Detalle resolver(Integer administradorUsuarioId, Integer reclamoId, ResolverReclamoRequestDTO request) {
@@ -214,7 +220,7 @@ public class ReclamoAdminService {
         return new ReclamoAdminResponseDTO.Detalle(reclamo.getId(), reclamo.getEstado(), reclamo.getMotivo(), reclamo.getDescripcion(),
                 reclamo.getFechaCreacion(), politica.fechaLimite(pedido), reclamo.getTipoResolucion(), reclamo.getMontoAprobado(),
                 reclamo.getNotaResolucion(), reclamo.getFechaResolucion(), ReclamoVistaService.enProceso(reclamo, nota), datosPedido,
-                saldo, reembolso);
+                saldo, reembolso, fotoService.listar(reclamo.getId()));
     }
 
     private static ReclamoAdminResponseDTO.Resumen aResumen(FilaBandeja fila) {
