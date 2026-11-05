@@ -47,6 +47,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AptitudVentaComercioService {
 
+    public static final java.util.Set<EstadoComercio> ESTADOS_INACTIVABLES = java.util.EnumSet.of(EstadoComercio.APROBADO,
+            EstadoComercio.APTO_VENTA, EstadoComercio.CERRADO_TEMPORALMENTE);
+
     static final String DETALLE_BLOQUEO_VIGENTE_AL_APROBAR = "Bloqueo de cuenta vigente al aprobar";
     static final String DETALLE_BLOQUEO_VIGENTE_AL_VINCULAR = "Bloqueo de cuenta vigente al vincular Mercado Pago";
     static final String DETALLE_BLOQUEO_VIGENTE_AL_REVISAR = "Bloqueo de cuenta vigente al revisar la documentación";
@@ -214,6 +217,23 @@ public class AptitudVentaComercioService {
         }
         comercioService.registrarTransicionAutomatica(comercio, EstadoComercio.APTO_VENTA,
                 EstadoComercio.CERRADO_TEMPORALMENTE, detalle);
+        return true;
+    }
+
+    /**
+     * Inactivación automática de la cuenta del Dueño: el comercio ya está tomado {@code FOR UPDATE} por quien llama
+     * (después de la fila del usuario, antes de revisar nada más) y pasa a {@code INACTIVO} si sigue siendo
+     * {@code APROBADO}, {@code APTO_VENTA} o {@code CERRADO_TEMPORALMENTE}. Un comercio {@code SUSPENDIDO} (o en
+     * cualquier otro estado) no se toca. Deja una fila de historial sin administrador. Devuelve {@code true} si hizo la
+     * transición.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public boolean inactivarPorInactividad(Comercio comercio, String detalle) {
+        EstadoComercio origen = comercio.getEstado();
+        if (!ESTADOS_INACTIVABLES.contains(origen)) {
+            return false;
+        }
+        comercioService.registrarTransicionAutomatica(comercio, origen, EstadoComercio.INACTIVO, detalle);
         return true;
     }
 

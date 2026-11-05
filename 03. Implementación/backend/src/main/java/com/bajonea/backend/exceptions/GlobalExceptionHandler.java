@@ -119,6 +119,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiResponse<>(ex.getMessage(), ex.getData()));
     }
 
+    @ExceptionHandler(CuentaInactivaException.class)
+    public ResponseEntity<ApiResponse<?>> handleCuentaInactiva(CuentaInactivaException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiResponse<>(ex.getMessage(), ex.getData()));
+    }
+
     @ExceptionHandler(ConflictoComercioException.class)
     public ResponseEntity<ApiResponse<?>> handleConflictoComercio(ConflictoComercioException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)

@@ -29,6 +29,9 @@ public interface ComercioRepository extends JpaRepository<Comercio, Integer> {
     @Query("SELECT c.id FROM Comercio c WHERE c.dueno.id = :duenoId ORDER BY c.id")
     List<Integer> findIdsByDuenoId(@Param("duenoId") Integer duenoId);
 
+    @Query("SELECT c.id FROM Comercio c WHERE c.dueno.id = :duenoId AND c.estado IN :estados ORDER BY c.id")
+    List<Integer> findIdsByDuenoIdAndEstadoIn(@Param("duenoId") Integer duenoId, @Param("estados") Collection<EstadoComercio> estados);
+
     /** Cantidad de comercios por Dueño en una sola consulta: cada fila es {@code [duenoId, cantidad]}. */
     @Query("SELECT c.dueno.id, COUNT(c) FROM Comercio c GROUP BY c.dueno.id")
     List<Object[]> contarComerciosPorDueno();

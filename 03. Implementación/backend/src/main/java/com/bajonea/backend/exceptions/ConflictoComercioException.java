@@ -41,6 +41,7 @@ public class ConflictoComercioException extends ConflictoDeNegocioException {
     public static final String MENSAJE_PEDIDO_PROPIO = "No podés gestionar tus propios pedidos";
 
     public static final String SUSPENDIDO = "COMERCIO_SUSPENDIDO";
+    public static final String INACTIVO = "COMERCIO_INACTIVO";
     public static final String SIN_OPERACION = "COMERCIO_SIN_OPERACION";
     public static final String SIN_PEDIDOS = "COMERCIO_SIN_PEDIDOS";
     public static final String MENSAJE_SIN_PEDIDOS = "Este comercio no está recibiendo pedidos por ahora. Probá con otro comercio.";

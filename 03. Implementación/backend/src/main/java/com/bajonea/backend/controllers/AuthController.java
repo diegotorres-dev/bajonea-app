@@ -95,6 +95,14 @@ public class AuthController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Login exitoso", response));
     }
 
+    @PostMapping("/reactivar-cuenta/con-credenciales")
+    public ResponseEntity<ApiResponse<LoginResponseDTO>> reactivarConCredenciales(@Valid @RequestBody LoginRequestDTO request,
+            HttpServletRequest httpRequest) {
+        LoginResponseDTO response = authService.reactivarConCredenciales(request, httpRequest.getRemoteAddr(),
+                httpRequest.getHeader(HttpHeaders.USER_AGENT));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Cuenta reactivada correctamente", response));
+    }
+
     @GetMapping("/verificar/{token}")
     public ResponseEntity<ApiResponse<Void>> verificarEmail(@PathVariable String token) {
         authService.verificarEmail(token);

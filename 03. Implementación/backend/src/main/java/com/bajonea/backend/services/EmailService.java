@@ -146,6 +146,19 @@ public class EmailService {
                         + "Equipo de Bajoneá");
     }
 
+    public ResultadoEnvioEmail enviarCuentaInactivada(String destinatario, java.util.List<String> comercios) {
+        String detalleComercios = comercios.isEmpty()
+                ? ""
+                : "Tus comercios (" + String.join(", ", comercios) + ") dejaron de estar disponibles: no aparecen en el catálogo "
+                        + "ni reciben pedidos nuevos hasta que reactives tu cuenta.\n\n";
+        return enviarAvisoDeCuenta(destinatario, "Tu cuenta de Bajoneá quedó inactiva por falta de uso",
+                "Tu cuenta de Bajoneá quedó inactiva porque pasaron 3 meses sin que la uses.\n\n"
+                        + detalleComercios
+                        + "Para volver, iniciá sesión con tu usuario y tu contraseña y elegí reactivar tu cuenta. "
+                        + "No perdés ningún dato.\n\n"
+                        + "Equipo de Bajoneá");
+    }
+
     public ResultadoEnvioEmail enviarSuspensionLevantada(String destinatario, String motivo) {
         String detalle = motivo == null || motivo.isBlank() ? "" : "Mensaje del equipo: " + motivo + "\n\n";
         return enviarAvisoDeCuenta(destinatario, "Tu cuenta de Bajoneá volvió a estar activa",

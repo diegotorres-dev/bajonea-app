@@ -22,6 +22,7 @@ import com.bajonea.backend.dto.response.ReSolicitudComercioAdminResponseDTO;
 import com.bajonea.backend.dto.response.SuspensionClientePreviaResponseDTO;
 import com.bajonea.backend.dto.response.SuspensionComercioPreviaResponseDTO;
 import com.bajonea.backend.dto.response.SuspensionComercioResponseDTO;
+import com.bajonea.backend.dto.response.ReactivacionCuentaResponseDTO;
 import com.bajonea.backend.dto.response.SuspensionUsuarioResponseDTO;
 import com.bajonea.backend.enums.EstadoEnvioNotificacion;
 import com.bajonea.backend.enums.EstadoNotaCredito;
@@ -30,6 +31,7 @@ import com.bajonea.backend.services.ConfiguracionTarifaService;
 import com.bajonea.backend.services.EquipoComercioAdminService;
 import com.bajonea.backend.services.NotaCreditoAdminService;
 import com.bajonea.backend.services.SuspensionComercioService;
+import com.bajonea.backend.services.ReactivacionCuentaAdminService;
 import com.bajonea.backend.services.SuspensionDuenoService;
 import com.bajonea.backend.services.SuspensionUsuarioService;
 import jakarta.validation.Valid;
@@ -63,6 +65,7 @@ public class AdministradorController {
     private final SuspensionUsuarioService suspensionUsuarioService;
     private final SuspensionComercioService suspensionComercioService;
     private final SuspensionDuenoService suspensionDuenoService;
+    private final ReactivacionCuentaAdminService reactivacionCuentaAdminService;
 
     @GetMapping("/comercios/pendientes")
     public ResponseEntity<ApiResponse<List<ComercioAdminResponseDTO>>> listarComerciosPendientes() {
@@ -220,6 +223,13 @@ public class AdministradorController {
             @AuthenticationPrincipal AuthenticatedUser administrador) {
         SuspensionUsuarioResponseDTO respuesta = suspensionUsuarioService.levantar(clienteId, administrador.userId(), request);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Suspensión levantada correctamente", respuesta));
+    }
+
+    @PutMapping("/cuentas/{usuarioId}/reactivar")
+    public ResponseEntity<ApiResponse<ReactivacionCuentaResponseDTO>> reactivarCuenta(@PathVariable Integer usuarioId,
+            @AuthenticationPrincipal AuthenticatedUser administrador) {
+        ReactivacionCuentaResponseDTO respuesta = reactivacionCuentaAdminService.reactivar(usuarioId, administrador.userId());
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Cuenta reactivada correctamente", respuesta));
     }
 
     @PostMapping("/clientes/{clienteId}/suspension/reenviar-email")

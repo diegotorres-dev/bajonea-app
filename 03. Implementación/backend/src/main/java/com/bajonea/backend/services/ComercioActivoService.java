@@ -41,7 +41,8 @@ public class ComercioActivoService {
     public static final String HEADER_COMERCIO_ID = "X-Comercio-Id";
 
     public static final Set<EstadoComercio> ESTADOS_ACCESIBLES_EMPLEADO = Set.of(EstadoComercio.APROBADO,
-            EstadoComercio.APTO_VENTA, EstadoComercio.SUSPENDIDO, EstadoComercio.CERRADO_TEMPORALMENTE);
+            EstadoComercio.APTO_VENTA, EstadoComercio.SUSPENDIDO, EstadoComercio.CERRADO_TEMPORALMENTE,
+            EstadoComercio.INACTIVO);
 
     private static final Set<EstadoComercio> ESTADOS_OPERATIVOS = Set.of(EstadoComercio.APROBADO, EstadoComercio.APTO_VENTA);
 
@@ -154,6 +155,10 @@ public class ComercioActivoService {
         if (estadoComercio == EstadoComercio.SUSPENDIDO) {
             throw new ConflictoComercioException(ConflictoComercioException.SUSPENDIDO,
                     "El comercio está suspendido: por ahora no se puede modificar.");
+        }
+        if (estadoComercio == EstadoComercio.INACTIVO) {
+            throw new ConflictoComercioException(ConflictoComercioException.INACTIVO,
+                    "El comercio está inactivo: por ahora no se puede modificar.");
         }
     }
 

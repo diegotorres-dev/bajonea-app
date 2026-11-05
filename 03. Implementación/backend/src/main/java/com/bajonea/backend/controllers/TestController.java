@@ -9,6 +9,8 @@ import com.bajonea.backend.enums.OrigenSuspensionComercio;
 import com.bajonea.backend.enums.TipoToken;
 import com.bajonea.backend.repositories.CierreTurnoRepository;
 import com.bajonea.backend.services.CierreTurnoJob;
+import com.bajonea.backend.services.InactivacionCuentaJob;
+import com.bajonea.backend.services.InactivacionCuentaService;
 import com.bajonea.backend.services.DisponibilidadComercioService;
 import com.bajonea.backend.services.EmailService;
 import com.bajonea.backend.services.InvitacionVencimientoJob;
@@ -56,6 +58,7 @@ public class TestController {
     private final PrecioBloqueoProperties precioBloqueoProperties;
     private final DocumentacionComercioProperties documentacionComercioProperties;
     private final CierreTurnoJob cierreTurnoJob;
+    private final InactivacionCuentaJob inactivacionCuentaJob;
     private final CierreTurnoRepository cierreTurnoRepository;
     private final EmailService emailService;
     private final Clock clock;
@@ -129,6 +132,29 @@ public class TestController {
                 ? invitacionVencimientoJob.vencerInvitaciones(LocalDateTime.now(clock))
                 : invitacionVencimientoJob.vencerInvitaciones(ahora);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Job de vencimiento de invitaciones ejecutado", vencidas));
+    }
+
+    @PutMapping("/usuarios/{id}/ultimo-acceso")
+    public ResponseEntity<ApiResponse<LocalDateTime>> fijarUltimoAcceso(@PathVariable Integer id,
+            @RequestParam(defaultValue = "0") int meses, @RequestParam(defaultValue = "0") int dias,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime fecha) {
+        LocalDateTime fijada = testSupportService.fijarUltimoAcceso(id, meses, dias, fecha);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Último acceso fijado para la prueba", fijada));
+    }
+
+    @PutMapping("/pedidos/{id}/envejecer-creacion")
+    public ResponseEntity<ApiResponse<Void>> envejecerCreacionDePedido(@PathVariable Integer id,
+            @RequestParam(defaultValue = "0") int meses, @RequestParam(defaultValue = "0") int dias) {
+        testSupportService.envejecerPedido(id, meses, dias);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Fecha del pedido adelantada", null));
+    }
+
+    @PostMapping("/jobs/inactivacion-cuentas")
+    public ResponseEntity<ApiResponse<InactivacionCuentaService.ResultadoCorrida>> ejecutarInactivacionDeCuentas(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime ahora) {
+        LocalDateTime momento = ahora == null ? LocalDateTime.now(clock).withNano(0) : ahora;
+        InactivacionCuentaService.ResultadoCorrida resultado = inactivacionCuentaJob.inactivarCuentas(momento);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Inactivación por falta de uso ejecutada", resultado));
     }
 
     @PostMapping("/jobs/backfill-turnos")

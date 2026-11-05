@@ -74,6 +74,24 @@ public class AvisoCuentaService {
                 () -> emailService.enviarCuentaSuspendida(email, motivo)));
     }
 
+    /**
+     * Inactivación automática por falta de uso: aviso dentro de la app, un aviso por cada comercio inactivado (si es
+     * un Dueño) y un solo email, después del commit, con un único intento y rastro en una fila {@code EMAIL}.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void avisarInactivacion(Integer usuarioId, String email, List<ComercioAvisado> inactivados) {
+        String mensaje = "Tu cuenta quedó inactiva por falta de uso. Iniciá sesión para reactivarla.";
+        notificacionService.crearParaCliente(usuarioId, mensaje, TipoNotificacion.CUENTA_INACTIVADA);
+        for (ComercioAvisado comercio : inactivados) {
+            notificacionService.crearParaDueno(usuarioId, comercio.id(),
+                    "Tu comercio '" + comercio.nombre() + "' dejó de estar disponible porque tu cuenta quedó inactiva.",
+                    TipoNotificacion.COMERCIO_INACTIVADO, TipoEntidadNotificacion.COMERCIO, comercio.id());
+        }
+        List<String> nombres = inactivados.stream().map(ComercioAvisado::nombre).toList();
+        EjecucionPostCommit.ejecutar(() -> enviarYRegistrar(usuarioId, mensaje, TipoNotificacion.CUENTA_INACTIVADA,
+                () -> emailService.enviarCuentaInactivada(email, nombres)));
+    }
+
     @Transactional(propagation = Propagation.MANDATORY)
     public void avisarLevantamiento(Integer usuarioId, String email, String motivo) {
         String mensaje = "Levantamos la suspensión de tu cuenta."

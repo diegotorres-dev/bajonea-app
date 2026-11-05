@@ -26,6 +26,7 @@ import com.bajonea.backend.enums.TipoCierreSesion;
 import com.bajonea.backend.enums.TipoToken;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.CredencialesInvalidasException;
+import com.bajonea.backend.exceptions.CuentaInactivaException;
 import com.bajonea.backend.exceptions.CuentaSuspendidaException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.exceptions.ValidacionException;
@@ -98,6 +99,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final EmailService emailService;
     private final EstadoUsuarioService estadoUsuarioService;
+    private final ReactivacionCuentaService reactivacionCuentaService;
 
     public LoginResponseDTO login(LoginRequestDTO request, String ipOrigen, String userAgent) {
         // findByNombreUsuarioConBloqueo (SELECT ... FOR UPDATE): serializa requests concurrentes contra
@@ -108,15 +110,19 @@ public class AuthService {
         // Una cuenta suspendida no revela su estado hasta que se prueba la contraseña, y una contraseña incorrecta
         // en ella no suma intentos (no hay nada que bloquear): el mensaje es el mismo genérico de cualquier error.
         boolean suspendida = usuario.getEstado() == EstadoUsuario.SUSPENDIDO;
-        if (!suspendida) {
+        boolean inactiva = usuario.getEstado() == EstadoUsuario.INACTIVO;
+        if (!suspendida && !inactiva) {
             validarEstadoParaLogin(usuario);
+        }
+        if (inactiva) {
+            exigirSinIntentosAgotados(usuario);
         }
 
         if (!passwordEncoder.matches(request.getPassword(), usuario.getPasswordHash())) {
             if (suspendida) {
                 throw new CredencialesInvalidasException(MENSAJE_CREDENCIALES_INVALIDAS);
             }
-            int intentosRestantes = registrarIntentoFallido(usuario);
+            int intentosRestantes = inactiva ? registrarIntentoFallidoDeCuentaInactiva(usuario) : registrarIntentoFallido(usuario);
             throw new CredencialesInvalidasException(
                     MENSAJE_CREDENCIALES_INVALIDAS, Map.of("intentosRestantes", intentosRestantes));
         }
@@ -124,7 +130,51 @@ public class AuthService {
         if (suspendida) {
             throw new CuentaSuspendidaException(usuario.getMotivoSuspension());
         }
+        if (inactiva) {
+            usuario.setIntentosFallidos(0);
+            usuarioRepository.save(usuario);
+            throw new CuentaInactivaException();
+        }
 
+        return iniciarSesion(usuario, ipOrigen, userAgent);
+    }
+
+    /**
+     * Reactiva con usuario y contraseña una cuenta inactiva por falta de uso y deja la sesión iniciada. Mismos
+     * límites de intentos fallidos que el login (a los 3 la cuenta queda a la espera de recuperar la contraseña, que
+     * también la reactiva) y la misma respuesta uniforme: una cuenta que no existe o que no está inactiva recibe el
+     * mensaje de credenciales incorrectas, sin contar intentos, para no revelar su estado.
+     */
+    public LoginResponseDTO reactivarConCredenciales(LoginRequestDTO request, String ipOrigen, String userAgent) {
+        Usuario usuario = usuarioRepository.findByNombreUsuarioConBloqueo(request.getNombreUsuario())
+                .orElseThrow(() -> new CredencialesInvalidasException(MENSAJE_CREDENCIALES_INVALIDAS));
+        if (usuario.getEstado() != EstadoUsuario.INACTIVO) {
+            throw new CredencialesInvalidasException(MENSAJE_CREDENCIALES_INVALIDAS);
+        }
+        exigirSinIntentosAgotados(usuario);
+        if (!passwordEncoder.matches(request.getPassword(), usuario.getPasswordHash())) {
+            int intentosRestantes = registrarIntentoFallidoDeCuentaInactiva(usuario);
+            throw new CredencialesInvalidasException(
+                    MENSAJE_CREDENCIALES_INVALIDAS, Map.of("intentosRestantes", intentosRestantes));
+        }
+        reactivacionCuentaService.reactivar(usuario, MOTIVO_REACTIVACION_CUENTA, MOTIVO_RESTAURACION_REACTIVACION, null);
+        return iniciarSesion(usuario, ipOrigen, userAgent);
+    }
+
+    private void exigirSinIntentosAgotados(Usuario usuario) {
+        if (usuario.getIntentosFallidos() >= MAX_INTENTOS_FALLIDOS) {
+            throw new ConflictoDeNegocioException(MensajesEstadoCuenta.conflictoDeLogin(EstadoUsuario.BLOQUEADO));
+        }
+    }
+
+    private int registrarIntentoFallidoDeCuentaInactiva(Usuario usuario) {
+        int intentos = usuario.getIntentosFallidos() + 1;
+        usuario.setIntentosFallidos(intentos);
+        usuarioRepository.save(usuario);
+        return Math.max(MAX_INTENTOS_FALLIDOS - intentos, 0);
+    }
+
+    private LoginResponseDTO iniciarSesion(Usuario usuario, String ipOrigen, String userAgent) {
         usuario.setIntentosFallidos(0);
         usuario.setFechaUltimoAcceso(LocalDateTime.now());
         usuarioRepository.save(usuario);
@@ -244,7 +294,10 @@ public class AuthService {
 
         // Recuperar la contraseña nunca levanta una suspensión: la cuenta suspendida cambia la contraseña y sigue
         // suspendida (y sus comercios no se restauran).
-        if (usuario.getEstado() != EstadoUsuario.SUSPENDIDO) {
+        if (usuario.getEstado() == EstadoUsuario.INACTIVO) {
+            reactivacionCuentaService.reactivar(usuario, MOTIVO_DESBLOQUEO_RECUPERACION, MOTIVO_RESTAURACION_RECUPERACION, null);
+            cerrarSesionActivaSiExiste(usuario, TipoCierreSesion.FORZADO);
+        } else if (usuario.getEstado() != EstadoUsuario.SUSPENDIDO) {
             estadoUsuarioService.cambiar(usuario, EstadoUsuario.ACTIVO, MOTIVO_DESBLOQUEO_RECUPERACION, null);
             cerrarSesionActivaSiExiste(usuario, TipoCierreSesion.FORZADO);
             restaurarComercioSiCorresponde(usuario, EstadoComercio.CERRADO_TEMPORALMENTE, MOTIVO_RESTAURACION_RECUPERACION);
@@ -370,11 +423,8 @@ public class AuthService {
                 request.getEmail(), request.getCodigo(), TipoToken.REACTIVACION_CUENTA);
         consumirToken(tokenEntity);
 
-        Usuario usuario = tokenEntity.getUsuario();
-        if (usuario.getEstado() == EstadoUsuario.INACTIVO) {
-            estadoUsuarioService.cambiar(usuario, EstadoUsuario.ACTIVO, MOTIVO_REACTIVACION_CUENTA, null);
-            restaurarComercioSiCorresponde(usuario, EstadoComercio.INACTIVO, MOTIVO_RESTAURACION_REACTIVACION);
-        }
+        reactivacionCuentaService.reactivar(tokenEntity.getUsuario(), MOTIVO_REACTIVACION_CUENTA,
+                MOTIVO_RESTAURACION_REACTIVACION, null);
     }
 
     public void logout(Integer sesionId) {

@@ -108,6 +108,7 @@ public class SecurityConfig {
             "/api/v1/auth/recuperar-password/confirmar",
             "/api/v1/auth/reactivar-cuenta",
             "/api/v1/auth/reactivar-cuenta/confirmar",
+            "/api/v1/auth/reactivar-cuenta/con-credenciales",
             "/api/v1/auth/invitaciones-empleado/validar",
             "/api/v1/auth/invitaciones-empleado/aceptar",
             "/api/v1/soporte/publico/consultas",

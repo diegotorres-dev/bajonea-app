@@ -205,6 +205,34 @@ public class TestSupportService {
     }
 
     /**
+     * Atajo de entorno de test: deja el último acceso de la cuenta {@code meses} meses antes de ahora (reloj de la
+     * aplicación) más {@code dias} días, o exactamente en {@code fecha} si se indica.
+     */
+    @Transactional
+    public LocalDateTime fijarUltimoAcceso(Integer usuarioId, int meses, int dias, LocalDateTime fecha) {
+        LocalDateTime nueva = fecha != null ? fecha
+                : LocalDateTime.now(clock).withNano(0).minusMonths(meses).minusDays(dias);
+        int filas = jdbcTemplate.update("UPDATE usuario SET fecha_ultimo_acceso = ? WHERE id = ?", nueva, usuarioId);
+        if (filas == 0) {
+            throw new RecursoNoEncontradoException("Usuario no encontrado");
+        }
+        return nueva;
+    }
+
+    /**
+     * Atajo de entorno de test: retrocede {@code meses} meses y {@code dias} días la fecha de creación de un pedido, para
+     * probar la actividad reciente de un comercio sin esperar.
+     */
+    @Transactional
+    public void envejecerPedido(Integer pedidoId, int meses, int dias) {
+        int filas = jdbcTemplate.update("UPDATE pedido SET fecha_creacion = DATE_SUB(DATE_SUB(fecha_creacion, INTERVAL ? MONTH), "
+                + "INTERVAL ? DAY) WHERE id = ?", meses, dias, pedidoId);
+        if (filas == 0) {
+            throw new RecursoNoEncontradoException("Pedido no encontrado");
+        }
+    }
+
+    /**
      * Atajo de entorno de test: retrocede {@code dias} la fecha de entrega de un pedido entregado, para probar el plazo
      * de 7 días de un reclamo sin esperar.
      */
