@@ -8581,6 +8581,18 @@ button.panel-comercios__fila:focus-visible {
   overflow-wrap: anywhere;
 }
 
+.reclamo-bloque__error-frase {
+  margin: 0;
+  font-weight: 700;
+}
+
+.reclamo-bloque__error-detalle {
+  margin: 6px 0 0;
+  font-size: 12px;
+  opacity: 0.85;
+  overflow-wrap: anywhere;
+}
+
 .reclamo-bloque .btn {
   align-self: stretch;
 }
@@ -8657,4 +8669,180 @@ button.panel-comercios__fila:focus-visible {
 
 .reclamo-saldo {
   margin-top: 16px;
+}
+
+.reclamo-fotos {
+  gap: 8px;
+}
+
+.reclamo-fotos__lista {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reclamo-fotos__item {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+}
+
+.reclamo-fotos__vista {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.reclamo-fotos__imagen {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.reclamo-fotos__sin-vista {
+  padding: 4px;
+  font-size: 12px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.reclamo-fotos__nombre {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reclamo-fotos__quitar {
+  min-height: 44px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-error);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reclamo-fotos__quitar:disabled,
+.reclamo-fotos__agregar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.reclamo-fotos__agregar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  min-height: 44px;
+  border: 1px dashed var(--color-text-muted);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.reclamo-fotos__agregar svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.reclamo-fotos__quitar:focus-visible,
+.reclamo-fotos__agregar:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.reclamo-fotos-admin__lista {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reclamo-fotos-admin__miniatura {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.reclamo-fotos-admin__miniatura img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.reclamo-fotos-admin__miniatura:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.reclamo-fotos-admin__texto {
+  padding: 4px;
+  text-align: center;
+}
+
+.reclamo-visor {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.85);
+}
+
+.reclamo-visor__imagen {
+  max-width: 100%;
+  max-height: calc(100vh - 120px);
+  object-fit: contain;
+}
+
+.reclamo-visor__cerrar {
+  min-height: 44px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
 }

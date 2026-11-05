@@ -82,6 +82,9 @@ export function crearBloqueReclamoCliente(reclamo, totalPagado) {
     ]),
     texto('p', 'reclamo-bloque__linea', `${etiquetaMotivoReclamo(reclamo.motivo)} · Enviado el ${fechaDelReclamo(reclamo.fechaCreacion)}`, { 'data-testid': 'linea-reclamo' }),
   ];
+  if (reclamo.cantidadFotos > 0) {
+    hijos.push(texto('p', 'reclamo-bloque__linea', reclamo.cantidadFotos === 1 ? 'Adjuntaste 1 foto.' : `Adjuntaste ${reclamo.cantidadFotos} fotos.`, { 'data-testid': 'texto-fotos-reclamo' }));
+  }
   if (reclamo.estado === 'PENDIENTE') {
     hijos.push(texto('p', 'reclamo-bloque__texto', 'Lo estamos revisando. Te avisamos cuando tengamos novedades.', { 'data-testid': 'texto-reclamo-pendiente' }));
   } else if (reclamo.estado === 'APROBADO') {

@@ -4,10 +4,12 @@ import { renderTopBar, showToast } from './catalogo.js';
 import { h, crearSvg, setLoading } from './form-utils.js';
 import { texto } from './admin-hojas.js';
 import { crearAvisoDeError, erroresPorCampo, limpiarError, mensajeDeApi, mostrarError } from './soporte-comun.js';
+import { crearSelectorDeFotos } from './reclamo-fotos.js';
 import { MAX_DESCRIPCION_RECLAMO, MIN_DESCRIPCION_RECLAMO, etiquetaMotivoReclamo } from './reclamos-comun.js';
 
 const OPCIONES_API = { handle5xxGlobally: false, handleRedGlobally: false };
 const CAMPOS_CON_ERROR = ['motivo', 'descripcion'];
+const TIMEOUT_ENVIO_MS = 120000;
 
 function crearCampoError(id) {
   return h('div', { class: 'field__error', id: `error-${id}`, role: 'alert', style: 'display:none;', 'data-testid': `error-${id}` });
@@ -83,9 +85,11 @@ function pintarFormulario(contenedor, pedido) {
     h('div', { class: 'textarea-counter' }, [contador]),
     crearCampoError('reclamo-descripcion'),
   ]);
+  const selectorDeFotos = crearSelectorDeFotos();
   const formulario = h('form', { class: 'form', novalidate: true, 'data-testid': 'formulario-reclamo' }, [
     campoMotivo,
     campoDescripcion,
+    selectorDeFotos.elemento,
     texto('p', 'soporte-privacidad', 'Podés enviar un solo reclamo por pedido y después no se puede cambiar.', { 'data-testid': 'texto-un-solo-reclamo' }),
     aviso,
     enviar,
@@ -105,16 +109,22 @@ function pintarFormulario(contenedor, pedido) {
     limpiarError(aviso);
     CAMPOS_CON_ERROR.forEach((campo) => mostrarErrorDeCampo(`reclamo-${campo}`, ''));
     setLoading(enviar, 'Enviando…', true);
+    selectorDeFotos.bloquear(true);
+    const datos = new FormData();
+    datos.append('reclamo', new Blob([JSON.stringify({ motivo: select.value || null, descripcion: area.value })], { type: 'application/json' }));
+    selectorDeFotos.archivos().forEach((archivo) => datos.append('fotos', archivo, archivo.name));
     try {
       await apiFetch(`/pedidos/cliente/${pedido.id}/reclamo`, {
         ...OPCIONES_API,
         method: 'POST',
-        body: { motivo: select.value || null, descripcion: area.value },
+        body: datos,
+        timeoutMs: TIMEOUT_ENVIO_MS,
       });
       showToast('Reclamo enviado');
       pintarConfirmacion(contenedor, pedido.id);
     } catch (error) {
       setLoading(enviar, '', false, 'Enviar reclamo');
+      selectorDeFotos.bloquear(false);
       const porCampo = erroresPorCampo(error);
       if (porCampo) {
         let primero = null;

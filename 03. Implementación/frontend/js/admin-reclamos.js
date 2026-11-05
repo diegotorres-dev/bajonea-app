@@ -172,6 +172,26 @@ function abrirModalConfirmar({ mensaje, opener, alConfirmar, alFallar }) {
   });
 }
 
+const FRASE_REEMBOLSO_FALLIDO = 'Mercado Pago no pudo hacer el reembolso.';
+const FRASE_SALDO_INSUFICIENTE = 'El comercio no tiene saldo suficiente en Mercado Pago para este reembolso.';
+
+function partirErrorDeReembolso(ultimoError) {
+  const original = String(ultimoError || '').trim();
+  if (original.startsWith(FRASE_SALDO_INSUFICIENTE)) {
+    return { frase: FRASE_SALDO_INSUFICIENTE, detalle: original.slice(FRASE_SALDO_INSUFICIENTE.length).trim() };
+  }
+  return { frase: FRASE_REEMBOLSO_FALLIDO, detalle: original };
+}
+
+function crearErrorDeReembolso(ultimoError) {
+  const { frase, detalle } = partirErrorDeReembolso(ultimoError);
+  const hijos = [texto('p', 'reclamo-bloque__error-frase', frase, { 'data-testid': 'error-reembolso-frase' })];
+  if (detalle) {
+    hijos.push(texto('p', 'reclamo-bloque__error-detalle', detalle, { 'data-testid': 'error-reembolso-detalle' }));
+  }
+  return h('div', { class: 'reclamo-bloque__error', role: 'alert', 'data-testid': 'error-reembolso-reclamo' }, hijos);
+}
+
 function crearBloqueReembolso(detalle) {
   const reembolso = detalle.reembolso;
   const hijos = [
@@ -184,7 +204,7 @@ function crearBloqueReembolso(detalle) {
     ]),
   ];
   if (reembolso && reembolso.ultimoError) {
-    hijos.push(texto('p', 'reclamo-bloque__error', reembolso.ultimoError, { role: 'alert', 'data-testid': 'error-reembolso-reclamo' }));
+    hijos.push(crearErrorDeReembolso(reembolso.ultimoError));
   } else {
     hijos.push(texto('p', 'reclamo-bloque__texto', 'El reembolso todavía no se procesó.', { 'data-testid': 'texto-reembolso-sin-procesar' }));
   }
@@ -377,6 +397,56 @@ async function repintarSiSeResolvio(contenedor, id, mensaje) {
   }
 }
 
+function abrirVisorDeFoto(url, numero, opener) {
+  const cerrar = texto('button', 'reclamo-visor__cerrar', 'Cerrar', { type: 'button', 'data-testid': 'btn-cerrar-visor-foto' });
+  const visor = h('div', { class: 'reclamo-visor', role: 'dialog', 'aria-modal': 'true', 'aria-label': `Foto ${numero} del reclamo`, 'data-testid': 'visor-foto-reclamo' }, [
+    h('img', { src: url, alt: `Foto ${numero} del reclamo`, class: 'reclamo-visor__imagen', 'data-testid': 'imagen-visor-foto' }),
+    cerrar,
+  ]);
+  let soltarFoco = () => {};
+  function cerrarVisor() {
+    soltarFoco();
+    visor.remove();
+    devolverFoco(opener);
+  }
+  cerrar.addEventListener('click', cerrarVisor);
+  visor.addEventListener('click', (evento) => {
+    if (evento.target === visor) cerrarVisor();
+  });
+  document.body.appendChild(visor);
+  soltarFoco = atraparFoco(visor, cerrarVisor) || soltarFoco;
+  cerrar.focus();
+}
+
+function crearMiniaturaDeFoto(reclamoId, foto, numero) {
+  const miniatura = texto('button', 'reclamo-fotos-admin__miniatura', 'Cargando…', {
+    type: 'button',
+    disabled: true,
+    'aria-label': `Ver foto ${numero} ampliada`,
+    'data-testid': `miniatura-foto-reclamo-${numero}`,
+  });
+  apiFetch(`/administrador/reclamos/${reclamoId}/fotos/${foto.id}`, { ...OPCIONES_API, comoBlob: true })
+    .then((blob) => {
+      const url = URL.createObjectURL(blob);
+      miniatura.replaceChildren(h('img', { src: url, alt: `Foto ${numero} del reclamo`, 'data-testid': `imagen-foto-reclamo-${numero}` }));
+      miniatura.disabled = false;
+      miniatura.addEventListener('click', () => abrirVisorDeFoto(url, numero, miniatura));
+    })
+    .catch(() => {
+      miniatura.replaceChildren(texto('span', 'reclamo-fotos-admin__texto', 'No pudimos cargar esta foto', { role: 'alert', 'data-testid': `error-foto-reclamo-${numero}` }));
+    });
+  return h('li', { 'data-testid': `foto-reclamo-${numero}` }, [miniatura]);
+}
+
+function crearSeccionDeFotos(detalle) {
+  const fotos = detalle.fotos || [];
+  if (fotos.length === 0) return null;
+  return h('section', { class: 'reclamo-bloque', 'aria-label': 'Fotos del Cliente', 'data-testid': 'fotos-del-reclamo' }, [
+    h('div', { class: 'reclamo-bloque__encabezado' }, [texto('h3', 'reclamo-bloque__titulo', 'Fotos del Cliente')]),
+    h('ul', { class: 'reclamo-fotos-admin__lista' }, fotos.map((foto, indice) => crearMiniaturaDeFoto(detalle.id, foto, indice + 1))),
+  ]);
+}
+
 function pintarDetalle(contenedor, detalle, avisoInicial = null) {
   const pedido = detalle.pedido;
   const aviso = crearAvisoDeError('aviso-detalle-reclamo');
@@ -401,7 +471,8 @@ function pintarDetalle(contenedor, detalle, avisoInicial = null) {
     ])),
     h('div', { class: 'order-line order-line--total' }, [texto('span', '', 'Total'), texto('span', '', formatearMonto(pedido.total))]),
   ]);
-  const hijos = [aviso, cabecera, mensaje, productos];
+  const seccionDeFotos = crearSeccionDeFotos(detalle);
+  const hijos = [aviso, cabecera, mensaje, ...(seccionDeFotos ? [seccionDeFotos] : []), productos];
   if (detalle.estado === 'PENDIENTE') {
     hijos.push(texto('p', 'reclamo-saldo', `Saldo reembolsable: ${formatearMonto(detalle.saldoReembolsable)}`, { 'data-testid': 'saldo-reembolsable' }));
     hijos.push(crearFormularioResolucion(detalle, contenedor));
