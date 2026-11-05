@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   agregarItemCarrito,
+  API_BASE_URL,
   apiConHeaders,
   apiPost,
   apiPut,
@@ -193,4 +194,64 @@ export async function pedidoNoRetirado(request: APIRequestContext, esc: Escenari
   expect((await apiPut(request, `/test/pedidos/${pedidoId}/envejecer-listo?minutos=90`, {})).status).toBe(200);
   expect((await accionDelComercio(request, esc, pedidoId, 'no-retirado')).status).toBe(200);
   return pedidoId;
+}
+
+export interface FotoDePrueba {
+  name: string;
+  mimeType: string;
+  buffer: Buffer;
+}
+
+const PNG_REAL = fs.readFileSync(path.resolve(__dirname, '../../fixtures/bajonea-e2e-producto.png'));
+
+export function fotoPng(name = 'foto.png'): FotoDePrueba {
+  return { name, mimeType: 'image/png', buffer: PNG_REAL };
+}
+
+export function fotoJpegFalsa(name = 'foto.jpg', tamano = 1000): FotoDePrueba {
+  const buffer = Buffer.alloc(tamano, 7);
+  buffer[0] = 0xff;
+  buffer[1] = 0xd8;
+  buffer[2] = 0xff;
+  return { name, mimeType: 'image/jpeg', buffer };
+}
+
+export function fotoHeicFalsa(name = 'iphone.heic'): FotoDePrueba {
+  const buffer = Buffer.alloc(64, 0);
+  buffer.write('ftypheic', 4, 'ascii');
+  return { name, mimeType: 'image/heic', buffer };
+}
+
+export function fotoPdfFalsa(name = 'documento.pdf'): FotoDePrueba {
+  return { name, mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 contenido de prueba', 'ascii') };
+}
+
+export async function reclamarConFotosPorApi(
+  request: APIRequestContext,
+  cliente: Cliente,
+  pedidoId: number,
+  fotos: FotoDePrueba[],
+  motivo = 'FALTAN_PRODUCTOS',
+  descripcion = DESCRIPCION_VALIDA,
+): Promise<{ status: number; body: any }> {
+  const limite = `----e2e${Date.now()}${Math.floor(Math.random() * 1e6)}`;
+  const partes: Buffer[] = [];
+  partes.push(Buffer.from(`--${limite}\r\nContent-Disposition: form-data; name="reclamo"; filename="reclamo.json"\r\nContent-Type: application/json\r\n\r\n${JSON.stringify({ motivo, descripcion })}\r\n`));
+  for (const foto of fotos) {
+    partes.push(Buffer.from(`--${limite}\r\nContent-Disposition: form-data; name="fotos"; filename="${foto.name}"\r\nContent-Type: ${foto.mimeType}\r\n\r\n`));
+    partes.push(foto.buffer);
+    partes.push(Buffer.from('\r\n'));
+  }
+  partes.push(Buffer.from(`--${limite}--\r\n`));
+  const response = await request.post(`${API_BASE_URL}/pedidos/cliente/${pedidoId}/reclamo`, {
+    headers: { Authorization: `Bearer ${cliente.sesion.token}`, 'Content-Type': `multipart/form-data; boundary=${limite}` },
+    data: Buffer.concat(partes),
+  });
+  let body: any = null;
+  try {
+    body = await response.json();
+  } catch {
+    body = null;
+  }
+  return { status: response.status(), body };
 }

@@ -212606,6 +212606,4614 @@
           ]
         }
       ]
+    },
+    {
+      "name": "90 - Reclamos Fase 5 S5 fotos (hasta 3 fotos de 5 MB por reclamo, formato validado por el contenido, todo o nada, solo las ve el Administrador, descarga con encabezados seguros, el Cliente solo ve la cantidad; requiere el Mercado Pago simulado de scripts/mp-simulado.mjs y el backend con MERCADOPAGO_API_BASE_URL)",
+      "item": [
+        {
+          "name": "Login Administrador (sesion propia de esta carpeta)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{admin_usuario}}\",\n  \"password\": \"{{admin_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('token_admin', pm.response.json().data.token);",
+                  "pm.environment.set('rf_admin_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Dueño",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "comercio"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Reclamos Fotos SRL\",\n  \"cuit\": \"{{rf_cuit_tmp}}\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Direccion fiscal reclamos 100\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"Local Reclamos Fotos {{rf_d_usuario}}\",\n  \"descripcion\": \"Comercio generado por la coleccion de Postman (reclamos, tramo S5)\",\n  \"telefono\": \"+5492964555448\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"nombreUsuario\": \"{{rf_d_usuario}}\",\n  \"email\": \"{{rf_d_email}}\",\n  \"password\": \"{{rf_d_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"804\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Carlos\",\n  \"apellidoRepresentante\": \"Sanchez\",\n  \"dniRepresentante\": \"{{rf_dni_rep_tmp}}\",\n  \"telefonoRepresentante\": \"+5492964701107\",\n  \"fechaNacimientoRepresentante\": \"1988-04-04\",\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/postman-reclamos-fotos.jpg\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/reclamosfotos\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('rf_d_email', 'rf.d.' + s + '@bajonea.test');",
+                  "pm.environment.set('rf_d_usuario', ('rfd' + s).slice(0, 20));",
+                  "pm.environment.set('rf_d_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('rf_d_dni', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "const mult = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];",
+                  "let cuit = null;",
+                  "while (cuit === null) {",
+                  "  const base = '30' + String(Math.floor(10000000 + Math.random() * 89999999));",
+                  "  let suma = 0;",
+                  "  for (let i = 0; i < 10; i += 1) suma += Number(base[i]) * mult[i];",
+                  "  let dv = 11 - (suma % 11);",
+                  "  if (dv === 11) dv = 0;",
+                  "  if (dv !== 10) cuit = base + dv;",
+                  "}",
+                  "pm.environment.set('rf_cuit_tmp', cuit);",
+                  "pm.environment.set('rf_dni_rep_tmp', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Dueño",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{rf_d_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{rf_d_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('rf_d_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Dueño",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{rf_d_email}}\",\n  \"codigo\": \"{{rf_d_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Dueño",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{rf_d_usuario}}\",\n  \"password\": \"{{rf_d_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('rf_d_token', pm.response.json().data.token);",
+                  "pm.environment.set('rf_d_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador busca el comercio pendiente del Dueño",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/pendientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "pendientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.emailCuenta === pm.environment.get('rf_d_email').toLowerCase());",
+                  "pm.test('El comercio del Dueño esta pendiente', () => pm.expect(c).to.exist);",
+                  "pm.environment.set('rf_com', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador aprueba el comercio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{rf_com}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{rf_com}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: el Dueño vincula una cuenta de Mercado Pago simulada y el comercio pasa a APTO_VENTA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/duenos/{{rf_d_id}}/mercadopago-simulada",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "duenos",
+                "{{rf_d_id}}",
+                "mercadopago-simulada"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador crea la categoria del producto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/categorias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "categorias"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"{{rf_cat_nombre}}\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('rf_cat_nombre', 'Cat Reclamos Fotos ' + Date.now().toString(36));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('rf_cat', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueño crea el producto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{rf_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "productos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nombre\": \"Producto Reclamos Fotos\", \"descripcion\": \"Producto de los reclamos\", \"precio\": 1500, \"categoriaId\": {{rf_cat}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('rf_prod', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Carla",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carla\",\n  \"apellido\": \"Reclamos\",\n  \"dni\": \"{{rf_c_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551238\",\n  \"nombreUsuario\": \"{{rf_c_usuario}}\",\n  \"email\": \"{{rf_c_email}}\",\n  \"password\": \"{{rf_c_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"125\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('rf_c_email', 'rf.c.' + s + '@bajonea.test');",
+                  "pm.environment.set('rf_c_usuario', ('rfc' + s).slice(0, 20));",
+                  "pm.environment.set('rf_c_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('rf_c_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Carla",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{rf_c_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{rf_c_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('rf_c_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Carla",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{rf_c_email}}\",\n  \"codigo\": \"{{rf_c_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Carla",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{rf_c_usuario}}\",\n  \"password\": \"{{rf_c_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('rf_c_token', pm.response.json().data.token);",
+                  "pm.environment.set('rf_c_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Direccion de Carla",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/clientes/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "clientes",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('rf_c_dir', pm.response.json().data.direccion.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Olga",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Olga\",\n  \"apellido\": \"Reclamos\",\n  \"dni\": \"{{rf_o_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551238\",\n  \"nombreUsuario\": \"{{rf_o_usuario}}\",\n  \"email\": \"{{rf_o_email}}\",\n  \"password\": \"{{rf_o_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"125\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('rf_o_email', 'rf.o.' + s + '@bajonea.test');",
+                  "pm.environment.set('rf_o_usuario', ('rfo' + s).slice(0, 20));",
+                  "pm.environment.set('rf_o_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('rf_o_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Olga",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{rf_o_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{rf_o_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('rf_o_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Olga",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{rf_o_email}}\",\n  \"codigo\": \"{{rf_o_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Olga",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{rf_o_usuario}}\",\n  \"password\": \"{{rf_o_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('rf_o_token', pm.response.json().data.token);",
+                  "pm.environment.set('rf_o_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Elena",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Elena\",\n  \"apellido\": \"Reclamos\",\n  \"dni\": \"{{rf_e_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551238\",\n  \"nombreUsuario\": \"{{rf_e_usuario}}\",\n  \"email\": \"{{rf_e_email}}\",\n  \"password\": \"{{rf_e_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"125\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('rf_e_email', 'rf.e.' + s + '@bajonea.test');",
+                  "pm.environment.set('rf_e_usuario', ('rfe' + s).slice(0, 20));",
+                  "pm.environment.set('rf_e_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('rf_e_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Elena",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{rf_e_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{rf_e_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('rf_e_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Elena",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{rf_e_email}}\",\n  \"codigo\": \"{{rf_e_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Elena",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{rf_e_usuario}}\",\n  \"password\": \"{{rf_e_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('rf_e_token', pm.response.json().data.token);",
+                  "pm.environment.set('rf_e_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueño invita a Elena al equipo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{rf_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/comercios/equipo/invitaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "comercios",
+                "equipo",
+                "invitaciones"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{rf_e_email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de la invitacion de Elena",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/invitaciones-empleado/codigo?email={{rf_e_email}}&comercioId={{rf_com}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "invitaciones-empleado",
+                "codigo"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{rf_e_email}}"
+                },
+                {
+                  "key": "comercioId",
+                  "value": "{{rf_com}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('rf_e_inv_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Elena acepta la invitacion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/invitaciones-empleado/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "invitaciones-empleado",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{rf_e_email}}\",\n  \"codigo\": \"{{rf_e_inv_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom1] El Cliente vacia el carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Carrito vaciado o ya vacio', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom1] El Cliente agrega el producto al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productoId\": {{rf_prod}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom1] El Cliente confirma el pedido (a domicilio)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tipoEntrega\": \"DOMICILIO\", \"direccionId\": {{rf_c_dir}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('rf_ped_dom1', pm.response.json().data.id);",
+                  "pm.environment.set('rf_tot_dom1', pm.response.json().data.total);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom1] \"Ir a pagar\" crea la preferencia en Mercado Pago",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom1}}/pago",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom1}}",
+                "pago"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom1] El webhook confirma el pago (id numerico del Mercado Pago simulado)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/webhooks/mercadopago?pedidoId={{rf_ped_dom1}}&data.id={{rf_idpago_dom1}}&type=payment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "webhooks",
+                "mercadopago"
+              ],
+              "query": [
+                {
+                  "key": "pedidoId",
+                  "value": "{{rf_ped_dom1}}"
+                },
+                {
+                  "key": "data.id",
+                  "value": "{{rf_idpago_dom1}}"
+                },
+                {
+                  "key": "type",
+                  "value": "payment"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('rf_idpago_dom1', 100000 + Number(pm.environment.get('rf_ped_dom1')));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom1] El Dueño acepta el pedido",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{rf_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{rf_ped_dom1}}/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{rf_ped_dom1}}",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom1] El Dueño lo despacha",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{rf_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{rf_ped_dom1}}/despachar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{rf_ped_dom1}}",
+                "despachar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom1] El Cliente confirma que lo recibio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom1}}/entregar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom1}}",
+                "entregar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"estado es ENTREGADO\", () => { pm.expect(pm.response.json().data.estado).to.eql(\"ENTREGADO\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom2] El Cliente vacia el carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Carrito vaciado o ya vacio', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom2] El Cliente agrega el producto al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productoId\": {{rf_prod}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom2] El Cliente confirma el pedido (a domicilio)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tipoEntrega\": \"DOMICILIO\", \"direccionId\": {{rf_c_dir}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('rf_ped_dom2', pm.response.json().data.id);",
+                  "pm.environment.set('rf_tot_dom2', pm.response.json().data.total);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom2] \"Ir a pagar\" crea la preferencia en Mercado Pago",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom2}}/pago",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom2}}",
+                "pago"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom2] El webhook confirma el pago (id numerico del Mercado Pago simulado)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/webhooks/mercadopago?pedidoId={{rf_ped_dom2}}&data.id={{rf_idpago_dom2}}&type=payment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "webhooks",
+                "mercadopago"
+              ],
+              "query": [
+                {
+                  "key": "pedidoId",
+                  "value": "{{rf_ped_dom2}}"
+                },
+                {
+                  "key": "data.id",
+                  "value": "{{rf_idpago_dom2}}"
+                },
+                {
+                  "key": "type",
+                  "value": "payment"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('rf_idpago_dom2', 100000 + Number(pm.environment.get('rf_ped_dom2')));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom2] El Dueño acepta el pedido",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{rf_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{rf_ped_dom2}}/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{rf_ped_dom2}}",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom2] El Dueño lo despacha",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{rf_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{rf_ped_dom2}}/despachar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{rf_ped_dom2}}",
+                "despachar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom2] El Cliente confirma que lo recibio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom2}}/entregar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom2}}",
+                "entregar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"estado es ENTREGADO\", () => { pm.expect(pm.response.json().data.estado).to.eql(\"ENTREGADO\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom3] El Cliente vacia el carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Carrito vaciado o ya vacio', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom3] El Cliente agrega el producto al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productoId\": {{rf_prod}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom3] El Cliente confirma el pedido (a domicilio)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tipoEntrega\": \"DOMICILIO\", \"direccionId\": {{rf_c_dir}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('rf_ped_dom3', pm.response.json().data.id);",
+                  "pm.environment.set('rf_tot_dom3', pm.response.json().data.total);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom3] \"Ir a pagar\" crea la preferencia en Mercado Pago",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom3}}/pago",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom3}}",
+                "pago"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom3] El webhook confirma el pago (id numerico del Mercado Pago simulado)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/webhooks/mercadopago?pedidoId={{rf_ped_dom3}}&data.id={{rf_idpago_dom3}}&type=payment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "webhooks",
+                "mercadopago"
+              ],
+              "query": [
+                {
+                  "key": "pedidoId",
+                  "value": "{{rf_ped_dom3}}"
+                },
+                {
+                  "key": "data.id",
+                  "value": "{{rf_idpago_dom3}}"
+                },
+                {
+                  "key": "type",
+                  "value": "payment"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('rf_idpago_dom3', 100000 + Number(pm.environment.get('rf_ped_dom3')));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom3] El Dueño acepta el pedido",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{rf_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{rf_ped_dom3}}/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{rf_ped_dom3}}",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom3] El Dueño lo despacha",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{rf_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{rf_ped_dom3}}/despachar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{rf_ped_dom3}}",
+                "despachar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom3] El Cliente confirma que lo recibio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom3}}/entregar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom3}}",
+                "entregar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"estado es ENTREGADO\", () => { pm.expect(pm.response.json().data.estado).to.eql(\"ENTREGADO\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom4] El Cliente vacia el carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Carrito vaciado o ya vacio', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom4] El Cliente agrega el producto al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productoId\": {{rf_prod}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom4] El Cliente confirma el pedido (a domicilio)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tipoEntrega\": \"DOMICILIO\", \"direccionId\": {{rf_c_dir}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('rf_ped_dom4', pm.response.json().data.id);",
+                  "pm.environment.set('rf_tot_dom4', pm.response.json().data.total);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom4] \"Ir a pagar\" crea la preferencia en Mercado Pago",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom4}}/pago",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom4}}",
+                "pago"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom4] El webhook confirma el pago (id numerico del Mercado Pago simulado)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/webhooks/mercadopago?pedidoId={{rf_ped_dom4}}&data.id={{rf_idpago_dom4}}&type=payment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "webhooks",
+                "mercadopago"
+              ],
+              "query": [
+                {
+                  "key": "pedidoId",
+                  "value": "{{rf_ped_dom4}}"
+                },
+                {
+                  "key": "data.id",
+                  "value": "{{rf_idpago_dom4}}"
+                },
+                {
+                  "key": "type",
+                  "value": "payment"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('rf_idpago_dom4', 100000 + Number(pm.environment.get('rf_ped_dom4')));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom4] El Dueño acepta el pedido",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{rf_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{rf_ped_dom4}}/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{rf_ped_dom4}}",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom4] El Dueño lo despacha",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{rf_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{rf_ped_dom4}}/despachar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{rf_ped_dom4}}",
+                "despachar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom4] El Cliente confirma que lo recibio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom4}}/entregar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom4}}",
+                "entregar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"estado es ENTREGADO\", () => { pm.expect(pm.response.json().data.estado).to.eql(\"ENTREGADO\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom5] El Cliente vacia el carrito",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Carrito vaciado o ya vacio', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom5] El Cliente agrega el producto al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/carrito/items",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "carrito",
+                "items"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"productoId\": {{rf_prod}}, \"cantidad\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom5] El Cliente confirma el pedido (a domicilio)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"tipoEntrega\": \"DOMICILIO\", \"direccionId\": {{rf_c_dir}}}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.environment.set('rf_ped_dom5', pm.response.json().data.id);",
+                  "pm.environment.set('rf_tot_dom5', pm.response.json().data.total);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom5] \"Ir a pagar\" crea la preferencia en Mercado Pago",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom5}}/pago",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom5}}",
+                "pago"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom5] El webhook confirma el pago (id numerico del Mercado Pago simulado)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/webhooks/mercadopago?pedidoId={{rf_ped_dom5}}&data.id={{rf_idpago_dom5}}&type=payment",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "webhooks",
+                "mercadopago"
+              ],
+              "query": [
+                {
+                  "key": "pedidoId",
+                  "value": "{{rf_ped_dom5}}"
+                },
+                {
+                  "key": "data.id",
+                  "value": "{{rf_idpago_dom5}}"
+                },
+                {
+                  "key": "type",
+                  "value": "payment"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.environment.set('rf_idpago_dom5', 100000 + Number(pm.environment.get('rf_ped_dom5')));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom5] El Dueño acepta el pedido",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{rf_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{rf_ped_dom5}}/aceptar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{rf_ped_dom5}}",
+                "aceptar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom5] El Dueño lo despacha",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{rf_com}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio/{{rf_ped_dom5}}/despachar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio",
+                "{{rf_ped_dom5}}",
+                "despachar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "[pedido dom5] El Cliente confirma que lo recibio",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom5}}/entregar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom5}}",
+                "entregar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"estado es ENTREGADO\", () => { pm.expect(pm.response.json().data.estado).to.eql(\"ENTREGADO\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin fotos (multipart con solo la parte del reclamo): 201 y cero fotos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom1}}/reclamo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom1}}",
+                "reclamo"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "reclamo",
+                  "type": "text",
+                  "value": "{\"motivo\":\"FALTAN_PRODUCTOS\",\"descripcion\":\"Faltó la bebida del combo y vino frío\"}",
+                  "contentType": "application/json"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.test(\"cantidadFotos es 0\", () => { pm.expect(pm.response.json().data.cantidadFotos).to.eql(0); });",
+                  "pm.environment.set('rf_rec_dom1', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Una foto PNG: 201 y una foto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom2}}/reclamo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom2}}",
+                "reclamo"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "reclamo",
+                  "type": "text",
+                  "value": "{\"motivo\":\"FALTAN_PRODUCTOS\",\"descripcion\":\"Faltó la bebida del combo y vino frío\"}",
+                  "contentType": "application/json"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/bajonea-e2e-producto.png"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"Recibimos tu reclamo\"); });",
+                  "pm.test(\"cantidadFotos es 1\", () => { pm.expect(pm.response.json().data.cantidadFotos).to.eql(1); });",
+                  "pm.environment.set('rf_rec_dom2', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tres fotos (JPG, PNG y WebP): 201 y tres fotos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom3}}/reclamo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom3}}",
+                "reclamo"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "reclamo",
+                  "type": "text",
+                  "value": "{\"motivo\":\"FALTAN_PRODUCTOS\",\"descripcion\":\"Faltó la bebida del combo y vino frío\"}",
+                  "contentType": "application/json"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/reclamo-foto.jpg"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/bajonea-e2e-producto.png"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/reclamo-foto.webp"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.test(\"cantidadFotos es 3\", () => { pm.expect(pm.response.json().data.cantidadFotos).to.eql(3); });",
+                  "pm.environment.set('rf_rec_dom3', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Un envio JSON sin fotos sigue funcionando como antes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom5}}/reclamo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom5}}",
+                "reclamo"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"motivo\": \"OTRO\",\n  \"descripcion\": \"Faltó la bebida del combo y vino frío\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.test(\"cantidadFotos es 0\", () => { pm.expect(pm.response.json().data.cantidadFotos).to.eql(0); });",
+                  "pm.environment.set('rf_rec_dom5', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La cuarta foto rechaza todo el envio: 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom4}}/reclamo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom4}}",
+                "reclamo"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "reclamo",
+                  "type": "text",
+                  "value": "{\"motivo\":\"FALTAN_PRODUCTOS\",\"descripcion\":\"Faltó la bebida del combo y vino frío\"}",
+                  "contentType": "application/json"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/reclamo-foto.jpg"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/bajonea-e2e-producto.png"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/reclamo-foto.webp"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/reclamo-foto.jpg"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test(\"data.codigo es RECLAMO_FOTO_CANTIDAD_EXCEDIDA\", () => { pm.expect(pm.response.json().data.codigo).to.eql(\"RECLAMO_FOTO_CANTIDAD_EXCEDIDA\"); });",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"Podés adjuntar hasta 3 fotos\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La cuarta foto no creo el reclamo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const p = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('rf_ped_dom4')));",
+                  "pm.test('Encuentra el pedido', () => pm.expect(p).to.exist);",
+                  "pm.test(\"Sigue sin reclamo y se puede reclamar\", () => { pm.expect(p.reclamo.id === undefined).to.eql(true); pm.expect(p.reclamo.puedeReclamar).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Un texto con extension .jpg no pasa (se valida el contenido): 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom4}}/reclamo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom4}}",
+                "reclamo"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "reclamo",
+                  "type": "text",
+                  "value": "{\"motivo\":\"FALTAN_PRODUCTOS\",\"descripcion\":\"Faltó la bebida del combo y vino frío\"}",
+                  "contentType": "application/json"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/reclamo-texto-disfrazado.jpg"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test(\"data.codigo es RECLAMO_FOTO_FORMATO_NO_PERMITIDO\", () => { pm.expect(pm.response.json().data.codigo).to.eql(\"RECLAMO_FOTO_FORMATO_NO_PERMITIDO\"); });",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"Solo se aceptan fotos en formato JPG, PNG o WebP\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Un PDF no es una foto: 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom4}}/reclamo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom4}}",
+                "reclamo"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "reclamo",
+                  "type": "text",
+                  "value": "{\"motivo\":\"FALTAN_PRODUCTOS\",\"descripcion\":\"Faltó la bebida del combo y vino frío\"}",
+                  "contentType": "application/json"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/documento-prueba.pdf"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test(\"data.codigo es RECLAMO_FOTO_FORMATO_NO_PERMITIDO\", () => { pm.expect(pm.response.json().data.codigo).to.eql(\"RECLAMO_FOTO_FORMATO_NO_PERMITIDO\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Una foto HEIC de iPhone se rechaza con un mensaje claro: 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom4}}/reclamo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom4}}",
+                "reclamo"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "reclamo",
+                  "type": "text",
+                  "value": "{\"motivo\":\"FALTAN_PRODUCTOS\",\"descripcion\":\"Faltó la bebida del combo y vino frío\"}",
+                  "contentType": "application/json"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/reclamo-foto.heic"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test(\"data.codigo es RECLAMO_FOTO_FORMATO_NO_PERMITIDO\", () => { pm.expect(pm.response.json().data.codigo).to.eql(\"RECLAMO_FOTO_FORMATO_NO_PERMITIDO\"); });",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"Las fotos HEIC de iPhone no se pueden adjuntar. Usá una foto en formato JPG, PNG o WebP\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Una foto de 5 MB + 1 byte: 400 con el limite",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom4}}/reclamo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom4}}",
+                "reclamo"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "reclamo",
+                  "type": "text",
+                  "value": "{\"motivo\":\"FALTAN_PRODUCTOS\",\"descripcion\":\"Faltó la bebida del combo y vino frío\"}",
+                  "contentType": "application/json"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/generados/foto-5mb-mas-uno.jpg"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test(\"data.codigo es RECLAMO_FOTO_TAMANO_EXCEDIDO\", () => { pm.expect(pm.response.json().data.codigo).to.eql(\"RECLAMO_FOTO_TAMANO_EXCEDIDO\"); });",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"Una foto supera el máximo de 5 MB\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Una foto valida junto a una invalida rechaza todo: 400",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom4}}/reclamo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom4}}",
+                "reclamo"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "reclamo",
+                  "type": "text",
+                  "value": "{\"motivo\":\"FALTAN_PRODUCTOS\",\"descripcion\":\"Faltó la bebida del combo y vino frío\"}",
+                  "contentType": "application/json"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/bajonea-e2e-producto.png"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/reclamo-texto-disfrazado.jpg"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));",
+                  "pm.test(\"data.codigo es RECLAMO_FOTO_FORMATO_NO_PERMITIDO\", () => { pm.expect(pm.response.json().data.codigo).to.eql(\"RECLAMO_FOTO_FORMATO_NO_PERMITIDO\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ningun envio invalido creo el reclamo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const p = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('rf_ped_dom4')));",
+                  "pm.test('Encuentra el pedido', () => pm.expect(p).to.exist);",
+                  "pm.test(\"Sigue sin reclamo y se puede reclamar\", () => { pm.expect(p.reclamo.id === undefined).to.eql(true); pm.expect(p.reclamo.puedeReclamar).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Otro Cliente reclamando un pedido ajeno con fotos: 404",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_o_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom4}}/reclamo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom4}}",
+                "reclamo"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "reclamo",
+                  "type": "text",
+                  "value": "{\"motivo\":\"FALTAN_PRODUCTOS\",\"descripcion\":\"Faltó la bebida del combo y vino frío\"}",
+                  "contentType": "application/json"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/bajonea-e2e-producto.png"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueño no puede crear reclamos: 403",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_d_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom4}}/reclamo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom4}}",
+                "reclamo"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "reclamo",
+                  "type": "text",
+                  "value": "{\"motivo\":\"FALTAN_PRODUCTOS\",\"descripcion\":\"Faltó la bebida del combo y vino frío\"}",
+                  "contentType": "application/json"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/bajonea-e2e-producto.png"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin token: 401",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom4}}/reclamo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom4}}",
+                "reclamo"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "reclamo",
+                  "type": "text",
+                  "value": "{\"motivo\":\"FALTAN_PRODUCTOS\",\"descripcion\":\"Faltó la bebida del combo y vino frío\"}",
+                  "contentType": "application/json"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/bajonea-e2e-producto.png"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Una foto de exactamente 5 MB se acepta: 201",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom4}}/reclamo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom4}}",
+                "reclamo"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "reclamo",
+                  "type": "text",
+                  "value": "{\"motivo\":\"FALTAN_PRODUCTOS\",\"descripcion\":\"Faltó la bebida del combo y vino frío\"}",
+                  "contentType": "application/json"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/generados/foto-5mb-justa.jpg"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.test(\"cantidadFotos es 1\", () => { pm.expect(pm.response.json().data.cantidadFotos).to.eql(1); });",
+                  "pm.environment.set('rf_rec_dom4', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Un segundo envio del mismo pedido con fotos: 409",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente/{{rf_ped_dom3}}/reclamo",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente",
+                "{{rf_ped_dom3}}",
+                "reclamo"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "reclamo",
+                  "type": "text",
+                  "value": "{\"motivo\":\"FALTAN_PRODUCTOS\",\"descripcion\":\"Faltó la bebida del combo y vino frío\"}",
+                  "contentType": "application/json"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/bajonea-e2e-producto.png"
+                },
+                {
+                  "key": "fotos",
+                  "type": "file",
+                  "src": "fixtures/bajonea-e2e-producto.png"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test(\"Mensaje exacto\", () => { pm.expect(pm.response.json().mensaje).to.eql(\"Ya hiciste un reclamo por este pedido.\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Administrador ve las tres fotos del reclamo en el orden de envio, sin el contenido",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/reclamos/{{rf_rec_dom3}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "reclamos",
+                "{{rf_rec_dom3}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test(\"Tres fotos con orden, nombre, tipo y tamaño\", () => { pm.expect(d.fotos.length).to.eql(3); pm.expect(d.fotos.map((f) => f.orden)).to.eql([1, 2, 3]); pm.expect(d.fotos.map((f) => f.tipoContenido)).to.eql(['image/jpeg', 'image/png', 'image/webp']); pm.expect(d.fotos[0].nombre).to.eql('reclamo-foto.jpg'); pm.expect(d.fotos[0].tamanoBytes).to.eql(1200); d.fotos.forEach((f) => pm.expect(f.contenido === undefined).to.eql(true)); });",
+                  "pm.environment.set('rf_foto_dom3_1', d.fotos[0].id);",
+                  "pm.environment.set('rf_foto_dom3_2', d.fotos[1].id);",
+                  "pm.environment.set('rf_foto_dom3_3', d.fotos[2].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El segundo envio rechazado no dejo fotos huerfanas: el reclamo de dom3 sigue con tres",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/reclamos/{{rf_rec_dom3}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "reclamos",
+                "{{rf_rec_dom3}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test(\"Siguen tres fotos\", () => { pm.expect(d.fotos.length).to.eql(3); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El reclamo sin fotos trae la lista vacia",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/reclamos/{{rf_rec_dom1}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "reclamos",
+                "{{rf_rec_dom1}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test(\"Lista vacia\", () => { pm.expect(d.fotos).to.eql([]); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El reclamo de una sola foto",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/reclamos/{{rf_rec_dom2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "reclamos",
+                "{{rf_rec_dom2}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const d = pm.response.json().data;",
+                  "pm.test(\"Una foto\", () => { pm.expect(d.fotos.length).to.eql(1); });",
+                  "pm.environment.set('rf_foto_dom2_1', d.fotos[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Administrador descarga una foto: tipo real y encabezados seguros",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/reclamos/{{rf_rec_dom3}}/fotos/{{rf_foto_dom3_2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "reclamos",
+                "{{rf_rec_dom3}}",
+                "fotos",
+                "{{rf_foto_dom3_2}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Content-Type, nosniff, inline y sin cache\", () => { pm.expect(pm.response.headers.get('Content-Type')).to.eql('image/png'); pm.expect(pm.response.headers.get('X-Content-Type-Options')).to.eql('nosniff'); pm.expect(pm.response.headers.get('Content-Disposition')).to.match(/^inline/); pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store'); });",
+                  "pm.test(\"El contenido es el PNG enviado\", () => { pm.expect(pm.response.stream.length).to.be.greaterThan(100); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Una foto de otro reclamo: 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/reclamos/{{rf_rec_dom3}}/fotos/{{rf_foto_dom2_1}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "reclamos",
+                "{{rf_rec_dom3}}",
+                "fotos",
+                "{{rf_foto_dom2_1}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Una foto inexistente: 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/reclamos/{{rf_rec_dom3}}/fotos/999999999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "reclamos",
+                "{{rf_rec_dom3}}",
+                "fotos",
+                "999999999"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Un reclamo inexistente: 404",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/reclamos/999999999/fotos/{{rf_foto_dom3_1}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "reclamos",
+                "999999999",
+                "fotos",
+                "{{rf_foto_dom3_1}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Cliente no descarga las fotos: 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/reclamos/{{rf_rec_dom3}}/fotos/{{rf_foto_dom3_1}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "reclamos",
+                "{{rf_rec_dom3}}",
+                "fotos",
+                "{{rf_foto_dom3_1}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueño no descarga las fotos: 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_d_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/reclamos/{{rf_rec_dom3}}/fotos/{{rf_foto_dom3_1}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "reclamos",
+                "{{rf_rec_dom3}}",
+                "fotos",
+                "{{rf_foto_dom3_1}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Empleado no descarga las fotos: 403",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_e_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/reclamos/{{rf_rec_dom3}}/fotos/{{rf_foto_dom3_1}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "reclamos",
+                "{{rf_rec_dom3}}",
+                "fotos",
+                "{{rf_foto_dom3_1}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin token: 401",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/administrador/reclamos/{{rf_rec_dom3}}/fotos/{{rf_foto_dom3_1}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "reclamos",
+                "{{rf_rec_dom3}}",
+                "fotos",
+                "{{rf_foto_dom3_1}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Cliente solo ve la cantidad de fotos, nunca las fotos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_c_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "cliente"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const p = pm.response.json().data.find((x) => x.id === Number(pm.environment.get('rf_ped_dom3')));",
+                  "pm.test('Encuentra el pedido', () => pm.expect(p).to.exist);",
+                  "pm.test(\"cantidadFotos 3 y sin lista\", () => { pm.expect(p.reclamo.cantidadFotos).to.eql(3); pm.expect(p.reclamo.fotos === undefined).to.eql(true); pm.expect(JSON.stringify(p.reclamo)).to.not.include('image/'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueño no recibe rastro de las fotos en sus pedidos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_d_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{rf_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Sin cantidadFotos ni fotos\", () => { const texto = JSON.stringify(pm.response.json().data); pm.expect(texto).to.not.match(/cantidadFotos|\"fotos\"/); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Empleado no recibe reclamo ni fotos en sus pedidos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{rf_e_token}}"
+              },
+              {
+                "key": "X-Comercio-Id",
+                "value": "{{rf_com}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/pedidos/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "pedidos",
+                "comercio"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Sin reclamo ni fotos\", () => { const texto = JSON.stringify(pm.response.json().data); pm.expect(texto).to.not.match(/\"reclamo\"|cantidadFotos|\"fotos\"/); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resolver (rechazo) un reclamo con fotos",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/reclamos/{{rf_rec_dom3}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "reclamos",
+                "{{rf_rec_dom3}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"RECHAZO\",\n  \"motivo\": \"Revisamos las fotos y el pedido salió completo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Rechazado y las fotos siguen ahi\", () => { const d = pm.response.json().data; pm.expect(d.estado).to.eql('RECHAZADO'); pm.expect(d.fotos.length).to.eql(3); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Con el reclamo resuelto la foto sigue disponible",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/reclamos/{{rf_rec_dom3}}/fotos/{{rf_foto_dom3_1}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "reclamos",
+                "{{rf_rec_dom3}}",
+                "fotos",
+                "{{rf_foto_dom3_1}}"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"image/jpeg\", () => { pm.expect(pm.response.headers.get('Content-Type')).to.eql('image/jpeg'); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "event": [

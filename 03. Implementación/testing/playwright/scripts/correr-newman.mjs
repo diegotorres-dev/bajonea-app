@@ -1,5 +1,5 @@
 import { spawnSync, execSync } from 'node:child_process';
-import { readFileSync, mkdirSync, existsSync, unlinkSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, statSync, unlinkSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -54,6 +54,19 @@ try {
 const password = resolverAdminPassword();
 const localidadId = await localidadRioGrande();
 mkdirSync(reportes, { recursive: true });
+const CINCO_MB = 5 * 1024 * 1024;
+const generados = path.resolve(aqui, '../fixtures/generados');
+mkdirSync(generados, { recursive: true });
+for (const [nombre, tamano] of [['foto-5mb-justa.jpg', CINCO_MB], ['foto-5mb-mas-uno.jpg', CINCO_MB + 1]]) {
+  const destino = path.join(generados, nombre);
+  if (!existsSync(destino) || statSync(destino).size !== tamano) {
+    const bytes = Buffer.alloc(tamano, 7);
+    bytes[0] = 0xff;
+    bytes[1] = 0xd8;
+    bytes[2] = 0xff;
+    writeFileSync(destino, bytes);
+  }
+}
 const newmanJs = path.join(execSync('npm root -g', { encoding: 'utf8' }).trim(), 'newman', 'bin', 'newman.js');
 let fallos = 0;
 const resumenes = [];

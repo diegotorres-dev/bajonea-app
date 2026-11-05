@@ -304,7 +304,8 @@ test.describe('Fase 5, S5 (entrega B): reclamos del Administrador', () => {
     await expect(page.getByTestId('reclamo-estado')).toContainText('Reembolso en proceso');
     await expect(page.getByTestId('bloque-reembolso-reclamo')).toBeVisible();
     await expect(page.getByTestId('estado-reembolso-reclamo')).toContainText('Reembolso en proceso');
-    await expect(page.getByTestId('error-reembolso-reclamo')).toContainText('Saldo insuficiente en la cuenta del comercio');
+    await expect(page.getByTestId('error-reembolso-frase')).toHaveText('El comercio no tiene saldo suficiente en Mercado Pago para este reembolso.');
+    await expect(page.getByTestId('error-reembolso-detalle')).toContainText('Saldo insuficiente en la cuenta del comercio');
     await sinScrollHorizontal(page);
     await expect(page.locator('.toast')).toHaveCount(0);
     await capturarReclamos(page, '25-admin-reembolso-fallido');
@@ -318,6 +319,24 @@ test.describe('Fase 5, S5 (entrega B): reclamos del Administrador', () => {
     await page.getByTestId(`reclamo-item-${reclamoId}`).click();
     await page.getByTestId('enlace-ir-a-reembolsos').click();
     await expect(page).toHaveURL(/admin-reembolsos\.html$/);
+  });
+
+  test('un reembolso que falla por otro motivo muestra la frase clara y debajo el detalle original', async ({ page, request }) => {
+    const { reclamoId } = await nuevoReclamo(request);
+    await abrirDetalle(page, reclamoId);
+    await elegir(page, 'total');
+    await conReembolsosFallidos(request, 'Refund processing unavailable', async () => {
+      await page.getByTestId('btn-resolver-reclamo').click();
+      await page.getByTestId('btn-confirmar-resolucion').click();
+      await expect(page.getByTestId('resolucion-reclamo')).toBeVisible();
+    });
+
+    await expect(page.getByTestId('error-reembolso-frase')).toHaveText('Mercado Pago no pudo hacer el reembolso.');
+    await expect(page.getByTestId('error-reembolso-detalle')).toContainText('Mercado Pago respondió 400');
+    await expect(page.getByTestId('error-reembolso-detalle')).toContainText('Refund processing unavailable');
+    await expect(page.getByTestId('error-reembolso-reclamo')).toHaveAttribute('role', 'alert');
+    await sinScrollHorizontal(page);
+    await capturarReclamos(page, '25b-admin-reembolso-fallido-generico');
   });
 
   test('un reclamo ya resuelto se ve solo para leer, sin formulario', async ({ page, request }) => {
