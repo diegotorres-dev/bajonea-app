@@ -9,6 +9,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
@@ -72,12 +73,19 @@ public class Usuario {
     private LocalDateTime fechaRegistro;
 
     @Setter
-    @Column(name = "fecha_ultimo_acceso")
+    @Column(name = "fecha_ultimo_acceso", nullable = false)
     private LocalDateTime fechaUltimoAcceso;
 
     @Setter
     @Column(name = "fecha_actualizacion")
     private LocalDateTime fechaActualizacion;
+
+    @PrePersist
+    void completarUltimoAcceso() {
+        if (fechaUltimoAcceso == null) {
+            fechaUltimoAcceso = fechaRegistro != null ? fechaRegistro : LocalDateTime.now();
+        }
+    }
 
     public void aplicarEstado(EstadoUsuario nuevoEstado, String motivoSuspensionNuevo, LocalDateTime suspendidoDesdeNuevo) {
         this.estado = nuevoEstado;

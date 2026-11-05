@@ -48,6 +48,9 @@ public class EstadoUsuarioService {
         LocalDateTime ahora = LocalDateTime.now(clock).truncatedTo(ChronoUnit.SECONDS);
         usuario.aplicarEstado(destino, destino == EstadoUsuario.SUSPENDIDO ? motivo : null, ahora);
         usuario.setFechaActualizacion(ahora);
+        if (destino == EstadoUsuario.ACTIVO) {
+            usuario.setFechaUltimoAcceso(ahora);
+        }
         usuarioRepository.save(usuario);
         historialEstadoUsuarioRepository.save(HistorialEstadoUsuario.builder()
                 .usuario(usuario)

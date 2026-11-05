@@ -4,5 +4,6 @@ public enum TipoCierreSesion {
     MANUAL,
     AUTOMATICO,
     FORZADO,
-    SUSPENSION
+    SUSPENSION,
+    INACTIVIDAD
 }
