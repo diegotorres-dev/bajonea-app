@@ -201,6 +201,9 @@ class PedidoAutoconfirmadoEquipoIntegrationTest {
         assertEquals(0, copias(desactivado.id(), T30, pedidoId), "el desactivado no recibe copia");
         assertEquals(0, copias(e.compradorId(), T30, pedidoId), "el comprador no recibe el aviso del equipo");
         assertEquals(1, copias(e.compradorId(), "PEDIDO_AUTOCONFIRMADO", pedidoId), "el aviso del Cliente (T8) no cambia");
+        assertEquals("Marcamos tu pedido #" + pedidoId + " como entregado. Si tuviste algún problema, podés reclamar dentro de los 7 días desde esta fecha.",
+                jdbcTemplate.queryForObject("SELECT mensaje FROM notificacion WHERE tipo = 'PEDIDO_AUTOCONFIRMADO' AND entidad_id = ? AND usuario_id = ?",
+                        String.class, pedidoId, e.compradorId()));
         assertEquals(3, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM notificacion WHERE entidad_tipo = 'PEDIDO' AND entidad_id = ? "
                 + "AND tipo = ? AND comercio_id = ? AND canal = 'PUSH' AND leida = 0 AND mensaje = ?", Integer.class,
                 pedidoId, T30, e.comercioId(), textoEsperado(pedidoId)));

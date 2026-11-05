@@ -1008,8 +1008,8 @@ public class PedidoService {
                     marcarEntregado(pedido, FuenteEntrega.SISTEMA);
                     registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.TIMEOUT_ENTREGA);
                     notificacionService.crearParaCliente(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
-                            "Tu pedido #" + pedido.getId()
-                                    + " fue autoconfirmado como entregado. Si no lo recibiste, podés iniciar un reclamo o contactar al comercio.",
+                            "Marcamos tu pedido #" + pedido.getId()
+                                    + " como entregado. Si tuviste algún problema, podés reclamar dentro de los 7 días desde esta fecha.",
                             TipoNotificacion.PEDIDO_AUTOCONFIRMADO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
                     notificacionService.crearParaEquipo(pedido.getComercio().getId(), pedido.getComercio().getDueno().getId(), bloqueado.equipo(),
                             String.format(MENSAJE_AUTOCONFIRMADO_COMERCIO, pedido.getId(), timeoutProperties.getAutoconfirmacionEnCaminoMinutos()),

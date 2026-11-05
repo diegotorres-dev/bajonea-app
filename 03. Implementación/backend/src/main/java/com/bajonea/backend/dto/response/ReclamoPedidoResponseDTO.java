@@ -27,5 +27,6 @@ public record ReclamoPedidoResponseDTO(
         BigDecimal montoAprobado,
         String motivoRechazo,
         LocalDateTime fechaResolucion,
-        Boolean reembolsoEnProceso) {
+        Boolean reembolsoEnProceso,
+        String avisoPlazoVencido) {
 }

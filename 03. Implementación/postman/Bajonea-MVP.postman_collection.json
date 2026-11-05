@@ -114764,7 +114764,7 @@
                   "const mios = pm.response.json().data.filter((n) => n.entidadTipo === 'PEDIDO' && n.entidadId === Number(pm.environment.get('ac_ped_propio')));",
                   "const equipo = mios.filter((n) => /^El pedido #(\\d+) se confirmó automáticamente como entregado porque el cliente no respondió en (\\d+) minutos\\.$/.test(n.mensaje));",
                   "pm.test('Hay 0 aviso(s) del equipo en los personales', () => pm.expect(equipo).to.have.length(0));",
-                  "pm.test('Hay 1 aviso(s) de comprador autoconfirmado', () => pm.expect(mios.filter((n) => /fue autoconfirmado como entregado/.test(n.mensaje))).to.have.length(1));"
+                  "pm.test('Hay 1 aviso(s) de comprador autoconfirmado', () => pm.expect(mios.filter((n) => /como entregado. Si tuviste algún problema/.test(n.mensaje))).to.have.length(1));"
                 ]
               }
             }
@@ -114801,7 +114801,7 @@
                   "const mios = pm.response.json().data.filter((n) => n.entidadTipo === 'PEDIDO' && n.entidadId === Number(pm.environment.get('ac_ped_auto')));",
                   "const equipo = mios.filter((n) => /^El pedido #(\\d+) se confirmó automáticamente como entregado porque el cliente no respondió en (\\d+) minutos\\.$/.test(n.mensaje));",
                   "pm.test('Hay 0 aviso(s) del equipo en los personales', () => pm.expect(equipo).to.have.length(0));",
-                  "pm.test('Hay 0 aviso(s) de comprador autoconfirmado', () => pm.expect(mios.filter((n) => /fue autoconfirmado como entregado/.test(n.mensaje))).to.have.length(0));"
+                  "pm.test('Hay 0 aviso(s) de comprador autoconfirmado', () => pm.expect(mios.filter((n) => /como entregado. Si tuviste algún problema/.test(n.mensaje))).to.have.length(0));"
                 ]
               }
             }
@@ -114838,7 +114838,7 @@
                   "const mios = pm.response.json().data.filter((n) => n.entidadTipo === 'PEDIDO' && n.entidadId === Number(pm.environment.get('ac_ped_auto')));",
                   "const equipo = mios.filter((n) => /^El pedido #(\\d+) se confirmó automáticamente como entregado porque el cliente no respondió en (\\d+) minutos\\.$/.test(n.mensaje));",
                   "pm.test('Hay 0 aviso(s) del equipo en los personales', () => pm.expect(equipo).to.have.length(0));",
-                  "pm.test('Hay 1 aviso(s) de comprador autoconfirmado', () => pm.expect(mios.filter((n) => /fue autoconfirmado como entregado/.test(n.mensaje))).to.have.length(1));"
+                  "pm.test('Hay 1 aviso(s) de comprador autoconfirmado', () => pm.expect(mios.filter((n) => /como entregado. Si tuviste algún problema/.test(n.mensaje))).to.have.length(1));"
                 ]
               }
             }

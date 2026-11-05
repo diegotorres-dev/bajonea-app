@@ -181,6 +181,8 @@ class ReclamoCrearIntegrationTest extends ReclamoIntegrationBase {
         ReclamoPedidoResponseDTO deRetiroVencido = bloqueDe(pedidos, retiro);
         assertFalse(deRetiroVencido.puedeReclamar());
         assertNull(deRetiroVencido.motivosDisponibles());
+        assertEquals("Pasaron los 7 días para reclamar este pedido.", deRetiroVencido.avisoPlazoVencido());
+        assertNull(deDomicilio.avisoPlazoVencido(), "un pedido dentro del plazo no trae el aviso");
         assertNull(bloqueDe(pedidos, enCamino));
 
         int retiroNuevo = pedidoEntregado(cliente, dueno, "RETIRO", LocalDateTime.now().minusDays(1));

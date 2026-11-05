@@ -45,6 +45,19 @@ class PoliticaReclamoTest {
                 politica.motivoDeNoElegible(pedido, pagoAprobado(), ENTREGA.plusDays(7).plusSeconds(1)));
     }
 
+    @Test
+    void elAvisoDePlazoVencidoSoloSeDaSiElPedidoEraReclamableEnTodoLoDemas() {
+        Pedido pedido = entregado(ENTREGA, TipoEntrega.DOMICILIO);
+        LocalDateTime vencido = ENTREGA.plusDays(7).plusSeconds(1);
+
+        assertEquals("Pasaron los 7 días para reclamar este pedido.", politica.avisoPlazoVencido(pedido, pagoAprobado(), vencido));
+        assertNull(politica.avisoPlazoVencido(pedido, pagoAprobado(), ENTREGA.plusDays(7)));
+        assertNull(politica.avisoPlazoVencido(pedido, null, vencido), "sin pago aprobado no es un plazo vencido");
+        assertNull(politica.avisoPlazoVencido(entregado(null, TipoEntrega.DOMICILIO), pagoAprobado(), vencido));
+        assertNull(politica.avisoPlazoVencido(Pedido.builder().estado(EstadoPedido.EN_CAMINO).tipoEntrega(TipoEntrega.DOMICILIO)
+                .fechaEntrega(ENTREGA).build(), pagoAprobado(), vencido));
+    }
+
     @ParameterizedTest
     @EnumSource(value = EstadoPedido.class, mode = EnumSource.Mode.EXCLUDE, names = "ENTREGADO")
     void soloUnPedidoEntregadoSePuedeReclamar(EstadoPedido estado) {

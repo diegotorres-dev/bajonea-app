@@ -294,7 +294,7 @@ function lecturaPersonal(nombre, token, clave, cantidadT30, cantidadT8) {
     deLaClave(clave),
     delEquipo,
     `pm.test('Hay ${cantidadT30} aviso(s) del equipo en los personales', () => pm.expect(equipo).to.have.length(${cantidadT30}));`,
-    `pm.test('Hay ${cantidadT8} aviso(s) de comprador autoconfirmado', () => pm.expect(mios.filter((n) => /fue autoconfirmado como entregado/.test(n.mensaje))).to.have.length(${cantidadT8}));`,
+    `pm.test('Hay ${cantidadT8} aviso(s) de comprador autoconfirmado', () => pm.expect(mios.filter((n) => /como entregado. Si tuviste algún problema/.test(n.mensaje))).to.have.length(${cantidadT8}));`,
   ]);
 }
 

@@ -54,9 +54,11 @@ public class ReclamoVistaService {
             if (reclamo != null) {
                 vista.put(pedido.getId(), deCliente(pedido, reclamo, notas.get(reclamo.getId())));
             } else if (pedido.getEstado() == EstadoPedido.ENTREGADO) {
-                boolean puede = politica.motivoDeNoElegible(pedido, pagos.get(pedido.getId()), ahora) == null;
+                Pago pago = pagos.get(pedido.getId());
+                boolean puede = politica.motivoDeNoElegible(pedido, pago, ahora) == null;
                 vista.put(pedido.getId(), new ReclamoPedidoResponseDTO(puede, politica.fechaLimite(pedido),
-                        puede ? politica.motivosDisponibles(pedido) : null, null, null, null, null, null, null, null, null, null));
+                        puede ? politica.motivosDisponibles(pedido) : null, null, null, null, null, null, null, null, null, null,
+                        politica.avisoPlazoVencido(pedido, pago, ahora)));
             }
         }
         return vista;
@@ -89,13 +91,13 @@ public class ReclamoVistaService {
         return new ReclamoPedidoResponseDTO(false, politica.fechaLimite(pedido), null, reclamo.getId(), reclamo.getMotivo(),
                 reclamo.getEstado(), reclamo.getFechaCreacion(), reclamo.getTipoResolucion(), reclamo.getMontoAprobado(),
                 reclamo.getEstado() == EstadoReclamo.RECHAZADO ? reclamo.getNotaResolucion() : null, reclamo.getFechaResolucion(),
-                enProceso(reclamo, nota));
+                enProceso(reclamo, nota), null);
     }
 
     private ReclamoPedidoResponseDTO deDueno(Reclamo reclamo, NotaCredito nota) {
         return new ReclamoPedidoResponseDTO(null, null, null, null, reclamo.getMotivo(), reclamo.getEstado(),
                 reclamo.getFechaCreacion(), reclamo.getTipoResolucion(), reclamo.getMontoAprobado(), null,
-                reclamo.getFechaResolucion(), enProceso(reclamo, nota));
+                reclamo.getFechaResolucion(), enProceso(reclamo, nota), null);
     }
 
     static Boolean enProceso(Reclamo reclamo, NotaCredito nota) {

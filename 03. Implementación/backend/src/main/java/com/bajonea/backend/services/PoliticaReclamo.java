@@ -51,9 +51,23 @@ public class PoliticaReclamo {
             return MENSAJE_SIN_FECHA;
         }
         if (ahora.isAfter(fechaLimite(pedido))) {
-            return "Pasaron los " + plazoDias + " días para reclamar este pedido.";
+            return mensajePlazoVencido();
         }
         return null;
+    }
+
+    /**
+     * El texto del plazo vencido, o {@code null} si el pedido no está en ese caso. Solo se informa cuando el pedido era
+     * reclamable en todo lo demás (entregado, con pago aprobado y con fecha de entrega): así la pantalla no confunde un
+     * plazo vencido con un pedido que nunca se pudo reclamar.
+     */
+    public String avisoPlazoVencido(Pedido pedido, Pago pago, LocalDateTime ahora) {
+        String motivo = motivoDeNoElegible(pedido, pago, ahora);
+        return motivo != null && motivo.equals(mensajePlazoVencido()) ? motivo : null;
+    }
+
+    private String mensajePlazoVencido() {
+        return "Pasaron los " + plazoDias + " días para reclamar este pedido.";
     }
 
     public List<MotivoReclamo> motivosDisponibles(Pedido pedido) {

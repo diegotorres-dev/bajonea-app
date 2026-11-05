@@ -189,7 +189,7 @@ test.describe('Aviso T30 de pedido autoconfirmado al equipo (API), bloque A6 de 
 
     const delComprador = delPedido(await avisos(request, e.comprador.token), pedidoId);
     expect(delComprador).toHaveLength(1);
-    expect(delComprador[0].mensaje).toContain('fue autoconfirmado como entregado');
+    expect(delComprador[0].mensaje).toContain('como entregado. Si tuviste algún problema, podés reclamar dentro de los 7 días');
     expect(Number(sql(`SELECT COUNT(*) FROM notificacion WHERE tipo = '${T8}' AND entidad_id = ${pedidoId} AND comercio_id IS NULL;`))).toBe(1);
     const sinHeaderDelDueno = await lista(request, e.dueno.token);
     expect(sinHeaderDelDueno.status).toBe(400);
