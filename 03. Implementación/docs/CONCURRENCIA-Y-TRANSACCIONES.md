@@ -593,6 +593,8 @@ Los 18 estreses del runner (`correr-estreses.mjs`, incluidos `carrito` con el ba
 
 **Llamadas externas.** La llamada a Mercado Pago (reembolso total o parcial) y los emails salen por `EjecucionPostCommit` (reglas 16 y 17): después del commit, sin conexión tomada, y no salen si la transacción se revierte. El resultado de Mercado Pago se registra en una transacción corta aparte (`solicitarYRegistrar`). Una falla deja el reclamo `APROBADO` y la nota `FALLIDO` con el motivo; el reintento (`admin-reembolsos`) manda el monto de la nota.
 
+**Las fotos del reclamo son hojas sin lock propio (S5, fotos, 2026-11-05).** `reclamo_foto` y `reclamo_foto_archivo` se escriben solo dentro de la transacción de creación del reclamo, **después** de insertar el reclamo (que ya tiene el pedido y el pago bloqueados): son hojas que viven detrás de `reclamo`, sin lecturas bloqueantes ni orden nuevo. La validación de las fotos (cantidad, tamaño, firma de bytes) y la lectura de sus bytes ocurren **antes** de abrir la transacción, sin conexión. Todo o nada: si el reclamo choca con `uq_reclamo_pedido` o con una regla de elegibilidad, la transacción se deshace entera y no queda ninguna foto (`ReclamoFotosIntegrationTest.unSegundoEnvioParaElMismoPedidoNoDejaFotosHuerfanas`). Nada borra fotos nunca, así que no hay `DELETE` que ordenar. La descarga del Administrador es una lectura de solo lectura por clave primaria `(foto, reclamo)`.
+
 **Cómo se prueba.**
 
 | Qué | Prueba |

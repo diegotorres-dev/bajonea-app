@@ -401,3 +401,13 @@ Sin `data-testid` nuevos. El spec `88` usa los existentes: `suspender-comercio-q
 | Modal de confirmación | `modal-confirmar-resolucion` (el `alertdialog`), `modal-confirmar-resolucion-fondo`, `modal-confirmar-resolucion-titulo`, `texto-confirmar-resolucion`, `btn-confirmar-resolucion`, `btn-cancelar-resolucion`, `aviso-confirmar-resolucion` | — |
 | Detalle de un reclamo resuelto | `resolucion-reclamo`, `tipo-resolucion`, `monto-resolucion`, `fecha-resolucion`, `motivo-rechazo-resolucion`; reembolso que no se pudo hacer: `bloque-reembolso-reclamo`, `estado-reembolso-reclamo`, `error-reembolso-reclamo`, `texto-reembolso-sin-procesar`, `enlace-ir-a-reembolsos` (lleva a `admin-reembolsos.html`, sin parámetro) | — |
 | `comercio-pedido-detalle.html` del Dueño | `bloque-reclamo-dueno`, `estado-reclamo-dueno`, `motivo-reclamo-dueno`, `texto-reembolso-dueno` ("Se reembolsaron $X al Cliente.") | — |
+
+
+### Fotos del reclamo (sub-entrega final de S5)
+
+| Pantalla | `data-testid` | Notas |
+|---|---|---|
+| `reclamo-nuevo.html` (selector de fotos) | `campo-reclamo-fotos`, `ayuda-reclamo-fotos`, `lista-reclamo-fotos`, `input-reclamo-foto` (el `input type=file`, oculto con `sr-only`), `btn-agregar-reclamo-foto`, `reclamo-foto-N`, `miniatura-reclamo-foto-N`, `sin-vista-reclamo-foto-N`, `nombre-reclamo-foto-N`, `btn-quitar-reclamo-foto-N`, `anuncio-reclamo-fotos` (`aria-live`) | `N` empieza en 1. Los errores del servidor salen en `aviso-reclamo` / `aviso-reclamo-mensaje`, que ya existían. |
+| `pedido-detalle.html` (bloque "Tu reclamo") | `texto-fotos-reclamo` ("Adjuntaste N fotos.") | Solo aparece si hay fotos; nunca se muestran las imágenes. |
+| `admin-reclamos.html?id=N` (detalle) | `fotos-del-reclamo`, `foto-reclamo-N`, `miniatura-foto-reclamo-N`, `imagen-foto-reclamo-N`, `error-foto-reclamo-N`; visor: `visor-foto-reclamo` (el `dialog`), `imagen-visor-foto`, `btn-cerrar-visor-foto` | La sección no existe si el reclamo no tiene fotos. |
+| `admin-reclamos.html?id=N` (reembolso fallido) | `error-reembolso-reclamo` (ahora el contenedor), `error-reembolso-frase`, `error-reembolso-detalle` | El texto original del servidor va en `error-reembolso-detalle` (con `textContent`). |

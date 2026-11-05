@@ -1347,3 +1347,19 @@ No se editó `01. Análisis de Requerimientos` ni `02. Diseño`. Lo de la entreg
 3. **Textos de los motivos (finales):** No recibí el pedido · Faltan productos · Productos equivocados · Producto en mal estado · Cobro incorrecto · Otro problema.
 4. **Casos de uso:** el de "Reclamar un pedido" termina en la pantalla "Recibimos tu reclamo" y el de "Resolver un reclamo" pasa por una confirmación. Sin cambios en los DFD.
 5. **Pendiente (no es de esta entrega):** las fotos del reclamo y la pasada de calidad de las pantallas.
+
+## Reclamos: fotos adjuntas (sub-entrega final de S5, 2026-11-05)
+
+### Qué se agregó
+
+- **Fotos del reclamo (opcionales).** Al crear un reclamo el Cliente puede adjuntar hasta 3 fotos de hasta 5 MB cada una, en formato JPG, PNG o WebP (desde el celular, la cámara o la galería). Las fotos de iPhone en formato HEIC no se aceptan: la pantalla muestra el mensaje "Las fotos HEIC de iPhone no se pueden adjuntar. Usá una foto en formato JPG, PNG o WebP". Si una foto no es válida, no se crea el reclamo; el Cliente la quita o la cambia y vuelve a enviar. Un reclamo enviado no se edita, así que no se agregan fotos después.
+- **Quién las ve.** Solo el Administrador, en el detalle del reclamo: miniaturas que se amplían en un visor. El Cliente solo ve cuántas adjuntó ("Adjuntaste 2 fotos."). El Dueño y el Empleado no ven ni la cantidad. Las fotos se guardan para siempre; ningún camino las borra.
+- **Reembolso fallido.** En el detalle del reclamo, cuando Mercado Pago no pudo hacer el reembolso, el Administrador ve primero una frase clara ("Mercado Pago no pudo hacer el reembolso.") y debajo, en letra más chica, el detalle original del servicio de pagos.
+
+### Cambios a reflejar en los documentos de requisitos
+
+1. **Requisitos funcionales:** el reclamo admite hasta 3 fotos opcionales (5 MB cada una, JPG, PNG o WebP), visibles solo para el Administrador. Límites configurables (`reclamo.fotos.max-cantidad` y `reclamo.fotos.max-bytes`).
+2. **Casos de uso:** en "Reclamar un pedido", el Cliente puede adjuntar fotos antes de enviar y quitarlas; el envío falla entero si una foto no es válida. En "Resolver un reclamo", el Administrador puede ver y ampliar las fotos antes de decidir.
+3. **Requisitos no funcionales:** las fotos son datos privados (solo el Administrador, con sesión; nunca con el token en la URL; `X-Content-Type-Options: nosniff`, sin caché). El servidor de base de datos necesita `max_allowed_packet` de al menos 16 MB (ya exigido por los documentos del comercio).
+4. **Modelo de datos:** diccionario v1.36 (tablas `reclamo_foto` y `reclamo_foto_archivo`).
+5. **Sin cambios en los DFD** más allá de que el flujo "Crear reclamo" ahora puede llevar fotos.

@@ -841,3 +841,29 @@ Otros inestables históricos que siguen en la lista del README de Playwright: `0
 - **Los tests con la base acumulada no pueden asumir "mi fila es la primera".** La bandeja de reclamos se ordena de la más vieja a la más nueva y la base de pruebas conserva los reclamos de todas las corridas anteriores: `laBandejaFiltraOrdenaYCuenta` pagina hasta encontrar sus filas y compara posiciones globales. Lo mismo vale para los contadores (se compara con `>=`).
 - **Determinismo sin dormir.** `ReclamoFotoDeLaTransaccionIntegrationTest` sostiene el bloqueo con una conexión JDBC aparte (`autoCommit = false`), lanza la operación en otro hilo, espera 1,5 s para comprobar que sigue esperando y recién entonces escribe y suelta: prueba el bloqueo y la foto de la transacción con un solo test y detecta tanto "sin bloqueo del pedido" como "lectura simple del reclamo".
 - **Montos con formato argentino.** `ResumenTurnoMensajeBuilder.monto` escribe `$250` (sin centavos si son cero) y `$1.250,50`; los avisos y el email de los reclamos lo reutilizan.
+
+
+## S5, fotos del reclamo (2026-11-05)
+
+### Los tests de tokens no se pisan entre sí
+
+- `TokenEspacioLlenoIntegrationTest` ocupa los 500000 códigos de 6 dígitos que terminan en cifra par (filas marcadas con `intentos_fallidos = 987655`) y `TokenRollbackOnlyIntegrationTest` usaba los códigos `990001` y `990002`. **`990002` termina en cifra par**: si un relleno queda en la tabla (una JVM cortada a mitad de la prueba, o el borrado masivo interrumpido), el reintento de `TokenRollbackOnly` choca con una fila del relleno y falla con `DataIntegrityViolationException` en vez del `UnexpectedRollbackException` que espera. El informe de la entrega B de S5 lo vio como "falló después del anterior". En una base limpia los tres tests de tokens pasan en cualquier orden (no se pudo reproducir el fallo; la causa se dedujo de los códigos y del orden).
+- **Qué se hizo:** `TokenRollbackOnlyIntegrationTest` usa códigos con letras (`RBK-COLISION`, `RBK-REINTENTO`), que no pueden estar en el espacio numérico del relleno, y limpia antes y después de cada test. `TokenEspacioLlenoIntegrationTest` borra el relleno por lotes de 50000 antes de llenar (si una corrida anterior murió) y después de cada test, y verifica que no quede ninguna fila marcada. Además, su precondición ya no es "más de 499000 filas de relleno" (fallaba sobre una base con muchos tokens pares de otros tests, porque `INSERT IGNORE` saltea los códigos ya ocupados) sino "relleno + pares que ya existían = 500000".
+- **Regla para tests con relleno masivo:** los códigos o datos de cualquier otro test que viva en el mismo espacio hay que sacarlos de ese espacio (letras, un prefijo propio) en vez de confiar en que el relleno ya se borró, y el relleno tiene que borrarse al empezar y al terminar.
+
+### Multipart: tres topes, y el manejador de "demasiado grande" tiene que saber de qué ruta viene
+
+- Un reclamo con tres fotos de 5 MB manda hasta 15 MB más el JSON. Los topes de Spring son `spring.servlet.multipart.max-file-size=16MB` (por archivo, sin cambios: lo comparten los documentos del comercio), `max-request-size=50MB` (antes 17 MB: dejaba pasar un solo documento; ahora deja pasar tres archivos de hasta el tope por archivo para que el servicio diga el tamaño real) y `server.tomcat.max-swallow-size=64MB` (antes 32 MB). Los límites de negocio (3 fotos, 5 MB) salen de `reclamo.fotos.max-cantidad` y `reclamo.fotos.max-bytes` y se validan en el servicio con el tamaño real, antes de abrir la transacción.
+- `GlobalExceptionHandler.handleMaxUploadSizeExceeded` hablaba siempre de documentos ("El archivo pesa X y el máximo es 8 MB"): para un envío de reclamo (`.../reclamo`) responde "Las fotos pesan demasiado. Cada foto puede tener hasta 5 MB" con el código `RECLAMO_FOTO_TAMANO_EXCEDIDO`.
+- **`max_allowed_packet`:** cada foto se guarda con su propio `INSERT` (una fila de `reclamo_foto_archivo`), así que el paquete más grande es una foto de 5 MB; con el mínimo de 16 MB que ya exigen los documentos alcanza. Medido: la base de desarrollo de Diego tiene 64 MB.
+
+### `tinyint` no pasa `ddl-auto=validate`
+
+- La primera versión de `V51` declaraba `orden` como `tinyint(4)` y Hibernate, que mapea el campo a `Integer`, no arrancó: "wrong column type encountered in column [orden]; found [tinyint], but expecting [integer]". Se corrigió a `int(11)` (el `CHECK` sigue limitando el valor a 1–3) y se rehízo `bajonea_test` (borrar las dos tablas y la fila 51 de `flyway_schema_history`; solo se había aplicado ahí).
+
+### Newman: archivos en `formdata` y cuerpos grandes
+
+- Un request de Postman con `body.mode = formdata` y partes `type: file` toma el archivo de `src`, relativo a `--working-dir` (`correr-newman.mjs` usa `testing/playwright`). La parte JSON del reclamo es una parte de texto con `contentType: application/json`: Spring la lee con `@RequestPart`.
+- Las fotos chicas (`reclamo-foto.jpg`, `.webp`, `.heic`, el texto con extensión `.jpg`) están versionadas en `testing/playwright/fixtures/`; las dos de 5 MB (`foto-5mb-justa.jpg` y `foto-5mb-mas-uno.jpg`) **se generan** en `fixtures/generados/` (ignorada por git) al correr el constructor y al correr `correr-newman.mjs`, para no versionar 10 MB.
+- Una carpeta de Newman que registra un comercio con nombre fijo no se puede repetir sobre la misma base desde que el nombre es único en toda la plataforma (`V37`): el nombre de la carpeta 90 lleva el nombre de usuario aleatorio del Dueño.
+- Un chequeo de "no hay rastro de las fotos" sobre el JSON de un pedido no puede buscar `image/`: el comercio trae `fotoPerfilUrl` con `.../image/upload/...`.

@@ -104,10 +104,55 @@ Frontend, tres specs de Playwright, capturas y documentación. Sin migraciones. 
 | Archivo | Tests | Qué cubre |
 |---|---|---|
 | `tests/94-reclamos-cliente-ui.spec.ts` | 14 | Botón solo cuando corresponde (ausente en rechazado, cancelado, en preparación y no retirado), plazo vencido deshabilitado, motivos de domicilio y de retiro, validaciones por campo con foco y contador, envío con "Enviando…" sin doble envío, error del servidor visible con foco, segundo reclamo imposible, pedido ajeno o inexistente, los tres resultados (aprobado total, parcial con el reembolso en proceso, rechazado con el motivo literal y el botón a Soporte), HTML mostrado literal, chips del listado y el aviso de entrega automática con el texto nuevo. |
-| `tests/95-reclamos-administrador-ui.spec.ts` | 13 | Tarjeta y contador del panel, bandeja (filtros con contadores, más viejos arriba, vacío por filtro, error con reintento), detalle de un pendiente (mensaje literal, productos, saldo), sin opción elegida, reembolso total con modal y "Cancelar", parcial (solo números con dos decimales, tope, monto con decimales), rechazo (motivo mínimo y máximo, aviso al Cliente), segundo intento con el reclamo ya resuelto, reembolso fallido con el motivo y el camino a Reembolsos, reclamo resuelto en solo lectura, reclamo inexistente y acceso denegado a otros roles. |
+| `tests/95-reclamos-administrador-ui.spec.ts` | 14 | Tarjeta y contador del panel, bandeja (filtros con contadores, más viejos arriba, vacío por filtro, error con reintento), detalle de un pendiente (mensaje literal, productos, saldo), sin opción elegida, reembolso total con modal y "Cancelar", parcial (solo números con dos decimales, tope, monto con decimales), rechazo (motivo mínimo y máximo, aviso al Cliente), segundo intento con el reclamo ya resuelto, reembolso fallido con el motivo y el camino a Reembolsos, reclamo resuelto en solo lectura, reclamo inexistente y acceso denegado a otros roles. |
 | `tests/96-reclamos-dueno-empleado-ui.spec.ts` | 8 | Bloque del Dueño en los tres estados (sin el mensaje del Cliente ni el motivo del rechazo), sin bloque cuando no hay reclamo, aviso del reembolso en la campana y navegación al pedido, ningún aviso en un rechazo, el Empleado sin bloque ni aviso ni campo en la respuesta, y el comercio suspendido en solo lectura. |
 | `tests/helpers/reclamos.ts` | — | Escenario (Dueño con Mercado Pago simulada, producto, Cliente), pedido entregado por el camino real (preferencia y webhook contra el simulado), reclamo y resolución por API, reembolsos que fallan y capturas. |
 | `PoliticaReclamoTest`, `ReclamoCrearIntegrationTest`, `PedidoAutoconfirmadoEquipoIntegrationTest` | +1, +2 aserciones, +1 aserción | `avisoPlazoVencido` y el texto nuevo del aviso. |
 | `tests/49-pedidos-autoconfirmado-equipo-api.spec.ts`, `build-pedidos-autoconfirmado-tramoE3-A6-postman.mjs` y la colección de Newman | — | La aserción del texto del aviso del Cliente. |
 
 Capturas a 375 px en `docs/capturas-reclamos/`, una por pantalla y estado (los specs las regeneran).
+
+## Fotos del reclamo (sub-entrega final de S5, 2026-11-05)
+
+El Cliente puede adjuntar hasta 3 fotos (opcionales, de hasta 5 MB cada una, JPG, PNG o WebP) al crear un reclamo. Solo las ve el Administrador. Nada se borra nunca.
+
+### Backend
+
+| Archivo | Qué hace |
+|---|---|
+| `db/migration/V51__reclamo_fotos.sql` | Tablas `reclamo_foto` (metadatos: `reclamo_id` con FK, `orden` 1–3 con `UNIQUE (reclamo_id, orden)` y `CHECK`, `nombre_original`, `tipo_contenido`, `tamano_bytes`, `fecha_creacion`) y `reclamo_foto_archivo` (`foto_id` PK/FK, `contenido` `LONGBLOB`). Dos tablas, como `documento_comercio` / `documento_comercio_archivo`: ningún listado lee el binario. No toca los reclamos existentes. |
+| `entities/ReclamoFoto.java`, `entities/ReclamoFotoArchivo.java` | Entidades (sin setters: nunca se modifican). |
+| `repositories/ReclamoFotoRepository.java`, `ReclamoFotoArchivoRepository.java` | Lista por reclamo, búsqueda `(foto, reclamo)` y conteo agrupado por reclamo (una sola consulta). Sin método de borrado. |
+| `config/ReclamoFotosProperties.java` | `reclamo.fotos.max-cantidad` (3) y `reclamo.fotos.max-bytes` (5 MB). |
+| `services/ReclamoFotoService.java` | `validar` (cantidad, tamaño y formato por la firma de bytes, antes de abrir ninguna transacción), `guardar` (dentro de la transacción del reclamo), `contarPorReclamo`, `listar` y `descargar`. |
+| `util/FirmaArchivo.java` | `detectarImagen` (JPEG, PNG y WebP; el PDF no) y `esHeic` (para el mensaje claro de iPhone). |
+| `exceptions/ValidacionFotoReclamoException.java` y `GlobalExceptionHandler` | `400` con `data.codigo`: `RECLAMO_FOTO_CANTIDAD_EXCEDIDA`, `RECLAMO_FOTO_TAMANO_EXCEDIDO` y `RECLAMO_FOTO_FORMATO_NO_PERMITIDO`. El manejador de "multipart demasiado grande" distingue la ruta `.../reclamo`. |
+| `services/ReclamoService.java`, `controllers/ReclamoController.java` | `POST /api/v1/pedidos/cliente/{id}/reclamo` acepta `application/json` (como antes, sin fotos) y `multipart/form-data` (parte `reclamo` con el JSON y hasta tres partes `fotos`): un solo pedido que crea el reclamo y las fotos todo o nada. |
+| `services/ReclamoAdminService.java`, `controllers/ReclamoAdministradorController.java`, `dto/response/ReclamoAdminResponseDTO.java` | El detalle suma `fotos` (`id`, `orden`, `nombre`, `tipoContenido`, `tamanoBytes`) y `GET /api/v1/administrador/reclamos/{id}/fotos/{fotoId}` entrega el archivo (`Content-Type` real, `Content-Disposition: inline`, `X-Content-Type-Options: nosniff`, `Cache-Control: no-store`; un id ajeno o inexistente es `404`). |
+| `services/ReclamoVistaService.java`, `dto/response/ReclamoPedidoResponseDTO.java` | El bloque del Cliente suma `cantidadFotos`; el del Dueño y el del Empleado no cambian. |
+| `application.properties` | `reclamo.fotos.*`, `spring.servlet.multipart.max-request-size=50MB` y `server.tomcat.max-swallow-size=64MB`. |
+
+### Frontend
+
+| Archivo | Qué hace |
+|---|---|
+| `js/reclamo-fotos.js` (nuevo) | Selector de hasta 3 fotos: espacios con "Agregar", miniatura por objeto local, "Sin vista previa" si el navegador no la puede mostrar, "Quitar", `aria-live` y foco. No duplica las reglas de tamaño ni de formato. |
+| `js/reclamo-nuevo.js` | Sección "Fotos (opcional)" y envío como `FormData` (parte `reclamo` JSON y partes `fotos`); bloquea el formulario mientras envía y muestra los errores del servidor con foco. |
+| `js/reclamos-comun.js` | Línea "Adjuntaste N fotos." (singular con 1) en el bloque "Tu reclamo" del Cliente. |
+| `js/admin-reclamos.js` | Sección "Fotos del Cliente" del detalle: miniaturas descargadas con el header de autorización (blob local, nunca un token en la URL), visor ampliado con "Cerrar" y Escape, error por foto sin romper el detalle. Además, el reembolso que Mercado Pago no pudo hacer muestra una frase clara ("Mercado Pago no pudo hacer el reembolso.") y debajo el detalle original en menor jerarquía. |
+| `css/styles.css` | `.reclamo-fotos*`, `.reclamo-fotos-admin*`, `.reclamo-visor*` y `.reclamo-bloque__error-frase`/`-detalle`. |
+
+### Pruebas
+
+| Archivo | Tests | Qué cubre |
+|---|---|---|
+| `ReclamoFotosIntegrationTest` | 13 | 0, 1, 2 y 3 fotos con su orden, tipo y tamaño; cuarta foto; 5 MB justos y 5 MB + 1; texto con extensión `.jpg`, PDF, HEIC y archivo vacío; todo o nada (una foto inválida no deja nada; un segundo envío no deja fotos huérfanas); 404 ajeno; el Administrador ve y descarga con los encabezados seguros; 404 de una foto de otro reclamo; el Cliente solo ve la cantidad; el JSON del Dueño y del Empleado sin rastro; 403/401 de la descarga. |
+| `ReclamoFotosPoolDiminutoIntegrationTest` | 1 | Doce envíos de tres fotos con un pool de tres conexiones terminan todos. |
+| `ReclamoFotoServiceTest`, `GlobalExceptionHandlerFotosReclamoTest`, `FirmaArchivoTest` (+2) | 5, 3, +2 | Partes vacías, nombres, límites por propiedad, manejador de tamaño y firmas. |
+| `TokenEspacioLlenoIntegrationTest`, `TokenRollbackOnlyIntegrationTest` | — | Aislamiento (ver `docs/APRENDIZAJES-TECNICOS.md`). |
+| `build-reclamos-fotos-fase5s5-postman.mjs` (carpeta `90`) | 100 requests | Creación con y sin fotos, errores de cantidad, formato (incluidos HEIC y texto disfrazado) y tamaño, todo o nada, descarga del Administrador y visibilidad por rol. |
+| `tests/97-reclamos-fotos-ui.spec.ts` | 10 | Formulario, miniaturas, quitar y límite de 3; envío con "Enviando…"; "Adjuntaste N fotos."; errores de formato y tamaño; "Sin vista previa"; detalle del Administrador con visor (botón y Escape); foto que no carga; Dueño y Empleado sin rastro. |
+| `tests/95-reclamos-administrador-ui.spec.ts` | (ajustado, 14 tests) | El reembolso fallido: frase clara y detalle por separado; un test nuevo con un motivo genérico (captura `25b`). |
+| `tests/helpers/reclamos.ts` | — | `reclamarConFotosPorApi` (multipart armado a mano) y fotos de prueba. |
+
+Capturas a 375 px en `docs/capturas-reclamos/` (`33` a `41`, más la `25` actualizada).
