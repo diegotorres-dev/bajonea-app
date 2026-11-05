@@ -238,6 +238,13 @@ export async function initAdminDashboard() {
       subtituloTestid: 'contador-soporte-esperando',
       href: 'admin-soporte.html',
     },
+    {
+      icon: ICONS.alert,
+      titulo: 'Reclamos',
+      subtitulo: metricas.reclamosPendientes === 0 ? 'Sin reclamos pendientes' : `${metricas.reclamosPendientes} ${metricas.reclamosPendientes === 1 ? 'pendiente' : 'pendientes'} de revisar`,
+      subtituloTestid: 'contador-reclamos-pendientes',
+      href: 'admin-reclamos.html',
+    },
   ];
 
   const grid = document.getElementById('gestion-grid');
