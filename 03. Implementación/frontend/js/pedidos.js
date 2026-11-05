@@ -2,6 +2,7 @@ import { apiFetch, ApiError, getUsuario } from './api.js';
 import { exigirContextoCliente } from './contexto.js';
 import { renderTopBar, renderBottomNav, pintarAvatarComercio, renderPedidoEstadoHeader, showToast } from './catalogo.js';
 import { normalizarCampos } from './validators.js';
+import { crearBloqueReclamoCliente, crearChipReclamoDeLista, fechaDelReclamo } from './reclamos-comun.js';
 
 function normalizarPedido(pedido) {
   normalizarCampos(pedido, ['nombreCliente']);
@@ -304,6 +305,10 @@ function renderPedidoCard(pedido, comercio) {
     card.appendChild(aviso);
   }
 
+  if (pedido.reclamo && pedido.reclamo.estado) {
+    card.appendChild(crearChipReclamoDeLista(pedido.reclamo.estado));
+  }
+
   const bottom = crear('div', 'pedido-card__bottom');
   const total = crear('span', 'pedido-card__total');
   total.setAttribute('data-testid', 'total-pedido');
@@ -480,6 +485,44 @@ function renderAccionesCliente(container, pedido, onActualizado, { procesando = 
   }
 }
 
+function renderReclamoCliente(body, pedido) {
+  const reclamo = pedido.reclamo;
+  if (!reclamo) {
+    return;
+  }
+  if (reclamo.estado) {
+    body.appendChild(crearBloqueReclamoCliente(reclamo, pedido.total));
+    return;
+  }
+  const seccion = crear('section', 'reclamo-ofrecimiento');
+  seccion.setAttribute('data-testid', 'seccion-reclamar');
+  if (reclamo.puedeReclamar) {
+    const aviso = crear('p', 'reclamo-ofrecimiento__texto');
+    aviso.setAttribute('data-testid', 'texto-plazo-reclamo');
+    aviso.textContent = `¿Tuviste un problema con este pedido? Tenés hasta el ${fechaDelReclamo(reclamo.fechaLimiteReclamo)} para reclamar.`;
+    seccion.appendChild(aviso);
+    const boton = crear('a', 'btn btn-secondary');
+    boton.href = `reclamo-nuevo.html?pedido=${pedido.id}`;
+    boton.setAttribute('data-testid', 'btn-reclamar-pedido');
+    boton.textContent = 'Tuve un problema con este pedido';
+    seccion.appendChild(boton);
+  } else if (reclamo.avisoPlazoVencido) {
+    const aviso = crear('p', 'reclamo-ofrecimiento__texto');
+    aviso.setAttribute('data-testid', 'texto-plazo-vencido');
+    aviso.textContent = reclamo.avisoPlazoVencido;
+    seccion.appendChild(aviso);
+    const boton = crear('button', 'btn btn-secondary');
+    boton.type = 'button';
+    boton.disabled = true;
+    boton.setAttribute('data-testid', 'btn-reclamar-pedido');
+    boton.textContent = 'Tuve un problema con este pedido';
+    seccion.appendChild(boton);
+  } else {
+    return;
+  }
+  body.appendChild(seccion);
+}
+
 export async function initPedidoDetalle() {
   if (!(await exigirContextoCliente())) {
     return;
@@ -638,6 +681,8 @@ export async function initPedidoDetalle() {
     totalValue.textContent = formatearPrecio(pedido.total);
     totalLine.appendChild(totalValue);
     body.appendChild(totalLine);
+
+    renderReclamoCliente(body, pedido);
 
     const accionesSlot = crear('div');
     accionesSlot.style.marginTop = '24px';
