@@ -1363,3 +1363,30 @@ No se editó `01. Análisis de Requerimientos` ni `02. Diseño`. Lo de la entreg
 3. **Requisitos no funcionales:** las fotos son datos privados (solo el Administrador, con sesión; nunca con el token en la URL; `X-Content-Type-Options: nosniff`, sin caché). El servidor de base de datos necesita `max_allowed_packet` de al menos 16 MB (ya exigido por los documentos del comercio).
 4. **Modelo de datos:** diccionario v1.36 (tablas `reclamo_foto` y `reclamo_foto_archivo`).
 5. **Sin cambios en los DFD** más allá de que el flujo "Crear reclamo" ahora puede llevar fotos.
+
+## Inactivación automática por falta de uso — Fase 5, tramo S6 entrega A (backend listo; cambios de requisitos y sugerencias de interfaz para la entrega B), 2026-11-05
+
+### Qué cambió
+
+- Todos los días de madrugada el sistema pasa a **inactiva** a la cuenta que lleva más de 3 meses sin usarse. Excepciones: el Administrador, las cuentas suspendidas, pendientes de verificar o bloqueadas, y toda cuenta con un pedido en curso (como comprador o, si es Dueño, en cualquiera de sus comercios). Un Dueño cuenta como activo si alguno de sus comercios recibió un pedido en los últimos 3 meses, aunque él no haya entrado. No hay aviso previo (decisión de Diego).
+- Al inactivar a un Dueño, sus comercios (aprobados, aptos para vender o cerrados temporalmente) quedan **inactivos**: salen del catálogo y no reciben pedidos; los suspendidos por separado siguen suspendidos. Su equipo los ve en solo lectura.
+- La persona recibe un email ("Tu cuenta quedó inactiva por falta de uso") una sola vez, sin reintentos.
+- **Volver:** al iniciar sesión con la contraseña correcta, el login responde "Cuenta inactiva" con un código estable; la persona puede reactivar con su usuario y contraseña (inicia sesión en el acto), con el código por email o recuperando la contraseña; el Administrador también puede reactivar desde la ficha. Al reactivar, la cuenta vuelve a activa y los comercios al estado que tenían (apto para vender o aprobado, según Mercado Pago y documentos).
+- Tres intentos de contraseña incorrecta en una cuenta inactiva la dejan a la espera de recuperar la contraseña (sin cambiar de estado).
+
+### Cambios a reflejar en los documentos de requisitos
+
+1. **Requisitos funcionales (sistema):** inactivación automática a los 3 meses calendario sin actividad (configurable), con las excepciones de arriba; el último acceso se renueva con cada inicio de sesión, con la reactivación, con la verificación del email, con el desbloqueo y al terminar una suspensión. Aviso por email y dentro de la app al inactivar. Reactivación por usuario y contraseña, por código, por recuperación de contraseña o por el Administrador.
+2. **Requisitos funcionales (Administrador):** reactivar una cuenta inactiva desde su ficha (Cliente o Dueño).
+3. **Casos de uso:** "Reactivar cuenta" (la persona inicia sesión, se le informa que su cuenta está inactiva y la reactiva); nuevo caso de sistema "Inactivar cuentas por falta de uso".
+4. **Requisitos no funcionales:** el proceso corre una vez por día, procesa como máximo 200 cuentas por corrida, cada cuenta en su propia transacción, y debe correr en una sola instancia.
+5. **Modelo de datos:** diccionario v1.37 (fragmentos en `diccionario-v1.37-fragmentos.md`).
+6. **DFD:** el proceso de inicio de sesión suma la salida "cuenta inactiva"; nuevo proceso "Inactivar cuentas" con la base de usuarios, comercios y pedidos como almacenes.
+
+### Sugerencias de interfaz para la entrega B
+
+- **Login:** cuando el `409` trae `data.codigo = CUENTA_INACTIVA`, mostrar una hoja o pantalla "Tu cuenta está inactiva" con el botón principal "Reactivar mi cuenta" (llama a `POST /auth/reactivar-cuenta/con-credenciales` con el mismo usuario y contraseña ya escritos, y entra directo) y, debajo, "Recibir un código por email" (el flujo actual de `reactivar-cuenta.html`). Si la reactivación responde `401` con `intentosRestantes`, mostrar el mismo mensaje que el login.
+- Hoy el login ya muestra el enlace "Solicitá la reactivación" porque el texto no cambió; la entrega B lo reemplaza por la hoja de arriba.
+- **Ficha del Administrador (clientes y Dueños):** botón "Reactivar cuenta" visible solo con la cuenta `INACTIVO` (`PUT /administrador/cuentas/{id}/reactivar`), con confirmación y toast de éxito.
+- **Equipo:** un Empleado cuyo comercio está inactivo ve el panel en solo lectura; las escrituras responden `409` con `data.codigo = COMERCIO_INACTIVO` ("El comercio está inactivo: por ahora no se puede modificar."). Conviene un aviso fijo "Comercio inactivo" en el panel, como el de comercio suspendido.
+- **Avisos dentro de la app:** `CUENTA_INACTIVADA` y `COMERCIO_INACTIVADO` ya existen como tipos; la persona no puede verlos mientras esté inactiva, así que sirven como rastro al volver.

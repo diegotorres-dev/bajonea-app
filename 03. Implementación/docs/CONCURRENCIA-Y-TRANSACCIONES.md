@@ -604,3 +604,22 @@ Los 18 estreses del runner (`correr-estreses.mjs`, incluidos `carrito` con el ba
 | Ni el email ni Mercado Pago con una conexión tomada (pool de 3 conexiones, 1,5 s de latencia en cada uno) | `ReclamoPoolDiminutoIntegrationTest` |
 | Ráfagas de creaciones y resoluciones mezcladas, reintentos con falla simulada y suspensión del Cliente, pool por defecto de 10 | `stress-locks-tramoReclamos.mjs` (id `reclamos`, escenario 23) |
 | Mutaciones (corrida base verde obligatoria) | `mutaciones-reclamos-s5.mjs` |
+
+## Inactivación automática por falta de uso — Fase 5, tramo S6 (2026-11-05)
+
+**Dónde queda en el orden global.** No agrega ninguna hoja: usa el orden vigente `usuario` → `empleado_comercio` → `dueno`/`cuenta_mercado_pago` → `comercio` → `documento_comercio` → `producto`/`pedido` → `pago` → `carrito` → … La corrida toma, por cuenta y en una transacción propia, `usuario` (`FOR UPDATE`) y después, si es un Dueño, sus comercios inactivables por clave primaria y en id ascendente (`FOR UPDATE`). No toma `cuenta_mercado_pago` (inactivar no la lee). Nunca bloquea todos los comercios del Dueño de una vez (se interbloquearía con la aprobación de un comercio pendiente, ver S3.2).
+
+**El bloqueo tiene que ser lo primero que se lee.** La lista de candidatas y los ids de los comercios de cada Dueño se leen *antes* de abrir la transacción (lecturas sueltas, sin conexión retenida). Dentro de la transacción la primera sentencia es el `SELECT ... FOR UPDATE` del usuario y después los de cada comercio; **recién con todo tomado** se corre la revalidación (`InactividadCuentaRepository.sigueElegible`, una lectura común): como es la primera lectura común, la foto de REPEATABLE READ se fija después de los bloqueos y ve lo último confirmado (un login o un pedido que se confirmaron mientras esta transacción esperaba). Una lectura común anterior habría fijado la foto antes y la revalidación habría decidido sobre datos viejos. Un pedido nuevo de un comercio lo toma con bloqueo compartido y uno de un Cliente toma su fila de `usuario`: o terminan antes de que esta transacción obtenga su bloqueo, o esperan.
+
+**Una sola condición de elegibilidad.** La lista y la revalidación usan el mismo `WHERE` (`InactividadCuentaRepository.CONDICION`), así que no pueden discrepar.
+
+**Un comercio nuevo en medio de la corrida.** Si después de tomar los bloqueos aparece un comercio inactivable del Dueño que no estaba en la lista (se aprobó entre la lectura y el bloqueo), la cuenta se omite esa noche en vez de quedar inactiva con un comercio disponible; la corrida siguiente los inactiva a todos juntos.
+
+**Emails.** `AvisoCuentaService.avisarInactivacion` registra el email con `EjecucionPostCommit` (reglas 16 y 17): sale recién cuando la transacción de esa cuenta se confirmó y soltó su conexión, no sale si se revierte, un solo intento, con rastro `ENVIADO`/`FALLIDO` en `notificacion`.
+
+**Reactivación.** `ReactivacionCuentaService` (`MANDATORY`) exige la fila del usuario bloqueada por quien llama: el login por usuario y contraseña, el código del email y la recuperación ya la tomaban; el Administrador toma `usuario` (compartido el suyo, exclusivo el de la cuenta, en id ascendente). Después `AptitudVentaComercioService.restaurar` lee la cuenta de Mercado Pago con bloqueo y cada comercio `INACTIVO` por clave primaria, como en el desbloqueo.
+
+| Prueba | Qué cubre |
+|---|---|
+| `InactivacionCuentaConcurrenciaIntegrationTest` | Un login que tiene la fila y confirma después de elegida la cuenta (la corrida espera y no inactiva); cuenta que deja de estar activa mientras espera; comercio nuevo en medio; un fallo no frena a las demás ni deja nada a medias. |
+| `InactivacionCuentaPoolDiminutoIntegrationTest` | Pool de 3 conexiones y email de 1 s: las demás consultas no se quedan sin conexión. |

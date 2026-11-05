@@ -867,3 +867,20 @@ Otros inestables históricos que siguen en la lista del README de Playwright: `0
 - Las fotos chicas (`reclamo-foto.jpg`, `.webp`, `.heic`, el texto con extensión `.jpg`) están versionadas en `testing/playwright/fixtures/`; las dos de 5 MB (`foto-5mb-justa.jpg` y `foto-5mb-mas-uno.jpg`) **se generan** en `fixtures/generados/` (ignorada por git) al correr el constructor y al correr `correr-newman.mjs`, para no versionar 10 MB.
 - Una carpeta de Newman que registra un comercio con nombre fijo no se puede repetir sobre la misma base desde que el nombre es único en toda la plataforma (`V37`): el nombre de la carpeta 90 lleva el nombre de usuario aleatorio del Dueño.
 - Un chequeo de "no hay rastro de las fotos" sobre el JSON de un pedido no puede buscar `image/`: el comercio trae `fotoPerfilUrl` con `.../image/upload/...`.
+
+## S6, inactivación por falta de uso (2026-11-05)
+
+### `27:507`, `27:536` y `27:559` no eran "el reloj simulado no avanza el sondeo"
+
+- Los tres fallaban por el mismo motivo, y no era la explicación que se venía repitiendo. Con `page.clock.install()`, `fastForward(15_000)` dispara **todos** los temporizadores que vencen en esos 15 s, incluidos los de aborto de 15 s que `apiFetch` arma en cada petición (`REQUEST_TIMEOUT_MS`). Desde que el panel del Dueño pide `documentos/requisitos` (bloque "Para empezar a vender") quedan peticiones en vuelo después de que `franja-comercio` es visible, y el salto las aborta: la pantalla va a `errores/timeout.html`.
+- **Regla para los specs con reloj simulado:** antes de `fastForward` esperar `waitForLoadState('networkidle')`. Es un cambio del test; la pantalla se comporta bien.
+- **Cómo se encontró:** un spec temporal que lista las peticiones en vuelo (`requestfinished`/`requestfailed`) en el momento del salto.
+
+### Un `@MockitoSpyBean` sobre un bean con `@Transactional(MANDATORY)` falla al configurar el stub
+
+- `doThrow(...).when(spy).metodo(...)` pasa por el interceptor transaccional del proxy y responde "No existing transaction found for transaction marked with propagation 'mandatory'". Se configura dentro de un `TransactionTemplate`.
+
+### Una mutación que no cambia el resultado puede ser código redundante, no un test flojo
+
+- Quitar solo `u.estado = 'ACTIVO'` de la consulta de candidatas no hizo fallar nada porque `InactivacionCuentaService.inactivar` repite el chequeo del estado con la fila ya bloqueada. Hay que mutar las dos defensas juntas para probar que el test de exentos las cubre.
+- Las mutaciones de la inactivación pueden dejar al Administrador `INACTIVO` en `bajonea_test` (la mutación que quita la exención); restaurarlo con `UPDATE usuario SET estado='ACTIVO' WHERE rol='ADMINISTRADOR'` antes de la siguiente.
