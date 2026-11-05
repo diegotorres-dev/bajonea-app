@@ -30,8 +30,8 @@ type Metodo = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 const HEADER = 'X-Comercio-Id';
 const NO_ENCONTRADO = { mensaje: 'Comercio no encontrado', data: { codigo: 'COMERCIO_NO_DISPONIBLE' } };
-const ACCESIBLES = ['APROBADO', 'APTO_VENTA', 'SUSPENDIDO', 'CERRADO_TEMPORALMENTE'];
-const NO_ACCESIBLES = ['PENDIENTE', 'RECHAZADO', 'INACTIVO', 'RECHAZO_DEFINITIVO'];
+const ACCESIBLES = ['APROBADO', 'APTO_VENTA', 'SUSPENDIDO', 'CERRADO_TEMPORALMENTE', 'INACTIVO'];
+const NO_ACCESIBLES = ['PENDIENTE', 'RECHAZADO', 'RECHAZO_DEFINITIVO'];
 const CAMPOS_PERFIL_EMPLEADO = [
   'abiertoAhora',
   'aceptaDelivery',
@@ -651,7 +651,7 @@ test.describe('Rol Empleado, tramo E2 (API): acceso de lectura a un comercio', (
       const filas = respuesta.body.data as Array<Record<string, any>>;
       expect(filas.map((fila) => fila.id)).toEqual(ACCESIBLES.map((estado) => ids[estado]));
       expect(filas.map((fila) => fila.estado)).toEqual(ACCESIBLES);
-      expect(filas.map((fila) => fila.operativo)).toEqual([true, true, false, false]);
+      expect(filas.map((fila) => fila.operativo)).toEqual([true, true, false, false, false]);
       for (const fila of filas) {
         expect(Object.keys(fila).sort()).toEqual(CAMPOS_MIS_COMERCIOS);
         expect(typeof fila.cantidadNotificacionesNoLeidas).toBe('number');

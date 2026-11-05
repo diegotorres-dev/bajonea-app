@@ -515,15 +515,15 @@ test.describe('Rol Empleado, E4 bloque A2 (API): renuncia y acceso propio', () =
 
     ponerEstadoComercio(propio.comercioId, 'SUSPENDIDO');
     expect((await acceso(request, propio.comercioId, m.token)).body.data.comercioAccesible).toBe(true);
-    for (const estado of ['INACTIVO', 'RECHAZADO', 'PENDIENTE', 'RECHAZO_DEFINITIVO']) {
+    ponerEstadoComercio(propio.comercioId, 'INACTIVO');
+    expect((await acceso(request, propio.comercioId, m.token)).body.data.comercioAccesible).toBe(true);
+    for (const estado of ['RECHAZADO', 'PENDIENTE', 'RECHAZO_DEFINITIVO']) {
       ponerEstadoComercio(propio.comercioId, estado);
       const consulta = await acceso(request, propio.comercioId, m.token);
       expect(consulta.status).toBe(200);
       expect(consulta.body.data).toMatchObject({ estado: 'INACTIVO', motivoBaja: 'RENUNCIA', comercioAccesible: false });
       expect(Object.keys(consulta.body.data).sort()).toEqual(['comercioAccesible', 'estado', 'motivoBaja']);
-      if (estado !== 'INACTIVO') {
-        expect(JSON.stringify(consulta.body)).not.toContain(estado);
-      }
+      expect(JSON.stringify(consulta.body)).not.toContain(estado);
     }
   });
 

@@ -59,7 +59,7 @@ class AuthServiceBloqueoComercioTest {
         authService = new AuthService(usuarioRepository, mock(TokenRepository.class), mock(TokenService.class),
                 mock(SesionRepository.class), comercioRepository, mock(HistorialCambioNombreUsuarioRepository.class),
                 aptitudService, passwordEncoder, mock(JwtService.class),
-                mock(EmailService.class), estadoReal());
+                mock(EmailService.class), estadoReal(), mock(ReactivacionCuentaService.class));
     }
 
     private static EstadoUsuarioService estadoReal() {

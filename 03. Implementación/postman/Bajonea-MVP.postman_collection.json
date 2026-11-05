@@ -217214,6 +217214,3190 @@
           ]
         }
       ]
+    },
+    {
+      "name": "91 - Inactivacion de cuentas por falta de uso S6 (umbral, exentos, Dueno y comercios, login con codigo estable, reactivacion, Administrador)",
+      "item": [
+        {
+          "name": "El Administrador obtiene su propio id",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('in6_admin_id', pm.response.json().data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Cliente A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente A\",\n  \"apellido\": \"Inactividad\",\n  \"dni\": \"{{in6_a_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551240\",\n  \"nombreUsuario\": \"{{in6_a_usuario}}\",\n  \"email\": \"{{in6_a_email}}\",\n  \"password\": \"{{in6_a_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('in6_a_email', 'in6.a.' + s + '@bajonea.test');",
+                  "pm.environment.set('in6_a_usuario', ('in6a' + s).slice(0, 20));",
+                  "pm.environment.set('in6_a_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('in6_a_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Cliente A",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{in6_a_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{in6_a_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('in6_a_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Cliente A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{in6_a_email}}\",\n  \"codigo\": \"{{in6_a_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Cliente A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{in6_a_usuario}}\",\n  \"password\": \"{{in6_a_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('in6_a_token', pm.response.json().data.token);",
+                  "pm.environment.set('in6_a_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Cliente B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente B\",\n  \"apellido\": \"Inactividad\",\n  \"dni\": \"{{in6_b_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551240\",\n  \"nombreUsuario\": \"{{in6_b_usuario}}\",\n  \"email\": \"{{in6_b_email}}\",\n  \"password\": \"{{in6_b_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('in6_b_email', 'in6.b.' + s + '@bajonea.test');",
+                  "pm.environment.set('in6_b_usuario', ('in6b' + s).slice(0, 20));",
+                  "pm.environment.set('in6_b_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('in6_b_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Cliente B",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{in6_b_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{in6_b_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('in6_b_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Cliente B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{in6_b_email}}\",\n  \"codigo\": \"{{in6_b_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Cliente B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{in6_b_usuario}}\",\n  \"password\": \"{{in6_b_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('in6_b_token', pm.response.json().data.token);",
+                  "pm.environment.set('in6_b_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Cliente C",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Cliente C\",\n  \"apellido\": \"Inactividad\",\n  \"dni\": \"{{in6_c_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551240\",\n  \"nombreUsuario\": \"{{in6_c_usuario}}\",\n  \"email\": \"{{in6_c_email}}\",\n  \"password\": \"{{in6_c_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('in6_c_email', 'in6.c.' + s + '@bajonea.test');",
+                  "pm.environment.set('in6_c_usuario', ('in6c' + s).slice(0, 20));",
+                  "pm.environment.set('in6_c_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('in6_c_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Cliente C",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{in6_c_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{in6_c_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('in6_c_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Cliente C",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{in6_c_email}}\",\n  \"codigo\": \"{{in6_c_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Cliente C",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{in6_c_usuario}}\",\n  \"password\": \"{{in6_c_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('in6_c_token', pm.response.json().data.token);",
+                  "pm.environment.set('in6_c_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cliente A queda a 2 meses sin usar",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/usuarios/{{in6_a_id}}/ultimo-acceso?meses=2&dias=25",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "usuarios",
+                "{{in6_a_id}}",
+                "ultimo-acceso"
+              ],
+              "query": [
+                {
+                  "key": "meses",
+                  "value": "2"
+                },
+                {
+                  "key": "dias",
+                  "value": "25"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cliente B queda a 4 meses sin usar",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/usuarios/{{in6_b_id}}/ultimo-acceso?meses=4&dias=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "usuarios",
+                "{{in6_b_id}}",
+                "ultimo-acceso"
+              ],
+              "query": [
+                {
+                  "key": "meses",
+                  "value": "4"
+                },
+                {
+                  "key": "dias",
+                  "value": "0"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Corre la inactivacion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/jobs/inactivacion-cuentas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "jobs",
+                "inactivacion-cuentas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Devuelve los contadores de la corrida\", () => { const d = pm.response.json().data; pm.expect(d).to.have.property('inactivadas'); pm.expect(d).to.have.property('omitidas'); pm.expect(d).to.have.property('conFalla'); pm.expect(d.conFalla).to.eql(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "A, con menos de 3 meses, sigue activo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/clientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "clientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"El estado es ACTIVO\", () => { const f = pm.response.json().data.find((c) => String(c.id) === String(pm.environment.get('in6_a_id'))); pm.expect(f.estado).to.eql('ACTIVO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "B, con mas de 3 meses, quedo inactivo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/clientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "clientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"El estado es INACTIVO\", () => { const f = pm.response.json().data.find((c) => String(c.id) === String(pm.environment.get('in6_b_id'))); pm.expect(f.estado).to.eql('INACTIVO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "C, que entro hoy, sigue activo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/clientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "clientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"El estado es ACTIVO\", () => { const f = pm.response.json().data.find((c) => String(c.id) === String(pm.environment.get('in6_c_id'))); pm.expect(f.estado).to.eql('ACTIVO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Una segunda corrida no cambia nada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/jobs/inactivacion-cuentas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "jobs",
+                "inactivacion-cuentas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Devuelve los contadores de la corrida\", () => { const d = pm.response.json().data; pm.expect(d).to.have.property('inactivadas'); pm.expect(d).to.have.property('omitidas'); pm.expect(d).to.have.property('conFalla'); pm.expect(d.conFalla).to.eql(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La sesion abierta de B fue cerrada: 401",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{in6_b_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/clientes/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "clientes",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login de B con la contrasena correcta: 409 con el codigo CUENTA_INACTIVA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{in6_b_usuario}}\",\n  \"password\": \"{{in6_b_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test(\"Trae el codigo estable\", () => { pm.expect(pm.response.json().data.codigo).to.eql('CUENTA_INACTIVA'); });",
+                  "pm.test(\"Conserva el texto de siempre\", () => { pm.expect(pm.response.json().mensaje).to.eql('Cuenta inactiva. Solicitá la reactivación de tu cuenta'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login de B con una contrasena incorrecta: 401 con los intentos restantes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{in6_b_usuario}}\",\n  \"password\": \"Incorrecta1x\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));",
+                  "pm.test(\"Quedan 2 intentos\", () => { pm.expect(pm.response.json().data.intentosRestantes).to.eql(2); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reactivar con una contrasena incorrecta: 401 uniforme",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/reactivar-cuenta/con-credenciales",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "reactivar-cuenta",
+                "con-credenciales"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{in6_b_usuario}}\",\n  \"password\": \"Incorrecta1x\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));",
+                  "pm.test(\"Quedan 1 intento\", () => { pm.expect(pm.response.json().data.intentosRestantes).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "B sigue inactiva despues de los intentos fallidos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/clientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "clientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"El estado es INACTIVO\", () => { const f = pm.response.json().data.find((c) => String(c.id) === String(pm.environment.get('in6_b_id'))); pm.expect(f.estado).to.eql('INACTIVO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reactivar una cuenta activa (C) con su contrasena correcta: 401 uniforme, sin revelar el estado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/reactivar-cuenta/con-credenciales",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "reactivar-cuenta",
+                "con-credenciales"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{in6_c_usuario}}\",\n  \"password\": \"{{in6_c_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));",
+                  "pm.test(\"Mismo mensaje que cualquier error\", () => { pm.expect(pm.response.json().mensaje).to.eql('Usuario o contraseña incorrectos'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reactivar una cuenta que no existe: 401 uniforme",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/reactivar-cuenta/con-credenciales",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "reactivar-cuenta",
+                "con-credenciales"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"usuarioquenoexiste1\",\n  \"password\": \"Cualquiera1x\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reactivar con usuario y contrasena inicia sesion",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/reactivar-cuenta/con-credenciales",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "reactivar-cuenta",
+                "con-credenciales"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{in6_b_usuario}}\",\n  \"password\": \"{{in6_b_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('in6_b_token', pm.response.json().data.token);",
+                  "pm.test(\"La cuenta queda activa\", () => { pm.expect(pm.response.json().data.usuario.estado).to.eql('ACTIVO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "La sesion nueva de B funciona",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{in6_b_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/clientes/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "clientes",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "B figura activa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/clientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "clientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"El estado es ACTIVO\", () => { const f = pm.response.json().data.find((c) => String(c.id) === String(pm.environment.get('in6_b_id'))); pm.expect(f.estado).to.eql('ACTIVO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Despues de reactivar, la corrida no vuelve a inactivarla",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/jobs/inactivacion-cuentas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "jobs",
+                "inactivacion-cuentas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Devuelve los contadores de la corrida\", () => { const d = pm.response.json().data; pm.expect(d).to.have.property('inactivadas'); pm.expect(d).to.have.property('omitidas'); pm.expect(d).to.have.property('conFalla'); pm.expect(d.conFalla).to.eql(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "B sigue activa",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/clientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "clientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"El estado es ACTIVO\", () => { const f = pm.response.json().data.find((c) => String(c.id) === String(pm.environment.get('in6_b_id'))); pm.expect(f.estado).to.eql('ACTIVO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "B vuelve a quedar vencida",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/usuarios/{{in6_b_id}}/ultimo-acceso?meses=5&dias=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "usuarios",
+                "{{in6_b_id}}",
+                "ultimo-acceso"
+              ],
+              "query": [
+                {
+                  "key": "meses",
+                  "value": "5"
+                },
+                {
+                  "key": "dias",
+                  "value": "0"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Corre la inactivacion otra vez",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/jobs/inactivacion-cuentas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "jobs",
+                "inactivacion-cuentas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Devuelve los contadores de la corrida\", () => { const d = pm.response.json().data; pm.expect(d).to.have.property('inactivadas'); pm.expect(d).to.have.property('omitidas'); pm.expect(d).to.have.property('conFalla'); pm.expect(d.conFalla).to.eql(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Administrador reactiva a B desde la ficha",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/cuentas/{{in6_b_id}}/reactivar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "cuentas",
+                "{{in6_b_id}}",
+                "reactivar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Queda activa\", () => { pm.expect(pm.response.json().data.estado).to.eql('ACTIVO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reactivar de nuevo: 409 (ya no esta inactiva)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/cuentas/{{in6_b_id}}/reactivar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "cuentas",
+                "{{in6_b_id}}",
+                "reactivar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Un Cliente no puede reactivar cuentas: 403",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{in6_c_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/cuentas/{{in6_b_id}}/reactivar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "cuentas",
+                "{{in6_b_id}}",
+                "reactivar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin sesion: 401",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/cuentas/{{in6_b_id}}/reactivar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "cuentas",
+                "{{in6_b_id}}",
+                "reactivar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Una cuenta inexistente: 404",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/cuentas/2000000000/reactivar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "cuentas",
+                "2000000000",
+                "reactivar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "No se reactiva a un Administrador: 409",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/cuentas/{{in6_admin_id}}/reactivar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "cuentas",
+                "{{in6_admin_id}}",
+                "reactivar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Administrador queda con el ultimo acceso a 1 ano",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/usuarios/{{in6_admin_id}}/ultimo-acceso?meses=12&dias=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "usuarios",
+                "{{in6_admin_id}}",
+                "ultimo-acceso"
+              ],
+              "query": [
+                {
+                  "key": "meses",
+                  "value": "12"
+                },
+                {
+                  "key": "dias",
+                  "value": "0"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Corre la inactivacion: el Administrador esta exento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/jobs/inactivacion-cuentas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "jobs",
+                "inactivacion-cuentas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Devuelve los contadores de la corrida\", () => { const d = pm.response.json().data; pm.expect(d).to.have.property('inactivadas'); pm.expect(d).to.have.property('omitidas'); pm.expect(d).to.have.property('conFalla'); pm.expect(d.conFalla).to.eql(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Administrador sigue pudiendo operar",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/perfil",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "perfil"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Administrador vuelve a la fecha de hoy",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/usuarios/{{in6_admin_id}}/ultimo-acceso?meses=0&dias=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "usuarios",
+                "{{in6_admin_id}}",
+                "ultimo-acceso"
+              ],
+              "query": [
+                {
+                  "key": "meses",
+                  "value": "0"
+                },
+                {
+                  "key": "dias",
+                  "value": "0"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Dueno D",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "comercio"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Inactividad S6 SRL\",\n  \"cuit\": \"{{in6_cuit_tmp}}\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Direccion fiscal S6 100\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"{{in6_nombre_d}}\",\n  \"descripcion\": \"Comercio generado por la coleccion de Postman (inactividad, S6)\",\n  \"telefono\": \"+5492964555448\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"nombreUsuario\": \"{{in6_d_usuario}}\",\n  \"email\": \"{{in6_d_email}}\",\n  \"password\": \"{{in6_d_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"804\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Carlos\",\n  \"apellidoRepresentante\": \"Sanchez\",\n  \"dniRepresentante\": \"{{in6_dni_rep_tmp}}\",\n  \"telefonoRepresentante\": \"+5492964701107\",\n  \"fechaNacimientoRepresentante\": \"1988-04-04\",\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/postman-inactividad-s6.jpg\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/inactividads6\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('in6_d_email', 'in6.d.' + s + '@bajonea.test');",
+                  "pm.environment.set('in6_d_usuario', ('in6d' + s).slice(0, 20));",
+                  "pm.environment.set('in6_d_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('in6_d_dni', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "const mult = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];",
+                  "let cuit = null;",
+                  "while (cuit === null) {",
+                  "  const base = '30' + String(Math.floor(10000000 + Math.random() * 89999999));",
+                  "  let suma = 0;",
+                  "  for (let i = 0; i < 10; i += 1) suma += Number(base[i]) * mult[i];",
+                  "  let dv = 11 - (suma % 11);",
+                  "  if (dv === 11) dv = 0;",
+                  "  if (dv !== 10) cuit = base + dv;",
+                  "}",
+                  "pm.environment.set('in6_cuit_tmp', cuit);",
+                  "pm.environment.set('in6_dni_rep_tmp', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "pm.environment.set('in6_nombre_d', 'Local Inactividad S6 ' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Dueno D",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{in6_d_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{in6_d_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('in6_d_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Dueno D",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{in6_d_email}}\",\n  \"codigo\": \"{{in6_d_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Dueno D",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{in6_d_usuario}}\",\n  \"password\": \"{{in6_d_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('in6_d_token', pm.response.json().data.token);",
+                  "pm.environment.set('in6_d_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador busca el comercio pendiente de Dueno D",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/pendientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "pendientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.emailCuenta === pm.environment.get('in6_d_email').toLowerCase());",
+                  "pm.test('El comercio esta pendiente', () => pm.expect(c).to.exist);",
+                  "pm.environment.set('in6_com_d', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador aprueba el comercio de Dueno D",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{in6_com_d}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{in6_com_d}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: cuenta de Mercado Pago simulada de Dueno D",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/duenos/{{in6_d_id}}/mercadopago-simulada",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "duenos",
+                "{{in6_d_id}}",
+                "mercadopago-simulada"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El comercio del Dueno D esta en el catalogo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/catalogo/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "catalogo",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Aparece en el catalogo\", () => { const c = pm.response.json().data.find((x) => String(x.id) === String(pm.environment.get('in6_com_d'))); pm.expect(Boolean(c)).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueno D queda a 4 meses sin entrar",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/usuarios/{{in6_d_id}}/ultimo-acceso?meses=4&dias=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "usuarios",
+                "{{in6_d_id}}",
+                "ultimo-acceso"
+              ],
+              "query": [
+                {
+                  "key": "meses",
+                  "value": "4"
+                },
+                {
+                  "key": "dias",
+                  "value": "0"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Corre la inactivacion: se inactiva el Dueno D",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/jobs/inactivacion-cuentas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "jobs",
+                "inactivacion-cuentas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Devuelve los contadores de la corrida\", () => { const d = pm.response.json().data; pm.expect(d).to.have.property('inactivadas'); pm.expect(d).to.have.property('omitidas'); pm.expect(d).to.have.property('conFalla'); pm.expect(d.conFalla).to.eql(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El comercio del Dueno D quedo inactivo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"El comercio esta INACTIVO\", () => { const c = pm.response.json().data.find((x) => String(x.id) === String(pm.environment.get('in6_com_d'))); pm.expect(c).to.exist; pm.expect(c.estado).to.eql('INACTIVO'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El comercio del Dueno D ya no esta en el catalogo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/catalogo/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "catalogo",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"No aparece en el catalogo\", () => { const c = pm.response.json().data.find((x) => String(x.id) === String(pm.environment.get('in6_com_d'))); pm.expect(Boolean(c)).to.eql(false); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del Dueno D: 409 con el codigo CUENTA_INACTIVA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{in6_d_usuario}}\",\n  \"password\": \"{{in6_d_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test(\"Trae el codigo estable\", () => { pm.expect(pm.response.json().data.codigo).to.eql('CUENTA_INACTIVA'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueno D reactiva su cuenta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/reactivar-cuenta/con-credenciales",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "reactivar-cuenta",
+                "con-credenciales"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{in6_d_usuario}}\",\n  \"password\": \"{{in6_d_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('in6_d_token', pm.response.json().data.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Su comercio vuelve a estar apto para vender",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"El comercio esta APTO_VENTA\", () => { const c = pm.response.json().data.find((x) => String(x.id) === String(pm.environment.get('in6_com_d'))); pm.expect(c).to.exist; pm.expect(c.estado).to.eql('APTO_VENTA'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Su comercio vuelve al catalogo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/catalogo/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "catalogo",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Aparece en el catalogo\", () => { const c = pm.response.json().data.find((x) => String(x.id) === String(pm.environment.get('in6_com_d'))); pm.expect(Boolean(c)).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Dueno E",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/comercio",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "comercio"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aceptaTerminos\": true,\n  \"razonSocial\": \"Inactividad S6 SRL\",\n  \"cuit\": \"{{in6_cuit_tmp}}\",\n  \"condicionIva\": \"RESPONSABLE_INSCRIPTO\",\n  \"tipoSociedad\": \"SRL\",\n  \"domicilioFiscal\": \"Direccion fiscal S6 100\",\n  \"fechaInicioActividades\": \"2020-01-01\",\n  \"nombre\": \"{{in6_nombre_e}}\",\n  \"descripcion\": \"Comercio generado por la coleccion de Postman (inactividad, S6)\",\n  \"telefono\": \"+5492964555448\",\n  \"tipoComercio\": \"RESTAURANTE\",\n  \"aceptaDelivery\": true,\n  \"aceptaRetiro\": true,\n  \"nombreUsuario\": \"{{in6_e_usuario}}\",\n  \"email\": \"{{in6_e_email}}\",\n  \"password\": \"{{in6_e_password}}\",\n  \"direccion\": {\n    \"calle\": \"Belgrano\",\n    \"numero\": \"804\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": false\n  },\n  \"horarios\": [\n    {\n      \"diaSemana\": \"LUNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MARTES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"MIERCOLES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"JUEVES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"VIERNES\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"SABADO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    },\n    {\n      \"diaSemana\": \"DOMINGO\",\n      \"horaApertura\": \"00:00:00\",\n      \"horaCierre\": \"23:59:00\"\n    }\n  ],\n  \"nombreRepresentante\": \"Carlos\",\n  \"apellidoRepresentante\": \"Sanchez\",\n  \"dniRepresentante\": \"{{in6_dni_rep_tmp}}\",\n  \"telefonoRepresentante\": \"+5492964701107\",\n  \"fechaNacimientoRepresentante\": \"1988-04-04\",\n  \"fotoPerfilUrl\": \"https://res.cloudinary.com/demo/image/upload/postman-inactividad-s6.jpg\",\n  \"redesSociales\": [\n    {\n      \"tipo\": \"INSTAGRAM\",\n      \"url\": \"instagram.com/inactividads6\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('in6_e_email', 'in6.e.' + s + '@bajonea.test');",
+                  "pm.environment.set('in6_e_usuario', ('in6e' + s).slice(0, 20));",
+                  "pm.environment.set('in6_e_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('in6_e_dni', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "const mult = [5, 4, 3, 2, 7, 6, 5, 4, 3, 2];",
+                  "let cuit = null;",
+                  "while (cuit === null) {",
+                  "  const base = '30' + String(Math.floor(10000000 + Math.random() * 89999999));",
+                  "  let suma = 0;",
+                  "  for (let i = 0; i < 10; i += 1) suma += Number(base[i]) * mult[i];",
+                  "  let dv = 11 - (suma % 11);",
+                  "  if (dv === 11) dv = 0;",
+                  "  if (dv !== 10) cuit = base + dv;",
+                  "}",
+                  "pm.environment.set('in6_cuit_tmp', cuit);",
+                  "pm.environment.set('in6_dni_rep_tmp', String(30000000 + Math.floor(Math.random() * 60000000)));",
+                  "pm.environment.set('in6_nombre_e', 'Local Inactividad S6 ' + Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Dueno E",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{in6_e_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{in6_e_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('in6_e_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Dueno E",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{in6_e_email}}\",\n  \"codigo\": \"{{in6_e_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Dueno E",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{in6_e_usuario}}\",\n  \"password\": \"{{in6_e_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('in6_e_token', pm.response.json().data.token);",
+                  "pm.environment.set('in6_e_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador busca el comercio pendiente de Dueno E",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/pendientes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "pendientes"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json().data.find((x) => x.emailCuenta === pm.environment.get('in6_e_email').toLowerCase());",
+                  "pm.test('El comercio esta pendiente', () => pm.expect(c).to.exist);",
+                  "pm.environment.set('in6_com_e', c.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Administrador aprueba el comercio de Dueno E",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios/{{in6_com_e}}/resolver",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios",
+                "{{in6_com_e}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"aprobar\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Atajo de test: cuenta de Mercado Pago simulada de Dueno E",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/duenos/{{in6_e_id}}/mercadopago-simulada",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "duenos",
+                "{{in6_e_id}}",
+                "mercadopago-simulada"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueno E queda a 4 meses sin entrar",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/usuarios/{{in6_e_id}}/ultimo-acceso?meses=4&dias=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "usuarios",
+                "{{in6_e_id}}",
+                "ultimo-acceso"
+              ],
+              "query": [
+                {
+                  "key": "meses",
+                  "value": "4"
+                },
+                {
+                  "key": "dias",
+                  "value": "0"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Corre la inactivacion con el Dueno E vencido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/jobs/inactivacion-cuentas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "jobs",
+                "inactivacion-cuentas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Devuelve los contadores de la corrida\", () => { const d = pm.response.json().data; pm.expect(d).to.have.property('inactivadas'); pm.expect(d).to.have.property('omitidas'); pm.expect(d).to.have.property('conFalla'); pm.expect(d.conFalla).to.eql(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Dueno E quedo inactivo: login con 409 CUENTA_INACTIVA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{in6_e_usuario}}\",\n  \"password\": \"{{in6_e_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 409', () => pm.response.to.have.status(409));",
+                  "pm.test(\"Trae el codigo estable\", () => { pm.expect(pm.response.json().data.codigo).to.eql('CUENTA_INACTIVA'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El Administrador reactiva al Dueno E desde la ficha",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/cuentas/{{in6_e_id}}/reactivar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "cuentas",
+                "{{in6_e_id}}",
+                "reactivar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El comercio del Dueno E vuelve a estar apto para vender",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_admin}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/administrador/comercios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "administrador",
+                "comercios"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"El comercio esta APTO_VENTA\", () => { const c = pm.response.json().data.find((x) => String(x.id) === String(pm.environment.get('in6_com_e'))); pm.expect(c).to.exist; pm.expect(c.estado).to.eql('APTO_VENTA'); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "event": [

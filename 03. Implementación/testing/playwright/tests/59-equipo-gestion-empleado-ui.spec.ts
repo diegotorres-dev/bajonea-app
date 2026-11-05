@@ -493,7 +493,7 @@ test.describe('Empleado: renuncia, pérdida de acceso según la causa y avisos, 
       const miembro = await nuevoMiembro(request, [conservado, perdido]);
       await abrirPagina(page, miembro, perdido, 'comercio-dashboard.html');
 
-      ponerEstadoComercio(perdido.id, 'INACTIVO');
+      ponerEstadoComercio(perdido.id, 'RECHAZADO');
       await provocar404(page);
 
       await esperarHoja(page, 'COMERCIO_NO_DISPONIBLE');

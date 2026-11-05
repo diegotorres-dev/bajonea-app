@@ -37,7 +37,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 class ComercioActivoServiceResolverEmpleadoIntegrationTest {
 
     private static final Set<EstadoComercio> ACCESIBLES = Set.of(EstadoComercio.APROBADO, EstadoComercio.APTO_VENTA,
-            EstadoComercio.SUSPENDIDO, EstadoComercio.CERRADO_TEMPORALMENTE);
+            EstadoComercio.SUSPENDIDO, EstadoComercio.CERRADO_TEMPORALMENTE, EstadoComercio.INACTIVO);
 
     @Autowired
     private ComercioActivoService service;
@@ -103,7 +103,7 @@ class ComercioActivoServiceResolverEmpleadoIntegrationTest {
 
     @ParameterizedTest
     @EnumSource(EstadoComercio.class)
-    void elEmpleadoActivoSoloAccedeALosCuatroEstadosAccesibles(EstadoComercio estado) {
+    void elEmpleadoActivoSoloAccedeALosCincoEstadosAccesibles(EstadoComercio estado) {
         Dueno dueno = datos.registrarDuenoAprobado();
         int empleado = datos.registrarCliente();
         datos.vincularEmpleado(empleado, dueno.comercioId(), "ACTIVO", LocalDateTime.now());

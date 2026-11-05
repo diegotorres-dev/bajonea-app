@@ -348,8 +348,10 @@ class RenunciaEmpleadoIntegrationTest {
         Escena e = escena();
         datos.cambiarEstadoComercio(e.dueno().comercioId(), "SUSPENDIDO");
         acceso(e.tokenEmpleado(), e.dueno().comercioId()).andExpect(jsonPath("$.data.comercioAccesible").value(true));
+        datos.cambiarEstadoComercio(e.dueno().comercioId(), "INACTIVO");
+        acceso(e.tokenEmpleado(), e.dueno().comercioId()).andExpect(jsonPath("$.data.comercioAccesible").value(true));
 
-        for (String estado : List.of("INACTIVO", "RECHAZADO", "PENDIENTE", "RECHAZO_DEFINITIVO")) {
+        for (String estado : List.of("RECHAZADO", "PENDIENTE", "RECHAZO_DEFINITIVO")) {
             datos.cambiarEstadoComercio(e.dueno().comercioId(), estado);
             String cuerpo = acceso(e.tokenEmpleado(), e.dueno().comercioId())
                     .andExpect(status().isOk())
