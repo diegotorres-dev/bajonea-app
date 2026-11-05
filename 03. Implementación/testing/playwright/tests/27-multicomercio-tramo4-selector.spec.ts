@@ -524,6 +524,7 @@ test.describe('Multi-comercio, tramo 4B: selector de comercio del Dueño (UI)', 
       await expect(pagina.getByTestId('franja-comercio')).toBeVisible();
       const alCargar = consultas.length;
       expect(alCargar).toBe(1);
+      await pagina.waitForLoadState('networkidle');
       await pagina.clock.fastForward(15_000);
       await expect.poll(() => consultas.length).toBe(alCargar + 1);
       await pagina.clock.fastForward(15_000);
@@ -543,6 +544,7 @@ test.describe('Multi-comercio, tramo 4B: selector de comercio del Dueño (UI)', 
       await pagina.clock.install();
       await pagina.goto('/comercio-dashboard.html');
       await expect(pagina.getByTestId('franja-comercio')).toBeVisible();
+      await pagina.waitForLoadState('networkidle');
       ponerEstadoComercio(dueno.comercioId, 'INACTIVO');
       await pagina.clock.fastForward(15_000);
       await expect.poll(async () => {
@@ -565,6 +567,7 @@ test.describe('Multi-comercio, tramo 4B: selector de comercio del Dueño (UI)', 
       await pagina.clock.install();
       await pagina.goto('/comercio-dashboard.html');
       await expect(pagina.getByTestId('franja-comercio')).toBeVisible();
+      await pagina.waitForLoadState('networkidle');
       ponerEstadoComercio(dueno.comercioId, 'INACTIVO');
       await pagina.clock.fastForward(15_000);
       await expect.poll(() => pagina.url(), { timeout: 20_000 }).toContain('/login.html');
