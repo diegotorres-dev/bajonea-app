@@ -1322,10 +1322,28 @@ No se editó `01. Análisis de Requerimientos` ni `02. Diseño` (salvo el diccio
 - **Requisito no funcional.** Una resolución nunca deja dos notas ni dos reembolsos aunque haya varios Administradores o pestañas; el email y la llamada a Mercado Pago no se hacen con una conexión de la base tomada.
 - **Casos de uso nuevos:** "Reclamar un pedido" (Cliente) y "Resolver un reclamo" (Administrador). **DFD:** nuevo proceso de reclamos con los almacenes `reclamo` y `nota_credito` y el flujo hacia Mercado Pago (reembolso parcial o total).
 
-### Interfaz sugerida para la entrega B (no hecha)
+### Interfaz sugerida para la entrega B (hecha en la entrega B, ver la sección siguiente)
 
 - **Cliente, `pedido-detalle.html`:** si `reclamo.puedeReclamar`, botón "Tuve un problema con este pedido" y la leyenda "Podés reclamar hasta el {fechaLimiteReclamo}". Formulario con los motivos de `reclamo.motivosDisponibles` (el servidor ya saca "No recibí el pedido" de los retiros) y un área de texto con contador de 10 a 1000. Con reclamo: tarjeta con el estado (pendiente, aprobado por $X con "el reembolso puede tardar unos días", rechazado con el motivo) y, si `reembolsoEnProceso`, "Estamos procesando tu reembolso". El texto del Cliente se muestra siempre con `textContent`.
 - **Textos de los motivos (propuestos):** No recibí el pedido · Faltan productos · Productos equivocados · Producto en mal estado · Cobro incorrecto · Otro.
 - **Administrador:** tarjeta "Reclamos" en el panel con `reclamosPendientes`; `admin-reclamos.html` con las tres pestañas y sus contadores (los pendientes, los más viejos arriba, con "hace cuánto"); detalle con el mensaje, los datos del pedido, el saldo reembolsable, el estado de la nota y su último error, y un enlace a Reembolsos (`notaCreditoId`). La resolución con tres opciones: total (confirmación con el monto), parcial (campo de monto que muestra el saldo y valida contra él) y rechazo (motivo con contador de 10 a 500).
 - **Dueño, `comercio-pedido-detalle.html`:** un chip "Reclamo: {estado}" con el motivo y el monto reembolsado, sin el mensaje. **Empleado:** nada.
-- **El aviso de autoconfirmación** ("Si no lo recibiste, podés iniciar un reclamo…") queda correcto cuando exista la pantalla.
+- **El aviso de autoconfirmación** se reescribió en la entrega B (ver la sección siguiente).
+
+## Reclamos — Fase 5, tramo S5 entrega B (pantallas hechas; cambios de interfaz para la pasada de documentación), 2026-11-05
+
+No se editó `01. Análisis de Requerimientos` ni `02. Diseño`. Lo de la entrega A sigue vigente; esto es lo que la entrega B agrega o cambia respecto de lo propuesto.
+
+### Lo sugerido para la entrega B, hecho
+
+- **Cliente.** En el detalle del pedido: debajo del total, "¿Tuviste un problema con este pedido? Tenés hasta el {fecha límite} para reclamar." con el botón "Tuve un problema con este pedido"; con el plazo vencido el botón queda deshabilitado y el texto es "Pasaron los 7 días para reclamar este pedido."; en un pedido que no se puede reclamar por otro motivo (rechazado, cancelado, no retirado, sin pago aprobado) no se muestra nada. Formulario propio `reclamo-nuevo.html?pedido=N` ("Tuve un problema", ¿Qué pasó?, Contanos más con contador "N / 1000 · mínimo 10", "Podés enviar un solo reclamo por pedido y después no se puede cambiar.", "Enviar reclamo", "Cancelar"), pantalla "Recibimos tu reclamo" y el aviso "Reclamo enviado". Con reclamo, el bloque "Tu reclamo" con su estado: en revisión ("Lo estamos revisando. Te avisamos cuando tengamos novedades."), aprobado ("Aprobamos tu reclamo. Te devolvemos $X." o, en un parcial, "… $X de los $Y que pagaste.", más "El reembolso está en proceso…" o "El reembolso ya fue enviado a Mercado Pago…") o rechazado ("No pudimos aprobar tu reclamo.", el motivo y "Contactar a Soporte", que abre Soporte con el tipo "Otra consulta"). En el listado de pedidos, un chip por reclamo ("Reclamo en revisión", "Reclamo aprobado", "Reclamo rechazado").
+- **Administrador.** Entrada "Reclamos" en el panel (con los pendientes) y `admin-reclamos.html`: bandeja con tres filtros y sus contadores (los pendientes con los más viejos arriba) y detalle con el pedido, el mensaje del Cliente, los productos, el saldo reembolsable y la resolución: reembolso total (muestra el monto), parcial (monto con hasta dos decimales y "Máximo $X") o rechazo (motivo con contador "N / 500 · mínimo 10"), siempre con una confirmación ("No se puede deshacer") y el aviso "Reclamo resuelto". Un reembolso que Mercado Pago no pudo hacer se ve en el detalle con el motivo y el enlace "Ir a Reembolsos para reintentar".
+- **Dueño.** En el detalle del pedido, un bloque de solo lectura "Reclamo del Cliente" con el estado y el motivo; si hubo reembolso, "Se reembolsaron $X al Cliente." (o "Se están reembolsando $X…" mientras Mercado Pago no lo procesó). Sin el mensaje del Cliente ni el motivo del rechazo. El aviso del reembolso ya aparecía en la campana. **Empleado:** nada, ni en el detalle ni en los avisos.
+
+### Cambios de texto y de comportamiento a reflejar
+
+1. **Aviso de entrega automática (cambió).** Antes: "Tu pedido #N fue autoconfirmado como entregado. Si no lo recibiste, podés iniciar un reclamo o contactar al comercio." Ahora: "Marcamos tu pedido #N como entregado. Si tuviste algún problema, podés reclamar dentro de los 7 días desde esta fecha." (El `7` está escrito en el texto del servidor.)
+2. **El bloque `reclamo` que ve el Cliente suma `avisoPlazoVencido`** (texto del servidor, solo para un pedido que se podía reclamar en todo lo demás y cuyo plazo venció). Nueva regla de interfaz: el frontend no calcula plazos ni elegibilidad.
+3. **Textos de los motivos (finales):** No recibí el pedido · Faltan productos · Productos equivocados · Producto en mal estado · Cobro incorrecto · Otro problema.
+4. **Casos de uso:** el de "Reclamar un pedido" termina en la pantalla "Recibimos tu reclamo" y el de "Resolver un reclamo" pasa por una confirmación. Sin cambios en los DFD.
+5. **Pendiente (no es de esta entrega):** las fotos del reclamo y la pasada de calidad de las pantallas.
