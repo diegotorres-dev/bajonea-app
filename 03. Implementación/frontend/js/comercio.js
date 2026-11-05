@@ -31,6 +31,7 @@ import { algunComercioSuspendido, comercioActivoSuspendido, pintarFranjaPedidos,
 import { initHorarios } from './comercio-form.js';
 import { ordenarFranjas, recortarHora, textoFranja, textoRango } from './horarios.js';
 import { cerrarVariosComercios, comerciosCerrables } from './apertura-comercio.js';
+import { crearBloqueReclamoDueno } from './reclamos-comun.js';
 import {
   subirImagenProducto,
   eliminarImagenProducto,
@@ -1525,6 +1526,10 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado, opciones 
   totalValue.textContent = formatearPrecio(pedido.vistaReducida ? pedido.total : pedido.neto);
   totalLine.appendChild(totalValue);
   body.appendChild(totalLine);
+
+  if (!pedido.vistaReducida && pedido.reclamo && pedido.reclamo.estado) {
+    body.appendChild(crearBloqueReclamoDueno(pedido.reclamo));
+  }
 
   if (pedido.esPedidoPropio) {
     body.appendChild(crearNotaPedidoPropio());
