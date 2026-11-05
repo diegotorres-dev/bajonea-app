@@ -11,6 +11,7 @@ import com.bajonea.backend.repositories.TokenRepository;
 import com.bajonea.backend.repositories.UsuarioRepository;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -27,13 +28,16 @@ import org.springframework.transaction.support.TransactionTemplate;
  * {@code tokenRepository.save} y volver a intentar) no funciona dentro de una transacción
  * existente: el {@code save} fallido marca la transacción como rollback-only aunque la excepción
  * se capture, así que el reintento "exitoso" termina revertido.
+ * <p>
+ * Los códigos de la prueba tienen letras a propósito: así quedan fuera del espacio de códigos
+ * numéricos de 6 dígitos que otros tests de tokens llenan de relleno y nunca pueden chocar con él.
  */
 @SpringBootTest
 @ActiveProfiles("test")
 class TokenRollbackOnlyIntegrationTest {
 
-    private static final String CODIGO_COLISION = "990001";
-    private static final String CODIGO_REINTENTO = "990002";
+    private static final String CODIGO_COLISION = "RBK-COLISION";
+    private static final String CODIGO_REINTENTO = "RBK-REINTENTO";
 
     @Autowired
     private TokenRepository tokenRepository;
@@ -47,6 +51,7 @@ class TokenRollbackOnlyIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @BeforeEach
     @AfterEach
     void limpiar() {
         jdbcTemplate.update("DELETE FROM token WHERE token IN (?, ?)", CODIGO_COLISION, CODIGO_REINTENTO);

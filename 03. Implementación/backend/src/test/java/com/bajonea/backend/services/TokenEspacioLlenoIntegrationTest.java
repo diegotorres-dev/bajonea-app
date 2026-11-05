@@ -2,7 +2,6 @@ package com.bajonea.backend.services;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bajonea.backend.dto.request.ReactivacionCuentaRequestDTO;
 import com.bajonea.backend.dto.request.RecuperacionPasswordRequestDTO;
@@ -30,9 +29,10 @@ import org.springframework.transaction.support.TransactionTemplate;
  * todos los pares están tomados, todo token nuevo debe terminar en cifra impar. Usa el generador
  * real (sin guion) y el valor por defecto de {@code token.generacion.max-intentos}.
  * <p>
- * Las filas masivas se marcan con {@code intentos_fallidos = 987655} y se borran en
- * {@link #limpiar()}; si la JVM muriera a mitad de la prueba, se pueden quitar con
- * {@code DELETE FROM token WHERE intentos_fallidos = 987655}.
+ * Las filas masivas se marcan con {@code intentos_fallidos = 987655}. Se borran por lotes antes de
+ * llenar (por si una corrida anterior murió a mitad de la prueba) y después de cada test, y se
+ * verifica que no quede ninguna: el relleno ocupa todos los códigos pares de 6 dígitos y no puede
+ * sobrevivir a esta clase.
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -59,6 +59,8 @@ class TokenEspacioLlenoIntegrationTest {
                  (SELECT 0 n UNION ALL SELECT 2 UNION ALL SELECT 4 UNION ALL SELECT 6 UNION ALL SELECT 8) f
             """;
 
+    private int paresPreexistentes;
+
     @Autowired
     private RegistroService registroService;
 
@@ -79,20 +81,34 @@ class TokenEspacioLlenoIntegrationTest {
 
     @BeforeEach
     void llenarLaMitadDelEspacio() {
+        borrarRelleno();
+        paresPreexistentes = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM token WHERE token REGEXP '^[0-9]{5}[02468]$'", Integer.class);
         Integer usuarioId = jdbcTemplate.queryForObject("SELECT MIN(id) FROM usuario", Integer.class);
         jdbcTemplate.update(SQL_RELLENO, usuarioId, MARCA_RELLENO);
     }
 
     @AfterEach
     void limpiar() {
-        jdbcTemplate.update("DELETE FROM token WHERE intentos_fallidos = ?", MARCA_RELLENO);
+        borrarRelleno();
+        Integer restantes = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM token WHERE intentos_fallidos = ?", Integer.class, MARCA_RELLENO);
+        assertEquals(0, restantes, "el relleno masivo debe quedar completamente borrado");
+    }
+
+    private void borrarRelleno() {
+        int borradas;
+        do {
+            borradas = jdbcTemplate.update("DELETE FROM token WHERE intentos_fallidos = ? LIMIT 50000", MARCA_RELLENO);
+        } while (borradas > 0);
     }
 
     @Test
     void registroYRecuperacionSiguenFuncionandoConLaMitadDelEspacioOcupado() {
         Integer rellenadas = jdbcTemplate.queryForObject(
                 "SELECT COUNT(*) FROM token WHERE intentos_fallidos = ?", Integer.class, MARCA_RELLENO);
-        assertTrue(rellenadas > 499_000, "el relleno debe cubrir (casi) todos los códigos pares: " + rellenadas);
+        assertEquals(500_000 - paresPreexistentes, rellenadas,
+                "el relleno más los códigos pares que ya existían deben cubrir los 500000 códigos pares: " + rellenadas);
 
         for (int i = 0; i < ITERACIONES_CLIENTE; i++) {
             enTransaccionConRollback(() -> {
