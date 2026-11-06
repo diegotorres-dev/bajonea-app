@@ -4,6 +4,7 @@ import { h, mostrarAvisoFijo, limpiarAvisoFijo } from './form-utils.js';
 import { normalizarCampos } from './validators.js';
 import { atraparFoco, devolverFoco, mensajeDeError } from './documentos-comun.js';
 import { abrirHoja, cajaInformativa, campoTexto, fechaLegible, plural, texto } from './admin-hojas.js';
+import { abrirHojaReactivarCuenta } from './admin-reactivar.js';
 
 const MIN_MOTIVO = 10;
 
@@ -174,6 +175,9 @@ export async function initAdminClientes() {
     cerrarMenu();
     const suspendida = cliente.estado === 'SUSPENDIDO';
     const acciones = [];
+    if (cliente.estado === 'INACTIVO') {
+      acciones.push({ clave: 'reactivar', etiqueta: 'Reactivar cuenta', alElegir: () => abrirModalReactivar(cliente, boton) });
+    }
     if (suspendida) {
       acciones.push({ clave: 'levantar', etiqueta: 'Levantar suspensión', alElegir: () => abrirModalLevantar(cliente, boton) });
     } else {
@@ -322,6 +326,22 @@ export async function initAdminClientes() {
       showToast('No pudimos actualizar la lista', 'error');
     }
     enfocarCliente(cliente.id);
+  }
+
+  function abrirModalReactivar(cliente, opener) {
+    abrirHojaReactivarCuenta({
+      usuarioId: cliente.id,
+      nombre: nombreCompleto(cliente),
+      opener,
+      devolverFocoA: entrada,
+      alExito: async () => {
+        await recargar().catch(() => showToast('No pudimos actualizar la lista', 'error'));
+        enfocarCliente(cliente.id);
+      },
+      alConflicto: () => {
+        recargar().catch(() => {});
+      },
+    });
   }
 
   async function abrirModalSuspender(cliente, opener) {

@@ -3,6 +3,7 @@ import { showToast } from './catalogo.js';
 import { h, mostrarAvisoFijo, limpiarAvisoFijo } from './form-utils.js';
 import { atraparFoco, devolverFoco, mensajeDeError } from './documentos-comun.js';
 import { abrirHoja, campoTexto, fechaLegible, plural, texto } from './admin-hojas.js';
+import { abrirHojaReactivarCuenta } from './admin-reactivar.js';
 
 const MIN_MOTIVO = 10;
 
@@ -325,19 +326,23 @@ export function abrirHojaLevantarDueno(dueno, opener, { alExito, alConflicto }) 
 export function abrirHojaAccionesDueno(dueno, opener, handlers) {
   const nombre = nombreDelDueno(dueno);
   const suspendido = dueno.estado === 'SUSPENDIDO';
+  const inactivo = dueno.estado === 'INACTIVO';
   const accion = suspendido
     ? texto('button', 'btn btn-primary doc-exito', 'Levantar suspensión', { type: 'button', 'data-testid': 'accion-levantar-dueno' })
-    : texto('button', 'btn btn-primary doc-peligro', 'Suspender cuenta', { type: 'button', 'data-testid': 'accion-suspender-dueno' });
+    : texto('button', `btn ${inactivo ? 'btn-secondary' : 'btn-primary'} doc-peligro`, 'Suspender cuenta', { type: 'button', 'data-testid': 'accion-suspender-dueno' });
+  const reactivar = inactivo
+    ? texto('button', 'btn btn-primary doc-exito', 'Reactivar cuenta', { type: 'button', 'data-testid': 'accion-reactivar-dueno' })
+    : null;
   const cancelar = texto('button', 'btn btn-tertiary', 'Cancelar', { type: 'button', 'data-testid': 'btn-cancelar-acciones-dueno' });
   const { hoja, fondo, overflowPrevio } = abrirHoja({
     id: 'acciones-dueno',
     titulo: nombre,
     testid: 'hoja-acciones-dueno',
-    hijos: [texto('p', 'cliente-modal__sub', dueno.email), h('div', { class: 'dueno-hoja__acciones' }, [accion, cancelar])],
+    hijos: [texto('p', 'cliente-modal__sub', dueno.email), h('div', { class: 'dueno-hoja__acciones' }, [...(reactivar ? [reactivar] : []), accion, cancelar])],
   });
   let cerrado = false;
   const quitarAtrapaFoco = atraparFoco(hoja, () => cerrar());
-  accion.focus();
+  (reactivar || accion).focus();
 
   function cerrar(devolver = true) {
     if (cerrado) return;
@@ -352,6 +357,12 @@ export function abrirHojaAccionesDueno(dueno, opener, handlers) {
   fondo.addEventListener('click', (evento) => {
     if (evento.target === fondo) cerrar();
   });
+  if (reactivar) {
+    reactivar.addEventListener('click', () => {
+      cerrar(false);
+      abrirHojaReactivarCuenta({ usuarioId: dueno.id, nombre, opener, alExito: handlers.alExito, alConflicto: handlers.alConflicto });
+    });
+  }
   accion.addEventListener('click', () => {
     cerrar(false);
     if (suspendido) {

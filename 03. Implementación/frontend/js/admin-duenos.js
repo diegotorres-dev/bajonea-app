@@ -26,6 +26,7 @@ const FILTROS = [
   { clave: 'TODOS', etiqueta: 'Todos', testid: 'filtro-duenos-todos' },
   { clave: 'SUSPENDIDO', etiqueta: 'Suspendidos', testid: 'filtro-duenos-suspendidos' },
   { clave: 'BLOQUEADO', etiqueta: 'Bloqueados', testid: 'filtro-duenos-bloqueados' },
+  { clave: 'INACTIVO', etiqueta: 'Inactivos', testid: 'filtro-duenos-inactivos' },
 ];
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
