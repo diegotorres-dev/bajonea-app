@@ -9,11 +9,15 @@ import com.bajonea.backend.dto.request.ConfirmarReactivacionCuentaRequestDTO;
 import com.bajonea.backend.dto.request.ConfirmarRecuperacionPasswordRequestDTO;
 import com.bajonea.backend.dto.request.LevantamientoSuspensionRequestDTO;
 import com.bajonea.backend.dto.request.SuspensionUsuarioRequestDTO;
+import com.bajonea.backend.dto.response.ComercioAlReactivarResponseDTO;
 import com.bajonea.backend.dto.response.LoginResponseDTO;
+import com.bajonea.backend.dto.response.ReactivacionCuentaPreviaResponseDTO;
 import com.bajonea.backend.dto.response.ReactivacionCuentaResponseDTO;
 import com.bajonea.backend.entities.Token;
 import com.bajonea.backend.entities.Usuario;
 import com.bajonea.backend.enums.EstadoComercio;
+import com.bajonea.backend.enums.EstadoUsuario;
+import com.bajonea.backend.enums.RolUsuario;
 import com.bajonea.backend.enums.TipoToken;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.CredencialesInvalidasException;
@@ -22,6 +26,7 @@ import com.bajonea.backend.repositories.UsuarioRepository;
 import com.bajonea.backend.services.DatosPruebaEmpleado.Cuenta;
 import com.bajonea.backend.services.DatosPruebaEmpleado.Dueno;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -280,5 +285,83 @@ class ReactivacionCuentaIntegrationTest extends InactividadTestBase {
         correr();
 
         assertEquals("SUSPENDIDO", estadoUsuario(cuenta.id()));
+    }
+
+    // ---------------------------------------------------------------- qué pasa con los comercios al reactivar
+
+    @SuppressWarnings("unchecked")
+    private static List<ComercioAlReactivarResponseDTO> comerciosDe(CuentaInactivaException ex) {
+        return (List<ComercioAlReactivarResponseDTO>) ex.getData().get("comercios");
+    }
+
+    @Test
+    void elLoginDeUnDuenoInactivoListaQueComerciosVuelvenYCualSigueSuspendido() {
+        Dueno dueno = duenoActivo();
+        int suspendido = comercioExtra(dueno, EstadoComercio.SUSPENDIDO);
+        int pendiente = comercioExtra(dueno, EstadoComercio.PENDIENTE);
+        vencida(dueno.id());
+        correr();
+        assertTrue(inactivada(dueno.id()));
+
+        CuentaInactivaException ex = assertThrows(CuentaInactivaException.class,
+                () -> authService.login(login(dueno), "127.0.0.1", "test"));
+
+        List<ComercioAlReactivarResponseDTO> comercios = comerciosDe(ex);
+        assertEquals(2, comercios.size());
+        ComercioAlReactivarResponseDTO vuelve = comercios.stream().filter(c -> c.getComercioId() == dueno.comercioId()).findFirst().orElseThrow();
+        ComercioAlReactivarResponseDTO sigue = comercios.stream().filter(c -> c.getComercioId() == suspendido).findFirst().orElseThrow();
+        assertEquals(ComercioAlReactivarResponseDTO.Resultado.VUELVE, vuelve.getResultado());
+        assertEquals(ComercioAlReactivarResponseDTO.Resultado.SIGUE_SUSPENDIDO, sigue.getResultado());
+        assertTrue(comercios.stream().noneMatch(c -> c.getComercioId() == pendiente));
+    }
+
+    @Test
+    void elLoginDeUnClienteInactivoNoTraeLista() {
+        Cuenta cuenta = clienteInactivo();
+
+        CuentaInactivaException ex = assertThrows(CuentaInactivaException.class,
+                () -> authService.login(login(cuenta), "127.0.0.1", "test"));
+
+        assertTrue(comerciosDe(ex).isEmpty());
+    }
+
+    @Test
+    void conUnaContrasenaIncorrectaElLoginNoRevelaNingunComercio() {
+        Dueno dueno = duenoInactivo();
+
+        CredencialesInvalidasException ex = assertThrows(CredencialesInvalidasException.class,
+                () -> authService.login(login(dueno.nombreUsuario(), "Incorrecta1"), "127.0.0.1", "test"));
+
+        Map<?, ?> data = (Map<?, ?>) ex.getData();
+        assertEquals(2, data.get("intentosRestantes"));
+        assertTrue(!data.containsKey("comercios"));
+        assertTrue(!data.containsKey("codigo"));
+    }
+
+    @Test
+    void laVistaPreviaDelAdministradorCoincideConLoQueLuegoHaceLaReactivacion() {
+        Dueno dueno = duenoActivo();
+        int suspendido = comercioExtra(dueno, EstadoComercio.SUSPENDIDO);
+        vencida(dueno.id());
+        correr();
+
+        ReactivacionCuentaPreviaResponseDTO previa = reactivacionAdmin.vistaPrevia(dueno.id());
+
+        assertEquals(RolUsuario.DUENO, previa.getRol());
+        assertEquals(EstadoUsuario.INACTIVO, previa.getEstadoActual());
+        assertEquals(2, previa.getComercios().size());
+        assertEquals("INACTIVO", estadoComercio(dueno.comercioId()));
+        reactivacionAdmin.reactivar(dueno.id(), administradorId);
+        assertEquals("APTO_VENTA", estadoComercio(dueno.comercioId()));
+        assertEquals("SUSPENDIDO", estadoComercio(suspendido));
+    }
+
+    @Test
+    void laVistaPreviaDeUnClienteNoTraeComerciosYLaDeUnAdministradorOUnInexistenteFalla() {
+        Cuenta cliente = clienteInactivo();
+
+        assertTrue(reactivacionAdmin.vistaPrevia(cliente.id()).getComercios().isEmpty());
+        assertThrows(ConflictoDeNegocioException.class, () -> reactivacionAdmin.vistaPrevia(administradorId));
+        assertThrows(com.bajonea.backend.exceptions.RecursoNoEncontradoException.class, () -> reactivacionAdmin.vistaPrevia(2_000_000_000));
     }
 }

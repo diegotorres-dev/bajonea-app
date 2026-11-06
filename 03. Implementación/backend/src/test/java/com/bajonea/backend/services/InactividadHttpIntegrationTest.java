@@ -6,12 +6,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bajonea.backend.config.security.AuthenticatedUser;
+import com.bajonea.backend.enums.EstadoComercio;
 import com.bajonea.backend.enums.RolUsuario;
 import com.bajonea.backend.services.DatosPruebaEmpleado.Cuenta;
 import com.bajonea.backend.services.DatosPruebaEmpleado.Dueno;
@@ -109,6 +111,42 @@ class InactividadHttpIntegrationTest extends InactividadTestBase {
                 .andExpect(status().isConflict());
 
         assertEquals("APTO_VENTA", estadoComercio(dueno.comercioId()));
+    }
+
+    @Test
+    void laVistaPreviaDeReactivarSoloLaVeElAdministradorYTraeLosComercios() throws Exception {
+        Dueno dueno = duenoActivo();
+        int suspendido = comercioExtra(dueno, EstadoComercio.SUSPENDIDO);
+        vencida(dueno.id());
+        correr();
+        Cuenta cliente = cliente();
+        String ruta = "/api/v1/administrador/cuentas/" + dueno.id() + "/reactivar/previa";
+
+        mockMvc.perform(get(ruta)).andExpect(status().isUnauthorized());
+        mockMvc.perform(como(get(ruta), RolUsuario.CLIENTE, cliente.id())).andExpect(status().isForbidden());
+        mockMvc.perform(como(get(ruta), RolUsuario.DUENO, dueno.id())).andExpect(status().isForbidden());
+        mockMvc.perform(como(get(ruta), RolUsuario.ADMINISTRADOR, administradorId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.estadoActual").value("INACTIVO"))
+                .andExpect(jsonPath("$.data.comercios.length()").value(2))
+                .andExpect(jsonPath("$.data.comercios[?(@.comercioId==" + suspendido + ")].resultado").value("SIGUE_SUSPENDIDO"));
+    }
+
+    @Test
+    void elLoginDeUnDuenoInactivoTraeLosComerciosEnLaRespuestaYUnaClaveIncorrectaNo() throws Exception {
+        Dueno dueno = duenoActivo();
+        int suspendido = comercioExtra(dueno, EstadoComercio.SUSPENDIDO);
+        vencida(dueno.id());
+        correr();
+
+        mockMvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON).content(cuerpo(dueno.nombreUsuario(), dueno.clave())))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.data.codigo").value("CUENTA_INACTIVA"))
+                .andExpect(jsonPath("$.data.comercios.length()").value(2))
+                .andExpect(jsonPath("$.data.comercios[?(@.comercioId==" + suspendido + ")].resultado").value("SIGUE_SUSPENDIDO"));
+        mockMvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON).content(cuerpo(dueno.nombreUsuario(), "Incorrecta1")))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.data.comercios").doesNotExist());
     }
 
     @Test
