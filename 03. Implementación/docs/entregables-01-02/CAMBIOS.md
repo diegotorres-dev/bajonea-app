@@ -1298,7 +1298,7 @@ Lo sugerido para la entrega B en la sección anterior está **hecho**, con estas
 | **Consulta enviada** | "Recibimos tu consulta", el código grande, "Copiar código" (toast "Código copiado"; si el navegador no deja, queda seleccionado), "También te lo mandamos a {email}." y "Ver mi consulta" (con sesión abre `soporte-consulta.html?id=N`; sin sesión lleva el código y el email en el `#`). |
 | **Ver y responder** (`soporte-consulta.html`) | Sin sesión: lee el `#`, lo borra con `history.replaceState` y consulta; o formulario con email y código (el código acepta minúsculas, espacios y guiones); "¿Perdiste el código?" lleva al reenvío, que responde siempre lo mismo. Con sesión (`?id=N`): la misma conversación sin pedir nada; una consulta ajena dice "No encontramos esa consulta.". Cabecera con tipo, fecha y estado ("Te toca responder", "Esperando a Soporte", "Cerrada"), burbujas "Vos" y "Soporte" con fecha y hora, caja "Tu respuesta" con `N / 1000 · quedan M mensajes`, y el aviso de la API al llegar al tope de 20. Sin tiempo real: se recarga al entrar y después de cada acción. |
 | **Mis consultas** (`mis-consultas.html`) | Lista con tipo, fecha y estado (las que le tocan primero), vacío con texto y "Nueva consulta". Entrada desde el Perfil de Cliente, Dueño (sección "Ayuda") y Empleado, con el contador de las que esperan su respuesta. Funciona con la cuenta suspendida. |
-| **Login y sesión suspendida** | "Contactar a Soporte" (`?tipo=APELACION_CUENTA`) en la hoja de cuenta suspendida del login y en la pantalla de sesión suspendida, que además tiene "Mis consultas". **La pantalla de sesión suspendida ya no borra la sesión**: se mantiene hasta "Cerrar sesión", porque Soporte con sesión la necesita (el servidor solo deja pasar las rutas de Soporte). Enlace "Contactar a Soporte" (`?tipo=NO_PUEDO_ENTRAR`) en el aviso de cuenta bloqueada del login y (`?tipo=APELACION_COMERCIO`) en "Tu comercio no está operativo". El aviso de cuenta inactiva todavía no existe (llega con S6). |
+| **Login y sesión suspendida** | "Contactar a Soporte" (`?tipo=APELACION_CUENTA`) en la hoja de cuenta suspendida del login y en la pantalla de sesión suspendida, que además tiene "Mis consultas". **La pantalla de sesión suspendida ya no borra la sesión**: se mantiene hasta "Cerrar sesión", porque Soporte con sesión la necesita (el servidor solo deja pasar las rutas de Soporte). Enlace "Contactar a Soporte" (`?tipo=NO_PUEDO_ENTRAR`) en el aviso de cuenta bloqueada del login y (`?tipo=APELACION_COMERCIO`) en "Tu comercio no está operativo". El aviso de cuenta inactiva es la pantalla "Tu cuenta está inactiva" de la entrega B de S6. |
 | **Panel del comercio** | Enlace "Contactar a Soporte" (`?tipo=APELACION_COMERCIO`) en la tarjeta de comercio suspendido, para el Dueño y para el Empleado. |
 | **Administrador** | Entrada "Soporte" en la grilla de gestión con `consultasSoporteEsperando`. Bandeja (`admin-soporte.html`) con los filtros "Esperan N", "Respondidas N" y "Cerradas N" (la cantidad sale de las listas, de a 200 como máximo), cada ítem con tipo, email, hace cuánto y las marcas "Cuenta suspendida" y "No se envió el email". Detalle (`admin-soporte.html?id=N`): cuenta asociada con "Ver cuenta" (`admin-clientes.html?id=` o `admin-duenos.html?id=`), conversación, "Responder", "Cerrar consulta" con confirmación y "Reenviar email". **No se construyó** el buscador por email de la bandeja (el endpoint lo admite con `&email=`; no estaba en el pedido de la entrega B). `admin-clientes.html` ahora acepta `?id=N` como `admin-duenos.html`. |
 
@@ -1383,10 +1383,34 @@ No se editó `01. Análisis de Requerimientos` ni `02. Diseño`. Lo de la entreg
 5. **Modelo de datos:** diccionario v1.37 (fragmentos en `diccionario-v1.37-fragmentos.md`).
 6. **DFD:** el proceso de inicio de sesión suma la salida "cuenta inactiva"; nuevo proceso "Inactivar cuentas" con la base de usuarios, comercios y pedidos como almacenes.
 
-### Sugerencias de interfaz para la entrega B
+### Sugerencias de interfaz para la entrega B (hechas el 2026-11-05, ver la sección siguiente; con una diferencia: el login ya no ofrece "Recibir un código por email", por decisión de Diego)
 
 - **Login:** cuando el `409` trae `data.codigo = CUENTA_INACTIVA`, mostrar una hoja o pantalla "Tu cuenta está inactiva" con el botón principal "Reactivar mi cuenta" (llama a `POST /auth/reactivar-cuenta/con-credenciales` con el mismo usuario y contraseña ya escritos, y entra directo) y, debajo, "Recibir un código por email" (el flujo actual de `reactivar-cuenta.html`). Si la reactivación responde `401` con `intentosRestantes`, mostrar el mismo mensaje que el login.
 - Hoy el login ya muestra el enlace "Solicitá la reactivación" porque el texto no cambió; la entrega B lo reemplaza por la hoja de arriba.
 - **Ficha del Administrador (clientes y Dueños):** botón "Reactivar cuenta" visible solo con la cuenta `INACTIVO` (`PUT /administrador/cuentas/{id}/reactivar`), con confirmación y toast de éxito.
 - **Equipo:** un Empleado cuyo comercio está inactivo ve el panel en solo lectura; las escrituras responden `409` con `data.codigo = COMERCIO_INACTIVO` ("El comercio está inactivo: por ahora no se puede modificar."). Conviene un aviso fijo "Comercio inactivo" en el panel, como el de comercio suspendido.
 - **Avisos dentro de la app:** `CUENTA_INACTIVADA` y `COMERCIO_INACTIVADO` ya existen como tipos; la persona no puede verlos mientras esté inactiva, así que sirven como rastro al volver.
+
+## Inactivación por falta de uso — Fase 5, tramo S6 entrega B (pantallas), 2026-11-05
+
+### Qué cambió
+
+- **Login.** Una persona con la cuenta inactiva que escribe bien su usuario y contraseña ve la pantalla **"Tu cuenta está inactiva"** ("Pasaron más de 3 meses sin que ingresaras, así que la dejamos en pausa. Tus datos y tus pedidos están a salvo.") con tres salidas: **Reactivar mi cuenta**, **Contactar a Soporte** y **Volver a ingresar**. Reactivar la deja entrar en el acto, con el aviso "Cuenta reactivada. ¡Qué bueno verte de nuevo!". Si el usuario es un Dueño, la pantalla le cuenta qué pasa con cada comercio: "{nombre} vuelve a estar disponible." o "{nombre} sigue suspendido. Si creés que es un error, escribinos.". Cliente y Empleado ven la misma pantalla sin esa lista.
+- **Se quitó del login** el enlace "¿Tu cuenta está inactiva? Reactivar mi cuenta" y la reactivación por código por email (decisión de Diego). Quien no recuerda su contraseña usa "¿Olvidaste tu contraseña?", que también reactiva la cuenta y devuelve sus comercios.
+- **Administrador.** En las listas de Clientes y de Dueños, una cuenta inactiva suma **Reactivar cuenta** en su menú. Pide confirmación con "Qué va a pasar" ("Podrá ingresar y comprar de nuevo." y "Se anota en su historial que la reactivaste vos."); para un Dueño muestra "Se restablecen N de M comercios", cuáles vuelven y cuál sigue suspendido ("Se suspendió aparte. Hay que levantarlo desde su ficha."). Dueños suma el filtro "Inactivos".
+- **La contraseña que se escribió en el login no se guarda en ningún lado** (ni almacenamiento del navegador ni dirección): vive solo en memoria mientras la pantalla está abierta.
+
+### Cambios a reflejar en los documentos de requisitos
+
+1. **Requisitos funcionales (sistema):** la persona con la cuenta inactiva puede reactivarla desde el inicio de sesión con su usuario y contraseña, y se le informa qué pasa con sus comercios si es Dueño. Se quita la reactivación por código por email como camino ofrecido (el backend la conserva).
+2. **Requisitos funcionales (Administrador):** reactivar una cuenta inactiva desde las listas de Clientes y de Dueños, con vista previa de los comercios que se restablecen.
+3. **Casos de uso:** "Reactivar cuenta": el flujo alternativo "recibir código por email" deja de estar en la pantalla; el Administrador confirma antes de reactivar.
+4. **DFD:** el proceso de inicio de sesión devuelve, junto a "cuenta inactiva", la lista de comercios del Dueño con su resultado (vuelve o sigue suspendido); nuevo flujo de consulta del Administrador "vista previa de reactivación".
+5. **Modelo de datos:** sin cambios (esta entrega no tiene migraciones).
+
+### Cambios de interfaz para la pasada de documentación
+
+- Pantalla nueva: "Tu cuenta está inactiva" (a pantalla completa, sobre el login). Captura en `docs/capturas-inactividad/` (`01` Cliente, `02` Dueño con comercios, `03` "Reactivando…", `04` toast, `05` error).
+- Hoja nueva del Administrador: "Reactivar a {nombre}" (`07` Cliente, `09` Dueño con comercios, `10` error) y el menú de Clientes con "Reactivar cuenta" (`06`); toast del Administrador en `08`.
+- Login: se quitó el enlace "Reactivar mi cuenta" del pie.
+

@@ -19,7 +19,7 @@ La mayor parte del contenido de `frontend/` se renderiza dinámicamente desde `f
 
 | Pantalla | Archivo(s) | `data-testid` agregados |
 |---|---|---|
-| `login.html` | mismo `.html` | `mensaje-banner`, `input-email`, `input-password`, `btn-mostrar-password`, `mensaje-error-login`, `mensaje-advertencia-bloqueo`, `btn-olvide-password`, `btn-ingresar`, `btn-ir-a-registro`, `btn-ir-a-reactivar-cuenta` |
+| `login.html` | mismo `.html` | `mensaje-banner`, `input-email`, `input-password`, `btn-mostrar-password`, `mensaje-error-login`, `mensaje-advertencia-bloqueo`, `btn-olvide-password`, `btn-ingresar`, `btn-ir-a-registro` (el enlace `btn-ir-a-reactivar-cuenta` se quitó en la entrega B de S6) |
 | `recuperar-password.html` | mismo `.html` + `js/otp.js` | `mensaje-banner`, `input-email`, `mensaje-error-email`, `btn-enviar-codigo-recuperacion`, `btn-ir-a-login`, `mensaje-banner-codigo`, `input-codigo-verificacion` + dígitos, `mensaje-error-codigo`, `btn-reenviar-codigo`, `input-nueva-password`, `btn-mostrar-nueva-password`, `indicador-fortaleza-password`, `mensaje-error-nueva-password`, `input-confirmar-password`, `btn-mostrar-confirmar-password`, `mensaje-error-confirmar-password`, `btn-restablecer-password`, `btn-ir-a-login-exito`, `btn-volver` |
 | `reactivar-cuenta.html` | mismo `.html` + `js/otp.js` | Mismo patrón que recuperar-password (código de reactivación): `btn-enviar-codigo-reactivacion`, `btn-reactivar-cuenta`, resto igual |
 
@@ -411,3 +411,14 @@ Sin `data-testid` nuevos. El spec `88` usa los existentes: `suspender-comercio-q
 | `pedido-detalle.html` (bloque "Tu reclamo") | `texto-fotos-reclamo` ("Adjuntaste N fotos.") | Solo aparece si hay fotos; nunca se muestran las imágenes. |
 | `admin-reclamos.html?id=N` (detalle) | `fotos-del-reclamo`, `foto-reclamo-N`, `miniatura-foto-reclamo-N`, `imagen-foto-reclamo-N`, `error-foto-reclamo-N`; visor: `visor-foto-reclamo` (el `dialog`), `imagen-visor-foto`, `btn-cerrar-visor-foto` | La sección no existe si el reclamo no tiene fotos. |
 | `admin-reclamos.html?id=N` (reembolso fallido) | `error-reembolso-reclamo` (ahora el contenedor), `error-reembolso-frase`, `error-reembolso-detalle` | El texto original del servidor va en `error-reembolso-detalle` (con `textContent`). |
+
+
+### Inactivación por falta de uso (Fase 5, tramo S6, entrega B)
+
+| Pantalla | `data-testid` | Notas |
+|---|---|---|
+| `login.html` (pantalla "Tu cuenta está inactiva", `js/cuenta-inactiva.js`) | `pantalla-cuenta-inactiva` (el `alertdialog` a pantalla completa), `titulo-cuenta-inactiva`, `texto-cuenta-inactiva`, `comercios-cuenta-inactiva` (la sección "Tus comercios", solo Dueño con comercios inactivos o suspendidos), `comercio-vuelve-{comercioId}`, `comercio-sigue-suspendido-{comercioId}`, `error-reactivar-cuenta` (bloque `role="alert"` que recibe el foco), `estado-reactivar-cuenta` (`aria-live`, "Reactivando tu cuenta…"), `acciones-cuenta-inactiva`, `btn-reactivar-cuenta-inactiva` ("Reactivar mi cuenta" / "Reactivando…"), `btn-soporte-cuenta-inactiva` (`aria-disabled` mientras se reactiva), `btn-volver-a-ingresar` | Se quitó `btn-ir-a-reactivar-cuenta` del pie del login. `reactivar-cuenta.html` (flujo por código) sigue existiendo pero ya no tiene entrada desde el login. |
+| `admin-clientes.html`, menú de acciones | `accion-reactivar-{id}` (solo cuentas `INACTIVO`) | Se suma a `accion-suspender-{id}`. |
+| `admin-duenos.html` | `filtro-duenos-inactivos`, `accion-reactivar-dueno` (en la hoja `hoja-acciones-dueno`, solo `INACTIVO`) | El filtro "Inactivos" es nuevo en Dueños. |
+| Hoja "Reactivar a {nombre}" (`js/admin-reactivar.js`, compartida por Clientes y Dueños) | `modal-reactivar-cuenta` (el `alertdialog`), `modal-reactivar-cuenta-fondo`, `modal-reactivar-cuenta-titulo`, `reactivar-que-va-a-pasar`, `reactivar-comercios`, `reactivar-previa-cargando`, `reactivar-vuelven` (título "Se restablecen N de M comercios"), `reactivar-vuelve-{comercioId}`, `reactivar-sigue-{comercioId}`, `aviso-reactivar-cuenta` (con `aviso-fijo` y `aviso-fijo-texto`), `btn-confirmar-reactivar`, `btn-cancelar-reactivar` | Toast de éxito "Cuenta reactivada". |
+

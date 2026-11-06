@@ -1,6 +1,6 @@
 # Mapeo de archivos — Fase 5, tramo S6, entrega A: inactivación automática por falta de uso (2026-11-05)
 
-Backend, migración `V52`, proceso diario, reactivación y tests. Sin pantallas: la entrega B (aviso de cuenta inactiva en el login y lo que haga falta en la ficha del Administrador) usa la API de abajo.
+Backend, migración `V52`, proceso diario, reactivación y tests. Sin pantallas: la entrega B (aviso de cuenta inactiva en el login y lo que haga falta en la ficha del Administrador) usa la API de abajo; su descripción está en la sección "Entrega B" al final de este archivo.
 
 ## Qué hace
 
@@ -73,3 +73,46 @@ Nadie queda inactivo el día del despliegue (todos quedan con la fecha de la mig
 | `inactividad.cron` | `0 30 3 * * *` | Hora diaria. |
 | `inactividad.job-habilitado` | `true` (`false` en el perfil `test`) | |
 | `app.zona-horaria` | `America/Argentina/Ushuaia` | Zona del cron y del corte. |
+
+
+# Entrega B: pantalla de cuenta inactiva y acción del Administrador (2026-11-05)
+
+Frontend, dos ajustes mínimos de API, specs de Playwright, una carpeta de Newman y capturas. Sin migraciones.
+
+## Qué hace
+
+- **Login.** Cuando el login responde `409` con `data.codigo = CUENTA_INACTIVA`, en vez del aviso con el enlace por código se abre la pantalla completa "Tu cuenta está inactiva" (`js/cuenta-inactiva.js`): texto "Pasaron más de 3 meses…", botón principal "Reactivar mi cuenta", "Contactar a Soporte" (`soporte.html?tipo=NO_PUEDO_ENTRAR`) y "Volver a ingresar". Un Dueño ve debajo "Tus comercios": "{nombre} vuelve a estar disponible." o "{nombre} sigue suspendido. Si creés que es un error, escribinos." (Cliente y Empleado no ven la lista).
+- **Reactivar.** Llama a `POST /auth/reactivar-cuenta/con-credenciales` con el usuario y la contraseña que la persona acaba de escribir. Esos valores viven solo en una variable en memoria del módulo (el campo de contraseña del login se vacía al abrir la pantalla) y se descartan al reactivar, al volver, con Escape y en `pagehide`. Mientras tanto el botón dice "Reactivando…" y los otros dos quedan deshabilitados (`aria-disabled` en el enlace de Soporte). Si anda bien: `setSesion`, toast pendiente "Cuenta reactivada. ¡Qué bueno verte de nuevo!" y el mismo `redirigirPostLogin` de un login normal (Cliente al inicio, Empleado al selector de contexto, Dueño al panel). Si falla: bloque `role="alert"` con el mensaje de la API y el foco; los botones se vuelven a habilitar.
+- **Administrador.** En Clientes, "Reactivar cuenta" (solo con la cuenta `INACTIVO`) aparece en el menú junto a "Suspender cuenta". En Dueños hay un filtro nuevo "Inactivos" y la hoja de acciones suma "Reactivar cuenta". Las dos abren la misma hoja "Reactivar a {nombre}" (`js/admin-reactivar.js`): "Qué va a pasar" ("Podrá ingresar y comprar de nuevo." y "Se anota en su historial que la reactivaste vos."), para un Dueño el detalle "Se restablecen N de M comercios" (o "Se restablece N comercio" si vuelven todos) con "Vuelve" en cada uno y una caja aparte "Sigue suspendido — Se suspendió aparte. Hay que levantarlo desde su ficha." por cada suspendido aparte, "Reactivar cuenta" y "Cancelar". Éxito: toast "Cuenta reactivada" y la lista se actualiza. Error: el mensaje exacto de la API en un aviso fijo con foco; un `409` además recarga la lista. Si no se puede calcular el detalle, el aviso dice "… Igual podés reactivar la cuenta.".
+
+## Cambios de API
+
+| Ruta | Cambio |
+|---|---|
+| `POST /api/v1/auth/login` | El `409` `CUENTA_INACTIVA` suma `data.comercios`: lista de `{comercioId, nombre, estadoActual, resultado}` con `resultado` `VUELVE` (comercio `INACTIVO`) o `SIGUE_SUSPENDIDO` (comercio `SUSPENDIDO`); vacía si la cuenta no es de un Dueño. Solo con la contraseña correcta: con una incorrecta la respuesta es la de siempre, sin `comercios` ni `codigo`. |
+| `GET /api/v1/administrador/cuentas/{usuarioId}/reactivar/previa` | Nueva, solo Administrador, solo lectura y sin bloqueos: `{usuarioId, rol, estadoActual, comercios}` con la misma lista. `409` para un Administrador, `404` si no existe. |
+
+Los comercios pendientes, rechazados o en cualquier otro estado no se listan. `ComerciosAlReactivarService` arma la lista para los dos caminos.
+
+## Archivos nuevos
+
+- Backend: `dto/response/ComercioAlReactivarResponseDTO.java`, `dto/response/ReactivacionCuentaPreviaResponseDTO.java`, `services/ComerciosAlReactivarService.java`.
+- Frontend: `js/cuenta-inactiva.js`, `js/admin-reactivar.js`; estilos al final de `css/styles.css` (`.cuenta-inactiva__error` y `.btn[aria-disabled='true']`; el resto reutiliza `suspension-pantalla`, `suspension-que-pasa` y `dueno-restauracion`).
+- Tests: `testing/playwright/tests/98-cuenta-inactiva-login-ui.spec.ts`, `99-reactivar-cuenta-administrador-ui.spec.ts`, `testing/playwright/scripts/build-inactividad-fase5s6b-postman.mjs` (carpeta `92` de Newman, 34 requests, se corre después del constructor de la `91`).
+- Capturas: `docs/capturas-inactividad/` (10 archivos a 375 px).
+
+## Archivos modificados
+
+`CuentaInactivaException` (suma la lista), `AuthService` (la pasa al lanzarla), `ReactivacionCuentaAdminService` (`vistaPrevia`), `AdministradorController`, `AuthServiceBloqueoComercioTest` y `AuthServiceColisionCodigoTest` (el constructor ganó un parámetro), `ReactivacionCuentaIntegrationTest` (+5 tests) e `InactividadHttpIntegrationTest` (+2). Frontend: `js/api.js` (`CODIGO_CUENTA_INACTIVA`), `js/auth.js` (abre la pantalla y ya no mapea el texto "Cuenta inactiva…" al enlace), `login.html` (sin el enlace "Reactivar mi cuenta"), `js/comercio.js` (el panel del Dueño consume el toast pendiente), `js/admin-clientes.js`, `js/admin-duenos.js` y `js/admin-dueno-suspension.js`.
+
+## Decisiones
+
+| Tema | Decisión |
+|---|---|
+| Qué queda sin uso | `reactivar-cuenta.html` y su lógica de `auth.js` (`initReactivarCuentaSolicitar`: pedir el código por email y confirmarlo) se conservan, junto con sus endpoints, pero ya no se llega desde el login; solo por la dirección directa. Los specs `02` y `10` que los ejercitan navegan por la dirección y siguen pasando. |
+| Recuperar la contraseña | "Olvidé mi contraseña" ya reactivaba la cuenta inactiva y devolvía sus comercios (entrega A); el spec `98` lo comprueba de punta a punta con el Dueño que tiene un comercio suspendido aparte. |
+| Soporte con el email cargado | No se pudo: el login solo conoce el nombre de usuario, no el email. `soporte.html?tipo=NO_PUEDO_ENTRAR` preselecciona el tipo y la persona escribe su email. |
+| Sesión abierta de una cuenta inactivada | La inactivación cierra la sesión (`INACTIVIDAD`): la próxima petición responde `401` y `apiFetch` muestra el modal "Sesión cerrada" y lleva al login, sin errores. El texto del modal habla de "otro dispositivo", que no es exacto para este caso; en la práctica no se da (el token dura 24 h y la cuenta inactiva lleva más de 3 meses sin acceder). |
+| Toast tras la redirección | Se guarda con `guardarToastPendiente` y lo muestra la pantalla de destino (`catalogo.js` para el Cliente, `selector-contexto.js` para el Empleado y, desde ahora, el panel del Dueño). |
+| Hoja de Dueños | La hoja de acciones del Dueño muestra "Reactivar cuenta" como acción principal y "Suspender cuenta" como secundaria cuando la cuenta está inactiva. |
+
