@@ -8846,3 +8846,26 @@ button.panel-comercios__fila:focus-visible {
   font-weight: 700;
   cursor: pointer;
 }
+
+.cuenta-inactiva__error {
+  width: 100%;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.cuenta-inactiva__error[hidden] {
+  display: none;
+}
+
+.btn[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+}

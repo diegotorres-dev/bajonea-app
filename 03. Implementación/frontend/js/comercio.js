@@ -2,7 +2,7 @@ import { apiFetch, ApiError, clearSesion, contextoPuedeCerrarComercio, contextoP
 import { enlazarMisConsultas } from './soporte-mis-consultas.js';
 import { exigirContextoComercio, exigirDueno } from './contexto.js';
 import { logout, construirTelefono, resolverHomePorRol, LABELS_TIPO_SOCIEDAD, LABELS_CONDICION_IVA } from './auth.js';
-import { resumenHorarioHoy, renderTopBar, showToast, pintarAvatarComercio, renderPedidoEstadoHeader, manejarBloqueoPorCambioPassword, crearBloqueMotivoRechazo } from './catalogo.js';
+import { resumenHorarioHoy, renderTopBar, showToast, mostrarToastPendiente, pintarAvatarComercio, renderPedidoEstadoHeader, manejarBloqueoPorCambioPassword, crearBloqueMotivoRechazo } from './catalogo.js';
 import { SOPORTE_CONTACTO_URL } from './config.js';
 import { horaConDiaDe, horaMinutoDe, milisegundosHasta } from './fechas.js';
 import { crearSvg, limpiarAvisoFijo, mostrarAvisoFijo, bindNombreComercio, MENSAJE_NOMBRE_COMERCIO_EN_USO } from './form-utils.js';
@@ -631,6 +631,7 @@ export async function initComercioDashboard() {
   if (!activo) {
     return;
   }
+  mostrarToastPendiente();
   const comercio = await apiFetch('/comercios/perfil');
   normalizarComercio(comercio);
 

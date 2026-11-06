@@ -11,6 +11,7 @@ const ULTIMO_COMERCIO_PREFIX = 'bajonea_ultimo_comercio_';
 const ULTIMO_CONTEXTO_PREFIX = 'bajonea_ultimo_contexto_';
 const CODIGO_COMERCIO_NO_DISPONIBLE = 'COMERCIO_NO_DISPONIBLE';
 export const CODIGO_CUENTA_SUSPENDIDA = 'CUENTA_SUSPENDIDA';
+export const CODIGO_CUENTA_INACTIVA = 'CUENTA_INACTIVA';
 const RUTA_SELECTOR_CONTEXTO = 'seleccionar-contexto.html';
 const ESPERA_MAXIMA_COMERCIOS_MS = 4000;
 const RUTAS_DE_COMERCIO = /^\/(comercios|productos|pedidos\/comercio|notificaciones|oauth)(?=[/?]|$)/;

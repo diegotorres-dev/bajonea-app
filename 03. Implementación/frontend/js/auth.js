@@ -1,7 +1,8 @@
-import { apiFetch, ApiError, CODIGO_CUENTA_SUSPENDIDA, getContextoGuardado, setSesion, setContexto, clearSesion, consumirAvisoInvitacion, TIPO_CONTEXTO } from './api.js';
+import { apiFetch, ApiError, CODIGO_CUENTA_SUSPENDIDA, CODIGO_CUENTA_INACTIVA, guardarToastPendiente, getContextoGuardado, setSesion, setContexto, clearSesion, consumirAvisoInvitacion, TIPO_CONTEXTO } from './api.js';
 import { consultarComerciosDelEmpleado, RUTA_SELECTOR_CONTEXTO } from './contexto.js';
 import { resolverComercioActivo, destinoDeNavegacion } from './comercio-activo.js';
 import { abrirHojaCuentaSuspendida } from './cuenta-suspendida.js';
+import { mostrarPantallaCuentaInactiva } from './cuenta-inactiva.js';
 import { crearInputOtp } from './otp.js';
 import { subirFotoPerfilRegistroComercio, CloudinaryUploadError } from './cloudinary.js';
 import {
@@ -35,6 +36,8 @@ import { renderBanner, renderBannerTexto, bindPasswordToggle, setLoading, constr
 export { LABELS_TIPO_SOCIEDAD, LABELS_CONDICION_IVA, LABELS_TIPO_COMERCIO, LABELS_TIPO_RED_SOCIAL } from './comercio-form.js';
 export { construirTelefono, bindNombreUsuario } from './form-utils.js';
 
+const TOAST_CUENTA_REACTIVADA = 'Cuenta reactivada. ¡Qué bueno verte de nuevo!';
+
 const MENSAJES_LOGIN_CONFLICTO = {
   'Cuenta bloqueada. Recuperá tu contraseña para desbloquearla': {
     kind: 'error',
@@ -42,12 +45,6 @@ const MENSAJES_LOGIN_CONFLICTO = {
     enlace: { texto: 'Recuperá tu contraseña', href: 'recuperar-password.html' },
     despues: ' para desbloquearla.',
     ayuda: { texto: 'Contactar a Soporte', href: 'soporte.html?tipo=NO_PUEDO_ENTRAR', testid: 'enlace-soporte-cuenta-bloqueada' },
-  },
-  'Cuenta inactiva. Solicitá la reactivación de tu cuenta': {
-    kind: 'warning',
-    antes: 'Tu cuenta está inactiva. ',
-    enlace: { texto: 'Solicitá la reactivación', href: 'reactivar-cuenta.html' },
-    despues: ' para volver a ingresar.',
   },
 };
 
@@ -192,6 +189,21 @@ export function initLogin() {
         scrollAlPrimerError();
       } else if (error instanceof ApiError && error.status === 409 && error.data && error.data.codigo === CODIGO_CUENTA_SUSPENDIDA) {
         abrirHojaCuentaSuspendida({ motivo: error.data.motivo, alCerrar: () => usuarioInput.focus() });
+      } else if (error instanceof ApiError && error.status === 409 && error.data && error.data.codigo === CODIGO_CUENTA_INACTIVA) {
+        const nombreUsuario = usuarioInput.value.trim().toLowerCase();
+        const password = passwordInput.value;
+        passwordInput.value = '';
+        mostrarPantallaCuentaInactiva({
+          nombreUsuario,
+          password,
+          comercios: Array.isArray(error.data.comercios) ? error.data.comercios : [],
+          alReactivar: async (sesion) => {
+            setSesion(sesion.token, sesion.usuario);
+            guardarToastPendiente(TOAST_CUENTA_REACTIVADA);
+            await redirigirPostLogin(sesion.usuario);
+          },
+          alVolver: () => usuarioInput.focus(),
+        });
       } else if (error instanceof ApiError && error.status === 409) {
         if (error.message === 'Verificá tu email antes de iniciar sesión') {
           renderBannerConEnlace(bannerSlot, 'warning', {
