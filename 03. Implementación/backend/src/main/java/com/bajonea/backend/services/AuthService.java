@@ -100,6 +100,7 @@ public class AuthService {
     private final EmailService emailService;
     private final EstadoUsuarioService estadoUsuarioService;
     private final ReactivacionCuentaService reactivacionCuentaService;
+    private final ComerciosAlReactivarService comerciosAlReactivarService;
 
     public LoginResponseDTO login(LoginRequestDTO request, String ipOrigen, String userAgent) {
         // findByNombreUsuarioConBloqueo (SELECT ... FOR UPDATE): serializa requests concurrentes contra
@@ -133,7 +134,9 @@ public class AuthService {
         if (inactiva) {
             usuario.setIntentosFallidos(0);
             usuarioRepository.save(usuario);
-            throw new CuentaInactivaException();
+            throw new CuentaInactivaException(usuario.getRol() == RolUsuario.DUENO
+                    ? comerciosAlReactivarService.deDueno(usuario.getId())
+                    : List.of());
         }
 
         return iniciarSesion(usuario, ipOrigen, userAgent);

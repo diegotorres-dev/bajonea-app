@@ -22,6 +22,7 @@ import com.bajonea.backend.dto.response.ReSolicitudComercioAdminResponseDTO;
 import com.bajonea.backend.dto.response.SuspensionClientePreviaResponseDTO;
 import com.bajonea.backend.dto.response.SuspensionComercioPreviaResponseDTO;
 import com.bajonea.backend.dto.response.SuspensionComercioResponseDTO;
+import com.bajonea.backend.dto.response.ReactivacionCuentaPreviaResponseDTO;
 import com.bajonea.backend.dto.response.ReactivacionCuentaResponseDTO;
 import com.bajonea.backend.dto.response.SuspensionUsuarioResponseDTO;
 import com.bajonea.backend.enums.EstadoEnvioNotificacion;
@@ -223,6 +224,12 @@ public class AdministradorController {
             @AuthenticationPrincipal AuthenticatedUser administrador) {
         SuspensionUsuarioResponseDTO respuesta = suspensionUsuarioService.levantar(clienteId, administrador.userId(), request);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Suspensión levantada correctamente", respuesta));
+    }
+
+    @GetMapping("/cuentas/{usuarioId}/reactivar/previa")
+    public ResponseEntity<ApiResponse<ReactivacionCuentaPreviaResponseDTO>> vistaPreviaReactivarCuenta(@PathVariable Integer usuarioId) {
+        ReactivacionCuentaPreviaResponseDTO previa = reactivacionCuentaAdminService.vistaPrevia(usuarioId);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Vista previa obtenida correctamente", previa));
     }
 
     @PutMapping("/cuentas/{usuarioId}/reactivar")

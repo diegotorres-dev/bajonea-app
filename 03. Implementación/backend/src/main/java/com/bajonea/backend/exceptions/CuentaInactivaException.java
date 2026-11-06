@@ -1,6 +1,8 @@
 package com.bajonea.backend.exceptions;
 
+import com.bajonea.backend.dto.response.ComercioAlReactivarResponseDTO;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -16,9 +18,14 @@ public class CuentaInactivaException extends ConflictoDeNegocioException {
     private final transient Map<String, Object> data;
 
     public CuentaInactivaException() {
+        this(List.of());
+    }
+
+    public CuentaInactivaException(List<ComercioAlReactivarResponseDTO> comercios) {
         super(MENSAJE);
         Map<String, Object> datos = new LinkedHashMap<>();
         datos.put("codigo", CODIGO);
+        datos.put("comercios", comercios);
         this.data = datos;
     }
 

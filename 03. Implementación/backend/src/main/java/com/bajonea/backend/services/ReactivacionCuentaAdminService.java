@@ -1,5 +1,7 @@
 package com.bajonea.backend.services;
 
+import com.bajonea.backend.dto.response.ComercioAlReactivarResponseDTO;
+import com.bajonea.backend.dto.response.ReactivacionCuentaPreviaResponseDTO;
 import com.bajonea.backend.dto.response.ReactivacionCuentaResponseDTO;
 import com.bajonea.backend.entities.Usuario;
 import com.bajonea.backend.enums.EstadoUsuario;
@@ -7,6 +9,7 @@ import com.bajonea.backend.enums.RolUsuario;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.repositories.UsuarioRepository;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -27,13 +30,34 @@ public class ReactivacionCuentaAdminService {
 
     private final UsuarioRepository usuarioRepository;
     private final ReactivacionCuentaService reactivacionCuentaService;
+    private final ComerciosAlReactivarService comerciosAlReactivarService;
     private final TransactionTemplate transaccion;
 
     public ReactivacionCuentaAdminService(UsuarioRepository usuarioRepository,
-            ReactivacionCuentaService reactivacionCuentaService, PlatformTransactionManager transactionManager) {
+            ReactivacionCuentaService reactivacionCuentaService, ComerciosAlReactivarService comerciosAlReactivarService,
+            PlatformTransactionManager transactionManager) {
         this.usuarioRepository = usuarioRepository;
         this.reactivacionCuentaService = reactivacionCuentaService;
+        this.comerciosAlReactivarService = comerciosAlReactivarService;
         this.transaccion = new TransactionTemplate(transactionManager);
+    }
+
+    /**
+     * Qué va a pasar si se reactiva la cuenta: su estado actual y, para un Dueño, qué comercios vuelven y cuáles
+     * siguen suspendidos. Solo lectura y sin bloqueos: la reactivación revalida todo con las filas bloqueadas.
+     */
+    public ReactivacionCuentaPreviaResponseDTO vistaPrevia(Integer usuarioId) {
+        RolUsuario rol = usuarioRepository.findRolById(usuarioId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+        if (rol == RolUsuario.ADMINISTRADOR) {
+            throw new ConflictoDeNegocioException(MENSAJE_ADMINISTRADOR);
+        }
+        EstadoUsuario estado = usuarioRepository.findEstadoById(usuarioId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado"));
+        List<ComercioAlReactivarResponseDTO> comercios = rol == RolUsuario.DUENO
+                ? comerciosAlReactivarService.deDueno(usuarioId)
+                : List.of();
+        return new ReactivacionCuentaPreviaResponseDTO(usuarioId, rol, estado, comercios);
     }
 
     public ReactivacionCuentaResponseDTO reactivar(Integer usuarioId, Integer administradorId) {
