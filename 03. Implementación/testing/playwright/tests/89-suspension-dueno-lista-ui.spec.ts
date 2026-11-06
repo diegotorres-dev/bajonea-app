@@ -110,7 +110,7 @@ test.describe('Fase 5, S3 (UI B): lista de Dueños y hojas de suspender y levant
     await page.waitForURL('**/admin-duenos.html');
     await expect(page.locator('.app-header__title')).toHaveText('Dueños');
     await expect(page.getByTestId('contador-duenos')).toContainText(/Mostrando \d+ dueños?/);
-    await expect(page.getByTestId('filtros-duenos').getByRole('button')).toHaveText(['Todos', 'Suspendidos', 'Bloqueados']);
+    await expect(page.getByTestId('filtros-duenos').getByRole('button')).toHaveText(['Todos', 'Suspendidos', 'Bloqueados', 'Inactivos']);
     await sinScrollHorizontal(page);
   });
 
