@@ -191,13 +191,26 @@ Los pedidos atraviesan los siguientes estados a lo largo de su ciclo de vida:
   TikTok, WhatsApp, X, sitio web u otro), que el comercio carga y edita
   manualmente como dato de contacto — ver Requisitos Funcionales del Comercio.
 
-- **Pedidos en camino durante suspensión:** Si un comercio es suspendido mientras tiene
-  pedidos en estado En Camino, esos pedidos se completan automáticamente como entregados.
-  No se generan reembolsos en ese caso, ya que el envío ya estaba en curso.
+- **Pedidos durante la suspensión de un comercio o de un Dueño:** los pedidos pendientes
+  de confirmación se rechazan solos, en el acto, con reembolso total. Los que están en
+  preparación se pueden despachar o anular y, si nadie lo hace, el sistema los cancela con
+  reembolso total a los 90 minutos de la suspensión. Los pedidos en camino no se modifican:
+  siguen su curso normal (el Cliente los confirma o, si no lo hace, el sistema los marca
+  como entregados a los 90 minutos) y no generan reembolso.
+
+- **Dueño y Cliente en una misma cuenta:** la combinación de Dueño y Cliente en una
+  misma cuenta no está construida. Queda escrita como regla (un Dueño no pasa a Cliente
+  ni un Cliente pasa a Dueño con la misma cuenta; se registra con otra) y como trabajo
+  futuro. Hoy un Empleado es un Cliente al que se le suma la relación con cada comercio,
+  y un Dueño no puede ser Empleado.
 
 - **Timer de retiro durante suspensión:** Si un comercio es suspendido y tiene pedidos
-  en estado Listo para Retirar, el cliente dispone de 90 minutos para presentarse. Si
-  no lo hace, el pedido se cierra automáticamente sin reembolso.
+  en estado Listo para Retirar, el equipo puede entregarlos o cerrarlos como No Retirados
+  y el cliente dispone de 90 minutos (contados desde que quedaron listos o desde la
+  suspensión, lo que haya pasado después) para presentarse. Si no lo hace, el sistema
+  cierra el pedido como No Retirado, sin reembolso. Excepción: si se suspende la cuenta del
+  Dueño y el comercio no tiene ningún Empleado activo, los pedidos en preparación y los
+  listos para retirar se anulan o cancelan con reembolso total.
 
 ---
 

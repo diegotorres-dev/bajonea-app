@@ -105,15 +105,15 @@ test.describe('Registro de Comercio, Fase 1: datos legales opcionales, términos
 
   test.describe('páginas legales', () => {
     for (const pagina of [
-      { archivo: 'terminos.html', titulo: 'titulo-terminos', texto: 'Términos y Condiciones' },
-      { archivo: 'privacidad.html', titulo: 'titulo-privacidad', texto: 'Política de Privacidad' },
+      { archivo: 'terminos.html', titulo: 'titulo-terminos', texto: 'Términos y Condiciones de Uso de Bajoneá' },
+      { archivo: 'privacidad.html', titulo: 'titulo-privacidad', texto: 'Política de Privacidad de Bajoneá' },
     ]) {
-      test(`${pagina.archivo} carga con su título y la línea de texto provisorio, sin scroll horizontal a 375 px`, async ({ page }) => {
+      test(`${pagina.archivo} carga con su título y su versión definitiva, sin scroll horizontal a 375 px`, async ({ page }) => {
         await page.setViewportSize({ width: 375, height: 812 });
         await page.goto(`/${pagina.archivo}`);
         await expect(page.getByTestId(pagina.titulo)).toHaveText(pagina.texto);
-        await expect(page.getByTestId('aviso-texto-provisorio')).toContainText('Texto provisorio');
-        await expect(page.getByTestId('aviso-texto-provisorio')).toContainText('se reemplaza por la versión definitiva');
+        await expect(page.getByTestId('legal-version')).toContainText('Versión 1.0');
+        await expect(page.getByTestId('aviso-texto-provisorio')).toHaveCount(0);
         await sinScrollHorizontal(page);
       });
     }
@@ -162,11 +162,11 @@ test.describe('Registro de Comercio, Fase 1: datos legales opcionales, términos
       await expect(terminos).toHaveText('Términos y Condiciones');
       await expect(terminos).toHaveAttribute('href', 'terminos.html');
       await expect(terminos).toHaveAttribute('target', '_blank');
-      await expect(terminos).toHaveAttribute('rel', 'noopener');
+      await expect(terminos).toHaveAttribute('rel', 'noopener noreferrer');
       await expect(privacidad).toHaveText('Política de Privacidad');
       await expect(privacidad).toHaveAttribute('href', 'privacidad.html');
       await expect(privacidad).toHaveAttribute('target', '_blank');
-      await expect(privacidad).toHaveAttribute('rel', 'noopener');
+      await expect(privacidad).toHaveAttribute('rel', 'noopener noreferrer');
     }
 
     test('el registro de Cliente tiene la línea de aceptación con los dos enlaces reales, y cada uno abre su página', async ({ page, context }) => {

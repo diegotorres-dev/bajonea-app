@@ -8,27 +8,126 @@
 </head>
 <body>
 <div class="app-shell">
-  <header class="app-header app-header--logo-centrado">
-    <img class="header-logo" src="assets/img/bajonea-logo-orange-header.png" alt="Bajoneá" />
+  <header class="app-header">
+    <button class="app-header__back" type="button" aria-label="Volver" data-testid="legal-volver">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span class="app-header__title">Información legal</span>
   </header>
-  <main class="app-main">
-    <div class="screen-body">
-      <h1 class="title-lg" data-testid="titulo-privacidad">Política de Privacidad</h1>
-      <div class="info-box" style="margin-bottom:20px;" data-testid="aviso-texto-provisorio">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        <span>Texto provisorio: se reemplaza por la versión definitiva al final del proyecto.</span>
-      </div>
-      <h2 class="section-heading">1. Qué datos recibimos</h2>
-      <p class="legal-texto">Los datos que cargás al registrarte, tus direcciones, tus pedidos y los datos de contacto de tu comercio, si tenés uno.</p>
-      <h2 class="section-heading">2. Para qué los usamos</h2>
-      <p class="legal-texto">Para que puedas iniciar sesión, hacer y recibir pedidos, avisarte lo que pasa con cada uno y revisar la cuenta de los comercios.</p>
-      <h2 class="section-heading">3. Con quién los compartimos</h2>
-      <p class="legal-texto">Con el comercio al que le hacés un pedido, con Mercado Pago para procesar el pago y con los servicios que usamos para enviar emails y guardar imágenes.</p>
-      <h2 class="section-heading">4. Tus derechos</h2>
-      <p class="legal-texto">Podés pedir que corrijamos o eliminemos tus datos escribiendo al soporte de Bajoneá.</p>
-      <p class="form-footer-link"><a class="link" href="terminos.html" data-testid="enlace-ir-a-terminos">Términos y Condiciones</a></p>
+  <main class="app-main" data-testid="legal-privacidad">
+    <div class="screen-body legal-pagina">
+      <h1 class="title-lg" data-testid="titulo-privacidad">Política de Privacidad de Bajoneá</h1>
+      <p class="legal-version" data-testid="legal-version">Versión 1.0 · Última actualización: 6 de noviembre de 2026</p>
+
+      <section class="legal-resumen" aria-labelledby="resumen-titulo" data-testid="legal-resumen">
+        <h2 class="legal-resumen__titulo" id="resumen-titulo">En pocas palabras</h2>
+        <ul class="legal-lista">
+          <li>Guardamos los datos que necesitás para registrarte, pedir, cobrar y que te podamos ayudar.</li>
+          <li>No vendemos tus datos ni mostramos publicidad.</li>
+          <li>Tu contraseña se guarda cifrada: nadie puede verla.</li>
+          <li>Por ahora no se borra nada para poder resolver reclamos y cumplir obligaciones; podés pedirnos la baja.</li>
+          <li>Podés pedirnos ver, corregir o consultar tus datos escribiendo a <a class="link" href="mailto:info@bajonea.ar">info@bajonea.ar</a>.</li>
+        </ul>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">1. Quién es el responsable</h2>
+        <p class="legal-texto"><strong>Diego Nicolás Torres Velásquez</strong><br /><strong>Contacto para temas de datos personales:</strong> <a class="link" href="mailto:info@bajonea.ar">info@bajonea.ar</a></p>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">2. Qué datos guardamos</h2>
+        <p class="legal-texto"><strong>Si sos Cliente:</strong> nombre, apellido, DNI, fecha de nacimiento, teléfono, email, nombre de usuario, contraseña (cifrada), tus direcciones de entrega, foto de perfil (opcional), tus pedidos y su historial, y los reclamos y consultas que hagas.</p>
+        <p class="legal-texto"><strong>Si sos Dueño de un comercio:</strong> además, los datos fiscales (CUIT, domicilio fiscal y, si los cargás, razón social, condición frente al IVA, tipo de sociedad e inicio de actividades), los datos del representante, los datos del comercio (nombre, dirección, teléfono, horarios, fotos, redes), los <strong>documentos</strong> que presentes (habilitación comercial, carnet de manipulación de alimentos, libreta sanitaria y otros) y la vinculación con tu cuenta de Mercado Pago (guardamos el permiso de acceso de forma cifrada, nunca tu clave).</p>
+        <p class="legal-texto"><strong>Si sos Empleado:</strong> tu cuenta de Cliente, la relación con cada comercio donde trabajás y un registro de la actividad que hacés en él.</p>
+        <p class="legal-texto"><strong>Soporte y reclamos:</strong></p>
+        <ul class="legal-lista">
+          <li>Consultas a Soporte: tu email, el tipo de consulta, los mensajes, un código de consulta y la <strong>dirección IP</strong> desde la que escribís (para evitar abusos).</li>
+          <li>Reclamos: el motivo, tu mensaje, la resolución y, si las adjuntás, las fotos (las ve solo el Administrador).</li>
+        </ul>
+        <p class="legal-texto"><strong>Datos de uso y seguridad:</strong> datos de tu sesión para mantenerte conectado, intentos fallidos de ingreso, la IP en algunas consultas para limitar abusos, y un historial de los cambios de estado de tu cuenta (por ejemplo, verificación, bloqueo o suspensión).</p>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">3. Para qué los usamos</h2>
+        <ul class="legal-lista">
+          <li>Crear y administrar tu cuenta y verificar tu email.</li>
+          <li>Procesar pedidos, pagos, cancelaciones, reembolsos y reclamos.</li>
+          <li>Avisarte lo que pasa con tu cuenta y tus pedidos, por la aplicación y por email.</li>
+          <li>Revisar y aprobar comercios y sus documentos.</li>
+          <li>Atender tus consultas a Soporte.</li>
+          <li>Proteger la plataforma: prevenir fraudes, abusos e ingresos no autorizados.</li>
+          <li>Cumplir obligaciones legales y resolver disputas.</li>
+        </ul>
+        <p class="legal-texto">No usamos tus datos para publicidad ni los vendemos.</p>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">4. Con quién los compartimos</h2>
+        <ul class="legal-lista">
+          <li><strong>El comercio</strong> con el que hacés un pedido recibe lo necesario para prepararlo y entregarlo: tu nombre, dirección de entrega (si es a domicilio) y el contenido del pedido. Los Empleados de ese comercio ven solo lo que necesitan para operar.</li>
+          <li><strong>Mercado Pago</strong>, que procesa los pagos y los reembolsos. Se rige por su propia política.</li>
+          <li><strong>Cloudinary</strong>, donde se guardan las fotos de perfil, de productos y de comercios.</li>
+          <li><strong>Resend</strong>, que envía los emails de la plataforma.</li>
+          <li><strong>Google Fonts</strong>, que entrega las tipografías de las páginas. Al cargarlas, Google recibe la dirección IP de tu navegador.</li>
+          <li><strong>Proveedores de alojamiento e infraestructura</strong> donde corre la plataforma y se guardan los datos (por ejemplo, Don Web).</li>
+          <li><strong>Autoridades</strong>, cuando una ley o una orden judicial lo exija.</li>
+        </ul>
+        <p class="legal-texto">Algunos de estos proveedores pueden procesar datos en servidores fuera de la Argentina.</p>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">5. Cuánto tiempo los guardamos</h2>
+        <p class="legal-texto">Para poder resolver reclamos, mantener la trazabilidad de los pagos y cumplir obligaciones legales y tributarias, <strong>no eliminamos</strong> los pedidos, las notas de crédito, los reembolsos, los documentos de los comercios (incluidos los rechazados), las consultas a Soporte, los reclamos ni los historiales de estados.</p>
+        <p class="legal-texto">Por ahora la cuenta no se puede eliminar desde la aplicación. Podés pedirnos la baja escribiendo a <a class="link" href="mailto:info@bajonea.ar">info@bajonea.ar</a>; evaluamos tu pedido, y suprimimos o desactivamos lo que no estemos obligados o necesitemos conservar.</p>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">6. Cómo cuidamos tus datos</h2>
+        <ul class="legal-lista">
+          <li>Las contraseñas se guardan cifradas con un método de un solo sentido.</li>
+          <li>Los permisos de Mercado Pago se guardan cifrados.</li>
+          <li>Cada persona ve solo lo que le corresponde según su rol; los documentos de los comercios y las fotos de reclamos no son públicos.</li>
+          <li>Las sesiones se pueden cerrar, y se cierran si suspendemos una cuenta.</li>
+        </ul>
+        <p class="legal-texto">Ningún sistema es completamente seguro. Si detectamos un problema que afecte tus datos, te avisaremos.</p>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">7. Tus derechos</h2>
+        <p class="legal-texto">La ley argentina (Ley 25.326) te reconoce derechos sobre tus datos personales: <strong>acceder</strong> a ellos, <strong>rectificarlos</strong> o actualizarlos y, cuando corresponda, pedir su <strong>supresión</strong>. Para ejercerlos, escribinos a <a class="link" href="mailto:info@bajonea.ar">info@bajonea.ar</a> desde el email de tu cuenta. Respondemos dentro de los plazos que fija la ley.</p>
+        <p class="legal-texto">Podés editar muchos de tus datos directamente desde tu perfil.</p>
+        <p class="legal-texto">La <strong>Agencia de Acceso a la Información Pública (AAIP)</strong>, como órgano de control de la Ley 25.326, tiene la atribución de atender las denuncias y reclamos de quienes vean afectados sus derechos de protección de datos personales.</p>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">8. Menores</h2>
+        <p class="legal-texto">Podés registrarte desde los <strong>14 años</strong>. Si sos menor de 18, tenés que usar la plataforma con el conocimiento de un adulto responsable.</p>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">9. Almacenamiento en tu navegador</h2>
+        <p class="legal-texto">Usamos el almacenamiento de tu navegador para mantener tu sesión iniciada y recordar preferencias de uso. No usamos herramientas de analítica ni de publicidad. Las tipografías se cargan desde Google Fonts (ver sección 4).</p>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">10. Cambios en esta política</h2>
+        <p class="legal-texto">Si cambiamos esta política, publicamos la versión nueva con su fecha. Si el cambio es importante, te lo avisamos.</p>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">11. Contacto</h2>
+        <p class="legal-texto"><a class="link" href="mailto:info@bajonea.ar">info@bajonea.ar</a></p>
+      </section>
+
+      <nav class="legal-pie" aria-label="Información legal" data-testid="legal-pie">
+        <a class="legal-pie__enlace" href="terminos.html" data-testid="legal-pie-terminos">Términos y Condiciones</a>
+        <a class="legal-pie__enlace" href="privacidad.html" aria-current="page" data-testid="legal-pie-privacidad">Política de Privacidad</a>
+        <a class="legal-pie__enlace" href="faq.html" data-testid="legal-pie-faq">Preguntas frecuentes</a>
+      </nav>
     </div>
   </main>
 </div>
+<script type="module" src="js/legal.js"></script>
 </body>
 </html>

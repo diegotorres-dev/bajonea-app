@@ -139,6 +139,11 @@ export function initSoporte() {
   contenedor.replaceChildren(
     texto('h1', 'title-lg', 'Contactar a Soporte', { 'data-testid': 'titulo-soporte' }),
     texto('p', 'soporte-intro', 'Te respondemos por email.', { 'data-testid': 'texto-soporte-intro' }),
+    h('p', { class: 'soporte-intro', 'data-testid': 'texto-faq' }, [
+      '¿Tenés una duda frecuente? Mirá las ',
+      texto('a', 'link', 'Preguntas frecuentes', { href: 'faq.html', 'data-testid': 'enlace-faq' }),
+      '.',
+    ]),
     formulario,
   );
 

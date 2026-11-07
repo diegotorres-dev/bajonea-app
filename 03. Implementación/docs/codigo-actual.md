@@ -628,3 +628,7 @@ Hallazgos objetivos del código real que valen la pena señalar antes de arranca
 - **Entidades:** 23 `@Entity` + 1 `@Embeddable` (`ProductoTagId`) = 24 clases en `entities/`, 12 enums.
 - **Services:** 14 de producción (64 métodos públicos) + 1 de testing (`TestSupportService`, 2 métodos) = 66 métodos públicos totales.
 - **Anotaciones de validación custom:** 9 catalogadas, 8 en uso real, 1 sin uso (`@DireccionExclusionMutua`).
+
+## Textos legales (2026-11-06)
+
+Solo frontend. `terminos.html` y `privacidad.html` publican los textos definitivos (versión 1.0, 4 de noviembre de 2026; fuentes en `docs/legales/`), `faq.html` es nueva (32 preguntas en cuatro grupos, acordeones `<details>`) y `js/legal.js` resuelve el botón "Volver". Las cuatro pantallas de acceso (`login`, `registro-tipo-cuenta`, `registro-cliente`, `registro-comercio`) tienen un pie con los tres enlaces y `soporte.html` enlaza a la FAQ. Sin endpoints ni migraciones nuevos (backend sin cambios). Diferencias entre la FAQ y el comportamiento real anotadas en `docs/DECISIONES.md`, 2026-11-06. Spec `100-textos-legales-ui` (18 tests).

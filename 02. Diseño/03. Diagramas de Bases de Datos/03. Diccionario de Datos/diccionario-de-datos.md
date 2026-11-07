@@ -3,7 +3,16 @@
 **Proyecto:** Bajoneá — Plataforma de pedidos gastronómicos en línea  
 **Motor de base de datos:** MySQL (InnoDB)  
 **ORM / Migraciones:** Spring Data JPA + Hibernate / Flyway  
-**Versión del modelo:** 1.28  
+**Versión del modelo:** 1.37
+**Cambios de la v1.37 (Fase 5, tramo S6, inactivación automática por falta de uso, migración `V52`, 2026-11-05):** `Usuario.fecha_ultimo_acceso` pasa a `DATETIME NOT NULL DEFAULT current_timestamp()` (antes admitía `NULL`; la migración deja a todas las cuentas existentes con la fecha de la migración, de modo que nadie queda inactivo el día del despliegue) y suma el índice `idx_usuario_estado_ultimo_acceso (estado, fecha_ultimo_acceso)`; `Sesion.tipo_cierre` suma `INACTIVIDAD` (al final del ENUM, cambio de metadatos); `Pedido` suma el índice `idx_pedido_comercio_fecha_creacion (comercio_id, fecha_creacion)`. Sin tablas ni columnas nuevas. Cambios de comportamiento: un proceso diario pasa a `INACTIVO` las cuentas `ACTIVO` con último acceso anterior a 3 meses calendario (salvo Administrador, cuentas con un pedido en curso y, para un Dueño, con un pedido en cualquier estado en los últimos 3 meses en alguno de sus comercios) y sus comercios `APROBADO`, `APTO_VENTA` y `CERRADO_TEMPORALMENTE` a `INACTIVO`; el último acceso se renueva con el inicio de sesión y con todo pase a `ACTIVO` (verificación, desbloqueo, reactivación, fin de suspensión). Los tipos de aviso `CUENTA_INACTIVADA` y `COMERCIO_INACTIVADO` ya existían en el ENUM de `notificacion.tipo` y ahora tienen emisor.  
+**Cambios de la v1.36 (Fase 5, tramo S5, fotos del reclamo, migración `V51`, 2026-11-05):** tablas nuevas `ReclamoFoto` (`reclamo_foto`: metadatos de cada foto adjunta a un reclamo: orden de 1 a 3, nombre original, tipo de contenido, tamaño y fecha) y `ReclamoFotoArchivo` (`reclamo_foto_archivo`: el contenido binario, `LONGBLOB`, en tabla aparte para que ningún listado lo lea, igual que `documento_comercio` / `documento_comercio_archivo`). El Cliente adjunta hasta 3 fotos opcionales (5 MB cada una, JPG, PNG o WebP, validadas por la firma de bytes) **al crear** el reclamo, en la misma transacción; un reclamo enviado no se edita. Solo las ve el Administrador; el Cliente ve solo la cantidad; el Dueño y el Empleado, nada. Nada las borra nunca. Límites por propiedad: `reclamo.fotos.max-cantidad` (3) y `reclamo.fotos.max-bytes` (5 MB). `V51` no toca los reclamos existentes. Ver "Fotos del reclamo (v1.36)" más abajo.  
+**Cambios de la v1.35 (Fase 5, tramo S5, Reclamos, migración `V50`, 2026-11-04):** `Reclamo` (la tabla existía desde el baseline, vacía y sin código) suma `motivo` (`ENUM MotivoReclamo NULL`, los seis motivos), `tipo_resolucion` (`ENUM TipoResolucionReclamo NULL`, nulo hasta resolver) y `monto_aprobado` (`DECIMAL(10,2) NULL`), el `CHECK ck_reclamo_resolucion` (un reclamo `PENDIENTE` no tiene resolución; uno `APROBADO` es un reembolso total o parcial con monto mayor que cero, administrador y fecha; uno `RECHAZADO` es un rechazo con motivo, sin monto, con administrador y fecha) y el índice `idx_reclamo_estado_fecha (estado, fecha_creacion)` para la bandeja; `motivo` queda nullable en la base (la migración no inventa datos si hubiera filas viejas) y es obligatorio en la aplicación. `NotaCredito` suma `reclamo_id` (`INT NULL`, `FOREIGN KEY` a `Reclamo.id`, `UNIQUE uq_nota_credito_reclamo`: un `UNIQUE` de MariaDB admite varios nulos, así que cada reclamo tiene como máximo una nota y el resto de las notas no cambia). `notificacion.tipo` suma `RECLAMO_REEMBOLSO_DUENO` (audiencia `DUENO`, al final del ENUM, cambio de metadatos). `Pedido` no cambia: un reclamo no cambia el estado del pedido. Sin estado nuevo del reclamo: "reembolso en proceso" se deduce del estado de la nota ligada. Ver "Reclamos (v1.35)" más abajo.
+**Cambios de la v1.34 (Fase 5, tramo S4, Soporte, migración `V49`, 2026-11-03):** se elimina la tabla `Soporte` (mensajes de descargo de usuarios suspendidos: nunca tuvo entidad ni código ni filas) y el ENUM `ResolucionSoporte`; las reemplazan `TicketSoporte` (`ticket_soporte`: una consulta de una persona a Soporte, con su código de 8 caracteres, el email, el usuario si escribió con sesión, el tipo, el estado por turnos, la IP y el contador de mensajes), `MensajeSoporte` (`ticket_soporte_mensaje`: cada mensaje de la conversación, con el autor y, para los de Soporte, si el email que avisa a la persona salió) y `SoporteLimite` (`soporte_limite`: una fila por clave de contador de los límites, que además sirve de cerrojo por email y por IP). Tres ENUM nuevos: `TipoTicketSoporte`, `EstadoTicketSoporte` y `AutorMensajeSoporte`. Ver "Soporte (v1.34)" más abajo.
+**Cambios de la v1.33 (Fase 5, tramo S3, suspensión de la cuenta de un Dueño, migración `V48`, 2026-10-30):** `historial_estado_pedido.motivo_timeout` suma `SUSPENSION_DUENO_SIN_ATENCION` y `notificacion.tipo` suma `DUENO_SUSPENDIDO` y `DUENO_SUSPENSION_LEVANTADA` (los tres al final del ENUM, cambio de metadatos, sin tablas ni columnas nuevas). Cambios de comportamiento: suspender la cuenta de un Dueño suspende sus comercios `APROBADO`, `APTO_VENTA` y `CERRADO_TEMPORALMENTE` (origen `DUENO`); un pedido `EN_PREPARACION` de un comercio sin Empleados activos se anula y uno `LISTO_PARA_RETIRAR` se cancela (`CANCELADO_POR_SISTEMA`) con reembolso total; ver "Suspensión de la cuenta de un Dueño (v1.33)" más abajo.
+**Cambios de la v1.32 (Fase 5, tramo S2.1, migración `V47`, 2026-10-30):** `historial_estado_pedido.motivo_timeout` suma `SUSPENSION_COMERCIO` al final del ENUM (cambio de metadatos, sin datos que reescribir): lo escribe el rechazo automático de un pedido `PENDIENTE_CONFIRMACION_COMERCIO` cuando se suspende su comercio (estado `RECHAZADO`, `actor_rol = SISTEMA`, `pedido.cancelado_por = SISTEMA`, nota de crédito `SUSPENSION_COMERCIO` por el monto pagado). `pedido.motivo_rechazo` queda `NULL` en ese rechazo.
+**Cambios de la v1.31 (Fase 5, tramo S2, entrega B2, migración `V46`, 2026-10-29):** `historial_estado_pedido.motivo_timeout` suma `CANCELACION_SIN_PAGO` al final del ENUM (cambio de metadatos): lo escribe la cancelación que hace el Cliente de un pedido que todavía no pagó (`PENDIENTE_PAGO` pasa a `CANCELADO`, sin nota de crédito y sin aviso al equipo); la actividad del comercio y la trazabilidad lo excluyen, como `TIMEOUT_PAGO`, porque el comercio nunca vio ese pedido. Cambios de comportamiento sin esquema: un pedido `PENDIENTE_PAGO` de un comercio `SUSPENDIDO` se puede cancelar pero no pagar, y las respuestas de pedido suman `limiteResolucionSuspension`, `comercioNoDisponible` y `reembolsoMotivo` (solo API, no son columnas).
+**Cambios de la v1.30 (Fase 5, tramo S2, suspensión individual de un comercio, migración `V45`, 2026-10-29):** `Comercio` suma `suspension_origen` (`ENUM('INDIVIDUAL','DUENO') NULL`), `suspendido_desde` (`DATETIME NULL`) y `motivo_suspension` (`VARCHAR(500) NULL`) con el `CHECK ck_comercio_suspension` (las tres completas si y solo si `estado = 'SUSPENDIDO'`, `NULL` en cualquier otro estado) y el índice `idx_comercio_suspension (dueno_id, estado, suspension_origen)`; `HistorialEstadoComercio` suma `suspension_origen` (`ENUM NULL`, el origen de la suspensión a la que se refiere la fila). La migración completa los comercios que ya estaban `SUSPENDIDO` (origen `INDIVIDUAL`, fecha y motivo tomados de su última fila de historial hacia `SUSPENDIDO`) y marca `INDIVIDUAL` las filas de historial que ya llevaban a `SUSPENDIDO`. `historial_estado_pedido.motivo_timeout` suma `TIMEOUT_PREPARACION_SUSPENSION`, `nota_credito.motivo` suma `PAGO_TARDIO` y `notificacion.tipo` suma `COMERCIO_SUSPENDIDO_EQUIPO` y `COMERCIO_SUSPENSION_LEVANTADA_EQUIPO` (los tres al final del ENUM, cambio de metadatos). `Pedido.suspension_retiro_expira` queda sin uso: la columna sigue en la base pero ninguna entidad ni proceso la lee ni la escribe. Cambios de comportamiento: suspender un comercio ya no toca ningún pedido; los dos topes de 90 minutos (preparación y retiro) se calculan desde `Comercio.suspendido_desde`; el Dueño y el equipo quedan en solo lectura mientras dure la suspensión; ver "Suspensión de un comercio (v1.30)" más abajo.
+**Cambios de la v1.29 (Fase 5, tramo S1, suspensión de cuentas del Cliente, migración `V44`, 2026-10-27):** `Usuario` suma `motivo_suspension` (`VARCHAR(500) NULL`) y `suspendido_desde` (`DATETIME NULL`) con el `CHECK ck_usuario_suspension`: las dos columnas están completas si y solo si `estado = 'SUSPENDIDO'` y son `NULL` en cualquier otro estado (el historial conserva todo el rastro; estas dos columnas son la foto vigente que lee el login y el filtro JWT sin un join). `HistorialEstadoUsuario` (ya existía en el baseline, sin entidad) suma `administrador_id` (`INT NULL`, `FOREIGN KEY` a `Usuario.id`, `NULL` cuando el cambio lo hace el sistema) y empieza a usarse: **todo** cambio de `usuario.estado` (suspensión, levantamiento, bloqueo por intentos, desbloqueo por recuperación de contraseña, verificación de email y reactivación) pasa por un único método (`EstadoUsuarioService.cambiar`) que cambia el estado y escribe la fila en la misma transacción. `sesion.tipo_cierre` suma `SUSPENSION` (cierre de la sesión por la suspensión; el filtro JWT lo distingue de cualquier otro cierre para mostrar el motivo). `nota_credito.motivo` suma `SUSPENSION_CLIENTE` (devolución de un pago que llegó cuando la cuenta del Cliente estaba suspendida) y `RECLAMO` (reservado para el tramo S5, sin emisor todavía). `historial_estado_pedido.motivo_timeout` suma `SUSPENSION_CLIENTE` (pedido sin pagar cancelado por la suspensión). Los cuatro ENUM suman el valor al final (cambio de metadatos, como `V34` y `V35`). Sin tablas nuevas. `notificacion.tipo` no cambia: `CLIENTE_SUSPENDIDO` (T28) y `SUSPENSION_LEVANTADA` (T29) existían sin emisor y ahora tienen uno. Cambios de comportamiento sin esquema: solo el Administrador suspende y levanta (a un Cliente; un Dueño todavía no, un Administrador nunca); recuperar la contraseña y verificar el email ya no pueden levantar una suspensión; el login revela la suspensión (con el motivo) solo después de comprobar la contraseña; un pago aprobado que llega sobre un pedido ya cancelado se reembolsa siempre.  
 **Cambios de la v1.28 (Fase 4, documentos del comercio y nueva regla de `APTO_VENTA`, migración `V43`, 2026-10-26):** tablas nuevas `DocumentoComercio` (`documento_comercio`: metadatos de cada documento de habilitación de un comercio, con tipo, estado, motivo de rechazo y quién y cuándo lo resolvió) y `DocumentoComercioArchivo` (`documento_comercio_archivo`: el contenido binario, `LONGBLOB`, en tabla aparte para que ningún listado lo lea). Enums nuevos `TipoDocumentoComercio` (`LIBRETA_SANITARIA`, `CARNET_MANIPULACION_ALIMENTOS`, `HABILITACION_COMERCIAL`, `OTRO`; ampliable agregando valores al final) y `EstadoDocumentoComercio` (`PENDIENTE`, `APROBADO`, `RECHAZADO`). `notificacion.tipo` suma `DOCUMENTO_APROBADO`, `DOCUMENTO_RECHAZADO`, `COMERCIO_APTO_VENTA` y `COMERCIO_SIN_APTITUD` (cambio de metadatos como `V34` y `V35`; audiencia `DUENO` los cuatro). `V43` no modifica el estado de ningún comercio. Cambia la regla de `EstadoComercio.APTO_VENTA`, que ahora decide un único servicio (`AptitudVentaComercioService`): para entrar hacen falta cuenta de MercadoPago activa, al menos un documento `APROBADO` y ningún documento `PENDIENTE`; para seguir vendiendo, cuenta activa y al menos un `APROBADO`; con la cuenta del Dueno `BLOQUEADO` nada queda a la venta. La exigencia de documentos se apaga con `comercio.documentacion.requerida=false` (por defecto `true`; `false` en el perfil `test`): apagada, solo cuenta MercadoPago, como antes de esta versión. Los documentos son privados del comercio: los ve y los sube solo el Dueno y los revisa el Administrador; el Empleado no tiene acceso. Límites por propiedad: 8 MB por archivo, 5 documentos en revisión a la vez y 20 en total por comercio (los rechazados cuentan). Formatos PDF, JPG, PNG y WebP, validados por la firma de bytes. Un `RECHAZADO` no se vuelve a resolver; el Dueno solo elimina un documento propio que sigue `PENDIENTE`.  
 **Cambios de la v1.27 (Fase 3, direcciones múltiples del Cliente, migración `V42`, 2026-10-24):** `Direccion` suma `nombre` (`VARCHAR(40) NULL`, alias privado del Cliente, repetible entre direcciones) y `referencia` (`VARCHAR(150) NULL`, indicación de entrega), la columna generada `principal_activa_cliente_id` (`STORED`: vale `cliente_id` si `principal = 1` y `eliminada = 0`, si no `NULL`) con el índice único `uq_direccion_principal_cliente` (garantiza en base una sola predeterminada activa por Cliente; no la mapea la entidad JPA) y el índice `idx_direccion_cliente_activa (cliente_id, eliminada)`. `Pedido` suma la copia de la dirección de entrega: `entrega_calle`, `entrega_numero`, `entrega_piso_depto`, `entrega_codigo_postal`, `entrega_localidad_id` (sin `FOREIGN KEY` a propósito) y `entrega_referencia`, todas `NULL`; `direccion_id` se conserva como origen de la copia y las respuestas de pedido leen siempre la copia, nunca la dirección viva. El alias no se copia al pedido. Un pedido `RETIRO` no tiene copia. La migración deja una predeterminada por Cliente que no la tuviera (la de mayor `id`) y copia la dirección a los pedidos `DOMICILIO` existentes; los valores previos a una edición posterior de la dirección no se pueden reconstruir, así que esos pedidos quedan con los valores actuales. Reglas de la API (sin esquema): hasta 5 direcciones activas por Cliente (`409 DIRECCIONES_CUPO_MAXIMO`), la primera queda predeterminada, la última activa no se puede eliminar (`409 ULTIMA_DIRECCION`), eliminar la predeterminada promueve la más reciente, y al crear o editar la localidad tiene que ser Río Grande, Ushuaia o Tolhuin (las direcciones viejas fuera de esas tres se siguen leyendo y sirven para pedir).  
 **Cambios de la v1.26 (Fase 2, tramo T4, migración `V41`, 2026-10-22):** tabla nueva `CierreTurno` (`cierre_turno`): una fila por turno terminado de un comercio, con la foto de sus cifras (`cantidad_pedidos`, `vendido`, `comision`, `neto`, `pendientes_al_cierre`) y el estado del email de resumen que se le manda al Dueño (`email_estado`, `email_intentos`, `email_proximo_intento`, `email_envio_iniciado`, `email_fecha_envio`, `email_ultimo_error`). Enum nuevo `EstadoEmailCierreTurno`. `UNIQUE (comercio_id, turno_fecha, horario_id)`; `horario_id` es una `FOREIGN KEY` a `Horario.id` sin cascada (un turno cerrado conserva su versión de horario). No cambia ninguna otra tabla.  
@@ -48,7 +57,7 @@ Ciclo de vida del usuario en el sistema.
 | `ACTIVO` | Email verificado; puede operar con normalidad. |
 | `BLOQUEADO` | Bloqueado tras 3 intentos fallidos de login o 3 intentos fallidos en el flujo de cambio de contraseña desde perfil. Desbloqueable exclusivamente mediante recuperación de contraseña por email. |
 | `SUSPENDIDO` | Suspendido manualmente por el Administrador con motivo. Puede enviar mensaje de soporte para solicitar revisión. |
-| `INACTIVO` | Inactivado automáticamente por el sistema tras 3 meses sin actividad (`fecha_ultimo_acceso`). Reactivable mediante token de reactivación. |
+| `INACTIVO` | Inactivada automáticamente por el sistema tras 3 meses sin actividad (`fecha_ultimo_acceso`), con motivo "Inactividad" en `HistorialEstadoUsuario`. No puede iniciar sesión: el login con la contraseña correcta responde `409` con el código `CUENTA_INACTIVA`. Se reactiva con usuario y contraseña, con un código por email, recuperando la contraseña o por el Administrador; si es un Dueño, sus comercios `INACTIVO` vuelven a `APTO_VENTA` o `APROBADO`. Una suspensión sobre una cuenta inactiva, al levantarse, la devuelve a `INACTIVO`. |
 
 ---
 
@@ -142,8 +151,8 @@ Ciclo de vida del comercio en la plataforma.
 | `PENDIENTE` | Solicitud de alta enviada; pendiente de revisión por el Administrador. No visible en el catálogo. |
 | `APROBADO` | Aprobado por el Administrador. Todavía no es visible en el catálogo ni puede recibir pedidos: para eso tiene que cumplir los requisitos de `APTO_VENTA` (cuenta de MercadoPago vinculada y documentación aprobada, ver abajo). Un comercio que pierde la aptitud vuelve a este estado. |
 | `RECHAZADO` | Solicitud rechazada por el Administrador con motivo. El Dueno puede corregir los datos del mismo comercio y volver a solicitar su aprobación (re-solicitud, hasta 3 veces por comercio: `comercio.resolicitudes.max`); la re-solicitud lo devuelve a `PENDIENTE`. |
-| `SUSPENDIDO` | Suspendido por el Administrador. Oculto del catálogo. El Dueno titular puede enviar mensaje de soporte. |
-| `INACTIVO` | Inactivado por propagación desde el Dueno titular (3 meses sin actividad). Oculto del catálogo. |
+| `SUSPENDIDO` | Suspendido por el Administrador (o, desde el tramo S3, por la suspensión del Dueño titular). Oculto del catálogo y sin pedidos nuevos; el Dueño entra a su panel en solo lectura. Se suspenden `APROBADO`, `APTO_VENTA` y `CERRADO_TEMPORALMENTE`. Lleva siempre `suspension_origen`, `suspendido_desde` y `motivo_suspension`; ningún evento (documentos, Mercado Pago, cierre manual, restauración de la cuenta) lo saca de este estado: solo lo levanta el Administrador. Ver "Suspensión de un comercio (v1.30)". |
+| `INACTIVO` | Inactivado por propagación desde el Dueno titular: el Dueño quedó inactivo por falta de uso (desde la `V52` lo escribe el proceso de inactivación; se restaura al reactivar la cuenta). Oculto del catálogo y sin pedidos nuevos; el Empleado lo ve en solo lectura. |
 | `CERRADO_TEMPORALMENTE` | Cerrado automáticamente por bloqueo del Dueno titular. Solo llegan a este estado los comercios que estaban en `APTO_VENTA`: un `APROBADO` (sin cuenta de cobro) y los demás estados no se tocan. Sigue visible en el catálogo con el indicador "Cerrado temporalmente", sin hora de reapertura y sin recibir pedidos. Se restaura al recuperar la contraseña: a `APTO_VENTA` si el Dueno sigue cumpliendo la regla de seguir vendiendo (cuenta de MercadoPago activa y al menos un documento aprobado, o solo la cuenta si la exigencia de documentos está apagada), o a `APROBADO` si no. Mientras dura el bloqueo ningún otro evento (documentos, MercadoPago) lo mueve. También es el destino de un comercio que, con la cuenta del Dueno `BLOQUEADO`, iba a quedar en `APTO_VENTA` (aprobación del Administrador con cuenta de cobro vinculada, o vinculación de MercadoPago sobre un `APROBADO`): ningún comercio queda a la venta con el Dueno bloqueado. |
 | `RECHAZO_DEFINITIVO` | Estado terminal, sin salida desde la aplicación. Se llega desde `PENDIENTE` cuando el Administrador rechaza de forma definitiva (a pedido suyo, sobre el alta original o sobre una re-solicitud) o cuando rechaza una re-solicitud y el comercio ya usó todas las que tenía (`cantidad_resolicitudes >= comercio.resolicitudes.max`; lo decide el servidor). El Dueno no puede corregirlo ni volver a solicitarlo; reabrirlo es una operación manual sobre la base (estado a `RECHAZADO`, `cantidad_resolicitudes` en 2 y una fila de historial "reabierto manualmente"). No cuenta para la elegibilidad de agregar otros comercios, pero sí como duplicado. No es visible en el catálogo ni recibe pedidos, y no lo toca el bloqueo ni la suspensión de cuenta (migración `V24`). |
 | `APTO_VENTA` | Aprobado, con la cuenta de MercadoPago del Dueno titular vinculada (`CuentaMercadoPago.activa = true`) y la documentación aprobada. Es el único estado en el que el comercio aparece en el catálogo público como abierto y puede recibir pedidos (migración `V12`). **Regla (v1.28, `AptitudVentaComercioService`, única fuente):** entrar desde `APROBADO` exige cuenta de MercadoPago activa, al menos un `DocumentoComercio` `APROBADO` (de cualquier tipo) y ningún documento `PENDIENTE`; seguir en `APTO_VENTA` exige cuenta activa y al menos un documento `APROBADO`, así que subir un documento nuevo (queda `PENDIENTE`) o que rechacen uno extra no corta las ventas. Se pierde (`APTO_VENTA → APROBADO`, con aviso `COMERCIO_SIN_APTITUD`) al desvincular MercadoPago, al revocarse el último documento aprobado o al eliminarse el respaldo. Con `comercio.documentacion.requerida=false` los documentos se ignoran y solo cuenta MercadoPago. Con la cuenta del Dueno `BLOQUEADO` ningún camino deja el comercio en `APTO_VENTA`: el que cumpliría queda en `CERRADO_TEMPORALMENTE`. Un comercio que pierde la aptitud desaparece del catálogo del Cliente, igual que al desvincular MercadoPago. |
@@ -345,7 +354,9 @@ Motivo del cierre de una sesión de usuario.
 |-------|-------------|
 | `MANUAL` | Cierre explícito realizado por el usuario (acción de logout). |
 | `AUTOMATICO` | Cierre por expiración del tiempo de sesión inactiva. |
-| `FORZADO` | Cierre forzado por el sistema: cambio de contraseña, bloqueo de cuenta, suspensión, inactivación o apertura de sesión concurrente. |
+| `FORZADO` | Cierre forzado por el sistema: cambio de contraseña, bloqueo de cuenta o apertura de sesión concurrente. |
+| `SUSPENSION` | Cierre de la sesión por la suspensión de la cuenta. |
+| `INACTIVIDAD` | Cierre de la sesión por la inactivación automática de la cuenta por falta de uso (desde la `V52`). |
 
 ---
 
@@ -459,7 +470,11 @@ Timeout automático que disparó una transición. Se registra en `HistorialEstad
 | `TIMEOUT_PAGO` | Venció el plazo de pago (30 minutos, configurable) con el pedido en `PENDIENTE_PAGO`. |
 | `TIMEOUT_ENTREGA` | Autoconfirmación de entrega a los 90 minutos en `EN_CAMINO`. |
 | `TIMEOUT_RESPUESTA_COMERCIO` | El comercio no respondió en 30 minutos (configurable) desde `PENDIENTE_CONFIRMACION_COMERCIO`. |
-| `TIMEOUT_RETIRO_SUSPENSION` | Venció el timer de 90 minutos de un pedido `LISTO_PARA_RETIRAR` de un comercio suspendido; el pedido pasa a `NO_RETIRADO` (hasta la v1.14 pasaba a `ENTREGADO`, y esas filas históricas conservan ese estado). |
+| `TIMEOUT_RETIRO_SUSPENSION` | Se cumplieron 90 minutos de un pedido `LISTO_PARA_RETIRAR` de un comercio suspendido, contados desde que quedó listo o desde que se suspendió el comercio (lo que haya pasado después); el pedido pasa a `NO_RETIRADO` (hasta la v1.14 pasaba a `ENTREGADO`, y esas filas históricas conservan ese estado). |
+| `TIMEOUT_PREPARACION_SUSPENSION` | Desde la `V45`: se cumplieron 90 minutos desde la suspensión de un comercio con un pedido `EN_PREPARACION` que el equipo no despachó ni anuló; el pedido pasa a `CANCELADO_POR_SISTEMA` con reembolso total (nota `SUSPENSION_COMERCIO`). |
+| `SUSPENSION_COMERCIO` | Desde la `V47`: el sistema rechazó un pedido `PENDIENTE_CONFIRMACION_COMERCIO` porque el comercio se suspendió (el pedido pasa a `RECHAZADO` con reembolso total, nota `SUSPENSION_COMERCIO`). Lo escribe el proceso que corre al suspender y el barrido de seguridad de cada minuto; la actividad lo muestra como "Rechazó automáticamente un pedido por la suspensión del comercio". |
+| `SUSPENSION_DUENO_SIN_ATENCION` | Desde la `V48`: el sistema anuló (`ANULADO`) un pedido `EN_PREPARACION` o canceló (`CANCELADO_POR_SISTEMA`) un pedido `LISTO_PARA_RETIRAR` porque la cuenta del Dueño está suspendida y su comercio no tiene ningún Empleado activo; reembolso total (nota `SUSPENSION_COMERCIO`). El estado de la misma fila del historial distingue la anulación de la cancelación. |
+| `CANCELACION_SIN_PAGO` | Desde la `V46`: el Cliente canceló un pedido que todavía no había pagado (el pedido pasa de `PENDIENTE_PAGO` a `CANCELADO`, sin reembolso). No es un vencimiento: la fila lleva `actor_rol = CLIENTE`. La actividad del comercio y la trazabilidad no la muestran. |
 
 ---
 
@@ -528,8 +543,11 @@ Agregado 2026-09-25. Origen de una nota de crédito (columna `NotaCredito.motivo
 | `RECHAZO_COMERCIO` | El comercio rechazó el pedido (`RECHAZADO`). |
 | `CANCELACION_CLIENTE` | El cliente canceló el pedido (`CANCELADO`). Todavía sin llamador (endpoint pendiente). |
 | `ANULACION_COMERCIO` | El comercio anuló el pedido (`ANULADO`). Todavía sin llamador (endpoint pendiente). |
-| `SUSPENSION_COMERCIO` | Cancelación por el sistema por suspensión del comercio (`CANCELADO_POR_SISTEMA`). |
+| `SUSPENSION_COMERCIO` | Cancelación por el sistema por suspensión del comercio (`CANCELADO_POR_SISTEMA`): el tope de 90 minutos de un pedido `EN_PREPARACION`, o un pago aprobado que llega con el comercio suspendido (también si llega tarde sobre un pedido ya cancelado). |
 | `EXPIRACION_SIN_RESPUESTA` | El comercio no respondió a tiempo (`EXPIRADO`). |
+| `SUSPENSION_CLIENTE` | Devolución de un pago aprobado que llegó cuando la cuenta del Cliente estaba suspendida (el pedido se cancela y se reembolsa entero en el acto), o de un pago tardío sobre un pedido cancelado mientras el Cliente sigue suspendido (`V44`). |
+| `RECLAMO` | Reembolso total o parcial por un reclamo aprobado (tramo S5). Reservado en `V44`, sin emisor todavía. |
+| `PAGO_TARDIO` | Desde la `V45`: devolución de un pago aprobado que llegó sobre un pedido que ya estaba cancelado por cualquier causa que no sea una suspensión (por ejemplo, un pedido vencido por falta de pago). Antes se usaba `CANCELACION_CLIENTE`. |
 
 ---
 
@@ -545,14 +563,65 @@ Estado de un reclamo iniciado por un cliente sobre un pedido.
 
 ---
 
-### ENUM: ResolucionSoporte
+### ENUM: MotivoReclamo
 
-Resolución de un ticket de soporte determinada por el Administrador.
+Agregado 2026-11-04 (V50). Motivo que el Cliente elige al reclamar (columna `Reclamo.motivo`). Los textos legibles viven en el frontend.
 
 | Valor | Descripción |
 |-------|-------------|
-| `REACTIVADO` | El Administrador levantó la suspensión del usuario tras revisar el mensaje. |
-| `SUSPENSION_MANTENIDA` | El Administrador mantuvo la suspensión tras revisar el mensaje. |
+| `NO_RECIBI_PEDIDO` | El Cliente no recibió el pedido. **Solo se acepta en pedidos a domicilio.** |
+| `FALTAN_PRODUCTOS` | Faltan productos del pedido. |
+| `PRODUCTOS_EQUIVOCADOS` | Llegaron productos distintos de los pedidos. |
+| `PRODUCTO_EN_MAL_ESTADO` | Un producto llegó en mal estado. |
+| `COBRO_INCORRECTO` | El cobro no corresponde. |
+| `OTRO` | Cualquier otro problema. |
+
+---
+
+### ENUM: TipoResolucionReclamo
+
+Agregado 2026-11-04 (V50). Cómo resolvió el Administrador un reclamo (columna `Reclamo.tipo_resolucion`). Nulo mientras el reclamo está `PENDIENTE`.
+
+| Valor | Descripción |
+|-------|-------------|
+| `REEMBOLSO_TOTAL` | Reembolso de todo lo que queda por reembolsar del pago (el monto pagado menos las notas de crédito vivas). |
+| `REEMBOLSO_PARCIAL` | Reembolso de un monto mayor que cero y menor que lo que queda por reembolsar. |
+| `RECHAZO` | Rechazo con motivo (`nota_resolucion`); no genera nota de crédito. |
+
+---
+
+### ENUM: TipoTicketSoporte
+
+Motivo de una consulta a Soporte, elegido por la persona al escribirla.
+
+| Valor | Descripción |
+|-------|-------------|
+| `APELACION_CUENTA` | La persona quiere apelar la suspensión o el bloqueo de su cuenta. |
+| `APELACION_COMERCIO` | El Dueño quiere apelar la suspensión o el rechazo de un comercio. |
+| `NO_PUEDO_ENTRAR` | La persona no puede iniciar sesión. |
+| `COMERCIO_RECHAZADO_DOCUMENTOS_COBROS` | Consulta sobre el rechazo de un comercio, la documentación o la cuenta de cobro. |
+| `OTRA` | Cualquier otro motivo. |
+
+---
+
+### ENUM: EstadoTicketSoporte
+
+Turno de una consulta a Soporte. Empieza hablando la persona; cada mensaje pasa el turno al otro lado.
+
+| Valor | Descripción |
+|-------|-------------|
+| `ESPERA_SOPORTE` | Le toca a Soporte responder. Es el estado inicial. |
+| `ESPERA_PERSONA` | Soporte respondió: le toca a la persona. |
+| `CERRADO` | Terminada: la cerró Soporte o llegó al mensaje número 20. No se reabre. |
+
+---
+
+### ENUM: AutorMensajeSoporte
+
+| Valor | Descripción |
+|-------|-------------|
+| `PERSONA` | Mensaje de quien consulta (con o sin sesión). |
+| `SOPORTE` | Mensaje del Administrador. |
 
 ---
 
@@ -602,6 +671,11 @@ Tipo de evento que originó la notificación. Corresponde a los códigos T1–T4
 | `COMERCIO_APROBADO` | T14 | Dueno | Push + Email | La solicitud del comercio fue aprobada por el Administrador. |
 | `COMERCIO_RECHAZADO` | T15 | Dueno | Push + Email | La solicitud del comercio fue rechazada con motivo. |
 | `COMERCIO_SUSPENDIDO` | T16 | Dueno (el Empleado ve el estado del comercio en su selector, con aviso) | Push + Email | El comercio fue suspendido por el Administrador con motivo. |
+| `COMERCIO_SUSPENDIDO_EQUIPO` | — | Empleados `ACTIVO` del comercio (cuenta no suspendida) | Push | Desde la `V45`: el comercio fue suspendido; sin motivo y sin email. |
+| `COMERCIO_SUSPENSION_LEVANTADA_EQUIPO` | — | Empleados `ACTIVO` del comercio (cuenta no suspendida) | Push | Desde la `V45`: se levantó la suspensión del comercio; sin mensaje y sin email. |
+| `DUENO_SUSPENDIDO` | — | Dueno | Email | Desde la `V48`: rastro del único email de la suspensión de la cuenta del Dueño (canal `EMAIL`, `ENVIADO` o `FALLIDO`, sin `comercio_id`); el aviso dentro de la app son los `COMERCIO_SUSPENDIDO` de cada comercio afectado. |
+| `RECLAMO_REEMBOLSO_DUENO` | — | Dueno | Push | Desde la `V50`: aviso al Dueño de que se reembolsó dinero al Cliente por un reclamo de un pedido de su comercio (lleva el `comercio_id` y el pedido). Solo cuando hubo reembolso. No afirma cuánto se le descuenta. |
+| `DUENO_SUSPENSION_LEVANTADA` | — | Dueno | Email | Desde la `V48`: rastro del único email del levantamiento de la suspensión de la cuenta del Dueño (canal `EMAIL`); el aviso dentro de la app son los `SUSPENSION_LEVANTADA` de cada comercio restaurado. |
 | `NUEVO_COMERCIO_PENDIENTE` | T17 | Administrador | Push | Nueva solicitud de alta de comercio para revisar en el panel. |
 | `NUEVA_RESOLICITUD_COMERCIO` | T18 | Administrador | Push | Re-solicitud de aprobación de un comercio rechazado. |
 | `NUEVO_RECLAMO` | T19 | Administrador | Push | Nuevo reclamo iniciado por un cliente. |
@@ -724,19 +798,21 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | `email_verificado` | TINYINT(1) | NO | `false` | NN | `true` una vez que el usuario consumió exitosamente el token de `VERIFICACION_EMAIL`. |
 | `foto_perfil_url` | VARCHAR(500) | SÍ | NULL | — | URL en Cloudinary de la foto de perfil personal del usuario. Opcional para los cuatro roles. Campo independiente de `Comercio.foto_perfil_url` (logo del negocio): no se comparte entre los distintos comercios de un mismo Dueno. |
 | `intentos_fallidos` | INT | NO | `0` | NN | Contador de intentos fallidos de login o de cambio de contraseña desde perfil. Se resetea al autenticarse correctamente. Al llegar a 3, el usuario pasa a `BLOQUEADO`. |
+| `motivo_suspension` | VARCHAR(500) | SÍ | NULL | CK `ck_usuario_suspension` | Motivo que cargó el Administrador al suspender la cuenta (10 a 500 caracteres, lo ve la persona suspendida). Completo si y solo si `estado = SUSPENDIDO`. Migración `V44` (reincorpora la columna que la v1.2 había eliminado a favor del historial: se mantiene como foto vigente para no hacer un join en cada request). |
+| `suspendido_desde` | DATETIME | SÍ | NULL | CK `ck_usuario_suspension` | Fecha y hora de la suspensión vigente. Completo si y solo si `estado = SUSPENDIDO`. Migración `V44`. |
 | `fecha_registro` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación del registro de usuario. Inmutable. |
-| `fecha_ultimo_acceso` | DATETIME | SÍ | NULL | — | Fecha y hora del último inicio de sesión exitoso. Criterio para detectar inactividad (3 meses sin actualización = `INACTIVO`). |
+| `fecha_ultimo_acceso` | DATETIME | NO | CURRENT_TIMESTAMP | NN | Último acceso de la persona: se actualiza con cada inicio de sesión exitoso y cada vez que la cuenta pasa a `ACTIVO` (verificación del email, desbloqueo, reactivación, fin de una suspensión); nunca en cada request. Las cuentas nuevas nacen con la fecha de registro. La inactivación automática compara contra esta fecha (`< ahora - 3 meses`). |
 | `fecha_actualizacion` | DATETIME | SÍ | NULL | — | Fecha y hora de la última modificación de cualquier campo del registro. |
 
 > **Campos eliminados en v1.2:** `fecha_bloqueo`, `fecha_suspension`, `motivo_suspension`, `fecha_inactivo`, `fecha_reactivacion`. Todos se derivan desde `HistorialEstadoUsuario`: `SELECT estado_destino, motivo, fecha_hora FROM HistorialEstadoUsuario WHERE usuario_id = ? ORDER BY fecha_hora DESC`.
 
-**Índices:** `PRIMARY KEY (id)` | `UNIQUE (email)` | `UNIQUE (nombre_usuario)` (`uq_usuario_nombre_usuario`) | `INDEX (rol)` | `INDEX (estado)`
+**Índices:** `PRIMARY KEY (id)` | `UNIQUE (email)` | `UNIQUE (nombre_usuario)` (`uq_usuario_nombre_usuario`) | `INDEX (rol)` | `INDEX (estado)` | `KEY idx_usuario_estado_ultimo_acceso (estado, fecha_ultimo_acceso)`
 
 **Reglas de negocio:**
 - El login es exclusivamente por `nombre_usuario` y contraseña. El `sub` del JWT es el `id` del usuario, no el email ni el nombre de usuario, por lo que cambiar el nombre de usuario no invalida las sesiones existentes.
 - Al registrarse: `estado = PENDIENTE`, `email_verificado = false`. Se inserta la primera fila en `HistorialEstadoUsuario` con `estado_origen = NULL`, `estado_destino = PENDIENTE`.
 - Tras 3 intentos fallidos: `estado → BLOQUEADO`, `intentos_fallidos` se resetea a 0. Se inserta fila en `HistorialEstadoUsuario`.
-- `fecha_ultimo_acceso` se actualiza en cada login exitoso y es el único criterio para la inactivación por 3 meses.
+- `fecha_ultimo_acceso` se actualiza en cada login exitoso y cada vez que la cuenta pasa a `ACTIVO` (verificación del email, desbloqueo, reactivación, fin de una suspensión); nunca en cada request. Es el criterio de la inactivación automática por 3 meses, junto con las excepciones de la v1.37 (Administrador, pedido en curso y, para un Dueño, pedido en los últimos 3 meses en alguno de sus comercios).
 - Cada cambio de `estado` genera un INSERT en `HistorialEstadoUsuario` con `estado_origen` (estado previo) y `estado_destino` (nuevo estado).
 
 ---
@@ -749,6 +825,7 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 |---------|-----------|------|---------|---------------|-------------|
 | `id` | INT | NO | AI | PK, AI | Identificador único del registro histórico. |
 | `usuario_id` | INT | NO | — | FK → Usuario.id, NN | Usuario cuyo estado cambió. |
+| `administrador_id` | INT | SÍ | NULL | FK → Usuario.id (`fk_heu_administrador`) | Administrador que hizo el cambio. `NULL` cuando lo hizo el sistema (bloqueo por intentos, recuperación de contraseña, verificación de email, reactivación). Migración `V44`. |
 | `estado_origen` | ENUM EstadoUsuario | SÍ | NULL | — | Estado del usuario antes de la transición. NULL únicamente en el primer registro (creación del usuario, sin estado previo). |
 | `estado_destino` | ENUM EstadoUsuario | NO | — | NN | Estado resultante del usuario tras la transición. |
 | `motivo` | VARCHAR(500) | SÍ | NULL | — | Motivo de la transición. Obligatorio para `SUSPENDIDO`; opcional para los demás estados. El actor se infiere de la transición: `BLOQUEADO` = sistema, `SUSPENDIDO` = admin, `INACTIVO` = sistema. |
@@ -758,6 +835,8 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 
 **Reglas de negocio:**
 - Tabla de solo inserción (append-only). No se modifica ni elimina ningún registro.
+- Desde la v1.29 la escribe un único método (`EstadoUsuarioService.cambiar`), dentro de la misma transacción que el cambio de `Usuario.estado`; ningún otro código puede cambiar el estado de un usuario (lo garantiza `EstadoUsuarioCentralizadoTest`). El registro de creación (`estado_origen = NULL`) no se escribe todavía.
+- El motivo del levantamiento de una suspensión (opcional, hasta 500 caracteres) va en la fila `SUSPENDIDO → ACTIVO` (o `→ PENDIENTE` si la cuenta estaba sin verificar al suspenderse).
 - El estado actual del usuario se obtiene desde `Usuario.estado`. El historial completo, desde esta tabla ordenada por `fecha_hora ASC`.
 - Para obtener la última suspensión: `SELECT motivo, fecha_hora FROM HistorialEstadoUsuario WHERE usuario_id = ? AND estado_destino = 'SUSPENDIDO' ORDER BY fecha_hora DESC LIMIT 1`.
 
@@ -916,6 +995,9 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 | `acepta_delivery` | TINYINT(1) | NO | `false` | NN | `true` si el comercio ofrece entrega a domicilio. |
 | `acepta_retiro` | TINYINT(1) | NO | `false` | NN | `true` si el comercio permite retiro en el local. |
 | `estado` | ENUM EstadoComercio | NO | `'PENDIENTE'` | NN | Estado operacional actual del comercio. Consultado en cada validación de pedido. |
+| `suspension_origen` | ENUM('INDIVIDUAL','DUENO') | SÍ | NULL | CHECK `ck_comercio_suspension` | Agregada en la `V45`. Quién originó la suspensión vigente: `INDIVIDUAL` (el Administrador suspendió este comercio) o `DUENO` (se suspendió al Dueño titular, tramo S3). `NULL` salvo con `estado = 'SUSPENDIDO'`. Un comercio `DUENO` no se levanta individualmente. |
+| `suspendido_desde` | DATETIME | SÍ | NULL | CHECK `ck_comercio_suspension` | Agregada en la `V45`. Cuándo empezó la suspensión vigente, con el reloj de la aplicación. De esta fecha salen los dos topes de 90 minutos; volver a suspender un comercio ya suspendido (de origen `DUENO` a `INDIVIDUAL`) la conserva. |
+| `motivo_suspension` | VARCHAR(500) | SÍ | NULL | CHECK `ck_comercio_suspension` | Agregada en la `V45`. Motivo de la suspensión vigente (10 a 500 caracteres, validado en el DTO). Lo ve el Dueño y el Administrador; el Empleado nunca. |
 | `cerrado_manualmente` | TINYINT(1) | NO | `false` | NN | `true` si el comerciante cerró manualmente su tienda. Independiente del estado y del horario; se combina con ambos para determinar la disponibilidad real. Solo se puede prender y apagar a mano dentro de una franja de `Horario` y con el comercio `APROBADO` o `APTO_VENTA`; se apaga solo al empezar la primera franja posterior al cierre (ver `HistorialCierreComercio`). Cada cambio deja una fila en `HistorialCierreComercio`, en la misma transacción. |
 | `fecha_resolicitud` | DATETIME | SÍ | NULL | — | Fecha y hora de la última re-solicitud: el Dueno corrigió el comercio rechazado y volvió a pedir su aprobación. `NULL` mientras nunca se re-solicitó. Se escribe en la misma transacción que `cantidad_resolicitudes` y que la fila `RECHAZADO → PENDIENTE` del historial. |
 | `cantidad_resolicitudes` | INT | NO | `0` | NN | Cuántas veces el Dueno volvió a solicitar la aprobación de este comercio. Es igual a la cantidad de filas `RECHAZADO → PENDIENTE` de `HistorialEstadoComercio` de este comercio (la aplicación mantiene las dos cosas en la misma transacción). Con `0` y `estado = PENDIENTE` es una solicitud nueva; con más de `0`, una re-solicitud: la bandeja del Administrador las muestra por separado. Tope: `comercio.resolicitudes.max` (3). Migración `V25`. |
@@ -925,7 +1007,7 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 
 > **Campos eliminados en v1.1:** `motivo_rechazo`, `fecha_rechazo`, `motivo_suspension`, `fecha_suspension`, `fecha_aprobacion`, `fecha_reactivacion`. Todos se obtienen desde `HistorialEstadoComercio` con `WHERE comercio_id = ? AND estado_destino = 'RECHAZADO' ORDER BY fecha_hora DESC LIMIT 1` (o el `estado_destino` correspondiente).
 
-**Índices:** `PRIMARY KEY (id)` | `INDEX (dueno_id)` | `INDEX (estado)` | `UNIQUE uq_comercio_nombre_unico (nombre_unico)`
+**Índices:** `PRIMARY KEY (id)` | `INDEX (dueno_id)` | `INDEX (estado)` | `UNIQUE uq_comercio_nombre_unico (nombre_unico)` | `INDEX idx_comercio_suspension (dueno_id, estado, suspension_origen)`
 
 **Reglas de negocio:**
 - Nombre único (v1.22): ningún otro comercio, de cualquier Dueño y en cualquier dirección, puede tener el mismo nombre, salvo uno en `RECHAZO_DEFINITIVO`. Se valida antes de escribir en el registro, el alta adicional, la corrección y la edición del perfil (`409` "Ya existe un comercio con ese nombre. Elegí otro."), con el índice como red de seguridad ante cargas simultáneas. La cuenta de un Dueño sin verificar también retiene el nombre.
@@ -938,7 +1020,7 @@ Tipo de entidad referenciada por `Notificacion.entidad_id`, cuando la notificaci
 - Regla del bloqueo vigente: con el `Usuario` del Dueno en `BLOQUEADO`, ningún camino deja un comercio en `APTO_VENTA`. La aprobación del Administrador (si el Dueno tiene `CuentaMercadoPago` activa) y la vinculación de MercadoPago (sobre los comercios `APROBADO`) leen el estado del `Usuario` con bloqueo compartido de fila **antes** de tocar la cuenta de cobro y el comercio (orden de bloqueo `usuario` → `cuenta_mercado_pago` → `comercio`) y, si está `BLOQUEADO`, dejan el comercio en `CERRADO_TEMPORALMENTE` sin pasar por `APTO_VENTA`: la aprobación deja la fila `PENDIENTE → APROBADO` (con el Administrador) y una segunda fila automática `APROBADO → CERRADO_TEMPORALMENTE` con el motivo "Bloqueo de cuenta vigente al aprobar"; la vinculación deja una fila automática `APROBADO → CERRADO_TEMPORALMENTE` con el motivo "Bloqueo de cuenta vigente al vincular Mercado Pago". Un comercio que no llegaría a `APTO_VENTA` (por ejemplo un `APROBADO` sin cuenta de cobro) no cambia. Al desbloquear, la restauración de siempre lo lleva a `APTO_VENTA` o `APROBADO` según la cuenta activa.
 - Al recuperar contraseña (desbloqueo del Dueno): se restaura automáticamente el estado de los comercios de ese Dueno que estuvieran en `CERRADO_TEMPORALMENTE`: a `APTO_VENTA` si el Dueno tiene una `CuentaMercadoPago` activa, o a `APROBADO` si no.
 - Al reactivarse la cuenta del Dueno (token de reactivación): se restaura automáticamente el estado de los comercios de ese Dueno que estuvieran en `INACTIVO`: a `APTO_VENTA` si el Dueno tiene una `CuentaMercadoPago` activa, o a `APROBADO` si no.
-- La suspensión de un comercio puntual por el Administrador es una acción a nivel `Comercio`: cambia el estado de ese comercio a `SUSPENDIDO` sin alterar el estado del Dueno ni el de sus demás comercios.
+- La suspensión de un comercio puntual por el Administrador es una acción a nivel `Comercio`: cambia el estado de ese comercio a `SUSPENDIDO` sin alterar el estado del Dueno ni el de sus demás comercios, y sin tocar ningún pedido (v1.30). Al levantarla el destino lo decide `AptitudVentaComercioService` con la regla de seguir vendiendo.
 - Los cambios de estado sobre la cuenta de un Empleado no propagan ningún efecto sobre los comercios donde opera.
 - Para obtener el motivo y fecha del último rechazo: `SELECT motivo, fecha_hora FROM HistorialEstadoComercio WHERE comercio_id = ? AND estado_destino = 'RECHAZADO' ORDER BY fecha_hora DESC LIMIT 1`.
 - Para obtener el motivo y fecha de la última suspensión: ídem con `estado_destino = 'SUSPENDIDO'`.
@@ -1192,6 +1274,7 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 | `estado_origen` | ENUM EstadoComercio | NO | — | NN | Estado del comercio antes de la transición. |
 | `estado_destino` | ENUM EstadoComercio | NO | — | NN | Estado del comercio después de la transición. |
 | `motivo` | VARCHAR(500) | SÍ | NULL | — | Motivo de la transición. Obligatorio para transiciones hacia `RECHAZADO`, `RECHAZO_DEFINITIVO` y `SUSPENDIDO`. Opcional en los demás casos. La re-solicitud del Dueno (`RECHAZADO → PENDIENTE`) lleva el motivo fijo "Nueva solicitud del Dueño". |
+| `suspension_origen` | ENUM('INDIVIDUAL','DUENO') | SÍ | NULL | — | Agregada en la `V45`. Origen de la suspensión a la que se refiere la fila: la que empieza (destino `SUSPENDIDO`), la que se convierte (`SUSPENDIDO → SUSPENDIDO`) o la que se levanta (origen `SUSPENDIDO`). `NULL` en las demás transiciones. |
 | `fecha_hora` | DATETIME | NO | `NOW()` | NN | Fecha y hora exacta de la transición. |
 
 **Índices:** `PRIMARY KEY (id)` | `INDEX (comercio_id)` | `INDEX (administrador_id)` | `INDEX (fecha_hora)`
@@ -1308,7 +1391,7 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 **Índices:** `PRIMARY KEY (id)` | `INDEX idx_documento_comercio_bandeja (estado, fecha_subida)` (bandeja de pendientes del Administrador, de la más antigua a la más nueva) | `INDEX idx_documento_comercio_conteo (comercio_id, estado)` (recuentos por comercio y estado) | `INDEX idx_documento_comercio_administrador (administrador_id)` | `INDEX idx_documento_comercio_subido_por (subido_por_usuario_id)` | `FOREIGN KEY` a `comercio`, `administrador` y `usuario`, sin cascada.
 
 **Reglas de negocio:**
-- Subir exige el comercio `APROBADO`, `APTO_VENTA` o `CERRADO_TEMPORALMENTE` (`409 COMERCIO_ESTADO_NO_PERMITE_DOCUMENTOS` en otro caso). Cupos configurables: 5 documentos `PENDIENTE` a la vez (`409 DOCUMENTO_CUPO_REVISION`) y 20 en total contando los rechazados (`409 DOCUMENTO_CUPO_TOTAL`). No se borra nada automáticamente.
+- Subir exige el comercio `APROBADO`, `APTO_VENTA`, `CERRADO_TEMPORALMENTE` o `SUSPENDIDO` (`409 COMERCIO_ESTADO_NO_PERMITE_DOCUMENTOS` en otro caso). Con el comercio `SUSPENDIDO` el Dueño puede subir (para corregir lo que motivó la suspensión), pero subir, eliminar, aprobar, rechazar o revocar un documento nunca saca al comercio de ahí: solo levantar la suspensión lo hace, y ahí se recalcula con los documentos vigentes (sin cambio de esquema ni de versión del diccionario). Cupos configurables: 5 documentos `PENDIENTE` a la vez (`409 DOCUMENTO_CUPO_REVISION`) y 20 en total contando los rechazados (`409 DOCUMENTO_CUPO_TOTAL`). No se borra nada automáticamente.
 - Formatos PDF, JPG, PNG y WebP, comprobados por la firma de bytes; tamaño máximo 8 MB. Errores `400` con `DOCUMENTO_FORMATO_NO_PERMITIDO` y `DOCUMENTO_TAMANO_EXCEDIDO` (el mensaje trae el tamaño real y el máximo).
 - Transiciones del Administrador (`PUT /administrador/documentos/{id}/resolver`): aprobar solo un `PENDIENTE`; rechazar un `PENDIENTE` o un `APROBADO` (revocación), siempre con motivo; un `RECHAZADO` no se vuelve a resolver (`409 DOCUMENTO_YA_RESUELTO`).
 - El Dueno solo elimina físicamente un documento propio que sigue `PENDIENTE` (`409 DOCUMENTO_NO_ELIMINABLE` si ya fue resuelto).
@@ -1395,7 +1478,7 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 | `activa` | TINYINT(1) | NO | `true` | NN | `true` mientras la sesión sigue abierta. `false` al cerrarse por cualquier motivo. |
 | `fecha_inicio` | DATETIME | NO | `NOW()` | NN | Fecha y hora del inicio de sesión exitoso (login). |
 | `fecha_cierre` | DATETIME | SÍ | NULL | — | Fecha y hora del cierre de la sesión. NULL mientras está activa. |
-| `tipo_cierre` | ENUM TipoCierreSesion | SÍ | NULL | — | Motivo del cierre: `MANUAL`, `AUTOMATICO` o `FORZADO`. NULL mientras está activa. |
+| `tipo_cierre` | ENUM TipoCierreSesion | SÍ | NULL | — | Motivo del cierre: `MANUAL`, `AUTOMATICO`, `FORZADO`, `INACTIVIDAD` (cierre de la sesión por la inactivación automática de la cuenta, desde la `V52`) o `SUSPENSION` (cierre por la suspensión de la cuenta, `V44`: el filtro JWT responde `401` con el código `CUENTA_SUSPENDIDA` y el motivo mientras la cuenta siga suspendida). NULL mientras está activa. |
 | `ip_origen` | VARCHAR(45) | NO | — | NN | Dirección IP del cliente al momento del login. Admite IPv4 (hasta 15 chars) e IPv6 (hasta 45 chars). |
 | `navegador` | VARCHAR(255) | SÍ | NULL | — | User-Agent del navegador al momento del login. NULL si no se puede detectar. |
 | `dispositivo` | VARCHAR(255) | SÍ | NULL | — | Información del dispositivo (SO, modelo). NULL si no se puede detectar. |
@@ -1403,7 +1486,7 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 **Índices:** `PRIMARY KEY (id)` | `INDEX (usuario_id, activa)`
 
 **Reglas de negocio:**
-- Al bloquear, suspender o inactivar un usuario: se fuerzan el cierre de todas sus sesiones activas (`activa = false`, `tipo_cierre = FORZADO`, `fecha_cierre = NOW()`).
+- Al bloquear un usuario se fuerza el cierre de todas sus sesiones activas (`activa = false`, `tipo_cierre = FORZADO`, `fecha_cierre = NOW()`); al suspenderlo el tipo es `SUSPENSION` y al inactivarlo por falta de uso, `INACTIVIDAD`.
 - Al cambiar contraseña: se fuerza el cierre de todas las sesiones activas del usuario.
 - Al detectar login con sesión ya activa: se fuerza el cierre de la sesión anterior; se envía notificación de cierre de sesión por email (por fuera del sistema de notificaciones push).
 
@@ -1447,41 +1530,122 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 
 ---
 
-### Tabla: Soporte
+### Tabla: TicketSoporte
 
-**Descripción:** Mensajes de descargo enviados por usuarios suspendidos al Administrador. Permite al usuario contestar la suspensión y solicitar su revisión. El Administrador puede levantar la suspensión o mantenerla.
+**Descripción:** Una consulta de una persona a Soporte (v1.34). Se escribe con sesión (desde el Perfil, también con la cuenta suspendida) o sin sesión (con el email y el código de la consulta). La conversación es por turnos y tiene como máximo 20 mensajes; solo el Administrador la cierra, salvo que llegue al mensaje 20, y una cerrada no se reabre. Nada se borra nunca.
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
-| `id` | INT | NO | AI | PK, AI | Identificador único del mensaje de soporte. |
-| `usuario_id` | INT | NO | — | FK → Usuario.id, NN | Usuario que envió el mensaje (debe estar en estado `SUSPENDIDO`). |
-| `mensaje_descargo` | TEXT | NO | — | NN | Texto libre con el descargo o justificación del usuario. |
-| `fecha_envio` | DATETIME | NO | `NOW()` | NN | Fecha y hora en que el usuario envió el mensaje. |
-| `atendido` | TINYINT(1) | NO | `false` | NN | `true` una vez que un Administrador revisó y resolvió el mensaje. |
-| `administrador_id` | INT | SÍ | NULL | FK → Administrador.id | Administrador que atendió el mensaje. NULL mientras está sin atender. |
-| `resolucion` | ENUM ResolucionSoporte | SÍ | NULL | — | Resolución del ticket: `REACTIVADO` o `SUSPENSION_MANTENIDA`. NULL mientras no fue atendido. |
-| `fecha_resolucion` | DATETIME | SÍ | NULL | — | Fecha y hora de resolución por el Administrador. NULL mientras no fue atendido. |
+| `id` | INT | NO | AI | PK, AI | Identificador único de la consulta. |
+| `codigo` | VARCHAR(8) `ascii_bin` | NO | — | NN, UQ | Código de 8 caracteres del alfabeto `23456789ABCDEFGHJKMNPQRSTUVWXYZ` (sin 0, O, 1, I ni L), con aleatoriedad criptográfica. Se guarda sin hash a propósito: hace falta reenviarlo por email. Por sí solo no da acceso: hace falta el email que coincida. |
+| `email` | VARCHAR(254) | NO | — | NN | Email de quien consulta, en minúsculas. Con sesión es el de la cuenta. |
+| `usuario_id` | INT | SÍ | NULL | FK → Usuario.id | La cuenta, si escribió con sesión; NULL si escribió sin sesión. |
+| `tipo` | ENUM TipoTicketSoporte | NO | — | NN | Motivo elegido. |
+| `estado` | ENUM EstadoTicketSoporte | NO | `'ESPERA_SOPORTE'` | NN | Turno de la conversación. |
+| `ip` | VARCHAR(45) | NO | — | NN | IP desde la que se creó (`request.getRemoteAddr()`; detrás de un proxy hace falta `server.forward-headers-strategy`, ver `docs/LISTA-DE-DESPLIEGUE.md`). Sirve para el límite de consultas por IP. |
+| `cantidad_mensajes` | INT | NO | 0 | NN, `CHECK BETWEEN 0 AND 20` | Mensajes de la conversación (los de ambos lados). Nace en 1 con el primero. |
+| `creado_en` | DATETIME | NO | — | NN | Alta, con el reloj único de la aplicación. |
+| `actualizado_en` | DATETIME | NO | — | NN | Último mensaje o cierre. Ordena la bandeja del Administrador. |
+| `cerrado_en` | DATETIME | SÍ | NULL | `CHECK` | NULL mientras esté abierta; completo si y solo si `estado = 'CERRADO'` (`ck_ticket_soporte_cierre`). |
 
-**Índices:** `PRIMARY KEY (id)` | `INDEX (usuario_id)` | `INDEX (atendido)`
+**Índices:** `PRIMARY KEY (id)` | `UNIQUE uq_ticket_soporte_codigo (codigo)` | `idx_ticket_soporte_email_codigo (email, codigo)` | `idx_ticket_soporte_email_creado (email, creado_en)` | `idx_ticket_soporte_estado_actualizado (estado, actualizado_en)` | `idx_ticket_soporte_ip_creado (ip, creado_en)` | `idx_ticket_soporte_usuario (usuario_id, estado)`
+
+---
+
+### Tabla: MensajeSoporte
+
+**Descripción:** Cada mensaje de una consulta (`ticket_soporte_mensaje`). Solo se modifica `email_enviado`, y por clave primaria.
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `id` | INT | NO | AI | PK, AI | Identificador único del mensaje. |
+| `ticket_id` | INT | NO | — | FK → TicketSoporte.id, NN | Consulta a la que pertenece. |
+| `autor` | ENUM AutorMensajeSoporte | NO | — | NN | Quién lo escribió. |
+| `texto` | VARCHAR(1000) | NO | — | NN | Texto tal cual lo escribió quien consulta (la primera vez de 10 a 1000 caracteres; las respuestas de 1 a 1000). Nunca se interpreta como HTML. |
+| `creado_en` | DATETIME | NO | — | NN | Fecha y hora. |
+| `email_enviado` | TINYINT(1) | NO | 0 | NN | En un mensaje de `SOPORTE`: si el email "Soporte respondió tu consulta" salió (un solo intento, sin reintentos automáticos; el Administrador puede reenviarlo a mano). En un mensaje de `PERSONA` es siempre 1 (no se avisa a nadie). |
+
+**Índices:** `PRIMARY KEY (id)` | `idx_ticket_soporte_mensaje_ticket (ticket_id, id)`
+
+---
+
+### Tabla: SoporteLimite
+
+**Descripción:** Contadores de los límites de Soporte (`soporte_limite`), una fila por clave. No es una entidad JPA: se maneja por JDBC con `INSERT ... ON DUPLICATE KEY UPDATE` y `SELECT ... FOR UPDATE`, y la fila bloqueada es el cerrojo que serializa todo lo que cuenta o decide bajo esa clave (MariaDB 10.4 no tiene índices únicos parciales).
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `clave` | VARCHAR(300) `utf8mb4_bin` | NO | — | PK | `<TIPO>\|<valor>`: `CREAR_EMAIL` y `CREAR_IP` (solo cerrojo: las consultas se cuentan en `ticket_soporte`), `INTENTO_EMAIL` e `INTENTO_IP` (accesos fallidos con email y código), `REENVIO_EMAIL` y `REENVIO_IP` (pedidos de reenvío de códigos). |
+| `cantidad` | INT | NO | 0 | NN | Cuántos van en la ventana vigente. |
+| `ventana_inicio` | DATETIME | NO | — | NN | Inicio de la ventana de una hora (ventana fija; arranca con el primer evento). |
 
 ---
 
 ### Tabla: Reclamo
 
-**Descripción:** Reclamos iniciados por clientes sobre pedidos autoconfirmados como entregados o con entrega cuestionada. Un pedido puede tener como máximo un reclamo (UNIQUE en `pedido_id`). Si el reclamo se aprueba, se genera una `NotaCredito` para el reembolso.
+**Descripción:** Reclamos iniciados por clientes sobre un pedido `ENTREGADO` (a domicilio o de retiro, también los autoconfirmados por el sistema) con el pago aprobado, dentro de los 7 días corridos desde `Pedido.fecha_entrega` (el plazo no se guarda: se calcula). Un pedido puede tener como máximo un reclamo (UNIQUE en `pedido_id`). Un reclamo se resuelve una sola vez (la resolución es final). Si se aprueba, se genera una `NotaCredito` con motivo `RECLAMO` ligada al reclamo (`NotaCredito.reclamo_id`). Sin estado de "reembolso en proceso": se deduce del estado de la nota ligada (un reclamo `APROBADO` cuya nota no está `PROCESADO`).
 
 | Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
 |---------|-----------|------|---------|---------------|-------------|
 | `id` | INT | NO | AI | PK, AI | Identificador único del reclamo. |
 | `pedido_id` | INT | NO | — | FK → Pedido.id, NN, UQ | Pedido sobre el que se realiza el reclamo. UNIQUE: máximo un reclamo por pedido. |
-| `descripcion` | TEXT | NO | — | NN | Descripción del problema ingresada por el **cliente** al crear el reclamo. |
+| `motivo` | ENUM MotivoReclamo | SÍ | NULL | — | Motivo elegido por el Cliente (V50). Nullable en la base para que la migración no invente datos; la aplicación lo exige siempre. |
+| `descripcion` | TEXT | NO | — | NN | Descripción del problema ingresada por el **cliente** al crear el reclamo (de 10 a 1000 caracteres, validado en la aplicación; se guarda tal cual y el frontend la muestra con `textContent`). |
 | `fecha_creacion` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación del reclamo. |
 | `estado` | ENUM EstadoReclamo | NO | `'PENDIENTE'` | NN | Estado del reclamo en el flujo de resolución. |
+| `tipo_resolucion` | ENUM TipoResolucionReclamo | SÍ | NULL | — | Cómo se resolvió (V50). NULL mientras está `PENDIENTE`. |
+| `monto_aprobado` | DECIMAL(10,2) | SÍ | NULL | — | Monto reembolsado (V50); igual al monto de la nota de crédito ligada. NULL en un rechazo y mientras está `PENDIENTE`. |
 | `administrador_id` | INT | SÍ | NULL | FK → Administrador.id | Administrador que resolvió el reclamo. NULL mientras está `PENDIENTE`. |
-| `nota_resolucion` | VARCHAR(500) | SÍ | NULL | — | Nota del **Administrador** al resolver el reclamo, aplicable tanto a `APROBADO` como a `RECHAZADO`. NULL mientras está `PENDIENTE`. Semánticamente distinto de `descripcion` (cliente) y de `Pedido.motivo_rechazo` (comercio rechazando el pedido). |
+| `nota_resolucion` | VARCHAR(500) | SÍ | NULL | — | Motivo del rechazo (de 10 a 500 caracteres) cuando el reclamo se **rechaza**; NULL en un reclamo aprobado y mientras está `PENDIENTE`. Semánticamente distinto de `descripcion` (cliente) y de `Pedido.motivo_rechazo` (comercio rechazando el pedido). |
 | `fecha_resolucion` | DATETIME | SÍ | NULL | — | Fecha y hora de resolución por el Administrador. NULL mientras está `PENDIENTE`. |
 
-**Índices:** `PRIMARY KEY (id)` | `UNIQUE (pedido_id)` | `INDEX (estado)`
+**Índices:** `PRIMARY KEY (id)` | `UNIQUE (pedido_id)` | `INDEX (estado)` | `INDEX idx_reclamo_estado_fecha (estado, fecha_creacion)`
+
+**Restricción:** `CHECK ck_reclamo_resolucion` (V50): `PENDIENTE` sin tipo, monto, administrador ni fecha de resolución; `APROBADO` con tipo `REEMBOLSO_TOTAL` o `REEMBOLSO_PARCIAL`, monto mayor que cero, administrador y fecha; `RECHAZADO` con tipo `RECHAZO`, sin monto, con motivo (`nota_resolucion`), administrador y fecha.
+
+### Tabla: ReclamoFoto
+
+**Descripción:** Foto adjunta por el Cliente al crear un reclamo (V51). Hasta 3 por reclamo (el `CHECK` y el `UNIQUE (reclamo_id, orden)` lo garantizan en la base; el servicio lo valida antes con un mensaje claro). Solo metadatos: el contenido vive en `ReclamoFotoArchivo`. Nunca se modifica ni se borra.
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `id` | INT | NO | AI | PK, AI | Identificador de la foto. |
+| `reclamo_id` | INT | NO | — | FK → Reclamo.id, NN | Reclamo al que pertenece la foto. |
+| `orden` | INT | NO | — | NN, CHECK 1–3 | Posición de la foto en el envío (1 a 3). |
+| `nombre_original` | VARCHAR(255) | NO | — | NN | Nombre del archivo en el dispositivo del Cliente, sin ruta ni caracteres de control; solo informativo. |
+| `tipo_contenido` | VARCHAR(50) | NO | — | NN | `image/jpeg`, `image/png` o `image/webp`, detectado por la firma de bytes (no por la extensión ni por el tipo que declara el cliente). |
+| `tamano_bytes` | INT | NO | — | NN | Tamaño real del archivo (hasta 5 MB). |
+| `fecha_creacion` | DATETIME | NO | — | NN | Momento en que se guardó (el del reclamo). |
+
+**Índices:** `PRIMARY KEY (id)` | `UNIQUE uq_reclamo_foto_orden (reclamo_id, orden)` | `FOREIGN KEY fk_reclamo_foto_reclamo`.
+
+**Restricción:** `CHECK ck_reclamo_foto_orden`: `orden` entre 1 y 3.
+
+---
+
+### Tabla: ReclamoFotoArchivo
+
+**Descripción:** Contenido binario de una foto de reclamo, en tabla aparte para que ninguna consulta de listado lo lea.
+
+| Columna | Tipo MySQL | Nulo | Default | Restricciones | Descripción |
+|---------|-----------|------|---------|---------------|-------------|
+| `foto_id` | INT | NO | — | PK, FK → ReclamoFoto.id | Foto a la que pertenece el contenido (relación 1:1). |
+| `contenido` | LONGBLOB | NO | — | NN | Bytes del archivo (hasta 5 MB). El servidor de base de datos necesita `max_allowed_packet` de al menos 16 MB. |
+
+**Índices:** `PRIMARY KEY (foto_id)` | `FOREIGN KEY fk_reclamo_foto_archivo_foto`.
+
+### Fotos del reclamo (v1.36)
+
+- **Quién las sube y cuándo:** solo el Cliente dueño del pedido, al crear el reclamo (`POST /api/v1/pedidos/cliente/{id}/reclamo` en `multipart/form-data`: parte `reclamo` con el JSON y hasta tres partes `fotos`; el envío JSON de siempre sigue funcionando, sin fotos). Todo o nada: una foto inválida (más de 3, más de 5 MB, formato que no es JPG, PNG ni WebP —un HEIC de iPhone se rechaza con un mensaje que dice qué formatos sirven—) rechaza el envío entero y no crea el reclamo; un segundo envío para el mismo pedido responde `409` y no deja fotos huérfanas.
+- **Quién las ve:** `GET /api/v1/administrador/reclamos/{id}` lista las fotos (`id`, `orden`, `nombre`, `tipoContenido`, `tamanoBytes`) y `GET /api/v1/administrador/reclamos/{id}/fotos/{fotoId}` entrega el archivo (`Content-Type` real, `Content-Disposition: inline`, `X-Content-Type-Options: nosniff`, `Cache-Control: no-store`; una foto de otro reclamo o inexistente es `404`). El bloque `reclamo` del Cliente suma `cantidadFotos`; el del Dueño y el del Empleado no cambian.
+- **Persistencia:** nada se borra nunca (sin endpoint ni cascada); las fotos se guardan en la base.
+
+### Reclamos (v1.35)
+
+- **Elegibilidad (la calcula el servidor, el frontend no calcula plazos ni reglas):** pedido `ENTREGADO`, pago con `mp_estado = 'approved'` y `fecha_confirmacion`, `fecha_entrega` no nula, plazo de `reclamo.plazo-dias` (7) días corridos desde la entrega (el instante exacto del límite todavía vale). `NO_RECIBI_PEDIDO` solo en pedidos a domicilio. Un Cliente suspendido no crea reclamos.
+- **Resolución:** reembolso total (lo que quede por reembolsar), parcial (mayor que cero y menor que ese saldo; igual al saldo se pide el total) o rechazo con motivo. Saldo reembolsable = `Pago.monto` menos las notas de crédito vivas (`PENDIENTE`, `PROCESADO`, `PENDIENTE_REINTENTO`, `PENDIENTE_REVISION_MANUAL`; las `FALLIDO` no cuentan). El reembolso se pide a Mercado Pago con la cuenta del Dueño: sin cuerpo si es el total del pago y con `{"amount": monto}` si es menor; si falla, el reclamo queda `APROBADO` y la nota `FALLIDO` (el Administrador la reintenta, y el reintento manda el monto de la nota).
+- **Qué ve cada rol:** el Cliente, el bloque `reclamo` de su pedido (elegibilidad y resultado); el Dueño, el reclamo de los pedidos de su comercio sin el mensaje ni el motivo del rechazo; el Empleado, nada; el Administrador, todo. Los campos `reembolsoEstado`, `reembolsoMonto` y `reembolsoMotivo` de un pedido describen solo las notas que no son de un reclamo.
+- **Avisos:** `RECLAMO_APROBADO` y `RECLAMO_RECHAZADO` al Cliente (aviso y email, un solo intento) y `RECLAMO_REEMBOLSO_DUENO` al Dueño solo si hubo reembolso. `NUEVO_RECLAMO` no se emite: el Administrador ve el contador `reclamosPendientes` del panel.
 
 ---
 
@@ -1717,7 +1881,7 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 | `motivo` | VARCHAR(500) | SÍ | NULL | — | Texto legible del motivo de anulación elegido por el comercio de la lista de motivos de rechazo, con el comentario si lo hay (por ejemplo, "Problema técnico. Se cortó la luz"; estado `ANULADO`; los pedidos anulados antes del 2026-10-12 conservan el texto libre que se escribió), o motivo automático de la cancelación por vencimiento del plazo de pago (`Pago no confirmado` si el pago quedó sin resolver, `Pago rechazado` si el último pago fue rechazado; estado `CANCELADO_POR_SISTEMA`). El DTO de respuesta solo lo expone cuando `estado = ANULADO`. |
 | `fuente_entrega` | ENUM FuenteEntrega | SÍ | NULL | — | Actor que confirmó la entrega. Solo se registra cuando `estado = ENTREGADO`. NULL en todos los demás estados. |
 | `fecha_entrega` | DATETIME | SÍ | NULL | — | Fecha y hora real en que el pedido fue entregado o confirmado como entregado. |
-| `suspension_retiro_expira` | DATETIME | SÍ | NULL | — | Fecha y hora de expiración del timer de 90 minutos para pedidos `LISTO_PARA_RETIRAR` afectados por la suspensión del comercio. NULL si no aplica. |
+| `suspension_retiro_expira` | DATETIME | SÍ | NULL | — | **Sin uso desde la v1.30** (`V45`): la entidad ya no la mapea y ningún proceso la lee ni la escribe. Hasta la v1.29 guardaba la expiración del timer de 90 minutos de un retiro afectado por la suspensión; ahora ese tope se calcula desde `Comercio.suspendido_desde` y desde la fecha en que el pedido quedó `LISTO_PARA_RETIRAR`. Se conserva la columna por las filas históricas. |
 | `primer_aviso_emitido` | TINYINT(1) | NO | `false` | NN | Flag de idempotencia: `true` una vez emitido el aviso de los 75 minutos (T7) para pedidos en `EN_CAMINO`. Evita duplicados en reintentos del job periódico. |
 | `motivo_rechazo` | ENUM MotivoRechazo | SÍ | NULL | — | Motivo estructurado del rechazo o de la anulación por el comercio (la misma lista para las dos acciones). Se registra cuando `estado = RECHAZADO` o `estado = ANULADO`; NULL en los pedidos anulados antes del 2026-10-12. |
 | `comentario_rechazo` | VARCHAR(500) | SÍ | NULL | — | Texto libre complementario al `motivo_rechazo`, en el rechazo y en la anulación. Obligatorio cuando `motivo_rechazo = OTRO`. |
@@ -1732,7 +1896,7 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 
 > **Campos eliminados en v1.1:** `fecha_pago`, `fecha_aceptacion`, `fecha_listo`, `fecha_despacho`, `fecha_cancelacion`. Todos se derivan desde `HistorialEstadoPedido` con `SELECT fecha_hora FROM HistorialEstadoPedido WHERE pedido_id = ? AND estado = 'ESTADO_BUSCADO' ORDER BY fecha_hora DESC LIMIT 1`.
 
-**Índices:** `PRIMARY KEY (id)` | `INDEX (cliente_id)` | `INDEX (comercio_id)` | `INDEX (estado)` | `INDEX (fecha_creacion)` | `INDEX idx_pedido_turno (comercio_id, turno_fecha, turno_horario_id)` | `INDEX idx_pedido_fecha_pago (comercio_id, fecha_pago_confirmado)` | `INDEX idx_pedido_turno_horario (turno_horario_id)`
+**Índices:** `PRIMARY KEY (id)` | `INDEX (cliente_id)` | `INDEX (comercio_id)` | `INDEX (estado)` | `INDEX (fecha_creacion)` | `INDEX idx_pedido_turno (comercio_id, turno_fecha, turno_horario_id)` | `INDEX idx_pedido_fecha_pago (comercio_id, fecha_pago_confirmado)` | `INDEX idx_pedido_turno_horario (turno_horario_id)` | `INDEX idx_pedido_comercio_fecha_creacion (comercio_id, fecha_creacion)` (v1.37)
 
 **Reglas de negocio:**
 - `cancelado_por` y `fuente_entrega` son mutuamente excluyentes: en un pedido terminal solo puede estar poblado uno de los dos. Un pedido `NO_RETIRADO` no tiene ninguno de los dos ni `fecha_entrega`.
@@ -1802,7 +1966,7 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 | `estado` | ENUM EstadoPedido | NO | — | NN | Estado alcanzado en esta transición. |
 | `actor_rol` | ENUM ActorPedido (`CLIENTE`,`DUENO`,`SISTEMA`,`EMPLEADO`) | NO | — | NN | Qué rol ejecutó esta transición puntual — se completa en **todas** las filas. Agregado en la Fase 19 (2026-09-15, ver `docs/DECISIONES.md`) a pedido explícito de Diego: trazabilidad completa del ciclo de vida, no solo de los estados terminales/`ENTREGADO`. Renombrado de `actor` a `actor_rol` el mismo día, al agregarse `actor_usuario_id` (rediseño), para distinguir explícitamente "qué rol" de "qué usuario puntual". Valor `EMPLEADO` agregado el 2026-09-16 como anticipación de diseño — sin ningún call site que lo use todavía, la entidad `Empleado` y su vínculo a `Usuario` no existen en el proyecto a esta fecha. Valor `COMERCIO` renombrado a `DUENO` el mismo día (2026-09-16, ver `docs/DECISIONES.md`): sin `ñ`, ASCII, consistente con el resto de identificadores del proyecto, y distingue explícitamente al Dueño de un futuro Empleado actuando en nombre del comercio — algo que `COMERCIO` no podía expresar. **Planificado (tramo E3, 2026-10-05):** el nombre de quien ejecutó cada transición se muestra en el detalle del pedido del panel del comercio (Dueno y Empleados), también cuando el Empleado ya está `INACTIVO` (el `actor_usuario_id` apunta al `Usuario`, que nunca se borra); el Cliente no ve qué empleado atendió su pedido |
 | `actor_usuario_id` | INT | SÍ | NULL | FK → Usuario.id, `ON DELETE RESTRICT` | Usuario específico que ejecutó la transición, cuando `actor_rol` es `CLIENTE` o `COMERCIO` (y en el futuro `EMPLEADO`). NULL cuando `actor_rol = SISTEMA`. Agregado en el rediseño del 2026-09-15 (ver `docs/DECISIONES.md`) — antes solo se sabía el rol, no el usuario puntual. `ON DELETE RESTRICT` explícito: nunca se puede borrar un `Usuario` con historial asociado, la trazabilidad se preserva siempre. |
-| `motivo_timeout` | ENUM MotivoTimeoutPedido (`TIMEOUT_PAGO`,`TIMEOUT_ENTREGA`,`TIMEOUT_RESPUESTA_COMERCIO`,`TIMEOUT_RETIRO_SUSPENSION`) | SÍ | NULL | — | Qué timeout automático disparó esta transición. Se completa **únicamente** en las 4 transiciones producidas por los jobs `@Scheduled` de `PedidoSchedulerService` (`expirarPagosVencidos`, `avisar75MinYAutoconfirmar` en su rama de autoconfirmación, `expirarPedidosSinRespuestaComercio`, `autoconfirmarRetirosPorSuspension`). NULL en cualquier otra transición de `actor_rol = SISTEMA` — en particular, la cascada de `PedidoService.cancelarPedidosPorSuspensionComercio` (disparada síncronamente por `AdministradorService.suspenderComercio`) no es un timeout, es una cancelación administrativa directa, y queda con `motivo_timeout = NULL`. Agregado en el mismo rediseño del 2026-09-15. |
+| `motivo_timeout` | ENUM MotivoTimeoutPedido (`TIMEOUT_PAGO`,`TIMEOUT_ENTREGA`,`TIMEOUT_RESPUESTA_COMERCIO`,`TIMEOUT_RETIRO_SUSPENSION`,`SUSPENSION_CLIENTE`,`TIMEOUT_PREPARACION_SUSPENSION`,`CANCELACION_SIN_PAGO`) | SÍ | NULL | — | Desde la `V45`, `TIMEOUT_PREPARACION_SUSPENSION` marca la cancelación por sistema de un pedido `EN_PREPARACION` a los 90 minutos de la suspensión del comercio (con reembolso total). Un pago aprobado que llega con el comercio suspendido cancela el pedido con `motivo_timeout = NULL` (no es un timeout). Desde la `V44`, `SUSPENSION_CLIENTE` marca la cancelación (`CANCELADO_POR_SISTEMA`) de un pedido sin pagar porque el Administrador suspendió la cuenta del Cliente, o del pedido que recibió un pago aprobado con la cuenta ya suspendida (no es un timeout, pero comparte la columna del motivo del sistema). Qué timeout automático disparó esta transición. Se completa **únicamente** en las 4 transiciones producidas por los jobs `@Scheduled` de `PedidoSchedulerService` (`expirarPagosVencidos`, `avisar75MinYAutoconfirmar` en su rama de autoconfirmación, `expirarPedidosSinRespuestaComercio`, `autoconfirmarRetirosPorSuspension`). NULL en cualquier otra transición de `actor_rol = SISTEMA` — en particular, la cascada de `PedidoService.cancelarPedidosPorSuspensionComercio` (disparada síncronamente por `AdministradorService.suspenderComercio`) no es un timeout, es una cancelación administrativa directa, y queda con `motivo_timeout = NULL`. Agregado en el mismo rediseño del 2026-09-15. |
 | `fecha_hora` | DATETIME | NO | `NOW()` | NN | Fecha y hora exacta de la transición. |
 
 **Índices:** `PRIMARY KEY (id)` | `INDEX (pedido_id, fecha_hora)` | `INDEX (actor_usuario_id)`
@@ -1873,11 +2037,12 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 | `refund_id_mp` | VARCHAR(50) | SÍ | NULL | — | ID del reembolso en MercadoPago (`refund_id`). Se popula al confirmar el reembolso exitoso por la API. |
 | `mp_payment_id` | VARCHAR(50) | SÍ | NULL | — | Id del pago de MercadoPago que se reembolsa (copia de `Pago.id_transaccion_mp` al crear la nota). Agregado 2026-09-25 (V23). |
 | `ultimo_error` | VARCHAR(500) | SÍ | NULL | — | Último error del intento de reembolso (respuesta real de MercadoPago) o motivo de la revisión manual. Se limpia al procesarse con éxito. Agregado 2026-09-25 (V23). |
+| `reclamo_id` | INT | SÍ | NULL | FK → Reclamo.id, UQ | Reclamo que originó la nota (V50); solo las notas de motivo `RECLAMO`. UNIQUE: un reclamo tiene como máximo una nota (los `NULL` no chocan entre sí). |
 | `fecha_emision` | DATETIME | NO | `NOW()` | NN | Fecha y hora de creación de la nota de crédito (momento en que se origina la solicitud de reembolso). |
 | `fecha_proceso` | DATETIME | SÍ | NULL | — | Fecha y hora en que el reembolso fue procesado exitosamente por MercadoPago. Se registra al pasar a `PROCESADO`. |
 | `fecha_fallido` | DATETIME | SÍ | NULL | — | Fecha y hora en que se alcanzó el máximo de intentos fallidos. Se emite notificación T27 al Administrador en este momento. |
 
-**Índices:** `PRIMARY KEY (id)` | `INDEX (pago_id)` | `INDEX (estado)`
+**Índices:** `PRIMARY KEY (id)` | `INDEX (pago_id)` | `INDEX (estado)` | `UNIQUE (reclamo_id)`
 
 **Reglas de negocio:**
 - **Criterio de pago reembolsable (corregido 2026-09-25):** `Pago.mp_estado = 'approved'` **y** `Pago.fecha_confirmacion` no nula. `Pago.id_transaccion_mp` por sí solo NO sirve: también se completa en pagos rechazados.
@@ -1911,10 +2076,13 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 | 16 | `Token` | `usuario_id` | `Usuario` | N:1 | N tokens → 1 usuario | Tokens de seguridad generados para el usuario. |
 | 17 | `Sesion` | `usuario_id` | `Usuario` | N:1 | N sesiones → 1 usuario | Historial de sesiones del usuario. |
 | 18 | `Notificacion` | `usuario_id` | `Usuario` | N:1 | N notificaciones → 1 usuario | Notificaciones emitidas al usuario. |
-| 19 | `Soporte` | `usuario_id` | `Usuario` | N:1 | N mensajes → 1 usuario | Mensajes de soporte enviados por el usuario. |
-| 20 | `Soporte` | `administrador_id` | `Administrador` | N:1 | N mensajes → 1 administrador | Administrador que atendió el mensaje. |
+| 19 | `TicketSoporte` | `usuario_id` | `Usuario` | N:1 | N consultas → 1 usuario | Consultas escritas con sesión (NULL si se escribieron sin sesión). |
+| 20 | `MensajeSoporte` | `ticket_id` | `TicketSoporte` | N:1 | N mensajes → 1 consulta | Conversación de la consulta (máximo 20). |
 | 21 | `Reclamo` | `pedido_id` | `Pedido` | 1:1 | 1 reclamo ↔ 1 pedido | Un reclamo por pedido (UNIQUE). |
 | 22 | `Reclamo` | `administrador_id` | `Administrador` | N:1 | N reclamos → 1 administrador | Administrador que resolvió el reclamo. |
+| 22b | `NotaCredito` | `reclamo_id` | `Reclamo` | 1:0..1 | 1 reclamo → 0 o 1 nota | Nota de crédito del reembolso de un reclamo aprobado (V50). UNIQUE. |
+| 22c | `ReclamoFoto` | `reclamo_id` | `Reclamo` | N:1 | 1 reclamo → 0 a 3 fotos | Fotos que el Cliente adjuntó al crear el reclamo (V51). Solo las ve el Administrador. |
+| 22d | `ReclamoFotoArchivo` | `foto_id` | `ReclamoFoto` | 1:1 | 1 foto → 1 contenido | Contenido binario de la foto (V51), en tabla aparte. |
 | 23 | `HistorialEstadoComercio` | `comercio_id` | `Comercio` | N:1 | N registros → 1 comercio | Historial de transiciones de estado del comercio. |
 | 24 | `HistorialEstadoComercio` | `administrador_id` | `Administrador` | N:1 | N registros → 1 administrador | Administrador que ejecutó la transición (NULL si fue el sistema o el Dueno). |
 | 24b | `HistorialCambioComercio` | `historial_estado_comercio_id` | `HistorialEstadoComercio` | N:1 | N cambios → 1 fila de historial | Campos que el Dueno cambió al re-solicitar un comercio rechazado (`ON DELETE CASCADE`). |
@@ -1990,6 +2158,7 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 | `Tag` | `nombre` | Nombre de tag único. |
 | `Carrito` | `cliente_id` | Un cliente tiene exactamente un carrito. |
 | `Reclamo` | `pedido_id` | Máximo un reclamo por pedido. |
+| `ReclamoFoto` | `(reclamo_id, orden)` | Una sola foto por posición en cada reclamo (máximo 3 por reclamo). |
 | `Pago` | `pedido_id` | Exactamente un pago por pedido. |
 | `CodigoVinculacionMp` | `identificador_intento` | Cada intento de vinculación OAuth de MercadoPago tiene un `state` irrepetible. |
 | `ProductoTag` | `(producto_id, tag_id)` | PK compuesta; evita tags duplicados por producto. |
@@ -2032,6 +2201,27 @@ Los nombres de índice y de clave foránea usan el prefijo `hed` y no `hec`: los
 | Aprobación del Administrador con el Dueno `BLOQUEADO` y cuenta MP activa | `BLOQUEADO` | `CERRADO_TEMPORALMENTE` (no `APTO_VENTA`) |
 | Vinculación de MercadoPago con el Dueno `BLOQUEADO` | `BLOQUEADO` | `CERRADO_TEMPORALMENTE` los que estaban `APROBADO` |
 
+### Suspensión de la cuenta de un Cliente (v1.29)
+
+- **Quién y cómo.** Solo el Administrador suspende y levanta (`PUT /api/v1/administrador/clientes/{id}/suspender` y `/levantar-suspension`), y solo a un usuario con rol `CLIENTE` (un Empleado es un Cliente). Un Dueño responde `409` "Todavía no se puede suspender a un Dueño desde acá" y un Administrador `409` (nunca se suspende; tampoco a uno mismo). Motivo al suspender: 10 a 500 caracteres, visible para la persona. La suspensión es indefinida. Motivo al levantar: opcional, hasta 500 caracteres, se guarda en el historial y viaja en el aviso T29.
+- **Prevalece sobre el bloqueo.** Suspender una cuenta `BLOQUEADA` la pisa; levantar la deja `ACTIVO` con `intentos_fallidos = 0`. Una cuenta que estaba `PENDIENTE` (sin verificar) vuelve a `PENDIENTE`, no a `ACTIVO`.
+- **Login.** Primero se comprueba la contraseña y recién después se revela el estado: contraseña incorrecta en una cuenta suspendida da el mensaje genérico, sin intentos restantes y sin sumar intentos; contraseña correcta da `409` con `data.codigo = CUENTA_SUSPENDIDA` y `data.motivo`, sin crear sesión. Con la sesión ya abierta, la siguiente request responde `401` con el mismo código y motivo (el filtro JWT mira el estado del usuario en cada request). Recuperar la contraseña cambia la contraseña pero no levanta la suspensión; la verificación del email solo activa cuentas `PENDIENTE`.
+- **Efectos.** Los pedidos ya pagados siguen su curso. Los pedidos `PENDIENTE_PAGO` se cancelan (`CANCELADO_POR_SISTEMA`, `motivo_timeout = SUSPENSION_CLIENTE`), cada uno en su propia transacción, después del commit de la suspensión. Un pago aprobado que llega después sobre un pedido todavía sin pagar o ya cancelado se devuelve entero en el acto (nota de crédito `SUSPENSION_CLIENTE`). El carrito se conserva; el checkout y "Ir a pagar" responden `409` `CUENTA_SUSPENDIDA`. Un Cliente suspendido que es Empleado no puede operar ningún comercio (las escrituras del comercio y las transiciones de pedido comprueban el estado de quien actúa dentro de la transacción).
+- **Avisos.** Aviso dentro de la app (T28 al suspender, T29 al levantar) y un email con un solo intento; el resultado queda en `notificacion` (canal `EMAIL`, `ENVIADO` o `FALLIDO`) y el Administrador puede reenviar el último fallido (`POST /api/v1/administrador/clientes/{id}/suspension/reenviar-email`).
+- **Pago aprobado sobre un pedido ya cancelado, por cualquier causa.** Siempre termina en reembolso total (motivo `SUSPENSION_CLIENTE` si el Cliente está suspendido y `CANCELACION_CLIENTE` en cualquier otro caso); antes solo dejaba una alerta y la plata quedaba retenida.
+
+### Suspensión de un comercio (v1.30)
+
+- **Quién y cómo.** Solo el Administrador (`PUT /api/v1/administrador/comercios/{id}/suspender` con motivo de 10 a 500 caracteres, `PUT .../levantar-suspension` con mensaje opcional de hasta 500, `GET .../suspension/previa` con los pedidos por estado y `POST .../suspension/reenviar-email`). Se suspenden `APROBADO`, `APTO_VENTA` y `CERRADO_TEMPORALMENTE`; cualquier otro estado da `409`. La suspensión es indefinida.
+- **Origen y fecha.** Se guardan `suspension_origen`, `suspendido_desde` y `motivo_suspension`. Re-suspender uno `INDIVIDUAL` da `409`; uno de origen `DUENO` pasa a `INDIVIDUAL` con el motivo nuevo y conserva `suspendido_desde`. Un comercio de origen `DUENO` no se levanta individualmente (`409`: hay que levantar la suspensión del Dueño).
+- **Levantar.** El destino lo decide `AptitudVentaComercioService` con la regla de seguir vendiendo (cuenta de Mercado Pago activa y al menos un documento aprobado; un documento en revisión no frena): `APTO_VENTA`, o `APROBADO` si falta algo, o `CERRADO_TEMPORALMENTE` si cumple pero la cuenta del Dueño está `BLOQUEADO`. El cierre manual no se toca. Se limpian los tres campos.
+- **La suspensión prevalece.** Mientras dure, aprobar documentos, vincular Mercado Pago, bloquear o restaurar la cuenta del Dueño y el cierre manual no cambian el estado del comercio.
+- **Pedidos.** Suspender no toca ningún pedido. `PENDIENTE_CONFIRMACION_COMERCIO`: el equipo solo puede rechazar (reembolso inmediato; aceptar da `409` `COMERCIO_SIN_OPERACION`, también para el Dueño) y sigue el vencimiento de 30 minutos. `EN_PREPARACION`: el equipo despacha o anula; si no, el sistema lo cancela con reembolso total a los 90 minutos de `suspendido_desde` (`TIMEOUT_PREPARACION_SUSPENSION`, nota `SUSPENSION_COMERCIO`, aviso T11 al Cliente). `LISTO_PARA_RETIRAR`: el equipo entrega o cierra como `NO_RETIRADO`; si no, el sistema lo cierra como `NO_RETIRADO` sin reembolso a los 90 minutos contados desde que quedó listo o desde `suspendido_desde`, lo que haya pasado después (`TIMEOUT_RETIRO_SUSPENSION`, aviso T36). `EN_CAMINO`: no se toca. `PENDIENTE_PAGO`: "Ir a pagar" da `409`; un pago aprobado que llega con el comercio suspendido cancela el pedido y se devuelve en el acto (nota `SUSPENSION_COMERCIO`). Levantar la suspensión detiene los dos topes sin escribir nada (los procesos revalidan, con el comercio y el pedido bloqueados, que el comercio siga suspendido).
+- **Solo lectura.** Con el comercio suspendido el Dueño y el Empleado no editan productos, precios, perfil, horarios ni redes (`409` `COMERCIO_SUSPENDIDO`) y no abren ni cierran (`409` `COMERCIO_NO_OPERATIVO`); el equipo no se invita, no se da de baja y no acepta una invitación pendiente; no se desvincula Mercado Pago. Siguen permitidos ver pedidos, estadísticas y documentos, subir documentos y vincular Mercado Pago.
+- **Avisos.** Al Dueño, T16 al suspender y T29 al levantar: aviso dentro de la app con el motivo (o el mensaje) y un email con un solo intento después del commit, con rastro por comercio (`notificacion`, canal `EMAIL`, `ENVIADO` o `FALLIDO`); el Administrador puede reenviar el último fallido. A los Empleados `ACTIVO` con la cuenta no suspendida, avisos solo dentro de la app, sin motivo y sin email (`COMERCIO_SUSPENDIDO_EQUIPO` y `COMERCIO_SUSPENSION_LEVANTADA_EQUIPO`).
+- **Pago aprobado sobre un pedido cancelado, por cualquier causa.** Siempre termina en reembolso total: `SUSPENSION_CLIENTE` si el Cliente está suspendido, `SUSPENSION_COMERCIO` si lo está el comercio y `PAGO_TARDIO` en cualquier otro caso.
+- **Concurrencia.** Orden de bloqueo: usuarios del Dueño y de los Empleados activos (compartido, id ascendente), relaciones, cuenta de Mercado Pago del Dueño (solo al levantar), comercio. Los procesos de 90 minutos toman un pedido por transacción: usuarios, comercio compartido y pedido, y revalidan estado y fecha con todo bloqueado.
+
 ### Solicitud de comercio: rechazo, corrección y rechazo definitivo
 
 | Evento | Estado Comercio resultante | Historial |
@@ -2058,9 +2248,9 @@ PENDIENTE_PAGO ──[pago rechazado por MP]────────────
 PENDIENTE_CONFIRMACION_COMERCIO ──[timeout 30 min]─────→ EXPIRADO (con reembolso)
 PENDIENTE_CONFIRMACION_COMERCIO ──[comercio rechaza]───→ RECHAZADO (con reembolso)
 EN_PREPARACION ──[comercio anula]──────────────────────→ ANULADO (con reembolso)
-PENDIENTE_CONFIRMACION_COMERCIO / EN_PREPARACION ──[suspensión comercio]─────→ CANCELADO_POR_SISTEMA (con reembolso)
+EN_PREPARACION ──[90 min desde la suspensión del comercio]─→ CANCELADO_POR_SISTEMA (motivo TIMEOUT_PREPARACION_SUSPENSION, con reembolso; la suspensión por sí sola no toca el pedido)
 EN_CAMINO      ──[90 min sin confirmación]─────────────→ ENTREGADO (fuente_entrega: SISTEMA)
-LISTO_PARA_RETIRAR ──[90 min durante suspensión]───────→ NO_RETIRADO (actor SISTEMA, motivo TIMEOUT_RETIRO_SUSPENSION, sin reembolso)
+LISTO_PARA_RETIRAR ──[90 min desde que quedó listo o desde la suspensión]──→ NO_RETIRADO (actor SISTEMA, motivo TIMEOUT_RETIRO_SUSPENSION, sin reembolso)
 LISTO_PARA_RETIRAR ──[Dueño o Empleado, tras 60 min listo]─→ NO_RETIRADO (sin reembolso)
 ```
 
@@ -2116,4 +2306,23 @@ LISTO_PARA_RETIRAR ──[Dueño o Empleado, tras 60 min listo]─→ NO_RETIRAD
 
 ---
 
-*Diccionario de Datos — Proyecto Bajoneá — Versión 1.28*
+*Diccionario de Datos — Proyecto Bajoneá — Versión 1.37*
+
+### Soporte (v1.34)
+
+- **Quién y cómo.** Cualquier persona le escribe al Administrador, con sesión (`POST /api/v1/soporte/consultas`, "Mis consultas" dentro del Perfil, sin código, también con la cuenta suspendida: el filtro JWT deja pasar las rutas de `/api/v1/soporte/` a una cuenta suspendida si su sesión sigue activa o se cerró por la suspensión) o sin sesión (`/api/v1/soporte/publico/...`, con el email y el código). El Administrador usa `/api/v1/administrador/soporte`.
+- **Turnos.** Habla primero la persona; cada mensaje pasa el turno; fuera de turno no se escribe, de ningún lado (`409`). El mensaje número 20 cierra la consulta sola (como los turnos alternan, siempre lo escribe Soporte). Solo Soporte cierra; una cerrada no acepta nada más. Estado y turno se revalidan sobre la fila de la consulta bloqueada con `FOR UPDATE`.
+- **Límites.** Por email: 3 consultas por día (ventana de 24 horas, cuentan también las cerradas) y 3 abiertas a la vez; por IP: 10 por día; accesos fallidos (email y código que no coinciden): 5 por hora por email y 10 por hora por IP; reenvíos de códigos: 3 por hora por email y por IP. Se responde `429` con el mensaje de cada límite. Los accesos correctos no cuentan, pero con el límite superado ni el código correcto entra.
+- **Acceso sin sesión.** Email (sin distinguir mayúsculas) y código (sin guiones ni espacios, en mayúsculas). Si no coinciden, siempre `404` "No encontramos una consulta con esos datos. Revisá el email y el código.", sea cual sea el dato incorrecto.
+- **Emails** (un solo intento, después del commit, sin reintentos; nada de lo que se registra en el log lleva emails ni códigos): "Recibimos tu consulta" (con el código), "Soporte respondió tu consulta" (el resultado queda en `email_enviado`) y "Tus códigos de consulta" (el reenvío; respuesta siempre igual, haya o no consultas abiertas). El botón "Ver mi consulta" lleva a `soporte-consulta.html#codigo=...&email=...`: en el fragmento y no en la query, para que no viajen a servidores, registros ni al encabezado `Referer`.
+- **Administrador.** Bandeja con los filtros `ESPERAN`, `RESPONDIDAS` y `CERRADAS` (las que esperan, más viejas primero), búsqueda por email, marca de cuenta suspendida y de email sin enviar, detalle con la cuenta asociada si el email coincide con un usuario (id, nombre, estado, rol y si es Empleado), responder, cerrar y reenviar el último email que no salió. Las métricas del panel suman `consultasSoporteEsperando`.
+- **Concurrencia.** Orden de bloqueo: usuario (compartido, solo al crear con sesión) → filas de `soporte_limite` (el email antes que la IP) → fila de `ticket_soporte` (primera lectura de la consulta) → mensaje. Los errores de negocio se devuelven como resultado y se lanzan después del commit, para no revertir nunca una transacción con contadores nuevos. Ver `docs/CONCURRENCIA-Y-TRANSACCIONES.md`.
+
+### Suspensión de la cuenta de un Dueño (v1.33)
+
+- **Quién y cómo.** Solo el Administrador (`PUT /api/v1/administrador/duenos/{id}/suspender` con motivo de 10 a 500 caracteres, `PUT .../levantar-suspension` con mensaje opcional de hasta 500, `GET .../suspension/previa`, `POST .../suspension/reenviar-email` y `GET /api/v1/administrador/duenos`). Reutiliza `EstadoUsuarioService.cambiar` (regla 14), la sesión se cierra con `tipo_cierre = SUSPENSION` y el login y el filtro JWT responden `CUENTA_SUSPENDIDA`. No se suspende a un Administrador ni a uno mismo; un id que no es un Dueño es `404`.
+- **Cascada.** Se suspenden los comercios `APROBADO`, `APTO_VENTA` y `CERRADO_TEMPORALMENTE` (`estado = SUSPENDIDO`, `suspension_origen = DUENO`, `suspendido_desde` = ahora, `motivo_suspension` = el de la cuenta, una fila de `historial_estado_comercio` con el Administrador). No cambian los comercios `PENDIENTE`, `RECHAZADO`, `RECHAZO_DEFINITIVO` e `INACTIVO`, ni los ya suspendidos por separado (origen `INDIVIDUAL`), ni el cierre manual. Mientras la cuenta esté suspendida no se aprueba un comercio pendiente (`409`; rechazar sí) ni se levanta la suspensión de un comercio suspendido por separado (`409`).
+- **Levantar.** La cuenta vuelve al estado que tenía antes (la última fila del historial hacia `SUSPENDIDO`; `BLOQUEADO` vuelve `ACTIVO` con los intentos en 0). Se restauran solo los comercios de origen `DUENO`, cada uno con `AptitudVentaComercioService.destinoAlLevantarSuspension` (cuenta de Mercado Pago activa y al menos un documento aprobado: `APTO_VENTA`; si no, `APROBADO`); los de origen `INDIVIDUAL` siguen suspendidos. Los pedidos ya rechazados, anulados o cancelados no se restauran.
+- **Pedidos** (de todos los comercios suspendidos del Dueño, también los suspendidos por separado antes). `PENDIENTE_CONFIRMACION_COMERCIO`: se rechaza y reembolsa en el acto (S2.1). Un pedido en preparación o listo para retirar está **sin atención** cuando la cuenta del Dueño está suspendida y el comercio no tiene ningún Empleado activo (relación `ACTIVO` y `usuario.estado = ACTIVO`, sin contar al Cliente del propio pedido): `EN_PREPARACION` pasa a `ANULADO` y `LISTO_PARA_RETIRAR` a `CANCELADO_POR_SISTEMA`, actor `SISTEMA`, `motivo_timeout = SUSPENSION_DUENO_SIN_ATENCION`, nota `SUSPENSION_COMERCIO` por el monto pagado y aviso al Cliente. Con Empleados activos siguen los topes de 90 minutos de S2. `EN_CAMINO` y `PENDIENTE_PAGO` no cambian. Un proceso cada 60 segundos vuelve a evaluar la condición y completa lo que haya quedado sin hacer.
+- **Avisos.** Un solo email al Dueño por suspensión (comercios afectados y motivo) y uno por levantamiento (restaurados, los que siguen suspendidos y el mensaje), con rastro `DUENO_SUSPENDIDO` y `DUENO_SUSPENSION_LEVANTADA` (canal `EMAIL`, `ENVIADO` o `FALLIDO`) y reenvío del último fallido. Aviso dentro de la app para el Dueño por cada comercio afectado o restaurado (`COMERCIO_SUSPENDIDO` y `SUSPENSION_LEVANTADA` con su `comercio_id`); a los Empleados `COMERCIO_SUSPENDIDO_EQUIPO` y `COMERCIO_SUSPENSION_LEVANTADA_EQUIPO` por comercio, sin motivo ni email.
+- **Concurrencia.** Orden de bloqueo: usuarios (id ascendente, el Dueño exclusivo), relaciones, cuenta de Mercado Pago (al levantar), comercios (id ascendente); los pedidos después del commit, uno por transacción. Ver `docs/CONCURRENCIA-Y-TRANSACCIONES.md`.

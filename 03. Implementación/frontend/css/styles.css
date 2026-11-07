@@ -8869,3 +8869,157 @@ button.panel-comercios__fila:focus-visible {
   cursor: not-allowed;
   pointer-events: none;
 }
+
+.legal-pagina {
+  padding-bottom: 32px;
+}
+
+.legal-version {
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.legal-resumen {
+  background: var(--color-primary-soft);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 8px;
+}
+
+.legal-resumen__titulo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--color-text);
+  margin: 0 0 8px;
+}
+
+.legal-resumen .legal-lista {
+  margin-bottom: 0;
+}
+
+.legal-seccion {
+  margin-top: 24px;
+}
+
+.legal-seccion .section-heading {
+  font-size: 16px;
+  margin: 0 0 8px;
+}
+
+.legal-lista {
+  margin: 0 0 14px;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text);
+}
+
+.legal-lista li {
+  margin-bottom: 6px;
+}
+
+.legal-pagina .link {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.legal-pie {
+  display: flex;
+  flex-direction: column;
+  margin-top: 32px;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+.legal-pie__enlace {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.legal-pie__enlace[aria-current='page'] {
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.legal-pie__enlace:focus-visible,
+.faq-item summary:focus-visible,
+.legal-pagina .link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.faq-item {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.faq-item summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--color-text);
+  cursor: pointer;
+  list-style: none;
+}
+
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-item summary::after {
+  content: '';
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid var(--color-text-muted);
+  border-bottom: 2px solid var(--color-text-muted);
+  transform: rotate(45deg);
+  margin-right: 4px;
+}
+
+.faq-item[open] summary {
+  color: var(--color-primary);
+}
+
+.faq-item[open] summary::after {
+  border-color: var(--color-primary);
+  transform: rotate(-135deg);
+}
+
+.faq-respuesta {
+  padding-bottom: 6px;
+}
+
+.legal-ayuda {
+  margin: 28px 0 0;
+  text-align: center;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.legal-pie--sitio {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  column-gap: 16px;
+  margin: 0 20px 24px;
+  padding-top: 4px;
+}
+
+.legal-pie--sitio .legal-pie__enlace {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}

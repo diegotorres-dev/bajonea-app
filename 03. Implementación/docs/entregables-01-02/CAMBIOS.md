@@ -5,6 +5,30 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
 
+## Textos legales: ajustes finales de redacción — 2026-11-06
+
+### Qué cambió
+
+- Términos: el reembolso a veces demora por una revisión manual (por ejemplo, si el comercio desvinculó su cuenta de Mercado Pago); y, ante la suspensión de un comercio o de un Dueño, los pedidos a domicilio que ya salieron no cambian, los de retiro ya listos se pueden retirar durante 90 minutos (después se cierran como no retirados, sin devolución) y, si se suspende al Dueño y no queda ningún Empleado activo, esos retiros se cancelan y se reembolsan.
+- Privacidad: el comercio recibe el nombre, la dirección de entrega (si es a domicilio) y el contenido del pedido, no el teléfono; se nombra a Google Fonts como proveedor que recibe la IP del navegador al cargar las tipografías.
+- Preguntas frecuentes: Soporte sin sesión se contacta por el formulario público (`soporte.html`); cerrar el comercio a mano se puede dentro del horario; misma aclaración de suspensión que en los Términos.
+
+### Cambios a reflejar en los documentos de requisitos
+
+1. **Alcance y limitaciones** (`alcance-y-limitaciones.md` de esta carpeta, ya actualizado): las dos limitaciones sobre los pedidos durante la suspensión de un comercio se reescriben. La anterior decía que los pedidos En Camino "se completan automáticamente como entregados"; el sistema nunca lo hizo (ya estaba anotado en la entrada de S2): siguen su curso normal. El retiro Listo para Retirar se cierra como No Retirado a los 90 minutos, sin reembolso, salvo Dueño suspendido sin Empleados activos (reembolso total). Copiar a `01. Análisis de Requerimientos/03. Alcance y Limitaciones/`.
+2. Pendiente fuera del alcance del proyecto: revisión de los tres textos por un abogado antes de abrir la plataforma al público. Pendiente de despliegue: probar el reembolso parcial en el sandbox de Mercado Pago (ver `docs/LISTA-DE-DESPLIEGUE.md`).
+
+## Textos legales: Términos, Privacidad y Preguntas frecuentes (2026-11-06)
+
+Solo frontend. Los tres textos legales (versión 1.0, 4 de noviembre de 2026) pasan a ser páginas públicas reales: `terminos.html` y `privacidad.html` reemplazan a las provisorias y `faq.html` es nueva. Los requisitos y las historias que ya hablaban de los Términos (registro con "Acepto los Términos y Condiciones y la Política de Privacidad") siguen vigentes; lo que cambia es que la línea de la casilla abre ahora el texto definitivo en una pestaña nueva. Cambios **sugeridos** a los documentos (no se aplicaron en las copias de esta carpeta):
+
+| Archivo | Cambio sugerido |
+|---|---|
+| `requisitos-funcionales-cliente.md` | Sección nueva "Información legal y ayuda": la plataforma publica Términos y Condiciones, Política de Privacidad y Preguntas frecuentes, accesibles sin sesión y enlazadas desde el ingreso, el registro y Soporte |
+| `alcance-y-limitaciones.md` | Los textos legales dejan de ser provisorios; queda pendiente su revisión por un profesional (fuera del alcance del proyecto) |
+
+**Para revisar antes de pegar en `01.`:** la FAQ dice que la recuperación de contraseña manda "un enlace por email" (hoy es un código de 6 dígitos) y que reactivar una cuenta inactiva "pide un código por email" (hoy usa usuario y contraseña, sin código); y los Términos dicen que una misma persona puede ser Cliente, Dueño y Empleado (las reglas vigentes son más estrictas). Ver `docs/DECISIONES.md`, 2026-11-06.
+
 ## Fase 2, tramo T5: estadísticas del Dueño (2026-10-24)
 
 Backend y pantalla. El Dueño ve las estadísticas de un comercio (últimos 7 o 30 días: vendido, comisión, neto, ticket promedio, un gráfico de barras por día con el detalle de cada día y sus turnos, y cómo terminaron los pedidos) desde un enlace debajo de las métricas del panel. Es exclusivo del Dueño y las cifras son vivas: el email de cierre de turno es una foto y puede diferir. Sin migración, así que el diccionario de datos no cambia.
@@ -1414,3 +1438,17 @@ No se editó `01. Análisis de Requerimientos` ni `02. Diseño`. Lo de la entreg
 - Hoja nueva del Administrador: "Reactivar a {nombre}" (`07` Cliente, `09` Dueño con comercios, `10` error) y el menú de Clientes con "Reactivar cuenta" (`06`); toast del Administrador en `08`.
 - Login: se quitó el enlace "Reactivar mi cuenta" del pie.
 
+
+## Textos legales: corrección de tres frases y fecha — 2026-11-06
+
+### Qué cambió
+
+- Los tres textos (Términos, Privacidad y Preguntas frecuentes) quedan en **versión 1.0, 6 de noviembre de 2026**.
+- Preguntas frecuentes: la recuperación de contraseña se hace con un código de 6 dígitos que vale 30 minutos (no con un enlace) y la reactivación de una cuenta inactiva se hace iniciando sesión y tocando "Reactivar mi cuenta" (sin código por email).
+- Términos, sección 3: una persona puede tener una cuenta de Cliente y, por invitación, ser Empleado en comercios ajenos; los Dueños administran uno o varios comercios y no pueden ser Empleados de otro comercio.
+
+### Cambios a reflejar en los documentos de requisitos
+
+1. **Alcance y limitaciones** (`alcance-y-limitaciones.md` de esta carpeta, ya actualizado): nueva limitación "Dueño y Cliente en una misma cuenta" (regla escrita, no construida, trabajo futuro). Copiar a `01. Análisis de Requerimientos/03. Alcance y Limitaciones/`.
+2. **Requisitos y casos de uso de reactivación:** la reactivación de cuenta inactiva desde el inicio de sesión no pide código por email (ya anotado en la entrada de S6, entrega B).
+3. Pendiente fuera del alcance del proyecto: revisión de los tres textos por un abogado antes de abrir la plataforma al público.

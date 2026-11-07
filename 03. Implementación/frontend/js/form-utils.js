@@ -91,7 +91,7 @@ export function construirTelefono(digitos) {
 export const MENSAJE_TERMINOS_REQUERIDOS = 'Tenés que aceptar los Términos y Condiciones';
 
 export function crearCheckboxTerminos() {
-  const enlace = (href, texto, testid) => h('a', { href, target: '_blank', rel: 'noopener', 'data-testid': testid }, [texto]);
+  const enlace = (href, texto, testid) => h('a', { href, target: '_blank', rel: 'noopener noreferrer', 'data-testid': testid }, [texto]);
   const input = h('input', { type: 'checkbox', id: 'aceptaTerminos', 'data-testid': 'input-acepta-terminos' });
   input.addEventListener('change', () => limpiarErrorCampo('error-terminos'));
   return h('div', { class: 'terminos', 'data-testid': 'bloque-terminos' }, [

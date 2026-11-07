@@ -8,29 +8,174 @@
 </head>
 <body>
 <div class="app-shell">
-  <header class="app-header app-header--logo-centrado">
-    <img class="header-logo" src="assets/img/bajonea-logo-orange-header.png" alt="Bajoneá" />
+  <header class="app-header">
+    <button class="app-header__back" type="button" aria-label="Volver" data-testid="legal-volver">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <span class="app-header__title">Información legal</span>
   </header>
-  <main class="app-main">
-    <div class="screen-body">
-      <h1 class="title-lg" data-testid="titulo-terminos">Términos y Condiciones</h1>
-      <div class="info-box" style="margin-bottom:20px;" data-testid="aviso-texto-provisorio">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-        <span>Texto provisorio: se reemplaza por la versión definitiva al final del proyecto.</span>
-      </div>
-      <h2 class="section-heading">1. Qué es Bajoneá</h2>
-      <p class="legal-texto">Bajoneá es una plataforma web que conecta a comercios gastronómicos de Tierra del Fuego con personas que quieren hacer pedidos. Bajoneá facilita el contacto y el pago, pero no prepara ni entrega los pedidos.</p>
-      <h2 class="section-heading">2. Tu cuenta</h2>
-      <p class="legal-texto">Tenés que cargar datos verdaderos y mantenerlos actualizados. Sos responsable de cuidar tu contraseña y de lo que se haga con tu cuenta.</p>
-      <h2 class="section-heading">3. Pedidos y pagos</h2>
-      <p class="legal-texto">Los precios, la disponibilidad y los tiempos de cada pedido los define cada comercio. Los pagos se procesan a través de Mercado Pago.</p>
-      <h2 class="section-heading">4. Uso permitido</h2>
-      <p class="legal-texto">No podés usar la plataforma para actividades ilegales, para engañar a otras personas ni para intentar acceder a datos que no te corresponden.</p>
-      <h2 class="section-heading">5. Cambios</h2>
-      <p class="legal-texto">Podemos actualizar estos términos. Si el cambio es importante, te vamos a avisar dentro de la plataforma.</p>
-      <p class="form-footer-link"><a class="link" href="privacidad.html" data-testid="enlace-ir-a-privacidad">Política de Privacidad</a></p>
+  <main class="app-main" data-testid="legal-terminos">
+    <div class="screen-body legal-pagina">
+      <h1 class="title-lg" data-testid="titulo-terminos">Términos y Condiciones de Uso de Bajoneá</h1>
+      <p class="legal-version" data-testid="legal-version">Versión 1.0 · Última actualización: 6 de noviembre de 2026</p>
+
+      <section class="legal-resumen" aria-labelledby="resumen-titulo" data-testid="legal-resumen">
+        <h2 class="legal-resumen__titulo" id="resumen-titulo">En pocas palabras</h2>
+        <ul class="legal-lista">
+          <li>Bajoneá conecta a personas que quieren pedir comida con comercios gastronómicos de Tierra del Fuego.</li>
+          <li>El comercio prepara y entrega tu pedido. Bajoneá es la plataforma que lo hace posible.</li>
+          <li>Pagás únicamente con Mercado Pago.</li>
+          <li>Si el pedido no se concreta, te devolvemos el dinero según las reglas de abajo.</li>
+          <li>Podés reclamar hasta 7 días después de recibir un pedido.</li>
+        </ul>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">1. Quiénes somos y qué es Bajoneá</h2>
+        <p class="legal-texto">Bajoneá es una plataforma web que permite a <strong>Clientes</strong> hacer pedidos a <strong>Comercios</strong> gastronómicos de Tierra del Fuego, y a los comercios recibir y gestionar esos pedidos.</p>
+        <p class="legal-texto">Bajoneá actúa como <strong>intermediario tecnológico</strong>: no elabora, no vende ni entrega los productos. Cada comercio es responsable de lo que ofrece, de su calidad y estado, de sus precios y de la entrega.</p>
+        <p class="legal-texto"><strong>Responsable del servicio:</strong> Diego Nicolás Torres Velásquez.<br /><strong>Contacto:</strong> <a class="link" href="mailto:info@bajonea.ar">info@bajonea.ar</a></p>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">2. Quién puede usar Bajoneá</h2>
+        <ul class="legal-lista">
+          <li>Tenés que tener <strong>14 años o más</strong>. La edad es la que declarás al registrarte; no la verificamos.</li>
+          <li>Si sos menor de 18 años, usás la plataforma con el conocimiento y la supervisión de un adulto responsable.</li>
+          <li>Por ahora el servicio está disponible solo en <strong>Tierra del Fuego</strong> (Río Grande, Tolhuin y Ushuaia).</li>
+        </ul>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">3. Tu cuenta</h2>
+        <ul class="legal-lista">
+          <li>Los datos que cargues tienen que ser verdaderos y estar actualizados.</li>
+          <li>Tu usuario y tu contraseña son personales. Sos responsable de lo que se haga con tu cuenta; si sospechás que alguien más la usa, cambiá la contraseña y avisanos.</li>
+          <li>Verificás tu cuenta con el email que registrás.</li>
+          <li>Por seguridad, la cuenta se bloquea si se ingresa mal la contraseña varias veces. Podés recuperarla desde "Olvidé mi contraseña".</li>
+          <li>Una misma persona puede tener una cuenta de Cliente y, por invitación, ser Empleado en comercios ajenos. Los Dueños administran uno o varios comercios y no pueden ser Empleados de otro comercio.</li>
+        </ul>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">4. Pedidos y pagos</h2>
+        <ul class="legal-lista">
+          <li>Los precios y las descripciones los define cada comercio.</li>
+          <li>Antes de pagar ves el detalle: subtotal, <strong>cargo por servicio</strong> y total. El cargo por servicio puede cambiar con el tiempo; siempre se te muestra antes de pagar.</li>
+          <li>El <strong>único medio de pago</strong> es Mercado Pago. Tus datos de pago los procesa Mercado Pago, no Bajoneá, y se rigen por sus propios términos.</li>
+          <li>El pedido llega al comercio cuando tu pago se aprueba. El comercio puede aceptarlo o rechazarlo.</li>
+          <li>Si el comercio no responde en 30 minutos, el pedido vence.</li>
+        </ul>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">5. Cancelaciones, rechazos y reembolsos</h2>
+        <p class="legal-texto">Te devolvemos el <strong>total</strong> que pagaste cuando:</p>
+        <ul class="legal-lista">
+          <li>el comercio rechaza el pedido;</li>
+          <li>el comercio lo anula mientras lo prepara;</li>
+          <li>vos lo cancelás antes de que salga (a domicilio) o esté listo (retiro);</li>
+          <li>el comercio no responde y el pedido vence;</li>
+          <li>el sistema lo cancela, por ejemplo por una suspensión del comercio o de la cuenta, o por un problema con el pago;</li>
+          <li>se aprueba un reclamo (ver sección 7), en forma total o parcial.</li>
+        </ul>
+        <p class="legal-texto">Si en un pedido de <strong>retiro</strong> el comercio lo dejó listo y no lo retirás, el comercio lo cierra como no retirado y <strong>no hay devolución</strong>, porque el pedido ya estaba preparado.</p>
+        <p class="legal-texto">El reembolso se solicita a Mercado Pago apenas corresponde. A veces demora por una revisión manual, por ejemplo si el comercio desvinculó su cuenta de Mercado Pago. El tiempo que tarda en verse en tu tarjeta o cuenta depende de Mercado Pago y de tu medio de pago.</p>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">6. Entrega y retiro</h2>
+        <ul class="legal-lista">
+          <li>A domicilio, la entrega la hace el comercio. Cuando lo recibís, podés confirmarlo en la app.</li>
+          <li>Si no confirmás la recepción de un pedido a domicilio, el sistema lo marca como entregado automáticamente a los 90 minutos.</li>
+          <li>En pedidos de retiro, la entrega la confirma el comercio.</li>
+        </ul>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">7. Reclamos</h2>
+        <ul class="legal-lista">
+          <li>Si tuviste un problema con un pedido entregado (no lo recibiste, faltan productos, vinieron equivocados, llegó en mal estado, hubo un cobro incorrecto u otro motivo), podés iniciar <strong>un reclamo por pedido</strong> dentro de los <strong>7 días corridos</strong> desde la entrega.</li>
+          <li>Un reclamo enviado no se modifica. Lo revisa el Administrador de Bajoneá y puede resolverlo con un reembolso total, un reembolso parcial o rechazarlo indicando el motivo. La resolución es definitiva.</li>
+          <li>El plazo de 7 días no se detiene si tu cuenta está suspendida.</li>
+          <li>Si preferís resolverlo directo, también podés contactar al comercio.</li>
+        </ul>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">8. Si tenés un comercio en Bajoneá</h2>
+        <ul class="legal-lista">
+          <li>Los datos de tu comercio y los documentos que presentes tienen que ser verdaderos. Bajoneá revisa tu solicitud y puede aprobarla, rechazarla (con motivo) o pedirte que la corrijas.</li>
+          <li>Para vender necesitás: comercio aprobado, cuenta de Mercado Pago vinculada y al menos un documento aprobado (por ejemplo habilitación comercial, carnet de manipulación de alimentos o libreta sanitaria).</li>
+          <li>Sos responsable de cumplir las normas de habilitación, sanitarias, tributarias y de consumo que te correspondan, y de la calidad, el estado y la entrega de lo que vendés.</li>
+          <li>Podés invitar a Empleados a operar tu comercio. Vos respondés por lo que hagan dentro de los permisos que les des.</li>
+          <li>Cuando un reclamo se aprueba con reembolso, Mercado Pago lo descuenta de tu cuenta en la parte que corresponda.</li>
+          <li>Bajoneá cobra al comercio un cargo por servicio, informado en la plataforma y sujeto a cambios.</li>
+        </ul>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">9. Suspensión, inactividad y baja</h2>
+        <ul class="legal-lista">
+          <li>El Administrador puede <strong>suspender</strong> una cuenta o un comercio, siempre con un motivo que verás en pantalla, cuando hay un incumplimiento o un riesgo que lo justifica.</li>
+          <li>Al suspender un comercio o un Dueño, los pedidos en curso se resuelven así: los pendientes de aceptación se rechazan y se reembolsan; los que están en preparación los resuelve el comercio dentro de un plazo o, si nadie puede atenderlos, se anulan y se reembolsan. Los pedidos a domicilio que ya salieron no cambian. Los pedidos de retiro que ya estaban listos se pueden retirar durante 90 minutos; pasado ese plazo se cierran como no retirados y no hay devolución. Si se suspende al Dueño y no queda ningún Empleado activo para atenderlos, los pedidos de retiro ya listos también se cancelan y se reembolsan.</li>
+          <li>Si creés que una suspensión es un error, podés escribir a Soporte.</li>
+          <li>Si pasan <strong>3 meses sin actividad</strong>, la cuenta puede pasar a inactiva. Podés reactivarla cuando quieras.</li>
+          <li>Por ahora la cuenta no se elimina desde la aplicación. Si querés pedir tu baja, escribinos a <a class="link" href="mailto:info@bajonea.ar">info@bajonea.ar</a> (ver la <a class="link" href="privacidad.html">Política de Privacidad</a>).</li>
+        </ul>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">10. Uso adecuado</h2>
+        <p class="legal-texto">No está permitido:</p>
+        <ul class="legal-lista">
+          <li>dar datos falsos, suplantar a otra persona o usar cuentas ajenas;</li>
+          <li>intentar acceder a datos o funciones que no te corresponden;</li>
+          <li>usar la plataforma para fraude, hacer pedidos sin intención de recibirlos o abusar de reclamos y reembolsos;</li>
+          <li>saturar el sistema o usar programas automáticos para operar;</li>
+          <li>subir contenido ilegal, ofensivo o que no te pertenezca.</li>
+        </ul>
+        <p class="legal-texto">Podemos limitar o suspender cuentas que incumplan estas reglas.</p>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">11. Soporte</h2>
+        <p class="legal-texto">Podés escribirnos desde "Contactar a Soporte" o, si no podés entrar a tu cuenta, desde el formulario público con tu email. Cada consulta se responde por turnos y tiene un máximo de 20 mensajes. Hay límites para evitar abusos: hasta 3 consultas por día y 3 abiertas a la vez por email. Las respuestas te llegan por email y las ves con tu código.</p>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">12. Propiedad intelectual y contenido</h2>
+        <p class="legal-texto">La marca Bajoneá, el diseño y el software son de su titular. Las fotos y textos que subas (por ejemplo, los de tu comercio o tu perfil) siguen siendo tuyos, pero nos autorizás a mostrarlos dentro de la plataforma para que funcione el servicio.</p>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">13. Limitación de responsabilidad</h2>
+        <p class="legal-texto">Hacemos lo posible para que la plataforma funcione sin interrupciones, pero no podemos garantizarlo: puede haber mantenimiento, fallas propias o de terceros (por ejemplo, de Mercado Pago o del hosting). Bajoneá no es responsable por la calidad, el estado o la entrega de los productos, que corresponden al comercio. Nada de lo dispuesto acá limita los derechos que la ley reconoce a los consumidores y usuarios.</p>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">14. Cambios en estos términos</h2>
+        <p class="legal-texto">Podemos actualizar estos términos. Publicamos la versión nueva con su fecha. Si seguís usando Bajoneá después del cambio, entendemos que la aceptás.</p>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">15. Ley aplicable y jurisdicción</h2>
+        <p class="legal-texto">Estos términos se rigen por la ley argentina. Para cualquier conflicto, serán competentes los tribunales ordinarios de Río Grande, Tierra del Fuego, sin perjuicio de los derechos que la ley reconoce a los consumidores.</p>
+      </section>
+
+      <section class="legal-seccion">
+        <h2 class="section-heading">16. Contacto</h2>
+        <p class="legal-texto"><a class="link" href="mailto:info@bajonea.ar">info@bajonea.ar</a></p>
+      </section>
+
+      <nav class="legal-pie" aria-label="Información legal" data-testid="legal-pie">
+        <a class="legal-pie__enlace" href="terminos.html" aria-current="page" data-testid="legal-pie-terminos">Términos y Condiciones</a>
+        <a class="legal-pie__enlace" href="privacidad.html" data-testid="legal-pie-privacidad">Política de Privacidad</a>
+        <a class="legal-pie__enlace" href="faq.html" data-testid="legal-pie-faq">Preguntas frecuentes</a>
+      </nav>
     </div>
   </main>
 </div>
+<script type="module" src="js/legal.js"></script>
 </body>
 </html>

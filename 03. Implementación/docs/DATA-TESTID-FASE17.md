@@ -422,3 +422,12 @@ Sin `data-testid` nuevos. El spec `88` usa los existentes: `suspender-comercio-q
 | `admin-duenos.html` | `filtro-duenos-inactivos`, `accion-reactivar-dueno` (en la hoja `hoja-acciones-dueno`, solo `INACTIVO`) | El filtro "Inactivos" es nuevo en Dueños. |
 | Hoja "Reactivar a {nombre}" (`js/admin-reactivar.js`, compartida por Clientes y Dueños) | `modal-reactivar-cuenta` (el `alertdialog`), `modal-reactivar-cuenta-fondo`, `modal-reactivar-cuenta-titulo`, `reactivar-que-va-a-pasar`, `reactivar-comercios`, `reactivar-previa-cargando`, `reactivar-vuelven` (título "Se restablecen N de M comercios"), `reactivar-vuelve-{comercioId}`, `reactivar-sigue-{comercioId}`, `aviso-reactivar-cuenta` (con `aviso-fijo` y `aviso-fijo-texto`), `btn-confirmar-reactivar`, `btn-cancelar-reactivar` | Toast de éxito "Cuenta reactivada". |
 
+
+## Textos legales (2026-11-06)
+
+| Pantalla | `data-testid` | Notas |
+|---|---|---|
+| `terminos.html`, `privacidad.html`, `faq.html` | `legal-terminos`, `legal-privacidad`, `legal-faq` (el `<main>` de cada una), `titulo-terminos`, `titulo-privacidad`, `titulo-faq` (el `<h1>`), `legal-version`, `legal-resumen` (solo Términos y Privacidad), `legal-volver`, `legal-pie`, `legal-pie-terminos`, `legal-pie-privacidad`, `legal-pie-faq` | `aviso-texto-provisorio`, `enlace-ir-a-terminos` y `enlace-ir-a-privacidad` ya no existen. El pie marca la página actual con `aria-current="page"`. |
+| `faq.html` | `faq-pregunta` (un `<summary>` por pregunta, 32), `faq-ayuda`, `faq-enlace-soporte` | Cada pregunta es un `<details class="faq-item">`; el estado abierto es el atributo `open`. |
+| `login.html`, `registro-tipo-cuenta.html`, `registro-cliente.html`, `registro-comercio.html` | `legal-pie`, `legal-pie-terminos`, `legal-pie-privacidad`, `legal-pie-faq` | Mismo pie, en versión compacta (`legal-pie--sitio`). |
+| `soporte.html` | `texto-faq`, `enlace-faq` | Se suman a `texto-privacidad` y `enlace-privacidad`, que ya existían. |
