@@ -430,7 +430,7 @@ items.push(
   ]),
   altaP('[rechazo] Alta adicional para rechazar', null, [status(201), guardar('alta_p_e_id', 'pm.response.json().data.id'), guardar('alta_p_e_nombre', 'pm.response.json().data.nombre')], (c) => (c.nombre = 'Sucursal Postman Rechazada')),
   item('[rechazo] Administrador rechaza el adicional con motivo', req('PUT', '/administrador/comercios/{{alta_p_e_id}}/resolver', { token: 'token_admin', body: { aprobar: false, motivo: 'Motivo de rechazo de Postman' } }), [status(200)]),
-  notificacionDe('[rechazo] Aviso de rechazo con nombre y motivo (sin cambios)', 'alta_p_e_id', "'Tu comercio ' + pm.environment.get('alta_p_e_nombre') + ' fue rechazado. Motivo: Motivo de rechazo de Postman'"),
+  notificacionDe('[rechazo] Aviso de rechazo con nombre y motivo (sin cambios)', 'alta_p_e_id', "'Tu comercio ' + pm.environment.get('alta_p_e_nombre') + ' fue rechazado. Motivo: Motivo de rechazo de Postman. Corregilo y volvé a solicitarlo.'"),
   item('[rechazo] El perfil del rechazado trae el motivo', req('GET', '/comercios/perfil', { token: 'token_alta_p', headers: { [HEADER]: '{{alta_p_e_id}}' } }), [
     status(200),
     "pm.test('RECHAZADO con motivo', () => { const d = pm.response.json().data; pm.expect(d.estado).to.eql('RECHAZADO'); pm.expect(d.motivoRechazo).to.eql('Motivo de rechazo de Postman'); });",

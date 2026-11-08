@@ -142,6 +142,13 @@ public class TestController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponse<>("Último acceso fijado para la prueba", fijada));
     }
 
+    @PostMapping("/usuarios/{id}/avisos-personales")
+    public ResponseEntity<ApiResponse<java.util.List<Integer>>> sembrarAvisosPersonales(@PathVariable Integer id,
+            @RequestParam(defaultValue = "1") int cantidad, @RequestParam(defaultValue = "false") boolean leidas) {
+        java.util.List<Integer> ids = testSupportService.sembrarAvisosPersonales(id, cantidad, leidas);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponse<>("Avisos personales sembrados para la prueba", ids));
+    }
+
     @PutMapping("/pedidos/{id}/envejecer-creacion")
     public ResponseEntity<ApiResponse<Void>> envejecerCreacionDePedido(@PathVariable Integer id,
             @RequestParam(defaultValue = "0") int meses, @RequestParam(defaultValue = "0") int dias) {

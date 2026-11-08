@@ -312,7 +312,7 @@ public class PedidoService {
             return;
         }
         if (bloqueado.estadoComercio() == EstadoComercio.SUSPENDIDO) {
-            cancelarPagoAprobadoPorSuspension(pedido, null, MotivoNotaCredito.SUSPENSION_COMERCIO, "el comercio fue suspendido");
+            cancelarPagoAprobadoPorSuspension(pedido, null, MotivoNotaCredito.SUSPENSION_COMERCIO, null);
             return;
         }
 
@@ -332,7 +332,7 @@ public class PedidoService {
         registrarHistorial(pedido, ActorPedido.SISTEMA, null, null, instante);
 
         notificacionService.crearParaEquipo(comercioId, pedido.getComercio().getDueno().getId(), bloqueado.equipo(),
-                "Nuevo pedido recibido de " + pedido.getCliente().getPersonaFisica().getNombre() + " "
+                "Pedido nuevo #" + pedido.getId() + " de " + pedido.getCliente().getPersonaFisica().getNombre() + " "
                         + pedido.getCliente().getPersonaFisica().getApellido() + ".",
                 TipoNotificacion.NUEVO_PEDIDO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
 
@@ -348,6 +348,10 @@ public class PedidoService {
         pedidoRepository.save(pedido);
         registrarHistorial(pedido, ActorPedido.SISTEMA, null, motivoTimeout);
         boolean devolucionEnGestion = reembolsoService.generarNotaYReembolsarTotal(pedido, motivoNota);
+        if (causa == null) {
+            notificarCancelacionPorComercioNoDisponible(pedido);
+            return;
+        }
         notificarCancelacionSistema(pedido, devolucionEnGestion
                 ? causa + " y estamos gestionando la devolución de tu pago"
                 : causa);
@@ -901,7 +905,7 @@ public class PedidoService {
         Map<Integer, NotaCredito> notas = ultimasNotasCredito(pedidos);
         Map<Integer, ReclamoPedidoResponseDTO> reclamos = reclamoVistaService.paraCliente(pedidos);
         return pedidos.stream()
-                .map(pedido -> aResponseDTO(pedido, fechasPago.get(pedido.getId()), notas.get(pedido.getId()), null, null,
+                .map(pedido -> aResponseDTO(pedido, fechasPago.get(pedido.getId()), notas.get(pedido.getId()), null, null, null,
                         reclamos.get(pedido.getId())))
                 .toList();
     }
@@ -922,6 +926,7 @@ public class PedidoService {
                 .map(pedido -> aResponseDTO(pedido, fechasPago.get(pedido.getId()), notas.get(pedido.getId()),
                         esperaNoRetirado(pedido, listoDesde.get(pedido.getId()), ahora),
                         limiteDeResolucionPorSuspension(pedido, listoDesde.get(pedido.getId())),
+                        limiteRespuestaComercio(pedido, fechasPago.get(pedido.getId())),
                         reclamos.get(pedido.getId())))
                 .toList();
     }
@@ -1018,7 +1023,7 @@ public class PedidoService {
                     pedido.setPrimerAvisoEmitido(true);
                     pedidoRepository.save(pedido);
                     notificacionService.crearParaCliente(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
-                            "Tu pedido #" + pedido.getId() + " está en camino hace un buen rato. Confirmá la recepción cuando llegue.",
+                            "Tu pedido #" + pedido.getId() + " sigue en camino. Si ya lo recibiste, confirmalo para cerrarlo.",
                             TipoNotificacion.AVISO_75MIN_SIN_CONFIRMACION, TipoEntidadNotificacion.PEDIDO, pedido.getId());
                 }
             });
@@ -1061,7 +1066,7 @@ public class PedidoService {
                                 + ". Se canceló y estamos gestionando la devolución de tu pago; podés ver su estado en el detalle del pedido.",
                         TipoNotificacion.PEDIDO_EXPIRADO_CLIENTE, TipoEntidadNotificacion.PEDIDO, pedido.getId());
                 notificacionService.crearParaEquipo(pedido.getComercio().getId(), pedido.getComercio().getDueno().getId(), bloqueado.equipo(),
-                        "El pedido #" + pedido.getId() + " expiró por falta de respuesta.",
+                        "El pedido #" + pedido.getId() + " se canceló porque nadie lo respondió a tiempo.",
                         TipoNotificacion.PEDIDO_EXPIRADO_COMERCIO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
             });
         }
@@ -1142,17 +1147,15 @@ public class PedidoService {
                 pedido.setCanceladoPor(CanceladoPor.SISTEMA);
                 pedidoRepository.save(pedido);
                 registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.TIMEOUT_PREPARACION_SUSPENSION);
-                boolean devolucionEnGestion = reembolsoService.generarNotaYReembolsarTotal(pedido,
-                        MotivoNotaCredito.SUSPENSION_COMERCIO);
-                notificarCancelacionSistema(pedido, devolucionEnGestion
-                        ? "el comercio fue suspendido y estamos gestionando la devolución de tu pago"
-                        : "el comercio fue suspendido");
+                reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.SUSPENSION_COMERCIO);
+                notificarCancelacionPorComercioNoDisponible(pedido);
             });
         }
     }
 
-    static final String TEXTO_RECHAZO_POR_SUSPENSION =
-            "Tu pedido se canceló porque el comercio no está disponible. Te devolvemos el dinero.";
+    static String textoPorComercioNoDisponible(Integer pedidoId) {
+        return "Cancelamos tu pedido #" + pedidoId + " porque el comercio no está disponible. Te devolvemos el dinero.";
+    }
 
     /**
      * Rechaza y reembolsa, uno por uno, los pedidos {@code PENDIENTE_CONFIRMACION_COMERCIO} de un comercio que acaba de
@@ -1199,7 +1202,7 @@ public class PedidoService {
             registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.SUSPENSION_COMERCIO);
             reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.SUSPENSION_COMERCIO);
             notificacionService.crearParaCliente(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
-                    TEXTO_RECHAZO_POR_SUSPENSION, TipoNotificacion.PEDIDO_RECHAZADO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
+                    textoPorComercioNoDisponible(pedido.getId()), TipoNotificacion.PEDIDO_RECHAZADO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
             rechazado[0] = true;
         });
         return rechazado[0];
@@ -1262,7 +1265,7 @@ public class PedidoService {
                 pedidoRepository.save(pedido);
                 registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.SUSPENSION_DUENO_SIN_ATENCION);
                 reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.SUSPENSION_COMERCIO);
-                notificacionService.crearParaCliente(clienteId, TEXTO_RECHAZO_POR_SUSPENSION,
+                notificacionService.crearParaCliente(clienteId, textoPorComercioNoDisponible(pedido.getId()),
                         TipoNotificacion.PEDIDO_ANULADO_COMERCIO, TipoEntidadNotificacion.PEDIDO, pedido.getId());
             } else if (pedido.getEstado() == EstadoPedido.LISTO_PARA_RETIRAR) {
                 pedido.setEstado(EstadoPedido.CANCELADO_POR_SISTEMA);
@@ -1270,7 +1273,7 @@ public class PedidoService {
                 pedidoRepository.save(pedido);
                 registrarHistorial(pedido, ActorPedido.SISTEMA, null, MotivoTimeoutPedido.SUSPENSION_DUENO_SIN_ATENCION);
                 reembolsoService.generarNotaYReembolsarTotal(pedido, MotivoNotaCredito.SUSPENSION_COMERCIO);
-                notificacionService.crearParaCliente(clienteId, TEXTO_RECHAZO_POR_SUSPENSION,
+                notificacionService.crearParaCliente(clienteId, textoPorComercioNoDisponible(pedido.getId()),
                         TipoNotificacion.PEDIDO_CANCELADO_SISTEMA, TipoEntidadNotificacion.PEDIDO, pedido.getId());
             } else {
                 return;
@@ -1303,6 +1306,12 @@ public class PedidoService {
         pedido.setFuenteEntrega(fuente);
         pedido.setFechaEntrega(LocalDateTime.now(clock));
         pedidoRepository.save(pedido);
+    }
+
+    private void notificarCancelacionPorComercioNoDisponible(Pedido pedido) {
+        notificacionService.crearParaCliente(pedido.getCliente().getPersonaFisica().getPersona().getUsuario().getId(),
+                textoPorComercioNoDisponible(pedido.getId()), TipoNotificacion.PEDIDO_CANCELADO_SISTEMA, TipoEntidadNotificacion.PEDIDO,
+                pedido.getId());
     }
 
     private void notificarCancelacionSistema(Pedido pedido, String motivo) {
@@ -1378,7 +1387,7 @@ public class PedidoService {
 
     private PedidoResponseDTO aResponseDTO(Pedido pedido) {
         return aResponseDTO(pedido, fechasPagoAprobado(List.of(pedido)).get(pedido.getId()),
-                ultimasNotasCredito(List.of(pedido)).get(pedido.getId()), null, null,
+                ultimasNotasCredito(List.of(pedido)).get(pedido.getId()), null, null, null,
                 reclamoVistaService.paraCliente(List.of(pedido)).get(pedido.getId()));
     }
 
@@ -1400,11 +1409,25 @@ public class PedidoService {
 
     private PedidoResponseDTO aResponseDTOParaComercio(Pedido pedido) {
         LocalDateTime listoDesde = obtenerFechaEntradaAEstado(pedido, EstadoPedido.LISTO_PARA_RETIRAR);
-        return aResponseDTO(pedido, fechasPagoAprobado(List.of(pedido)).get(pedido.getId()),
+        LocalDateTime fechaPago = fechasPagoAprobado(List.of(pedido)).get(pedido.getId());
+        return aResponseDTO(pedido, fechaPago,
                 ultimasNotasCredito(List.of(pedido)).get(pedido.getId()),
                 esperaNoRetirado(pedido, listoDesde, LocalDateTime.now(clock)),
                 limiteDeResolucionPorSuspension(pedido, listoDesde),
+                limiteRespuestaComercio(pedido, fechaPago),
                 reclamoVistaService.paraDueno(List.of(pedido)).get(pedido.getId()));
+    }
+
+    /**
+     * Hora límite para que el comercio responda un pedido pagado: la entrada a {@code PENDIENTE_CONFIRMACION_COMERCIO}
+     * más el mismo plazo que usa el vencimiento automático ({@code pedido.timeout.respuesta-comercio-minutos}). Solo
+     * existe mientras el pedido está en ese estado; en cualquier otro, {@code null}.
+     */
+    private LocalDateTime limiteRespuestaComercio(Pedido pedido, LocalDateTime fechaPagoAprobado) {
+        if (pedido.getEstado() != EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO || fechaPagoAprobado == null) {
+            return null;
+        }
+        return fechaPagoAprobado.plusMinutes(timeoutProperties.getRespuestaComercioMinutos());
     }
 
     /**
@@ -1431,7 +1454,8 @@ public class PedidoService {
     }
 
     private PedidoResponseDTO aResponseDTO(Pedido pedido, LocalDateTime fechaPagoAprobado, NotaCredito notaCredito,
-            EsperaNoRetirado espera, LocalDateTime limiteResolucionSuspension, ReclamoPedidoResponseDTO reclamo) {
+            EsperaNoRetirado espera, LocalDateTime limiteResolucionSuspension, LocalDateTime limiteRespuestaComercio,
+            ReclamoPedidoResponseDTO reclamo) {
         List<DetallePedidoResponseDTO> detalles = detallePedidoRepository.findByPedidoId(pedido.getId()).stream()
                 .map(this::aResponseDTO)
                 .toList();
@@ -1467,6 +1491,7 @@ public class PedidoService {
                 espera == null ? null : espera.disponibleDesde(),
                 espera == null ? null : espera.minutosRestantes(),
                 limiteResolucionSuspension,
+                limiteRespuestaComercio,
                 pedido.getEstado() == EstadoPedido.PENDIENTE_PAGO && pedido.getComercio().getEstado() == EstadoComercio.SUSPENDIDO,
                 notaCredito == null ? null : notaCredito.getMotivo(),
                 reclamo);

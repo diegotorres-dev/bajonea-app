@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -62,6 +63,10 @@ class NotificacionServiceTest {
                 new ComercioActivoService(comercioRepository, empleadoComercioRepository), Clock.systemDefaultZone());
     }
 
+    private List<NotificacionResponseDTO> listarItems(AuthenticatedUser usuario, String header) {
+        return service.listar(usuario, header, null, null).items();
+    }
+
     private static Notificacion notificacion(int id, Integer comercioId) {
         return Notificacion.builder()
                 .id(id)
@@ -88,58 +93,58 @@ class NotificacionServiceTest {
     @Test
     void elDuenoListaSoloLasDelComercioDelHeader() {
         comercioDelDueno();
-        when(notificacionRepository.findByUsuarioIdAndComercioId(USUARIO_ID, COMERCIO_ID))
+        when(notificacionRepository.findByUsuarioIdAndComercioId(eq(USUARIO_ID), eq(COMERCIO_ID), any(), any(), any()))
                 .thenReturn(List.of(notificacion(1, COMERCIO_ID), notificacion(2, COMERCIO_ID)));
 
-        List<NotificacionResponseDTO> resultado = service.listar(dueno, String.valueOf(COMERCIO_ID));
+        List<NotificacionResponseDTO> resultado = listarItems(dueno, String.valueOf(COMERCIO_ID));
 
         assertEquals(List.of(1, 2), resultado.stream().map(NotificacionResponseDTO::getId).toList());
-        verify(notificacionRepository, never()).findPersonalesPushByUsuarioId(anyInt());
+        verify(notificacionRepository, never()).findPersonalesPushByUsuarioId(anyInt(), any(), any(), any());
     }
 
     @Test
     void elClienteSinHeaderListaSoloLasPersonales() {
-        when(notificacionRepository.findPersonalesPushByUsuarioId(USUARIO_ID)).thenReturn(List.of(notificacion(1, null)));
+        when(notificacionRepository.findPersonalesPushByUsuarioId(eq(USUARIO_ID), any(), any(), any())).thenReturn(List.of(notificacion(1, null)));
 
-        assertEquals(1, service.listar(cliente, null).size());
-        assertEquals(1, service.listar(cliente, "").size());
-        assertEquals(1, service.listar(cliente, "  ").size());
-        verify(notificacionRepository, never()).findByUsuarioIdAndComercioId(anyInt(), anyInt());
+        assertEquals(1, listarItems(cliente, null).size());
+        assertEquals(1, listarItems(cliente, "").size());
+        assertEquals(1, listarItems(cliente, "  ").size());
+        verify(notificacionRepository, never()).findByUsuarioIdAndComercioId(anyInt(), anyInt(), any(), any(), any());
         verifyNoInteractions(comercioRepository);
     }
 
     @Test
     void elClienteConHeaderNoNumericoRecibe400() {
-        assertThrows(ValidacionException.class, () -> service.listar(cliente, "abc"));
+        assertThrows(ValidacionException.class, () -> listarItems(cliente, "abc"));
         assertThrows(ValidacionException.class, () -> service.contarNoLeidas(cliente, "abc"));
-        verify(notificacionRepository, never()).findPersonalesPushByUsuarioId(anyInt());
+        verify(notificacionRepository, never()).findPersonalesPushByUsuarioId(anyInt(), any(), any(), any());
     }
 
     @Test
     void elClienteConHeaderDeUnComercioDondeNoEsEmpleadoActivoRecibeElMismo404EnListarYContador() {
-        assertThrows(ComercioNoDisponibleException.class, () -> service.listar(cliente, String.valueOf(COMERCIO_ID)));
+        assertThrows(ComercioNoDisponibleException.class, () -> listarItems(cliente, String.valueOf(COMERCIO_ID)));
         assertThrows(ComercioNoDisponibleException.class, () -> service.contarNoLeidas(cliente, String.valueOf(COMERCIO_ID)));
-        verify(notificacionRepository, never()).findPersonalesPushByUsuarioId(anyInt());
-        verify(notificacionRepository, never()).findByUsuarioIdAndComercioId(anyInt(), anyInt());
+        verify(notificacionRepository, never()).findPersonalesPushByUsuarioId(anyInt(), any(), any(), any());
+        verify(notificacionRepository, never()).findByUsuarioIdAndComercioId(anyInt(), anyInt(), any(), any(), any());
     }
 
     @Test
     void elEmpleadoActivoConHeaderDeSuComercioListaYCuentaLasNotificacionesDeEseComercio() {
         empleadoActivo();
-        when(notificacionRepository.findByUsuarioIdAndComercioId(USUARIO_ID, COMERCIO_ID)).thenReturn(List.of(notificacion(4, COMERCIO_ID)));
+        when(notificacionRepository.findByUsuarioIdAndComercioId(eq(USUARIO_ID), eq(COMERCIO_ID), any(), any(), any())).thenReturn(List.of(notificacion(4, COMERCIO_ID)));
         when(notificacionRepository.countNoLeidasByUsuarioIdAndComercioId(USUARIO_ID, COMERCIO_ID)).thenReturn(1L);
 
-        assertEquals(List.of(4), service.listar(cliente, String.valueOf(COMERCIO_ID)).stream().map(NotificacionResponseDTO::getId).toList());
+        assertEquals(List.of(4), listarItems(cliente, String.valueOf(COMERCIO_ID)).stream().map(NotificacionResponseDTO::getId).toList());
         assertEquals(1, service.contarNoLeidas(cliente, String.valueOf(COMERCIO_ID)));
-        verify(notificacionRepository, never()).findPersonalesPushByUsuarioId(anyInt());
+        verify(notificacionRepository, never()).findPersonalesPushByUsuarioId(anyInt(), any(), any(), any());
     }
 
     @Test
     void otrosRolesTampocoUsanElHeader() {
-        when(notificacionRepository.findPersonalesPushByUsuarioId(USUARIO_ID)).thenReturn(List.of());
+        when(notificacionRepository.findPersonalesPushByUsuarioId(eq(USUARIO_ID), any(), any(), any())).thenReturn(List.of());
         when(notificacionRepository.countPersonalesPushNoLeidasByUsuarioId(USUARIO_ID)).thenReturn(3L);
 
-        assertTrue(service.listar(admin, "99999").isEmpty());
+        assertTrue(listarItems(admin, "99999").isEmpty());
         assertEquals(3, service.contarNoLeidas(admin, "abc"));
         verifyNoInteractions(comercioRepository);
     }
@@ -148,13 +153,13 @@ class NotificacionServiceTest {
     void elDuenoConUnComercioAjenoRecibe404EnListarYContador() {
         when(comercioRepository.findByIdAndDuenoId(99, USUARIO_ID)).thenReturn(Optional.empty());
 
-        assertThrows(RecursoNoEncontradoException.class, () -> service.listar(dueno, "99"));
+        assertThrows(RecursoNoEncontradoException.class, () -> listarItems(dueno, "99"));
         assertThrows(RecursoNoEncontradoException.class, () -> service.contarNoLeidas(dueno, "99"));
     }
 
     @Test
     void elDuenoConUnHeaderNoNumericoRecibe400() {
-        assertThrows(ValidacionException.class, () -> service.listar(dueno, "abc"));
+        assertThrows(ValidacionException.class, () -> listarItems(dueno, "abc"));
         assertThrows(ValidacionException.class, () -> service.contarNoLeidas(dueno, "12.5"));
     }
 

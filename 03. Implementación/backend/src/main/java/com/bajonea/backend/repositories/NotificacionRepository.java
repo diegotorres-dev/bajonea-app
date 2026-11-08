@@ -6,6 +6,7 @@ import com.bajonea.backend.enums.TipoNotificacion;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -59,9 +60,19 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Inte
             SELECT n FROM Notificacion n
             WHERE n.usuario.id = :usuarioId AND n.canal = com.bajonea.backend.enums.CanalNotificacion.PUSH
               AND n.comercioId IS NULL
+              AND (n.fechaCreacion < :fecha OR (n.fechaCreacion = :fecha AND n.id < :id))
             ORDER BY n.fechaCreacion DESC, n.id DESC
             """)
-    List<Notificacion> findPersonalesPushByUsuarioId(@Param("usuarioId") Integer usuarioId);
+    List<Notificacion> findPersonalesPushByUsuarioId(@Param("usuarioId") Integer usuarioId, @Param("fecha") LocalDateTime fecha,
+            @Param("id") Integer id, Pageable pagina);
+
+    @Query("""
+            SELECT n.id FROM Notificacion n
+            WHERE n.usuario.id = :usuarioId AND n.comercioId IS NULL AND n.leida = false
+              AND n.canal = com.bajonea.backend.enums.CanalNotificacion.PUSH
+            ORDER BY n.id
+            """)
+    List<Integer> findIdsPersonalesPushNoLeidasByUsuarioId(@Param("usuarioId") Integer usuarioId);
 
     @Query("""
             SELECT COUNT(n) FROM Notificacion n
@@ -82,10 +93,12 @@ public interface NotificacionRepository extends JpaRepository<Notificacion, Inte
             SELECT n FROM Notificacion n
             WHERE n.usuario.id = :usuarioId AND n.comercioId = :comercioId
               AND n.canal = com.bajonea.backend.enums.CanalNotificacion.PUSH
+              AND (n.fechaCreacion < :fecha OR (n.fechaCreacion = :fecha AND n.id < :id))
             ORDER BY n.fechaCreacion DESC, n.id DESC
             """)
     List<Notificacion> findByUsuarioIdAndComercioId(@Param("usuarioId") Integer usuarioId,
-            @Param("comercioId") Integer comercioId);
+            @Param("comercioId") Integer comercioId, @Param("fecha") LocalDateTime fecha, @Param("id") Integer id,
+            Pageable pagina);
 
     @Query("""
             SELECT COUNT(n) FROM Notificacion n

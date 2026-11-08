@@ -121,8 +121,11 @@ test.describe('Fase 5, S4 (UI B): Soporte sin sesión', () => {
   });
 
   test.describe('Consulta enviada', () => {
-    test('muestra el código, copia con un toast, y "Ver mi consulta" abre la conversación sin pedir nada y limpia la URL', async ({ page, context }) => {
-      await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    test('muestra el código, copia con un toast, y "Ver mi consulta" abre la conversación sin pedir nada y limpia la URL', async ({ page, context, browserName }) => {
+      const permiteLeerElPortapapeles = browserName === 'chromium';
+      if (permiteLeerElPortapapeles) {
+        await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+      }
       const email = emailUnico();
       await conIp(page, ipNueva());
       await page.goto('/soporte.html?tipo=NO_PUEDO_ENTRAR');
@@ -144,7 +147,9 @@ test.describe('Fase 5, S4 (UI B): Soporte sin sesión', () => {
 
       await page.getByTestId('btn-copiar-codigo').click();
       await expect(page.locator('.toast')).toContainText('Código copiado');
-      expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(codigo);
+      if (permiteLeerElPortapapeles) {
+        expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(codigo);
+      }
 
       await page.getByTestId('btn-ver-mi-consulta').click();
       await expect(page.getByTestId('cabecera-consulta')).toBeVisible();

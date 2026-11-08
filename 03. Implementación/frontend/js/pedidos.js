@@ -2,6 +2,7 @@ import { apiFetch, ApiError, getUsuario } from './api.js';
 import { exigirContextoCliente } from './contexto.js';
 import { renderTopBar, renderBottomNav, pintarAvatarComercio, renderPedidoEstadoHeader, showToast } from './catalogo.js';
 import { normalizarCampos } from './validators.js';
+import { abrirHoja } from './hoja.js';
 import { crearBloqueReclamoCliente, crearChipReclamoDeLista, fechaDelReclamo } from './reclamos-comun.js';
 
 function normalizarPedido(pedido) {
@@ -243,7 +244,7 @@ function renderEstadoDot(pedido) {
   return span;
 }
 
-function renderEmptyState(container, titulo, texto, icono) {
+function renderEmptyState(container, titulo, texto, icono, accion = { texto: 'Explorar comercios', href: 'index.html', testid: 'btn-explorar-comercios' }) {
   container.innerHTML = '';
   const wrapper = crear('div', 'state-page');
   wrapper.setAttribute('data-testid', 'estado-vacio');
@@ -261,9 +262,9 @@ function renderEmptyState(container, titulo, texto, icono) {
   const actions = crear('div', 'state-page__actions');
   const cta = document.createElement('a');
   cta.className = 'btn btn-primary';
-  cta.href = 'index.html';
-  cta.setAttribute('data-testid', 'btn-explorar-comercios');
-  cta.textContent = 'Explorar comercios';
+  cta.href = accion.href;
+  cta.setAttribute('data-testid', accion.testid);
+  cta.textContent = accion.texto;
   actions.appendChild(cta);
   wrapper.appendChild(actions);
   container.appendChild(wrapper);
@@ -371,27 +372,77 @@ function renderNoEncontrado(container) {
     'No encontramos este pedido',
     'El pedido que buscás no existe o no pertenece a tu cuenta.',
     ICONS.alert,
+    { texto: 'Ver mis pedidos', href: 'pedidos.html', testid: 'btn-ver-mis-pedidos' },
   );
+}
+
+function abrirHojaDeAccionCliente({ endpoint, titulo, parrafos, etiqueta, etiquetaEnviando, variante, testid, mensajeExito, onActualizado, disparador }) {
+  abrirHoja({
+    disparador,
+    titulo,
+    parrafos,
+    testid: `hoja-${testid}`,
+    acciones: [
+      {
+        etiqueta,
+        etiquetaEnviando,
+        variante,
+        testid: `btn-confirmar-${testid}`,
+        alPulsar: async () => {
+          const actualizado = await apiFetch(endpoint, { method: 'PUT' });
+          normalizarPedido(actualizado);
+          showToast(actualizado.reembolsoEstado ? `${mensajeExito}. Estamos gestionando la devolución de tu pago.` : mensajeExito);
+          onActualizado(actualizado);
+        },
+      },
+      { etiqueta: 'Volver', variante: 'segura', inicial: true, testid: 'btn-volver-hoja' },
+    ],
+  });
+}
+
+function abrirHojaCancelarPedido(pedido, onActualizado, disparador) {
+  const yaPagado = pedido.estado !== 'PENDIENTE_PAGO';
+  abrirHojaDeAccionCliente({
+    endpoint: `/pedidos/cliente/${pedido.id}/cancelar`,
+    titulo: `¿Cancelar el pedido #${pedido.id}?`,
+    parrafos: [
+      yaPagado
+        ? `Ya lo pagaste. Si lo cancelás, te devolvemos los ${formatearPrecio(pedido.total)} a Mercado Pago. Puede demorar en verse en tu cuenta.`
+        : 'Todavía no lo pagaste, así que no se te cobra nada.',
+    ],
+    etiqueta: 'Sí, cancelar pedido',
+    etiquetaEnviando: 'Cancelando…',
+    variante: 'peligro',
+    testid: 'cancelar-pedido',
+    mensajeExito: 'Pedido cancelado',
+    onActualizado,
+    disparador,
+  });
+}
+
+function abrirHojaConfirmarRecepcion(pedido, onActualizado, disparador) {
+  abrirHojaDeAccionCliente({
+    endpoint: `/pedidos/cliente/${pedido.id}/entregar`,
+    titulo: '¿Ya tenés tu pedido?',
+    parrafos: ['Si no lo recibiste, no lo confirmes todavía.'],
+    etiqueta: 'Sí, lo recibí',
+    etiquetaEnviando: 'Confirmando…',
+    variante: 'primaria',
+    testid: 'confirmar-recepcion',
+    mensajeExito: 'Entrega confirmada',
+    onActualizado,
+    disparador,
+  });
+}
+
+const ESTADOS_FINALES_PEDIDO = new Set(['ENTREGADO', 'CANCELADO', 'CANCELADO_POR_SISTEMA', 'RECHAZADO', 'ANULADO', 'EXPIRADO', 'NO_RETIRADO']);
+
+function firmaDelPedido(pedido) {
+  return [pedido.estado, pedido.pagoEstado, pedido.comercioNoDisponible, pedido.reembolsoEstado].join('|');
 }
 
 function renderAccionesCliente(container, pedido, onActualizado, { procesando = false } = {}) {
   container.innerHTML = '';
-
-  async function ejecutar(boton, endpoint, textoCargando, mensajeExito, mensajeError) {
-    boton.disabled = true;
-    const original = boton.textContent;
-    boton.textContent = textoCargando;
-    try {
-      const actualizado = await apiFetch(endpoint, { method: 'PUT' });
-      normalizarPedido(actualizado);
-      showToast(actualizado.reembolsoEstado ? `${mensajeExito}. Estamos gestionando la devolución de tu pago.` : mensajeExito);
-      onActualizado(actualizado);
-    } catch (error) {
-      showToast(error instanceof ApiError ? error.message : mensajeError, 'error');
-      boton.disabled = false;
-      boton.textContent = original;
-    }
-  }
 
   if (pedido.estado === 'PENDIENTE_PAGO') {
     if (pedido.pagoEstado === 'PAGADO') {
@@ -415,8 +466,7 @@ function renderAccionesCliente(container, pedido, onActualizado, { procesando = 
       cancelarSinPagar.style.color = 'var(--color-error)';
       cancelarSinPagar.setAttribute('data-testid', 'btn-cancelar-pedido');
       cancelarSinPagar.textContent = 'Cancelar pedido';
-      cancelarSinPagar.addEventListener('click', () => ejecutar(cancelarSinPagar, `/pedidos/cliente/${pedido.id}/cancelar`,
-        'Cancelando...', 'Pedido cancelado', 'No pudimos cancelar el pedido'));
+      cancelarSinPagar.addEventListener('click', (evento) => abrirHojaCancelarPedido(pedido, onActualizado, evento.currentTarget));
       container.appendChild(cancelarSinPagar);
       return;
     }
@@ -468,8 +518,7 @@ function renderAccionesCliente(container, pedido, onActualizado, { procesando = 
     cancelarBtn.style.color = 'var(--color-error)';
     cancelarBtn.setAttribute('data-testid', 'btn-cancelar-pedido');
     cancelarBtn.textContent = 'Cancelar pedido';
-    cancelarBtn.addEventListener('click', () => ejecutar(cancelarBtn, `/pedidos/cliente/${pedido.id}/cancelar`,
-      'Cancelando...', 'Pedido cancelado', 'No pudimos cancelar el pedido'));
+    cancelarBtn.addEventListener('click', (evento) => abrirHojaCancelarPedido(pedido, onActualizado, evento.currentTarget));
     container.appendChild(cancelarBtn);
     return;
   }
@@ -479,8 +528,7 @@ function renderAccionesCliente(container, pedido, onActualizado, { procesando = 
     entregarBtn.type = 'button';
     entregarBtn.setAttribute('data-testid', 'btn-confirmar-entrega');
     entregarBtn.textContent = 'Confirmar que recibí mi pedido';
-    entregarBtn.addEventListener('click', () => ejecutar(entregarBtn, `/pedidos/cliente/${pedido.id}/entregar`,
-      'Confirmando...', 'Entrega confirmada', 'No pudimos confirmar la entrega'));
+    entregarBtn.addEventListener('click', (evento) => abrirHojaConfirmarRecepcion(pedido, onActualizado, evento.currentTarget));
     container.appendChild(entregarBtn);
   }
 }
@@ -554,8 +602,8 @@ export async function initPedidoDetalle() {
     return;
   }
 
-  async function cargarPedido() {
-    const lista = await apiFetch('/pedidos/cliente');
+  async function cargarPedido(opciones) {
+    const lista = await apiFetch('/pedidos/cliente', opciones);
     lista.forEach(normalizarPedido);
     return lista.find((p) => p.id === pedidoId);
   }
@@ -715,12 +763,12 @@ export async function initPedidoDetalle() {
 
   if (!vueltaMp) {
     window.setInterval(async () => {
-      if (document.hidden || pedido.estado !== 'PENDIENTE_PAGO') {
+      if (document.hidden || ESTADOS_FINALES_PEDIDO.has(pedido.estado)) {
         return;
       }
       try {
-        const vigente = await cargarPedido();
-        if (vigente && (vigente.estado !== pedido.estado || vigente.comercioNoDisponible !== pedido.comercioNoDisponible)) {
+        const vigente = await cargarPedido({ segundoPlano: true });
+        if (vigente && firmaDelPedido(vigente) !== firmaDelPedido(pedido)) {
           pedido = vigente;
           renderActual();
         }

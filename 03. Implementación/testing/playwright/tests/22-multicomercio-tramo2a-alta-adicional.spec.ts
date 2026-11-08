@@ -612,7 +612,7 @@ test.describe('Multi-comercio, tramo 2A: alta adicional, aprobación y bandeja d
       expect(historial[0]).toMatch(/^PENDIENTE>RECHAZADO\|\d+\|/);
       expect(historial[0].endsWith(`|${motivo}`)).toBe(true);
       const notificaciones = await notificacionesDelComercio(request, dueno.token, adicional.id);
-      expect(notificaciones[0].mensaje).toBe(`Tu comercio ${adicional.nombre} fue rechazado. Motivo: ${motivo}`);
+      expect(notificaciones[0].mensaje).toBe(`Tu comercio ${adicional.nombre} fue rechazado. Motivo: ${motivo}. Corregilo y volvé a solicitarlo.`);
       expect(sql(`SELECT tipo FROM notificacion WHERE id = ${notificaciones[0].id};`)).toBe('COMERCIO_RECHAZADO');
       expect(estadosOtros(dueno.duenoId, adicional.id)).toBe(otrosAntes);
       expect(sql(`SELECT estado FROM usuario WHERE id = ${dueno.duenoId};`)).toBe(usuarioAntes);

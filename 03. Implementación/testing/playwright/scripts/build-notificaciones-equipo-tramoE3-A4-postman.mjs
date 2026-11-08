@@ -163,9 +163,9 @@ const conLosAvisos = (...lineas) => ['const d = pm.response.json().data;', ...li
 const tieneAviso = (clave, regex, descripcion) => `pm.test('Tiene el aviso ${descripcion} del pedido ${clave}', () => pm.expect(${aviso(clave, regex)}).to.exist);`;
 const noTieneAviso = (clave, regex, descripcion) => `pm.test('No tiene el aviso ${descripcion} del pedido ${clave}', () => pm.expect(${aviso(clave, regex)}).to.not.exist);`;
 const cantidadDe = (n) => `pm.test('La lista tiene ${n} avisos', () => pm.expect(d.length).to.eql(${n}));`;
-const NUEVO = '/Nuevo pedido recibido/';
+const NUEVO = '/Pedido nuevo #/';
 const CANCELO = '/cancel/';
-const EXPIRO = '/expir/';
+const EXPIRO = '/nadie lo respondió/';
 
 const lista = (nombre, token, comercio, lineas, codigo = 200) =>
   item(nombre, req('GET', '/notificaciones', { token, comercio }), [status(codigo), ...(codigo === 200 ? conLosAvisos(...lineas) : lineas)]);
@@ -265,7 +265,7 @@ agregar(
   ...pedidoPagado('uno'),
   lista('Una copia por persona: el Dueño ve el aviso del pedido nuevo (y sus avisos de administracion: aprobacion y dos altas del equipo)', T_DUENO, COM, [
     tieneAviso('uno', NUEVO, 'de pedido nuevo'),
-    "pm.test('Tiene una sola copia del pedido nuevo', () => pm.expect(d.filter((a) => /Nuevo pedido recibido/.test(a.mensaje)).length).to.eql(1));",
+    "pm.test('Tiene una sola copia del pedido nuevo', () => pm.expect(d.filter((a) => /Pedido nuevo #/.test(a.mensaje)).length).to.eql(1));",
     "pm.test('Tiene ademas los tres avisos de administracion del comercio', () => pm.expect(d.filter((a) => a.entidadTipo === 'COMERCIO').length).to.eql(3));",
     guardarAviso(v('d_aviso'), 'uno', NUEVO),
   ]),
@@ -354,7 +354,7 @@ agregar(
   lista('Expiracion: Gina lo recibe', T_GINA, COM, [tieneAviso('expira', EXPIRO, 'de expiracion')]),
   lista('Expiracion: la Compradora recibe su propio aviso, sin header, y no el del equipo', T_CARLA, undefined, [
     tieneAviso('expira', "/no respondi/", 'personal de expiracion'),
-    `pm.test('Ningun aviso personal es del equipo', () => pm.expect(d.some((a) => /Nuevo pedido recibido|expiró por falta de respuesta|canceló el pedido/.test(a.mensaje))).to.be.false);`,
+    `pm.test('Ningun aviso personal es del equipo', () => pm.expect(d.some((a) => /Pedido nuevo #|nadie lo respondió a tiempo|canceló el pedido/.test(a.mensaje))).to.be.false);`,
   ]),
 );
 
@@ -409,7 +409,7 @@ agregar(
   item('Empleado comprador: el Dueño acepta el pedido de Elena', req('PUT', `/pedidos/comercio/${P('propio')}/aceptar`, { token: T_DUENO, comercio: COM, body: {} }), [status(200)]),
   lista('Empleado comprador: su campana de Cliente (sin header) trae el aviso de comprador', T_ELENA, undefined, [
     "pm.test('Tiene el aviso de aceptacion de su pedido', () => pm.expect(d.some((a) => a.entidadId === Number(pm.environment.get('na_ped_propio')) && /fue aceptado/.test(a.mensaje))).to.be.true);",
-    `pm.test('No mezcla ningun aviso del equipo', () => pm.expect(d.some((a) => /Nuevo pedido recibido|expiró por falta de respuesta|canceló el pedido|fue suspendido/.test(a.mensaje))).to.be.false);`,
+    `pm.test('No mezcla ningun aviso del equipo', () => pm.expect(d.some((a) => /Pedido nuevo #|nadie lo respondió a tiempo|canceló el pedido|fue suspendido/.test(a.mensaje))).to.be.false);`,
   ]),
   lista('Empleado comprador: con el comercio abierto no aparece el aviso de comprador', T_ELENA, COM, [
     "pm.test('Ninguno es de aceptacion de su pedido', () => pm.expect(d.some((a) => /fue aceptado/.test(a.mensaje))).to.be.false);",

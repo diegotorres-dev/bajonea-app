@@ -644,8 +644,10 @@ test.describe('Empleado: renuncia, pérdida de acceso según la causa y avisos, 
         await expect(aviso.locator('.notification-item__texto')).toBeVisible();
         await expect(aviso.locator('.notification-item__fecha')).toBeVisible();
         await expect(aviso.locator('.notification-item__dot')).toHaveCount(1);
-        await expect(aviso.locator('a')).toHaveCount(0);
       }
+      expect(await baja.evaluate((nodo) => nodo.tagName)).toBe('BUTTON');
+      expect(await reactivacion.evaluate((nodo) => nodo.tagName)).toBe('A');
+      await expect(reactivacion).toHaveAttribute('href', 'seleccionar-contexto.html');
       await expect(baja).not.toHaveClass(/notification-item--leida/);
       await sinScrollHorizontal(page);
       await capturar(page, 'avisos-t32-t37');
@@ -658,14 +660,17 @@ test.describe('Empleado: renuncia, pérdida de acceso según la causa y avisos, 
       });
       const urlAntes = page.url();
       await baja.click();
-      await reactivacion.click();
 
       await expect(baja).toHaveClass(/notification-item--leida/);
-      await expect(reactivacion).toHaveClass(/notification-item--leida/);
       await page.waitForTimeout(600);
       expect(page.url()).toBe(urlAntes);
       expect(comerciosPedidos).toEqual([]);
       await expect(page.getByTestId('aviso-acceso-perdido')).toHaveCount(0);
+
+      await reactivacion.click();
+      await page.waitForURL('**/seleccionar-contexto.html');
+      await page.goto('/notificaciones.html');
+      await expect(page.locator('.notification-item', { hasText: `${comercio.nombre} te reactivó en el equipo. Ya podés volver a trabajar ahí.` })).toHaveClass(/notification-item--leida/);
     });
 
     test('T37 coincide con el texto que arma el servidor para la reactivación', async ({ request }) => {

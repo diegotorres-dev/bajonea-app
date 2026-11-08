@@ -46,7 +46,9 @@ test.describe('Notificaciones in-app', () => {
     );
     await notificacion.click();
     await marcarLeidaResponse;
+    await page.waitForURL('**/comercio-dashboard.html');
 
-    await expect(notificacion).toHaveClass(/notification-item--leida/);
+    await page.goto('/notificaciones.html');
+    await expect(page.locator('[data-testid^="notificacion-item-"]').first()).toHaveClass(/notification-item--leida/);
   });
 });

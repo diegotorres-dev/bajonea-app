@@ -48229,7 +48229,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const n = pm.response.json().data.filter((x) => x.entidadTipo === 'COMERCIO' && x.entidadId === Number(pm.environment.get('alta_p_e_id')));",
-                  "pm.test('Hay una notificacion con el texto esperado', () => { pm.expect(n).to.have.length(1); pm.expect(n[0].mensaje).to.eql('Tu comercio ' + pm.environment.get('alta_p_e_nombre') + ' fue rechazado. Motivo: Motivo de rechazo de Postman'); });"
+                  "pm.test('Hay una notificacion con el texto esperado', () => { pm.expect(n).to.have.length(1); pm.expect(n[0].mensaje).to.eql('Tu comercio ' + pm.environment.get('alta_p_e_nombre') + ' fue rechazado. Motivo: Motivo de rechazo de Postman. Corregilo y volvé a solicitarlo.'); });"
                 ]
               }
             }
@@ -50996,7 +50996,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const n = pm.response.json().data.filter((x) => x.entidadTipo === 'COMERCIO' && x.entidadId === Number(pm.environment.get('rK_com'))).map((x) => x.mensaje);",
-                  "pm.test('Hay una notificacion con el texto esperado', () => pm.expect(n).to.include('Tu comercio ' + pm.environment.get('rK_nombre_nuevo') + ' fue rechazado. Motivo: Segundo rechazo K'));"
+                  "pm.test('Hay una notificacion con el texto esperado', () => pm.expect(n).to.include('Tu comercio ' + pm.environment.get('rK_nombre_nuevo') + ' fue rechazado. Motivo: Segundo rechazo K. Corregilo y volvé a solicitarlo.'));"
                 ]
               }
             }
@@ -54097,7 +54097,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const n = pm.response.json().data.filter((x) => x.entidadTipo === 'COMERCIO' && x.entidadId === Number(pm.environment.get('rO_com'))).map((x) => x.mensaje);",
-                  "pm.test('Hay una notificacion con el texto esperado', () => pm.expect(n).to.include('Tu comercio ' + pm.environment.get('rO_nombre') + ' fue rechazado. Motivo: Rechazo 2'));"
+                  "pm.test('Hay una notificacion con el texto esperado', () => pm.expect(n).to.include('Tu comercio ' + pm.environment.get('rO_nombre') + ' fue rechazado. Motivo: Rechazo 2. Corregilo y volvé a solicitarlo.'));"
                 ]
               }
             }
@@ -98068,10 +98068,10 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
-                  "pm.test('Tiene el aviso de pedido nuevo del pedido uno', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Nuevo pedido recibido/.test(a.mensaje))).to.exist);",
-                  "pm.test('Tiene una sola copia del pedido nuevo', () => pm.expect(d.filter((a) => /Nuevo pedido recibido/.test(a.mensaje)).length).to.eql(1));",
+                  "pm.test('Tiene el aviso de pedido nuevo del pedido uno', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Pedido nuevo #/.test(a.mensaje))).to.exist);",
+                  "pm.test('Tiene una sola copia del pedido nuevo', () => pm.expect(d.filter((a) => /Pedido nuevo #/.test(a.mensaje)).length).to.eql(1));",
                   "pm.test('Tiene ademas los tres avisos de administracion del comercio', () => pm.expect(d.filter((a) => a.entidadTipo === 'COMERCIO').length).to.eql(3));",
-                  "pm.environment.set('na_d_aviso', d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Nuevo pedido recibido/.test(a.mensaje)).id);"
+                  "pm.environment.set('na_d_aviso', d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Pedido nuevo #/.test(a.mensaje)).id);"
                 ]
               }
             }
@@ -98110,9 +98110,9 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
-                  "pm.test('Tiene el aviso de pedido nuevo del pedido uno', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Nuevo pedido recibido/.test(a.mensaje))).to.exist);",
+                  "pm.test('Tiene el aviso de pedido nuevo del pedido uno', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Pedido nuevo #/.test(a.mensaje))).to.exist);",
                   "pm.test('La lista tiene 1 avisos', () => pm.expect(d.length).to.eql(1));",
-                  "pm.environment.set('na_e_aviso', d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Nuevo pedido recibido/.test(a.mensaje)).id);"
+                  "pm.environment.set('na_e_aviso', d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Pedido nuevo #/.test(a.mensaje)).id);"
                 ]
               }
             }
@@ -98151,9 +98151,9 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
-                  "pm.test('Tiene el aviso de pedido nuevo del pedido uno', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Nuevo pedido recibido/.test(a.mensaje))).to.exist);",
+                  "pm.test('Tiene el aviso de pedido nuevo del pedido uno', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Pedido nuevo #/.test(a.mensaje))).to.exist);",
                   "pm.test('La lista tiene 1 avisos', () => pm.expect(d.length).to.eql(1));",
-                  "pm.environment.set('na_f_aviso', d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Nuevo pedido recibido/.test(a.mensaje)).id);"
+                  "pm.environment.set('na_f_aviso', d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Pedido nuevo #/.test(a.mensaje)).id);"
                 ]
               }
             }
@@ -98226,7 +98226,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
-                  "pm.test('No tiene el aviso de pedido nuevo del pedido uno', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Nuevo pedido recibido/.test(a.mensaje))).to.not.exist);",
+                  "pm.test('No tiene el aviso de pedido nuevo del pedido uno', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Pedido nuevo #/.test(a.mensaje))).to.not.exist);",
                   "pm.test('La lista tiene 0 avisos', () => pm.expect(d.length).to.eql(0));"
                 ]
               }
@@ -98822,7 +98822,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
-                  "pm.test('Tiene el aviso de pedido nuevo del pedido uno', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Nuevo pedido recibido/.test(a.mensaje))).to.exist);",
+                  "pm.test('Tiene el aviso de pedido nuevo del pedido uno', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Pedido nuevo #/.test(a.mensaje))).to.exist);",
                   "pm.test('La lista tiene 1 avisos', () => pm.expect(d.length).to.eql(1));"
                 ]
               }
@@ -99579,8 +99579,8 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
-                  "pm.test('Tiene el aviso de pedido nuevo del pedido dos', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_dos')) && /Nuevo pedido recibido/.test(a.mensaje))).to.exist);",
-                  "pm.test('No tiene el aviso de pedido nuevo del pedido uno', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Nuevo pedido recibido/.test(a.mensaje))).to.not.exist);",
+                  "pm.test('Tiene el aviso de pedido nuevo del pedido dos', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_dos')) && /Pedido nuevo #/.test(a.mensaje))).to.exist);",
+                  "pm.test('No tiene el aviso de pedido nuevo del pedido uno', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Pedido nuevo #/.test(a.mensaje))).to.not.exist);",
                   "pm.test('La lista tiene 1 avisos', () => pm.expect(d.length).to.eql(1));"
                 ]
               }
@@ -99620,8 +99620,8 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
-                  "pm.test('Tiene el aviso de pedido nuevo del pedido uno', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Nuevo pedido recibido/.test(a.mensaje))).to.exist);",
-                  "pm.test('Tiene el aviso de pedido nuevo del pedido dos', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_dos')) && /Nuevo pedido recibido/.test(a.mensaje))).to.exist);",
+                  "pm.test('Tiene el aviso de pedido nuevo del pedido uno', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Pedido nuevo #/.test(a.mensaje))).to.exist);",
+                  "pm.test('Tiene el aviso de pedido nuevo del pedido dos', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_dos')) && /Pedido nuevo #/.test(a.mensaje))).to.exist);",
                   "pm.test('La lista tiene 2 avisos', () => pm.expect(d.length).to.eql(2));"
                 ]
               }
@@ -100159,7 +100159,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
-                  "pm.test('Tiene el aviso de pedido nuevo del pedido tres', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_tres')) && /Nuevo pedido recibido/.test(a.mensaje))).to.exist);"
+                  "pm.test('Tiene el aviso de pedido nuevo del pedido tres', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_tres')) && /Pedido nuevo #/.test(a.mensaje))).to.exist);"
                 ]
               }
             }
@@ -100198,7 +100198,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
-                  "pm.test('Tiene el aviso de pedido nuevo del pedido tres', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_tres')) && /Nuevo pedido recibido/.test(a.mensaje))).to.exist);"
+                  "pm.test('Tiene el aviso de pedido nuevo del pedido tres', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_tres')) && /Pedido nuevo #/.test(a.mensaje))).to.exist);"
                 ]
               }
             }
@@ -100730,9 +100730,9 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
-                  "pm.test('Tiene el aviso de pedido nuevo del pedido cuatro', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_cuatro')) && /Nuevo pedido recibido/.test(a.mensaje))).to.exist);",
-                  "pm.test('No tiene el aviso de pedido nuevo del pedido uno', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Nuevo pedido recibido/.test(a.mensaje))).to.not.exist);",
-                  "pm.test('No tiene el aviso de pedido nuevo del pedido tres', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_tres')) && /Nuevo pedido recibido/.test(a.mensaje))).to.not.exist);",
+                  "pm.test('Tiene el aviso de pedido nuevo del pedido cuatro', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_cuatro')) && /Pedido nuevo #/.test(a.mensaje))).to.exist);",
+                  "pm.test('No tiene el aviso de pedido nuevo del pedido uno', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_uno')) && /Pedido nuevo #/.test(a.mensaje))).to.not.exist);",
+                  "pm.test('No tiene el aviso de pedido nuevo del pedido tres', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_tres')) && /Pedido nuevo #/.test(a.mensaje))).to.not.exist);",
                   "pm.test('La lista tiene 1 avisos', () => pm.expect(d.length).to.eql(1));"
                 ]
               }
@@ -101484,7 +101484,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
-                  "pm.test('Tiene el aviso de expiracion del pedido expira', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_expira')) && /expir/.test(a.mensaje))).to.exist);"
+                  "pm.test('Tiene el aviso de expiracion del pedido expira', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_expira')) && /nadie lo respondió/.test(a.mensaje))).to.exist);"
                 ]
               }
             }
@@ -101523,7 +101523,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
-                  "pm.test('Tiene el aviso de expiracion del pedido expira', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_expira')) && /expir/.test(a.mensaje))).to.exist);"
+                  "pm.test('Tiene el aviso de expiracion del pedido expira', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_expira')) && /nadie lo respondió/.test(a.mensaje))).to.exist);"
                 ]
               }
             }
@@ -101562,7 +101562,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
-                  "pm.test('Tiene el aviso de expiracion del pedido expira', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_expira')) && /expir/.test(a.mensaje))).to.exist);"
+                  "pm.test('Tiene el aviso de expiracion del pedido expira', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_expira')) && /nadie lo respondió/.test(a.mensaje))).to.exist);"
                 ]
               }
             }
@@ -101598,7 +101598,7 @@
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
                   "pm.test('Tiene el aviso personal de expiracion del pedido expira', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_expira')) && /no respondi/.test(a.mensaje))).to.exist);",
-                  "pm.test('Ningun aviso personal es del equipo', () => pm.expect(d.some((a) => /Nuevo pedido recibido|expiró por falta de respuesta|canceló el pedido/.test(a.mensaje))).to.be.false);"
+                  "pm.test('Ningun aviso personal es del equipo', () => pm.expect(d.some((a) => /Pedido nuevo #|nadie lo respondió a tiempo|canceló el pedido/.test(a.mensaje))).to.be.false);"
                 ]
               }
             }
@@ -101923,8 +101923,8 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
-                  "pm.test('Tiene el aviso de pedido nuevo del pedido clon', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_clon')) && /Nuevo pedido recibido/.test(a.mensaje))).to.exist);",
-                  "pm.test('No tiene el aviso de pedido nuevo del pedido dos', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_dos')) && /Nuevo pedido recibido/.test(a.mensaje))).to.not.exist);",
+                  "pm.test('Tiene el aviso de pedido nuevo del pedido clon', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_clon')) && /Pedido nuevo #/.test(a.mensaje))).to.exist);",
+                  "pm.test('No tiene el aviso de pedido nuevo del pedido dos', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_dos')) && /Pedido nuevo #/.test(a.mensaje))).to.not.exist);",
                   "pm.test('La lista tiene 1 avisos', () => pm.expect(d.length).to.eql(1));"
                 ]
               }
@@ -101964,7 +101964,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
-                  "pm.test('No tiene el aviso de pedido nuevo del pedido clon', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_clon')) && /Nuevo pedido recibido/.test(a.mensaje))).to.not.exist);"
+                  "pm.test('No tiene el aviso de pedido nuevo del pedido clon', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_clon')) && /Pedido nuevo #/.test(a.mensaje))).to.not.exist);"
                 ]
               }
             }
@@ -102788,7 +102788,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
-                  "pm.test('No tiene el aviso de pedido nuevo del pedido propio', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_propio')) && /Nuevo pedido recibido/.test(a.mensaje))).to.not.exist);"
+                  "pm.test('No tiene el aviso de pedido nuevo del pedido propio', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_propio')) && /Pedido nuevo #/.test(a.mensaje))).to.not.exist);"
                 ]
               }
             }
@@ -102827,7 +102827,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
-                  "pm.test('Tiene el aviso de pedido nuevo del pedido propio', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_propio')) && /Nuevo pedido recibido/.test(a.mensaje))).to.exist);"
+                  "pm.test('Tiene el aviso de pedido nuevo del pedido propio', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_propio')) && /Pedido nuevo #/.test(a.mensaje))).to.exist);"
                 ]
               }
             }
@@ -102866,7 +102866,7 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
-                  "pm.test('Tiene el aviso de pedido nuevo del pedido propio', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_propio')) && /Nuevo pedido recibido/.test(a.mensaje))).to.exist);"
+                  "pm.test('Tiene el aviso de pedido nuevo del pedido propio', () => pm.expect(d.find((a) => a.entidadId === Number(pm.environment.get('na_ped_propio')) && /Pedido nuevo #/.test(a.mensaje))).to.exist);"
                 ]
               }
             }
@@ -102955,7 +102955,7 @@
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const d = pm.response.json().data;",
                   "pm.test('Tiene el aviso de aceptacion de su pedido', () => pm.expect(d.some((a) => a.entidadId === Number(pm.environment.get('na_ped_propio')) && /fue aceptado/.test(a.mensaje))).to.be.true);",
-                  "pm.test('No mezcla ningun aviso del equipo', () => pm.expect(d.some((a) => /Nuevo pedido recibido|expiró por falta de respuesta|canceló el pedido|fue suspendido/.test(a.mensaje))).to.be.false);"
+                  "pm.test('No mezcla ningun aviso del equipo', () => pm.expect(d.some((a) => /Pedido nuevo #|nadie lo respondió a tiempo|canceló el pedido|fue suspendido/.test(a.mensaje))).to.be.false);"
                 ]
               }
             }
@@ -188210,7 +188210,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test(\"Tres avisos\", () => { const n = pm.response.json().data.filter((x) => x.tipo === 'PEDIDO_RECHAZADO'); pm.expect(n.length).to.eql(3); n.forEach((x) => { pm.expect(x.mensaje).to.eql('Tu pedido se canceló porque el comercio no está disponible. Te devolvemos el dinero.'); pm.expect(x.mensaje).to.not.match(/SUSPENDIDO|RECHAZADO|PENDIENTE/); }); });"
+                  "pm.test(\"Tres avisos\", () => { const n = pm.response.json().data.filter((x) => x.tipo === 'PEDIDO_RECHAZADO'); pm.expect(n.length).to.eql(3); n.forEach((x) => { pm.expect(x.mensaje).to.include('porque el comercio no está disponible. Te devolvemos el dinero.'); pm.expect(x.mensaje).to.not.match(/SUSPENDIDO|RECHAZADO|PENDIENTE/); }); });"
                 ]
               }
             }
@@ -189138,7 +189138,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test(\"Cinco avisos\", () => { const n = pm.response.json().data.filter((x) => x.tipo === 'PEDIDO_RECHAZADO'); pm.expect(n.length).to.eql(5); pm.expect(n.filter((x) => x.mensaje === 'Tu pedido se canceló porque el comercio no está disponible. Te devolvemos el dinero.').length).to.eql(4); });"
+                  "pm.test(\"Cinco avisos\", () => { const n = pm.response.json().data.filter((x) => x.tipo === 'PEDIDO_RECHAZADO'); pm.expect(n.length).to.eql(5); pm.expect(n.filter((x) => x.mensaje.endsWith('porque el comercio no está disponible. Te devolvemos el dinero.')).length).to.eql(4); });"
                 ]
               }
             }
@@ -193381,7 +193381,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test(\"Cuatro avisos\", () => { const t = 'Tu pedido se canceló porque el comercio no está disponible. Te devolvemos el dinero.'; const n = pm.response.json().data.filter((x) => x.mensaje === t); pm.expect(n.length).to.eql(4); n.forEach((x) => pm.expect(x.mensaje).to.not.match(/SUSPENDIDO|RECHAZADO|PENDIENTE|ANULADO/)); });"
+                  "pm.test(\"Cuatro avisos\", () => { const t = 'porque el comercio no está disponible. Te devolvemos el dinero.'; const n = pm.response.json().data.filter((x) => x.mensaje.endsWith(t)); pm.expect(n.length).to.eql(4); n.forEach((x) => pm.expect(x.mensaje).to.not.match(/SUSPENDIDO|RECHAZADO|PENDIENTE|ANULADO/)); });"
                 ]
               }
             }
@@ -193543,7 +193543,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
-                  "pm.test(\"Cuatro avisos\", () => { const t = 'Tu pedido se canceló porque el comercio no está disponible. Te devolvemos el dinero.'; pm.expect(pm.response.json().data.filter((x) => x.mensaje === t).length).to.eql(4); });"
+                  "pm.test(\"Cuatro avisos\", () => { const t = 'porque el comercio no está disponible. Te devolvemos el dinero.'; pm.expect(pm.response.json().data.filter((x) => x.mensaje.endsWith(t)).length).to.eql(4); });"
                 ]
               }
             }
@@ -211591,7 +211591,7 @@
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "const suyos = pm.response.json().data.filter((n) => n.tipo === 'RECLAMO_REEMBOLSO_DUENO' && n.entidadId === Number(pm.environment.get('rc_ped_dom1')));",
                   "pm.test('Hay 1 aviso(s) RECLAMO_REEMBOLSO_DUENO de este pedido', () => pm.expect(suyos.length).to.eql(1));",
-                  "pm.test('El texto es el aprobado', () => pm.expect(suyos[0].mensaje).to.eql('Reembolsamos $500,50 al Cliente por un reclamo del pedido #' + pm.environment.get('rc_ped_dom1') + '. Mercado Pago lo descuenta de tu cuenta en la parte que te corresponde.'));"
+                  "pm.test('El texto es el aprobado', () => pm.expect(suyos[0].mensaje).to.eql('Reembolsamos $500,50 al Cliente por un reclamo del pedido #' + pm.environment.get('rc_ped_dom1') + '.'));"
                 ]
               }
             }
@@ -221875,6 +221875,1046 @@
                 "exec": [
                   "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
                   "pm.test(\"El comercio esta SUSPENDIDO\", () => { const c = pm.response.json().data.find((x) => String(x.id) === String(pm.environment.get('in6b_com_f_susp'))); pm.expect(c).to.exist; pm.expect(c.estado).to.eql('SUSPENDIDO'); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "93 - Notificaciones Tramo 2C (paginacion por cursor y marcar todas las personales)",
+      "item": [
+        {
+          "name": "Registro Avisos A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Avisos A\",\n  \"apellido\": \"Avisos\",\n  \"dni\": \"{{np2c_a_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551240\",\n  \"nombreUsuario\": \"{{np2c_a_usuario}}\",\n  \"email\": \"{{np2c_a_email}}\",\n  \"password\": \"{{np2c_a_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('np2c_a_email', 'np2c.a.' + s + '@bajonea.test');",
+                  "pm.environment.set('np2c_a_usuario', ('np2ca' + s).slice(0, 20));",
+                  "pm.environment.set('np2c_a_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('np2c_a_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Avisos A",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{np2c_a_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{np2c_a_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('np2c_a_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Avisos A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{np2c_a_email}}\",\n  \"codigo\": \"{{np2c_a_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Avisos A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{np2c_a_usuario}}\",\n  \"password\": \"{{np2c_a_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('np2c_a_token', pm.response.json().data.token);",
+                  "pm.environment.set('np2c_a_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registro Avisos B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/registro/cliente",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "registro",
+                "cliente"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Avisos B\",\n  \"apellido\": \"Avisos\",\n  \"dni\": \"{{np2c_b_dni}}\",\n  \"fechaNacimiento\": \"1995-05-20\",\n  \"telefono\": \"+5492964551240\",\n  \"nombreUsuario\": \"{{np2c_b_usuario}}\",\n  \"email\": \"{{np2c_b_email}}\",\n  \"password\": \"{{np2c_b_password}}\",\n  \"aceptaTerminos\": true,\n  \"direccion\": {\n    \"calle\": \"Calle Siempre Viva\",\n    \"numero\": \"123\",\n    \"pisoDepto\": null,\n    \"codigoPostal\": \"9420\",\n    \"localidadId\": \"{{localidad_id}}\",\n    \"principal\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const s = Date.now().toString(36) + Math.floor(Math.random() * 1296).toString(36);",
+                  "pm.environment.set('np2c_b_email', 'np2c.b.' + s + '@bajonea.test');",
+                  "pm.environment.set('np2c_b_usuario', ('np2cb' + s).slice(0, 20));",
+                  "pm.environment.set('np2c_b_password', 'Pm9x' + Math.random().toString(36).slice(2, 12));",
+                  "pm.environment.set('np2c_b_dni', String(30000000 + Math.floor(Math.random() * 60000000)));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bypass test - codigo de verificacion Avisos B",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/test/token-verificacion?email={{np2c_b_email}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "token-verificacion"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "{{np2c_b_email}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('np2c_b_codigo', pm.response.json().data);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Verificar cuenta Avisos B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verificar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verificar"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{np2c_b_email}}\",\n  \"codigo\": \"{{np2c_b_codigo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Avisos B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreUsuario\": \"{{np2c_b_usuario}}\",\n  \"password\": \"{{np2c_b_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.environment.set('np2c_b_token', pm.response.json().data.token);",
+                  "pm.environment.set('np2c_b_id', pm.response.json().data.usuario.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Siembra 45 avisos personales para A",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/usuarios/{{np2c_a_id}}/avisos-personales?cantidad=45",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "usuarios",
+                "{{np2c_a_id}}",
+                "avisos-personales"
+              ],
+              "query": [
+                {
+                  "key": "cantidad",
+                  "value": "45"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.test(\"Se sembraron 45\", () => { pm.expect(pm.response.json().data.length).to.eql(45); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Siembra 3 avisos personales para B",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/test/usuarios/{{np2c_b_id}}/avisos-personales?cantidad=3",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "test",
+                "usuarios",
+                "{{np2c_b_id}}",
+                "avisos-personales"
+              ],
+              "query": [
+                {
+                  "key": "cantidad",
+                  "value": "3"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 201', () => pm.response.to.have.status(201));",
+                  "pm.test(\"Se sembraron 3\", () => { pm.expect(pm.response.json().data.length).to.eql(3); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Primera pagina: 20 avisos, el arreglo sigue siendo data y la cabecera trae el cursor",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{np2c_a_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notificaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Son 20 y el arreglo esta en data\", () => { const d = pm.response.json().data; pm.expect(Array.isArray(d)).to.eql(true); pm.expect(d.length).to.eql(20); });",
+                  "pm.test(\"Viene de la mas nueva a la mas vieja\", () => { const ids = pm.response.json().data.map((n) => n.id); pm.expect(ids).to.eql([...ids].sort((a, b) => b - a)); });",
+                  "pm.test(\"La cabecera X-Siguiente-Cursor trae un cursor\", () => { pm.expect(pm.response.headers.get('X-Siguiente-Cursor')).to.match(/^[0-9T:.-]+_[0-9]+$/); });",
+                  "pm.environment.set('np2c_cursor1', pm.response.headers.get('X-Siguiente-Cursor'));",
+                  "pm.environment.set('np2c_primer_id', pm.response.json().data[0].id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Segunda pagina con el cursor: otros 20, sin repetir",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{np2c_a_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notificaciones?cursor={{np2c_cursor1}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones"
+              ],
+              "query": [
+                {
+                  "key": "cursor",
+                  "value": "{{np2c_cursor1}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Son 20 y ninguno es de la primera pagina\", () => { const d = pm.response.json().data; pm.expect(d.length).to.eql(20); pm.expect(d.every((n) => n.id < Number(pm.environment.get('np2c_primer_id')) - 19)).to.eql(true); });",
+                  "pm.test(\"Hay otra pagina\", () => { pm.expect(pm.response.headers.get('X-Siguiente-Cursor')).to.be.a('string'); });",
+                  "pm.environment.set('np2c_cursor2', pm.response.headers.get('X-Siguiente-Cursor'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tercera pagina: los 5 que quedan y sin cabecera de cursor",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{np2c_a_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notificaciones?cursor={{np2c_cursor2}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones"
+              ],
+              "query": [
+                {
+                  "key": "cursor",
+                  "value": "{{np2c_cursor2}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Son 5\", () => { pm.expect(pm.response.json().data.length).to.eql(5); });",
+                  "pm.test(\"No hay cabecera de cursor\", () => { pm.expect(pm.response.headers.has('X-Siguiente-Cursor')).to.eql(false); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Con limite=7 devuelve 7 y deja cursor",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{np2c_a_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notificaciones?limite=7",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "7"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Son 7\", () => { pm.expect(pm.response.json().data.length).to.eql(7); });",
+                  "pm.test(\"Hay cursor\", () => { pm.expect(pm.response.headers.has('X-Siguiente-Cursor')).to.eql(true); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Con limite=500 el tope es 50 y los 45 entran en una pagina",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{np2c_a_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notificaciones?limite=500",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "500"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Son 45 y no hay cursor\", () => { pm.expect(pm.response.json().data.length).to.eql(45); pm.expect(pm.response.headers.has('X-Siguiente-Cursor')).to.eql(false); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Un limite menor que 1: 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{np2c_a_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notificaciones?limite=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones"
+              ],
+              "query": [
+                {
+                  "key": "limite",
+                  "value": "0"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Un cursor roto: 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{np2c_a_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notificaciones?cursor=basura",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones"
+              ],
+              "query": [
+                {
+                  "key": "cursor",
+                  "value": "basura"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Un cursor con id que no es numero: 400",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{np2c_a_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notificaciones?cursor=2026-01-01T00:00:00_x",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones"
+              ],
+              "query": [
+                {
+                  "key": "cursor",
+                  "value": "2026-01-01T00:00:00_x"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El contador cuenta todas, no solo la pagina",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{np2c_a_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notificaciones/no-leidas/contador",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones",
+                "no-leidas",
+                "contador"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Son 45\", () => { pm.expect(pm.response.json().data).to.eql(45); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Marcar todas las personales de A: devuelve 45",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{np2c_a_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notificaciones/personales/leidas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones",
+                "personales",
+                "leidas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Marco 45\", () => { pm.expect(pm.response.json().data).to.eql(45); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Repetirlo es idempotente: 0",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{np2c_a_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notificaciones/personales/leidas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones",
+                "personales",
+                "leidas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"No marco ninguna\", () => { pm.expect(pm.response.json().data).to.eql(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El contador de A queda en 0",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{np2c_a_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notificaciones/no-leidas/contador",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones",
+                "no-leidas",
+                "contador"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Es 0\", () => { pm.expect(pm.response.json().data).to.eql(0); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Los avisos de B no se vieron afectados",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{np2c_b_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notificaciones/no-leidas/contador",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones",
+                "no-leidas",
+                "contador"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"Siguen las 3 sin leer\", () => { pm.expect(pm.response.json().data).to.eql(3); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sin sesion: 401",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notificaciones/personales/leidas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notificaciones",
+                "personales",
+                "leidas"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code es 401', () => pm.response.to.have.status(401));"
                 ]
               }
             }

@@ -153,7 +153,8 @@ test.describe('Fase 5, S2 (UI B2): Dueño, Empleado y Cliente con el comercio su
       await expect(fila).toHaveAttribute('aria-current', 'true');
       await captura(page, '02-selector-con-chip-suspendido');
       await fila.click();
-      await expect(page).toHaveURL(/comercio-dashboard\.html/);
+      await expect(page).toHaveURL(/notificaciones\.html/);
+      await page.goto('/comercio-dashboard.html');
       await expect(tarjeta).toBeVisible();
 
       await levantar(request);
@@ -428,6 +429,7 @@ test.describe('Fase 5, S2 (UI B2): Dueño, Empleado y Cliente con el comercio su
       await captura(page, '10-cliente-detalle-sin-pagar');
 
       await page.getByTestId('btn-cancelar-pedido').click();
+      await page.getByTestId('btn-confirmar-cancelar-pedido').click();
       await expect(page.locator('.toast')).toContainText('Pedido cancelado');
       expect(estadoDe(sinPagar)).toBe('CANCELADO');
       expect(Number(sql(`SELECT COUNT(*) FROM nota_credito nc JOIN pago pg ON pg.id = nc.pago_id WHERE pg.pedido_id = ${sinPagar};`))).toBe(0);

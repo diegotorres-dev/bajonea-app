@@ -220,6 +220,38 @@ public class TestSupportService {
     }
 
     /**
+     * Atajo de entorno de test: siembra {@code cantidad} avisos personales (canal {@code PUSH}, sin comercio) para un
+     * usuario, del más viejo al más nuevo, con un segundo de diferencia entre uno y otro. Devuelve los ids creados en
+     * ese orden. Sirve para probar la paginación y el marcado de lectura sin tener que provocar cada aviso.
+     */
+    @Transactional
+    public List<Integer> sembrarAvisosPersonales(Integer usuarioId, int cantidad, boolean leidas) {
+        if (usuarioRepository.findById(usuarioId).isEmpty()) {
+            throw new RecursoNoEncontradoException("Usuario no encontrado");
+        }
+        LocalDateTime ahora = LocalDateTime.now(clock).withNano(0);
+        List<Integer> ids = new java.util.ArrayList<>(cantidad);
+        for (int n = cantidad; n >= 1; n--) {
+            java.sql.Timestamp fecha = java.sql.Timestamp.valueOf(ahora.minusSeconds(n));
+            org.springframework.jdbc.support.GeneratedKeyHolder claves = new org.springframework.jdbc.support.GeneratedKeyHolder();
+            final int numero = n;
+            jdbcTemplate.update(conexion -> {
+                java.sql.PreparedStatement sentencia = conexion.prepareStatement(
+                        "INSERT INTO notificacion (usuario_id, tipo, mensaje, leida, fecha_creacion, canal, estado) "
+                                + "VALUES (?, 'PRODUCTO_REMOVIDO_CARRITO', ?, ?, ?, 'PUSH', 'PENDIENTE')",
+                        java.sql.Statement.RETURN_GENERATED_KEYS);
+                sentencia.setInt(1, usuarioId);
+                sentencia.setString(2, "Aviso de prueba " + numero);
+                sentencia.setBoolean(3, leidas);
+                sentencia.setTimestamp(4, fecha);
+                return sentencia;
+            }, claves);
+            ids.add(claves.getKey().intValue());
+        }
+        return ids;
+    }
+
+    /**
      * Atajo de entorno de test: retrocede {@code meses} meses y {@code dias} días la fecha de creación de un pedido, para
      * probar la actividad reciente de un comercio sin esperar.
      */

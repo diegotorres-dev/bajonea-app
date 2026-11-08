@@ -62,7 +62,7 @@ public class AvisoReclamoService {
     @Transactional(propagation = Propagation.MANDATORY)
     public void avisarReembolsoAlDueno(Integer duenoId, Integer comercioId, Integer pedidoId, BigDecimal monto) {
         String mensaje = "Reembolsamos " + ResumenTurnoMensajeBuilder.monto(monto) + " al Cliente por un reclamo del pedido #"
-                + pedidoId + ". Mercado Pago lo descuenta de tu cuenta en la parte que te corresponde.";
+                + pedidoId + ".";
         notificacionService.crearParaDueno(duenoId, comercioId, mensaje, TipoNotificacion.RECLAMO_REEMBOLSO_DUENO,
                 TipoEntidadNotificacion.PEDIDO, pedidoId);
     }

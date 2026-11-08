@@ -12,6 +12,7 @@ import com.bajonea.backend.enums.TipoEntidadNotificacion;
 import com.bajonea.backend.enums.TipoNotificacion;
 import com.bajonea.backend.exceptions.ConflictoComercioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
+import com.bajonea.backend.util.TextoUtils;
 import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.DocumentoComercioRepository;
 import java.time.Clock;
@@ -110,9 +111,9 @@ public class RevisionDocumentoService {
         } else {
             String mensaje = revocacion
                     ? "Se revocó la aprobación de tu documento «" + etiqueta + "» de " + comercio.getNombre()
-                            + ". Motivo: " + request.getMotivo()
+                            + ". Motivo: " + TextoUtils.conPuntoFinal(request.getMotivo()) + " Subí uno nuevo."
                     : "Tu documento «" + etiqueta + "» de " + comercio.getNombre() + " fue rechazado. Motivo: "
-                            + request.getMotivo();
+                            + TextoUtils.conPuntoFinal(request.getMotivo()) + " Subí uno nuevo.";
             notificacionService.crearParaDueno(duenoId, comercioId, mensaje, TipoNotificacion.DOCUMENTO_RECHAZADO,
                     TipoEntidadNotificacion.COMERCIO, comercioId);
         }

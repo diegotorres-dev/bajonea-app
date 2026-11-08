@@ -327,7 +327,7 @@ items.push(
     "pm.test('Ninguna notificacion del comercio K para el Administrador', () => pm.expect(pm.response.json().data.filter((n) => n.entidadId === Number(pm.environment.get('rK_com')))).to.have.length(0));",
   ]),
   rechazar('K', 'Segundo rechazo K'),
-  notificacionContiene('[aviso] El rechazo llega sin comillas', 'K', 'rK_com', "'Tu comercio ' + pm.environment.get('rK_nombre_nuevo') + ' fue rechazado. Motivo: Segundo rechazo K'"),
+  notificacionContiene('[aviso] El rechazo llega sin comillas', 'K', 'rK_com', "'Tu comercio ' + pm.environment.get('rK_nombre_nuevo') + ' fue rechazado. Motivo: Segundo rechazo K. Corregilo y volvé a solicitarlo.'"),
   perfil('[perfil] Rechazado de nuevo con el motivo del segundo rechazo', 'K', 'rK_com', [
     "pm.test('RECHAZADO con el motivo nuevo', () => { const d = pm.response.json().data; pm.expect(d.estado).to.eql('RECHAZADO'); pm.expect(d.motivoRechazo).to.eql('Segundo rechazo K'); });",
   ]),
@@ -491,7 +491,7 @@ for (let intento = 1; intento <= 3; intento += 1) {
   );
 }
 items.push(
-  notificacionContiene('[aviso] El rechazo 2 es un rechazo comun', 'O', 'rO_com', "'Tu comercio ' + pm.environment.get('rO_nombre') + ' fue rechazado. Motivo: Rechazo 2'"),
+  notificacionContiene('[aviso] El rechazo 2 es un rechazo comun', 'O', 'rO_com', "'Tu comercio ' + pm.environment.get('rO_nombre') + ' fue rechazado. Motivo: Rechazo 2. Corregilo y volvé a solicitarlo.'"),
   notificacionContiene('[aviso] El rechazo 3 es definitivo', 'O', 'rO_com', "'Tu comercio ' + pm.environment.get('rO_nombre') + ' fue rechazado de forma definitiva. Motivo: Rechazo 3'"),
   correccion('[GET] Sin intentos: 404', 'O', 'rO_com', 404),
   item('[elegibilidad] Con su unico comercio en RECHAZO_DEFINITIVO es elegible', req('GET', '/comercios/alta-adicional/elegibilidad', { token: 'token_r_o' }), [

@@ -1,5 +1,6 @@
 import { apiFetch, ApiError, getUsuario } from './api.js';
 import { enlazarMisConsultas } from './soporte-mis-consultas.js';
+import { crearInterruptorSonido } from './sonido-interruptor.js';
 import { exigirContextoCliente, consultarComerciosDelEmpleado } from './contexto.js';
 import { abrirHojaCambiarCuenta } from './selector-contexto.js';
 import { logout } from './auth.js';
@@ -99,6 +100,7 @@ export async function initPerfil() {
 
   document.getElementById('cerrar-sesion-link').addEventListener('click', mostrarModalConfirmarLogout);
   enlazarMisConsultas(document.getElementById('mis-consultas-link'));
+  document.getElementById('sonido-slot').appendChild(crearInterruptorSonido());
 
   const cambiarCuentaLink = document.getElementById('cambiar-cuenta-link');
   cambiarCuentaLink.addEventListener('click', () => abrirHojaCambiarCuenta());

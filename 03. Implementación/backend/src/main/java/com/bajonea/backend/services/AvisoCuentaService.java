@@ -80,7 +80,7 @@ public class AvisoCuentaService {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void avisarInactivacion(Integer usuarioId, String email, List<ComercioAvisado> inactivados) {
-        String mensaje = "Tu cuenta quedó inactiva por falta de uso. Iniciá sesión para reactivarla.";
+        String mensaje = "Tu cuenta quedó inactiva por falta de uso.";
         notificacionService.crearParaCliente(usuarioId, mensaje, TipoNotificacion.CUENTA_INACTIVADA);
         for (ComercioAvisado comercio : inactivados) {
             notificacionService.crearParaDueno(usuarioId, comercio.id(),

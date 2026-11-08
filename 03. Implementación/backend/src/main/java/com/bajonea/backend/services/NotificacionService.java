@@ -11,18 +11,21 @@ import com.bajonea.backend.enums.EstadoEnvioNotificacion;
 import com.bajonea.backend.enums.TipoEntidadNotificacion;
 import com.bajonea.backend.enums.TipoNotificacion;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
+import com.bajonea.backend.exceptions.ValidacionException;
 import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.EmpleadoComercioRepository;
 import com.bajonea.backend.repositories.NotificacionRepository;
 import com.bajonea.backend.repositories.UsuarioRepository;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -168,17 +171,75 @@ public class NotificacionService {
         return notificacionRepository.findTopByUsuarioIdAndCanalAndTipoOrderByIdDesc(usuarioId, CanalNotificacion.EMAIL, tipo);
     }
 
+    public static final int LIMITE_POR_DEFECTO = 20;
+    public static final int LIMITE_MAXIMO = 50;
+
+    private static final LocalDateTime SIN_CURSOR_FECHA = LocalDateTime.of(9999, 12, 31, 23, 59, 59);
+
+    /**
+     * Una página de la campana, de la más nueva a la más vieja. {@code siguienteCursor} es nulo cuando no hay más.
+     */
+    public record PaginaNotificaciones(List<NotificacionResponseDTO> items, String siguienteCursor) {
+    }
+
     /**
      * Con comercio abierto (Dueño siempre, con header obligatorio; Cliente que manda {@code X-Comercio-Id}, que se
      * trata como Empleado de ese comercio) lista los avisos del usuario sobre ese comercio. Sin comercio (el Cliente
      * sin header, y el Administrador, que ignora el header) lista solo los personales: nunca los del comercio.
+     * <p>
+     * Paginación por cursor sobre {@code (fecha_creacion desc, id desc)}: el cursor es la posición del último aviso
+     * entregado, así que un aviso nuevo no corre las páginas ni repite ni saltea filas. Se piden {@code limite + 1}
+     * filas para saber si hay otra página sin una consulta de conteo.
      */
-    public List<NotificacionResponseDTO> listar(AuthenticatedUser usuario, String headerComercioId) {
+    public PaginaNotificaciones listar(AuthenticatedUser usuario, String headerComercioId, Integer limite, String cursor) {
+        int tamanio = tamanioDePagina(limite);
+        Cursor desde = Cursor.interpretar(cursor);
+        PageRequest pagina = PageRequest.of(0, tamanio + 1);
         Optional<ComercioActivo> comercio = comercioActivoService.resolverSiCorresponde(usuario, headerComercioId);
         List<Notificacion> notificaciones = comercio.isPresent()
-                ? notificacionRepository.findByUsuarioIdAndComercioId(usuario.userId(), comercio.get().comercioId())
-                : notificacionRepository.findPersonalesPushByUsuarioId(usuario.userId());
-        return notificaciones.stream().map(this::aResponseDTO).toList();
+                ? notificacionRepository.findByUsuarioIdAndComercioId(usuario.userId(), comercio.get().comercioId(), desde.fecha(),
+                        desde.id(), pagina)
+                : notificacionRepository.findPersonalesPushByUsuarioId(usuario.userId(), desde.fecha(), desde.id(), pagina);
+        boolean hayMas = notificaciones.size() > tamanio;
+        List<Notificacion> entregadas = hayMas ? notificaciones.subList(0, tamanio) : notificaciones;
+        String siguiente = hayMas ? Cursor.de(entregadas.get(entregadas.size() - 1)) : null;
+        return new PaginaNotificaciones(entregadas.stream().map(this::aResponseDTO).toList(), siguiente);
+    }
+
+    private static int tamanioDePagina(Integer limite) {
+        if (limite == null) {
+            return LIMITE_POR_DEFECTO;
+        }
+        if (limite < 1) {
+            throw new ValidacionException("El límite tiene que ser de al menos 1");
+        }
+        return Math.min(limite, LIMITE_MAXIMO);
+    }
+
+    private record Cursor(LocalDateTime fecha, Integer id) {
+
+        static Cursor interpretar(String texto) {
+            if (texto == null || texto.isBlank()) {
+                return new Cursor(SIN_CURSOR_FECHA, Integer.MAX_VALUE);
+            }
+            String[] partes = texto.trim().split("_");
+            if (partes.length != 2) {
+                throw cursorInvalido();
+            }
+            try {
+                return new Cursor(LocalDateTime.parse(partes[0]), Integer.parseInt(partes[1]));
+            } catch (DateTimeParseException | NumberFormatException e) {
+                throw cursorInvalido();
+            }
+        }
+
+        static String de(Notificacion ultima) {
+            return ultima.getFechaCreacion() + "_" + ultima.getId();
+        }
+
+        private static ValidacionException cursorInvalido() {
+            return new ValidacionException("El cursor no es válido");
+        }
     }
 
     /**
@@ -239,8 +300,20 @@ public class NotificacionService {
         return ids.size();
     }
 
+    /**
+     * Marca como leídos todos los avisos personales no leídos de quien llama (los que no llevan comercio, canal
+     * {@code PUSH}) y devuelve cuántos cambiaron. No toca ningún aviso de comercio. Idempotente: repetirlo devuelve
+     * {@code 0}. Mismo marcado por lotes y por clave primaria que el de un comercio, sin bloqueos de hueco.
+     */
+    public int marcarLeidasPersonales(Integer usuarioId) {
+        return marcarPorIds(notificacionRepository.findIdsPersonalesPushNoLeidasByUsuarioId(usuarioId));
+    }
+
     private int marcarLeidasDelUsuarioEnComercio(Integer usuarioId, Integer comercioId) {
-        List<Integer> ids = notificacionRepository.findIdsNoLeidasByUsuarioIdAndComercioId(usuarioId, comercioId);
+        return marcarPorIds(notificacionRepository.findIdsNoLeidasByUsuarioIdAndComercioId(usuarioId, comercioId));
+    }
+
+    private int marcarPorIds(List<Integer> ids) {
         int marcadas = 0;
         for (int desde = 0; desde < ids.size(); desde += LOTE_MARCADO) {
             marcadas += notificacionRepository.marcarLeidasPorIds(ids.subList(desde, Math.min(desde + LOTE_MARCADO, ids.size())));

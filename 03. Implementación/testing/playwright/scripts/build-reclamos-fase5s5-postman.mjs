@@ -426,7 +426,7 @@ agregar(
   avisos('Parcial: el Cliente recibio el aviso de aprobacion con el monto', TOKEN_CLIENTE, undefined, 'RECLAMO_APROBADO', 'dom1', 1,
     `'Aprobamos tu reclamo del pedido #' + ${entorno(v('ped_dom1'))} + ' y te vamos a devolver $500,50. El reembolso puede tardar unos días en acreditarse.'`),
   avisos('Parcial: el Dueño recibio el aviso del reembolso, sin afirmar cuanto se le descuenta', TOKEN_DUENO, COM, 'RECLAMO_REEMBOLSO_DUENO', 'dom1', 1,
-    `'Reembolsamos $500,50 al Cliente por un reclamo del pedido #' + ${entorno(v('ped_dom1'))} + '. Mercado Pago lo descuenta de tu cuenta en la parte que te corresponde.'`),
+    `'Reembolsamos $500,50 al Cliente por un reclamo del pedido #' + ${entorno(v('ped_dom1'))} + '.'`),
 );
 
 // ----------------------------------------------------------------------------- resolver: total y rechazo

@@ -129,6 +129,7 @@ class ClasificacionRutasComercioTest {
         CLASIFICACION.put("PUT /api/v1/notificaciones/{id}/leida", Categoria.PROPIO);
         CLASIFICACION.put("GET /api/v1/notificaciones/no-leidas/contador", Categoria.COMPARTIDO);
         CLASIFICACION.put("PUT /api/v1/notificaciones/leidas", Categoria.COMPARTIDO_CON_COMERCIO);
+        CLASIFICACION.put("PUT /api/v1/notificaciones/personales/leidas", Categoria.PROPIO);
         exclusivo("PUT /api/v1/notificaciones/comercio/{comercioId}/leidas");
 
         CLASIFICACION.put("GET /api/v1/empleados/mis-comercios", Categoria.PROPIO);

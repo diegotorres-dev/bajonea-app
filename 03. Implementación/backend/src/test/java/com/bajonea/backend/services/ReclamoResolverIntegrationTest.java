@@ -318,8 +318,7 @@ class ReclamoResolverIntegrationTest extends ReclamoIntegrationBase {
         assertEquals("Revisamos tu reclamo del pedido #" + rechazado + " y no pudimos aprobarlo. Motivo: El comercio demostró que entregó todo",
                 mensajeDeLaNotificacion(cliente, "RECLAMO_RECHAZADO"));
         assertEquals(1, notificaciones(dueno.id(), "RECLAMO_REEMBOLSO_DUENO"));
-        assertEquals("Reembolsamos $250 al Cliente por un reclamo del pedido #" + aprobado
-                + ". Mercado Pago lo descuenta de tu cuenta en la parte que te corresponde.",
+        assertEquals("Reembolsamos $250 al Cliente por un reclamo del pedido #" + aprobado + ".",
                 mensajeDeLaNotificacion(dueno.id(), "RECLAMO_REEMBOLSO_DUENO"));
         assertEquals(dueno.comercioId(), jdbcTemplate.queryForObject(
                 "SELECT comercio_id FROM notificacion WHERE usuario_id = ? AND tipo = 'RECLAMO_REEMBOLSO_DUENO'", Integer.class, dueno.id()));

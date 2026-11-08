@@ -10,6 +10,7 @@ import {
   clearComercioActivoId,
   getUltimoComercioId,
 } from './api.js';
+import { vigilarAvisos } from './sonido-avisos.js';
 
 export const RUTA_DASHBOARD = 'comercio-dashboard.html';
 export const RUTA_LOGIN = 'login.html';
@@ -37,6 +38,13 @@ function avisarOyentes() {
   });
 }
 
+function vigilarAvisosDelActivo() {
+  const activo = getComercioActivoEnMemoria();
+  if (activo && Number.isInteger(activo.cantidadNotificacionesNoLeidas)) {
+    vigilarAvisos(`comercio-${activo.id}`, activo.cantidadNotificacionesNoLeidas);
+  }
+}
+
 export function rutaDeEstado(comercio) {
   const ruta = RUTA_POR_ESTADO[comercio.estado];
   return ruta ? `${ruta}?id=${comercio.id}` : null;
@@ -59,11 +67,12 @@ export function suscribirComercios(oyente) {
   return () => oyentes.delete(oyente);
 }
 
-export async function refrescarComercios() {
-  const comercios = await apiFetch(esContextoEmpleado() ? '/empleados/mis-comercios' : '/comercios/mis-comercios');
+export async function refrescarComercios(opciones) {
+  const comercios = await apiFetch(esContextoEmpleado() ? '/empleados/mis-comercios' : '/comercios/mis-comercios', opciones);
   comerciosEnMemoria = [...comercios].sort(
     (a, b) => String(a.fechaRegistro).localeCompare(String(b.fechaRegistro)) || a.id - b.id,
   );
+  vigilarAvisosDelActivo();
   avisarOyentes();
   return comerciosEnMemoria;
 }
@@ -125,6 +134,7 @@ export function resolverComercioActivo() {
         const destino = elegirDestino(comercios);
         if (destino.tipo === 'operativo') {
           setComercioActivoId(destino.comercio.id);
+          vigilarAvisosDelActivo();
           avisarOyentes();
         }
         return destino;
@@ -168,7 +178,7 @@ async function verificarComercioActivo() {
   }
   let comercios;
   try {
-    comercios = await refrescarComercios();
+    comercios = await refrescarComercios({ segundoPlano: true });
   } catch {
     return;
   }

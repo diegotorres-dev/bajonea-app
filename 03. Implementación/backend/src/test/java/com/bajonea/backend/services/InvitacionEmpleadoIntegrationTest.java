@@ -937,7 +937,7 @@ class InvitacionEmpleadoIntegrationTest {
             notificacionService.registrarEmailEnviado(cliente, "Otro aviso por email", TipoNotificacion.INVITACION_EMPLEADO, INICIO);
             sincronizar();
 
-            List<NotificacionResponseDTO> lista = notificacionService.listar(principal, null);
+            List<NotificacionResponseDTO> lista = notificacionService.listar(principal, null, null, null).items();
 
             assertEquals(List.of("Campana visible"), lista.stream().map(NotificacionResponseDTO::getMensaje).toList());
             assertEquals(1, notificacionService.contarNoLeidas(principal, null));

@@ -623,3 +623,8 @@ Los 18 estreses del runner (`correr-estreses.mjs`, incluidos `carrito` con el ba
 |---|---|
 | `InactivacionCuentaConcurrenciaIntegrationTest` | Un login que tiene la fila y confirma después de elegida la cuenta (la corrida espera y no inactiva); cuenta que deja de estar activa mientras espera; comercio nuevo en medio; un fallo no frena a las demás ni deja nada a medias. |
 | `InactivacionCuentaPoolDiminutoIntegrationTest` | Pool de 3 conexiones y email de 1 s: las demás consultas no se quedan sin conexión. |
+
+
+## Tramo 2C: "Marcar todas" de los avisos personales y lista paginada (2026-11-07)
+
+`PUT /notificaciones/personales/leidas` (`NotificacionService.marcarLeidasPersonales`) no toma ningún bloqueo propio ni cambia el orden global: lee los ids de los avisos personales sin leer del usuario (`comercio_id IS NULL`, canal `PUSH`, sin bloquear) y los marca en lotes de 500 por clave primaria con `UPDATE ... WHERE id IN (...) AND leida = false`, igual que `marcarLeidasDelUsuarioEnComercio`. La condición `leida = false` hace que la cantidad devuelta sea la de filas que de verdad cambiaron: dos pedidos simultáneos del mismo usuario se reparten los avisos (cada aviso se cuenta una sola vez, la suma de lo devuelto es el total) y un aviso que llega entre la lectura de los ids y el `UPDATE` queda sin leer hasta la próxima llamada. No hay bloqueos de hueco sobre el rango del usuario. La lista paginada (`GET /notificaciones`) es de solo lectura, sin bloqueos, con el cursor `(fecha_creacion, id)`; un aviso nuevo no desplaza ni repite filas de las páginas ya entregadas. Estrés: `stress-locks-tramoNotificaciones2c.mjs`.

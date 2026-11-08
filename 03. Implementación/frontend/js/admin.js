@@ -193,6 +193,139 @@ async function pintarTarjetaDocumentos(tarjeta, cantidad) {
   }
 }
 
+const INTERVALO_PANEL_ADMIN_MS = 30000;
+
+async function cantidadDeReembolsosParaRevisar(opciones = {}) {
+  try {
+    const notas = await apiFetch('/administrador/reembolsos', { handleRedGlobally: false, handle5xxGlobally: false, ...opciones });
+    return notas.length;
+  } catch (error) {
+    if (opciones.segundoPlano) {
+      throw error;
+    }
+    return null;
+  }
+}
+
+function pintarContadorRedondo(contador, cantidad) {
+  contador.textContent = String(cantidad);
+  contador.style.display = cantidad > 0 ? 'flex' : 'none';
+}
+
+function armarTarjetasDeAtencion() {
+  const comercios = document.getElementById('alert-comercios-pendientes');
+  const resolicitudes = document.getElementById('alert-resolicitudes');
+  const documentos = document.getElementById('alert-documentos');
+  return [
+    {
+      nodo: comercios,
+      pendientes: (metricas) => metricas.comerciosPendientes,
+      pintar: (metricas) => {
+        pintarContadorRedondo(comercios.querySelector('[data-count]'), metricas.comerciosPendientes);
+        comercios.querySelector('[data-subtitulo]').textContent = metricas.comerciosPendientes === 1
+          ? '1 solicitud de aprobación'
+          : `${metricas.comerciosPendientes} solicitudes de aprobación`;
+      },
+    },
+    {
+      nodo: resolicitudes,
+      pendientes: (metricas) => metricas.resolicitudesPendientes,
+      pintar: (metricas) => pintarContadorRedondo(resolicitudes.querySelector('[data-count]'), metricas.resolicitudesPendientes),
+    },
+    {
+      nodo: documentos,
+      pendientes: (metricas) => metricas.documentosPendientes,
+      pintar: (metricas) => pintarTarjetaDocumentos(documentos, metricas.documentosPendientes),
+    },
+  ];
+}
+
+function subtituloReembolsos(reembolsos) {
+  if (reembolsos === null) {
+    return 'Revisión manual';
+  }
+  return reembolsos === 0 ? 'Sin reembolsos para revisar' : `${reembolsos} para revisar`;
+}
+
+function armarTilesDeGestion() {
+  const definiciones = [
+    { clave: 'comercios', icon: ICONS.store, titulo: 'Comercios', subtitulo: (m) => `${m.comerciosTotal} registrados`, href: 'admin-comercios.html' },
+    { clave: 'clientes', icon: ICONS.users, titulo: 'Clientes', subtitulo: (m) => `${m.clientesTotal} registrados`, href: 'admin-clientes.html' },
+    { clave: 'duenos', icon: ICONS.users, titulo: 'Dueños', subtitulo: () => 'Cuentas y suspensiones', href: 'admin-duenos.html' },
+    { clave: 'categorias', icon: ICONS.tag, titulo: 'Categorías', subtitulo: (m) => `${m.categoriasActivas} activas`, href: 'admin-categorias.html' },
+    { clave: 'tags', icon: ICONS.hash, titulo: 'Tags', subtitulo: (m) => `${m.tagsActivos} activos`, href: 'admin-tags.html' },
+    { clave: 'tarifas', icon: ICONS.percent, titulo: 'Tarifas', subtitulo: () => 'Cargos y comisiones', href: 'admin-tarifas.html' },
+    {
+      clave: 'reembolsos',
+      icon: ICONS.refund,
+      titulo: 'Reembolsos',
+      subtitulo: (m, r) => subtituloReembolsos(r),
+      pendientes: (m, r) => r || 0,
+      href: 'admin-reembolsos.html',
+    },
+    {
+      clave: 'soporte',
+      icon: ICONS.chat,
+      titulo: 'Soporte',
+      subtitulo: (m) => (m.consultasSoporteEsperando === 0 ? 'Sin consultas esperando' : `${m.consultasSoporteEsperando} ${m.consultasSoporteEsperando === 1 ? 'espera' : 'esperan'} tu respuesta`),
+      subtituloTestid: 'contador-soporte-esperando',
+      pendientes: (m) => m.consultasSoporteEsperando,
+      href: 'admin-soporte.html',
+    },
+    {
+      clave: 'reclamos',
+      icon: ICONS.alert,
+      titulo: 'Reclamos',
+      subtitulo: (m) => (m.reclamosPendientes === 0 ? 'Sin reclamos pendientes' : `${m.reclamosPendientes} ${m.reclamosPendientes === 1 ? 'pendiente' : 'pendientes'} de revisar`),
+      subtituloTestid: 'contador-reclamos-pendientes',
+      pendientes: (m) => m.reclamosPendientes,
+      href: 'admin-reclamos.html',
+    },
+  ];
+  return definiciones.map((definicion) => {
+    const nodo = crear('a', 'stat-tile');
+    nodo.href = definicion.href;
+    nodo.setAttribute('data-testid', `tile-gestion-${definicion.href.replace('admin-', '').replace('.html', '')}`);
+    const icon = crear('div', 'stat-tile__icon');
+    icon.innerHTML = definicion.icon;
+    nodo.appendChild(icon);
+    const h3 = document.createElement('h3');
+    h3.textContent = definicion.titulo;
+    nodo.appendChild(h3);
+    const p = document.createElement('p');
+    if (definicion.subtituloTestid) {
+      p.setAttribute('data-testid', definicion.subtituloTestid);
+    }
+    nodo.appendChild(p);
+    let contador = null;
+    if (definicion.pendientes) {
+      contador = crear('span', 'alert-card__count alert-card__count--numero stat-tile__contador');
+      contador.setAttribute('data-testid', `contador-tile-${definicion.clave}`);
+      nodo.appendChild(contador);
+    }
+    return {
+      nodo,
+      pendientes: definicion.pendientes || (() => 0),
+      pintar: (metricas, reembolsos) => {
+        p.textContent = definicion.subtitulo(metricas, reembolsos);
+        if (contador) {
+          pintarContadorRedondo(contador, definicion.pendientes(metricas, reembolsos));
+        }
+      },
+    };
+  });
+}
+
+function ordenarPorUrgencia(tarjetas, tiles, metricas, reembolsos) {
+  const conUrgenciaPrimero = (lista) => lista
+    .map((elemento, indice) => ({ elemento, indice, urgente: elemento.pendientes(metricas, reembolsos) > 0 }))
+    .sort((a, b) => Number(b.urgente) - Number(a.urgente) || a.indice - b.indice)
+    .map((entrada) => entrada.elemento);
+  const tope = document.getElementById('gestion-grid').previousElementSibling;
+  conUrgenciaPrimero(tarjetas).forEach((tarjeta) => tope.parentNode.insertBefore(tarjeta.nodo, tope));
+  tiles.splice(0, tiles.length, ...conUrgenciaPrimero(tiles));
+}
+
 export async function initAdminDashboard() {
   if (!requireAdmin()) {
     return;
@@ -200,9 +333,10 @@ export async function initAdminDashboard() {
 
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarPerfil: false, mostrarCampana: false, centrarLogo: true });
 
-  const [metricas, perfil] = await Promise.all([
+  const [metricas, perfil, reembolsos] = await Promise.all([
     apiFetch('/administrador/metricas'),
     apiFetch('/administrador/perfil'),
+    cantidadDeReembolsosParaRevisar(),
   ]);
   normalizarCampos(perfil, ['nombre', 'apellido']);
 
@@ -211,61 +345,50 @@ export async function initAdminDashboard() {
   const avatarAdmin = document.getElementById('admin-avatar');
   pintarAvatarUsuario(avatarAdmin, perfil.fotoPerfilUrl, 'AD');
 
-  const alertLink = document.getElementById('alert-comercios-pendientes');
-  alertLink.querySelector('[data-count]').style.display = metricas.comerciosPendientes > 0 ? 'block' : 'none';
-  alertLink.querySelector('[data-subtitulo]').textContent =
-    metricas.comerciosPendientes === 1 ? '1 solicitud de aprobación' : `${metricas.comerciosPendientes} solicitudes de aprobación`;
-
-  const resolicitudesLink = document.getElementById('alert-resolicitudes');
-  const contadorResolicitudes = resolicitudesLink.querySelector('[data-count]');
-  contadorResolicitudes.textContent = String(metricas.resolicitudesPendientes);
-  contadorResolicitudes.style.display = metricas.resolicitudesPendientes > 0 ? 'flex' : 'none';
-
-  pintarTarjetaDocumentos(document.getElementById('alert-documentos'), metricas.documentosPendientes);
-
-  const tiles = [
-    { icon: ICONS.store, titulo: 'Comercios', subtitulo: `${metricas.comerciosTotal} registrados`, href: 'admin-comercios.html' },
-    { icon: ICONS.users, titulo: 'Clientes', subtitulo: `${metricas.clientesTotal} registrados`, href: 'admin-clientes.html' },
-    { icon: ICONS.users, titulo: 'Dueños', subtitulo: 'Cuentas y suspensiones', href: 'admin-duenos.html' },
-    { icon: ICONS.tag, titulo: 'Categorías', subtitulo: `${metricas.categoriasActivas} activas`, href: 'admin-categorias.html' },
-    { icon: ICONS.hash, titulo: 'Tags', subtitulo: `${metricas.tagsActivos} activos`, href: 'admin-tags.html' },
-    { icon: ICONS.percent, titulo: 'Tarifas', subtitulo: 'Cargos y comisiones', href: 'admin-tarifas.html' },
-    { icon: ICONS.refund, titulo: 'Reembolsos', subtitulo: 'Revisión manual', href: 'admin-reembolsos.html' },
-    {
-      icon: ICONS.chat,
-      titulo: 'Soporte',
-      subtitulo: metricas.consultasSoporteEsperando === 0 ? 'Sin consultas esperando' : `${metricas.consultasSoporteEsperando} ${metricas.consultasSoporteEsperando === 1 ? 'espera' : 'esperan'} tu respuesta`,
-      subtituloTestid: 'contador-soporte-esperando',
-      href: 'admin-soporte.html',
-    },
-    {
-      icon: ICONS.alert,
-      titulo: 'Reclamos',
-      subtitulo: metricas.reclamosPendientes === 0 ? 'Sin reclamos pendientes' : `${metricas.reclamosPendientes} ${metricas.reclamosPendientes === 1 ? 'pendiente' : 'pendientes'} de revisar`,
-      subtituloTestid: 'contador-reclamos-pendientes',
-      href: 'admin-reclamos.html',
-    },
-  ];
+  const tarjetas = armarTarjetasDeAtencion();
+  const tiles = armarTilesDeGestion();
+  ordenarPorUrgencia(tarjetas, tiles, metricas, reembolsos);
 
   const grid = document.getElementById('gestion-grid');
-  tiles.forEach((tile) => {
-    const card = crear(tile.href ? 'a' : 'div', 'stat-tile');
-    if (tile.href) {
-      card.href = tile.href;
-      card.setAttribute('data-testid', `tile-gestion-${tile.href.replace('admin-', '').replace('.html', '')}`);
+  tiles.forEach((tile) => grid.appendChild(tile.nodo));
+
+  let ultimaFirma = null;
+  function pintar(metricasActuales, reembolsosActuales) {
+    const firma = JSON.stringify([metricasActuales, reembolsosActuales]);
+    if (firma === ultimaFirma) {
+      return;
     }
-    const icon = crear('div', 'stat-tile__icon');
-    icon.innerHTML = tile.icon;
-    card.appendChild(icon);
-    const h3 = document.createElement('h3');
-    h3.textContent = tile.titulo;
-    card.appendChild(h3);
-    const p = document.createElement('p');
-    p.textContent = tile.subtitulo;
-    if (tile.subtituloTestid) p.setAttribute('data-testid', tile.subtituloTestid);
-    card.appendChild(p);
-    grid.appendChild(card);
+    ultimaFirma = firma;
+    tarjetas.forEach((tarjeta) => tarjeta.pintar(metricasActuales, reembolsosActuales));
+    tiles.forEach((tile) => tile.pintar(metricasActuales, reembolsosActuales));
+  }
+  pintar(metricas, reembolsos);
+
+  let actualizando = false;
+  async function actualizar() {
+    if (actualizando || document.visibilityState === 'hidden') {
+      return;
+    }
+    actualizando = true;
+    try {
+      const [metricasNuevas, reembolsosNuevos] = await Promise.all([
+        apiFetch('/administrador/metricas', { segundoPlano: true }),
+        cantidadDeReembolsosParaRevisar({ segundoPlano: true }),
+      ]);
+      pintar(metricasNuevas, reembolsosNuevos);
+    } catch {
+      return;
+    } finally {
+      actualizando = false;
+    }
+  }
+  const intervalo = window.setInterval(actualizar, INTERVALO_PANEL_ADMIN_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      actualizar();
+    }
   });
+  window.addEventListener('beforeunload', () => window.clearInterval(intervalo));
 
   document.getElementById('cerrar-sesion-btn').addEventListener('click', mostrarModalConfirmarLogoutAdmin);
 }
@@ -1202,6 +1325,7 @@ export async function initAdminCategorias() {
   }
 
   fab.addEventListener('click', () => abrirModalCategoria(null));
+  fab.disabled = false;
 
   render();
 }
@@ -1463,6 +1587,7 @@ export async function initAdminTags() {
   }
 
   fab.addEventListener('click', () => abrirModalTag(null));
+  fab.disabled = false;
 
   render();
 }

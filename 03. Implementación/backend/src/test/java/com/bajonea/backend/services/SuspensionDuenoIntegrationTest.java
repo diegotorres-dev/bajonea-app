@@ -55,7 +55,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 class SuspensionDuenoIntegrationTest extends SuspensionDuenoTestBase {
 
-    private static final String TEXTO_AVISO = "Tu pedido se canceló porque el comercio no está disponible. Te devolvemos el dinero.";
+    private static final String TEXTO_AVISO = "Cancelamos tu pedido #% porque el comercio no está disponible. Te devolvemos el dinero.";
 
     @Autowired
     private UsuarioRepository usuarioRepository;
@@ -402,9 +402,9 @@ class SuspensionDuenoIntegrationTest extends SuspensionDuenoTestBase {
         }
         assertEquals(1, filasDeHistorialDePedido(enPreparacion, "ANULADO"));
         assertEquals(1, filasDeHistorialDePedido(listo, "CANCELADO_POR_SISTEMA"));
-        assertEquals(1, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND tipo = 'PEDIDO_ANULADO_COMERCIO' AND mensaje = ?",
+        assertEquals(1, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND tipo = 'PEDIDO_ANULADO_COMERCIO' AND mensaje LIKE ?",
                 Integer.class, cliente, TEXTO_AVISO));
-        assertEquals(1, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND tipo = 'PEDIDO_CANCELADO_SISTEMA' AND mensaje = ?",
+        assertEquals(1, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND tipo = 'PEDIDO_CANCELADO_SISTEMA' AND mensaje LIKE ?",
                 Integer.class, cliente, TEXTO_AVISO));
         assertEquals("EN_CAMINO", estadoDelPedido(enCamino));
         assertEquals("PENDIENTE_PAGO", estadoDelPedido(sinPagar));
@@ -525,7 +525,7 @@ class SuspensionDuenoIntegrationTest extends SuspensionDuenoTestBase {
         assertEquals(1, notas(enPreparacion));
         assertEquals(1, notas(listo));
         assertEquals(1, filasDeHistorialDePedido(enPreparacion, "ANULADO"));
-        assertEquals(2, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND mensaje = ?", Integer.class, cliente, TEXTO_AVISO));
+        assertEquals(2, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND mensaje LIKE ?", Integer.class, cliente, TEXTO_AVISO));
         verify(reembolsoClient, times(2)).solicitarReembolsoTotal(any(), any(), anyString());
     }
 

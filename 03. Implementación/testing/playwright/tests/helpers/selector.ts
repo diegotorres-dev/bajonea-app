@@ -50,6 +50,14 @@ export async function seleccionarComercioEnPanel(page: Page, comercioId: number)
   await page.getByTestId(`fila-comercio-${comercioId}`).click();
 }
 
+export async function irAlPanelDelComercioElegido(page: Page) {
+  await page.waitForURL(/\/(comercio-dashboard|notificaciones)\.html/);
+  if (page.url().includes('/notificaciones.html')) {
+    await page.goto('/comercio-dashboard.html');
+  }
+  await page.waitForURL('**/comercio-dashboard.html');
+}
+
 export async function comercioActivoEnSesion(page: Page): Promise<{ usuarioId: number; comercioId: number } | null> {
   return page.evaluate((clave) => {
     const raw = sessionStorage.getItem(clave);

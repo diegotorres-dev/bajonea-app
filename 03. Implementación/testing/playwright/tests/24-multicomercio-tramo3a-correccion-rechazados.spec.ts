@@ -870,7 +870,7 @@ test.describe('Multi-comercio, tramo 3A: corrección y re-solicitud de comercios
       expect(historial[historial.length - 1]).toBe(`PENDIENTE>RECHAZO_DEFINITIVO|${adminId}|Rechazo 3`);
 
       const notificaciones = (await notificacionesDelComercio(request, dueno.token, dueno.comercioId)).map((n) => n.mensaje);
-      expect(notificaciones).toContain(`Tu comercio ${dueno.nombre} fue rechazado. Motivo: Rechazo 2`);
+      expect(notificaciones).toContain(`Tu comercio ${dueno.nombre} fue rechazado. Motivo: Rechazo 2. Corregilo y volvé a solicitarlo.`);
       expect(notificaciones).toContain(`Tu comercio ${dueno.nombre} fue rechazado de forma definitiva. Motivo: Rechazo 3`);
       expect(sql(`SELECT tipo FROM notificacion WHERE mensaje LIKE '%de forma definitiva. Motivo: Rechazo 3' AND entidad_id = ${dueno.comercioId};`)).toBe('COMERCIO_RECHAZADO');
 

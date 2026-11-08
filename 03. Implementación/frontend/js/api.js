@@ -1,4 +1,5 @@
 import { mostrarPantallaCuentaSuspendida } from './cuenta-suspendida.js';
+import { FalloRecuperable, esperarReintento, mostrarAvisoTimeout, registrarExitoSegundoPlano, registrarFalloSegundoPlano } from './red-aviso.js';
 
 export const API_BASE_URL = 'http://localhost:8080/api/v1';
 
@@ -25,6 +26,7 @@ const HEADER_COMERCIO_ID = 'X-Comercio-Id';
 const RUTAS_DEL_DUENO = /^\/(comercios\/(perfil|redes-sociales|cerrar|abrir|equipo|estadisticas|documentos)|productos|pedidos\/comercio|notificaciones)(?=[/?]|$)/;
 const RUTAS_DEL_DUENO_SIN_HEADER = /^\/notificaciones\/comercio\//;
 const REQUEST_TIMEOUT_MS = 15000;
+const PAUSA_REINTENTO_LECTURA_MS = 250;
 
 export class ApiError extends Error {
   constructor(status, mensaje, data) {
@@ -32,6 +34,12 @@ export class ApiError extends Error {
     this.status = status;
     this.data = data;
   }
+}
+
+const CODIGO_TIMEOUT_AVISADO = 'TIMEOUT_AVISADO';
+
+export function esTimeoutAvisado(error) {
+  return error instanceof ApiError && Boolean(error.data) && error.data.codigo === CODIGO_TIMEOUT_AVISADO;
 }
 
 export function getToken() {
@@ -259,19 +267,29 @@ function crearModalSesionCerrada({ id, icono, titulo, texto }) {
   backdrop.id = id;
   backdrop.className = 'modal-backdrop';
   backdrop.innerHTML = `
-    <div class="modal-sheet">
+    <div class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="${id}-titulo" aria-describedby="${id}-texto">
       <div class="modal-sheet__icon">
         ${icono}
       </div>
-      <h2 class="modal-sheet__title">${titulo}</h2>
-      <p class="modal-sheet__text">${texto}</p>
+      <h2 class="modal-sheet__title" id="${id}-titulo">${titulo}</h2>
+      <p class="modal-sheet__text" id="${id}-texto">${texto}</p>
       <button class="btn btn-primary" type="button" id="${id}-cta">Ir al inicio de sesión</button>
     </div>
   `;
   document.body.appendChild(backdrop);
-  document.getElementById(`${id}-cta`).addEventListener('click', () => {
+  const cta = document.getElementById(`${id}-cta`);
+  function irAlLogin() {
+    document.removeEventListener('keydown', alTeclear, true);
     redirectTo('login.html');
-  });
+  }
+  function alTeclear(evento) {
+    if (evento.key === 'Escape') {
+      irAlLogin();
+    }
+  }
+  document.addEventListener('keydown', alTeclear, true);
+  cta.addEventListener('click', irAlLogin);
+  cta.focus();
 }
 
 const ICONO_SESION_CERRADA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 9.4 7.55 4.24"/><path d="M18 13v-1a6 6 0 0 0-8.62-5.4"/><path d="M6 18.5A6 6 0 0 0 18 17.5"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
@@ -282,7 +300,7 @@ function showSesionCerradaModal() {
     id: 'sesion-cerrada-modal',
     icono: ICONO_SESION_CERRADA,
     titulo: 'Sesión cerrada',
-    texto: 'Detectamos que iniciaste sesión en otro dispositivo. Por seguridad, tu sesión en este dispositivo fue cerrada automáticamente.',
+    texto: 'Tu sesión terminó. Iniciá sesión de nuevo.',
   });
 }
 
@@ -493,7 +511,39 @@ export function perderAccesoAlComercio() {
   consultarAcceso(comercioId).then((acceso) => mostrarAvisoAccesoPerdido({ nombre, acceso }));
 }
 
-export async function apiFetch(path, { method = 'GET', body, auth = true, handle401Globally = true, handle5xxGlobally = true, comercioId, sinComercio = false, conMensaje = false, handleRedGlobally = true, comoBlob = false, timeoutMs = REQUEST_TIMEOUT_MS } = {}) {
+function modoDeFalla(explicito, esMutacion, segundoPlano) {
+  if (segundoPlano) {
+    return 'silencioso';
+  }
+  if (explicito === false) {
+    return 'lanzar';
+  }
+  if (explicito === undefined && esMutacion) {
+    return 'aviso';
+  }
+  return 'redirigir';
+}
+
+export async function apiFetch(path, opciones = {}) {
+  const esMutacion = (opciones.method || 'GET').toUpperCase() !== 'GET';
+  const modoRed = modoDeFalla(opciones.handleRedGlobally, esMutacion, opciones.segundoPlano);
+  const modo5xx = modoDeFalla(opciones.handle5xxGlobally, esMutacion, opciones.segundoPlano);
+  const contexto = { modoRed, modo5xx };
+  if (modoRed !== 'aviso' && modo5xx !== 'aviso') {
+    return solicitar(path, opciones, contexto);
+  }
+  try {
+    return await solicitar(path, opciones, contexto);
+  } catch (error) {
+    if (!(error instanceof FalloRecuperable)) {
+      throw error;
+    }
+    return esperarReintento(() => solicitar(path, opciones, contexto), error.tipo);
+  }
+}
+
+async function solicitar(path, opciones, { modoRed, modo5xx, reintentado = false }) {
+  const { method = 'GET', body, auth = true, handle401Globally = true, comercioId, sinComercio = false, conMensaje = false, conCabeceras = false, comoBlob = false, timeoutMs = REQUEST_TIMEOUT_MS, segundoPlano = false, noIdempotente = null } = opciones || {};
   const esFormData = typeof FormData !== 'undefined' && body instanceof FormData;
   const headers = esFormData ? {} : { 'Content-Type': 'application/json' };
   const token = getToken();
@@ -522,8 +572,23 @@ export async function apiFetch(path, { method = 'GET', body, auth = true, handle
     });
   } catch (error) {
     clearTimeout(timeoutId);
-    if (!handleRedGlobally) {
+    if (noIdempotente && error.name === 'AbortError' && modoRed !== 'silencioso') {
+      mostrarAvisoTimeout(noIdempotente);
+      throw new ApiError(0, 'Se cortó la conexión', { codigo: CODIGO_TIMEOUT_AVISADO });
+    }
+    if (modoRed === 'silencioso') {
+      registrarFalloSegundoPlano();
       throw new ApiError(0, 'Sin conexión', null);
+    }
+    if (modoRed === 'lanzar') {
+      throw new ApiError(0, 'Sin conexión', null);
+    }
+    if (modoRed === 'aviso') {
+      throw new FalloRecuperable('red');
+    }
+    if (modoRed === 'redirigir' && method === 'GET' && error.name !== 'AbortError' && !reintentado) {
+      await new Promise((resolver) => setTimeout(resolver, PAUSA_REINTENTO_LECTURA_MS));
+      return solicitar(path, opciones, { modoRed, modo5xx, reintentado: true });
     }
     if (error.name === 'AbortError') {
       redirectTo('errores/timeout.html', true);
@@ -534,13 +599,26 @@ export async function apiFetch(path, { method = 'GET', body, auth = true, handle
   }
   clearTimeout(timeoutId);
 
+  if (segundoPlano && response.status < 500) {
+    registrarExitoSegundoPlano();
+  }
+
   if (comoBlob && response.ok) {
     return response.blob();
   }
 
   const parsed = await parseBody(response);
 
-  if (response.status >= 500 && handle5xxGlobally) {
+  if (response.status >= 500 && modo5xx === 'silencioso') {
+    registrarFalloSegundoPlano();
+    throw new ApiError(response.status, parsed.mensaje, parsed.data);
+  }
+
+  if (response.status >= 500 && modo5xx === 'aviso') {
+    throw new FalloRecuperable('servidor');
+  }
+
+  if (response.status >= 500 && modo5xx === 'redirigir') {
     redirectTo('errores/500.html', true);
     throw new ApiError(response.status, parsed.mensaje, parsed.data);
   }
@@ -587,5 +665,8 @@ export async function apiFetch(path, { method = 'GET', body, auth = true, handle
     throw new ApiError(response.status, parsed.mensaje, parsed.data);
   }
 
+  if (conCabeceras) {
+    return { data: parsed.data, cabeceras: response.headers };
+  }
   return conMensaje ? { mensaje: parsed.mensaje, data: parsed.data } : parsed.data;
 }

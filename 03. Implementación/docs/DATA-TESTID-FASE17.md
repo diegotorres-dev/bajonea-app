@@ -431,3 +431,49 @@ Sin `data-testid` nuevos. El spec `88` usa los existentes: `suspender-comercio-q
 | `faq.html` | `faq-pregunta` (un `<summary>` por pregunta, 32), `faq-ayuda`, `faq-enlace-soporte` | Cada pregunta es un `<details class="faq-item">`; el estado abierto es el atributo `open`. |
 | `login.html`, `registro-tipo-cuenta.html`, `registro-cliente.html`, `registro-comercio.html` | `legal-pie`, `legal-pie-terminos`, `legal-pie-privacidad`, `legal-pie-faq` | Mismo pie, en versión compacta (`legal-pie--sitio`). |
 | `soporte.html` | `texto-faq`, `enlace-faq` | Se suman a `texto-privacidad` y `enlace-privacidad`, que ya existían. |
+
+
+## Tramo 1 de pulido (2026-11-07)
+
+| Pantalla | `data-testid` | Notas |
+|---|---|---|
+| Hoja de confirmación (`js/hoja.js`) | `hoja-<nombre>` (el fondo), `hoja-<nombre>-titulo`, `hoja-<nombre>-texto-1`…, `hoja-<nombre>-error`, `btn-volver-hoja`, `btn-confirmar-<nombre>` | `<nombre>` es `cancelar-pedido` o `confirmar-recepcion`. El diálogo se encuentra con `getByRole('dialog')`. |
+| `pedido-detalle.html` | `btn-cancelar-pedido`, `btn-confirmar-entrega` | Siguen siendo los disparadores; ahora abren la hoja. Para cancelar de verdad hay que hacer clic además en `btn-confirmar-cancelar-pedido`. |
+| Cualquier pantalla (`js/red-aviso.js`) | `franja-sin-conexion`, `aviso-red`, `aviso-red-texto`, `btn-reintentar-red` | La franja aparece a la segunda falla seguida de un sondeo; el aviso aparece cuando una acción del usuario no pudo llegar al servidor. |
+| `comercio-dashboard.html`, `comercio-pedidos.html` | `etiqueta-pedido-nuevo`, `vencimiento-pedido` | Dentro de `pedido-item-<id>`. `nombre-cliente-pedido` pasó a un `<span>` dentro del `<p>` del nombre. |
+| `perfil.html`, `comercio-perfil.html`, `comercio-dashboard.html` | `sonido-slot`, `sonido-avisos`, `switch-sonido-avisos`, `ayuda-sonido-bloqueado`, `btn-activar-sonido` | El interruptor es un `role="switch"` con `aria-checked`. |
+| `perfil.html`, `comercio-perfil.html` | `btn-ayuda` | Fila "Ayuda" (un enlace a `ayuda.html`). |
+| `ayuda.html` | `contenido-ayuda`, `lista-ayuda`, `btn-ayuda-faq`, `btn-ayuda-escribir-soporte`, `btn-ayuda-mis-consultas`, `btn-ayuda-terminos`, `btn-ayuda-privacidad`, `contador-mis-consultas` | `btn-volver` de la cabecera vuelve al perfil. |
+| Toast (`showToast`) | `toast-exito`, `toast-error`, `btn-cerrar-toast` | La clase `.toast` no cambió. |
+
+
+## Tramo 1b de pulido (2026-11-07)
+
+Sin `data-testid` nuevos. Se reutilizan `vencimiento-pedido` (ahora lo alimenta el campo `limiteRespuestaComercio` de la API), `toast-exito`, `toast-error`, `btn-ayuda`, `btn-mis-consultas`, `btn-crear-categoria` y `btn-crear-tag` (estos dos nacen `disabled` hasta que la lista termina de cargar, como los botones de los perfiles) y el contenedor `#seccion-soporte` del perfil del Dueño, que ya no lleva un título "Ayuda" (el selector `.profile-section__title` del Dueño devuelve solo "Mi comercio" y "Sesión").
+
+## Tramo 2A de pulido (2026-11-07)
+
+| Elemento | `data-testid` | Nota |
+|---|---|---|
+| Aviso de timeout de un envío que puede duplicar (`mostrarAvisoTimeout`, `js/red-aviso.js`) | `aviso-timeout`, `aviso-timeout-titulo`, `aviso-timeout-texto`, `aviso-timeout-enlace`, `btn-cerrar-aviso-timeout` | `role="alert"`; el enlace (`target="_blank"`) no existe en la consulta a Soporte sin sesión. No reemplaza a `aviso-red` / `btn-reintentar-red`, que siguen para el fallo inmediato y el 5xx. |
+
+## Tramo 2B de pulido (2026-11-07)
+
+| Elemento | `data-testid` | Nota |
+|---|---|---|
+| Tarjeta de aviso (`notificaciones.html`) | `notificacion-item-{id}` | Ahora es un `<a href>` (con destino) o un `<button type="button">` (sin destino, `disabled` una vez leído). Antes era un `div`. Conserva las clases `notification-item`, `notification-item--leida`, `notification-item__texto`, `__fecha` y `__dot`. |
+| Estado de lectura (texto oculto "No leída. ") | `notificacion-estado-{id}` | `.sr-only`; vacío cuando el aviso ya está leído. |
+| Etiqueta del destino dentro de la tarjeta | `btn-ver-pedido-notificacion-{id}` (avisos de pedido y de reclamo), `btn-ver-destino-notificacion-{id}` (los demás) | **Los ids se conservaron, pero ya no son enlaces**: son un `span` con el texto del destino ("Ver pedido", "Ver reclamo", "Ver documentación", "Ver equipo", "Ver panel", "Ver carrito", "Cambiar de cuenta"). El `href` está en la tarjeta (`notificacion-item-{id}`). |
+| Pedido no encontrado (Cliente, `pedido-detalle.html`) | `btn-ver-mis-pedidos` | Sale a `pedidos.html`. Reemplaza al botón "Explorar comercios" (`btn-explorar-comercios`) solo en este estado vacío. |
+| Contador redondo de las tarjetas de Gestión del Administrador | `contador-tile-reembolsos`, `contador-tile-soporte`, `contador-tile-reclamos` | Mismo estilo que `contador-comercios-pendientes`, `contador-resolicitudes-pendientes` y `contador-documentos-por-revisar`. Los subtítulos `contador-soporte-esperando` y `contador-reclamos-pendientes` siguen igual. |
+| Las seis tarjetas con acción del panel del Administrador | `tile-gestion-reembolsos`, `tile-gestion-soporte`, `tile-gestion-reclamos` (ya existían) | La tarjeta de Reembolsos dice "N para revisar" o "Sin reembolsos para revisar". |
+
+## Tramo 2C de pulido (2026-11-07)
+
+| Elemento | `data-testid` | Nota |
+|---|---|---|
+| Botón "Marcar todas" (`notificaciones.html`) | `btn-marcar-todas-leidas` (ya existía) | Ahora también en el contexto del Cliente. En el Cliente lleva el atributo `hidden` mientras no haya avisos sin leer (en el comercio sigue visible y deshabilitado). Llama a `PUT /notificaciones/personales/leidas` en el Cliente y a `PUT /notificaciones/leidas` en el comercio. |
+| Botón "Ver más" al final de la lista | `btn-notificaciones-ver-mas` | 44 px o más de alto; dice "Cargando…" y queda deshabilitado (`aria-busy`) mientras pide la página. Desaparece cuando no hay otra página. |
+| Error al cargar más | `notificaciones-error-mas` | Banner `role="alert"` con "No pudimos cargar más avisos." dentro de la lista; no redirige. |
+| Reintentar la carga de más avisos | `btn-reintentar-notificaciones-mas` | Recibe el foco cuando aparece el error. |
+| Tarjeta de aviso ya leído y sin destino | `notificacion-item-{id}` (el mismo) | **Cambió de elemento:** un aviso leído y sin destino es un `div` (no un `button` con `disabled`); se lee como texto normal. Un aviso sin destino y sin leer sigue siendo un `button`; al marcarse leído se reemplaza por un `div` con el mismo `data-testid` y se le da el foco (`tabindex="-1"`). Con destino sigue siendo un `a`. |

@@ -1,4 +1,4 @@
-import { apiFetch, ApiError } from './api.js';
+import { apiFetch, ApiError, esTimeoutAvisado } from './api.js';
 import { exigirDueno } from './contexto.js';
 import { showToast } from './catalogo.js';
 import { prepararPaginaComercio } from './selector-comercio.js';
@@ -337,10 +337,13 @@ export function abrirHojaSubida({ requisitos, tipoInicial = null, alSubido, foco
     subiendo = true;
     actualizarBoton();
     try {
-      await apiFetch(RUTA_API, { method: 'POST', body: datos, handle5xxGlobally: false, handleRedGlobally: false, timeoutMs: TIMEOUT_SUBIDA_MS });
+      await apiFetch(RUTA_API, { method: 'POST', body: datos, handle5xxGlobally: false, handleRedGlobally: false, timeoutMs: TIMEOUT_SUBIDA_MS, noIdempotente: { texto: 'Documentación', enlace: 'comercio-documentacion.html' } });
     } catch (error) {
       subiendo = false;
       actualizarBoton();
+      if (esTimeoutAvisado(error)) {
+        return;
+      }
       renderBannerTexto(bannerSlot, 'error', mensajeConSugerencia(error));
       bannerSlot.firstElementChild?.setAttribute('role', 'alert');
       bannerSlot.firstElementChild?.setAttribute('data-testid', 'error-subida-documento');

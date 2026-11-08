@@ -341,7 +341,7 @@ class PedidoAutoconfirmadoConcurrenciaIntegrationTest {
                 auxiliares.add(pool.submit(() -> atrapar(() -> {
                     largada.await(10, TimeUnit.SECONDS);
                     while (seguir.get()) {
-                        notificacionService.listar(lector, String.valueOf(dueno.comercioId()));
+                        notificacionService.listar(lector, String.valueOf(dueno.comercioId()), null, null).items();
                         notificacionService.contarNoLeidas(lector, String.valueOf(dueno.comercioId()));
                         notificacionService.marcarLeidasDelComercioActivo(lector, String.valueOf(dueno.comercioId()));
                         pausa(5);
@@ -351,7 +351,7 @@ class PedidoAutoconfirmadoConcurrenciaIntegrationTest {
             auxiliares.add(pool.submit(() -> atrapar(() -> {
                 largada.await(10, TimeUnit.SECONDS);
                 while (seguir.get()) {
-                    notificacionService.listar(comoFijo, null);
+                    notificacionService.listar(comoFijo, null, null, null).items();
                     pausa(5);
                 }
             })));

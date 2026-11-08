@@ -582,7 +582,8 @@ test.describe('Fase 4 (UI): documentos del comercio, entrega B', () => {
       await expect(page.getByText(/Se revocó la aprobación de tu documento «Libreta sanitaria» de .*Motivo: Documento vencido/)).toBeVisible();
       await expect(page.getByText(/ya puede recibir pedidos\./)).toBeVisible();
       await expect(page.getByText(/dejó de recibir pedidos/)).toBeVisible();
-      await expect(page.locator('[data-testid^="btn-ver-destino-notificacion-"]')).toHaveCount(4);
+      await expect(page.locator('[data-testid^="btn-ver-destino-notificacion-"]')).toHaveCount(5);
+      await expect(page.getByText('Ver panel')).toHaveCount(1);
       await expect(page.getByText('Ver documentación')).toHaveCount(2);
       await expect(page.getByText('Ir al panel')).toHaveCount(1);
       await expect(page.getByText('Ver qué falta')).toHaveCount(1);

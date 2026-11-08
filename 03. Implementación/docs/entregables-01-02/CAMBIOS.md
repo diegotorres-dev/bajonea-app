@@ -1452,3 +1452,102 @@ No se editó `01. Análisis de Requerimientos` ni `02. Diseño`. Lo de la entreg
 1. **Alcance y limitaciones** (`alcance-y-limitaciones.md` de esta carpeta, ya actualizado): nueva limitación "Dueño y Cliente en una misma cuenta" (regla escrita, no construida, trabajo futuro). Copiar a `01. Análisis de Requerimientos/03. Alcance y Limitaciones/`.
 2. **Requisitos y casos de uso de reactivación:** la reactivación de cuenta inactiva desde el inicio de sesión no pide código por email (ya anotado en la entrada de S6, entrega B).
 3. Pendiente fuera del alcance del proyecto: revisión de los tres textos por un abogado antes de abrir la plataforma al público.
+
+
+## Tramo 1 de pulido: correcciones graves de usabilidad — 2026-11-07
+
+### Qué cambió
+
+- Cancelar un pedido y confirmar su recepción piden confirmación antes de actuar; cancelar un pedido pagado avisa cuánto se devuelve.
+- Un corte de red o un error del servidor no expulsa a la persona de la pantalla: aparece un aviso con "Reintentar" y no se pierde lo escrito.
+- El panel y la lista de pedidos del comercio se actualizan solos, marcan los pedidos nuevos y suenan los avisos nuevos (con un interruptor "Sonido de avisos").
+- Los mensajes de error duran más y se pueden cerrar; el mensaje de sesión terminada deja de afirmar que se inició sesión en otro dispositivo.
+- Nueva pantalla de Ayuda en el perfil del Cliente, del Dueño y del Empleado.
+
+### Cambios a reflejar en los documentos de requisitos
+
+1. **Requisitos funcionales y casos de uso del Cliente (cancelar pedido, confirmar recepción):** el paso "El Cliente cancela / confirma" pasa a "El sistema pide confirmación y muestra la consecuencia; el Cliente confirma o vuelve". Para un pedido pagado, el mensaje informa el monto que se devuelve.
+2. **Requisitos no funcionales (usabilidad y disponibilidad):** ante un corte de conexión el sistema debe conservar lo que la persona estaba haciendo y permitir reintentar sin recargar; los sondeos de fondo no deben interrumpir la pantalla.
+3. **Casos de uso del Dueño y del Empleado (pedidos recibidos):** el panel y la lista de pedidos se actualizan automáticamente (cada 15 s) y distinguen los pedidos nuevos hasta que se abre su detalle. Nuevo requisito: aviso sonoro opcional, solo con la aplicación abierta; las notificaciones fuera de la aplicación (push) quedan fuera de alcance.
+4. **Alcance y limitaciones:** el aviso sonoro depende de que el navegador permita el audio (hace falta un toque previo en la pantalla) y no suena con la aplicación cerrada. La cuenta regresiva de "vence en N minutos" de un pedido pendiente depende de que la API informe el límite de respuesta (pendiente de decisión).
+5. **Casos de uso comunes (ayuda):** nueva pantalla "Ayuda" accesible desde el perfil de Cliente, Dueño y Empleado, con Preguntas frecuentes, Escribir a Soporte, Mis consultas a Soporte, Términos y condiciones y Política de privacidad. El Administrador no la tiene.
+
+
+## Tramo 1b de pulido: ajustes del Tramo 1 — 2026-11-07
+
+### Qué cambió
+
+- El comercio ve cuánto tiempo le queda para responder un pedido nuevo ("Vence en N minutos"); el plazo lo calcula el servidor con la misma configuración del vencimiento automático.
+- Los avisos de éxito ("Guardado") se van solos aunque el mouse esté encima; solo los de error se quedan mientras se los mira.
+- El perfil del Dueño ya no repite el título "Ayuda".
+- Los botones de crear categoría y crear tag esperan a que la pantalla termine de cargar antes de poder tocarse.
+- Al cerrar una hoja de confirmación en iPhone y Safari, el foco vuelve al botón que la abrió.
+
+### Cambios a reflejar en los documentos de requisitos
+
+1. **Requisitos funcionales del Dueño y del Empleado (pedidos recibidos):** cada pedido pendiente de respuesta informa el tiempo restante para responder (30 minutos desde que se confirma el pago, configurable); pasado ese plazo el pedido expira solo y se devuelve el pago. El Cliente no ve ese plazo.
+2. **Requisitos no funcionales (usabilidad):** los avisos de éxito desaparecen solos a los 2,5 segundos; los de error duran 7 segundos, se pueden cerrar y se pausan mientras se los mira o se los toca.
+3. **Alcance y limitaciones** (`alcance-y-limitaciones.md` de esta carpeta, ya actualizado): el sonido y el aviso de conexión no se probaron en un iPhone ni en Safari reales; el reintento de una acción tras un corte de red puede duplicar lo que no tiene protección propia (crear un producto, cargar un documento, una consulta nueva a Soporte, crear un pedido desde el mismo carrito); el tiempo restante para responder se actualiza con la recarga de 15 segundos.
+
+## Tramo 2A de pulido: reintentos seguros — 2026-11-07
+
+### Qué cambió
+
+Crear un pedido, crear un producto, cargar un documento y enviar una consulta nueva a Soporte ya no se pueden reintentar tras un corte en el que no se sabe si el envío llegó: la aplicación avisa "Se cortó la conexión. Puede que ya se haya enviado: revisá [dónde] antes de volver a enviar.", con un enlace a la lista (Mis pedidos, Productos, Documentación, Mis consultas a Soporte; sin sesión, "tu email"), y deja lo escrito en pantalla. Un corte inmediato o un error del servidor siguen igual.
+
+### Cambios a reflejar en los documentos de requisitos
+
+1. **Alcance y limitaciones** (`alcance-y-limitaciones.md` de esta carpeta, ya actualizado): el reintento tras un corte de red ya no puede duplicar esos cuatro envíos cuando el corte es un tiempo de espera agotado; sigue pudiendo duplicarlos ante un error del servidor (5xx) tras el que se ofrece "Reintentar" o si la persona vuelve a enviar a mano sin verificar.
+2. **Requisitos no funcionales (usabilidad):** ante un tiempo de espera agotado en un envío sin protección contra duplicados, el sistema avisa dónde verificar antes de reenviar.
+
+## Tramo 2B de pulido: notificaciones, pantallas de espera y panel del Administrador — 2026-11-07
+
+### Qué cambió
+
+- **Notificaciones (Cliente, Dueño y Empleado).** Cada aviso entero se toca: si tiene una pantalla relacionada (el pedido, el reclamo, la documentación, el equipo, el panel, el carrito, el cambio de cuenta) lleva a ella y se marca leído; si es solo informativo (cuenta inactivada o suspendida, comercio inactivado, baja del equipo) se marca leído sin navegar. El estado "no leída" se distingue por un fondo suave, un punto y el texto accesible "No leída", no solo por el color. Un Empleado nunca recibe un destino que no puede ver.
+- **Pantallas de espera del Dueño** (comercio pendiente, rechazado o con rechazo definitivo): se actualizan solas cada 15 segundos con la pantalla visible; cuando el Administrador resuelve, el Dueño pasa a la pantalla que corresponde, con un sonido si lo tiene encendido y un aviso de que el comercio fue aprobado. Antes había que recargar.
+- **Panel del Administrador:** la tarjeta de Reembolsos cuenta los que hay para revisar; las seis tarjetas con acción tienen el mismo contador; lo pendiente aparece primero (al abrir el panel, sin moverse después) y los números se actualizan cada 30 segundos mientras la pestaña se ve.
+- Un pedido que no existe o no es del Cliente ofrece "Ver mis pedidos". Al tocar un comercio con avisos sin leer en "Tus comercios" se abren sus notificaciones.
+
+### Cambios a reflejar en los documentos de requisitos
+
+1. **Requisitos funcionales (notificaciones, T1 a T41):** cada notificación enlaza con la pantalla donde se actúa, según el tipo y el rol del destinatario (tabla en `docs/MAPEO-ARCHIVOS-TRAMO-2B.md`); las informativas no navegan. Las pantallas de espera del Dueño reflejan el cambio de estado sin recargar.
+2. **Requisitos no funcionales (usabilidad y accesibilidad):** el estado leído o no leído de un aviso no depende solo del color; la zona táctil de cada aviso es de al menos 44 píxeles; el aviso se puede recorrer con el teclado. La actualización automática solo corre con la pantalla visible.
+3. **Alcance y limitaciones:** sigue sin haber avisos ni campana para el Administrador (el panel se actualiza solo, sin aviso sonoro); "Marcar todas" para el Cliente, la paginación de la lista de avisos y la revisión de los textos de los avisos quedan para el tramo 2C.
+
+## Tramo 2C de pulido: notificaciones (paginación, "Marcar todas" del Cliente y textos) — 2026-11-07
+
+### Qué cambió
+
+- **La lista de notificaciones se carga de a 20.** La pantalla muestra los 20 avisos más nuevos y, si hay más, un botón "Ver más" al final (Cliente, Dueño y Empleado). Al tocarlo se suman los siguientes sin perder el lugar en la pantalla. El punto de la campana y el contador cuentan todos los avisos sin leer, no solo los cargados. Si falla la carga de más avisos, el error aparece dentro de la lista con "Reintentar".
+- **"Marcar todas" también para el Cliente.** El botón se ve solo si hay avisos sin leer; marca como leídos los avisos personales (no los de ningún comercio) y avisa con el mismo mensaje que en el comercio.
+- **Un aviso informativo ya leído se lee como texto**, no como un botón deshabilitado: los lectores de pantalla ya no lo saltean.
+- **Textos de varios avisos** (los avisos ya creados conservan el texto con el que se crearon):
+
+| Aviso | Antes | Ahora |
+|---|---|---|
+| Pedido nuevo (T1) | "Nuevo pedido recibido de {Nombre Apellido}." | "Pedido nuevo #{n} de {Nombre Apellido}." |
+| Pedido en camino sin confirmar (T7) | "Tu pedido #{n} está en camino hace un buen rato. Confirmá la recepción cuando llegue." | "Tu pedido #{n} sigue en camino. Si ya lo recibiste, confirmalo para cerrarlo." |
+| Pedido cancelado porque el comercio no está disponible (T3, T10 y T11, suspensión del comercio) | "Tu pedido se canceló porque el comercio no está disponible. Te devolvemos el dinero." y, en un caso, "Tu pedido #{n} fue cancelado automáticamente: el comercio fue suspendido…" | "Cancelamos tu pedido #{n} porque el comercio no está disponible. Te devolvemos el dinero." (con el número, en todos los casos) |
+| Pedido sin respuesta del comercio (T13) | "El pedido #{n} expiró por falta de respuesta." | "El pedido #{n} se canceló porque nadie lo respondió a tiempo." |
+| Comercio rechazado (T15) | "Tu comercio {nombre} fue rechazado. Motivo: {motivo}" | Igual y, solo cuando todavía se puede corregir, se agrega "Corregilo y volvé a solicitarlo." (no en el rechazo definitivo) |
+| Documento rechazado o revocado (T39) | "Tu documento «{tipo}» de {comercio} fue rechazado. Motivo: {motivo}" (o "Se revocó la aprobación…") | Se agrega "Subí uno nuevo." |
+| Cuenta inactivada (T24, aviso de la campana) | "Tu cuenta quedó inactiva por falta de uso. Iniciá sesión para reactivarla." | "Tu cuenta quedó inactiva por falta de uso." (el email conserva la instrucción de reactivar) |
+| Reembolso por reclamo (al Dueño) | "Reembolsamos {monto} al Cliente por un reclamo del pedido #{n}. Mercado Pago lo descuenta de tu cuenta en la parte que te corresponde." | "Reembolsamos {monto} al Cliente por un reclamo del pedido #{n}." (se quita la segunda oración hasta verificar el reparto con Mercado Pago real) |
+
+### Cambios a reflejar en los documentos de requisitos
+
+1. **Requisitos funcionales (notificaciones):** el listado se entrega por páginas de 20 (50 como máximo) con un cursor; el contador de no leídas es total. Agregar "Marcar todas como leídas" para el Cliente (avisos personales). Reemplazar los textos de T1, T7, T3/T10/T11 (suspensión del comercio), T13, T15, T24, T39 y del reembolso por reclamo por los de la tabla de arriba.
+2. **Requisitos no funcionales (accesibilidad):** un aviso sin acción disponible no se presenta como un control deshabilitado; los avisos de la lista se pueden recorrer con el teclado y leer con un lector de pantalla.
+3. **Diccionario de datos (tipos de notificación sin código T).** Los siguientes tipos existen en el código y no figuran con un código T; se sugiere asignarles uno (o aclarar que se identifican por nombre):
+
+| Código sugerido | Tipo | Quién lo recibe | Cuándo | Canal |
+|---|---|---|---|---|
+| T42 | `RECLAMO_REEMBOLSO_DUENO` | Dueño del comercio | Un reclamo se resolvió con reembolso | Campana |
+| T43 | `COMERCIO_SUSPENDIDO_EQUIPO` | Empleados del comercio (no el Dueño) | El comercio fue suspendido | Campana |
+| T44 | `COMERCIO_SUSPENSION_LEVANTADA_EQUIPO` | Empleados del comercio (no el Dueño) | Se levantó la suspensión del comercio | Campana |
+| T45 | `DUENO_SUSPENDIDO` | Dueño | Se suspendió su cuenta | Solo rastro del email |
+| T46 | `DUENO_SUSPENSION_LEVANTADA` | Dueño | Se levantó la suspensión de su cuenta | Solo rastro del email |
+
+   Además, **el diccionario salta del T3 al T5: no existe T4** (ni tipo en el enum). Se sugiere dejarlo anotado como "no usado" para no confundir, o renumerar.
+4. **Alcance y limitaciones:** siguen sin existir avisos ni campana para el Administrador; los 6 tipos sin emisor (`NUEVO_COMERCIO_PENDIENTE`, `NUEVA_RESOLICITUD_COMERCIO`, `NUEVO_RECLAMO`, `NUEVO_MENSAJE_SOPORTE`, `REEMBOLSO_FALLIDO_DEFINITIVO` y `PEDIDO_CERRADO_TIMER_SUSPENSION`) quedan documentados y no se eliminan. La frase sobre cómo Mercado Pago descuenta un reembolso por reclamo se vuelve a incluir recién cuando se verifique el reparto con Mercado Pago real.

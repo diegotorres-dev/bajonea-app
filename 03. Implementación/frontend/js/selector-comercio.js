@@ -17,6 +17,7 @@ import {
 import { ETIQUETA_CERRADO, mostrarChipCerrado } from './apertura-comercio.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
+const RUTA_NOTIFICACIONES = 'notificaciones.html';
 const ID_PANEL = 'panel-comercios';
 const ID_TITULO_PANEL = 'panel-comercios-titulo';
 const DURACION_MANTENER_APRETADO_MS = 500;
@@ -428,7 +429,7 @@ export function abrirPanelComercios() {
   function alElegir(comercio) {
     if (esSeleccionable(comercio)) {
       activarComercio(comercio.id);
-      window.location.href = RUTA_DASHBOARD;
+      window.location.href = comercio.cantidadNotificacionesNoLeidas > 0 ? RUTA_NOTIFICACIONES : RUTA_DASHBOARD;
       return;
     }
     window.location.href = rutaDeEstado(comercio);

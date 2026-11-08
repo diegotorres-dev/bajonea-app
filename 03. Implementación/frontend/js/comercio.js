@@ -1,5 +1,8 @@
-import { apiFetch, ApiError, clearSesion, contextoPuedeCerrarComercio, contextoPuedeEditarCatalogo, contextoPuedeGestionarPedidos, esContextoComercio, esContextoDueno, esContextoEmpleado, getComercioActivoId, getUsuario, setContexto, TIPO_CONTEXTO } from './api.js';
+import { apiFetch, ApiError, guardarToastPendiente, esTimeoutAvisado, clearSesion, contextoPuedeCerrarComercio, contextoPuedeEditarCatalogo, contextoPuedeGestionarPedidos, esContextoComercio, esContextoDueno, esContextoEmpleado, getComercioActivoId, getUsuario, setContexto, TIPO_CONTEXTO } from './api.js';
 import { enlazarMisConsultas } from './soporte-mis-consultas.js';
+import { crearInterruptorSonido } from './sonido-interruptor.js';
+import { prepararAudio, reproducirDing } from './sonido-avisos.js';
+import { esPedidoNuevo, marcarPedidoVisto, registrarLineaBase, textoVencimientoPedido } from './pedidos-nuevos.js';
 import { exigirContextoComercio, exigirDueno } from './contexto.js';
 import { logout, construirTelefono, resolverHomePorRol, LABELS_TIPO_SOCIEDAD, LABELS_CONDICION_IVA } from './auth.js';
 import { resumenHorarioHoy, renderTopBar, showToast, mostrarToastPendiente, pintarAvatarComercio, renderPedidoEstadoHeader, manejarBloqueoPorCambioPassword, crearBloqueMotivoRechazo } from './catalogo.js';
@@ -13,6 +16,7 @@ import {
   getComercioActivoEnMemoria,
   getComerciosEnMemoria,
   iniciarPollingComercios,
+  INTERVALO_POLLING_COMERCIOS_MS,
   marcarNotificacionesDelComercioLeidas,
   refrescarComercios,
   resolverComercioActivo,
@@ -251,6 +255,66 @@ function leerComercioIdDeLaUrl() {
   return crudo !== null && Number.isInteger(valor) && valor > 0 ? valor : null;
 }
 
+const ESPERA_ANTES_DE_NAVEGAR_CON_SONIDO_MS = 700;
+const TEXTO_TOAST_APROBADO = 'Tu comercio fue aprobado';
+
+async function llevarAlEstadoActual(comercio) {
+  if (comercio.estado === 'APROBADO' || comercio.estado === 'APTO_VENTA') {
+    activarComercio(comercio.id);
+    window.location.href = RUTA_DASHBOARD;
+    return;
+  }
+  const ruta = rutaDeEstado(comercio);
+  if (ruta) {
+    window.location.href = ruta;
+  } else {
+    await redirigirPorDefecto();
+  }
+}
+
+function vigilarCambioDeEstadoDelComercio(comercioId, estadoEsperado) {
+  let consultando = false;
+  let cambiando = false;
+  let intervalo = null;
+
+  async function consultar() {
+    if (consultando || cambiando || document.visibilityState === 'hidden') {
+      return;
+    }
+    consultando = true;
+    let actual;
+    try {
+      actual = await apiFetch('/comercios/perfil', { comercioId, segundoPlano: true });
+    } catch {
+      return;
+    } finally {
+      consultando = false;
+    }
+    if (actual.estado === estadoEsperado) {
+      return;
+    }
+    cambiando = true;
+    window.clearInterval(intervalo);
+    if (actual.estado === 'APROBADO' || actual.estado === 'APTO_VENTA') {
+      guardarToastPendiente(TEXTO_TOAST_APROBADO);
+    }
+    prepararAudio();
+    const sono = reproducirDing();
+    if (sono) {
+      await new Promise((resolver) => window.setTimeout(resolver, ESPERA_ANTES_DE_NAVEGAR_CON_SONIDO_MS));
+    }
+    await llevarAlEstadoActual(actual);
+  }
+
+  intervalo = window.setInterval(consultar, INTERVALO_POLLING_COMERCIOS_MS);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      consultar();
+    }
+  });
+  window.addEventListener('beforeunload', () => window.clearInterval(intervalo));
+}
+
 export async function initComercioEstadoPagina(estadoEsperado) {
   if (!(await exigirDueno())) {
     return null;
@@ -285,17 +349,7 @@ export async function initComercioEstadoPagina(estadoEsperado) {
   normalizarComercio(comercio);
 
   if (comercio.estado !== estadoEsperado) {
-    if (comercio.estado === 'APROBADO' || comercio.estado === 'APTO_VENTA') {
-      activarComercio(comercio.id);
-      window.location.href = RUTA_DASHBOARD;
-      return null;
-    }
-    const ruta = rutaDeEstado(comercio);
-    if (ruta) {
-      window.location.href = ruta;
-    } else {
-      await redirigirPorDefecto();
-    }
+    await llevarAlEstadoActual(comercio);
     return null;
   }
 
@@ -303,6 +357,7 @@ export async function initComercioEstadoPagina(estadoEsperado) {
     await marcarNotificacionesDelComercioLeidas(comercio.id);
   } catch {
   }
+  vigilarCambioDeEstadoDelComercio(comercio.id, estadoEsperado);
   return comercio;
 }
 
@@ -512,16 +567,25 @@ const ESTADO_BADGE_COMERCIO = {
 const BADGE_COMERCIO_DESCONOCIDO = { label: 'Estado no disponible', dotClass: 'pedido-estado__dot--vencido' };
 
 function renderPedidoActivoCard(pedido) {
+  const nuevo = esPedidoNuevo(pedido);
   const card = document.createElement('a');
-  card.className = 'pedido-card';
+  card.className = nuevo ? 'pedido-card pedido-card--nuevo' : 'pedido-card';
   card.href = `comercio-pedido-detalle.html?id=${pedido.id}`;
   card.setAttribute('data-testid', `pedido-item-${pedido.id}`);
 
   const top = crear('div', 'pedido-card__top');
   const info = document.createElement('div');
   const clienteEl = crear('p', 'pedido-card__comercio');
-  clienteEl.setAttribute('data-testid', 'nombre-cliente-pedido');
-  clienteEl.textContent = pedido.nombreCliente;
+  const nombreEl = crear('span');
+  nombreEl.setAttribute('data-testid', 'nombre-cliente-pedido');
+  nombreEl.textContent = pedido.nombreCliente;
+  clienteEl.appendChild(nombreEl);
+  if (nuevo) {
+    const etiqueta = crear('span', 'etiqueta-nuevo');
+    etiqueta.setAttribute('data-testid', 'etiqueta-pedido-nuevo');
+    etiqueta.textContent = 'Nuevo';
+    clienteEl.appendChild(etiqueta);
+  }
   info.appendChild(clienteEl);
   const cantidadProductos = pedido.detalles.reduce((total, detalle) => total + detalle.cantidad, 0);
   const fechaEl = crear('p', 'pedido-card__fecha');
@@ -534,6 +598,13 @@ function renderPedidoActivoCard(pedido) {
   }
   fechaEl.appendChild(document.createTextNode(` · ${cantidadProductos} producto${cantidadProductos === 1 ? '' : 's'} · ${formatearFechaHoraCorta(pedido.fechaPagoAprobado)}`));
   info.appendChild(fechaEl);
+  const textoVence = textoVencimientoPedido(pedido, { nuevo });
+  if (textoVence) {
+    const venceEl = crear('p', 'pedido-card__vence');
+    venceEl.setAttribute('data-testid', 'vencimiento-pedido');
+    venceEl.textContent = textoVence;
+    info.appendChild(venceEl);
+  }
   top.appendChild(info);
 
   const badgeInfo = ESTADO_BADGE_COMERCIO[pedido.estado] || BADGE_COMERCIO_DESCONOCIDO;
@@ -627,6 +698,7 @@ export async function initComercioDashboard() {
   if (contextoPuedeCerrarComercio()) {
     montarSwitchCierre(document.getElementById('cierre-comercio-slot'));
   }
+  document.getElementById('sonido-slot').appendChild(crearInterruptorSonido());
   const activo = await prepararPaginaComercio({ slotFranja: document.getElementById('franja-comercio-slot') });
   if (!activo) {
     return;
@@ -671,30 +743,59 @@ export async function initComercioDashboard() {
     month: 'long',
   });
 
-  async function cargarResumenYPedidos() {
-    const [resumen, pedidos] = await Promise.all([
-      apiFetch('/pedidos/comercio/resumen-turno'),
-      apiFetch('/pedidos/comercio'),
-    ]);
-    pedidos.forEach(normalizarPedido);
-    const resumenTurno = normalizarResumenTurno(resumen);
-    renderResumenTurno(document.getElementById('metrics-row'), resumenTurno);
-    programarRecargaAlFinDelTurno(resumenTurno, cargarResumenYPedidos);
-    renderPedidosActivos(document.getElementById('pedidos-activos-list'), document.getElementById('badge-pedidos-activos'), pedidos);
+  let firmaPintada = null;
+  let recargando = false;
+
+  async function cargarResumenYPedidos({ segundoPlano = false } = {}) {
+    if (recargando) {
+      return;
+    }
+    recargando = true;
+    try {
+      const [resumen, pedidos] = await Promise.all([
+        apiFetch('/pedidos/comercio/resumen-turno', { segundoPlano }),
+        apiFetch('/pedidos/comercio', { segundoPlano }),
+      ]);
+      pedidos.forEach(normalizarPedido);
+      registrarLineaBase(pedidos);
+      const resumenTurno = normalizarResumenTurno(resumen);
+      programarRecargaAlFinDelTurno(resumenTurno, () => cargarResumenYPedidos({ segundoPlano: true }));
+      const firma = firmaDelPanel(resumen, pedidos);
+      if (firma === firmaPintada) {
+        return;
+      }
+      firmaPintada = firma;
+      renderResumenTurno(document.getElementById('metrics-row'), resumenTurno);
+      renderPedidosActivos(document.getElementById('pedidos-activos-list'), document.getElementById('badge-pedidos-activos'), pedidos);
+    } finally {
+      recargando = false;
+    }
   }
 
   await cargarResumenYPedidos();
 
+  suscribirComercios(() => {
+    if (!document.hidden) {
+      cargarResumenYPedidos({ segundoPlano: true }).catch(() => {});
+    }
+  });
   window.addEventListener('pageshow', (event) => {
     if (event.persisted) {
-      cargarResumenYPedidos();
+      cargarResumenYPedidos({ segundoPlano: true }).catch(() => {});
     }
   });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
-      cargarResumenYPedidos();
+      cargarResumenYPedidos({ segundoPlano: true }).catch(() => {});
     }
   });
+}
+
+function firmaDelPanel(resumen, pedidos) {
+  const lista = pedidos
+    .filter((pedido) => ESTADOS_ACTIVOS_DASHBOARD.includes(pedido.estado))
+    .map((pedido) => [pedido.id, pedido.estado, esPedidoNuevo(pedido), textoVencimientoPedido(pedido, { nuevo: esPedidoNuevo(pedido) }), pedido.limiteResolucionSuspension || ''].join('|'));
+  return `${JSON.stringify(resumen)}#${lista.join(',')}`;
 }
 
 const FILTROS_PEDIDOS = [
@@ -739,6 +840,7 @@ export async function initComercioPedidos() {
   const avisoComercioSlot = document.getElementById('aviso-comercio-slot');
   let pedidos = await apiFetch('/pedidos/comercio');
   pedidos.forEach(normalizarPedido);
+  registrarLineaBase(pedidos);
 
   function pintarAvisoDeLaLista() {
     if (!pintarFranjaPedidos(avisoComercioSlot, pedidos)) {
@@ -796,14 +898,17 @@ export async function initComercioPedidos() {
 
   renderLista();
 
-  const firmaDeLaLista = (lista) => lista.map((pedido) => `${pedido.id}|${pedido.estado}|${pedido.limiteResolucionSuspension || ''}`).join(',');
+  const firmaDeLaLista = (lista) => lista.map((pedido) => {
+    const nuevo = esPedidoNuevo(pedido);
+    return `${pedido.id}|${pedido.estado}|${pedido.limiteResolucionSuspension || ''}|${nuevo}|${textoVencimientoPedido(pedido, { nuevo }) || ''}`;
+  }).join(',');
   let estabaSuspendido = comercioActivoSuspendido();
   let recargando = false;
   suscribirComercios(async () => {
     const suspendido = comercioActivoSuspendido();
     const cambio = suspendido !== estabaSuspendido;
     estabaSuspendido = suspendido;
-    if (!suspendido && !cambio) {
+    if (document.hidden && !cambio) {
       pintarAvisoComercioNoOperativo(avisoComercioSlot);
       return;
     }
@@ -812,8 +917,9 @@ export async function initComercioPedidos() {
     }
     recargando = true;
     try {
-      const recientes = await apiFetch('/pedidos/comercio');
+      const recientes = await apiFetch('/pedidos/comercio', { segundoPlano: true });
       recientes.forEach(normalizarPedido);
+      registrarLineaBase(recientes);
       if (cambio || firmaDeLaLista(recientes) !== firmaDeLaLista(pedidos)) {
         pedidos = recientes;
         renderLista();
@@ -1625,6 +1731,8 @@ export async function initComercioPedidoDetalle() {
     renderPedidoNoEncontrado(container);
     return;
   }
+  registrarLineaBase(pedidos);
+  marcarPedidoVisto(pedidoId);
 
   async function refrescarTrasConflicto(mensaje) {
     try {
@@ -2224,6 +2332,7 @@ function prepararVistasDelPerfil(esEmpleado) {
     return;
   }
   const lista = document.getElementById('lista-perfil-empleado');
+  lista.appendChild(document.getElementById('ayuda-link'));
   lista.appendChild(document.getElementById('mis-consultas-link'));
   lista.appendChild(document.getElementById('cerrar-sesion-link'));
   quitar('seccion-mi-comercio', 'seccion-soporte', 'seccion-sesion', 'view-editar-perfil', 'view-datos-legales', 'view-equipo', 'view-mercadopago', 'view-cambiar-password');
@@ -2393,6 +2502,7 @@ export async function initComercioPerfil() {
   renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'perfil');
   document.getElementById('cerrar-sesion-link').addEventListener('click', mostrarModalConfirmarLogout);
   enlazarMisConsultas(document.getElementById('mis-consultas-link'));
+  document.getElementById('sonido-slot').appendChild(crearInterruptorSonido());
   if (!(await prepararPaginaComercio({ slotFranja: document.getElementById('franja-comercio-slot') }))) {
     return;
   }
@@ -2508,6 +2618,10 @@ export async function initComercioPerfil() {
   if (resultadoVinculacionMp || parametrosUrl.get('vista') === 'mercadopago') {
     mostrarVista('view-mercadopago');
     actualizarCuentaMercadoPago();
+  }
+  if (parametrosUrl.get('vista') === 'equipo' && esContextoDueno()) {
+    mostrarVista('view-equipo');
+    abrirEquipoComercio();
   }
   if (parametrosUrl.has('vinculacionMp') || parametrosUrl.has('vista')) {
     limpiarParametrosMercadoPago();
@@ -3490,7 +3604,7 @@ export async function initComercioProductoForm() {
         return;
       }
 
-      const creado = await apiFetch('/productos', { method: 'POST', body });
+      const creado = await apiFetch('/productos', { method: 'POST', body, noIdempotente: { texto: 'Productos', enlace: 'comercio-productos.html' } });
 
       try {
         for (let i = 0; i < fotosStaged.length; i += 1) {
@@ -3503,6 +3617,9 @@ export async function initComercioProductoForm() {
 
       window.location.href = 'comercio-productos.html?productoCreado=1';
     } catch (error) {
+      if (esTimeoutAvisado(error)) {
+        return;
+      }
       if (error instanceof ApiError && error.status === 409 && error.data && error.data.codigo === 'PRECIO_BLOQUEADO_EN_FRANJA') {
         mostrarAvisoFijo(bannerSlot, error.message);
         if (productoActual) {

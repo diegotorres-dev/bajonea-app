@@ -126,7 +126,9 @@ test.describe('Fase 5, S5 (entrega B): reclamos del Dueño y del Empleado', () =
     await sinScrollHorizontal(page);
     await capturarReclamos(page, '31-dueno-aviso-de-reembolso');
 
-    await aviso.getByRole('link', { name: 'Ver pedido' }).click();
+    await expect(aviso).toHaveAttribute('href', `comercio-pedido-detalle.html?id=${pedidoId}`);
+    await expect(aviso.getByTestId(/^btn-ver-pedido-notificacion-/)).toHaveText('Ver reclamo');
+    await aviso.click();
     await expect(page).toHaveURL(new RegExp(`comercio-pedido-detalle\\.html\\?id=${pedidoId}$`));
     await expect(page.getByTestId('bloque-reclamo-dueno')).toBeVisible();
   });

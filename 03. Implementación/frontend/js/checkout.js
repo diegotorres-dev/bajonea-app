@@ -1,4 +1,4 @@
-import { apiFetch, ApiError, getUsuario } from './api.js';
+import { apiFetch, ApiError, esTimeoutAvisado, getUsuario } from './api.js';
 import { exigirContextoCliente } from './contexto.js';
 import { showToast } from './catalogo.js';
 import { crearBannerCierre, crearBotonVolverAlCatalogo, esConflictoDeCierre, estaAbiertoParaClientes } from './apertura-comercio.js';
@@ -498,6 +498,7 @@ export async function initCheckout() {
             direccionId: tipoEntregaSeleccionado === 'DOMICILIO' ? direccionElegida.id : undefined,
             totalEsperado: totalConCargo,
           },
+          noIdempotente: { texto: 'Mis pedidos', enlace: 'pedidos.html' },
         });
         normalizarCampos(pedido.direccion, ['calle']);
         (pedido.detalles || []).forEach((detalle) => normalizarCampos(detalle, ['nombreProducto']));
@@ -505,6 +506,10 @@ export async function initCheckout() {
         mostrarPaso(3);
       } catch (error) {
         confirmBtn.textContent = textoBoton;
+        if (esTimeoutAvisado(error)) {
+          confirmBtn.disabled = false;
+          return;
+        }
         if (error instanceof ApiError && error.status === 409 && error.data && error.data.codigo === 'PRECIO_CAMBIO') {
           const hayItemConPrecioNuevo = (error.data.items || []).some((item) => item.precioCambio);
           carrito.items = error.data.items;

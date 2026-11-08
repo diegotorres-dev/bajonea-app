@@ -117,7 +117,7 @@ test.describe('Campana y notificaciones del Empleado en pantalla, E3 entrega B e
   });
 
   test.describe('Estado vacío', () => {
-    test('sin avisos, el Empleado ve el texto del comercio y el Cliente el de sus pedidos; "Marcar todas" solo existe dentro de un comercio y está apagado', async ({ page, browser }) => {
+    test('sin avisos, el Empleado ve el texto del comercio y el Cliente el de sus pedidos; "Marcar todas" está apagado en el comercio y oculto para el Cliente', async ({ page, browser }) => {
       await abrirComoEmpleado(page, vacia);
       await page.goto('/notificaciones.html');
 
@@ -133,7 +133,7 @@ test.describe('Campana y notificaciones del Empleado en pantalla, E3 entrega B e
       await abrirComoCliente(paginaCliente, vacia);
       await paginaCliente.goto('/notificaciones.html');
       await expect(paginaCliente.getByTestId('estado-vacio')).toContainText(TEXTO_VACIO_CLIENTE);
-      await expect(paginaCliente.getByTestId('btn-marcar-todas-leidas')).toHaveCount(0);
+      await expect(paginaCliente.getByTestId('btn-marcar-todas-leidas')).toBeHidden();
       await otra.close();
     });
   });
@@ -200,7 +200,7 @@ test.describe('Campana y notificaciones del Empleado en pantalla, E3 entrega B e
       await paginaCliente.goto('/notificaciones.html');
       await expect(paginaCliente.getByTestId(`notificacion-item-${avisoPersonal.id}`)).toBeVisible();
       await expect(paginaCliente.getByTestId(`notificacion-item-${avisoEquipo.id}`)).toHaveCount(0);
-      await expect(paginaCliente.getByTestId(`btn-ver-pedido-notificacion-${avisoPersonal.id}`)).toHaveAttribute('href', `pedido-detalle.html?id=${propio}`);
+      await expect(paginaCliente.getByTestId(`notificacion-item-${avisoPersonal.id}`)).toHaveAttribute('href', `pedido-detalle.html?id=${propio}`);
       await otra.close();
     });
 
@@ -210,7 +210,8 @@ test.describe('Campana y notificaciones del Empleado en pantalla, E3 entrega B e
       expect(aviso.leida).toBe(false);
       await abrirComoEmpleado(page, elena);
       await page.goto('/notificaciones.html');
-      const enlace = page.getByTestId(`btn-ver-pedido-notificacion-${aviso.id}`);
+      const enlace = page.getByTestId(`notificacion-item-${aviso.id}`);
+      await expect(page.getByTestId(`btn-ver-pedido-notificacion-${aviso.id}`)).toHaveText('Ver pedido');
       await expect(enlace).toHaveAttribute('href', `comercio-pedido-detalle.html?id=${pedidoId}`);
 
       await enlace.click();
@@ -301,7 +302,7 @@ test.describe('Campana y notificaciones del Empleado en pantalla, E3 entrega B e
       await page.getByTestId('btn-notificaciones').click();
       await page.waitForURL('**/notificaciones.html');
 
-      await expect(page.getByTestId(`btn-ver-pedido-notificacion-${aviso.id}`)).toHaveAttribute('href', `comercio-pedido-detalle.html?id=${pedidoId}`);
+      await expect(page.getByTestId(`notificacion-item-${aviso.id}`)).toHaveAttribute('href', `comercio-pedido-detalle.html?id=${pedidoId}`);
       await expect(page.getByTestId('btn-marcar-todas-leidas')).toBeEnabled();
       await page.getByTestId('btn-marcar-todas-leidas').click();
 
@@ -309,7 +310,7 @@ test.describe('Campana y notificaciones del Empleado en pantalla, E3 entrega B e
       expect(await contador(request, dueno.token, true)).toBe(0);
     });
 
-    test('un Cliente sin comercios ve sus avisos como siempre y sin "Marcar todas"', async ({ page, request }) => {
+    test('un Cliente sin comercios ve sus avisos como siempre y, al tener uno sin leer, "Marcar todas"', async ({ page, request }) => {
       const pedidoId = await pedidoPagado(request, comprador);
       expect((await apiConHeaders(request, 'PUT', `/pedidos/comercio/${pedidoId}/aceptar`, dueno.token, conComercio(), {})).status).toBe(200);
       const aviso = delPedido(await avisos(request, comprador.sesion.token, false), pedidoId)!;
@@ -317,8 +318,8 @@ test.describe('Campana y notificaciones del Empleado en pantalla, E3 entrega B e
       await page.goto('/notificaciones.html');
 
       await expect(page.getByTestId(`notificacion-item-${aviso.id}`)).toBeVisible();
-      await expect(page.getByTestId(`btn-ver-pedido-notificacion-${aviso.id}`)).toHaveAttribute('href', `pedido-detalle.html?id=${pedidoId}`);
-      await expect(page.getByTestId('btn-marcar-todas-leidas')).toHaveCount(0);
+      await expect(page.getByTestId(`notificacion-item-${aviso.id}`)).toHaveAttribute('href', `pedido-detalle.html?id=${pedidoId}`);
+      await expect(page.getByTestId('btn-marcar-todas-leidas')).toBeVisible();
       await sinScrollHorizontal(page);
     });
   });

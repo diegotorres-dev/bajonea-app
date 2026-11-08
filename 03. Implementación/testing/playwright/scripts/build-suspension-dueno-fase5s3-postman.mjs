@@ -394,7 +394,7 @@ agregar(
   estadoDelPedido('El pedido sin pagar no cambia', 'b_sinpagar', 'PENDIENTE_PAGO'),
   item('El Cliente recibe un aviso por cada pedido devuelto, con el texto claro y sin nombres internos', req('GET', '/notificaciones', { token: TOKEN_COMPRADOR }), [
     status(200),
-    prueba('Cuatro avisos', "const t = 'Tu pedido se canceló porque el comercio no está disponible. Te devolvemos el dinero.'; const n = pm.response.json().data.filter((x) => x.mensaje === t); pm.expect(n.length).to.eql(4); n.forEach((x) => pm.expect(x.mensaje).to.not.match(/SUSPENDIDO|RECHAZADO|PENDIENTE|ANULADO/));"),
+    prueba('Cuatro avisos', "const t = 'porque el comercio no está disponible. Te devolvemos el dinero.'; const n = pm.response.json().data.filter((x) => x.mensaje.endsWith(t)); pm.expect(n.length).to.eql(4); n.forEach((x) => pm.expect(x.mensaje).to.not.match(/SUSPENDIDO|RECHAZADO|PENDIENTE|ANULADO/));"),
   ]),
   item('La Empleada recibe el aviso del comercio sin el motivo y sin email', req('GET', '/notificaciones', { token: TOKEN_EMPLEADO, comercio: COM }), [
     status(200),
@@ -404,7 +404,7 @@ agregar(
   item('Una segunda corrida del barrido tampoco', req('POST', '/test/jobs/pedidos/procesar-sin-atencion-suspension-dueno', { body: {} }), [status(200)]),
   item('El Cliente sigue con cuatro avisos exactos', req('GET', '/notificaciones', { token: TOKEN_COMPRADOR }), [
     status(200),
-    prueba('Cuatro avisos', "const t = 'Tu pedido se canceló porque el comercio no está disponible. Te devolvemos el dinero.'; pm.expect(pm.response.json().data.filter((x) => x.mensaje === t).length).to.eql(4);"),
+    prueba('Cuatro avisos', "const t = 'porque el comercio no está disponible. Te devolvemos el dinero.'; pm.expect(pm.response.json().data.filter((x) => x.mensaje.endsWith(t)).length).to.eql(4);"),
   ]),
   item('La Empleada sigue pudiendo despachar el pedido en preparacion (lo atiende el equipo)', req('PUT', `/pedidos/comercio/${P('a_prep')}/despachar`, { token: TOKEN_EMPLEADO, comercio: COM, body: {} }), [status(200)]),
 

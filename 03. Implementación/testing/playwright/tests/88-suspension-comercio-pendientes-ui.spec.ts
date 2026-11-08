@@ -28,7 +28,7 @@ test.use({ viewport: { width: 375, height: 812 } });
 const CARPETA_CAPTURAS = path.resolve(__dirname, '../../../docs/capturas-suspension-comercio-b2');
 const MOTIVO = 'Reiteradas quejas de clientes por demoras y pedidos incompletos';
 const TEXTO_CLIENTE = 'El comercio no estaba disponible. Te devolvemos el dinero.';
-const TEXTO_AVISO = 'Tu pedido se canceló porque el comercio no está disponible. Te devolvemos el dinero.';
+const TEXTO_AVISO = 'porque el comercio no está disponible. Te devolvemos el dinero.';
 const todoElDia = () => [{ diaSemana: diaDeHoy(), horaApertura: '00:00', horaCierre: '23:59' }];
 
 async function captura(page: Page, nombre: string) {

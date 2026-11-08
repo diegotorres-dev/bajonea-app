@@ -42,6 +42,7 @@ const ESTRESES = [
   { id: 'soporte', archivo: 'stress-locks-tramoSoporte.mjs', descripcion: 'Fase 5 S4 (escenario 22): Soporte (rafagas de consultas con y sin sesion, respuestas de la persona y de Soporte, cierres, accesos con codigos erroneos, reenvios y el mensaje 20 disputado; limites por email e IP exactos; sin 5xx ni Connection is not available)' },
   { id: 'reclamos', archivo: 'stress-locks-tramoReclamos.mjs', descripcion: 'Fase 5 S5 (escenario 23): Reclamos (creaciones simultaneas del mismo pedido, resoluciones total, parcial y rechazo del mismo reclamo, reintentos del reembolso, lecturas de la bandeja, y creacion y resolucion contra la suspension del Cliente; necesita el backend con MERCADOPAGO_API_BASE_URL apuntando al stub; sin 5xx ni Connection is not available)', requiereStubMp: true },
   { id: 'e4', archivo: 'stress-locks-empleado-e4.mjs', descripcion: 'E4: gestión del equipo (desactivar, reactivar y renunciar; S1 a S10)' },
+  { id: 'notificaciones', archivo: 'stress-locks-tramoNotificaciones2c.mjs', descripcion: 'Tramo 2C: marcar todas las personales mientras llegan avisos y se lee la lista paginada (cada aviso se marca una sola vez, sin 5xx)' },
 ];
 
 const argumentos = process.argv.slice(2);

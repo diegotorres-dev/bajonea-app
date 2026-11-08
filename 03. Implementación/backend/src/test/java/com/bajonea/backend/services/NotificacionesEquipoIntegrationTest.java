@@ -262,13 +262,13 @@ class NotificacionesEquipoIntegrationTest {
 
         List<String> conComercio = mensajes(e.tokenA(), e.comercioId());
         assertEquals(1, conComercio.size(), "con el comercio abierto: solo el aviso del equipo del pedido ajeno: " + conComercio);
-        assertTrue(conComercio.get(0).contains("Nuevo pedido recibido"));
+        assertTrue(conComercio.get(0).contains("Pedido nuevo #"));
         assertEquals(1, copias(e.a().id(), "NUEVO_PEDIDO", deLosDemas));
 
         List<String> personales = mensajes(e.tokenA(), null);
         assertEquals(1, personales.size(), "sin header: solo el de comprador (la cancelación propia no emite aviso al comprador): " + personales);
         assertTrue(personales.get(0).contains("no respondió"), personales.get(0));
-        assertFalse(personales.get(0).contains("Nuevo pedido recibido"));
+        assertFalse(personales.get(0).contains("Pedido nuevo #"));
         assertEquals(1, contador(e.tokenA(), null));
         assertEquals(1, contador(e.tokenA(), e.comercioId()));
     }

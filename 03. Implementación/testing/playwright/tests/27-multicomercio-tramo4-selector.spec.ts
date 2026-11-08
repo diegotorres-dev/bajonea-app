@@ -25,6 +25,7 @@ import {
   comercioActivoEnSesion,
   mantenerApretado,
   seleccionarComercioEnPanel,
+  irAlPanelDelComercioElegido,
   ultimoComercioGuardado,
 } from './helpers/selector';
 
@@ -339,7 +340,7 @@ test.describe('Multi-comercio, tramo 4B: selector de comercio del Dueño (UI)', 
       const encabezados = registrarHeaders(page, '/comercios/perfil');
       await abrirDashboardDe(page, request, grande.dueno);
       await seleccionarComercioEnPanel(page, grande.b);
-      await page.waitForURL('**/comercio-dashboard.html');
+      await irAlPanelDelComercioElegido(page);
       await expect(page.getByTestId('franja-comercio-nombre')).toHaveText(grande.nombres[grande.b]);
       await expect(page.getByTestId('mensaje-saludo')).toContainText(grande.nombres[grande.b]);
       expect((await comercioActivoEnSesion(page))?.comercioId).toBe(grande.b);
@@ -350,7 +351,7 @@ test.describe('Multi-comercio, tramo 4B: selector de comercio del Dueño (UI)', 
     test('después de cambiar, las demás pestañas operan sobre el comercio elegido', async ({ page, request }) => {
       await abrirDashboardDe(page, request, grande.dueno);
       await seleccionarComercioEnPanel(page, grande.b);
-      await page.waitForURL('**/comercio-dashboard.html');
+      await irAlPanelDelComercioElegido(page);
       const encabezados = registrarHeaders(page, '/productos');
       await page.getByTestId('btn-nav-productos').click();
       await page.waitForURL('**/comercio-productos.html');
@@ -471,7 +472,7 @@ test.describe('Multi-comercio, tramo 4B: selector de comercio del Dueño (UI)', 
       await expect(page.locator('#notif-content')).not.toContainText('Aviso B');
       await page.goto('/comercio-dashboard.html');
       await seleccionarComercioEnPanel(page, grande.b);
-      await page.waitForURL('**/comercio-dashboard.html');
+      await irAlPanelDelComercioElegido(page);
       await expect(page.getByTestId('contador-notificaciones')).toHaveText('2');
       await page.getByTestId('btn-notificaciones').click();
       await page.waitForURL('**/notificaciones.html');
@@ -487,14 +488,14 @@ test.describe('Multi-comercio, tramo 4B: selector de comercio del Dueño (UI)', 
       await primera.goto('/comercio-dashboard.html');
       await expect(primera.getByTestId('franja-comercio-nombre')).toHaveText(grande.nombres[grande.a]);
       await seleccionarComercioEnPanel(primera, grande.b);
-      await primera.waitForURL('**/comercio-dashboard.html');
+      await irAlPanelDelComercioElegido(primera);
       await expect(primera.getByTestId('franja-comercio-nombre')).toHaveText(grande.nombres[grande.b]);
 
       const segunda = await contexto.newPage();
       await segunda.goto('/comercio-dashboard.html');
       await expect(segunda.getByTestId('franja-comercio-nombre')).toHaveText(grande.nombres[grande.b]);
       await seleccionarComercioEnPanel(segunda, grande.a);
-      await segunda.waitForURL('**/comercio-dashboard.html');
+      await irAlPanelDelComercioElegido(segunda);
       await expect(segunda.getByTestId('franja-comercio-nombre')).toHaveText(grande.nombres[grande.a]);
 
       await primera.reload();

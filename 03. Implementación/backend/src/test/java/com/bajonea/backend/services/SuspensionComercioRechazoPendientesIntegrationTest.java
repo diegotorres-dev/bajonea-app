@@ -43,7 +43,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
  */
 class SuspensionComercioRechazoPendientesIntegrationTest extends CarritoIntegrationBase {
 
-    private static final String TEXTO_AVISO = "Tu pedido se canceló porque el comercio no está disponible. Te devolvemos el dinero.";
+    private static final String TEXTO_AVISO = "Cancelamos tu pedido #% porque el comercio no está disponible. Te devolvemos el dinero.";
     private static final String SQL_ESTADO_NOTA = "SELECT nc.estado FROM nota_credito nc JOIN pago pg ON pg.id = nc.pago_id WHERE pg.pedido_id = ?";
 
     @Autowired
@@ -148,7 +148,7 @@ class SuspensionComercioRechazoPendientesIntegrationTest extends CarritoIntegrat
                     "SELECT motivo_timeout FROM historial_estado_pedido WHERE pedido_id = ? AND estado = 'RECHAZADO'", String.class, id));
         }
         assertEquals(5, avisosDeRechazo(cliente));
-        assertEquals(5, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND mensaje = ?", Integer.class, cliente, TEXTO_AVISO));
+        assertEquals(5, jdbcTemplate.queryForObject("SELECT COUNT(*) FROM notificacion WHERE usuario_id = ? AND mensaje LIKE ?", Integer.class, cliente, TEXTO_AVISO));
         verify(reembolsoClient, times(5)).solicitarReembolsoTotal(any(), any(), anyString());
     }
 

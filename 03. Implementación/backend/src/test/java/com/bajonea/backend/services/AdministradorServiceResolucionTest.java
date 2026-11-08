@@ -146,7 +146,7 @@ class AdministradorServiceResolucionTest {
         assertEquals(EstadoComercio.PENDIENTE, fila.getEstadoOrigen());
         assertEquals(EstadoComercio.RECHAZADO, fila.getEstadoDestino());
         assertEquals("Falta la foto", fila.getMotivo());
-        verify(notificacionService).crearParaDueno(DUENO_ID, COMERCIO_ID, "Tu comercio Cafe fue rechazado. Motivo: Falta la foto",
+        verify(notificacionService).crearParaDueno(DUENO_ID, COMERCIO_ID, "Tu comercio Cafe fue rechazado. Motivo: Falta la foto. Corregilo y volvé a solicitarlo.",
                 TipoNotificacion.COMERCIO_RECHAZADO, TipoEntidadNotificacion.COMERCIO, COMERCIO_ID);
     }
 

@@ -76,6 +76,7 @@ const CAMPOS_PEDIDO_EMPLEADO = [
   'fuenteEntrega',
   'id',
   'limiteResolucionSuspension',
+  'limiteRespuestaComercio',
   'motivoAnulacion',
   'motivoRechazo',
   'noRetiradoDisponibleDesde',

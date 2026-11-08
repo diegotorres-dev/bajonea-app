@@ -275,7 +275,7 @@ agregar(
   ]),
   item('El Cliente recibe un aviso de rechazo por cada pedido, con el texto claro', req('GET', '/notificaciones', { token: TOKEN_COMPRADOR }), [
     status(200),
-    prueba('Tres avisos', "const n = pm.response.json().data.filter((x) => x.tipo === 'PEDIDO_RECHAZADO'); pm.expect(n.length).to.eql(3); n.forEach((x) => { pm.expect(x.mensaje).to.eql('Tu pedido se canceló porque el comercio no está disponible. Te devolvemos el dinero.'); pm.expect(x.mensaje).to.not.match(/SUSPENDIDO|RECHAZADO|PENDIENTE/); });"),
+    prueba('Tres avisos', "const n = pm.response.json().data.filter((x) => x.tipo === 'PEDIDO_RECHAZADO'); pm.expect(n.length).to.eql(3); n.forEach((x) => { pm.expect(x.mensaje).to.include('porque el comercio no está disponible. Te devolvemos el dinero.'); pm.expect(x.mensaje).to.not.match(/SUSPENDIDO|RECHAZADO|PENDIENTE/); });"),
   ]),
   item('El Dueño no recibe un aviso por cada pedido rechazado', req('GET', '/notificaciones', { token: TOKEN_DUENO, comercio: COM }), [
     status(200),
@@ -310,7 +310,7 @@ agregar(
   item('El barrido es idempotente: una segunda corrida no cambia nada', req('POST', '/test/jobs/pedidos/rechazar-pendientes-suspension', { body: {} }), [status(200)]),
   item('El Cliente tiene exactamente un aviso por pedido rechazado', req('GET', '/notificaciones', { token: TOKEN_COMPRADOR }), [
     status(200),
-    prueba('Cinco avisos', "const n = pm.response.json().data.filter((x) => x.tipo === 'PEDIDO_RECHAZADO'); pm.expect(n.length).to.eql(5); pm.expect(n.filter((x) => x.mensaje === 'Tu pedido se canceló porque el comercio no está disponible. Te devolvemos el dinero.').length).to.eql(4);"),
+    prueba('Cinco avisos', "const n = pm.response.json().data.filter((x) => x.tipo === 'PEDIDO_RECHAZADO'); pm.expect(n.length).to.eql(5); pm.expect(n.filter((x) => x.mensaje.endsWith('porque el comercio no está disponible. Te devolvemos el dinero.')).length).to.eql(4);"),
   ]),
   item('El Administrador levanta la suspension', req('PUT', ADM_COM(COM, '/levantar-suspension'), { token: TOKEN_ADMIN }), [status(200)]),
   estadoPedido('Levantar no deshace el rechazo', 'pend_a', 'RECHAZADO'),

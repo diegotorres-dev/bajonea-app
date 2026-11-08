@@ -123,6 +123,7 @@ test.describe('Anular con motivo de la lista y cancelación del Cliente con devo
 
     const respuesta = page.waitForResponse((res) => res.url().endsWith(`/pedidos/cliente/${pedidoId}/cancelar`) && res.request().method() === 'PUT');
     await page.getByTestId('btn-cancelar-pedido').click();
+    await page.getByTestId('btn-confirmar-cancelar-pedido').click();
     expect((await respuesta).status()).toBe(200);
 
     await expect(page.locator('.toast')).toContainText('Estamos gestionando la devolución de tu pago');

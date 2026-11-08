@@ -22,6 +22,15 @@ public final class TextoUtils {
     private TextoUtils() {
     }
 
+    public static String conPuntoFinal(String texto) {
+        String recortado = texto == null ? "" : texto.strip();
+        if (recortado.isEmpty()) {
+            return recortado;
+        }
+        char ultimo = recortado.charAt(recortado.length() - 1);
+        return ultimo == '.' || ultimo == '!' || ultimo == '?' ? recortado : recortado + ".";
+    }
+
     public static String normalizarUrlConEsquema(String url) {
         if (url == null) {
             return null;

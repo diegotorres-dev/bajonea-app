@@ -59,7 +59,7 @@ class PedidoServiceVistaEmpleadoTest {
 
     private static final Set<String> CAMPOS_EMPLEADO = Set.of("id", "nombreCliente", "comercioId", "estado", "tipoEntrega",
             "direccion", "motivoRechazo", "comentarioRechazo", "canceladoPor", "fuenteEntrega", "motivoAnulacion", "fechaCreacion",
-            "fechaPagoAprobado", "fechaEntrega", "detalles", "subtotal", "cargoServicioCliente", "total", "reembolsoEstado", "reembolsoMonto", "esPedidoPropio", "noRetiradoDisponibleDesde", "noRetiradoMinutosRestantes", "limiteResolucionSuspension");
+            "fechaPagoAprobado", "fechaEntrega", "detalles", "subtotal", "cargoServicioCliente", "total", "reembolsoEstado", "reembolsoMonto", "esPedidoPropio", "noRetiradoDisponibleDesde", "noRetiradoMinutosRestantes", "limiteResolucionSuspension", "limiteRespuestaComercio");
     private static final Set<String> CAMPOS_EXCLUIDOS = Set.of("clienteId", "pagoEstado", "cargoServicioComercio");
 
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule())
@@ -69,6 +69,7 @@ class PedidoServiceVistaEmpleadoTest {
     private HistorialEstadoPedidoRepository historialRepository;
     private NotaCreditoService notaCreditoService;
     private PedidoService pedidoService;
+    private PedidoTimeoutProperties timeouts;
     private Cliente cliente;
     private Comercio comercio;
 
@@ -77,7 +78,7 @@ class PedidoServiceVistaEmpleadoTest {
         pedidoRepository = mock(PedidoRepository.class);
         historialRepository = mock(HistorialEstadoPedidoRepository.class);
         notaCreditoService = mock(NotaCreditoService.class);
-        PedidoTimeoutProperties timeouts = new PedidoTimeoutProperties();
+        timeouts = new PedidoTimeoutProperties();
         timeouts.setPagoMinutos(30);
         timeouts.setRespuestaComercioMinutos(30);
         timeouts.setRetiroSuspensionMinutos(90);
@@ -201,7 +202,54 @@ class PedidoServiceVistaEmpleadoTest {
         assertEquals(new BigDecimal("100"), lista.get(0).getCargoServicioComercio());
         assertEquals(77, lista.get(0).getClienteId());
         assertEquals(EstadoPagoPedido.PAGADO, lista.get(0).getPagoEstado());
-        assertEquals(30, campos.size());
+        assertEquals(31, campos.size());
+    }
+
+    @Test
+    void elLimiteDeRespuestaDelComercioEsElPagoMasElPlazoConfiguradoSoloEnPendienteDeConfirmacion() {
+        Pedido pendiente = pedido(20, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, "10000", "100");
+        Pedido enPreparacion = pedido(21, EstadoPedido.EN_PREPARACION, "10000", "100");
+        Pedido expirado = pedido(22, EstadoPedido.EXPIRADO, "10000", "100");
+        pagadosHoy(pendiente, enPreparacion, expirado);
+        LocalDateTime pago = LocalDateTime.of(2026, 11, 7, 20, 0);
+        List<Object[]> filas = new ArrayList<>();
+        for (Pedido pedido : List.of(pendiente, enPreparacion, expirado)) {
+            filas.add(new Object[] {pedido.getId(), pago});
+        }
+        when(historialRepository.findPrimeraEntradaAEstadoPorPedido(anyList(), eq(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO)))
+                .thenReturn(filas);
+
+        List<PedidoResponseDTO> dueno = pedidoService.listarPedidosComercio(40);
+        List<PedidoEmpleadoResponseDTO> empleado = pedidoService.listarPedidosComercioEmpleado(40, 5);
+
+        assertEquals(pago.plusMinutes(30), dueno.get(0).getLimiteRespuestaComercio());
+        assertEquals(pago.plusMinutes(30), empleado.get(0).getLimiteRespuestaComercio());
+        assertNull(dueno.get(1).getLimiteRespuestaComercio());
+        assertNull(dueno.get(2).getLimiteRespuestaComercio());
+        assertNull(empleado.get(1).getLimiteRespuestaComercio());
+        assertNull(empleado.get(2).getLimiteRespuestaComercio());
+    }
+
+    @Test
+    void elLimiteDeRespuestaSigueAlPlazoDelVencimientoAutomaticoYNoUnNumeroFijo() {
+        Pedido pendiente = pedido(23, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, "10000", "100");
+        pagadosHoy(pendiente);
+        LocalDateTime pago = LocalDateTime.of(2026, 11, 7, 20, 0);
+        when(historialRepository.findPrimeraEntradaAEstadoPorPedido(anyList(), eq(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO)))
+                .thenReturn(List.<Object[]>of(new Object[] {23, pago}));
+        timeouts.setRespuestaComercioMinutos(45);
+
+        assertEquals(pago.plusMinutes(45), pedidoService.listarPedidosComercio(40).get(0).getLimiteRespuestaComercio());
+    }
+
+    @Test
+    void sinFechaDePagoElLimiteDeRespuestaEsNulo() {
+        Pedido pendiente = pedido(24, EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO, "10000", "100");
+        pagadosHoy(pendiente);
+        when(historialRepository.findPrimeraEntradaAEstadoPorPedido(anyList(), eq(EstadoPedido.PENDIENTE_CONFIRMACION_COMERCIO)))
+                .thenReturn(List.of());
+
+        assertNull(pedidoService.listarPedidosComercio(40).get(0).getLimiteRespuestaComercio());
     }
 
     @Test

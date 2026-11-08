@@ -1,4 +1,4 @@
-import { apiFetch, getToken, getUsuario } from './api.js';
+import { apiFetch, esTimeoutAvisado, getToken, getUsuario } from './api.js';
 import { renderTopBar, showToast } from './catalogo.js';
 import { h, crearSvg, setLoading } from './form-utils.js';
 import { texto } from './admin-hojas.js';
@@ -166,10 +166,14 @@ export function initSoporte() {
         body: cuerpo,
         handle5xxGlobally: false,
         handleRedGlobally: false,
+        noIdempotente: conSesion ? { texto: 'Mis consultas a Soporte', enlace: 'mis-consultas.html' } : { texto: 'tu email' },
       });
       pintarExito(contenedor, creada, conSesion ? usuario.email : email.value.trim().toLowerCase(), conSesion);
     } catch (error) {
       setLoading(enviar, '', false, 'Enviar consulta');
+      if (esTimeoutAvisado(error)) {
+        return;
+      }
       const porCampo = erroresPorCampo(error);
       if (porCampo) {
         let primero = null;

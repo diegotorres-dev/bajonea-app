@@ -4,8 +4,10 @@ import { resolverHomePorRol, LABELS_TIPO_COMERCIO } from './auth.js';
 import { contarNotificacionesNoLeidasActivo, resolverComercioActivo, suscribirComercios } from './comercio-activo.js';
 import { normalizarCampos, excedeSubtotalMaximo, mensajeSubtotalMaximoExcedido } from './validators.js';
 import { crearAvisoCierre, esConflictoDeCierre, estaAbiertoParaClientes, etiquetaCierrePublica } from './apertura-comercio.js';
+import { vigilarAvisos } from './sonido-avisos.js';
 import { franjaDeHoyYMadrugada, recortarHora, textoRango } from './horarios.js';
 
+const INTERVALO_CAMPANA_CLIENTE_MS = 15000;
 const DIA_POR_INDICE = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
 
 const ICONS = {
@@ -28,21 +30,87 @@ const ICONS = {
   zoom: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
 };
 
+const DURACION_TOAST_EXITO_MS = 2500;
+const DURACION_TOAST_ERROR_MS = 7000;
+const ESPERA_MINIMA_TRAS_TOCAR_MS = 3000;
+let cerrarToastActual = null;
+
 export function showToast(mensaje, kind = 'success') {
+  if (cerrarToastActual) {
+    cerrarToastActual();
+  }
   document.querySelectorAll('.toast').forEach((el) => el.remove());
+  const esError = kind === 'error';
   const toast = crear('div', 'toast');
-  toast.setAttribute('role', 'status');
-  toast.setAttribute('aria-live', 'polite');
+  toast.setAttribute('role', esError ? 'alert' : 'status');
+  toast.setAttribute('aria-live', esError ? 'assertive' : 'polite');
+  toast.setAttribute('data-testid', esError ? 'toast-error' : 'toast-exito');
   const banner = crear('div', `banner banner-${kind}`);
   const iconWrap = crear('span');
-  iconWrap.innerHTML = kind === 'error' ? ICONS.close : ICONS.check;
+  iconWrap.innerHTML = esError ? ICONS.close : ICONS.check;
   banner.appendChild(iconWrap.firstElementChild);
   const text = document.createElement('span');
+  text.className = 'toast__texto';
   text.textContent = mensaje;
   banner.appendChild(text);
+  if (esError) {
+    const cerrar = crear('button', 'toast__cerrar');
+    cerrar.type = 'button';
+    cerrar.setAttribute('aria-label', 'Cerrar aviso');
+    cerrar.setAttribute('data-testid', 'btn-cerrar-toast');
+    cerrar.innerHTML = ICONS.close;
+    cerrar.addEventListener('click', () => quitar());
+    banner.appendChild(cerrar);
+  }
   toast.appendChild(banner);
   document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 2200);
+
+  let restante = esError ? DURACION_TOAST_ERROR_MS : DURACION_TOAST_EXITO_MS;
+  let inicio = Date.now();
+  let temporizador = setTimeout(quitar, restante);
+
+  function quitar() {
+    clearTimeout(temporizador);
+    toast.remove();
+    if (cerrarToastActual === quitar) {
+      cerrarToastActual = null;
+    }
+  }
+  function pausar() {
+    clearTimeout(temporizador);
+    restante = Math.max(restante - (Date.now() - inicio), 0);
+  }
+  function reanudar(minimo = 0) {
+    inicio = Date.now();
+    restante = Math.max(restante, minimo);
+    temporizador = setTimeout(quitar, restante);
+  }
+
+  if (esError) {
+    toast.addEventListener('pointerenter', (evento) => {
+      if (evento.pointerType === 'mouse') {
+        pausar();
+      }
+    });
+    toast.addEventListener('pointerleave', (evento) => {
+      if (evento.pointerType === 'mouse') {
+        reanudar();
+      }
+    });
+    toast.addEventListener('pointerdown', (evento) => {
+      if (evento.pointerType !== 'mouse') {
+        pausar();
+      }
+    });
+    toast.addEventListener('pointerup', (evento) => {
+      if (evento.pointerType !== 'mouse') {
+        reanudar(ESPERA_MINIMA_TRAS_TOCAR_MS);
+      }
+    });
+    toast.addEventListener('focusin', pausar);
+    toast.addEventListener('focusout', () => reanudar());
+  }
+  cerrarToastActual = quitar;
 }
 
 export function mostrarToastPendiente() {
@@ -108,19 +176,30 @@ async function cargarBadgeNotificaciones(bellLink) {
     resolverComercioActivo().then(() => pintarBadgeDueno(bellLink)).catch(() => {});
     return;
   }
-  try {
-    const contador = await apiFetch('/notificaciones/no-leidas/contador');
+  async function consultar(opciones) {
+    const contador = await apiFetch('/notificaciones/no-leidas/contador', opciones);
+    bellLink.querySelectorAll('.top-bar__badge-dot').forEach((el) => el.remove());
     if (contador > 0) {
       const dot = crear('span', 'top-bar__badge-dot');
       dot.setAttribute('data-testid', 'contador-notificaciones');
       dot.textContent = contador > 9 ? '9+' : String(contador);
       bellLink.appendChild(dot);
     }
+    vigilarAvisos('cliente', contador);
+  }
+  try {
+    await consultar();
   } catch {
   }
+  const intervalo = window.setInterval(() => {
+    if (!document.hidden && document.contains(bellLink)) {
+      consultar({ segundoPlano: true }).catch(() => {});
+    }
+  }, INTERVALO_CAMPANA_CLIENTE_MS);
+  window.addEventListener('pagehide', () => window.clearInterval(intervalo));
 }
 
-export function renderTopBar(container, { mostrarVolver = false, titulo = null, mostrarPerfil = true, mostrarCampana = true, centrarLogo = false, accion = null } = {}) {
+export function renderTopBar(container, { mostrarVolver = false, titulo = null, mostrarPerfil = true, mostrarCampana = true, centrarLogo = false, accion = null, destinoVolver = null } = {}) {
   container.innerHTML = '';
   const bar = crear('header', centrarLogo ? 'top-bar top-bar--logo-centrado' : 'top-bar');
 
@@ -129,7 +208,13 @@ export function renderTopBar(container, { mostrarVolver = false, titulo = null, 
     backBtn.type = 'button';
     backBtn.setAttribute('data-testid', 'btn-volver');
     backBtn.innerHTML = ICONS.chevronLeft;
-    backBtn.addEventListener('click', () => history.back());
+    backBtn.addEventListener('click', () => {
+      if (destinoVolver) {
+        window.location.href = destinoVolver;
+        return;
+      }
+      history.back();
+    });
     bar.appendChild(backBtn);
 
     const titleEl = crear('h1', 'app-header__title');

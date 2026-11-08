@@ -140,8 +140,8 @@ test.describe('Avisos del comercio con fan-out al equipo (API), bloque A4 de E3'
     expect(copias(e.comprador.id, pedidoId, 'NUEVO_PEDIDO')).toBe(0);
     expect(sql(`SELECT COUNT(*) FROM notificacion WHERE tipo = 'NUEVO_PEDIDO' AND entidad_id = ${pedidoId} AND comercio_id = ${comercioId};`)).toBe('3');
 
-    const deA = delPedido(await avisos(request, e.a.token, comercioId), pedidoId, /Nuevo pedido recibido/);
-    const deB = delPedido(await avisos(request, e.b.token, comercioId), pedidoId, /Nuevo pedido recibido/);
+    const deA = delPedido(await avisos(request, e.a.token, comercioId), pedidoId, /Pedido nuevo #/);
+    const deB = delPedido(await avisos(request, e.b.token, comercioId), pedidoId, /Pedido nuevo #/);
     expect(deA).toBeDefined();
     expect(deB).toBeDefined();
     expect(deA!.id).not.toBe(deB!.id);
@@ -159,7 +159,7 @@ test.describe('Avisos del comercio con fan-out al equipo (API), bloque A4 de E3'
     expect((await marcarTodas(request, e.b.token, comercioId)).body.data).toBe(0);
     expect(await sinLeer(request, e.b.token, comercioId)).toBe(0);
     expect(await avisos(request, e.b.token, comercioId)).toHaveLength(1);
-    const delDueno = delPedido(await avisos(request, e.dueno.token, comercioId), pedidoId, /Nuevo pedido recibido/);
+    const delDueno = delPedido(await avisos(request, e.dueno.token, comercioId), pedidoId, /Pedido nuevo #/);
     expect(delDueno).toBeDefined();
     expect(delDueno!.leida).toBe(false);
   });
@@ -204,8 +204,8 @@ test.describe('Avisos del comercio con fan-out al equipo (API), bloque A4 de E3'
 
     const vistos = await avisos(request, c.token, comercioId);
     expect(vistos).toHaveLength(1);
-    expect(delPedido(vistos, posterior, /Nuevo pedido recibido/)).toBeDefined();
-    expect(delPedido(vistos, anterior, /Nuevo pedido recibido/)).toBeUndefined();
+    expect(delPedido(vistos, posterior, /Pedido nuevo #/)).toBeDefined();
+    expect(delPedido(vistos, anterior, /Pedido nuevo #/)).toBeUndefined();
     expect(copias(c.usuario.id, anterior, 'NUEVO_PEDIDO')).toBe(0);
     expect(await avisos(request, e.a.token, comercioId)).toHaveLength(2);
   });
@@ -214,7 +214,7 @@ test.describe('Avisos del comercio con fan-out al equipo (API), bloque A4 de E3'
     const e = await escenario(request);
     const comercioId = e.dueno.comercioId;
     const primero = await pedidoPagado(request, e.comprador, e.productoId);
-    const viejoDeA = delPedido(await avisos(request, e.a.token, comercioId), primero, /Nuevo pedido recibido/)!;
+    const viejoDeA = delPedido(await avisos(request, e.a.token, comercioId), primero, /Pedido nuevo #/)!;
 
     expect((await atajoEstadoRelacion(request, comercioId, e.a.id, 'INACTIVO')).status).toBe(200);
     const segundo = await pedidoPagado(request, e.comprador, e.productoId);
@@ -240,8 +240,8 @@ test.describe('Avisos del comercio con fan-out al equipo (API), bloque A4 de E3'
     const tercero = await pedidoPagado(request, e.comprador, e.productoId);
     const vistos = await avisos(request, reactivada.token, comercioId);
     expect(vistos).toHaveLength(1);
-    expect(delPedido(vistos, tercero, /Nuevo pedido recibido/)).toBeDefined();
-    expect(delPedido(vistos, segundo, /Nuevo pedido recibido/)).toBeUndefined();
+    expect(delPedido(vistos, tercero, /Pedido nuevo #/)).toBeDefined();
+    expect(delPedido(vistos, segundo, /Pedido nuevo #/)).toBeUndefined();
   });
 
   test('los avisos de administración llegan al Dueño y los Empleados reciben solo el aviso corto de la suspensión', async ({ request }) => {
@@ -328,7 +328,7 @@ test.describe('Avisos del comercio con fan-out al equipo (API), bloque A4 de E3'
     for (const token of [e.dueno.token, e.a.token, e.b.token]) {
       const vistos = await avisos(request, token, comercioId);
       expect(delPedido(vistos, aCancelar, /cancel/)).toBeDefined();
-      expect(delPedido(vistos, aExpirar, /expir/)).toBeDefined();
+      expect(delPedido(vistos, aExpirar, /nadie lo respondió/)).toBeDefined();
     }
     const personales = await avisos(request, e.comprador.token);
     expect(delPedido(personales, aCancelar, /./)).toBeUndefined();
@@ -356,7 +356,7 @@ test.describe('Avisos del comercio con fan-out al equipo (API), bloque A4 de E3'
   test('un Empleado no puede marcar el aviso de otra persona', async ({ request }) => {
     const e = await escenario(request);
     const pedidoId = await pedidoPagado(request, e.comprador, e.productoId);
-    const deDueno = delPedido(await avisos(request, e.dueno.token, e.dueno.comercioId), pedidoId, /Nuevo pedido recibido/)!;
+    const deDueno = delPedido(await avisos(request, e.dueno.token, e.dueno.comercioId), pedidoId, /Pedido nuevo #/)!;
 
     expect((await marcarUna(request, e.a.token, deDueno.id)).status).toBe(404);
     expect((await marcarUna(request, e.a.token, 99999999)).status).toBe(404);

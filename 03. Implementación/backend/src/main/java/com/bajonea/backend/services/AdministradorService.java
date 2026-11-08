@@ -35,6 +35,7 @@ import com.bajonea.backend.enums.TipoNotificacion;
 import com.bajonea.backend.exceptions.ConflictoDeNegocioException;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.exceptions.ValidacionException;
+import com.bajonea.backend.util.TextoUtils;
 import com.bajonea.backend.repositories.AdministradorRepository;
 import com.bajonea.backend.repositories.CategoriaRepository;
 import com.bajonea.backend.repositories.DocumentoComercioRepository;
@@ -360,7 +361,8 @@ public class AdministradorService {
         if (definitivo) {
             mensaje = "Tu comercio " + comercio.getNombre() + " fue rechazado de forma definitiva. Motivo: " + request.getMotivo();
         } else if (!aprobar) {
-            mensaje = "Tu comercio " + comercio.getNombre() + " fue rechazado. Motivo: " + request.getMotivo();
+            mensaje = "Tu comercio " + comercio.getNombre() + " fue rechazado. Motivo: " + TextoUtils.conPuntoFinal(request.getMotivo())
+                    + " Corregilo y volvé a solicitarlo.";
         } else if (estadoFinal == EstadoComercio.APTO_VENTA) {
             mensaje = "Tu comercio " + comercio.getNombre() + " fue aprobado y ya podés vender";
         } else {

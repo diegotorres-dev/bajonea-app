@@ -74,6 +74,7 @@ public class PedidoResponseDTO {
     private final LocalDateTime noRetiradoDisponibleDesde;
     private final Long noRetiradoMinutosRestantes;
     private final LocalDateTime limiteResolucionSuspension;
+    private final LocalDateTime limiteRespuestaComercio;
     private final boolean comercioNoDisponible;
     private final MotivoNotaCredito reembolsoMotivo;
 
@@ -109,6 +110,7 @@ public class PedidoResponseDTO {
             LocalDateTime noRetiradoDisponibleDesde,
             Long noRetiradoMinutosRestantes,
             LocalDateTime limiteResolucionSuspension,
+            LocalDateTime limiteRespuestaComercio,
             boolean comercioNoDisponible,
             MotivoNotaCredito reembolsoMotivo,
             ReclamoPedidoResponseDTO reclamo) {
@@ -140,6 +142,7 @@ public class PedidoResponseDTO {
         this.noRetiradoDisponibleDesde = noRetiradoDisponibleDesde;
         this.noRetiradoMinutosRestantes = noRetiradoMinutosRestantes;
         this.limiteResolucionSuspension = limiteResolucionSuspension;
+        this.limiteRespuestaComercio = limiteRespuestaComercio;
         this.comercioNoDisponible = comercioNoDisponible;
         this.reembolsoMotivo = reembolsoMotivo;
         this.reclamo = reclamo;

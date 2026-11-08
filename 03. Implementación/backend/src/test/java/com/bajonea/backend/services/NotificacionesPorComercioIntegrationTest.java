@@ -129,27 +129,27 @@ class NotificacionesPorComercioIntegrationTest {
 
     private void filtradoPorComercio(Dueno dueno, Dueno otroDueno, int clienteId, int comercioA, int comercioB, int comercioC) {
         assertEquals(List.of("A aprobado", "A ya leida", "Pedido de A"),
-                mensajes(notificacionService.listar(dueno.principal(), String.valueOf(comercioA))).stream().sorted().toList(),
+                mensajes(notificacionService.listar(dueno.principal(), String.valueOf(comercioA), null, null).items()).stream().sorted().toList(),
                 "el comercio A ve las suyas, leídas incluidas, y no las del pedido de B ni las del otro Dueño");
-        assertEquals(List.of("Pedido de B"), mensajes(notificacionService.listar(dueno.principal(), String.valueOf(comercioB))));
-        assertEquals(List.of("C rechazado"), mensajes(notificacionService.listar(dueno.principal(), String.valueOf(comercioC))));
-        assertTrue(notificacionService.listar(dueno.principal(), String.valueOf(comercioB)).stream().allMatch(n -> n.getTipo() != null),
+        assertEquals(List.of("Pedido de B"), mensajes(notificacionService.listar(dueno.principal(), String.valueOf(comercioB), null, null).items()));
+        assertEquals(List.of("C rechazado"), mensajes(notificacionService.listar(dueno.principal(), String.valueOf(comercioC), null, null).items()));
+        assertTrue(notificacionService.listar(dueno.principal(), String.valueOf(comercioB), null, null).items().stream().allMatch(n -> n.getTipo() != null),
                 "Cada aviso listado expone su tipo");
 
         assertEquals(2, notificacionService.contarNoLeidas(dueno.principal(), String.valueOf(comercioA)));
         assertEquals(1, notificacionService.contarNoLeidas(dueno.principal(), String.valueOf(comercioB)));
 
         assertThrows(RecursoNoEncontradoException.class,
-                () -> notificacionService.listar(dueno.principal(), String.valueOf(otroDueno.comercioId())));
+                () -> notificacionService.listar(dueno.principal(), String.valueOf(otroDueno.comercioId()), null, null).items());
         assertThrows(RecursoNoEncontradoException.class,
                 () -> notificacionService.contarNoLeidas(dueno.principal(), String.valueOf(otroDueno.comercioId())));
 
         AuthenticatedUser cliente = new AuthenticatedUser(clienteId, 1, RolUsuario.CLIENTE);
-        assertEquals(List.of("Del cliente sobre el pedido de A"), mensajes(notificacionService.listar(cliente, null)),
+        assertEquals(List.of("Del cliente sobre el pedido de A"), mensajes(notificacionService.listar(cliente, null, null, null).items()),
                 "el Cliente sin header ve las suyas personales");
         assertEquals(1, notificacionService.contarNoLeidas(cliente, null));
-        assertThrows(ValidacionException.class, () -> notificacionService.listar(cliente, "abc"));
-        assertThrows(ComercioNoDisponibleException.class, () -> notificacionService.listar(cliente, String.valueOf(comercioA)));
+        assertThrows(ValidacionException.class, () -> notificacionService.listar(cliente, "abc", null, null).items());
+        assertThrows(ComercioNoDisponibleException.class, () -> notificacionService.listar(cliente, String.valueOf(comercioA), null, null).items());
         assertThrows(ComercioNoDisponibleException.class, () -> notificacionService.contarNoLeidas(cliente, String.valueOf(comercioA)));
     }
 
