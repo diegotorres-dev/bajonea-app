@@ -1,4 +1,7 @@
 import { h } from './form-utils.js';
+import { crearDetalle } from './hoja.js';
+
+export { crearDetalle };
 
 export const MAX_MOTIVO = 500;
 
@@ -16,11 +19,39 @@ export function fechaLegible(fechaIso) {
   return new Date(fechaIso).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+export function normalizarBotonesDelPie(botones) {
+  botones.forEach((boton) => {
+    if (boton.classList.contains('btn-tertiary')) {
+      boton.classList.remove('btn-tertiary');
+      boton.classList.add('btn-secondary', 'hoja__accion--segura');
+    }
+    if (boton.classList.contains('doc-peligro')) {
+      boton.classList.remove('btn-primary', 'doc-peligro');
+      boton.classList.add('btn-peligro');
+    }
+    if (boton.classList.contains('doc-exito')) {
+      boton.classList.remove('doc-exito');
+    }
+  });
+}
+
 export function abrirHoja({ clase = 'product-modal-sheet', id, titulo, testid, hijos }) {
-  const hoja = h('div', { class: clase, role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': `${id}-titulo`, 'data-testid': testid }, [
+  const cuerpo = h('div', { class: 'product-modal-sheet__body' }, [texto('h2', 'cliente-modal__titulo', titulo, { id: `${id}-titulo`, 'data-testid': `${testid}-titulo` }), ...hijos]);
+  const hoja = h('div', { class: `${clase} hoja-decision`, role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': `${id}-titulo`, 'data-testid': testid }, [
     h('div', { class: 'product-modal-sheet__handle' }, [h('span')]),
-    h('div', { class: 'product-modal-sheet__body' }, [texto('h2', 'cliente-modal__titulo', titulo, { id: `${id}-titulo`, 'data-testid': `${testid}-titulo` }), ...hijos]),
+    cuerpo,
   ]);
+  const formulario = hijos.find((nodo) => nodo.tagName === 'FORM');
+  if (formulario) {
+    const botones = [...formulario.children].filter((nodo) => nodo.tagName === 'BUTTON');
+    if (botones.length > 0) {
+      formulario.id = formulario.id || `${id}-formulario`;
+      normalizarBotonesDelPie(botones);
+      botones.forEach((boton) => boton.setAttribute('form', formulario.id));
+      const pie = h('div', { class: 'hoja-decision__pie' }, botones);
+      hoja.appendChild(pie);
+    }
+  }
   const fondo = h('div', { class: 'modal-backdrop', 'data-testid': `${testid}-fondo` }, [hoja]);
   document.body.appendChild(fondo);
   const overflowPrevio = document.body.style.overflow;

@@ -447,7 +447,11 @@ test.describe('Pedidos del comercio en pantalla para el Dueño y el Empleado, E3
       await page.getByTestId('btn-confirmar-no-retirado').click();
 
       await expect(page.getByTestId('aviso-fijo-texto')).toContainText('Todavía no podés cerrar este pedido como no retirado');
-      await expect(page.getByTestId('btn-cerrar-no-retirado')).toBeEnabled();
+      await expect(page.getByTestId('modal-no-retirado-error')).toContainText('Todavía no podés cerrar este pedido como no retirado');
+      await expect(page.getByTestId('modal-no-retirado')).toBeVisible();
+      await page.getByTestId('btn-cancelar-no-retirado').click();
+      await expect(page.getByTestId('modal-no-retirado')).toHaveCount(0);
+      await expect(page.getByTestId('btn-cerrar-no-retirado')).toBeDisabled();
       expect(estadoDe(pedidoId)).toBe('LISTO_PARA_RETIRAR');
       await sinScrollHorizontal(page);
     });

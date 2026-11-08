@@ -477,3 +477,37 @@ Sin `data-testid` nuevos. Se reutilizan `vencimiento-pedido` (ahora lo alimenta 
 | Error al cargar más | `notificaciones-error-mas` | Banner `role="alert"` con "No pudimos cargar más avisos." dentro de la lista; no redirige. |
 | Reintentar la carga de más avisos | `btn-reintentar-notificaciones-mas` | Recibe el foco cuando aparece el error. |
 | Tarjeta de aviso ya leído y sin destino | `notificacion-item-{id}` (el mismo) | **Cambió de elemento:** un aviso leído y sin destino es un `div` (no un `button` con `disabled`); se lee como texto normal. Un aviso sin destino y sin leer sigue siendo un `button`; al marcarse leído se reemplaza por un `div` con el mismo `data-testid` y se le da el foco (`tabindex="-1"`). Con destino sigue siendo un `a`. |
+
+## Tramo P1a de pulido (2026-11-08)
+
+`abrirHoja` genera por defecto, para una hoja con `testid` "X": `X` (el fondo), `X-titulo`, `X-texto-N` (un párrafo por línea), `X-aviso`, `X-detalle` (el `<details>`) y `X-error` (la línea de error de la hoja). Las hojas migradas conservan los `data-testid` que ya tenían (opción `testids: { titulo, textos, error }`); los que se agregan:
+
+| Elemento | `data-testid` | Nota |
+|---|---|---|
+| Aviso de la hoja (borde gris, ícono) | `{testid}-aviso` | Cuando la hoja lo declara. |
+| "Ver detalle" desplegable | `{testid}-detalle` | `<details>` cerrado por defecto; el `<summary>` mide 44 px o más. |
+| Error dentro de la hoja | `{testid}-error` | `role="alert"`; las hojas migradas con otro id lo conservan (`error-renuncia`). |
+| Rechazo definitivo de comercio: advertencia propia | `aviso-rechazo-definitivo` | Visible solo con el interruptor activo y sin ser el último intento. |
+| Suspender Cliente: frase visible | `suspender-resumen` | "No podrá ingresar ni comprar." El detalle (`suspender-que-va-a-pasar`) pasó a ser el `<details>`. |
+| Suspender comercio: frase visible | `suspender-comercio-resumen` | "Deja de aparecer en el catálogo." (o el aviso de suspensión aparte). `suspender-comercio-que-va-a-pasar` es el `<details>` con el resto de las líneas; se oculta si no hay más. |
+| Levantar Cliente: detalle | `levantar-detalle` | Contiene `levantar-suspension-actual` y `levantar-motivo-actual`. `levantar-que-va-a-pasar` es ahora un párrafo. |
+| Levantar comercio: detalle | `levantar-comercio-detalle` | Contiene el motivo actual; `levantar-comercio-que-va-a-pasar` es un párrafo. |
+| Suspender y levantar Dueño: detalle | `modal-suspender-dueno-detalle`, `modal-levantar-dueno-detalle` | Contienen la lista por comercio (`previa-comercio-N`, `vuelve-comercio-N`, `sigue-comercio-N`) y, al levantar, el motivo actual. El subtítulo (`…-subtitulo`) resume: "Se restablecen N comercios." |
+| Error al desvincular Mercado Pago | `error-desvincular-mp` | Queda dentro de la hoja; ya no se cierra con un toast. |
+| Casilla de confirmación de una hoja | el que pasa el caller (`check-renuncia-entiendo`, `input-confirmar-irreversible`) | `campoCasilla`. |
+
+**Cambió el rol:** las hojas de eliminar dirección y de eliminar documento pasaron de `alertdialog` a `dialog`.
+
+## Tramo P1b de pulido (2026-11-08)
+
+Se agregan y no se renombra ninguno.
+
+| Elemento | `data-testid` | Nota |
+|---|---|---|
+| Esqueleto de carga (todas las pantallas del Cliente) | `esqueleto-comercios`, `esqueleto-pedidos`, `esqueleto-carrito`, `esqueleto-avisos`, `esqueleto-productos` | `role="status"` y `aria-busy="true"`; se quitan al llegar los datos. |
+| Error de carga de una lista | `error-de-carga` | Reemplaza al esqueleto cuando falla la primera carga. |
+| Botón "Reintentar" del error de carga | `btn-reintentar-carga` | 44 px; recarga la página. |
+| Pista "Mantené apretado para ver tus comercios" | `pista-selector-comercios` | Una sola vez por dispositivo y solo con 2 o más comercios. |
+| Botón "Entendido" de la pista | `btn-pista-selector-entendido` | 44 px. |
+
+Sin `data-testid` nuevo: las líneas de esqueleto del perfil del Cliente y del panel del Administrador (se buscan por `.skeleton` dentro de `nombre-cliente-perfil`, `nombre-admin` y `subtitulo-documentos-por-revisar`), y la barra de espera de `lista-perfil` (`aria-busy`).

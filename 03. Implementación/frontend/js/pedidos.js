@@ -3,6 +3,7 @@ import { exigirContextoCliente } from './contexto.js';
 import { renderTopBar, renderBottomNav, pintarAvatarComercio, renderPedidoEstadoHeader, showToast } from './catalogo.js';
 import { normalizarCampos } from './validators.js';
 import { abrirHoja } from './hoja.js';
+import { mostrarEsqueleto, mostrarErrorDeCarga } from './esqueletos.js';
 import { crearBloqueReclamoCliente, crearChipReclamoDeLista, fechaDelReclamo } from './reclamos-comun.js';
 
 function normalizarPedido(pedido) {
@@ -34,16 +35,19 @@ const ICONS = {
 
 const ICON_CLASS = 'pedido-detail__icon--pendiente';
 
+const TEXTO_PAGO_RECHAZADO = 'No pudimos procesar tu pago. Podés intentar de nuevo.';
+const TEXTO_CONFIRMANDO_PAGO = 'Estamos confirmando tu pago. Esta pantalla se actualiza sola.';
+
 const ESTADO_INFO = {
   PENDIENTE_PAGO: {
     label: 'Esperando pago',
     dotClass: 'pedido-estado__dot--pendiente',
     iconClass: ICON_CLASS,
     icon: ICONS.clock,
-    texto: () => 'Todavía no confirmamos tu pago. Si ya pagaste, esperá unos segundos y actualizá esta pantalla.',
+    texto: (_nombreComercio, pedido) => (pedido && pedido.pagoEstado === 'RECHAZADO' ? TEXTO_PAGO_RECHAZADO : 'Todavía no pagaste este pedido.'),
   },
   PENDIENTE_CONFIRMACION_COMERCIO: {
-    label: 'Pendiente',
+    label: 'Esperando al comercio',
     dotClass: 'pedido-estado__dot--pendiente',
     iconClass: 'pedido-detail__icon--pendiente',
     icon: ICONS.clock,
@@ -337,11 +341,19 @@ export async function initPedidosHistorial() {
   renderBottomNav(document.getElementById('bottom-nav-slot'), 'pedidos');
 
   const container = document.getElementById('pedidos-content');
+  mostrarEsqueleto(container, 'pedidos');
 
-  const [pedidos, comercios] = await Promise.all([
-    apiFetch('/pedidos/cliente'),
-    apiFetch('/catalogo/comercios', { auth: false }),
-  ]);
+  let pedidos;
+  let comercios;
+  try {
+    [pedidos, comercios] = await Promise.all([
+      apiFetch('/pedidos/cliente'),
+      apiFetch('/catalogo/comercios', { auth: false }),
+    ]);
+  } catch {
+    mostrarErrorDeCarga(container, 'No pudimos cargar tus pedidos.');
+    return;
+  }
   (pedidos || []).forEach(normalizarPedido);
   normalizarComercios(comercios);
 
@@ -459,11 +471,9 @@ function renderAccionesCliente(container, pedido, onActualizado, { procesando = 
       ayuda.setAttribute('data-testid', 'ayuda-pago-comercio-no-disponible');
       ayuda.textContent = 'Vas a poder pagar cuando el comercio vuelva a estar disponible, si el pedido no venció.';
       container.appendChild(ayuda);
-      const cancelarSinPagar = crear('button', 'btn btn-secondary');
+      const cancelarSinPagar = crear('button', 'btn btn-peligro-contorno');
       cancelarSinPagar.type = 'button';
       cancelarSinPagar.style.marginTop = '12px';
-      cancelarSinPagar.style.borderColor = 'var(--color-error)';
-      cancelarSinPagar.style.color = 'var(--color-error)';
       cancelarSinPagar.setAttribute('data-testid', 'btn-cancelar-pedido');
       cancelarSinPagar.textContent = 'Cancelar pedido';
       cancelarSinPagar.addEventListener('click', (evento) => abrirHojaCancelarPedido(pedido, onActualizado, evento.currentTarget));
@@ -512,10 +522,8 @@ function renderAccionesCliente(container, pedido, onActualizado, { procesando = 
   }
 
   if (pedido.estado === 'PENDIENTE_CONFIRMACION_COMERCIO' || pedido.estado === 'EN_PREPARACION') {
-    const cancelarBtn = crear('button', 'btn btn-secondary');
+    const cancelarBtn = crear('button', 'btn btn-peligro-contorno');
     cancelarBtn.type = 'button';
-    cancelarBtn.style.borderColor = 'var(--color-error)';
-    cancelarBtn.style.color = 'var(--color-error)';
     cancelarBtn.setAttribute('data-testid', 'btn-cancelar-pedido');
     cancelarBtn.textContent = 'Cancelar pedido';
     cancelarBtn.addEventListener('click', (evento) => abrirHojaCancelarPedido(pedido, onActualizado, evento.currentTarget));
@@ -645,7 +653,7 @@ export async function initPedidoDetalle() {
       iconClass: info.iconClass,
       icono: info.icon,
       label: info.label,
-      texto: info.texto(nombreDelComercio, pedido),
+      texto: pagoEnProceso() ? TEXTO_CONFIRMANDO_PAGO : info.texto(nombreDelComercio, pedido),
       numeroTexto: `Pedido #${pedido.id} · ${formatearFecha(pedido.fechaCreacion)}`,
       motivoRechazo: motivoInfo,
       reembolsoTexto: textoReembolso(pedido),

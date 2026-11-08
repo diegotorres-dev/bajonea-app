@@ -3,7 +3,7 @@ import { showToast } from './catalogo.js';
 import { h, mostrarAvisoFijo, limpiarAvisoFijo } from './form-utils.js';
 import { normalizarCampos } from './validators.js';
 import { atraparFoco, devolverFoco, mensajeDeError } from './documentos-comun.js';
-import { abrirHoja, cajaInformativa, campoTexto, fechaLegible, plural, texto } from './admin-hojas.js';
+import { abrirHoja, cajaInformativa, campoTexto, crearDetalle, fechaLegible, plural, texto } from './admin-hojas.js';
 import { abrirHojaReactivarCuenta } from './admin-reactivar.js';
 
 const MIN_MOTIVO = 10;
@@ -346,14 +346,15 @@ export async function initAdminClientes() {
 
   async function abrirModalSuspender(cliente, opener) {
     const nombre = nombreCompleto(cliente);
-    const { caja, items } = cajaInformativa('Qué va a pasar', [], 'suspender-que-va-a-pasar');
+    const items = h('ul', { class: 'cliente-modal__caja-lista' });
     items.appendChild(texto('li', 'cliente-modal__espera', 'Cargando…', { 'data-testid': 'suspender-previa-cargando' }));
+    const caja = crearDetalle('Ver detalle', [items], 'suspender-que-va-a-pasar');
     const { campo, area } = campoTexto({ id: 'suspender-motivo', etiqueta: 'Motivo (lo va a ver la persona)', placeholder: 'Contale por qué se suspende la cuenta', minimo: MIN_MOTIVO });
     const aviso = h('div', { 'data-testid': 'aviso-suspender' });
-    const confirmar = texto('button', 'btn btn-primary doc-peligro', 'Suspender cuenta', { type: 'submit', disabled: true, 'data-testid': 'btn-confirmar-suspender' });
+    const confirmar = texto('button', 'btn btn-peligro', 'Suspender cuenta', { type: 'submit', disabled: true, 'data-testid': 'btn-confirmar-suspender' });
     const cancelar = texto('button', 'btn btn-tertiary', 'Cancelar', { type: 'button', 'data-testid': 'btn-cancelar-suspender' });
     const formulario = h('form', { class: 'form', novalidate: true }, [campo, aviso, confirmar, cancelar]);
-    const { hoja, fondo, overflowPrevio } = abrirHoja({ id: 'suspender', titulo: `Suspender a ${nombre}`, testid: 'modal-suspender-cliente', hijos: [caja, formulario] });
+    const { hoja, fondo, overflowPrevio } = abrirHoja({ id: 'suspender', titulo: `Suspender a ${nombre}`, testid: 'modal-suspender-cliente', hijos: [texto('p', 'cliente-modal__sub', 'No podrá ingresar ni comprar.', { 'data-testid': 'suspender-resumen' }), caja, formulario] });
     let ocupado = false;
     let cerrado = false;
     const quitarAtrapaFoco = atraparFoco(hoja, cerrar);
@@ -379,12 +380,11 @@ export async function initAdminClientes() {
           lineas.push(`${previa.pedidosSinPagar} ${plural(previa.pedidosSinPagar, 'pedido sin pagar se cancela', 'pedidos sin pagar se cancelan')}`);
         }
         if (lineas.length === 0) lineas.push('No tiene pedidos en curso');
-        lineas.push('No podrá ingresar ni comprar');
         items.replaceChildren(...lineas.map((linea) => texto('li', '', linea)));
       })
       .catch((error) => {
         if (cerrado) return;
-        items.replaceChildren(texto('li', '', 'No podrá ingresar ni comprar'));
+        items.replaceChildren(texto('li', '', 'No pudimos calcular los pedidos afectados'));
         mostrarAvisoFijo(aviso, `${mensajeDeError(error, 'No pudimos calcular el detalle.')} Igual podés suspender la cuenta.`);
       });
 
@@ -440,13 +440,13 @@ export async function initAdminClientes() {
     if (previo === 'BLOQUEADO') lineas.push('Estaba bloqueada: vuelve activa.');
     if (previo === 'INACTIVO') lineas = ['Vuelve a estar inactiva: tiene que reactivar su cuenta para ingresar.'];
     if (previo === 'PENDIENTE') lineas = ['Vuelve a estar pendiente: tiene que verificar su email para ingresar.'];
-    const { caja } = cajaInformativa('Qué va a pasar', lineas, 'levantar-que-va-a-pasar');
+    const resumen = texto('p', 'cliente-modal__sub', lineas.join(' '), { 'data-testid': 'levantar-que-va-a-pasar' });
     const { campo, area } = campoTexto({ id: 'levantar-mensaje', etiqueta: 'Mensaje para la persona (opcional)', placeholder: 'Por ejemplo, qué pasó o qué esperamos de ahora en más' });
     const aviso = h('div', { 'data-testid': 'aviso-levantar' });
     const confirmar = texto('button', 'btn btn-primary', 'Levantar suspensión', { type: 'submit', 'data-testid': 'btn-confirmar-levantar' });
     const cancelar = texto('button', 'btn btn-tertiary', 'Cancelar', { type: 'button', 'data-testid': 'btn-cancelar-levantar' });
     const formulario = h('form', { class: 'form', novalidate: true }, [campo, aviso, confirmar, cancelar]);
-    const { hoja, fondo, overflowPrevio } = abrirHoja({ id: 'levantar', titulo: 'Levantar suspensión', testid: 'modal-levantar-suspension', hijos: [texto('p', 'cliente-modal__sub', nombre), motivoCaja, caja, formulario] });
+    const { hoja, fondo, overflowPrevio } = abrirHoja({ id: 'levantar', titulo: 'Levantar suspensión', testid: 'modal-levantar-suspension', hijos: [texto('p', 'cliente-modal__sub', nombre), resumen, crearDetalle('Ver detalle', [motivoCaja], 'levantar-detalle'), formulario] });
     let ocupado = false;
     let cerrado = false;
     const quitarAtrapaFoco = atraparFoco(hoja, cerrar);

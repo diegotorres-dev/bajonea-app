@@ -250,6 +250,7 @@ test.describe('Equipo del Dueño en pantalla, E4 entrega B1', () => {
         `${NOMBRE} va a dejar de tener acceso a ${comercio.nombre} y se le avisa. Si cambiás de idea, la podés reactivar desde Inactivos.`,
       );
       const confirmar = page.getByTestId('btn-confirmar-desactivar-miembro');
+      await page.mouse.move(0, 0);
       expect(await colorDe(confirmar, 'backgroundColor')).toBe(colorMenu);
       expect(colorMenu).toBe(ROJO);
       await expect(confirmar).toHaveText('Desactivar');
@@ -291,7 +292,7 @@ test.describe('Equipo del Dueño en pantalla, E4 entrega B1', () => {
       await expect(filaMiembro(page, miembro.cuenta.email).getByTestId('equipo-estado')).toHaveText(/^Dado de baja el/);
     });
 
-    test('si el servidor falla al desactivar, se cierra la hoja, se avisa con un toast de error y el miembro sigue activo', async ({ page, request }) => {
+    test('si el servidor falla al desactivar, la hoja sigue abierta con el error adentro y el miembro sigue activo', async ({ page, request }) => {
       const comercio = await comercioNuevo(request);
       const miembro = await nuevoMiembro(request, comercio.id);
       await abrirEquipo(page, comercio.id);
@@ -303,8 +304,10 @@ test.describe('Equipo del Dueño en pantalla, E4 entrega B1', () => {
       await page.getByTestId('btn-desactivar-miembro').click();
       await page.getByTestId('btn-confirmar-desactivar-miembro').click();
 
+      await expect(page.getByTestId('hoja-desactivar-miembro')).toBeVisible();
+      await expect(page.getByTestId('hoja-desactivar-miembro-error')).toContainText('No pudimos desactivar a esta persona. Probá de nuevo.');
+      await page.getByTestId('btn-volver-desactivar-miembro').click();
       await expect(page.getByTestId('hoja-desactivar-miembro')).toHaveCount(0);
-      await expect(toast(page)).toContainText('No pudimos desactivar a esta persona. Probá de nuevo.');
       await expect(filaMiembro(page, miembro.cuenta.email)).toBeVisible();
       expect(estadoRelacion(miembro.id, comercio.id)).toBe('ACTIVO');
     });

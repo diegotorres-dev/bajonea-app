@@ -23,6 +23,8 @@ const ID_TITULO_PANEL = 'panel-comercios-titulo';
 const DURACION_MANTENER_APRETADO_MS = 500;
 const TOLERANCIA_MOVIMIENTO_PX = 8;
 const FILAS_ESQUELETO = 3;
+const CLAVE_PISTA_SELECTOR = 'bajonea_pista_selector_vista';
+const TEXTO_PISTA_SELECTOR = 'Mantené apretado para ver tus comercios';
 
 const ICONOS = {
   chevronAbajo: [['polyline', { points: '6 9 12 15 18 9' }]],
@@ -490,6 +492,7 @@ export function enlazarMantenerApretado(elemento, alDisparar) {
   let origenY = 0;
   let suprimirClick = false;
   let liberarSupresion = null;
+  let ultimoPunteroTactil = false;
 
   function cancelar() {
     if (temporizador !== null) {
@@ -499,7 +502,8 @@ export function enlazarMantenerApretado(elemento, alDisparar) {
   }
 
   elemento.addEventListener('pointerdown', (evento) => {
-    if (evento.pointerType !== 'touch') {
+    ultimoPunteroTactil = evento.pointerType === 'touch';
+    if (!ultimoPunteroTactil) {
       return;
     }
     suprimirClick = false;
@@ -541,7 +545,74 @@ export function enlazarMantenerApretado(elemento, alDisparar) {
     }
   }, true);
 
-  elemento.addEventListener('contextmenu', (evento) => evento.preventDefault());
+  elemento.addEventListener('contextmenu', (evento) => {
+    if (ultimoPunteroTactil) {
+      evento.preventDefault();
+    }
+  });
+}
+
+function pistaSelectorYaVista() {
+  try {
+    return window.localStorage.getItem(CLAVE_PISTA_SELECTOR) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function marcarPistaSelectorVista() {
+  try {
+    window.localStorage.setItem(CLAVE_PISTA_SELECTOR, '1');
+  } catch {
+  }
+}
+
+function montarPistaSelector(nav) {
+  const pista = document.createElement('div');
+  pista.className = 'pista-selector';
+  pista.setAttribute('role', 'status');
+  pista.setAttribute('data-testid', 'pista-selector-comercios');
+  const texto = document.createElement('p');
+  texto.className = 'pista-selector__texto';
+  texto.textContent = TEXTO_PISTA_SELECTOR;
+  const entendido = document.createElement('button');
+  entendido.type = 'button';
+  entendido.className = 'pista-selector__boton';
+  entendido.setAttribute('data-testid', 'btn-pista-selector-entendido');
+  entendido.textContent = 'Entendido';
+  function cerrar() {
+    pista.remove();
+    document.removeEventListener('pointerdown', alTocarAfuera, true);
+  }
+  function alTocarAfuera(evento) {
+    if (!pista.contains(evento.target)) {
+      cerrar();
+    }
+  }
+  entendido.addEventListener('click', cerrar);
+  document.addEventListener('pointerdown', alTocarAfuera, true);
+  pista.append(texto, entendido);
+  nav.appendChild(pista);
+}
+
+export function prepararPistaSelector(nav) {
+  if (pistaSelectorYaVista()) {
+    return;
+  }
+  let mostrada = false;
+  function intentar() {
+    if (mostrada || !nav.isConnected || pistaSelectorYaVista()) {
+      return;
+    }
+    if ((getComerciosEnMemoria() || []).length < 2) {
+      return;
+    }
+    mostrada = true;
+    marcarPistaSelectorVista();
+    montarPistaSelector(nav);
+  }
+  intentar();
+  suscribirComercios(intentar);
 }
 
 export async function prepararPaginaComercio({ slotFranja = null } = {}) {

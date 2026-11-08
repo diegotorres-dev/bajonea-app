@@ -1,6 +1,7 @@
 import { apiFetch, ApiError, getUsuario } from './api.js';
 import { renderTopBar, showToast } from './catalogo.js';
 import { h, setLoading } from './form-utils.js';
+import { establecerErrorCampo } from './validators.js';
 import { atraparFoco, devolverFoco, elementoQueAbrio, tiempoRelativo } from './documentos-comun.js';
 import { abrirHoja, texto } from './admin-hojas.js';
 import { crearAvisoDeError, erroresPorCampo, fechaHoraLegible, limpiarError, mensajeDeApi, mostrarError } from './soporte-comun.js';
@@ -311,9 +312,7 @@ function crearFormularioResolucion(detalle, contenedor) {
   }));
 
   function mostrarErrorDe(id, mensaje) {
-    const caja = document.getElementById(id);
-    caja.textContent = mensaje;
-    caja.style.display = mensaje ? 'flex' : 'none';
+    establecerErrorCampo(document.getElementById(id), mensaje);
   }
 
   function limpiarErrores() {

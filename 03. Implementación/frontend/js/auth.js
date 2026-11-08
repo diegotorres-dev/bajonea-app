@@ -29,6 +29,7 @@ import {
   mapearErroresBackend,
   validarCamposSilencioso,
   scrollAlPrimerError,
+  establecerErrorCampo,
 } from './validators.js';
 import { montarFormularioCliente } from './cliente-form.js';
 import { renderBanner, renderBannerTexto, bindPasswordToggle, setLoading, construirTelefono, bindNombreUsuario, montarTerminos, validarTerminos, MENSAJE_NOMBRE_USUARIO_EN_USO, MENSAJE_NOMBRE_COMERCIO_EN_USO } from './form-utils.js';
@@ -104,10 +105,23 @@ export function initLogin() {
     import('./catalogo.js').then((modulo) => modulo.showToast('Listo, ya podés ingresar')).catch(() => {});
   }
 
+  function marcarCredencialesInvalidas(usuarioInvalido, passwordInvalido) {
+    [[usuarioInput, usuarioInvalido], [passwordInput, passwordInvalido]].forEach(([input, invalido]) => {
+      if (invalido) {
+        input.setAttribute('aria-invalid', 'true');
+        input.setAttribute('aria-describedby', errorCredenciales.id);
+      } else {
+        input.removeAttribute('aria-invalid');
+        input.removeAttribute('aria-describedby');
+      }
+    });
+  }
+
   function limpiarErrores() {
+    marcarCredencialesInvalidas(false, false);
     shellUsuario.classList.remove('input-shell--error');
     shellPassword.classList.remove('input-shell--error');
-    errorCredenciales.style.display = 'none';
+    establecerErrorCampo(errorCredenciales, null);
     warningBloqueo.style.display = 'none';
     renderBanner(bannerSlot, 'info', '');
   }
@@ -123,8 +137,8 @@ export function initLogin() {
     let mensaje = 'Completá tu nombre de usuario y tu contraseña.';
     if (usuarioVacio && !passwordVacio) mensaje = 'Ingresá tu nombre de usuario.';
     if (!usuarioVacio && passwordVacio) mensaje = 'Ingresá tu contraseña.';
-    errorCredenciales.textContent = mensaje;
-    errorCredenciales.style.display = 'flex';
+    establecerErrorCampo(errorCredenciales, mensaje);
+    marcarCredencialesInvalidas(usuarioVacio, passwordVacio);
     return false;
   }
 
@@ -179,8 +193,8 @@ export function initLogin() {
       if (error instanceof ApiError && error.status === 401) {
         shellUsuario.classList.add('input-shell--error');
         shellPassword.classList.add('input-shell--error');
-        errorCredenciales.textContent = 'Usuario o contraseña incorrectos. Intentá nuevamente.';
-        errorCredenciales.style.display = 'flex';
+        establecerErrorCampo(errorCredenciales, 'Usuario o contraseña incorrectos. Intentá nuevamente.');
+        marcarCredencialesInvalidas(true, true);
         const intentosRestantes = error.data && typeof error.data.intentosRestantes === 'number' ? error.data.intentosRestantes : null;
         if (intentosRestantes === 1) {
           warningBloqueo.textContent = 'Cuidado: si fallás una vez más, tu cuenta se bloqueará.';
@@ -223,8 +237,8 @@ export function initLogin() {
       } else if (error instanceof ApiError && error.data) {
         shellUsuario.classList.toggle('input-shell--error', Boolean(error.data.nombreUsuario));
         shellPassword.classList.toggle('input-shell--error', Boolean(error.data.password));
-        errorCredenciales.textContent = error.data.nombreUsuario || error.data.password || error.message;
-        errorCredenciales.style.display = 'flex';
+        establecerErrorCampo(errorCredenciales, error.data.nombreUsuario || error.data.password || error.message);
+        marcarCredencialesInvalidas(Boolean(error.data.nombreUsuario), Boolean(error.data.password));
         scrollAlPrimerError();
       } else if (error instanceof ApiError) {
         renderBanner(bannerSlot, 'error', error.message || 'No pudimos iniciar sesión. Intentá nuevamente.');

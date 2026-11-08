@@ -34,6 +34,9 @@ export async function conIp(page: Page, ip: string): Promise<void> {
 }
 
 export async function capturarSoporte(page: Page, nombre: string, paginaCompleta = false): Promise<void> {
+  if (process.env.CAPTURAS !== '1') {
+    return;
+  }
   fs.mkdirSync(CARPETA_CAPTURAS_SOPORTE, { recursive: true });
   const imagen = await page.screenshot({ fullPage: paginaCompleta });
   const destino = path.join(CARPETA_CAPTURAS_SOPORTE, `${nombre}.png`);

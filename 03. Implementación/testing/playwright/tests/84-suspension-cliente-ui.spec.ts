@@ -21,6 +21,9 @@ const CARPETA_CAPTURAS = path.resolve(__dirname, '../../../docs/capturas-suspens
 const MOTIVO = 'Reiteradas quejas de comercios por pedidos falsos';
 
 async function captura(page: Page, nombre: string, paginaCompleta = false) {
+  if (process.env.CAPTURAS !== '1') {
+    return;
+  }
   fs.mkdirSync(CARPETA_CAPTURAS, { recursive: true });
   await page.screenshot({ path: path.join(CARPETA_CAPTURAS, `${nombre}.png`), fullPage: paginaCompleta });
 }
@@ -328,7 +331,7 @@ test.describe('Fase 5, S1 (UI): suspensión de cuentas del Cliente', () => {
     await expect(modal).toHaveAttribute('role', 'alertdialog');
     await expect(page.getByTestId('modal-suspender-cliente-titulo')).toHaveText(`Suspender a ${cliente.nombreCompleto}`);
     await expect(page.getByTestId('suspender-que-va-a-pasar')).toContainText('No tiene pedidos en curso');
-    await expect(page.getByTestId('suspender-que-va-a-pasar')).toContainText('No podrá ingresar ni comprar');
+    await expect(page.getByTestId('suspender-resumen')).toHaveText('No podrá ingresar ni comprar.');
     await expect(page.getByTestId('input-suspender-motivo')).toBeFocused();
     const confirmar = page.getByTestId('btn-confirmar-suspender');
     await expect(confirmar).toBeDisabled();

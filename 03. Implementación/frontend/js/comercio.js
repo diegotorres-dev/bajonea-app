@@ -24,7 +24,7 @@ import {
   suscribirComercios,
   RUTA_DASHBOARD,
 } from './comercio-activo.js';
-import { abrirPanelComercios, enlazarMantenerApretado, prepararPaginaComercio } from './selector-comercio.js';
+import { abrirPanelComercios, enlazarMantenerApretado, prepararPaginaComercio, prepararPistaSelector } from './selector-comercio.js';
 import { abrirHojaCambiarCuenta } from './selector-contexto.js';
 import { abrirHojaRenuncia } from './renuncia-empleado.js';
 import { montarSwitchCierre } from './cierre-comercio.js';
@@ -47,6 +47,7 @@ import {
   CloudinaryUploadError,
 } from './cloudinary.js';
 import { abrirEditorRecorte } from './crop.js';
+import { abrirHoja, activarHoja, campoCasilla, campoSelect, campoTextarea } from './hoja.js';
 import {
   mostrarErrorCampo,
   limpiarErrorCampo,
@@ -62,6 +63,7 @@ import {
   aplicarFortalezaPassword,
   scrollAlPrimerError,
   normalizarCampos,
+  establecerErrorCampo,
 } from './validators.js';
 
 const MAX_TAGS_POR_PRODUCTO = 5;
@@ -475,6 +477,7 @@ export function renderBottomNavComercio(container, activo) {
     if (esContextoDueno()) {
       perfilLink.classList.add('bottom-nav__item--selector');
       enlazarMantenerApretado(perfilLink, () => abrirPanelComercios());
+      prepararPistaSelector(nav);
     }
     let firma = null;
     const pintar = () => {
@@ -735,8 +738,7 @@ export async function initComercioDashboard() {
     montarPasosParaVender(document.getElementById('pasos-vender-slot'));
   }
 
-  const nombreCorto = comercio.nombre;
-  document.getElementById('saludo-titulo').textContent = `Hola, ${nombreCorto} 👋`;
+  document.getElementById('saludo-titulo').textContent = 'Hola 👋';
   document.getElementById('saludo-fecha').textContent = new Date().toLocaleDateString('es-AR', {
     weekday: 'long',
     day: 'numeric',
@@ -1013,81 +1015,67 @@ const DETALLE_COMERCIO_DESCONOCIDO = {
   texto: 'Estamos actualizando el estado de este pedido.',
 };
 
-function mostrarModalRechazarPedido(pedido, onConfirmar) {
-  const backdrop = crear('div', 'modal-backdrop');
-  backdrop.setAttribute('data-testid', 'modal-rechazar-pedido');
-  const opcionesHtml = MOTIVOS_RECHAZO.map((motivo) => `<option value="${motivo.value}">${motivo.label}</option>`).join('');
-  backdrop.innerHTML = `
-    <div class="product-modal-sheet">
-      <div class="product-modal-sheet__handle"><span></span></div>
-      <div class="product-modal-sheet__body">
-        <h2 style="font-size:19px;margin-bottom:16px;">Rechazar pedido #${pedido.id}</h2>
-        <form class="form" id="form-rechazar-pedido" novalidate>
-          <div class="field">
-            <label class="field__label" for="rechazo-motivo">Motivo del rechazo</label>
-            <div class="select-shell">
-              <select id="rechazo-motivo" required data-testid="select-motivo-rechazo">
-                <option value="" disabled selected>Seleccioná un motivo</option>
-                ${opcionesHtml}
-              </select>
-              <svg class="select-shell__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div class="field__error" id="rechazo-error-motivo" style="display:none;" data-testid="mensaje-error-motivo-rechazo"></div>
-          </div>
-          <div class="field">
-            <label class="field__label" for="rechazo-comentario" id="rechazo-comentario-label">Comentario (opcional)</label>
-            <div class="textarea-shell" id="rechazo-comentario-shell"><textarea id="rechazo-comentario" maxlength="500" placeholder="Agregá una aclaración para el cliente" data-testid="input-comentario-rechazo"></textarea></div>
-            <div class="field__error" id="rechazo-error-comentario" style="display:none;" data-testid="mensaje-error-comentario-rechazo"></div>
-          </div>
-          <button class="btn btn-primary" type="submit" style="background:var(--color-error);margin-bottom:10px;" data-testid="btn-confirmar-rechazo">Rechazar pedido</button>
-          <button class="btn btn-tertiary" type="button" id="cancelar-rechazo-btn" data-testid="btn-cancelar-rechazo">Cancelar</button>
-        </form>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(backdrop);
+const TEXTO_DEVOLUCION_PEDIDO = 'El cliente recibe la devolución de todo el pago por Mercado Pago. Puede demorar en verse en su cuenta.';
 
-  const form = backdrop.querySelector('#form-rechazar-pedido');
-  const selectMotivo = form.querySelector('#rechazo-motivo');
-  const comentarioLabel = form.querySelector('#rechazo-comentario-label');
-  const comentarioShell = form.querySelector('#rechazo-comentario-shell');
-  const comentarioTextarea = form.querySelector('#rechazo-comentario');
+function abrirHojaMotivoPedido({ pedido, accion, enviar, disparador }) {
+  const esAnulacion = accion === 'anular';
+  const prefijo = esAnulacion ? 'anulacion' : 'rechazo';
+  const sustantivo = esAnulacion ? 'anulación' : 'rechazo';
+  const select = campoSelect({
+    id: `${prefijo}-motivo`,
+    etiqueta: `Motivo de la ${sustantivo}`,
+    placeholder: 'Seleccioná un motivo',
+    opciones: MOTIVOS_RECHAZO,
+    testid: esAnulacion ? 'select-motivo-anulacion' : 'select-motivo-rechazo',
+    testidError: esAnulacion ? 'mensaje-error-motivo-anulacion' : 'mensaje-error-motivo-rechazo',
+  });
+  const comentario = campoTextarea({
+    id: `${prefijo}-comentario`,
+    etiqueta: 'Comentario (opcional)',
+    placeholder: 'Agregá una aclaración para el cliente',
+    testid: esAnulacion ? 'input-comentario-anulacion' : 'input-comentario-rechazo',
+    testidError: esAnulacion ? 'mensaje-error-comentario-anulacion' : 'mensaje-error-comentario-rechazo',
+  });
+  select.control.addEventListener('change', () => {
+    comentario.etiqueta.textContent = select.control.value === 'OTRO' ? 'Comentario' : 'Comentario (opcional)';
+    comentario.limpiarError();
+  });
 
-  function limpiarErrorComentario() {
-    comentarioShell.classList.remove('textarea-shell--error');
-    limpiarErrorCampo('rechazo-error-comentario');
+  function validar() {
+    if (!select.control.value) {
+      select.mostrarError(`Seleccioná un motivo de ${sustantivo}.`);
+      return false;
+    }
+    if (select.control.value === 'OTRO' && !comentario.control.value.trim()) {
+      comentario.mostrarError(`Ingresá un comentario para especificar el motivo ${esAnulacion ? 'de la anulación' : 'del rechazo'}.`);
+      return false;
+    }
+    return true;
   }
 
-  selectMotivo.addEventListener('change', () => {
-    comentarioLabel.textContent = selectMotivo.value === 'OTRO' ? 'Comentario' : 'Comentario (opcional)';
-    limpiarErrorComentario();
+  abrirHoja({
+    titulo: esAnulacion ? `¿Anular el pedido #${pedido.id}?` : `¿Rechazar el pedido #${pedido.id}?`,
+    parrafos: [TEXTO_DEVOLUCION_PEDIDO, 'Le avisamos el motivo y tu comentario.'],
+    contenido: [select.campo, comentario.campo],
+    clase: 'hoja--formulario',
+    testid: esAnulacion ? 'modal-anular-pedido' : 'modal-rechazar-pedido',
+    disparador,
+    acciones: [
+      {
+        etiqueta: esAnulacion ? 'Anular pedido' : 'Rechazar pedido',
+        etiquetaEnviando: esAnulacion ? 'Anulando…' : 'Rechazando…',
+        variante: 'peligro',
+        testid: esAnulacion ? 'btn-confirmar-anulacion' : 'btn-confirmar-rechazo',
+        validar,
+        alPulsar: () => enviar({ motivo: select.control.value, comentario: comentario.control.value.trim() }),
+      },
+      { etiqueta: 'Cancelar', variante: 'segura', inicial: true, testid: esAnulacion ? 'btn-cancelar-anulacion' : 'btn-cancelar-rechazo' },
+    ],
   });
-  comentarioTextarea.addEventListener('input', limpiarErrorComentario);
+}
 
-  backdrop.querySelector('#cancelar-rechazo-btn').addEventListener('click', () => backdrop.remove());
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
-  });
-  form.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const motivo = selectMotivo.value;
-    if (!motivo) {
-      mostrarErrorCampo('rechazo-error-motivo', 'Seleccioná un motivo de rechazo.');
-      return;
-    }
-    limpiarErrorCampo('rechazo-error-motivo');
-    const comentario = comentarioTextarea.value.trim();
-    if (motivo === 'OTRO' && !comentario) {
-      comentarioShell.classList.add('textarea-shell--error');
-      mostrarErrorCampo('rechazo-error-comentario', 'Ingresá un comentario para especificar el motivo del rechazo.');
-      return;
-    }
-    limpiarErrorComentario();
-    backdrop.remove();
-    onConfirmar({ motivo, comentario });
-  });
+function mostrarModalRechazarPedido(pedido, enviar, disparador) {
+  abrirHojaMotivoPedido({ pedido, accion: 'rechazar', enviar, disparador });
 }
 
 function mostrarErrorDeAccion(error, avisoSlot, mensajeGenerico) {
@@ -1099,6 +1087,12 @@ function mostrarErrorDeAccion(error, avisoSlot, mensajeGenerico) {
     return;
   }
   showToast(error instanceof ApiError ? error.message : mensajeGenerico, 'error');
+}
+
+function refrescarTrasConflicto(error, avisoSlot) {
+  if (error instanceof ApiError && error.status === 409 && typeof avisoSlot.alConflicto === 'function') {
+    avisoSlot.alConflicto(error.message);
+  }
 }
 
 function renderAccionesPendiente(container, pedido, onActualizado, avisoSlot) {
@@ -1129,10 +1123,8 @@ function renderAccionesPendiente(container, pedido, onActualizado, avisoSlot) {
     container.appendChild(aceptarBtn);
   }
 
-  const rechazarBtn = crear('button', 'btn btn-secondary');
+  const rechazarBtn = crear('button', 'btn btn-peligro-contorno');
   rechazarBtn.type = 'button';
-  rechazarBtn.style.borderColor = 'var(--color-error)';
-  rechazarBtn.style.color = 'var(--color-error)';
   rechazarBtn.setAttribute('data-testid', 'btn-rechazar-pedido');
   rechazarBtn.textContent = 'Rechazar pedido';
   rechazarBtn.addEventListener('click', () => {
@@ -1147,89 +1139,16 @@ function renderAccionesPendiente(container, pedido, onActualizado, avisoSlot) {
         showToast('Pedido rechazado');
         onActualizado(actualizado);
       } catch (error) {
-        mostrarErrorDeAccion(error, avisoSlot, 'No pudimos rechazar el pedido');
+        refrescarTrasConflicto(error, avisoSlot);
+        throw error;
       }
-    });
+    }, rechazarBtn);
   });
   container.appendChild(rechazarBtn);
 }
 
-function mostrarModalAnularPedido(pedido, onConfirmar) {
-  const backdrop = crear('div', 'modal-backdrop');
-  backdrop.setAttribute('data-testid', 'modal-anular-pedido');
-  const opcionesHtml = MOTIVOS_RECHAZO.map((motivo) => `<option value="${motivo.value}">${motivo.label}</option>`).join('');
-  backdrop.innerHTML = `
-    <div class="product-modal-sheet">
-      <div class="product-modal-sheet__handle"><span></span></div>
-      <div class="product-modal-sheet__body">
-        <h2 style="font-size:19px;margin-bottom:16px;">Anular pedido #${pedido.id}</h2>
-        <form class="form" id="form-anular-pedido" novalidate>
-          <div class="field">
-            <label class="field__label" for="anulacion-motivo">Motivo de la anulación</label>
-            <div class="select-shell">
-              <select id="anulacion-motivo" required data-testid="select-motivo-anulacion">
-                <option value="" disabled selected>Seleccioná un motivo</option>
-                ${opcionesHtml}
-              </select>
-              <svg class="select-shell__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div class="field__error" id="anulacion-error-motivo" style="display:none;" data-testid="mensaje-error-motivo-anulacion"></div>
-          </div>
-          <div class="field">
-            <label class="field__label" for="anulacion-comentario" id="anulacion-comentario-label">Comentario (opcional)</label>
-            <div class="textarea-shell" id="anulacion-comentario-shell"><textarea id="anulacion-comentario" maxlength="500" placeholder="Agregá una aclaración para el cliente" data-testid="input-comentario-anulacion"></textarea></div>
-            <div class="field__error" id="anulacion-error-comentario" style="display:none;" data-testid="mensaje-error-comentario-anulacion"></div>
-          </div>
-          <button class="btn btn-primary" type="submit" style="background:var(--color-error);margin-bottom:10px;" data-testid="btn-confirmar-anulacion">Anular pedido</button>
-          <button class="btn btn-tertiary" type="button" id="cancelar-anulacion-btn" data-testid="btn-cancelar-anulacion">Cancelar</button>
-        </form>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(backdrop);
-
-  const form = backdrop.querySelector('#form-anular-pedido');
-  const selectMotivo = form.querySelector('#anulacion-motivo');
-  const comentarioLabel = form.querySelector('#anulacion-comentario-label');
-  const comentarioShell = form.querySelector('#anulacion-comentario-shell');
-  const comentarioTextarea = form.querySelector('#anulacion-comentario');
-
-  function limpiarErrorComentario() {
-    comentarioShell.classList.remove('textarea-shell--error');
-    limpiarErrorCampo('anulacion-error-comentario');
-  }
-
-  selectMotivo.addEventListener('change', () => {
-    comentarioLabel.textContent = selectMotivo.value === 'OTRO' ? 'Comentario' : 'Comentario (opcional)';
-    limpiarErrorCampo('anulacion-error-motivo');
-    limpiarErrorComentario();
-  });
-  comentarioTextarea.addEventListener('input', limpiarErrorComentario);
-
-  backdrop.querySelector('#cancelar-anulacion-btn').addEventListener('click', () => backdrop.remove());
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
-  });
-  form.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const motivo = selectMotivo.value;
-    if (!motivo) {
-      mostrarErrorCampo('anulacion-error-motivo', 'Seleccioná un motivo de anulación.');
-      return;
-    }
-    limpiarErrorCampo('anulacion-error-motivo');
-    const comentario = comentarioTextarea.value.trim();
-    if (motivo === 'OTRO' && !comentario) {
-      comentarioShell.classList.add('textarea-shell--error');
-      mostrarErrorCampo('anulacion-error-comentario', 'Ingresá un comentario para especificar el motivo de la anulación.');
-      return;
-    }
-    limpiarErrorComentario();
-    backdrop.remove();
-    onConfirmar({ motivo, comentario });
-  });
+function mostrarModalAnularPedido(pedido, enviar, disparador) {
+  abrirHojaMotivoPedido({ pedido, accion: 'anular', enviar, disparador });
 }
 
 function renderAccionesEnPreparacion(container, pedido, onActualizado, avisoSlot) {
@@ -1256,10 +1175,8 @@ function renderAccionesEnPreparacion(container, pedido, onActualizado, avisoSlot
   });
   container.appendChild(despacharBtn);
 
-  const anularBtn = crear('button', 'btn btn-secondary');
+  const anularBtn = crear('button', 'btn btn-peligro-contorno');
   anularBtn.type = 'button';
-  anularBtn.style.borderColor = 'var(--color-error)';
-  anularBtn.style.color = 'var(--color-error)';
   anularBtn.setAttribute('data-testid', 'btn-anular-pedido');
   anularBtn.textContent = 'Anular pedido';
   anularBtn.addEventListener('click', () => {
@@ -1271,64 +1188,25 @@ function renderAccionesEnPreparacion(container, pedido, onActualizado, avisoSlot
         showToast('Pedido anulado');
         onActualizado(actualizado);
       } catch (error) {
-        mostrarErrorDeAccion(error, avisoSlot, 'No pudimos anular el pedido');
+        refrescarTrasConflicto(error, avisoSlot);
+        throw error;
       }
-    });
+    }, anularBtn);
   });
   container.appendChild(anularBtn);
 }
 
-function mostrarModalNoRetirado(pedido, onConfirmar) {
-  const backdrop = crear('div', 'modal-backdrop');
-  backdrop.setAttribute('data-testid', 'modal-no-retirado');
-  const hoja = crear('div', 'modal-sheet');
-  hoja.setAttribute('role', 'dialog');
-  hoja.setAttribute('aria-modal', 'true');
-  hoja.setAttribute('aria-labelledby', 'modal-no-retirado-titulo');
-
-  const titulo = crear('h2', 'modal-sheet__title');
-  titulo.id = 'modal-no-retirado-titulo';
-  titulo.textContent = `¿Cerrar el pedido #${pedido.id} como no retirado?`;
-  const texto = crear('p', 'modal-sheet__text');
-  texto.setAttribute('data-testid', 'texto-modal-no-retirado');
-  texto.textContent = 'El cliente no pasó a buscarlo y no se le devuelve el pago, porque el pedido ya estaba preparado.';
-  const confirmar = crear('button', 'btn btn-primary');
-  confirmar.type = 'button';
-  confirmar.style.background = 'var(--color-error)';
-  confirmar.style.marginBottom = '10px';
-  confirmar.setAttribute('data-testid', 'btn-confirmar-no-retirado');
-  confirmar.textContent = 'Cerrar como no retirado';
-  const cancelar = crear('button', 'btn btn-tertiary');
-  cancelar.type = 'button';
-  cancelar.setAttribute('data-testid', 'btn-cancelar-no-retirado');
-  cancelar.textContent = 'Cancelar';
-
-  hoja.append(titulo, texto, confirmar, cancelar);
-  backdrop.appendChild(hoja);
-  document.body.appendChild(backdrop);
-  cancelar.focus();
-
-  function cerrar() {
-    document.removeEventListener('keydown', alTeclear);
-    backdrop.remove();
-  }
-
-  function alTeclear(evento) {
-    if (evento.key === 'Escape') {
-      cerrar();
-    }
-  }
-
-  document.addEventListener('keydown', alTeclear);
-  backdrop.addEventListener('click', (evento) => {
-    if (evento.target === backdrop) {
-      cerrar();
-    }
-  });
-  cancelar.addEventListener('click', cerrar);
-  confirmar.addEventListener('click', () => {
-    cerrar();
-    onConfirmar();
+function mostrarModalNoRetirado(pedido, enviar, disparador) {
+  abrirHoja({
+    titulo: `¿Cerrar el pedido #${pedido.id} como no retirado?`,
+    texto: 'El cliente no pasó a buscarlo y no se le devuelve el pago, porque el pedido ya estaba preparado.',
+    testid: 'modal-no-retirado',
+    testids: { textos: ['texto-modal-no-retirado'] },
+    disparador,
+    acciones: [
+      { etiqueta: 'Cerrar como no retirado', etiquetaEnviando: 'Cerrando…', variante: 'peligro', testid: 'btn-confirmar-no-retirado', alPulsar: enviar },
+      { etiqueta: 'Cancelar', variante: 'segura', inicial: true, testid: 'btn-cancelar-no-retirado' },
+    ],
   });
 }
 
@@ -1367,11 +1245,9 @@ function renderAccionesListoParaRetirar(container, pedido, onActualizado, avisoS
     return;
   }
 
-  const noRetiradoBtn = crear('button', 'btn btn-secondary');
+  const noRetiradoBtn = crear('button', 'btn btn-peligro-contorno');
   noRetiradoBtn.type = 'button';
   noRetiradoBtn.style.marginTop = '10px';
-  noRetiradoBtn.style.borderColor = 'var(--color-error)';
-  noRetiradoBtn.style.color = 'var(--color-error)';
   noRetiradoBtn.setAttribute('data-testid', 'btn-cerrar-no-retirado');
   noRetiradoBtn.textContent = 'Cerrar como no retirado';
   container.appendChild(noRetiradoBtn);
@@ -1412,18 +1288,16 @@ function renderAccionesListoParaRetirar(container, pedido, onActualizado, avisoS
   noRetiradoBtn.addEventListener('click', () => {
     limpiarAvisoFijo(avisoSlot);
     mostrarModalNoRetirado(pedido, async () => {
-      setLoading(noRetiradoBtn, 'Cerrando...', true);
       try {
         const actualizado = await apiFetch(`/pedidos/comercio/${pedido.id}/no-retirado`, { method: 'PUT' });
         normalizarPedido(actualizado);
         showToast('Pedido cerrado como no retirado');
         onActualizado(actualizado);
       } catch (error) {
-        mostrarErrorDeAccion(error, avisoSlot, 'No pudimos cerrar el pedido');
-        setLoading(noRetiradoBtn, '', false, 'Cerrar como no retirado');
-        pintarEspera();
+        refrescarTrasConflicto(error, avisoSlot);
+        throw error;
       }
-    });
+    }, noRetiradoBtn);
   });
 }
 
@@ -1793,24 +1667,14 @@ function mostrarVista(id) {
 }
 
 function mostrarModalConfirmarLogout() {
-  const backdrop = crear('div', 'modal-backdrop');
-  backdrop.setAttribute('data-testid', 'modal-confirmar-logout');
-  backdrop.innerHTML = `
-    <div class="modal-sheet">
-      <div class="modal-sheet__icon">${ICONS.logoutIcon}</div>
-      <h2 class="modal-sheet__title">¿Cerrar sesión?</h2>
-      <p class="modal-sheet__text">Podés volver a ingresar en cualquier momento.</p>
-      <button class="btn btn-primary" type="button" id="confirmar-logout-btn" style="margin-bottom:12px;" data-testid="btn-confirmar-logout">Sí, cerrar sesión</button>
-      <button class="btn btn-tertiary" type="button" id="cancelar-logout-btn" data-testid="btn-cancelar-logout">Cancelar</button>
-    </div>
-  `;
-  document.body.appendChild(backdrop);
-  document.getElementById('cancelar-logout-btn').addEventListener('click', () => backdrop.remove());
-  document.getElementById('confirmar-logout-btn').addEventListener('click', () => logout());
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
+  abrirHoja({
+    titulo: '¿Cerrar sesión?',
+    texto: 'Podés volver a ingresar en cualquier momento.',
+    testid: 'modal-confirmar-logout',
+    acciones: [
+      { etiqueta: 'Sí, cerrar sesión', etiquetaEnviando: 'Cerrando…', variante: 'primaria', testid: 'btn-confirmar-logout', alPulsar: () => logout() },
+      { etiqueta: 'Cancelar', variante: 'segura', inicial: true, testid: 'btn-cancelar-logout' },
+    ],
   });
 }
 
@@ -1878,6 +1742,7 @@ function crearTituloModalMp(texto) {
   const titulo = crear('h2', 'modal-sheet__title');
   titulo.textContent = texto;
   titulo.setAttribute('data-testid', 'titulo-desvincular-mp');
+  titulo.id = 'titulo-desvincular-mp-hoja';
   return titulo;
 }
 
@@ -1892,20 +1757,21 @@ function crearBotonMp(className, texto, testid) {
 function abrirModalDesvincularMp({ alTerminar }) {
   const backdrop = crear('div', 'modal-backdrop');
   backdrop.setAttribute('data-testid', 'modal-desvincular-mp');
-  const hoja = crear('div', 'modal-sheet');
+  const hoja = crear('div', 'modal-sheet hoja-scroll');
+  hoja.setAttribute('aria-labelledby', 'titulo-desvincular-mp-hoja');
   backdrop.appendChild(hoja);
-  document.body.appendChild(backdrop);
   let ocupado = false;
+  const controlHoja = activarHoja({ fondo: backdrop, hoja, ocupada: () => ocupado });
 
   function cerrar() {
-    backdrop.remove();
+    controlHoja.cerrar();
   }
 
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop && !ocupado) {
-      cerrar();
-    }
-  });
+  function crearAccionesMp(...botones) {
+    const acciones = crear('div', 'hoja__acciones');
+    acciones.append(...botones);
+    return acciones;
+  }
 
   function mostrarCargando() {
     const esqueleto = crear('div', 'desvincular-mp__esqueleto');
@@ -1944,12 +1810,14 @@ function abrirModalDesvincularMp({ alTerminar }) {
       nodos.push(error);
     }
     if (hayCierre) {
-      const cerrarBtn = crearBotonMp('btn btn-primary cierre-modal__confirmar', cerrables.length > 1 ? 'Cerrar comercios' : 'Cerrar comercio', 'btn-cerrar-comercios-desvincular-mp');
+      const cerrarBtn = crearBotonMp('btn btn-primary', cerrables.length > 1 ? 'Cerrar comercios' : 'Cerrar comercio', 'btn-cerrar-comercios-desvincular-mp');
       cerrarBtn.addEventListener('click', () => cerrarComerciosCerrables(previa, cerrarBtn, entendido));
-      nodos.push(cerrarBtn);
+      nodos.push(crearAccionesMp(cerrarBtn, entendido));
+    } else {
+      nodos.push(crearAccionesMp(entendido));
     }
-    nodos.push(entendido);
     hoja.replaceChildren(...nodos);
+    entendido.focus();
   }
 
   async function cerrarComerciosCerrables(previa, cerrarBtn, entendido) {
@@ -1994,8 +1862,8 @@ function abrirModalDesvincularMp({ alTerminar }) {
   }
 
   function mostrarConfirmacion(previa) {
-    const desvincular = crearBotonMp('btn btn-primary desvincular-mp__confirmar', 'Desvincular', 'btn-confirmar-desvincular-mp');
-    const cancelar = crearBotonMp('btn btn-tertiary', 'Cancelar', 'btn-cancelar-desvincular-mp');
+    const desvincular = crearBotonMp('btn btn-peligro', 'Desvincular', 'btn-confirmar-desvincular-mp');
+    const cancelar = crearBotonMp('btn btn-secondary hoja__accion--segura', 'Cancelar', 'btn-cancelar-desvincular-mp');
     cancelar.addEventListener('click', cerrar);
     desvincular.addEventListener('click', () => confirmar(desvincular, cancelar));
     hoja.replaceChildren(
@@ -2004,9 +1872,9 @@ function abrirModalDesvincularMp({ alTerminar }) {
       crearParrafoMp('modal-sheet__text', 'Tus comercios dejarán de recibir pedidos nuevos y saldrán del catálogo hasta que vuelvas a vincular una cuenta.', 'texto-desvincular-mp'),
       crearBloquePedidosEnCurso(previa),
       crearParrafoMp('desvincular-mp__nota', 'Si hay que devolver el dinero de alguno de estos pedidos, lo gestiona el equipo de Bajoneá de forma manual.', 'nota-desvincular-mp'),
-      desvincular,
-      cancelar,
+      crearAccionesMp(desvincular, cancelar),
     );
+    cancelar.focus();
   }
 
   function resolverPrevia(previa) {
@@ -2030,6 +1898,7 @@ function abrirModalDesvincularMp({ alTerminar }) {
     ocupado = true;
     desvincular.disabled = true;
     cancelar.disabled = true;
+    desvincular.textContent = 'Desvinculando…';
     try {
       const { mensaje } = await apiFetch('/oauth/mercadopago/desvincular', { method: 'DELETE', conMensaje: true });
       await terminarConAviso(mensaje, 'success');
@@ -2048,7 +1917,15 @@ function abrirModalDesvincularMp({ alTerminar }) {
         }
         return;
       }
-      await terminarConAviso(error instanceof ApiError ? error.message : 'No pudimos desvincular la cuenta', 'error');
+      ocupado = false;
+      desvincular.disabled = false;
+      cancelar.disabled = false;
+      desvincular.textContent = 'Desvincular';
+      hoja.querySelector('[data-testid="error-desvincular-mp"]')?.remove();
+      const aviso = crearParrafoMp('desvincular-mp__error', error instanceof ApiError ? error.message : 'No pudimos desvincular la cuenta. Probá de nuevo.', 'error-desvincular-mp');
+      aviso.setAttribute('role', 'alert');
+      hoja.insertBefore(aviso, desvincular.parentElement);
+      desvincular.focus();
     }
   }
 
@@ -2490,6 +2367,7 @@ async function iniciarPerfilDelEmpleado(comercio) {
 
   protegerPorSuspension(document.getElementById('editar-comercio-empleado-link'));
   protegerPorSuspension(document.getElementById('editar-horarios-empleado-link'));
+  document.querySelectorAll('.profile-link-list[aria-busy]').forEach((lista) => lista.removeAttribute('aria-busy'));
 }
 
 export async function initComercioPerfil() {
@@ -2760,7 +2638,7 @@ export async function initComercioPerfil() {
     event.preventDefault();
     renderBanner(bannerPassword, 'info', '');
     shellPasswordActual.classList.remove('input-shell--error');
-    errorPasswordActual.style.display = 'none';
+    establecerErrorCampo(errorPasswordActual, null);
     const camposValidos = validarCamposSilencioso([
       { inputId: 'password-actual', errorId: 'error-password-actual', mensaje: 'Ingresá tu contraseña actual.' },
       { inputId: 'password-nueva', errorId: 'error-password-nueva', mensaje: 'Ingresá una nueva contraseña.' },
@@ -2802,8 +2680,7 @@ export async function initComercioPerfil() {
       const mapaErrores = { passwordNueva: 'error-password-nueva' };
       if (error instanceof ApiError && error.status === 401) {
         shellPasswordActual.classList.add('input-shell--error');
-        errorPasswordActual.textContent = 'La contraseña actual no es correcta.';
-        errorPasswordActual.style.display = 'flex';
+        establecerErrorCampo(errorPasswordActual, 'La contraseña actual no es correcta.');
         const intentosRestantes = error.data && typeof error.data.intentosRestantes === 'number' ? error.data.intentosRestantes : null;
         if (intentosRestantes === 1) {
           renderBanner(bannerPassword, 'warning', 'Cuidado: si fallás una vez más, tu cuenta se bloqueará.');
@@ -2830,6 +2707,7 @@ export async function initComercioPerfil() {
   ].forEach((boton) => {
     boton.disabled = false;
   });
+  document.querySelectorAll('.profile-link-list[aria-busy]').forEach((lista) => lista.removeAttribute('aria-busy'));
 
   protegerPorSuspension(document.getElementById('editar-perfil-link'));
   protegerPorSuspension(document.getElementById('editar-horarios-link'));
@@ -2982,38 +2860,27 @@ function mostrarModalAccionProducto(producto, { onEditar, onCambiarEstado, onDes
   });
 }
 
-function mostrarModalConfirmarDescontinuar(producto, onConfirmar) {
-  const backdrop = crear('div', 'modal-backdrop');
-  backdrop.setAttribute('data-testid', 'modal-confirmar-descontinuar');
-  backdrop.innerHTML = `
-    <div class="modal-sheet">
-      <div class="modal-sheet__icon modal-sheet__icon--danger">${ICONS.alert}</div>
-      <h2 class="modal-sheet__title" id="descontinuar-modal-titulo"></h2>
-      <p class="modal-sheet__text">Esta acción no se puede deshacer. El producto va a dejar de mostrarse en tu catálogo público, se va a quitar de los carritos activos que lo tengan, y no vas a poder volver a marcarlo como disponible.</p>
-      <div class="checkbox-row">
-        <input type="checkbox" id="confirmar-irreversible-check" data-testid="input-confirmar-irreversible" />
-        <label for="confirmar-irreversible-check">Entiendo que esta acción es irreversible</label>
-      </div>
-      <button class="btn btn-primary" type="button" id="confirmar-descontinuar-btn" style="margin-top:16px;margin-bottom:12px;background:var(--color-error);" disabled data-testid="btn-confirmar-descontinuar">Sí, descontinuar</button>
-      <button class="btn btn-tertiary" type="button" id="cancelar-descontinuar-btn" data-testid="btn-cancelar-descontinuar">Cancelar</button>
-    </div>
-  `;
-  backdrop.querySelector('#descontinuar-modal-titulo').textContent = `¿Descontinuar "${producto.nombre}"?`;
-  document.body.appendChild(backdrop);
-  const confirmarBtn = document.getElementById('confirmar-descontinuar-btn');
-  document.getElementById('confirmar-irreversible-check').addEventListener('change', (event) => {
-    confirmarBtn.disabled = !event.target.checked;
+function mostrarModalConfirmarDescontinuar(producto, enviar) {
+  const casilla = campoCasilla({ id: 'confirmar-irreversible-check', etiqueta: 'Entiendo que esta acción es irreversible', testid: 'input-confirmar-irreversible' });
+  const hoja = abrirHoja({
+    titulo: `¿Descontinuar "${producto.nombre}"?`,
+    texto: 'Esta acción no se puede deshacer. El producto va a dejar de mostrarse en tu catálogo público, se va a quitar de los carritos activos que lo tengan, y no vas a poder volver a marcarlo como disponible.',
+    contenido: casilla.campo,
+    clase: 'hoja--formulario',
+    testid: 'modal-confirmar-descontinuar',
+    acciones: [
+      {
+        etiqueta: 'Sí, descontinuar',
+        etiquetaEnviando: 'Descontinuando…',
+        variante: 'peligro',
+        testid: 'btn-confirmar-descontinuar',
+        deshabilitadaSi: () => !casilla.control.checked,
+        alPulsar: enviar,
+      },
+      { etiqueta: 'Cancelar', variante: 'segura', inicial: true, testid: 'btn-cancelar-descontinuar' },
+    ],
   });
-  document.getElementById('cancelar-descontinuar-btn').addEventListener('click', () => backdrop.remove());
-  confirmarBtn.addEventListener('click', () => {
-    backdrop.remove();
-    onConfirmar();
-  });
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
-  });
+  casilla.control.addEventListener('change', () => hoja.refrescarAcciones());
 }
 
 export async function initComercioProductos() {
@@ -3136,17 +3003,13 @@ export async function initComercioProductos() {
       },
       onDescontinuar: () => {
         mostrarModalConfirmarDescontinuar(producto, async () => {
-          try {
-            const actualizado = await apiFetch(`/productos/${producto.id}/estado`, {
-              method: 'PATCH',
-              body: { estado: 'DESCONTINUADO' },
-            });
-            normalizarCampos(actualizado, ['nombre']);
-            actualizarProducto(actualizado);
-            showToast('Producto descontinuado');
-          } catch (error) {
-            mostrarErrorDeCatalogo(error, 'No pudimos descontinuar el producto');
-          }
+          const actualizado = await apiFetch(`/productos/${producto.id}/estado`, {
+            method: 'PATCH',
+            body: { estado: 'DESCONTINUADO' },
+          });
+          normalizarCampos(actualizado, ['nombre']);
+          actualizarProducto(actualizado);
+          showToast('Producto descontinuado');
         });
       },
     });
@@ -3490,12 +3353,8 @@ export async function initComercioProductoForm() {
     descontinuarLink.style.display = 'flex';
     descontinuarLink.addEventListener('click', () => {
       mostrarModalConfirmarDescontinuar(productoActual, async () => {
-        try {
-          await apiFetch(`/productos/${productoId}/estado`, { method: 'PATCH', body: { estado: 'DESCONTINUADO' } });
-          window.location.href = 'comercio-productos.html?productoDescontinuado=1';
-        } catch (error) {
-          mostrarErrorDeFormulario(error, 'No pudimos descontinuar el producto.');
-        }
+        await apiFetch(`/productos/${productoId}/estado`, { method: 'PATCH', body: { estado: 'DESCONTINUADO' } });
+        window.location.href = 'comercio-productos.html?productoDescontinuado=1';
       });
     });
   }

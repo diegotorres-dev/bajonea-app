@@ -4,6 +4,7 @@ import { getComercioActivoEnMemoria, INTERVALO_POLLING_COMERCIOS_MS, suscribirCo
 import { comercioActivoSuspendido } from './comercio-suspendido.js';
 import { h, crearSvg, renderBanner } from './form-utils.js';
 import { fechaCortaDe } from './fechas.js';
+import { abrirHoja } from './hoja.js';
 import { mostrarErrorCampo, limpiarErrorCampo, mapearErroresBackend } from './validators.js';
 import {
   ESTADO_INVITACION,
@@ -526,29 +527,30 @@ async function reenviar(invitacion) {
 }
 
 function abrirConfirmacionCancelar(invitacion) {
-  const { backdrop, hoja } = crearHoja('hoja-cancelar-invitacion');
-  const titulo = h('h2', { class: 'modal-sheet__title equipo-confirmar__titulo', 'data-testid': 'titulo-cancelar-invitacion' });
-  titulo.textContent = `¿Cancelar la invitación a ${invitacion.email}?`;
-  const confirmar = h('button', { class: 'btn btn-primary equipo-hoja__peligro', type: 'button', 'data-testid': 'btn-confirmar-cancelar-invitacion' });
-  confirmar.textContent = 'Cancelar invitación';
-  const volver = h('button', { class: 'btn btn-tertiary', type: 'button', 'data-testid': 'btn-volver-cancelar-invitacion' });
-  volver.textContent = 'Volver';
-  hoja.append(titulo, confirmar, volver);
-  volver.addEventListener('click', () => backdrop.remove());
-  confirmar.addEventListener('click', async () => {
-    if (confirmar.disabled) {
-      return;
-    }
-    ocupar(backdrop, confirmar, 'Cancelando...', true, 'Cancelar invitación');
-    volver.disabled = true;
-    try {
-      const { mensaje } = await apiFetch(`${RUTA_EQUIPO}/invitaciones/${invitacion.id}/cancelar`, { ...OPCIONES_RED, method: 'PUT' });
-      showToast(mensaje);
-    } catch (error) {
-      showToast(mensajeDeError(error, 'No pudimos cancelar la invitación. Probá de nuevo.'), 'error');
-    }
-    backdrop.remove();
-    cargar({ conEsqueleto: false });
+  abrirHoja({
+    titulo: `¿Cancelar la invitación a ${invitacion.email}?`,
+    testid: 'hoja-cancelar-invitacion',
+    testids: { titulo: 'titulo-cancelar-invitacion' },
+    acciones: [
+      {
+        etiqueta: 'Cancelar invitación',
+        etiquetaEnviando: 'Cancelando…',
+        variante: 'peligro',
+        testid: 'btn-confirmar-cancelar-invitacion',
+        alPulsar: async () => {
+          let respuesta;
+          try {
+            respuesta = await apiFetch(`${RUTA_EQUIPO}/invitaciones/${invitacion.id}/cancelar`, { ...OPCIONES_RED, method: 'PUT' });
+          } catch (error) {
+            cargar({ conEsqueleto: false });
+            throw new Error(mensajeDeError(error, 'No pudimos cancelar la invitación. Probá de nuevo.'));
+          }
+          showToast(respuesta.mensaje);
+          cargar({ conEsqueleto: false });
+        },
+      },
+      { etiqueta: 'Volver', variante: 'segura', inicial: true, testid: 'btn-volver-cancelar-invitacion' },
+    ],
   });
 }
 
@@ -635,33 +637,31 @@ function crearBotonCerrarMenu(backdrop) {
 }
 
 function abrirConfirmacionDesactivar(miembro) {
-  const { backdrop, hoja } = crearHoja('hoja-desactivar-miembro');
-  const titulo = h('h2', { class: 'modal-sheet__title equipo-confirmar__titulo', 'data-testid': 'titulo-desactivar-miembro' });
-  titulo.textContent = `¿Desactivar a ${nombreCompleto(miembro)}?`;
-  const texto = h('p', { class: 'equipo-aviso__cuerpo', 'data-testid': 'texto-desactivar-miembro' });
-  texto.textContent = `${nombreCompleto(miembro)} va a dejar de tener acceso a ${nombreDelComercioActivo() || 'este comercio'} y se le avisa. Si cambiás de idea, la podés reactivar desde Inactivos.`;
-  const confirmar = h('button', { class: 'btn btn-primary equipo-hoja__peligro', type: 'button', 'data-testid': 'btn-confirmar-desactivar-miembro' });
-  confirmar.textContent = 'Desactivar';
-  const volver = h('button', { class: 'btn btn-tertiary', type: 'button', 'data-testid': 'btn-volver-desactivar-miembro' });
-  volver.textContent = 'Volver';
-  hoja.append(titulo, texto, confirmar, volver);
-  volver.addEventListener('click', () => backdrop.remove());
-  confirmar.addEventListener('click', async () => {
-    if (confirmar.disabled) {
-      return;
-    }
-    ocupar(backdrop, confirmar, 'Desactivando...', true, 'Desactivar');
-    volver.disabled = true;
-    try {
-      const { data } = await apiFetch(`${RUTA_EQUIPO}/miembros/${miembro.empleadoId}/desactivar`, { ...OPCIONES_RED, method: 'PUT' });
-      backdrop.remove();
-      reemplazarMiembro(data);
-      showToast(`Desactivaste a ${nombreCompleto(miembro)}`);
-    } catch (error) {
-      backdrop.remove();
-      showToast(mensajeDeError(error, MENSAJE_ERROR_DESACTIVAR), 'error');
-      cargar({ conEsqueleto: false });
-    }
+  abrirHoja({
+    titulo: `¿Desactivar a ${nombreCompleto(miembro)}?`,
+    texto: `${nombreCompleto(miembro)} va a dejar de tener acceso a ${nombreDelComercioActivo() || 'este comercio'} y se le avisa. Si cambiás de idea, la podés reactivar desde Inactivos.`,
+    testid: 'hoja-desactivar-miembro',
+    testids: { titulo: 'titulo-desactivar-miembro', textos: ['texto-desactivar-miembro'] },
+    acciones: [
+      {
+        etiqueta: 'Desactivar',
+        etiquetaEnviando: 'Desactivando…',
+        variante: 'peligro',
+        testid: 'btn-confirmar-desactivar-miembro',
+        alPulsar: async () => {
+          let respuesta;
+          try {
+            respuesta = await apiFetch(`${RUTA_EQUIPO}/miembros/${miembro.empleadoId}/desactivar`, { ...OPCIONES_RED, method: 'PUT' });
+          } catch (error) {
+            cargar({ conEsqueleto: false });
+            throw new Error(mensajeDeError(error, MENSAJE_ERROR_DESACTIVAR));
+          }
+          reemplazarMiembro(respuesta.data);
+          showToast(`Desactivaste a ${nombreCompleto(miembro)}`);
+        },
+      },
+      { etiqueta: 'Volver', variante: 'segura', inicial: true, testid: 'btn-volver-desactivar-miembro' },
+    ],
   });
 }
 

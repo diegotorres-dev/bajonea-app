@@ -24,6 +24,9 @@ test.use({ viewport: { width: 375, height: 812 } });
 const CARPETA_CAPTURAS = path.resolve(__dirname, '../../../docs/capturas-inactividad');
 
 async function captura(page: Page, nombre: string) {
+  if (process.env.CAPTURAS !== '1') {
+    return;
+  }
   fs.mkdirSync(CARPETA_CAPTURAS, { recursive: true });
   await page.screenshot({ path: path.join(CARPETA_CAPTURAS, `${nombre}.png`) });
 }

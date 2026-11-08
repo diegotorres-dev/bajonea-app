@@ -32,6 +32,9 @@ const MOTIVO = 'Reiteradas quejas de clientes por demoras y pedidos incompletos'
 const todoElDia = () => [{ diaSemana: diaDeHoy(), horaApertura: '00:00', horaCierre: '23:59' }];
 
 async function captura(page: Page, nombre: string) {
+  if (process.env.CAPTURAS !== '1') {
+    return;
+  }
   fs.mkdirSync(CARPETA_CAPTURAS, { recursive: true });
   await page.screenshot({ path: path.join(CARPETA_CAPTURAS, `${nombre}.png`) });
 }
@@ -108,8 +111,8 @@ test.describe('Fase 5, S2 (UI): suspensión individual de un comercio', () => {
     await expect(hoja).toBeVisible();
     await expect(hoja).toHaveAttribute('role', 'alertdialog');
     await expect(page.getByTestId('modal-suspender-comercio-titulo')).toContainText('Suspender ');
+    await expect(page.getByTestId('suspender-comercio-resumen')).toHaveText('Deja de aparecer en el catálogo.');
     await expect(page.getByTestId('suspender-comercio-que-va-a-pasar').locator('li')).toHaveText([
-      'Deja de aparecer en el catálogo.',
       'No tiene pedidos en curso.',
     ]);
     await expect(page.getByTestId('input-suspender-comercio-motivo')).toBeFocused();
@@ -164,8 +167,8 @@ test.describe('Fase 5, S2 (UI): suspensión individual de un comercio', () => {
 
     await abrirDetalle(page, conPedidos.comercioId);
     await page.getByTestId('btn-suspender-comercio').click();
+    await expect(page.getByTestId('suspender-comercio-resumen')).toHaveText('Deja de aparecer en el catálogo.');
     await expect(page.getByTestId('suspender-comercio-que-va-a-pasar').locator('li')).toHaveText([
-      'Deja de aparecer en el catálogo.',
       '2 pedidos pendientes: se rechazan ahora y se reembolsan. No se puede deshacer.',
       '1 pedido en preparación: tiene 90 minutos para despacharlo o se cancela con reembolso.',
       '1 pedido listo para retirar: tiene 90 minutos para entregarlo o se cierra como no retirado.',

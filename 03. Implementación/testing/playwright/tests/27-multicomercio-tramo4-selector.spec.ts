@@ -342,7 +342,7 @@ test.describe('Multi-comercio, tramo 4B: selector de comercio del Dueño (UI)', 
       await seleccionarComercioEnPanel(page, grande.b);
       await irAlPanelDelComercioElegido(page);
       await expect(page.getByTestId('franja-comercio-nombre')).toHaveText(grande.nombres[grande.b]);
-      await expect(page.getByTestId('mensaje-saludo')).toContainText(grande.nombres[grande.b]);
+      await expect(page.getByTestId('mensaje-saludo')).toHaveText('Hola 👋');
       expect((await comercioActivoEnSesion(page))?.comercioId).toBe(grande.b);
       expect(await ultimoComercioGuardado(page, grande.dueno.duenoId)).toBe(grande.b);
       await expect.poll(() => encabezados.at(-1)).toBe(String(grande.b));

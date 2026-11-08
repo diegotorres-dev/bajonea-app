@@ -67,24 +67,31 @@ for (const [nombre, tamano] of [['foto-5mb-justa.jpg', CINCO_MB], ['foto-5mb-mas
     writeFileSync(destino, bytes);
   }
 }
-const newmanJs = path.join(execSync('npm root -g', { encoding: 'utf8' }).trim(), 'newman', 'bin', 'newman.js');
+const raizGlobal = execSync('npm root -g', { encoding: 'utf8' }).trim();
 let fallos = 0;
 const resumenes = [];
 
 for (let vuelta = 1; vuelta <= repeticiones; vuelta += 1) {
   const exportado = path.join(os.tmpdir(), `newman-${process.pid}-${vuelta}.json`);
-  const args = ['run', coleccion, '-e', entorno, '--env-var', `base_url=${base}`, '--env-var', `localidad_id=${localidadId}`, '--env-var', `admin_password=${password}`, ...Object.entries(secretos).filter(([clave]) => clave !== 'admin_password').flatMap(([clave, valor]) => ['--env-var', `${clave}=${valor}`]),
-    '--reporters', 'cli,json', '--reporter-json-export', exportado, '--color', 'off', '--working-dir', path.resolve(aqui, '..')];
-  if (!todas) {
-    for (const carpeta of carpetas) args.push('--folder', carpeta);
-  }
-  console.log(`\n=== Newman, vuelta ${vuelta} de ${repeticiones}: ${todas ? 'colección completa' : carpetas.map((c) => c.slice(0, 2)).join(', ')} contra ${base} ===`);
+  const variables = [
+    { key: 'base_url', value: base },
+    { key: 'localidad_id', value: String(localidadId) },
+    { key: 'admin_password', value: password },
+    ...Object.entries(secretos).filter(([clave]) => clave !== 'admin_password').map(([key, value]) => ({ key, value: String(value) })),
+  ];
+  const configuracion = { collection: coleccion, environment: entorno, envVar: variables, color: 'off', workingDir: path.resolve(aqui, '..'), ...(todas ? {} : { folder: carpetas }) };
+  console.log(`\nn=== Newman, vuelta ${vuelta} de ${repeticiones}: ${todas ? 'colección completa' : carpetas.map((c) => c.slice(0, 2)).join(', ')} contra ${base} ===`);
   const inicio = Date.now();
-  const resultado = spawnSync(process.execPath, [newmanJs, ...args], { stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8', maxBuffer: 1024 * 1024 * 512 });
+  const resultado = spawnSync(process.execPath, [path.join(aqui, 'lib', 'newman-resumen.cjs'), raizGlobal, exportado], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    encoding: 'utf8',
+    maxBuffer: 1024 * 1024 * 512,
+    env: { ...process.env, NEWMAN_CONFIG: JSON.stringify(configuracion) },
+  });
   const salida = `${resultado.stdout || ''}${resultado.stderr || ''}`;
-  const corrida = existsSync(exportado) ? JSON.parse(readFileSync(exportado, 'utf8')).run : null;
+  const corrida = existsSync(exportado) ? JSON.parse(readFileSync(exportado, 'utf8')) : null;
   if (existsSync(exportado)) unlinkSync(exportado);
-  const resumen = corrida ? corrida.stats : null;
+  const resumen = corrida && corrida.stats ? corrida.stats : null;
   const duracion = ((Date.now() - inicio) / 1000).toFixed(0);
   if (resumen) {
     const f = resumen.assertions.failed + resumen.requests.failed + resumen.testScripts.failed + resumen.prerequestScripts.failed;
@@ -92,15 +99,14 @@ for (let vuelta = 1; vuelta <= repeticiones; vuelta += 1) {
     resumenes.push({ vuelta, requests: resumen.requests.total, assertions: resumen.assertions.total, fallas: f, segundos: Number(duracion) });
     console.log(`vuelta ${vuelta}: requests ${resumen.requests.total}, assertions ${resumen.assertions.total}, fallas ${f}, ${duracion} s`);
     if (f > 0) {
-      const detalle = corrida.failures.slice(0, Number(process.env.NEWMAN_FALLAS || 15));
-      for (const falla of detalle) {
-        console.log(`  FALLA: ${falla.source?.name || '?'} -> ${falla.error?.name}: ${String(falla.error?.message).slice(0, 220)}`);
+      for (const falla of corrida.failures) {
+        console.log(`  FALLA: ${falla.origen || '?'} -> ${falla.nombre}: ${falla.mensaje}`);
       }
     }
   } else {
     fallos += 1;
     console.log(salida.split('\n').slice(-40).join('\n'));
-    console.log(`vuelta ${vuelta}: Newman no produjo reporte (código ${resultado.status})`);
+    console.log(`vuelta ${vuelta}: Newman no produjo reporte (código ${resultado.status})${corrida && corrida.error ? `: ${corrida.error}` : ''}`);
   }
 }
 console.log('\nResumen:', JSON.stringify(resumenes));

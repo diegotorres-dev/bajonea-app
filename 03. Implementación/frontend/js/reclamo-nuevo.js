@@ -2,6 +2,7 @@ import { apiFetch, getUsuario } from './api.js';
 import { exigirContextoCliente } from './contexto.js';
 import { renderTopBar, showToast } from './catalogo.js';
 import { h, crearSvg, setLoading } from './form-utils.js';
+import { establecerErrorCampo } from './validators.js';
 import { texto } from './admin-hojas.js';
 import { crearAvisoDeError, erroresPorCampo, limpiarError, mensajeDeApi, mostrarError } from './soporte-comun.js';
 import { crearSelectorDeFotos } from './reclamo-fotos.js';
@@ -16,9 +17,7 @@ function crearCampoError(id) {
 }
 
 function mostrarErrorDeCampo(id, mensaje) {
-  const caja = document.getElementById(`error-${id}`);
-  caja.textContent = mensaje;
-  caja.style.display = mensaje ? 'flex' : 'none';
+  establecerErrorCampo(document.getElementById(`error-${id}`), mensaje);
 }
 
 function textoContador(largo) {

@@ -3,6 +3,7 @@ import { renderTopBar, showToast } from './catalogo.js';
 import { prepararPaginaComercio } from './selector-comercio.js';
 import { getComerciosEnMemoria, refrescarComercios } from './comercio-activo.js';
 import { ROL_AVISO, destinoDeAviso } from './destino-aviso.js';
+import { mostrarEsqueleto, mostrarErrorDeCarga } from './esqueletos.js';
 import { RUTA_SELECTOR_CONTEXTO, resolverContextoDeLaPestania } from './contexto.js';
 
 const POLLING_INTERVAL_MS = 15000;
@@ -391,7 +392,13 @@ export async function initNotificaciones() {
     }
   }
 
-  await cargar();
+  mostrarEsqueleto(container, 'avisos');
+  try {
+    await cargar();
+  } catch {
+    mostrarErrorDeCarga(container, 'No pudimos cargar tus avisos.');
+    return;
+  }
 
   function paginaVisible() {
     return document.visibilityState !== 'hidden';

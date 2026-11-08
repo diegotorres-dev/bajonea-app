@@ -32,6 +32,9 @@ const TEXTO_AVISO = 'porque el comercio no está disponible. Te devolvemos el di
 const todoElDia = () => [{ diaSemana: diaDeHoy(), horaApertura: '00:00', horaCierre: '23:59' }];
 
 async function captura(page: Page, nombre: string) {
+  if (process.env.CAPTURAS !== '1') {
+    return;
+  }
   fs.mkdirSync(CARPETA_CAPTURAS, { recursive: true });
   await page.screenshot({ path: path.join(CARPETA_CAPTURAS, `${nombre}.png`) });
 }
@@ -90,8 +93,8 @@ test.describe('Fase 5, S2.1 (UI): los pedidos pendientes se rechazan solos al su
   test('la hoja avisa que los pendientes se rechazan y reembolsan ahora; al confirmar, quedan rechazados con su nota y el de preparación sigue igual', async ({ page }) => {
     await abrirDetalle(page, dueno.comercioId);
     await page.getByTestId('btn-suspender-comercio').click();
+    await expect(page.getByTestId('suspender-comercio-resumen')).toHaveText('Deja de aparecer en el catálogo.');
     await expect(page.getByTestId('suspender-comercio-que-va-a-pasar').locator('li')).toHaveText([
-      'Deja de aparecer en el catálogo.',
       '2 pedidos pendientes: se rechazan ahora y se reembolsan. No se puede deshacer.',
       '1 pedido en preparación: tiene 90 minutos para despacharlo o se cancela con reembolso.',
     ]);
@@ -118,8 +121,8 @@ test.describe('Fase 5, S2.1 (UI): los pedidos pendientes se rechazan solos al su
 
     await abrirDetalle(page, otro.comercioId);
     await page.getByTestId('btn-suspender-comercio').click();
+    await expect(page.getByTestId('suspender-comercio-resumen')).toHaveText('Deja de aparecer en el catálogo.');
     await expect(page.getByTestId('suspender-comercio-que-va-a-pasar').locator('li')).toHaveText([
-      'Deja de aparecer en el catálogo.',
       '1 pedido pendiente: se rechaza ahora y se reembolsa. No se puede deshacer.',
     ]);
     await page.getByTestId('btn-cancelar-suspender-comercio').click();

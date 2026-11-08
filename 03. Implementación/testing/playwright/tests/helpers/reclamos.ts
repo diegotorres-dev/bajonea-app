@@ -152,6 +152,9 @@ export async function conReembolsosFallidos<T>(request: APIRequestContext, mensa
 }
 
 export async function capturarReclamos(page: Page, nombre: string, paginaCompleta = true): Promise<void> {
+  if (process.env.CAPTURAS !== '1') {
+    return;
+  }
   fs.mkdirSync(CARPETA_CAPTURAS_RECLAMOS, { recursive: true });
   const imagen = await page.screenshot({ fullPage: paginaCompleta });
   const destino = path.join(CARPETA_CAPTURAS_RECLAMOS, `${nombre}.png`);

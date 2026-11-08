@@ -1,5 +1,6 @@
 import { apiFetch, ApiError } from './api.js';
 import { showToast } from './catalogo.js';
+import { abrirHoja } from './hoja.js';
 import { h, crearSvg, setLoading, renderBannerTexto } from './form-utils.js';
 import { initGeografiaSelects } from './geografia.js';
 import {
@@ -512,62 +513,34 @@ export function abrirConfirmacionBaja({ direccion, direcciones, alEliminada, alA
     return;
   }
   const opener = elementoQueAbrio();
-  const overflowPrevio = document.body.style.overflow;
   const sucesora = direccion.principal ? direccionMasReciente(direcciones, direccion.id) : null;
-  const titulo = h('h2', { class: 'modal-sheet__title', id: 'eliminar-direccion-titulo', 'data-testid': 'titulo-eliminar-direccion' }, [
-    direccion.principal ? '¿Eliminar tu dirección predeterminada?' : '¿Eliminar esta dirección?',
-  ]);
-  const texto = h('p', { class: 'modal-sheet__text', id: 'eliminar-direccion-texto', 'data-testid': 'texto-eliminar-direccion' });
   const base = 'Los pedidos que ya hiciste con esta dirección no cambian.';
-  texto.textContent = sucesora ? `${base} Tu dirección más reciente, ${tituloDireccion(sucesora)}, pasa a ser la predeterminada.` : base;
-  const confirmar = h('button', { type: 'button', class: 'btn btn-primary equipo-hoja__peligro', 'data-testid': 'btn-confirmar-eliminar-direccion' }, ['Eliminar']);
-  const cancelar = h('button', { type: 'button', class: 'btn btn-tertiary', 'data-testid': 'btn-cancelar-eliminar-direccion' }, ['Cancelar']);
-  const hoja = h('div', { class: 'modal-sheet', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': 'eliminar-direccion-titulo', 'aria-describedby': 'eliminar-direccion-texto' }, [titulo, texto, confirmar, cancelar]);
-  const fondo = h('div', { class: 'modal-backdrop', 'data-testid': 'modal-eliminar-direccion' }, [hoja]);
-  document.body.append(fondo);
-  document.body.style.overflow = 'hidden';
-  cancelar.focus();
-  let ocupado = false;
-
-  const quitarAtrapaFoco = atraparFoco(hoja, cerrar);
-  function cerrar() {
-    if (ocupado) {
-      return;
-    }
-    quitarAtrapaFoco();
-    fondo.remove();
-    document.body.style.overflow = overflowPrevio;
-    if (opener && opener.isConnected && typeof opener.focus === 'function') {
-      opener.focus();
-    }
-  }
-  cancelar.addEventListener('click', cerrar);
-  fondo.addEventListener('click', (evento) => {
-    if (evento.target === fondo) {
-      cerrar();
-    }
-  });
-
-  confirmar.addEventListener('click', async () => {
-    if (ocupado) {
-      return;
-    }
-    ocupado = true;
-    confirmar.disabled = true;
-    cancelar.disabled = true;
-    confirmar.textContent = 'Eliminando...';
-    try {
-      const { mensaje, data } = await apiFetch(`${RUTA_API}/${direccion.id}`, { method: 'DELETE', conMensaje: true });
-      ocupado = false;
-      cerrar();
-      showToast(mensaje || 'Dirección eliminada');
-      alEliminada(normalizarLista(data));
-    } catch (error) {
-      ocupado = false;
-      cerrar();
-      showToast(error instanceof ApiError && error.status === 404 ? MENSAJE_NO_EXISTE : mensajeDe(error), 'error');
-      alActualizar();
-    }
+  abrirHoja({
+    titulo: direccion.principal ? '¿Eliminar tu dirección predeterminada?' : '¿Eliminar esta dirección?',
+    texto: sucesora ? `${base} Tu dirección más reciente, ${tituloDireccion(sucesora)}, pasa a ser la predeterminada.` : base,
+    testid: 'modal-eliminar-direccion',
+    testids: { titulo: 'titulo-eliminar-direccion', textos: ['texto-eliminar-direccion'] },
+    disparador: opener,
+    acciones: [
+      {
+        etiqueta: 'Eliminar',
+        etiquetaEnviando: 'Eliminando…',
+        variante: 'peligro',
+        testid: 'btn-confirmar-eliminar-direccion',
+        alPulsar: async () => {
+          let respuesta;
+          try {
+            respuesta = await apiFetch(`${RUTA_API}/${direccion.id}`, { method: 'DELETE', conMensaje: true });
+          } catch (error) {
+            alActualizar();
+            throw new Error(error instanceof ApiError && error.status === 404 ? MENSAJE_NO_EXISTE : mensajeDe(error));
+          }
+          showToast(respuesta.mensaje || 'Dirección eliminada');
+          alEliminada(normalizarLista(respuesta.data));
+        },
+      },
+      { etiqueta: 'Cancelar', variante: 'segura', inicial: true, testid: 'btn-cancelar-eliminar-direccion' },
+    ],
   });
 }
 

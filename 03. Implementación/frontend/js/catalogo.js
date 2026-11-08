@@ -5,6 +5,7 @@ import { contarNotificacionesNoLeidasActivo, resolverComercioActivo, suscribirCo
 import { normalizarCampos, excedeSubtotalMaximo, mensajeSubtotalMaximoExcedido } from './validators.js';
 import { crearAvisoCierre, esConflictoDeCierre, estaAbiertoParaClientes, etiquetaCierrePublica } from './apertura-comercio.js';
 import { vigilarAvisos } from './sonido-avisos.js';
+import { mostrarEsqueleto, mostrarErrorDeCarga } from './esqueletos.js';
 import { franjaDeHoyYMadrugada, recortarHora, textoRango } from './horarios.js';
 
 const INTERVALO_CAMPANA_CLIENTE_MS = 15000;
@@ -582,6 +583,9 @@ export async function initCatalogo() {
   const topBarSlot = document.getElementById('top-bar-slot');
   renderTopBar(topBarSlot, { mostrarPerfil: false, centrarLogo: true });
 
+  const listContainer = document.getElementById('comercio-list');
+  mostrarEsqueleto(listContainer, 'comercios');
+
   const greetingTitle = document.getElementById('greeting-title');
   const greetingSubtitle = document.getElementById('greeting-subtitle');
   if (usuario) {
@@ -600,14 +604,19 @@ export async function initCatalogo() {
     greetingSubtitle.textContent = '';
   }
 
-  const comercios = await apiFetch('/catalogo/comercios', { auth: false });
+  let comercios;
+  try {
+    comercios = await apiFetch('/catalogo/comercios', { auth: false });
+  } catch {
+    mostrarErrorDeCarga(listContainer, 'No pudimos cargar los comercios.');
+    return;
+  }
   comercios.forEach((c) => {
     normalizarCampos(c, ['nombre', 'razonSocial']);
     normalizarCampos(c.direccion, ['calle']);
   });
 
   const chipRow = document.getElementById('chip-row');
-  const listContainer = document.getElementById('comercio-list');
   const bottomNavSlot = document.getElementById('bottom-nav-slot');
   renderBottomNav(bottomNavSlot, 'inicio');
 

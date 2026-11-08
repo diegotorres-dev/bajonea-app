@@ -35,7 +35,16 @@ npm test              # toda la suite, headless
 npm run test:ui       # modo UI interactivo (recomendado mientras se escribe un spec)
 npx playwright test tests/01-registro-y-verificacion.spec.ts   # un spec puntual
 npm run report        # abre el último reporte HTML
+npm run test:completa # chequea que api.cloudinary.com responda y recién ahí corre toda la suite
+npm run test:webkit:completa  # lo mismo con la configuración de WebKit
+npm run verificar:conectividad  # solo el chequeo previo (sale con error y un mensaje claro si no hay red)
 ```
+
+**Conectividad (P1b).** La suite sube imágenes reales a Cloudinary; si internet se corta a mitad de una corrida completa fallan decenas de pruebas con `ENOTFOUND api.cloudinary.com` (en el P1a fueron 117). `test:completa` corre antes `scripts/verificar-conectividad.mjs` (una petición `HEAD`, 8 s de espera, configurable con `E2E_CONECTIVIDAD_URL` y `E2E_CONECTIVIDAD_ESPERA_MS`) y aborta sin empezar si no hay red. No detecta un corte posterior: ante esa causa hay que repetir la corrida.
+
+**Capturas de documentación (P1b).** Los specs que guardan imágenes en `docs/capturas-*` (`81`, `83` a `90`, `91` a `97` por los ayudantes de soporte y reclamos, `98`, `99` y `116`) solo escriben cuando la variable `CAPTURAS=1` está definida; sin ella no tocan ningún archivo y `git status` queda limpio después de una corrida. Para regenerarlas: `CAPTURAS=1 npx playwright test tests/83-documentos-comercio-ui.spec.ts`. Los specs viejos que guardan en `tmp-capturas/` usan la misma variable (cualquier valor, que además forma parte del nombre del archivo).
+
+**Inestables conocidos:** `27:497`, `06:89`, `23:235` y, desde el P1a, `81:598` (checkout; falló una vez en una corrida completa y pasó al repetirlo). No se corrigieron.
 
 **Proyectos:** `npm test` y `npx playwright test` corren solo `chromium` (escritorio). WebKit (emulación de iPhone 13, 390×844) tiene su propia configuración, `playwright.webkit.config.ts`, y se corre con `npm run test:webkit`. **No corre en la máquina de Diego:** Windows bloquea 4 DLL del navegador con una directiva de Control de aplicaciones (ver `docs/APRENDIZAJES-TECNICOS.md`); probar en otra máquina o en un iPhone real. Para WebKit conviene sumar solo los specs de UI, no el `21` ni el `22` (son de API).
 

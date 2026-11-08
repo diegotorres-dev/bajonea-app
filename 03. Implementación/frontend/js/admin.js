@@ -1,11 +1,12 @@
 import { apiFetch, ApiError, getUsuario } from './api.js';
 import { showToast, renderTopBar, pintarAvatarComercio, pintarAvatarUsuario, crearBloqueMotivoRechazo } from './catalogo.js';
 import { logout, LABELS_TIPO_COMERCIO, LABELS_TIPO_RED_SOCIAL, LABELS_TIPO_SOCIEDAD } from './auth.js';
-import { normalizarCampos } from './validators.js';
+import { normalizarCampos, enlazarControlConError } from './validators.js';
 import { recordarNombreDelComercio } from './admin-comercio-nombre.js';
 import { cruzaMedianoche, recortarHora, textoRango } from './horarios.js';
 import { diasDesde } from './documentos-comun.js';
 import { crearControlesSuspension } from './admin-comercio-suspension.js';
+import { abrirHoja, campoTextarea, crearAviso } from './hoja.js';
 
 function normalizarComercioAdmin(comercio) {
   normalizarCampos(comercio, ['nombre', 'razonSocial']);
@@ -150,24 +151,14 @@ function detailRow(label, valor) {
 }
 
 function mostrarModalConfirmarLogoutAdmin() {
-  const backdrop = crear('div', 'modal-backdrop');
-  backdrop.setAttribute('data-testid', 'modal-confirmar-logout');
-  backdrop.innerHTML = `
-    <div class="modal-sheet">
-      <div class="modal-sheet__icon">${ICONS.logoutIcon}</div>
-      <h2 class="modal-sheet__title">¿Cerrar sesión?</h2>
-      <p class="modal-sheet__text">Podés volver a ingresar en cualquier momento.</p>
-      <button class="btn btn-primary" type="button" id="confirmar-logout-btn" style="margin-bottom:12px;" data-testid="btn-confirmar-logout">Sí, cerrar sesión</button>
-      <button class="btn btn-tertiary" type="button" id="cancelar-logout-btn" data-testid="btn-cancelar-logout">Cancelar</button>
-    </div>
-  `;
-  document.body.appendChild(backdrop);
-  document.getElementById('cancelar-logout-btn').addEventListener('click', () => backdrop.remove());
-  document.getElementById('confirmar-logout-btn').addEventListener('click', () => logout());
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
+  abrirHoja({
+    titulo: '¿Cerrar sesión?',
+    texto: 'Podés volver a ingresar en cualquier momento.',
+    testid: 'modal-confirmar-logout',
+    acciones: [
+      { etiqueta: 'Sí, cerrar sesión', etiquetaEnviando: 'Cerrando…', variante: 'primaria', testid: 'btn-confirmar-logout', alPulsar: () => logout() },
+      { etiqueta: 'Cancelar', variante: 'segura', inicial: true, testid: 'btn-cancelar-logout' },
+    ],
   });
 }
 
@@ -520,88 +511,99 @@ function renderNoEncontrado(container) {
   container.appendChild(wrapper);
 }
 
-function mostrarModalConfirmarAprobacion(comercio, onConfirmar) {
-  const backdrop = crear('div', 'modal-backdrop');
-  backdrop.setAttribute('data-testid', 'modal-confirmar-aprobacion');
-  backdrop.innerHTML = `
-    <div class="modal-sheet">
-      <div class="modal-sheet__icon modal-sheet__icon--success">${ICONS.check}</div>
-      <h2 class="modal-sheet__title">¿Aprobar este comercio?</h2>
-      <p class="modal-sheet__text" style="margin-bottom:20px;">Al aprobar, el comercio recibirá una notificación para comenzar a operar.</p>
-      <button class="btn btn-primary" type="button" id="confirmar-aprobar-btn" style="background:var(--color-success);margin-bottom:12px;" data-testid="btn-confirmar-aprobacion">Confirmar Aprobación</button>
-      <button class="btn btn-tertiary" type="button" id="cancelar-aprobar-btn" data-testid="btn-cancelar-aprobacion">Cancelar</button>
-    </div>
-  `;
-  document.body.appendChild(backdrop);
-  document.getElementById('cancelar-aprobar-btn').addEventListener('click', () => backdrop.remove());
-  document.getElementById('confirmar-aprobar-btn').addEventListener('click', () => {
-    backdrop.remove();
-    onConfirmar();
-  });
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
+function mostrarModalConfirmarAprobacion(comercio, alConfirmar) {
+  abrirHoja({
+    titulo: '¿Aprobar este comercio?',
+    texto: 'Al aprobar, el comercio recibirá una notificación para comenzar a operar.',
+    testid: 'modal-confirmar-aprobacion',
+    acciones: [
+      { etiqueta: 'Confirmar Aprobación', etiquetaEnviando: 'Aprobando…', variante: 'primaria', testid: 'btn-confirmar-aprobacion', alPulsar: alConfirmar },
+      { etiqueta: 'Cancelar', variante: 'segura', inicial: true, testid: 'btn-cancelar-aprobacion' },
+    ],
   });
 }
 
-function mostrarModalRechazarComercio(comercio, onConfirmar, { esUltimoIntento = false } = {}) {
-  const backdrop = crear('div', 'modal-backdrop');
-  backdrop.setAttribute('data-testid', 'modal-rechazar-comercio');
-  backdrop.innerHTML = `
-    <div class="product-modal-sheet">
-      <div class="product-modal-sheet__handle"><span></span></div>
-      <div class="product-modal-sheet__body">
-        <h2 style="font-size:19px;margin-bottom:6px;">Rechazar solicitud</h2>
-        <p class="product-modal-sheet__description" id="rechazo-nombre-comercio" style="margin-bottom:6px;font-weight:700;color:var(--color-text);" data-testid="nombre-comercio-rechazo"></p>
-        <p class="product-modal-sheet__description" style="margin-bottom:16px;">El comercio recibirá una notificación con el motivo del rechazo.</p>
-        <form class="form" id="form-rechazar-comercio" novalidate>
-          <div class="field">
-            <label class="field__label" for="rechazo-motivo">Motivo del rechazo</label>
-            <div class="textarea-shell" id="rechazo-motivo-shell"><textarea id="rechazo-motivo" maxlength="500" placeholder="Describí el motivo del rechazo..." data-testid="input-motivo-rechazo-comercio"></textarea></div>
-            <div class="textarea-counter"><span id="rechazo-contador">0/500</span></div>
-            <div id="rechazo-error" class="field__error" style="display:none;" data-testid="mensaje-error-motivo-rechazo-comercio">${ICONS.xCircle}<span>El motivo es obligatorio para rechazar una solicitud.</span></div>
-          </div>
-          <div class="aviso-ultimo-intento is-hidden" id="aviso-ultimo-intento" data-testid="aviso-ultimo-intento">${ICONS.alert}<span>Esta es la última re-solicitud: el rechazo será definitivo.</span></div>
-          <div class="switch-row switch-row--peligro" id="rechazo-definitivo-fila" aria-pressed="false" style="margin-bottom:16px;" data-testid="fila-rechazo-definitivo">
-            <span class="switch-row__texto">
-              <span class="switch-row__label">Rechazo definitivo</span>
-              <span class="switch-row__ayuda" id="rechazo-definitivo-ayuda" data-testid="ayuda-rechazo-definitivo">El Dueño no podrá volver a solicitar este comercio.</span>
-            </span>
-            <button type="button" class="switch" id="rechazo-definitivo-switch" aria-pressed="false" aria-label="Rechazo definitivo" data-testid="switch-rechazo-definitivo"><span class="switch__knob"></span></button>
-          </div>
-          <button class="btn btn-primary" type="submit" id="confirmar-rechazo-btn" style="margin-bottom:10px;" disabled data-testid="btn-confirmar-rechazo-comercio">Confirmar Rechazo</button>
-          <button class="btn btn-tertiary" type="button" id="cancelar-rechazo-btn" data-testid="btn-cancelar-rechazo-comercio">Cancelar</button>
-        </form>
-      </div>
-    </div>
-  `;
-  backdrop.querySelector('#rechazo-nombre-comercio').textContent = comercio.nombre;
-  document.body.appendChild(backdrop);
+function mostrarModalRechazarComercio(comercio, alConfirmar, { esUltimoIntento = false } = {}) {
+  const motivo = campoTextarea({
+    id: 'rechazo-motivo',
+    etiqueta: 'Motivo del rechazo',
+    placeholder: 'Describí el motivo del rechazo...',
+    testid: 'input-motivo-rechazo-comercio',
+    testidError: 'mensaje-error-motivo-rechazo-comercio',
+    idContador: 'rechazo-contador',
+  });
 
-  const textarea = backdrop.querySelector('#rechazo-motivo');
-  const shell = backdrop.querySelector('#rechazo-motivo-shell');
-  const contador = backdrop.querySelector('#rechazo-contador');
-  const errorEl = backdrop.querySelector('#rechazo-error');
-  const submitBtn = backdrop.querySelector('#confirmar-rechazo-btn');
-  const fila = backdrop.querySelector('#rechazo-definitivo-fila');
-  const interruptor = backdrop.querySelector('#rechazo-definitivo-switch');
-  const ayuda = backdrop.querySelector('#rechazo-definitivo-ayuda');
+  const interruptor = crear('button', 'switch');
+  interruptor.type = 'button';
+  interruptor.id = 'rechazo-definitivo-switch';
+  interruptor.setAttribute('aria-pressed', 'false');
+  interruptor.setAttribute('aria-label', 'Rechazo definitivo');
+  interruptor.setAttribute('data-testid', 'switch-rechazo-definitivo');
+  interruptor.appendChild(crear('span', 'switch__knob'));
+  const etiquetaSwitch = crear('span', 'switch-row__label');
+  etiquetaSwitch.textContent = 'Rechazo definitivo';
+  const ayuda = crear('span', 'switch-row__ayuda');
+  ayuda.id = 'rechazo-definitivo-ayuda';
+  ayuda.setAttribute('data-testid', 'ayuda-rechazo-definitivo');
+  ayuda.textContent = 'El Dueño no podrá volver a solicitar este comercio.';
+  const textos = crear('span', 'switch-row__texto');
+  textos.append(etiquetaSwitch, ayuda);
+  const fila = crear('div', 'switch-row switch-row--peligro');
+  fila.id = 'rechazo-definitivo-fila';
+  fila.setAttribute('aria-pressed', 'false');
+  fila.setAttribute('data-testid', 'fila-rechazo-definitivo');
+  fila.append(textos, interruptor);
 
+  const avisoUltimo = crearAviso('Esta es la última re-solicitud: el rechazo será definitivo.', 'aviso-ultimo-intento');
+  avisoUltimo.id = 'aviso-ultimo-intento';
+  avisoUltimo.classList.toggle('is-hidden', !esUltimoIntento);
+  const avisoDefinitivo = crearAviso('El rechazo definitivo no se puede deshacer.', 'aviso-rechazo-definitivo');
+  avisoDefinitivo.classList.add('is-hidden');
+
+  let botonConfirmar = null;
   function definitivoActivo() {
     return interruptor.getAttribute('aria-pressed') === 'true';
   }
-
   function fijarDefinitivo(activo) {
     interruptor.setAttribute('aria-pressed', String(activo));
     fila.setAttribute('aria-pressed', String(activo));
-    submitBtn.textContent = activo ? 'Rechazar definitivamente' : 'Confirmar Rechazo';
-    submitBtn.style.background = activo ? '' : 'var(--color-error)';
-    submitBtn.classList.toggle('btn-peligro', activo);
+    avisoDefinitivo.classList.toggle('is-hidden', !activo || esUltimoIntento);
+    if (botonConfirmar) {
+      botonConfirmar.textContent = activo ? 'Rechazar definitivamente' : 'Confirmar Rechazo';
+    }
   }
 
+  const hoja = abrirHoja({
+    titulo: 'Rechazar solicitud',
+    parrafos: [comercio.nombre, 'El comercio recibirá una notificación con el motivo del rechazo.'],
+    testids: { textos: ['nombre-comercio-rechazo'] },
+    contenido: [motivo.campo, avisoUltimo, fila, avisoDefinitivo],
+    clase: 'hoja--formulario',
+    testid: 'modal-rechazar-comercio',
+    acciones: [
+      {
+        etiqueta: 'Confirmar Rechazo',
+        etiquetaEnviando: 'Rechazando…',
+        variante: 'peligro',
+        testid: 'btn-confirmar-rechazo-comercio',
+        deshabilitadaSi: () => motivo.control.value.trim().length === 0,
+        validar: () => {
+          if (!motivo.control.value.trim()) {
+            motivo.mostrarError('El motivo es obligatorio para rechazar una solicitud.');
+            return false;
+          }
+          return true;
+        },
+        alPulsar: () => alConfirmar(motivo.control.value.trim(), definitivoActivo()),
+      },
+      { etiqueta: 'Cancelar', variante: 'segura', inicial: true, testid: 'btn-cancelar-rechazo-comercio' },
+    ],
+  });
+  botonConfirmar = hoja.hoja.querySelector('[data-testid="btn-confirmar-rechazo-comercio"]');
+  const nombreEl = hoja.hoja.querySelector('[data-testid="nombre-comercio-rechazo"]');
+  nombreEl.classList.add('hoja__destacado');
+
   if (esUltimoIntento) {
-    backdrop.querySelector('#aviso-ultimo-intento').classList.remove('is-hidden');
     fijarDefinitivo(true);
     interruptor.disabled = true;
     fila.classList.add('switch-row--bloqueado');
@@ -610,35 +612,7 @@ function mostrarModalRechazarComercio(comercio, onConfirmar, { esUltimoIntento =
     fijarDefinitivo(false);
     interruptor.addEventListener('click', () => fijarDefinitivo(!definitivoActivo()));
   }
-
-  textarea.addEventListener('input', () => {
-    contador.textContent = `${textarea.value.length}/500`;
-    const valido = textarea.value.trim().length > 0;
-    submitBtn.disabled = !valido;
-    if (valido) {
-      shell.classList.remove('textarea-shell--error');
-      errorEl.style.display = 'none';
-    }
-  });
-
-  backdrop.querySelector('#cancelar-rechazo-btn').addEventListener('click', () => backdrop.remove());
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
-  });
-
-  backdrop.querySelector('#form-rechazar-comercio').addEventListener('submit', (event) => {
-    event.preventDefault();
-    const motivo = textarea.value.trim();
-    if (!motivo) {
-      shell.classList.add('textarea-shell--error');
-      errorEl.style.display = 'flex';
-      return;
-    }
-    backdrop.remove();
-    onConfirmar(motivo, definitivoActivo());
-  });
+  motivo.control.addEventListener('input', () => hoja.refrescarAcciones());
 }
 
 function iniciales(nombre, apellido) {
@@ -831,23 +805,17 @@ function renderDetalle(container, comercio, onResuelto) {
   container.appendChild(body);
 
   const footer = crear('div', 'request-footer');
-  const rechazarBtn = crear('button', 'btn btn-secondary');
+  const rechazarBtn = crear('button', 'btn btn-peligro-contorno');
   rechazarBtn.type = 'button';
-  rechazarBtn.style.borderColor = 'var(--color-error)';
-  rechazarBtn.style.color = 'var(--color-error)';
   rechazarBtn.setAttribute('data-testid', 'btn-rechazar-comercio');
   rechazarBtn.textContent = 'Rechazar';
   rechazarBtn.addEventListener('click', () => {
     mostrarModalRechazarComercio(comercio, async (motivo, definitivo) => {
-      try {
-        await apiFetch(`/administrador/comercios/${comercio.id}/resolver`, {
-          method: 'PUT',
-          body: { aprobar: false, motivo, definitivo },
-        });
-        onResuelto();
-      } catch (error) {
-        showToast(error instanceof ApiError ? error.message : 'No pudimos rechazar el comercio', 'error');
-      }
+      await apiFetch(`/administrador/comercios/${comercio.id}/resolver`, {
+        method: 'PUT',
+        body: { aprobar: false, motivo, definitivo },
+      });
+      onResuelto();
     });
   });
   footer.appendChild(rechazarBtn);
@@ -858,15 +826,11 @@ function renderDetalle(container, comercio, onResuelto) {
   aprobarBtn.textContent = 'Aprobar';
   aprobarBtn.addEventListener('click', () => {
     mostrarModalConfirmarAprobacion(comercio, async () => {
-      try {
-        await apiFetch(`/administrador/comercios/${comercio.id}/resolver`, {
-          method: 'PUT',
-          body: { aprobar: true, motivo: null },
-        });
-        onResuelto();
-      } catch (error) {
-        showToast(error instanceof ApiError ? error.message : 'No pudimos aprobar el comercio', 'error');
-      }
+      await apiFetch(`/administrador/comercios/${comercio.id}/resolver`, {
+        method: 'PUT',
+        body: { aprobar: true, motivo: null },
+      });
+      onResuelto();
     });
   });
   footer.appendChild(aprobarBtn);
@@ -1154,11 +1118,13 @@ function mostrarModalCategoria(categoriaExistente, onGuardado) {
     nombreShell.classList.add('input-shell--error');
     nombreError.style.display = 'flex';
     nombreErrorTexto.textContent = mensaje;
+    enlazarControlConError(nombreError, true);
   }
 
   nombreInput.addEventListener('input', () => {
     nombreShell.classList.remove('input-shell--error');
     nombreError.style.display = 'none';
+    enlazarControlConError(nombreError, false);
   });
 
   form.addEventListener('submit', async (event) => {
@@ -1416,11 +1382,13 @@ function mostrarModalTag(tagExistente, onGuardado) {
     nombreShell.classList.add('input-shell--error');
     nombreError.style.display = 'flex';
     nombreErrorTexto.textContent = mensaje;
+    enlazarControlConError(nombreError, true);
   }
 
   nombreInput.addEventListener('input', () => {
     nombreShell.classList.remove('input-shell--error');
     nombreError.style.display = 'none';
+    enlazarControlConError(nombreError, false);
   });
 
   form.addEventListener('submit', async (event) => {
@@ -1732,11 +1700,13 @@ function mostrarModalNuevaTarifa(onGuardado) {
   function limpiarError(campo) {
     campo.inputShell.classList.remove('input-shell--error');
     campo.error.style.display = 'none';
+    enlazarControlConError(campo.error, false);
   }
   function mostrarError(campo, mensaje) {
     campo.inputShell.classList.add('input-shell--error');
     campo.error.style.display = 'flex';
     campo.errorTexto.textContent = mensaje;
+    enlazarControlConError(campo.error, true);
   }
   [campoCliente, campoComercio].forEach((campo) => {
     campo.input.addEventListener('input', () => limpiarError(campo));
@@ -2401,23 +2371,17 @@ function renderResolicitudDetalle(container, resolicitud, onResuelto) {
   container.appendChild(body);
 
   const footer = crear('div', 'request-footer');
-  const rechazarBtn = crear('button', 'btn btn-secondary');
+  const rechazarBtn = crear('button', 'btn btn-peligro-contorno');
   rechazarBtn.type = 'button';
-  rechazarBtn.style.borderColor = 'var(--color-error)';
-  rechazarBtn.style.color = 'var(--color-error)';
   rechazarBtn.setAttribute('data-testid', 'btn-rechazar-comercio');
   rechazarBtn.textContent = 'Rechazar';
   rechazarBtn.addEventListener('click', () => {
     mostrarModalRechazarComercio(comercio, async (motivo, definitivo) => {
-      try {
-        await apiFetch(`/administrador/comercios/${comercio.id}/resolver`, {
-          method: 'PUT',
-          body: { aprobar: false, motivo, definitivo },
-        });
-        onResuelto();
-      } catch (error) {
-        showToast(error instanceof ApiError ? error.message : 'No pudimos rechazar el comercio', 'error');
-      }
+      await apiFetch(`/administrador/comercios/${comercio.id}/resolver`, {
+        method: 'PUT',
+        body: { aprobar: false, motivo, definitivo },
+      });
+      onResuelto();
     }, { esUltimoIntento: resolicitud.esUltimoIntento });
   });
   footer.appendChild(rechazarBtn);
@@ -2428,15 +2392,11 @@ function renderResolicitudDetalle(container, resolicitud, onResuelto) {
   aprobarBtn.textContent = 'Aprobar comercio';
   aprobarBtn.addEventListener('click', () => {
     mostrarModalConfirmarAprobacion(comercio, async () => {
-      try {
-        await apiFetch(`/administrador/comercios/${comercio.id}/resolver`, {
-          method: 'PUT',
-          body: { aprobar: true, motivo: null },
-        });
-        onResuelto();
-      } catch (error) {
-        showToast(error instanceof ApiError ? error.message : 'No pudimos aprobar el comercio', 'error');
-      }
+      await apiFetch(`/administrador/comercios/${comercio.id}/resolver`, {
+        method: 'PUT',
+        body: { aprobar: true, motivo: null },
+      });
+      onResuelto();
     });
   });
   footer.appendChild(aprobarBtn);

@@ -2,7 +2,7 @@ import { apiFetch, ApiError } from './api.js';
 import { showToast } from './catalogo.js';
 import { h, mostrarAvisoFijo, limpiarAvisoFijo } from './form-utils.js';
 import { atraparFoco, devolverFoco, mensajeDeError } from './documentos-comun.js';
-import { abrirHoja, cajaInformativa, campoTexto, fechaLegible, texto } from './admin-hojas.js';
+import { abrirHoja, cajaInformativa, campoTexto, crearDetalle, fechaLegible, texto } from './admin-hojas.js';
 
 const MIN_MOTIVO = 10;
 const ESTADOS_SUSPENDIBLES = ['APROBADO', 'APTO_VENTA', 'CERRADO_TEMPORALMENTE'];
@@ -44,9 +44,11 @@ export function lineasDeLaVistaPrevia(previa) {
 }
 
 function abrirModalSuspender(comercio, opener, { alExito, alConflicto }, { aparte = false } = {}) {
-  const { caja, items } = cajaInformativa('Qué va a pasar', [], 'suspender-comercio-que-va-a-pasar');
+  const items = h('ul', { class: 'cliente-modal__caja-lista' });
+  const resumen = texto('p', 'cliente-modal__sub', aparte ? AVISO_SUSPENDER_APARTE : 'Deja de aparecer en el catálogo.', { 'data-testid': 'suspender-comercio-resumen' });
+  const caja = crearDetalle('Ver detalle', [items], 'suspender-comercio-que-va-a-pasar');
   if (aparte) {
-    items.appendChild(texto('li', '', AVISO_SUSPENDER_APARTE));
+    caja.classList.add('is-hidden');
   } else {
     items.appendChild(texto('li', 'cliente-modal__espera', 'Cargando…', { 'data-testid': 'suspender-comercio-previa-cargando' }));
   }
@@ -57,14 +59,14 @@ function abrirModalSuspender(comercio, opener, { alExito, alConflicto }, { apart
     minimo: MIN_MOTIVO,
   });
   const aviso = h('div', { 'data-testid': 'aviso-suspender-comercio' });
-  const confirmar = texto('button', 'btn btn-primary doc-peligro', 'Suspender comercio', { type: 'submit', disabled: true, 'data-testid': 'btn-confirmar-suspender-comercio' });
+  const confirmar = texto('button', 'btn btn-peligro', 'Suspender comercio', { type: 'submit', disabled: true, 'data-testid': 'btn-confirmar-suspender-comercio' });
   const cancelar = texto('button', 'btn btn-tertiary', 'Cancelar', { type: 'button', 'data-testid': 'btn-cancelar-suspender-comercio' });
   const formulario = h('form', { class: 'form', novalidate: true }, [campo, aviso, confirmar, cancelar]);
   const { hoja, fondo, overflowPrevio } = abrirHoja({
     id: 'suspender-comercio',
     titulo: aparte ? 'Suspender solo este comercio' : `Suspender ${comercio.nombre}`,
     testid: 'modal-suspender-comercio',
-    hijos: [caja, formulario],
+    hijos: [resumen, caja, formulario],
   });
   let ocupado = false;
   let cerrado = false;
@@ -84,11 +86,13 @@ function abrirModalSuspender(comercio, opener, { alExito, alConflicto }, { apart
     apiFetch(`/administrador/comercios/${comercio.id}/suspension/previa`, { handle5xxGlobally: false, handleRedGlobally: false })
       .then((previa) => {
         if (cerrado) return;
-        items.replaceChildren(...lineasDeLaVistaPrevia(previa).map((linea) => texto('li', '', linea)));
+        const detalleLineas = lineasDeLaVistaPrevia(previa).slice(1);
+        items.replaceChildren(...detalleLineas.map((linea) => texto('li', '', linea)));
+        caja.classList.toggle('is-hidden', detalleLineas.length === 0);
       })
       .catch((error) => {
         if (cerrado) return;
-        items.replaceChildren(texto('li', '', 'Deja de aparecer en el catálogo.'));
+        caja.classList.add('is-hidden');
         mostrarAvisoFijo(aviso, `${mensajeDeError(error, 'No pudimos calcular el detalle.')} Igual podés suspender el comercio.`);
       });
   }
@@ -136,9 +140,7 @@ function abrirModalLevantar(comercio, opener, { alExito, alConflicto }) {
     texto('p', 'cliente-modal__caja-titulo', desde),
     texto('p', 'cliente-modal__caja-motivo', comercio.motivoSuspension || '', { 'data-testid': 'levantar-comercio-motivo-actual' }),
   ]);
-  const { caja } = cajaInformativa('Qué va a pasar', [
-    'Vuelve a vender si tiene cuenta de cobro activa y documentación aprobada. Si no, queda aprobado sin poder vender.',
-  ], 'levantar-comercio-que-va-a-pasar');
+  const caja = texto('p', 'cliente-modal__sub', 'Vuelve a vender si tiene cuenta de cobro activa y documentación aprobada. Si no, queda aprobado sin poder vender.', { 'data-testid': 'levantar-comercio-que-va-a-pasar' });
   const { campo, area } = campoTexto({ id: 'levantar-comercio-mensaje', etiqueta: 'Mensaje para el Dueño (opcional)', placeholder: 'Por ejemplo, qué pasó o qué esperamos de ahora en más' });
   const aviso = h('div', { 'data-testid': 'aviso-levantar-comercio' });
   const confirmar = texto('button', 'btn btn-primary', 'Levantar suspensión', { type: 'submit', 'data-testid': 'btn-confirmar-levantar-comercio' });
@@ -148,7 +150,7 @@ function abrirModalLevantar(comercio, opener, { alExito, alConflicto }) {
     id: 'levantar-comercio',
     titulo: 'Levantar suspensión',
     testid: 'modal-levantar-suspension-comercio',
-    hijos: [texto('p', 'cliente-modal__sub', comercio.nombre), motivoCaja, caja, formulario],
+    hijos: [texto('p', 'cliente-modal__sub', comercio.nombre), caja, crearDetalle('Ver detalle', [motivoCaja], 'levantar-comercio-detalle'), formulario],
   });
   let ocupado = false;
   let cerrado = false;

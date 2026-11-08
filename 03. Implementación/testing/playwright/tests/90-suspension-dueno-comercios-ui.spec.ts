@@ -34,6 +34,9 @@ const MOTIVO_APARTE = 'Pedidos sin entregar durante dos semanas seguidas';
 const todoElDia = () => [{ diaSemana: diaDeHoy(), horaApertura: '00:00', horaCierre: '23:59' }];
 
 async function captura(page: Page, nombre: string) {
+  if (process.env.CAPTURAS !== '1') {
+    return;
+  }
   fs.mkdirSync(CARPETA_CAPTURAS, { recursive: true });
   await page.screenshot({ path: path.join(CARPETA_CAPTURAS, `${nombre}.png`) });
 }
@@ -162,7 +165,7 @@ test.describe('Fase 5, S3 (UI B): comercios suspendidos con su Dueño, equipo y 
       const hoja = page.getByTestId('modal-suspender-comercio');
       await expect(hoja).toBeVisible();
       await expect(page.getByTestId('modal-suspender-comercio-titulo')).toHaveText('Suspender solo este comercio');
-      await expect(page.getByTestId('suspender-comercio-que-va-a-pasar')).toContainText('Va a seguir suspendido aunque levanten la suspensión del Dueño.');
+      await expect(page.getByTestId('suspender-comercio-resumen')).toContainText('Va a seguir suspendido aunque levanten la suspensión del Dueño.');
       await expect(page.getByTestId('suspender-comercio-previa-cargando')).toHaveCount(0);
       await expect(page.getByTestId('btn-confirmar-suspender-comercio')).toBeDisabled();
       await page.getByTestId('btn-cancelar-suspender-comercio').click();

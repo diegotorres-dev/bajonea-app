@@ -231,18 +231,62 @@ export function normalizarUrlRedSocial(url) {
   return /^https?:\/\//i.test(valor) ? valor : `https://${valor}`;
 }
 
+const SELECTOR_CONTROL_DE_CAMPO = 'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled])';
+
+export function controlDelError(errorEl) {
+  const campo = errorEl.closest('.field');
+  if (!campo) return null;
+  return Array.from(campo.querySelectorAll(SELECTOR_CONTROL_DE_CAMPO))
+    .find((control) => control.type !== 'file' && !control.readOnly) || campo.querySelector('input[type="file"]');
+}
+
+function tokensDe(valor) {
+  return String(valor || '').split(/\s+/).filter(Boolean);
+}
+
+let contadorIdsError = 0;
+
+export function enlazarControlConError(errorEl, activo) {
+  const control = controlDelError(errorEl);
+  if (!control) return;
+  if (!errorEl.id) {
+    contadorIdsError += 1;
+    errorEl.id = `campo-error-${contadorIdsError}`;
+  }
+  const tokens = tokensDe(control.getAttribute('aria-describedby')).filter((token) => token !== errorEl.id);
+  if (activo) {
+    tokens.unshift(errorEl.id);
+    control.setAttribute('aria-invalid', 'true');
+  } else {
+    control.removeAttribute('aria-invalid');
+  }
+  if (tokens.length) {
+    control.setAttribute('aria-describedby', tokens.join(' '));
+  } else {
+    control.removeAttribute('aria-describedby');
+  }
+}
+
+export function establecerErrorCampo(errorEl, mensaje) {
+  if (!errorEl) return;
+  if (mensaje) {
+    errorEl.textContent = mensaje;
+    errorEl.classList.remove('is-hidden');
+    errorEl.style.display = 'flex';
+    enlazarControlConError(errorEl, true);
+    return;
+  }
+  errorEl.textContent = '';
+  errorEl.style.display = 'none';
+  enlazarControlConError(errorEl, false);
+}
+
 export function mostrarErrorCampo(errorElId, mensaje) {
-  const el = document.getElementById(errorElId);
-  if (!el) return;
-  el.textContent = mensaje;
-  el.style.display = 'flex';
+  establecerErrorCampo(document.getElementById(errorElId), mensaje || '');
 }
 
 export function limpiarErrorCampo(errorElId) {
-  const el = document.getElementById(errorElId);
-  if (!el) return;
-  el.textContent = '';
-  el.style.display = 'none';
+  establecerErrorCampo(document.getElementById(errorElId), null);
 }
 
 export function limpiarErroresCampos(errorElIds) {
@@ -302,6 +346,13 @@ export function scrollAlPrimerError(contenedor = document) {
   const primerCampoError = Array.from(contenedor.querySelectorAll('.field__error'))
     .find((el) => el.offsetParent !== null && el.textContent.trim() !== '');
   if (primerCampoError) {
+    const invalido = Array.from(contenedor.querySelectorAll('[aria-invalid="true"]'))
+      .find((control) => control.offsetParent !== null && typeof control.focus === 'function');
+    const control = invalido || controlDelError(primerCampoError);
+    if (control && control.offsetParent !== null) {
+      control.focus({ preventScroll: false });
+      return;
+    }
     primerCampoError.scrollIntoView({ behavior: 'smooth', block: 'center' });
     return;
   }

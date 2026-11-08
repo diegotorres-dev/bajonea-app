@@ -1,5 +1,5 @@
 import { apiFetch, ApiError, completarRenuncia } from './api.js';
-import { h } from './form-utils.js';
+import { abrirHoja, campoCasilla } from './hoja.js';
 
 const ID_HOJA = 'hoja-renuncia-empleado';
 const MENSAJE_SIN_CONEXION = 'No pudimos conectar. Revisá tu conexión e intentá de nuevo.';
@@ -27,96 +27,36 @@ export function abrirHojaRenuncia(comercio) {
   if (document.getElementById(ID_HOJA)) {
     return;
   }
-  const overflowPrevio = document.body.style.overflow;
-  const backdrop = h('div', { class: 'modal-backdrop', id: ID_HOJA, 'data-testid': ID_HOJA });
-  const hoja = h('div', { class: 'modal-sheet', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': `${ID_HOJA}-titulo` });
-
-  const titulo = h('h2', { class: 'modal-sheet__title', id: `${ID_HOJA}-titulo`, 'data-testid': 'titulo-renuncia' });
-  titulo.textContent = `¿Dejar de trabajar en ${comercio.nombre}?`;
-
-  const texto = h('p', { class: 'modal-sheet__text', 'data-testid': 'texto-renuncia' });
-  texto.textContent = 'Vas a salir del equipo y no vas a poder volver a operar en este comercio. Se le notificará al dueño. Tu cuenta y tus datos personales continuarán intactos.';
-
-  const casilla = h('input', { type: 'checkbox', id: 'renuncia-entiendo', 'data-testid': 'check-renuncia-entiendo' });
-  const etiqueta = h('label', { for: 'renuncia-entiendo' });
-  etiqueta.textContent = 'Entiendo que para volver el dueño me tiene que invitar de nuevo.';
-  const fila = h('div', { class: 'checkbox-row renuncia-hoja__casilla' }, [casilla, etiqueta]);
-
-  const aviso = h('p', { class: 'renuncia-hoja__error is-hidden', role: 'alert', 'data-testid': 'error-renuncia' });
-
-  const confirmar = h('button', { class: 'btn btn-primary renuncia-hoja__peligro', type: 'button', 'data-testid': 'btn-confirmar-renuncia' });
-  confirmar.textContent = 'Dejar de trabajar';
-  confirmar.disabled = true;
-  const volver = h('button', { class: 'btn btn-tertiary', type: 'button', 'data-testid': 'btn-volver-renuncia' });
-  volver.textContent = 'Volver';
-
-  hoja.append(titulo, texto, fila, aviso, confirmar, volver);
-  backdrop.append(hoja);
-  document.body.append(backdrop);
-  document.body.style.overflow = 'hidden';
-  casilla.focus();
-
-  let ocupado = false;
-
-  function cerrar() {
-    document.removeEventListener('keydown', alTeclear);
-    document.body.style.overflow = overflowPrevio;
-    backdrop.remove();
-  }
-
-  function alTeclear(evento) {
-    if (evento.key === 'Escape' && !ocupado) {
-      cerrar();
-    }
-  }
-
-  function ocultarError() {
-    aviso.textContent = '';
-    aviso.classList.add('is-hidden');
-  }
-
-  casilla.addEventListener('change', () => {
-    confirmar.disabled = ocupado || !casilla.checked;
-    ocultarError();
+  const casilla = campoCasilla({ id: 'renuncia-entiendo', etiqueta: 'Entiendo que para volver el dueño me tiene que invitar de nuevo.', testid: 'check-renuncia-entiendo' });
+  const hoja = abrirHoja({
+    titulo: `¿Dejar de trabajar en ${comercio.nombre}?`,
+    texto: 'Vas a salir del equipo y no vas a poder volver a operar en este comercio. Se le notificará al dueño. Tu cuenta y tus datos personales continuarán intactos.',
+    contenido: casilla.campo,
+    clase: 'hoja--formulario',
+    testid: ID_HOJA,
+    testids: { titulo: 'titulo-renuncia', textos: ['texto-renuncia'], error: 'error-renuncia' },
+    acciones: [
+      {
+        etiqueta: 'Dejar de trabajar',
+        etiquetaEnviando: 'Saliendo…',
+        variante: 'peligro',
+        testid: 'btn-confirmar-renuncia',
+        deshabilitadaSi: () => !casilla.control.checked,
+        alPulsar: async () => {
+          try {
+            await apiFetch(`/empleados/comercios/${comercio.id}/renunciar`, { ...OPCIONES_RED, method: 'PUT' });
+          } catch (error) {
+            throw new Error(mensajeDeRenuncia(error));
+          }
+          completarRenuncia(comercio.id, comercio.nombre);
+        },
+      },
+      { etiqueta: 'Volver', variante: 'segura', inicial: true, testid: 'btn-volver-renuncia' },
+    ],
   });
-
-  volver.addEventListener('click', () => {
-    if (!ocupado) {
-      cerrar();
-    }
+  hoja.fondo.id = ID_HOJA;
+  casilla.control.addEventListener('change', () => {
+    hoja.limpiarError();
+    hoja.refrescarAcciones();
   });
-
-  backdrop.addEventListener('click', (evento) => {
-    if (evento.target === backdrop && !ocupado) {
-      cerrar();
-    }
-  });
-
-  confirmar.addEventListener('click', async () => {
-    if (ocupado || !casilla.checked) {
-      return;
-    }
-    ocupado = true;
-    confirmar.disabled = true;
-    volver.disabled = true;
-    casilla.disabled = true;
-    confirmar.textContent = 'Saliendo...';
-    ocultarError();
-    try {
-      await apiFetch(`/empleados/comercios/${comercio.id}/renunciar`, { ...OPCIONES_RED, method: 'PUT' });
-      document.removeEventListener('keydown', alTeclear);
-      document.body.style.overflow = overflowPrevio;
-      completarRenuncia(comercio.id, comercio.nombre);
-    } catch (error) {
-      ocupado = false;
-      casilla.disabled = false;
-      volver.disabled = false;
-      confirmar.disabled = !casilla.checked;
-      confirmar.textContent = 'Dejar de trabajar';
-      aviso.textContent = mensajeDeRenuncia(error);
-      aviso.classList.remove('is-hidden');
-    }
-  });
-
-  document.addEventListener('keydown', alTeclear);
 }

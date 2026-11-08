@@ -1,8 +1,10 @@
 import { apiFetch, ApiError, esTimeoutAvisado } from './api.js';
 import { exigirDueno } from './contexto.js';
 import { showToast } from './catalogo.js';
+import { abrirHoja } from './hoja.js';
 import { prepararPaginaComercio } from './selector-comercio.js';
 import { h, renderBannerTexto, mostrarAvisoFijo } from './form-utils.js';
+import { establecerErrorCampo } from './validators.js';
 import {
   abrirVisorDocumento,
   atraparFoco,
@@ -196,17 +198,12 @@ export function abrirHojaSubida({ requisitos, tipoInicial = null, alSubido, foco
   document.body.style.overflow = 'hidden';
   selectTipo.focus();
 
-  function mostrarErrorCampo(elemento, texto) {
-    elemento.style.display = texto ? '' : 'none';
-    elemento.textContent = texto || '';
-  }
-
   function actualizarDescripcion() {
     const esOtro = selectTipo.value === 'OTRO';
     campoDescripcion.classList.toggle('is-hidden', !esOtro);
     if (!esOtro) {
       inputDescripcion.value = '';
-      mostrarErrorCampo(errorDescripcion, null);
+      establecerErrorCampo(errorDescripcion, null);
     }
   }
   actualizarDescripcion();
@@ -266,9 +263,9 @@ export function abrirHojaSubida({ requisitos, tipoInicial = null, alSubido, foco
 
   selectTipo.addEventListener('change', () => {
     actualizarDescripcion();
-    mostrarErrorCampo(errorTipo, null);
+    establecerErrorCampo(errorTipo, null);
   });
-  inputDescripcion.addEventListener('input', () => mostrarErrorCampo(errorDescripcion, null));
+  inputDescripcion.addEventListener('input', () => establecerErrorCampo(errorDescripcion, null));
 
   function fijarArchivo(archivo) {
     archivoElegido = archivo;
@@ -279,7 +276,7 @@ export function abrirHojaSubida({ requisitos, tipoInicial = null, alSubido, foco
       nombreArchivo.textContent = archivo.name;
       tamanoArchivo.textContent = formatearTamano(archivo.size);
     }
-    mostrarErrorCampo(errorArchivoEl, errorArchivo);
+    establecerErrorCampo(errorArchivoEl, errorArchivo);
     inputArchivo.setAttribute('aria-invalid', String(Boolean(errorArchivo)));
     actualizarBoton();
   }
@@ -306,19 +303,19 @@ export function abrirHojaSubida({ requisitos, tipoInicial = null, alSubido, foco
     const tipo = selectTipo.value;
     const descripcion = inputDescripcion.value.trim();
     let primerError = null;
-    mostrarErrorCampo(errorTipo, null);
-    mostrarErrorCampo(errorDescripcion, null);
+    establecerErrorCampo(errorTipo, null);
+    establecerErrorCampo(errorDescripcion, null);
     if (!tipo) {
-      mostrarErrorCampo(errorTipo, 'Elegí el tipo de documento');
+      establecerErrorCampo(errorTipo, 'Elegí el tipo de documento');
       primerError = primerError || selectTipo;
     }
     if (tipo === 'OTRO' && !descripcion) {
-      mostrarErrorCampo(errorDescripcion, 'Contanos qué documento es');
+      establecerErrorCampo(errorDescripcion, 'Contanos qué documento es');
       primerError = primerError || inputDescripcion;
     }
     if (!archivoElegido) {
       errorArchivo = null;
-      mostrarErrorCampo(errorArchivoEl, 'Elegí el archivo que vas a subir');
+      establecerErrorCampo(errorArchivoEl, 'Elegí el archivo que vas a subir');
       primerError = primerError || elegirBtn;
     }
     if (primerError) {
@@ -360,55 +357,33 @@ export function abrirHojaSubida({ requisitos, tipoInicial = null, alSubido, foco
 function abrirConfirmacionEliminar({ documento, alEliminado, alFallar, focoAlCerrar }) {
   const opener = elementoQueAbrio();
   const nombre = nombreDelDocumento(documento);
-  const titulo = h('h2', { class: 'modal-sheet__title', id: 'eliminar-documento-titulo', 'data-testid': 'titulo-eliminar-documento' });
-  titulo.textContent = '¿Eliminar este documento?';
-  const texto = h('p', { class: 'modal-sheet__text', id: 'eliminar-documento-texto', 'data-testid': 'texto-eliminar-documento' });
-  texto.textContent = `Vas a eliminar «${nombre}». Si lo necesitás de nuevo, tendrás que subirlo otra vez.`;
-  const confirmar = h('button', { type: 'button', class: 'btn btn-primary doc-peligro', 'data-testid': 'btn-confirmar-eliminar-documento' });
-  confirmar.textContent = 'Eliminar';
-  const cancelar = h('button', { type: 'button', class: 'btn btn-tertiary', 'data-testid': 'btn-cancelar-eliminar-documento' });
-  cancelar.textContent = 'Cancelar';
-  const hoja = h('div', { class: 'modal-sheet', role: 'alertdialog', 'aria-modal': 'true', 'aria-labelledby': 'eliminar-documento-titulo', 'aria-describedby': 'eliminar-documento-texto' }, [titulo, texto, confirmar, cancelar]);
-  const fondo = h('div', { class: 'modal-backdrop', 'data-testid': 'modal-eliminar-documento' }, [hoja]);
-  document.body.append(fondo);
-  cancelar.focus();
-  let ocupado = false;
-  const quitarAtrapaFoco = atraparFoco(hoja, cerrarSinAccion);
-  function quitar() {
-    quitarAtrapaFoco();
-    fondo.remove();
-  }
-  function cerrarSinAccion() {
-    if (ocupado) {
-      return;
-    }
-    quitar();
-    devolverFoco(opener, focoAlCerrar);
-  }
-  cancelar.addEventListener('click', cerrarSinAccion);
-  fondo.addEventListener('click', (evento) => {
-    if (evento.target === fondo) {
-      cerrarSinAccion();
-    }
-  });
-  confirmar.addEventListener('click', async () => {
-    if (ocupado) {
-      return;
-    }
-    ocupado = true;
-    confirmar.disabled = true;
-    cancelar.disabled = true;
-    confirmar.textContent = 'Eliminando…';
-    try {
-      await apiFetch(`${RUTA_API}/${documento.id}`, { method: 'DELETE', handle5xxGlobally: false, handleRedGlobally: false });
-    } catch (error) {
-      quitar();
-      alFallar(mensajeConSugerencia(error));
-      return;
-    }
-    quitar();
-    showToast('Documento eliminado');
-    alEliminado();
+  abrirHoja({
+    titulo: '¿Eliminar este documento?',
+    texto: `Vas a eliminar «${nombre}». Si lo necesitás de nuevo, tendrás que subirlo otra vez.`,
+    testid: 'modal-eliminar-documento',
+    testids: { titulo: 'titulo-eliminar-documento', textos: ['texto-eliminar-documento'] },
+    disparador: opener,
+    alCerrar: () => devolverFoco(opener, focoAlCerrar),
+    acciones: [
+      {
+        etiqueta: 'Eliminar',
+        etiquetaEnviando: 'Eliminando…',
+        variante: 'peligro',
+        testid: 'btn-confirmar-eliminar-documento',
+        alPulsar: async () => {
+          try {
+            await apiFetch(`${RUTA_API}/${documento.id}`, { method: 'DELETE', handle5xxGlobally: false, handleRedGlobally: false });
+          } catch (error) {
+            const mensaje = mensajeConSugerencia(error);
+            alFallar(mensaje);
+            throw new Error(mensaje);
+          }
+          showToast('Documento eliminado');
+          alEliminado();
+        },
+      },
+      { etiqueta: 'Cancelar', variante: 'segura', inicial: true, testid: 'btn-cancelar-eliminar-documento' },
+    ],
   });
 }
 
@@ -550,8 +525,7 @@ export async function initComercioDocumentacion() {
     abrirConfirmacionEliminar({
       documento,
       alEliminado: cargar,
-      alFallar: (mensaje) => {
-        avisarError(mensaje);
+      alFallar: () => {
         cargar();
       },
       focoAlCerrar: botonSubirPrincipal,

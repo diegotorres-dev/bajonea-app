@@ -10,6 +10,7 @@ import { validarArchivoImagen, subirFotoPerfilUsuario, eliminarFotoPerfilUsuario
 import { abrirEditorRecorte } from './crop.js';
 import { enlazarEdicionDatosPersonales, enlazarCambioPassword } from './perfil-cuenta.js';
 import { initMisDirecciones } from './direcciones.js';
+import { abrirHoja } from './hoja.js';
 
 const ICONS = {
   logout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
@@ -62,25 +63,14 @@ function mostrarModalFotoPerfil({ onEditar, onEliminar }) {
 }
 
 function mostrarModalConfirmarLogout() {
-  const backdrop = document.createElement('div');
-  backdrop.className = 'modal-backdrop';
-  backdrop.setAttribute('data-testid', 'modal-confirmar-logout');
-  backdrop.innerHTML = `
-    <div class="modal-sheet">
-      <div class="modal-sheet__icon">${ICONS.logout}</div>
-      <h2 class="modal-sheet__title">¿Cerrar sesión?</h2>
-      <p class="modal-sheet__text">Podés volver a ingresar en cualquier momento.</p>
-      <button class="btn btn-primary" type="button" id="confirmar-logout-btn" style="margin-bottom:12px;" data-testid="btn-confirmar-logout">Sí, cerrar sesión</button>
-      <button class="btn btn-tertiary" type="button" id="cancelar-logout-btn" data-testid="btn-cancelar-logout">Cancelar</button>
-    </div>
-  `;
-  document.body.appendChild(backdrop);
-  document.getElementById('cancelar-logout-btn').addEventListener('click', () => backdrop.remove());
-  document.getElementById('confirmar-logout-btn').addEventListener('click', () => logout());
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
+  abrirHoja({
+    titulo: '¿Cerrar sesión?',
+    texto: 'Podés volver a ingresar en cualquier momento.',
+    testid: 'modal-confirmar-logout',
+    acciones: [
+      { etiqueta: 'Sí, cerrar sesión', etiquetaEnviando: 'Cerrando…', variante: 'primaria', testid: 'btn-confirmar-logout', alPulsar: () => logout() },
+      { etiqueta: 'Cancelar', variante: 'segura', inicial: true, testid: 'btn-cancelar-logout' },
+    ],
   });
 }
 
@@ -124,6 +114,7 @@ export async function initPerfil() {
   const avatarPerfil = document.getElementById('perfil-avatar');
   function actualizarAvatares() {
     const inicial = (cliente.nombre || '?').trim().charAt(0).toUpperCase();
+    avatarPerfil.classList.remove('skeleton');
     pintarAvatarUsuario(avatarPerfil, cliente.fotoPerfilUrl, inicial);
     const avatarFooter = document.querySelector('.bottom-nav__item[data-testid="btn-nav-perfil"] .bottom-nav__avatar');
     if (avatarFooter) {
@@ -217,4 +208,5 @@ export async function initPerfil() {
   document.getElementById('editar-datos-link').disabled = false;
   document.getElementById('cambiar-password-link').disabled = false;
   avatarPerfil.disabled = false;
+  document.querySelectorAll('.profile-link-list[aria-busy]').forEach((lista) => lista.removeAttribute('aria-busy'));
 }

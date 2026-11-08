@@ -65,7 +65,8 @@ async function ordenDeTarjetas(page: Page): Promise<string[]> {
 async function abrirPanelConSimulacion(page: Page, valores: () => Valores) {
   await simularPanel(page, valores);
   await loginAdminUi(page);
-  await expect(page.getByTestId('nombre-admin')).not.toHaveText('Cargando...');
+  await expect(page.getByTestId('nombre-admin').locator('.skeleton')).toHaveCount(0);
+  await expect(page.getByTestId('nombre-admin')).not.toHaveText('');
   await page.waitForLoadState('networkidle');
 }
 

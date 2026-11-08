@@ -3,6 +3,8 @@ import { exigirContextoCliente } from './contexto.js';
 import { renderTopBar, renderBottomNav, showToast, pintarAvatarComercio, actualizarContadorCarrito } from './catalogo.js';
 import { normalizarCampos, excedeSubtotalMaximo, mensajeSubtotalMaximoExcedido } from './validators.js';
 import { crearPrecioUnitario } from './precio-cambio.js';
+import { abrirHoja } from './hoja.js';
+import { mostrarEsqueleto, mostrarErrorDeCarga } from './esqueletos.js';
 
 const ICONS = {
   bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><line x1="3" y1="9" x2="21" y2="9"/></svg>',
@@ -61,38 +63,24 @@ function crearAccionVaciarHeader(onConfirm) {
 }
 
 function mostrarModalVaciarCarrito(onConfirm) {
-  const backdrop = crear('div', 'modal-backdrop');
-  backdrop.setAttribute('data-testid', 'modal-vaciar-carrito');
-  backdrop.innerHTML = `
-    <div class="modal-sheet">
-      <div class="modal-sheet__icon">${ICONS.trash}</div>
-      <h2 class="modal-sheet__title">¿Vaciar el carrito?</h2>
-      <p class="modal-sheet__text">Vas a eliminar todos los productos del carrito. Esta acción no se puede deshacer.</p>
-      <button class="btn btn-primary" type="button" id="confirmar-vaciar-btn" style="margin-bottom:12px;" data-testid="btn-confirmar-vaciar-carrito">Sí, vaciar carrito</button>
-      <button class="btn btn-tertiary" type="button" id="cancelar-vaciar-btn" data-testid="btn-cancelar-vaciar-carrito">Cancelar</button>
-    </div>
-  `;
-  document.body.appendChild(backdrop);
-  document.getElementById('cancelar-vaciar-btn').addEventListener('click', () => backdrop.remove());
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
-  });
-  document.getElementById('confirmar-vaciar-btn').addEventListener('click', async () => {
-    const btn = document.getElementById('confirmar-vaciar-btn');
-    btn.disabled = true;
-    btn.textContent = 'Vaciando...';
-    try {
-      await apiFetch('/carrito', { method: 'DELETE' });
-      backdrop.remove();
-      showToast('Vaciaste el carrito');
-      onConfirm();
-    } catch (error) {
-      btn.disabled = false;
-      btn.textContent = 'Sí, vaciar carrito';
-      showToast(error instanceof ApiError ? error.message : 'No pudimos vaciar el carrito. Intentá nuevamente.', 'error');
-    }
+  abrirHoja({
+    titulo: '¿Vaciar el carrito?',
+    texto: 'Vas a eliminar todos los productos del carrito. Esta acción no se puede deshacer.',
+    testid: 'modal-vaciar-carrito',
+    acciones: [
+      {
+        etiqueta: 'Sí, vaciar carrito',
+        etiquetaEnviando: 'Vaciando…',
+        variante: 'peligro',
+        testid: 'btn-confirmar-vaciar-carrito',
+        alPulsar: async () => {
+          await apiFetch('/carrito', { method: 'DELETE' });
+          showToast('Vaciaste el carrito');
+          onConfirm();
+        },
+      },
+      { etiqueta: 'Cancelar', variante: 'segura', inicial: true, testid: 'btn-cancelar-vaciar-carrito' },
+    ],
   });
 }
 
@@ -319,6 +307,13 @@ export async function initCarrito() {
     renderConProductos(container, footerSlot, carrito, comercioInfo, productosCache.porId, pintar);
   }
 
-  const carrito = await apiFetch('/carrito');
+  mostrarEsqueleto(container, 'carrito');
+  let carrito;
+  try {
+    carrito = await apiFetch('/carrito');
+  } catch {
+    mostrarErrorDeCarga(container, 'No pudimos cargar tu carrito.');
+    return;
+  }
   await pintar(carrito);
 }

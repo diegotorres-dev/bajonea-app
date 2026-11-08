@@ -12,6 +12,7 @@ import {
   validarCamposRequeridosSilencioso,
   scrollAlPrimerError,
   normalizarCampos,
+  establecerErrorCampo,
 } from './validators.js';
 import { showToast, manejarBloqueoPorCambioPassword } from './catalogo.js';
 
@@ -102,12 +103,12 @@ function mostrarModalConfirmarNombreUsuario({ onConfirmar, onErrorNoPassword }) 
 
   confirmarBtn.addEventListener('click', async () => {
     shell.classList.remove('input-shell--error');
-    errorEl.style.display = 'none';
+    establecerErrorCampo(errorEl, null);
     warningBloqueo.style.display = 'none';
     if (!passwordInput.value) {
       shell.classList.add('input-shell--error');
-      errorEl.textContent = 'Ingresá tu contraseña actual.';
-      errorEl.style.display = 'flex';
+      establecerErrorCampo(errorEl, 'Ingresá tu contraseña actual.');
+      passwordInput.focus();
       return;
     }
     setLoading(confirmarBtn, 'Confirmando...', true);
@@ -121,8 +122,7 @@ function mostrarModalConfirmarNombreUsuario({ onConfirmar, onErrorNoPassword }) 
       }
       if (error instanceof ApiError && error.status === 401) {
         shell.classList.add('input-shell--error');
-        errorEl.textContent = 'La contraseña actual no es correcta.';
-        errorEl.style.display = 'flex';
+        establecerErrorCampo(errorEl, 'La contraseña actual no es correcta.');
         const intentosRestantes = error.data && typeof error.data.intentosRestantes === 'number' ? error.data.intentosRestantes : null;
         if (intentosRestantes === 1) {
           warningBloqueo.style.display = 'block';
@@ -264,7 +264,7 @@ export function enlazarCambioPassword({ mostrarVista }) {
     event.preventDefault();
     renderBanner(bannerPassword, 'warning', '');
     shellPasswordActual.classList.remove('input-shell--error');
-    errorPasswordActual.style.display = 'none';
+    establecerErrorCampo(errorPasswordActual, null);
     const camposValidos = validarCamposSilencioso([
       { inputId: 'password-actual', errorId: 'error-password-actual', mensaje: 'Ingresá tu contraseña actual.' },
       { inputId: 'password-nueva', errorId: 'error-password-nueva', mensaje: 'Ingresá una nueva contraseña.' },
@@ -306,8 +306,7 @@ export function enlazarCambioPassword({ mostrarVista }) {
       const mapaErrores = { passwordNueva: 'error-password-nueva' };
       if (error instanceof ApiError && error.status === 401) {
         shellPasswordActual.classList.add('input-shell--error');
-        errorPasswordActual.textContent = 'La contraseña actual no es correcta.';
-        errorPasswordActual.style.display = 'flex';
+        establecerErrorCampo(errorPasswordActual, 'La contraseña actual no es correcta.');
         const intentosRestantes = error.data && typeof error.data.intentosRestantes === 'number' ? error.data.intentosRestantes : null;
         if (intentosRestantes === 1) {
           renderBanner(bannerPassword, 'warning', 'Cuidado: si fallás una vez más, tu cuenta se bloqueará.');

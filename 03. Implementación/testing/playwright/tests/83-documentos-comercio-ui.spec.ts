@@ -32,6 +32,9 @@ const todoElDia = (): HorarioInput[] => [{ diaSemana: diaDeHoy(), horaApertura: 
 const estadoComercio = (comercioId: number): string => sql(`SELECT estado FROM comercio WHERE id = ${comercioId};`);
 
 async function captura(page: Page, nombre: string, paginaCompleta = false) {
+  if (process.env.CAPTURAS !== '1') {
+    return;
+  }
   fs.mkdirSync(CARPETA_CAPTURAS, { recursive: true });
   await page.screenshot({ path: path.join(CARPETA_CAPTURAS, `${nombre}.png`), fullPage: paginaCompleta });
 }
@@ -437,7 +440,7 @@ test.describe('Fase 4 (UI): documentos del comercio, entrega B', () => {
       await eliminar.click();
 
       const modal = page.getByTestId('modal-eliminar-documento');
-      await expect(modal.getByRole('alertdialog')).toBeVisible();
+      await expect(modal.getByRole('dialog')).toBeVisible();
       await expect(page.getByTestId('titulo-eliminar-documento')).toHaveText('¿Eliminar este documento?');
       await expect(page.getByTestId('btn-cancelar-eliminar-documento')).toBeFocused();
       await captura(page, '17-modal-eliminar');
@@ -464,10 +467,12 @@ test.describe('Fase 4 (UI): documentos del comercio, entrega B', () => {
 
       await page.getByTestId(`btn-eliminar-documento-${id}`).click();
       await page.getByTestId('btn-confirmar-eliminar-documento').click();
-      await expect(page.getByTestId('aviso-fijo-texto')).toHaveText('Solo podés eliminar documentos que todavía están en revisión');
+      await expect(page.getByTestId('modal-eliminar-documento-error')).toHaveText('Solo podés eliminar documentos que todavía están en revisión');
+      await captura(page, '18-eliminar-documento-ya-resuelto');
+      await page.getByTestId('btn-cancelar-eliminar-documento').click();
+      await expect(page.getByTestId('modal-eliminar-documento')).toHaveCount(0);
       await expect(page.getByTestId('titulo-seccion-aprobados')).toHaveText('Aprobados · 1');
       await expect(page.getByTestId('titulo-seccion-en-revision')).toHaveCount(0);
-      await captura(page, '18-eliminar-documento-ya-resuelto');
     });
 
     test('con 5 documentos en revisión el botón se deshabilita y explica por qué', async ({ page, request }) => {

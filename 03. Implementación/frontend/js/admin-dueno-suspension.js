@@ -2,7 +2,7 @@ import { apiFetch, ApiError } from './api.js';
 import { showToast } from './catalogo.js';
 import { h, mostrarAvisoFijo, limpiarAvisoFijo } from './form-utils.js';
 import { atraparFoco, devolverFoco, mensajeDeError } from './documentos-comun.js';
-import { abrirHoja, campoTexto, fechaLegible, plural, texto } from './admin-hojas.js';
+import { abrirHoja, campoTexto, crearDetalle, fechaLegible, normalizarBotonesDelPie, plural, texto } from './admin-hojas.js';
 import { abrirHojaReactivarCuenta } from './admin-reactivar.js';
 
 const MIN_MOTIVO = 10;
@@ -117,11 +117,13 @@ function esperaDeLista(testid) {
 function crearHojaDeDueno({ id, titulo, testid, subtitulo }) {
   const subtituloEl = texto('p', 'cliente-modal__sub', subtitulo, { 'data-testid': `${testid}-subtitulo` });
   const lista = h('div', { class: 'dueno-hoja__lista', 'data-testid': `${testid}-comercios` });
-  const cuerpo = h('div', { class: 'dueno-hoja__cuerpo' }, [subtituloEl, lista]);
+  const detalle = crearDetalle('Ver detalle', [lista], `${testid}-detalle`);
+  const detalleCuerpo = detalle.querySelector('.hoja__detalle-cuerpo');
+  const cuerpo = h('div', { class: 'dueno-hoja__cuerpo' }, [subtituloEl, detalle]);
   const pie = h('div', { class: 'dueno-hoja__pie' });
   const formulario = h('form', { class: 'dueno-hoja__form', novalidate: true }, [cuerpo, pie]);
   const { hoja, fondo, overflowPrevio } = abrirHoja({ clase: 'product-modal-sheet dueno-hoja', id, titulo, testid, hijos: [formulario] });
-  return { hoja, fondo, overflowPrevio, subtituloEl, lista, cuerpo, pie, formulario };
+  return { hoja, fondo, overflowPrevio, subtituloEl, lista, cuerpo, detalleCuerpo, pie, formulario };
 }
 
 export function abrirHojaSuspenderDueno(dueno, opener, { alExito, alConflicto }) {
@@ -136,9 +138,10 @@ export function abrirHojaSuspenderDueno(dueno, opener, { alExito, alConflicto })
   const { campo, area } = campoTexto({ id: 'suspender-dueno-motivo', etiqueta: 'Motivo (lo va a ver la persona)', placeholder: 'Contale por qué se suspende la cuenta', minimo: MIN_MOTIVO });
   const aviso = h('div', { 'data-testid': 'aviso-suspender-dueno' });
   cuerpo.append(campo, aviso);
-  const confirmar = texto('button', 'btn btn-primary doc-peligro', 'Suspender al Dueño', { type: 'submit', disabled: true, 'data-testid': 'btn-confirmar-suspender-dueno' });
+  const confirmar = texto('button', 'btn btn-peligro', 'Suspender al Dueño', { type: 'submit', disabled: true, 'data-testid': 'btn-confirmar-suspender-dueno' });
   const cancelar = texto('button', 'btn btn-tertiary', 'Cancelar', { type: 'button', 'data-testid': 'btn-cancelar-suspender-dueno' });
   pie.append(confirmar, cancelar);
+  normalizarBotonesDelPie([confirmar, cancelar]);
 
   let ocupado = false;
   let cerrado = false;
@@ -224,26 +227,26 @@ function cajaDeComercioQueSigue(comercio) {
 export function abrirHojaLevantarDueno(dueno, opener, { alExito, alConflicto }) {
   const nombre = nombreDelDueno(dueno);
   const desde = dueno.suspendidoDesde ? `Suspendido desde ${fechaLegible(dueno.suspendidoDesde)}` : 'Cuenta suspendida';
-  const { hoja, fondo, overflowPrevio, subtituloEl, lista, cuerpo, pie, formulario } = crearHojaDeDueno({
+  const { hoja, fondo, overflowPrevio, subtituloEl, lista, cuerpo, detalleCuerpo, pie, formulario } = crearHojaDeDueno({
     id: 'levantar-dueno',
     titulo: `Levantar a ${nombre}`,
     testid: 'modal-levantar-dueno',
-    subtitulo: '',
+    subtitulo: 'Calculando qué va a pasar…',
   });
-  subtituloEl.remove();
   const cajaActual = h('div', { class: 'cliente-modal__caja', 'data-testid': 'levantar-dueno-suspension-actual' }, [
     texto('p', 'cliente-modal__caja-titulo', desde),
     texto('p', 'cliente-modal__caja-motivo', dueno.motivoSuspension || '', { 'data-testid': 'levantar-dueno-motivo-actual' }),
   ]);
-  cuerpo.insertBefore(cajaActual, lista);
+  detalleCuerpo.insertBefore(cajaActual, lista);
   lista.replaceChildren(esperaDeLista('levantar-dueno-cargando'));
   const nota = texto('p', 'dueno-hoja__nota', 'Los pedidos que se rechazaron o anularon al suspender no vuelven.', { 'data-testid': 'levantar-dueno-nota' });
   const { campo, area } = campoTexto({ id: 'levantar-dueno-mensaje', etiqueta: 'Mensaje para la persona (opcional)', placeholder: 'Por ejemplo, qué pasó o qué esperamos de ahora en más' });
   const aviso = h('div', { 'data-testid': 'aviso-levantar-dueno' });
   cuerpo.append(nota, campo, aviso);
-  const confirmar = texto('button', 'btn btn-primary doc-exito', 'Levantar suspensión', { type: 'submit', 'data-testid': 'btn-confirmar-levantar-dueno' });
+  const confirmar = texto('button', 'btn btn-primary', 'Levantar suspensión', { type: 'submit', 'data-testid': 'btn-confirmar-levantar-dueno' });
   const cancelar = texto('button', 'btn btn-tertiary', 'Cancelar', { type: 'button', 'data-testid': 'btn-cancelar-levantar-dueno' });
   pie.append(confirmar, cancelar);
+  normalizarBotonesDelPie([confirmar, cancelar]);
 
   let ocupado = false;
   let cerrado = false;
@@ -266,6 +269,13 @@ export function abrirHojaLevantarDueno(dueno, opener, { alExito, alConflicto }) 
       const vuelven = suspendidos.filter((comercio) => comercio.suspensionOrigen === 'DUENO');
       const siguen = suspendidos.filter((comercio) => comercio.suspensionOrigen !== 'DUENO');
       const bloques = [];
+      if (suspendidos.length === 0) {
+        subtituloEl.textContent = 'No tiene comercios suspendidos.';
+      } else if (siguen.length > 0) {
+        subtituloEl.textContent = `Se restablecen ${vuelven.length} de ${suspendidos.length} comercios.`;
+      } else {
+        subtituloEl.textContent = `Se restablece${vuelven.length === 1 ? '' : 'n'} ${textoComercios(vuelven.length)}.`;
+      }
       if (vuelven.length > 0) {
         const titulo = siguen.length > 0
           ? `Se restablecen ${vuelven.length} de ${suspendidos.length} comercios`
@@ -281,6 +291,7 @@ export function abrirHojaLevantarDueno(dueno, opener, { alExito, alConflicto }) 
     .catch((error) => {
       if (cerrado) return;
       lista.replaceChildren();
+      subtituloEl.textContent = 'Se restablecen los comercios que se suspendieron con la cuenta.';
       mostrarAvisoFijo(aviso, `${mensajeDeError(error, 'No pudimos calcular el detalle.')} Igual podés levantar la suspensión.`);
     });
 

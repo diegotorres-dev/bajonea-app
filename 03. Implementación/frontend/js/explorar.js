@@ -2,6 +2,7 @@ import { apiFetch } from './api.js';
 import { exigirContextoCliente } from './contexto.js';
 import { renderTopBar, renderBottomNav, renderEmptyState } from './catalogo.js';
 import { normalizarCampos } from './validators.js';
+import { mostrarEsqueleto } from './esqueletos.js';
 
 function crear(tag, className) {
   const node = document.createElement(tag);
@@ -150,6 +151,7 @@ export async function initExplorar() {
   const listContainer = document.getElementById('producto-list');
   const paginationSlot = document.getElementById('pagination-slot');
 
+  mostrarEsqueleto(listContainer, 'productos');
   const filtros = await apiFetch('/catalogo/filtros', { auth: false });
 
   let categoriaActiva = null;

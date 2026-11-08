@@ -449,6 +449,7 @@ const CAMPOS_PEDIDO = [
   'fuenteEntrega',
   'id',
   'limiteResolucionSuspension',
+  'limiteRespuestaComercio',
   'motivoAnulacion',
   'motivoRechazo',
   'noRetiradoDisponibleDesde',

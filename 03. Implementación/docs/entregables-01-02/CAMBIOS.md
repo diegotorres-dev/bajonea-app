@@ -1551,3 +1551,36 @@ Crear un pedido, crear un producto, cargar un documento y enviar una consulta nu
 
    Además, **el diccionario salta del T3 al T5: no existe T4** (ni tipo en el enum). Se sugiere dejarlo anotado como "no usado" para no confundir, o renumerar.
 4. **Alcance y limitaciones:** siguen sin existir avisos ni campana para el Administrador; los 6 tipos sin emisor (`NUEVO_COMERCIO_PENDIENTE`, `NUEVA_RESOLICITUD_COMERCIO`, `NUEVO_RECLAMO`, `NUEVO_MENSAJE_SOPORTE`, `REEMBOLSO_FALLIDO_DEFINITIVO` y `PEDIDO_CERRADO_TIMER_SUSPENSION`) quedan documentados y no se eliminan. La frase sobre cómo Mercado Pago descuenta un reembolso por reclamo se vuelve a incluir recién cuando se verifique el reparto con Mercado Pago real.
+
+## Tramo P1a de pulido: hojas de decisión unificadas — 2026-11-08
+
+### Qué cambió
+
+- **Todas las confirmaciones se comportan igual.** Las ventanas que piden confirmar (vaciar el carrito, cerrar sesión, rechazar, anular o cerrar como no retirado un pedido, descontinuar un producto, eliminar un documento o una dirección, desactivar a un integrante del equipo, cancelar una invitación, dejar de trabajar en un comercio, aprobar o rechazar un comercio y desvincular Mercado Pago) se cierran con `Escape` o tocando afuera, arrancan con el foco en la opción segura, mantienen el foco adentro con el teclado y devuelven el foco al botón que las abrió.
+- **Lo escrito no se pierde.** Al confirmar, la ventana queda abierta con el botón en "Enviando…" y los campos bloqueados; si falla, el error aparece adentro de la ventana y lo escrito sigue ahí; solo se cierra cuando la acción terminó bien, con el aviso de siempre. Antes se cerraba al confirmar y el error salía como un aviso suelto.
+- **Un solo rojo para lo que no se puede deshacer.** Todas las acciones que destruyen son rojas con texto blanco; las confirmaciones que no destruyen (cerrar sesión, aprobar un comercio) son naranjas; "Volver" o "Cancelar" es siempre un botón con borde, debajo y a 12 px. El rechazo definitivo de un comercio ya no invierte los colores: los dos rechazos son rojos y el definitivo agrega "El rechazo definitivo no se puede deshacer.".
+- **Rechazar y anular un pedido explican qué pasa.** "¿Rechazar el pedido #N?" / "¿Anular el pedido #N?": "El cliente recibe la devolución de todo el pago por Mercado Pago. Puede demorar en verse en su cuenta. Le avisamos el motivo y tu comentario."
+- **Hojas de suspender y levantar la suspensión (Dueño, comercio y Cliente).** Una frase visible ("Se restablecen 2 comercios.", "No podrá ingresar ni comprar.") y el detalle (por comercio, por pedido, motivo anterior) en un "Ver detalle" plegado; sin cajas amarillas ni verdes; los botones siempre a la vista.
+
+### Cambios a reflejar en los documentos de requisitos
+
+1. **Requisitos funcionales (confirmaciones):** toda acción destructiva o irreversible pide una confirmación que (a) se puede cancelar con el teclado, (b) no se cierra mientras se envía, (c) conserva lo escrito si falla y (d) explica la consecuencia cuando hay dinero de por medio (rechazar y anular un pedido: devolución total del pago por Mercado Pago, sin plazo garantizado).
+2. **Requisitos no funcionales (accesibilidad):** las ventanas de confirmación son diálogos modales con foco gestionado (foco inicial en la opción segura, foco atrapado y devuelto).
+3. **Historias de usuario del Administrador:** rechazar un comercio con "rechazo definitivo" muestra una advertencia propia; la hoja de suspender o levantar muestra una frase y el detalle plegado.
+
+## Tramo P1b de pulido (2026-11-08)
+
+Solo frontend, pruebas y documentación. Textos nuevos o cambiados de la interfaz:
+
+- **Cliente, estado del pedido:** "Pendiente" pasa a **"Esperando al comercio"** (el comercio sigue viendo "Pendiente").
+- **Cliente, pedido sin pagar:** "Todavía no pagaste este pedido." Al volver de Mercado Pago a la espera de la confirmación: "Estamos confirmando tu pago. Esta pantalla se actualiza sola." Con el pago rechazado: "No pudimos procesar tu pago. Podés intentar de nuevo."
+- **Panel del comercio:** el saludo pasa de "Hola, {nombre del comercio} 👋" a **"Hola 👋"** (el login no devuelve el nombre de la persona).
+- **Pista de "Tus comercios":** "Mantené apretado para ver tus comercios", con el botón "Entendido"; se muestra una sola vez por dispositivo, solo con dos o más comercios.
+- **Error al cargar una lista del Cliente:** el mensaje del error con el botón "Reintentar".
+
+### Cambios a reflejar en los documentos de requisitos
+
+1. **Requisitos no funcionales (accesibilidad):** todo control interactivo tiene un área táctil de al menos 44 × 44 px sin deformar el diseño (quedan tres enlaces de texto del login y del panel del Administrador por debajo, anotados en el mapeo); los errores de campo se anuncian con `aria-invalid` y `aria-describedby` y el foco va al primer campo con error; las animaciones de carga respetan la preferencia de movimiento reducido.
+2. **Requisitos no funcionales (usabilidad):** toda pantalla del Cliente muestra un indicador de carga (esqueleto) mientras llegan los datos y, si falla la primera carga, un error con la opción de reintentar.
+3. **Historias de usuario del Cliente:** el estado "Esperando al comercio" y los tres textos de "Esperando pago"; la persona entiende si falta pagar, si se está confirmando el pago o si fue rechazado.
+4. **Historias de usuario del Dueño:** la pista de un solo uso sobre el gesto de mantener apretado el avatar para cambiar de comercio.

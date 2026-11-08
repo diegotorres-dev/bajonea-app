@@ -8,7 +8,10 @@
     "test:ui": "playwright test --ui",
     "test:webkit": "playwright test --config=playwright.webkit.config.ts",
     "test:reset": "node scripts/reset-db.mjs",
-    "report": "playwright show-report"
+    "report": "playwright show-report",
+    "verificar:conectividad": "node scripts/verificar-conectividad.mjs",
+    "test:completa": "node scripts/verificar-conectividad.mjs && playwright test",
+    "test:webkit:completa": "node scripts/verificar-conectividad.mjs && playwright test --config=playwright.webkit.config.ts"
   },
   "keywords": [],
   "author": "",

@@ -28,6 +28,9 @@ const TEXTO_PANTALLA = 'Pasaron más de 3 meses sin que ingresaras, así que la 
 const TOAST = 'Cuenta reactivada. ¡Qué bueno verte de nuevo!';
 
 async function captura(page: Page, nombre: string) {
+  if (process.env.CAPTURAS !== '1') {
+    return;
+  }
   fs.mkdirSync(CARPETA_CAPTURAS, { recursive: true });
   await page.screenshot({ path: path.join(CARPETA_CAPTURAS, `${nombre}.png`) });
 }

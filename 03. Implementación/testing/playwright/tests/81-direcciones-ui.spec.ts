@@ -41,6 +41,9 @@ interface Cuenta {
 }
 
 async function captura(page: Page, nombre: string, paginaCompleta = false) {
+  if (process.env.CAPTURAS !== '1') {
+    return;
+  }
   fs.mkdirSync(CARPETA_CAPTURAS, { recursive: true });
   await page.screenshot({ path: path.join(CARPETA_CAPTURAS, `${nombre}.png`), fullPage: paginaCompleta });
 }
@@ -435,7 +438,7 @@ test.describe('Fase 3 (UI): direcciones múltiples del Cliente, entrega B', () =
     await page.getByTestId(`btn-menu-direccion-${otraId}`).click();
     await page.getByTestId('btn-eliminar-direccion').click();
     const modal = page.getByTestId('modal-eliminar-direccion');
-    await expect(modal.getByRole('alertdialog')).toBeVisible();
+    await expect(modal.getByRole('dialog')).toBeVisible();
     await expect(page.getByTestId('titulo-eliminar-direccion')).toHaveText('¿Eliminar esta dirección?');
     await expect(page.getByTestId('texto-eliminar-direccion')).toHaveText('Los pedidos que ya hiciste con esta dirección no cambian.');
     await expect(page.getByTestId('btn-cancelar-eliminar-direccion')).toBeFocused();

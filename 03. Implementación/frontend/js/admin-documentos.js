@@ -1,6 +1,7 @@
 import { apiFetch, ApiError } from './api.js';
 import { showToast } from './catalogo.js';
 import { h, mostrarAvisoFijo } from './form-utils.js';
+import { establecerErrorCampo } from './validators.js';
 import { requireAdmin } from './admin.js';
 import {
   abrirVisorDocumento,
@@ -115,7 +116,7 @@ function abrirModalMotivo({ titulo, mensaje, textoConfirmar, alConfirmar }) {
   const error = h('div', { class: 'field__error', id: 'motivo-documento-error', style: 'display:none;', role: 'alert', 'data-testid': 'error-motivo-documento' });
   error.textContent = 'El motivo es obligatorio.';
   const bannerSlot = h('div', { 'data-testid': 'banner-motivo-documento' });
-  const confirmar = h('button', { type: 'submit', class: 'btn btn-primary doc-peligro', 'data-testid': 'btn-confirmar-motivo-documento' });
+  const confirmar = h('button', { type: 'submit', class: 'btn btn-peligro', 'data-testid': 'btn-confirmar-motivo-documento' });
   confirmar.textContent = textoConfirmar;
   const cancelar = h('button', { type: 'button', class: 'btn btn-tertiary', 'data-testid': 'btn-cancelar-motivo-documento' });
   cancelar.textContent = 'Cancelar';
@@ -154,7 +155,7 @@ function abrirModalMotivo({ titulo, mensaje, textoConfirmar, alConfirmar }) {
   textarea.addEventListener('input', () => {
     contador.textContent = `${textarea.value.length} / ${MAX_MOTIVO}`;
     if (textarea.value.trim()) {
-      error.style.display = 'none';
+      establecerErrorCampo(error, null);
     }
   });
   cancelar.addEventListener('click', cerrar);
@@ -170,7 +171,7 @@ function abrirModalMotivo({ titulo, mensaje, textoConfirmar, alConfirmar }) {
     }
     const motivo = textarea.value.trim();
     if (!motivo) {
-      error.style.display = '';
+      establecerErrorCampo(error, 'El motivo es obligatorio.');
       textarea.focus();
       return;
     }

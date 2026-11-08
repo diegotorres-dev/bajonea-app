@@ -1,6 +1,7 @@
 import { apiFetch, esTimeoutAvisado, getToken, getUsuario } from './api.js';
 import { renderTopBar, showToast } from './catalogo.js';
 import { h, crearSvg, setLoading } from './form-utils.js';
+import { establecerErrorCampo } from './validators.js';
 import { texto } from './admin-hojas.js';
 import {
   MIN_MENSAJE, TIPOS_CONSULTA, crearAvisoDeError, erroresPorCampo, limpiarError, mensajeDeApi, mostrarError, textoContadorLargo, tipoValido,
@@ -26,9 +27,7 @@ function crearCampoError(id) {
 }
 
 function mostrarErrorDeCampo(id, mensaje) {
-  const caja = document.getElementById(`error-${id}`);
-  caja.textContent = mensaje;
-  caja.style.display = mensaje ? 'flex' : 'none';
+  establecerErrorCampo(document.getElementById(`error-${id}`), mensaje);
 }
 
 function limpiarErroresDeCampo() {

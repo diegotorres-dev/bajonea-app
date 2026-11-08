@@ -34,6 +34,9 @@ const TEXTO_CLIENTE = 'El comercio no estaba disponible. Te devolvemos el dinero
 const todoElDia = () => [{ diaSemana: diaDeHoy(), horaApertura: '00:00', horaCierre: '23:59' }];
 
 async function captura(page: Page, nombre: string) {
+  if (process.env.CAPTURAS !== '1') {
+    return;
+  }
   fs.mkdirSync(CARPETA_CAPTURAS, { recursive: true });
   await page.screenshot({ path: path.join(CARPETA_CAPTURAS, `${nombre}.png`) });
 }
@@ -415,6 +418,7 @@ test.describe('Fase 5, S3 (UI B): lista de Dueños y hojas de suspender y levant
       for (const dueno of [sinDocumentos, sinCuenta]) {
         await abrirAcciones(page, dueno);
         await page.getByTestId('accion-levantar-dueno').click();
+        await page.getByTestId('modal-levantar-dueno-detalle').locator('summary').click();
         await expect(page.getByTestId(`vuelve-comercio-${dueno.comercioId}`)).toBeVisible();
         await page.getByTestId('btn-confirmar-levantar-dueno').click();
         await expect(page.locator('.toast').last()).toContainText('Suspensión levantada');
