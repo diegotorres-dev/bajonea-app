@@ -45,7 +45,11 @@ function destinoDeLaCuenta(cuenta) {
   return null;
 }
 
-function dibujarFila(consulta) {
+const consultaEscritorio = window.matchMedia('(min-width: 1024px)');
+const INTERVALO_SONDEO_MS = 15000;
+let alCambiarDetalle = null;
+
+function dibujarFila(consulta, seleccionadaId = null) {
   const marcas = [];
   if (consulta.cuentaSuspendida) {
     marcas.push(texto('span', 'soporte-fila__marca', 'Cuenta suspendida', { 'data-testid': 'marca-cuenta-suspendida' }));
@@ -53,20 +57,26 @@ function dibujarFila(consulta) {
   if (consulta.emailPendienteDeReenvio) {
     marcas.push(texto('span', 'soporte-fila__marca', 'No se envió el email', { 'data-testid': 'marca-email-fallido' }));
   }
+  const seleccionada = seleccionadaId === consulta.id;
   return h('a', {
-    class: 'soporte-fila',
+    class: `soporte-fila${seleccionada ? ' soporte-fila--seleccionada' : ''}`,
     href: `admin-soporte.html?id=${consulta.id}`,
+    'aria-current': seleccionada ? 'true' : null,
     'data-testid': `soporte-item-${consulta.id}`,
   }, [
     texto('span', 'soporte-fila__tipo', etiquetaTipo(consulta.tipo), { 'data-testid': 'soporte-item-tipo' }),
     emailCortable(consulta.email),
     texto('span', 'soporte-fila__fecha', tiempoRelativo(consulta.actualizadoEn), { 'data-testid': 'soporte-item-hace' }),
+    h('span', { class: 'soporte-fila__estado', hidden: true, 'data-testid': 'soporte-item-estado' }, [ESTADOS_DE_SOPORTE[consulta.estado] ? ESTADOS_DE_SOPORTE[consulta.estado].texto : 'Estado no disponible']),
     ...(marcas.length > 0 ? [h('span', { class: 'soporte-fila__marcas' }, marcas)] : []),
   ]);
 }
 
-async function pintarBandeja(contenedor) {
-  const estado = { filtro: 'ESPERAN', listas: { ESPERAN: [], RESPONDIDAS: [], CERRADAS: [] } };
+const FILTRO_POR_ESTADO = { ESPERA_SOPORTE: 'ESPERAN', ESPERA_PERSONA: 'RESPONDIDAS', CERRADO: 'CERRADAS' };
+
+async function pintarBandeja(contenedor, { maestroDetalle = false, idInicial = null } = {}) {
+  const estado = { filtro: 'ESPERAN', listas: { ESPERAN: [], RESPONDIDAS: [], CERRADAS: [] }, seleccionada: idInicial };
+  let panelDetalle = null;
   const aviso = crearAvisoDeError('aviso-bandeja');
   const contador = texto('p', 'cliente-contador', '', { role: 'status', 'aria-live': 'polite', 'data-testid': 'contador-bandeja' });
   const lista = h('div', { class: 'soporte-lista', id: 'soporte-lista', 'data-testid': 'bandeja-soporte' });
@@ -102,23 +112,132 @@ async function pintarBandeja(contenedor) {
       }[estado.filtro], { 'data-testid': 'bandeja-vacia' }));
       return;
     }
-    lista.replaceChildren(...mostradas.map(dibujarFila));
+    lista.replaceChildren(...mostradas.map((consulta) => dibujarFila(consulta, estado.seleccionada)));
   }
 
-  contenedor.replaceChildren(
+  function panelVacio() {
+    return h('div', { class: 'soporte-panel__vacio', 'data-testid': 'consulta-vacia' }, [
+      texto('p', 'soporte-panel__vacio-titulo', 'Elegí una consulta'),
+      texto('p', 'soporte-panel__vacio-texto', 'Va a aparecer acá, con toda la conversación.'),
+    ]);
+  }
+
+  function enfocarFila(indice) {
+    const filas = [...lista.querySelectorAll('a.soporte-fila')];
+    if (filas.length === 0) return;
+    filas[Math.max(0, Math.min(indice, filas.length - 1))].focus();
+  }
+
+  async function elegir(id) {
+    estado.seleccionada = id;
+    window.history.pushState(null, '', `admin-soporte.html?id=${id}`);
+    dibujar();
+    await iniciarDetalle(panelDetalle, id);
+  }
+
+  async function recargarListas() {
+    const resultados = await Promise.all(FILTROS.map((filtro) => apiFetch(`/administrador/soporte?estado=${filtro.clave}&limite=${LIMITE_LISTA}`, OPCIONES_API)));
+    FILTROS.forEach((filtro, indice) => {
+      estado.listas[filtro.clave] = resultados[indice];
+    });
+  }
+
+  function textoEnCurso() {
+    const area = panelDetalle.querySelector('textarea');
+    return Boolean(area && (area.value.trim() !== '' || document.activeElement === area));
+  }
+
+  async function sondear() {
+    if (document.visibilityState === 'hidden') return;
+    try {
+      await recargarListas();
+      dibujar();
+      if (estado.seleccionada !== null && !textoEnCurso()) {
+        const consulta = await apiFetch(`/administrador/soporte/${estado.seleccionada}`, OPCIONES_API);
+        const visibles = panelDetalle.querySelectorAll('[data-testid="hilo-consulta"] > *').length;
+        if (consulta.mensajes && consulta.mensajes.length !== visibles) {
+          pintarDetalle(panelDetalle, consulta);
+        }
+      }
+    } catch {
+      return;
+    }
+  }
+
+  if (maestroDetalle) {
+    panelDetalle = h('section', { class: 'soporte-panel', 'aria-label': 'Consulta seleccionada', 'data-testid': 'panel-consulta' }, [panelVacio()]);
+    lista.addEventListener('click', (evento) => {
+      const fila = evento.target.closest('a.soporte-fila');
+      if (!fila || evento.metaKey || evento.ctrlKey || evento.shiftKey || evento.button !== 0) return;
+      evento.preventDefault();
+      elegir(Number(new URL(fila.href).searchParams.get('id')));
+    });
+    lista.addEventListener('keydown', (evento) => {
+      const filas = [...lista.querySelectorAll('a.soporte-fila')];
+      const indice = filas.indexOf(document.activeElement);
+      if (indice === -1) return;
+      const destinos = { ArrowDown: indice + 1, ArrowUp: indice - 1, Home: 0, End: filas.length - 1 };
+      if (evento.key in destinos) {
+        evento.preventDefault();
+        enfocarFila(destinos[evento.key]);
+      }
+    });
+    window.addEventListener('popstate', () => {
+      const id = idDeLaUrl();
+      estado.seleccionada = id;
+      dibujar();
+      if (id === null) {
+        panelDetalle.replaceChildren(panelVacio());
+      } else {
+        iniciarDetalle(panelDetalle, id);
+      }
+    });
+    alCambiarDetalle = async (consulta) => {
+      try {
+        await recargarListas();
+        if (estado.seleccionada === consulta.id && FILTRO_POR_ESTADO[consulta.estado]) {
+          estado.filtro = FILTRO_POR_ESTADO[consulta.estado];
+        }
+        dibujar();
+      } catch {
+        return;
+      }
+    };
+    window.setInterval(sondear, INTERVALO_SONDEO_MS);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') sondear();
+    });
+  }
+
+  const bandeja = [
     texto('h1', 'title-lg', 'Soporte', { 'data-testid': 'titulo-admin-soporte' }),
     filtros, contador, aviso, lista,
-  );
+  ];
+  if (maestroDetalle) {
+    contenedor.replaceChildren(h('div', { class: 'soporte-maestro-detalle', 'data-testid': 'soporte-maestro-detalle' }, [
+      h('div', { class: 'soporte-maestro' }, bandeja),
+      panelDetalle,
+    ]));
+  } else {
+    contenedor.replaceChildren(...bandeja);
+  }
   lista.replaceChildren(...[0, 1, 2].map(() => h('div', { class: 'soporte-fila soporte-fila--espera', 'aria-hidden': 'true' }, [
-    h('div', { class: 'skeleton', style: 'height:16px;width:60%;margin-bottom:10px;' }),
-    h('div', { class: 'skeleton', style: 'height:12px;width:80%;' }),
+    h('div', { class: 'skeleton skeleton--linea-titulo-60' }),
+    h('div', { class: 'skeleton skeleton--linea-texto-80' }),
   ])));
   try {
     const resultados = await Promise.all(FILTROS.map((filtro) => apiFetch(`/administrador/soporte?estado=${filtro.clave}&limite=${LIMITE_LISTA}`, OPCIONES_API)));
     FILTROS.forEach((filtro, indice) => {
       estado.listas[filtro.clave] = resultados[indice];
     });
+    if (idInicial !== null) {
+      const encontrada = FILTROS.find((filtro) => estado.listas[filtro.clave].some((consulta) => consulta.id === idInicial));
+      if (encontrada) estado.filtro = encontrada.clave;
+    }
     dibujar();
+    if (maestroDetalle && idInicial !== null) {
+      iniciarDetalle(panelDetalle, idInicial);
+    }
   } catch (error) {
     lista.replaceChildren();
     mostrarError(aviso, mensajeDeApi(error, 'No pudimos cargar las consultas.'), { enfocar: false });
@@ -271,6 +390,9 @@ function pintarDetalle(contenedor, consulta, avisoInicial = null) {
     hijos.push(cerrar);
   }
   contenedor.replaceChildren(...hijos);
+  if (alCambiarDetalle) {
+    alCambiarDetalle(consulta);
+  }
   if (avisoInicial) {
     const slot = contenedor.querySelector('[data-testid="aviso-respuesta-admin"]');
     if (slot) mostrarError(slot, avisoInicial, { enfocar: false });
@@ -279,8 +401,8 @@ function pintarDetalle(contenedor, consulta, avisoInicial = null) {
 
 async function iniciarDetalle(contenedor, id) {
   contenedor.replaceChildren(
-    h('div', { class: 'skeleton', style: 'height:96px;margin-bottom:16px;', 'aria-hidden': 'true' }),
-    h('div', { class: 'skeleton', style: 'height:64px;width:70%;margin-bottom:12px;', 'aria-hidden': 'true' }),
+    h('div', { class: 'skeleton skeleton--bloque-96-auto', 'aria-hidden': 'true' }),
+    h('div', { class: 'skeleton skeleton--bloque-64-70', 'aria-hidden': 'true' }),
   );
   try {
     pintarDetalle(contenedor, await apiFetch(`/administrador/soporte/${id}`, OPCIONES_API));
@@ -303,6 +425,10 @@ export function initAdminSoporte() {
   const id = idDeLaUrl();
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: id === null ? 'Soporte' : 'Consulta' });
   const contenedor = document.getElementById('admin-soporte-contenido');
+  if (consultaEscritorio.matches) {
+    pintarBandeja(contenedor, { maestroDetalle: true, idInicial: id });
+    return;
+  }
   if (id !== null) {
     iniciarDetalle(contenedor, id);
     return;

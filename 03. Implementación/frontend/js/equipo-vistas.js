@@ -2,6 +2,7 @@ import { apiFetch, ApiError } from './api.js';
 import { showToast, renderEmptyState } from './catalogo.js';
 import { iniciales } from './selector-comercio.js';
 import { h, crearSvg, renderBanner } from './form-utils.js';
+import { crearEncabezadoTabla } from './tabla-admin.js';
 import { diaDe, etiquetaDeDia, horaMinutoDe } from './fechas.js';
 
 export const OPCIONES_RED = { handle5xxGlobally: false, handleRedGlobally: false, conMensaje: true };
@@ -320,7 +321,7 @@ export function crearActividad({ contenedor, ruta, estaVisible }) {
       }
       filas.append(crearFilaActividad(item));
     });
-    cuerpo.replaceChildren(filas);
+    cuerpo.replaceChildren(crearEncabezadoTabla('actividad', [{ etiqueta: '' }, { etiqueta: 'Quién' }, { etiqueta: 'Acción' }, { etiqueta: 'Sobre' }, { etiqueta: 'Hora' }], 'encabezado-actividad'), filas);
     if (estado.hayMas) {
       const verMas = h('button', { class: 'btn btn-secondary actividad-ver-mas', type: 'button', 'data-testid': 'btn-actividad-ver-mas' });
       verMas.textContent = 'Ver más';

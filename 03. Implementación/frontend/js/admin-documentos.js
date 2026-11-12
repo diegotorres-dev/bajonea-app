@@ -1,5 +1,6 @@
 import { apiFetch, ApiError } from './api.js';
 import { showToast } from './catalogo.js';
+import { crearEncabezadoTabla } from './tabla-admin.js';
 import { h, mostrarAvisoFijo } from './form-utils.js';
 import { establecerErrorCampo } from './validators.js';
 import { requireAdmin } from './admin.js';
@@ -98,7 +99,7 @@ export async function initAdminDocumentos() {
         revisar,
       ]);
     });
-    contenedor.replaceChildren(...tarjetas);
+    contenedor.replaceChildren(crearEncabezadoTabla('documentos', [{ etiqueta: 'Comercio' }, { etiqueta: 'Documento' }, { etiqueta: 'Archivo' }, { etiqueta: 'Subido' }, { etiqueta: '' }], 'encabezado-documentos'), ...tarjetas);
   }
 
   await cargar();
@@ -257,7 +258,7 @@ function textoConteo(documentos) {
   return `${cuenta('APROBADO')} aprobados · ${cuenta('PENDIENTE')} en revisión · ${cuenta('RECHAZADO')} rechazados`;
 }
 
-async function montarVistaPrevia(contenedor, documento) {
+async function montarVistaPrevia(contenedor, documento, alListo = null) {
   contenedor.setAttribute('aria-busy', 'true');
   let blob;
   try {
@@ -272,6 +273,9 @@ async function montarVistaPrevia(contenedor, documento) {
   const url = URL.createObjectURL(blob);
   window.addEventListener('pagehide', () => URL.revokeObjectURL(url), { once: true });
   contenedor.setAttribute('aria-busy', 'false');
+  if (alListo) {
+    alListo(url);
+  }
   if (documento.tipoMime === 'application/pdf') {
     const marco = h('iframe', { class: 'doc-vista-previa__pdf', title: `Vista previa de ${nombreDelDocumento(documento)}`, 'data-testid': 'vista-previa-pdf' });
     marco.src = url;
@@ -351,7 +355,8 @@ export async function initAdminDocumentoRevision() {
       filasComercio.push(crearFilaInfo('tilde', infoPendiente.cuentaMercadoPagoVinculada ? 'Mercado Pago: vinculado' : 'Mercado Pago: sin vincular', 'revision-mercadopago'));
     }
     filasComercio.push(crearFilaInfo('archivo', `Documentos: ${textoConteo(documentos)}`, 'revision-conteo'));
-    const tarjetaComercio = h('section', { class: 'request-card revision-comercio', 'aria-label': 'Datos del comercio', 'data-testid': 'revision-comercio' }, [nombreEl, h('div', { class: 'request-card__rows' }, filasComercio)]);
+    const tituloComercio = h('h2', { class: 'revision-panel__titulo', hidden: true, 'data-testid': 'titulo-datos-comercio' }, ['Datos del comercio']);
+    const tarjetaComercio = h('section', { class: 'request-card revision-comercio', 'aria-label': 'Datos del comercio', 'data-testid': 'revision-comercio' }, [tituloComercio, nombreEl, h('div', { class: 'request-card__rows' }, filasComercio)]);
 
     const nombreDoc = h('h3', { class: 'revision-doc__nombre', 'data-testid': 'revision-doc-nombre' });
     nombreDoc.textContent = nombreDelDocumento(seleccionado);
@@ -360,12 +365,16 @@ export async function initAdminDocumentoRevision() {
     const vistaPrevia = h('div', { class: 'doc-vista-previa', 'aria-busy': 'true', 'data-testid': 'vista-previa' });
     const pantallaCompleta = h('button', { type: 'button', class: 'btn btn-secondary', 'data-testid': 'btn-ver-pantalla-completa' }, [icono('externo')]);
     pantallaCompleta.append(document.createTextNode('Ver en pantalla completa'));
+    const abrirPestana = h('button', { type: 'button', class: 'btn btn-secondary', disabled: true, 'data-testid': 'btn-abrir-pestana-nueva' }, [icono('externo')]);
+    abrirPestana.append(document.createTextNode('Abrir en pestaña nueva'));
+    const abrirPestanaCaja = h('div', { class: 'revision-abrir-pestana', hidden: true }, [abrirPestana]);
     pantallaCompleta.addEventListener('click', () => abrirVisorDocumento({ documento: seleccionado, rutaArchivo: `/administrador/documentos/${seleccionado.id}/archivo` }));
     const bloqueDoc = h('section', { class: 'request-card', 'aria-label': 'Documento', 'data-testid': 'revision-documento' }, [
       h('div', { class: 'request-card__top' }, [nombreDoc, crearChipEstado(seleccionado.estado, 'revision-doc-estado')]),
       meta,
       vistaPrevia,
       pantallaCompleta,
+      abrirPestanaCaja,
     ]);
     if (seleccionado.estado === 'RECHAZADO' && seleccionado.motivoRechazo) {
       const motivo = h('div', { class: 'doc-motivo', 'data-testid': 'revision-doc-motivo' });
@@ -418,6 +427,7 @@ export async function initAdminDocumentoRevision() {
           window.location.href = 'admin-documentos.html?resuelto=aprobado';
         },
       }));
+      nodos.push(h('h2', { class: 'revision-panel__titulo revision-panel__titulo--decision', hidden: true, 'data-testid': 'titulo-tu-decision' }, ['Tu decisión']));
       nodos.push(h('div', { class: 'revision-acciones' }, [rechazar, aprobar]));
     } else if (seleccionado.estado === 'APROBADO') {
       const revocar = h('button', { type: 'button', class: 'btn btn-secondary doc-peligro-borde', 'data-testid': 'btn-revocar-documento' });
@@ -434,6 +444,7 @@ export async function initAdminDocumentoRevision() {
           cargar();
         },
       }));
+      nodos.push(h('h2', { class: 'revision-panel__titulo revision-panel__titulo--decision', hidden: true, 'data-testid': 'titulo-tu-decision' }, ['Tu decisión']));
       nodos.push(h('div', { class: 'revision-acciones revision-acciones--sola' }, [revocar]));
     }
 
@@ -454,11 +465,21 @@ export async function initAdminDocumentoRevision() {
         ]);
         lista.append(h('li', {}, [enlace]));
       });
-      nodos.push(h('section', { class: 'doc-seccion' }, [titulo, lista]));
+      const alternar = h('button', { type: 'button', class: 'revision-otros-alternar', hidden: true, 'aria-expanded': 'false', 'aria-controls': 'revision-otros-lista', 'data-testid': 'btn-alternar-otros-documentos' }, [`Otros documentos del comercio (${otros.length})`]);
+      lista.id = 'revision-otros-lista';
+      const seccion = h('section', { class: 'doc-seccion doc-seccion--colapsada' }, [titulo, alternar, lista]);
+      alternar.addEventListener('click', () => {
+        const abierta = seccion.classList.toggle('doc-seccion--colapsada') === false;
+        alternar.setAttribute('aria-expanded', String(abierta));
+      });
+      nodos.push(seccion);
     }
 
     contenedor.replaceChildren(...nodos);
-    montarVistaPrevia(vistaPrevia, seleccionado);
+    montarVistaPrevia(vistaPrevia, seleccionado, (url) => {
+      abrirPestana.disabled = false;
+      abrirPestana.addEventListener('click', () => window.open(url, '_blank', 'noopener'));
+    });
   }
 
   await cargar();

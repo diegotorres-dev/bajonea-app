@@ -6,11 +6,12 @@
 <title>Revisar documento — Bajoneá</title>
 <link rel="stylesheet" href="css/styles.css" />
 <link rel="stylesheet" href="css/escritorio.css" media="(min-width: 1024px)" />
+<script type="module" src="js/admin-shell.js"></script>
 </head>
-<body>
+<body data-admin-nav="documentos">
 <div class="app-shell">
   <header class="app-header">
-    <button class="app-header__back app-header__back--tactil" type="button" onclick="history.back()" aria-label="Volver" data-testid="btn-volver">
+    <button class="app-header__back app-header__back--tactil" type="button" data-volver="admin-documentos.html" aria-label="Volver" data-testid="btn-volver">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <h1 class="app-header__title" data-testid="titulo-revision-documento">Revisar documento</h1>

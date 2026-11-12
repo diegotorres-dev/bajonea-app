@@ -554,3 +554,19 @@ Los specs `124` y `125` usan estos y los existentes.
 | `panel-marca`, `panel-marca-titular`, `panel-legal*` | `comercio-pendiente`, `comercio-rechazado` y `comercio-rechazo-definitivo` | Panel de marca de la pantalla partida |
 
 Los specs `126` a `130` usan estos y los existentes.
+
+
+## Tramo E2 (Administrador en escritorio)
+
+| `data-testid` | Dónde | Qué es |
+|---|---|---|
+| `barra-admin`, `logo-barra-admin`, `btn-nav-admin-<clave>`, `insignia-nav-admin-<clave>`, `btn-lateral-admin-cerrar-sesion` | todas las páginas `admin-*` (escritorio) | Barra lateral. Claves: `panel`, `pendientes`, `comercios`, `resolicitudes`, `documentos`, `soporte`, `reclamos`, `clientes`, `duenos`, `reembolsos`, `tarifas`, `categorias`. Insignias en `pendientes`, `resolicitudes`, `documentos`, `soporte`, `reclamos` y `reembolsos` |
+| `titulo-panel-admin` | `admin-dashboard.html` | Título "Panel" de la cabecera de escritorio |
+| `encabezado-clientes`, `encabezado-duenos`, `encabezado-comercios`, `encabezado-categorias`, `encabezado-tags`, `encabezado-reembolsos`, `encabezado-documentos`, `encabezado-equipo`, `encabezado-solicitudes`, `encabezado-actividad`, `encabezado-cambios` | tablas del Administrador | Encabezado de cada tabla (solo escritorio) |
+| `btn-nueva-categoria-escritorio`, `btn-nuevo-tag-escritorio` | `admin-categorias.html`, `admin-tags.html` | Botones de la cabecera que reemplazan al flotante en escritorio |
+| `estado-fila` | filas de categorías y tags | Texto Activa/Activo e Inactiva/Inactivo (escritorio) |
+| `soporte-maestro-detalle`, `panel-consulta`, `consulta-vacia`, `soporte-item-estado` | `admin-soporte.html` (escritorio) | Lista con detalle, panel de la derecha, estado vacío "Elegí una consulta" y estado de cada consulta |
+| `titulo-datos-comercio`, `titulo-tu-decision`, `btn-alternar-otros-documentos`, `btn-abrir-pestana-nueva` | `admin-documento-revision.html` (escritorio) | Títulos de la columna derecha, desplegable de otros documentos y botón de abrir en pestaña nueva |
+| `tarifa-formulario`, `comparacion-tarifa` | `admin-tarifas.html` | Formulario en línea (escritorio) y comparación "Antes → Ahora" de la hoja de confirmación (móvil y escritorio) |
+
+Los specs `131` a `135` usan estos y los existentes.

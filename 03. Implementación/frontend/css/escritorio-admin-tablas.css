@@ -1,0 +1,529 @@
+@media (min-width: 1024px) {
+  .barra-admin__texto {
+    white-space: normal;
+    line-height: 1.2;
+    text-overflow: clip;
+  }
+
+  .encabezado-accion-escritorio[hidden] {
+    display: block;
+    margin-left: auto;
+  }
+
+  .encabezado-accion-escritorio .btn {
+    width: auto;
+    min-width: 180px;
+    padding: 0 var(--space-6);
+  }
+
+  .app-shell--lateral-admin > .fab {
+    display: none;
+  }
+
+  .app-shell--lateral-admin .app-header__badge {
+    margin-left: auto;
+  }
+
+  .app-shell--lateral-admin .chip-row {
+    flex-wrap: wrap;
+  }
+
+  [data-admin-nav] .tabla-encabezado[hidden] {
+    display: grid;
+  }
+
+  .tabla-encabezado {
+    position: sticky;
+    top: 0;
+    z-index: 4;
+    grid-template-columns: var(--cols);
+    align-items: center;
+    column-gap: var(--space-4);
+    min-height: 44px;
+    padding: 0 var(--space-4);
+    background: var(--color-surface-alt);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    color: var(--color-text-muted);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .tabla--clientes,
+  .tabla--duenos {
+    --cols: minmax(0, 1.2fr) minmax(0, 1.8fr) 140px minmax(0, 1.4fr) 44px;
+  }
+
+  .tabla--comercios {
+    --cols: 40px minmax(0, 1.6fr) minmax(0, 1fr) 190px 150px;
+  }
+
+  .tabla--categorias {
+    --cols: 36px minmax(0, 1.6fr) minmax(0, 1fr) 140px 44px;
+  }
+
+  .tabla--reembolsos {
+    --cols: 150px 64px minmax(0, 1fr) minmax(0, 1fr) 90px 92px minmax(0, 1fr) 150px;
+  }
+
+  .tabla-admin > .cliente-admin-row,
+  .tabla-admin > .comercio-admin-row,
+  .tabla-admin > .categoria-row {
+    display: grid;
+    grid-template-columns: var(--cols);
+    align-items: center;
+    column-gap: var(--space-4);
+    min-height: 56px;
+    padding: var(--space-2) var(--space-4);
+    margin: 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-strong);
+    border-top: none;
+    border-radius: 0;
+    box-shadow: none;
+    position: relative;
+  }
+
+  .tabla-admin.cliente-admin-list,
+  .tabla-admin.categoria-list {
+    gap: 0;
+  }
+
+  .tabla-admin > :last-child {
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  }
+
+  @media (hover: hover) {
+    .tabla-admin > .cliente-admin-row:hover,
+    .tabla-admin > .comercio-admin-row:hover,
+    .tabla-admin > .categoria-row:hover {
+      background: var(--color-primary-tint);
+      border-color: var(--color-border-strong);
+      box-shadow: none;
+    }
+  }
+
+  .tabla-admin .cliente-admin-row__cuerpo {
+    display: contents;
+  }
+
+  .tabla-admin .cliente-admin-row h3 {
+    grid-column: 1;
+    margin: 0;
+    font-size: var(--fs-sm);
+    overflow-wrap: anywhere;
+  }
+
+  .tabla-admin .cliente-admin-row__email {
+    grid-column: 2;
+    margin: 0;
+    font-size: var(--fs-sm);
+    overflow-wrap: anywhere;
+  }
+
+  .tabla-admin .cliente-admin-row .cliente-estado {
+    grid-column: 3;
+    margin: 0;
+  }
+
+  .tabla-admin .cliente-admin-row__aviso,
+  .tabla-admin .dueno-admin-row__suspension {
+    grid-column: 4;
+    margin: 0;
+    font-size: var(--fs-xs);
+  }
+
+  .tabla-admin .cliente-admin-row__acciones {
+    grid-column: 5;
+    grid-row: 1;
+    width: 44px;
+    height: 44px;
+    justify-self: end;
+  }
+
+  .tabla-admin .comercio-admin-row__body {
+    display: contents;
+  }
+
+  .tabla-admin .comercio-admin-row__avatar {
+    width: 40px;
+    height: 40px;
+  }
+
+  .tabla-admin .comercio-admin-row h3 {
+    grid-column: 2;
+    margin: 0;
+    font-size: var(--fs-sm);
+  }
+
+  .tabla-admin .comercio-admin-row__body > p {
+    grid-column: 3;
+    margin: 0;
+    font-size: var(--fs-sm);
+  }
+
+  .tabla-admin .comercio-admin-row .status-badge {
+    grid-column: 4;
+    justify-self: start;
+  }
+
+  .tabla-admin .comercio-admin-row__detalle {
+    grid-column: 5;
+    justify-self: end;
+    min-height: 44px;
+    padding: 0 var(--space-3);
+    font-size: var(--fs-sm);
+  }
+
+  .tabla-admin .categoria-row__icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .tabla-admin .categoria-row__info {
+    display: contents;
+  }
+
+  .tabla-admin .categoria-row__info h3 {
+    grid-column: 2;
+    margin: 0;
+    font-size: var(--fs-sm);
+  }
+
+  .tabla-admin .categoria-row__info p {
+    grid-column: 3;
+    margin: 0;
+    font-size: var(--fs-sm);
+    color: var(--color-text-muted);
+  }
+
+  .categoria-row__estado[hidden] {
+    display: inline-flex;
+  }
+
+  .categoria-row__estado {
+    grid-column: 4;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+  }
+
+  .categoria-row__estado::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-success);
+  }
+
+  .categoria-row__estado--inactivo::before {
+    background: var(--color-text-placeholder);
+  }
+
+  .tabla-admin .categoria-row__edit-btn {
+    grid-column: 5;
+    width: 44px;
+    height: 44px;
+    justify-self: end;
+  }
+
+  .tabla-admin .categoria-row--inactivo h3 {
+    color: var(--color-text-muted);
+  }
+
+  .tabla-admin.tabla--reembolsos > .reembolso-row {
+    display: grid;
+    grid-template-columns: var(--cols);
+    align-items: center;
+    column-gap: var(--space-4);
+    row-gap: var(--space-1);
+    min-height: 56px;
+    padding: var(--space-2) var(--space-4);
+    margin: 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-strong);
+    border-top: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .tabla--reembolsos .cliente-admin-row__top {
+    grid-column: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-1);
+  }
+
+  .tabla--reembolsos .detail-row {
+    display: block;
+    margin: 0;
+    padding: 0;
+    border: none;
+    font-size: var(--fs-sm);
+    overflow-wrap: anywhere;
+  }
+
+  .tabla--reembolsos .detail-row > span:first-child {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .tabla--reembolsos .reembolso-row__error,
+  .tabla--reembolsos .reembolso-row__aviso {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+
+  .tabla--reembolsos .reembolso-row > .btn {
+    grid-column: 8;
+    grid-row: 1;
+    width: 100%;
+    min-height: 44px;
+    height: auto;
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--fs-sm);
+    line-height: 1.2;
+  }
+
+  .app-shell--lateral-admin .app-main > .chip-row,
+  .app-shell--lateral-admin #filtros-slot > .chip-row {
+    padding: var(--space-2) var(--space-10) var(--space-4);
+  }
+
+  .app-shell--lateral-admin .screen-body .chip-row {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  #clientes-content,
+  #duenos-content {
+    display: grid;
+    grid-template-columns: minmax(0, 400px) 1fr;
+    column-gap: var(--space-6);
+    align-items: end;
+  }
+
+  #clientes-content > *,
+  #duenos-content > * {
+    grid-column: 1 / -1;
+  }
+
+  #clientes-content > .cliente-busqueda,
+  #duenos-content > .cliente-busqueda {
+    grid-column: 1;
+    grid-row: 1;
+    margin: 0;
+  }
+
+  #clientes-content > .cliente-filtros,
+  #duenos-content > .cliente-filtros {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+  }
+
+  #pendientes-content,
+  #resolicitudes-content {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+    align-items: start;
+  }
+
+  #pendientes-content > .state-page,
+  #resolicitudes-content > .state-page {
+    grid-column: 1 / -1;
+  }
+
+  #pendientes-content .request-card,
+  #resolicitudes-content .request-card {
+    margin: 0;
+  }
+}
+
+@media (min-width: 1600px) {
+  #pendientes-content,
+  #resolicitudes-content {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  [data-admin-nav] .tabla--equipo {
+    --cols: 44px minmax(0, 1.2fr) minmax(0, 1.6fr) minmax(0, 1fr) 190px;
+  }
+
+  [data-admin-nav] .tabla--actividad {
+    --cols: 44px minmax(0, 1.2fr) minmax(0, 1.4fr) minmax(0, 1.4fr) 80px;
+  }
+
+  [data-admin-nav] .equipo-filas {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  [data-admin-nav] .equipo-filas > .equipo-fila {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1.2fr) minmax(0, 1.6fr) minmax(0, 1fr) 190px;
+    align-items: center;
+    column-gap: var(--space-4);
+    min-height: 56px;
+    padding: var(--space-2) var(--space-4);
+    margin: 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-strong);
+    border-top: none;
+    border-radius: 0;
+  }
+
+  [data-admin-nav] .equipo-filas > .equipo-fila:last-child {
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  }
+
+  [data-admin-nav] .equipo-filas > .equipo-fila .equipo-fila__datos {
+    display: contents;
+  }
+
+  [data-admin-nav] .equipo-fila__nombre {
+    grid-column: 2;
+    font-size: var(--fs-sm);
+  }
+
+  [data-admin-nav] .equipo-fila__email {
+    grid-column: 3;
+    font-size: var(--fs-sm);
+    overflow-wrap: anywhere;
+  }
+
+  [data-admin-nav] .equipo-fila__datos > .equipo-fila__detalle {
+    grid-column: 4;
+    font-size: var(--fs-sm);
+  }
+
+  [data-admin-nav] .equipo-fila__datos > .equipo-fila__estado {
+    grid-column: 5;
+    grid-row: 1;
+  }
+
+  [data-admin-nav] .equipo-fila__suspendida {
+    grid-column: 5;
+  }
+
+  [data-admin-nav] .equipo-filas > .actividad-fila {
+    grid-template-columns: 44px minmax(0, 1.2fr) minmax(0, 1.4fr) minmax(0, 1.4fr) 80px;
+  }
+
+  [data-admin-nav] .actividad-fila__encabezado {
+    grid-column: 2;
+  }
+
+  [data-admin-nav] .equipo-filas > .actividad-fila .actividad-fila__accion {
+    grid-column: 3;
+  }
+
+  [data-admin-nav] .equipo-filas > .actividad-fila .actividad-fila__referencia {
+    grid-column: 4;
+  }
+
+  [data-admin-nav] .actividad-fila__hora {
+    grid-column: 5;
+    grid-row: 1;
+    justify-self: end;
+    font-size: var(--fs-sm);
+  }
+
+  [data-admin-nav] .equipo-filas > .actividad-dia {
+    padding: var(--space-2) var(--space-4);
+    background: var(--color-surface-alt);
+    border: 1px solid var(--color-border-strong);
+    border-top: none;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--color-text-muted);
+  }
+
+  .app-shell--lateral-admin > .app-header .equipo-header__titulos,
+  .app-shell--lateral-admin > .app-header .equipo-header__titulos--con-accion {
+    position: static;
+    transform: none;
+    flex: 0 1 auto;
+    align-items: flex-start;
+    text-align: left;
+    margin: 0;
+    max-width: none;
+  }
+
+  [data-admin-nav] .equipo-header__titulo {
+    font-family: var(--font-display);
+    font-size: var(--fs-2xl);
+    font-weight: 800;
+  }
+
+  [data-admin-nav] .equipo-header__accion {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .tabla--clientes,
+  .tabla--duenos {
+    --cols: minmax(0, 1fr) minmax(0, 1.4fr) 120px 44px 44px;
+  }
+
+  .tabla-admin .cliente-admin-row__aviso,
+  .tabla-admin .dueno-admin-row__suspension {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  .tabla--reembolsos.tabla-encabezado,
+  .tabla-encabezado.tabla--reembolsos {
+    display: none;
+  }
+
+  [data-admin-nav] .tabla-encabezado.tabla--reembolsos[hidden] {
+    display: none;
+  }
+
+  .tabla-admin.tabla--reembolsos > .reembolso-row {
+    display: block;
+    padding: var(--space-4);
+  }
+
+  .tabla--reembolsos .cliente-admin-row__top {
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: var(--space-2);
+  }
+
+  .tabla--reembolsos .detail-row {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .tabla--reembolsos .detail-row > span:first-child {
+    position: static;
+    width: auto;
+    height: auto;
+    clip: auto;
+    color: var(--color-text-muted);
+  }
+
+  .tabla--reembolsos .reembolso-row > .btn {
+    margin-top: var(--space-3);
+  }
+}

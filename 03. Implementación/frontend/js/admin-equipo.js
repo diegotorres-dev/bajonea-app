@@ -1,3 +1,4 @@
+import { crearEncabezadoTabla } from './tabla-admin.js';
 import { apiFetch, ApiError } from './api.js';
 import { renderEmptyState } from './catalogo.js';
 import { requireAdmin } from './admin.js';
@@ -220,7 +221,7 @@ export async function initAdminComercioEquipo() {
     } else {
       const filas = h('div', { class: 'equipo-filas', 'data-testid': 'equipo-filas' });
       miembros.forEach((miembro) => filas.append(crearFilaDeMiembro(miembro)));
-      contenido.append(filas);
+      contenido.append(crearEncabezadoTabla('equipo', [{ etiqueta: '' }, { etiqueta: 'Integrante' }, { etiqueta: 'Email' }, { etiqueta: 'En el equipo desde' }, { etiqueta: 'Estado' }], 'encabezado-equipo'), filas);
     }
     lista.replaceChildren(crearChips(), soloLectura, contenido);
   }
@@ -235,7 +236,7 @@ export async function initAdminComercioEquipo() {
     } else {
       const filas = h('div', { class: 'equipo-filas', 'data-testid': 'equipo-filas' });
       invitaciones.forEach((invitacion) => filas.append(crearFilaDeSolicitud(invitacion)));
-      contenido.append(filas);
+      contenido.append(crearEncabezadoTabla('equipo', [{ etiqueta: '' }, { etiqueta: 'Invitado' }, { etiqueta: 'Enviada' }, { etiqueta: '' }, { etiqueta: 'Estado' }], 'encabezado-solicitudes'), filas);
     }
     lista.replaceChildren(introduccion, contenido);
   }

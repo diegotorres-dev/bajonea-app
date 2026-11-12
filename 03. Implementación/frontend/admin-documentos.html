@@ -6,8 +6,9 @@
 <title>Documentos por revisar — Bajoneá</title>
 <link rel="stylesheet" href="css/styles.css" />
 <link rel="stylesheet" href="css/escritorio.css" media="(min-width: 1024px)" />
+<script type="module" src="js/admin-shell.js"></script>
 </head>
-<body>
+<body data-admin-nav="documentos">
 <div class="app-shell">
   <header class="app-header">
     <a class="app-header__back app-header__back--tactil" href="admin-dashboard.html" aria-label="Volver" data-testid="btn-volver">
@@ -18,7 +19,7 @@
   <main class="app-main">
     <div class="screen-body screen-body--tight">
       <p class="doc-resumen" id="documentos-resumen" data-testid="resumen-documentos"></p>
-      <div id="documentos-contenido" aria-live="polite" data-testid="lista-documentos-por-revisar"></div>
+      <div class="tabla-admin tabla--documentos" id="documentos-contenido" aria-live="polite" data-testid="lista-documentos-por-revisar"></div>
     </div>
   </main>
 </div>

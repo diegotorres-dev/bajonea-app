@@ -7,6 +7,7 @@ import { cruzaMedianoche, recortarHora, textoRango } from './horarios.js';
 import { diasDesde } from './documentos-comun.js';
 import { crearControlesSuspension } from './admin-comercio-suspension.js';
 import { abrirHoja, campoTextarea, crearAviso } from './hoja.js';
+import { crearEncabezadoTabla } from './tabla-admin.js';
 
 function normalizarComercioAdmin(comercio) {
   normalizarCampos(comercio, ['nombre', 'razonSocial']);
@@ -312,8 +313,8 @@ function ordenarPorUrgencia(tarjetas, tiles, metricas, reembolsos) {
     .map((elemento, indice) => ({ elemento, indice, urgente: elemento.pendientes(metricas, reembolsos) > 0 }))
     .sort((a, b) => Number(b.urgente) - Number(a.urgente) || a.indice - b.indice)
     .map((entrada) => entrada.elemento);
-  const tope = document.getElementById('gestion-grid').previousElementSibling;
-  conUrgenciaPrimero(tarjetas).forEach((tarjeta) => tope.parentNode.insertBefore(tarjeta.nodo, tope));
+  const contenedor = document.getElementById('admin-alertas');
+  conUrgenciaPrimero(tarjetas).forEach((tarjeta) => contenedor.appendChild(tarjeta.nodo));
   tiles.splice(0, tiles.length, ...conUrgenciaPrimero(tiles));
 }
 
@@ -715,9 +716,8 @@ function renderComercioDetailSections(body, comercio) {
 
   const deliveryRow = crear('div', 'detail-row');
   const deliveryLabel = document.createElement('span');
-  deliveryLabel.innerHTML = `${ICONS.truck}<span style="margin-left:6px;">Delivery</span>`;
-  deliveryLabel.style.display = 'flex';
-  deliveryLabel.style.alignItems = 'center';
+  deliveryLabel.className = 'detail-row__etiqueta-icono';
+  deliveryLabel.innerHTML = `${ICONS.truck}<span>Delivery</span>`;
   deliveryRow.appendChild(deliveryLabel);
   const deliveryValor = crear('span', comercio.aceptaDelivery ? '' : '');
   deliveryValor.style.color = comercio.aceptaDelivery ? 'var(--color-success)' : 'var(--color-text-placeholder)';
@@ -727,9 +727,8 @@ function renderComercioDetailSections(body, comercio) {
 
   const retiroRow = crear('div', 'detail-row');
   const retiroLabel = document.createElement('span');
-  retiroLabel.innerHTML = `${ICONS.bag}<span style="margin-left:6px;">Retiro en local</span>`;
-  retiroLabel.style.display = 'flex';
-  retiroLabel.style.alignItems = 'center';
+  retiroLabel.className = 'detail-row__etiqueta-icono';
+  retiroLabel.innerHTML = `${ICONS.bag}<span>Retiro en local</span>`;
   retiroRow.appendChild(retiroLabel);
   const retiroValor = document.createElement('span');
   retiroValor.style.color = comercio.aceptaRetiro ? 'var(--color-success)' : 'var(--color-text-placeholder)';
@@ -788,7 +787,7 @@ function renderDetalle(container, comercio, onResuelto) {
 
   const hero = crear('div', 'request-hero');
   const avatar = crear('div', 'comercio-detail-header__avatar');
-  avatar.style.marginBottom = '12px';
+  avatar.classList.add('admin-mb-12');
   pintarAvatarComercio(avatar, comercio);
   hero.appendChild(avatar);
   const h1 = document.createElement('h1');
@@ -895,8 +894,7 @@ function mostrarModalDetalleComercio(comercio, onSuspendido) {
 
   const body = crear('div', 'product-modal-sheet__body');
   const h2 = document.createElement('h2');
-  h2.style.marginBottom = '16px';
-  h2.style.textAlign = 'center';
+  h2.className = 'admin-h2-centrado';
   h2.textContent = comercio.nombre;
   body.appendChild(h2);
 
@@ -1024,6 +1022,7 @@ export async function initAdminComercios() {
     return;
   }
 
+  container.appendChild(crearEncabezadoTabla('comercios', [{ etiqueta: '' }, { etiqueta: 'Comercio' }, { etiqueta: 'Tipo' }, { etiqueta: 'Estado' }, { etiqueta: '' }], 'encabezado-comercios'));
   comercios
     .sort((a, b) => a.nombre.localeCompare(b.nombre))
     .forEach((comercio) => container.appendChild(renderComercioAdminRow(comercio, initAdminComercios)));
@@ -1044,7 +1043,7 @@ function mostrarModalCategoria(categoriaExistente, onGuardado) {
 
   const body = crear('div', 'product-modal-sheet__body');
   const h2 = document.createElement('h2');
-  h2.style.marginBottom = '16px';
+  h2.className = 'admin-h2-mb-16';
   h2.textContent = esEdicion ? 'Editar Categoría' : 'Nueva Categoría';
   body.appendChild(h2);
 
@@ -1102,7 +1101,7 @@ function mostrarModalCategoria(categoriaExistente, onGuardado) {
 
   const submitBtn = crear('button', 'btn btn-primary');
   submitBtn.type = 'submit';
-  submitBtn.style.marginTop = '8px';
+  submitBtn.classList.add('admin-mt-8');
   submitBtn.setAttribute('data-testid', 'btn-guardar-categoria');
   submitBtn.textContent = esEdicion ? 'Guardar Cambios' : 'Crear Categoría';
   form.appendChild(submitBtn);
@@ -1178,6 +1177,14 @@ function mostrarModalCategoria(categoriaExistente, onGuardado) {
   });
 }
 
+function crearEstadoDeFila(activo, textoActivo, textoInactivo) {
+  const estado = crear('span', `categoria-row__estado${activo ? '' : ' categoria-row__estado--inactivo'}`);
+  estado.hidden = true;
+  estado.setAttribute('data-testid', 'estado-fila');
+  estado.textContent = activo ? textoActivo : textoInactivo;
+  return estado;
+}
+
 function renderCategoriaRow(categoria, { onEditar }) {
   const row = crear('div', `categoria-row${categoria.activo ? '' : ' categoria-row--inactivo'}`);
   row.setAttribute('data-testid', `categoria-item-${categoria.id}`);
@@ -1194,6 +1201,8 @@ function renderCategoriaRow(categoria, { onEditar }) {
   p.textContent = labelCantidadProductos(categoria.cantidadProductos);
   info.appendChild(p);
   row.appendChild(info);
+
+  row.appendChild(crearEstadoDeFila(categoria.activo, 'Activa', 'Inactiva'));
 
   const editarBtn = crear('button', 'categoria-row__edit-btn');
   editarBtn.type = 'button';
@@ -1263,7 +1272,8 @@ export async function initAdminCategorias() {
       return;
     }
 
-    const lista = crear('div', 'categoria-list');
+    content.appendChild(crearEncabezadoTabla('categorias', [{ etiqueta: '' }, { etiqueta: 'Nombre' }, { etiqueta: 'Productos' }, { etiqueta: 'Estado' }, { etiqueta: '' }], 'encabezado-categorias'));
+    const lista = crear('div', 'categoria-list tabla-admin tabla--categorias');
     filtradas.forEach((categoria) => {
       lista.appendChild(
         renderCategoriaRow(categoria, {
@@ -1291,6 +1301,9 @@ export async function initAdminCategorias() {
   }
 
   fab.addEventListener('click', () => abrirModalCategoria(null));
+  const nuevaEscritorio = document.getElementById('nueva-categoria-escritorio');
+  nuevaEscritorio.addEventListener('click', () => abrirModalCategoria(null));
+  nuevaEscritorio.disabled = false;
   fab.disabled = false;
 
   render();
@@ -1307,7 +1320,7 @@ function mostrarModalTag(tagExistente, onGuardado) {
 
   const body = crear('div', 'product-modal-sheet__body');
   const h2 = document.createElement('h2');
-  h2.style.marginBottom = '16px';
+  h2.className = 'admin-h2-mb-16';
   h2.textContent = esEdicion ? 'Editar Tag' : 'Nuevo Tag';
   body.appendChild(h2);
 
@@ -1366,7 +1379,7 @@ function mostrarModalTag(tagExistente, onGuardado) {
 
   const submitBtn = crear('button', 'btn btn-primary');
   submitBtn.type = 'submit';
-  submitBtn.style.marginTop = '8px';
+  submitBtn.classList.add('admin-mt-8');
   submitBtn.setAttribute('data-testid', 'btn-guardar-tag');
   submitBtn.textContent = esEdicion ? 'Guardar Cambios' : 'Crear Tag';
   form.appendChild(submitBtn);
@@ -1459,6 +1472,8 @@ function renderTagRow(tag, { onEditar }) {
   info.appendChild(p);
   row.appendChild(info);
 
+  row.appendChild(crearEstadoDeFila(tag.activo, 'Activo', 'Inactivo'));
+
   const editarBtn = crear('button', 'categoria-row__edit-btn');
   editarBtn.type = 'button';
   editarBtn.setAttribute('aria-label', 'Editar tag');
@@ -1527,7 +1542,8 @@ export async function initAdminTags() {
       return;
     }
 
-    const lista = crear('div', 'categoria-list');
+    content.appendChild(crearEncabezadoTabla('categorias', [{ etiqueta: '' }, { etiqueta: 'Nombre' }, { etiqueta: 'Productos' }, { etiqueta: 'Estado' }, { etiqueta: '' }], 'encabezado-tags'));
+    const lista = crear('div', 'categoria-list tabla-admin tabla--categorias');
     filtrados.forEach((tag) => {
       lista.appendChild(
         renderTagRow(tag, {
@@ -1555,6 +1571,9 @@ export async function initAdminTags() {
   }
 
   fab.addEventListener('click', () => abrirModalTag(null));
+  const nuevoEscritorio = document.getElementById('nuevo-tag-escritorio');
+  nuevoEscritorio.addEventListener('click', () => abrirModalTag(null));
+  nuevoEscritorio.disabled = false;
   fab.disabled = false;
 
   render();
@@ -1571,7 +1590,7 @@ function crearCampoCargo(idPrefix, tituloLabel, tipoDefault) {
   const row = crear('div', 'schedule-row');
 
   const selectShell = crear('div', 'select-shell');
-  selectShell.style.flex = '1';
+  selectShell.classList.add('admin-flex-1');
   const select = document.createElement('select');
   select.id = `${idPrefix}-tipo`;
   select.setAttribute('data-testid', `select-tipo-${idPrefix}`);
@@ -1589,7 +1608,7 @@ function crearCampoCargo(idPrefix, tituloLabel, tipoDefault) {
   row.appendChild(selectShell);
 
   const inputShell = crear('div', 'input-shell');
-  inputShell.style.flex = '1';
+  inputShell.classList.add('admin-flex-1');
   const input = document.createElement('input');
   input.type = 'number';
   input.min = '0';
@@ -1613,63 +1632,56 @@ function crearCampoCargo(idPrefix, tituloLabel, tipoDefault) {
   return { field, select, input, inputShell, error, errorTexto };
 }
 
-function mostrarModalConfirmarTarifa(datos, formBackdrop, onGuardado) {
-  const backdrop = crear('div', 'modal-backdrop');
-  backdrop.setAttribute('data-testid', 'modal-confirmar-tarifa');
-  const resumenCliente = `${formatearCargo(datos.cargoCliente, datos.tipoCargoCliente)} al cliente`;
-  const resumenComercio = `${formatearCargo(datos.cargoComercio, datos.tipoCargoComercio)} al comercio`;
-  backdrop.innerHTML = `
-    <div class="modal-sheet">
-      <h2 class="modal-sheet__title">¿Confirmás aplicar esta tarifa desde ahora?</h2>
-      <p class="modal-sheet__text" style="margin-bottom:20px;">${resumenCliente} · ${resumenComercio}</p>
-      <button class="btn btn-primary" type="button" id="confirmar-tarifa-btn" style="margin-bottom:12px;" data-testid="btn-confirmar-nueva-tarifa">Confirmar</button>
-      <button class="btn btn-tertiary" type="button" id="cancelar-tarifa-btn" data-testid="btn-cancelar-confirmar-tarifa">Cancelar</button>
-    </div>
-  `;
-  document.body.appendChild(backdrop);
+function crearFilaComparacionTarifa(etiqueta, antes, ahora) {
+  const fila = crear('div', 'tarifa-comparacion__fila');
+  const nombre = crear('span', 'tarifa-comparacion__etiqueta');
+  nombre.textContent = etiqueta;
+  const valores = crear('span', 'tarifa-comparacion__valores');
+  const valorAntes = crear('span', 'tarifa-comparacion__antes');
+  valorAntes.textContent = antes;
+  const flecha = crear('span', 'tarifa-comparacion__flecha');
+  flecha.setAttribute('aria-hidden', 'true');
+  flecha.textContent = '→';
+  const valorAhora = crear('strong', 'tarifa-comparacion__ahora');
+  valorAhora.textContent = ahora;
+  valores.append(valorAntes, flecha, valorAhora);
+  fila.append(nombre, valores);
+  return fila;
+}
 
-  document.getElementById('cancelar-tarifa-btn').addEventListener('click', () => backdrop.remove());
-
-  const confirmarBtn = document.getElementById('confirmar-tarifa-btn');
-  confirmarBtn.addEventListener('click', async () => {
-    confirmarBtn.disabled = true;
-    try {
-      await apiFetch('/administrador/tarifas', { method: 'POST', body: datos });
-      backdrop.remove();
-      formBackdrop.remove();
-      showToast('Tarifa creada correctamente');
-      await onGuardado();
-    } catch (error) {
-      showToast(error instanceof ApiError ? error.message : 'No pudimos guardar la tarifa', 'error');
-      confirmarBtn.disabled = false;
-    }
-  });
-
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
+function confirmarNuevaTarifa(datos, vigente, { alGuardado }) {
+  const comparacion = crear('div', 'tarifa-comparacion');
+  comparacion.setAttribute('data-testid', 'comparacion-tarifa');
+  const antesCliente = vigente ? formatearCargo(vigente.cargoCliente, vigente.tipoCargoCliente) : 'Sin tarifa';
+  const antesComercio = vigente ? formatearCargo(vigente.cargoComercio, vigente.tipoCargoComercio) : 'Sin tarifa';
+  comparacion.append(
+    crearFilaComparacionTarifa('Cargo al cliente', antesCliente, formatearCargo(datos.cargoCliente, datos.tipoCargoCliente)),
+    crearFilaComparacionTarifa('Cargo al comercio', antesComercio, formatearCargo(datos.cargoComercio, datos.tipoCargoComercio)),
+  );
+  abrirHoja({
+    titulo: '¿Aplicar la nueva tarifa?',
+    texto: 'Se aplica a los pedidos que se confirmen desde ahora. Los pedidos ya creados conservan la tarifa con la que se confirmaron.',
+    parrafos: ['Si un cliente está por confirmar su pedido, va a ver el total actualizado antes de pagar.'],
+    contenido: comparacion,
+    testid: 'modal-confirmar-tarifa',
+    acciones: [
+      {
+        etiqueta: 'Aplicar tarifa',
+        etiquetaEnviando: 'Aplicando…',
+        variante: 'primaria',
+        testid: 'btn-confirmar-nueva-tarifa',
+        alPulsar: async () => {
+          await apiFetch('/administrador/tarifas', { method: 'POST', body: datos });
+          showToast('Tarifa creada correctamente');
+          await alGuardado();
+        },
+      },
+      { etiqueta: 'Cancelar', variante: 'segura', inicial: true, testid: 'btn-cancelar-confirmar-tarifa' },
+    ],
   });
 }
 
-function mostrarModalNuevaTarifa(onGuardado) {
-  const backdrop = crear('div', 'modal-backdrop');
-  backdrop.setAttribute('data-testid', 'modal-nueva-tarifa');
-  const sheet = crear('div', 'product-modal-sheet');
-  const handle = crear('div', 'product-modal-sheet__handle');
-  handle.innerHTML = '<span></span>';
-  sheet.appendChild(handle);
-
-  const body = crear('div', 'product-modal-sheet__body');
-  const h2 = document.createElement('h2');
-  h2.style.marginBottom = '6px';
-  h2.textContent = 'Nueva configuración de tarifa';
-  body.appendChild(h2);
-  const descripcion = crear('p', 'product-modal-sheet__description');
-  descripcion.style.marginBottom = '16px';
-  descripcion.textContent = 'Se aplica a todos los pedidos nuevos a partir de este momento.';
-  body.appendChild(descripcion);
-
+function crearFormularioTarifa({ vigente, alGuardado, alCancelar = null }) {
   const form = crear('form', 'form');
   form.setAttribute('novalidate', '');
 
@@ -1680,22 +1692,19 @@ function mostrarModalNuevaTarifa(onGuardado) {
 
   const submitBtn = crear('button', 'btn btn-primary');
   submitBtn.type = 'submit';
-  submitBtn.style.marginTop = '8px';
+  submitBtn.classList.add('admin-mt-8');
   submitBtn.setAttribute('data-testid', 'btn-guardar-nueva-tarifa');
   submitBtn.textContent = 'Guardar nueva tarifa';
   form.appendChild(submitBtn);
 
-  const cancelBtn = crear('button', 'btn btn-tertiary');
-  cancelBtn.type = 'button';
-  cancelBtn.setAttribute('data-testid', 'btn-cancelar-nueva-tarifa');
-  cancelBtn.textContent = 'Cancelar';
-  cancelBtn.addEventListener('click', () => backdrop.remove());
-  form.appendChild(cancelBtn);
-
-  body.appendChild(form);
-  sheet.appendChild(body);
-  backdrop.appendChild(sheet);
-  document.body.appendChild(backdrop);
+  if (alCancelar) {
+    const cancelBtn = crear('button', 'btn btn-tertiary');
+    cancelBtn.type = 'button';
+    cancelBtn.setAttribute('data-testid', 'btn-cancelar-nueva-tarifa');
+    cancelBtn.textContent = 'Cancelar';
+    cancelBtn.addEventListener('click', alCancelar);
+    form.appendChild(cancelBtn);
+  }
 
   function limpiarError(campo) {
     campo.inputShell.classList.remove('input-shell--error');
@@ -1733,8 +1742,41 @@ function mostrarModalNuevaTarifa(onGuardado) {
       tipoCargoComercio: campoComercio.select.value,
     };
 
-    mostrarModalConfirmarTarifa(datos, backdrop, onGuardado);
+    confirmarNuevaTarifa(datos, vigente, { alGuardado });
   });
+
+  return form;
+}
+
+function mostrarModalNuevaTarifa(onGuardado, vigente) {
+  const backdrop = crear('div', 'modal-backdrop');
+  backdrop.setAttribute('data-testid', 'modal-nueva-tarifa');
+  const sheet = crear('div', 'product-modal-sheet');
+  const handle = crear('div', 'product-modal-sheet__handle');
+  handle.innerHTML = '<span></span>';
+  sheet.appendChild(handle);
+
+  const body = crear('div', 'product-modal-sheet__body');
+  const h2 = document.createElement('h2');
+  h2.className = 'admin-h2-mb-6';
+  h2.textContent = 'Nueva configuración de tarifa';
+  body.appendChild(h2);
+  const descripcion = crear('p', 'product-modal-sheet__description');
+  descripcion.classList.add('admin-mb-16');
+  descripcion.textContent = 'Se aplica a todos los pedidos nuevos a partir de este momento.';
+  body.appendChild(descripcion);
+
+  body.appendChild(crearFormularioTarifa({
+    vigente,
+    alGuardado: async () => {
+      backdrop.remove();
+      await onGuardado();
+    },
+    alCancelar: () => backdrop.remove(),
+  }));
+  sheet.appendChild(body);
+  backdrop.appendChild(sheet);
+  document.body.appendChild(backdrop);
 
   backdrop.addEventListener('click', (event) => {
     if (event.target === backdrop) {
@@ -1765,12 +1807,12 @@ export async function initAdminTarifas() {
     const section = crear('div', 'detail-section');
 
     const badge = crear('span', 'status-badge status-badge--nueva');
-    badge.style.marginBottom = '12px';
+    badge.classList.add('admin-mb-12');
     badge.textContent = `Activa desde ${formatearSoloFecha(vigente.fechaVigencia)}`;
     section.appendChild(badge);
 
     const bar = crear('div', 'stats-bar');
-    bar.style.margin = '12px 0 16px';
+    bar.classList.add('admin-stats-vigente');
     [
       { titulo: formatearCargo(vigente.cargoCliente, vigente.tipoCargoCliente), label: `Cargo al cliente · ${labelResumenCargo(vigente.tipoCargoCliente)}` },
       { titulo: formatearCargo(vigente.cargoComercio, vigente.tipoCargoComercio), label: `Cargo al comercio · ${labelResumenCargo(vigente.tipoCargoComercio)}` },
@@ -1790,7 +1832,7 @@ export async function initAdminTarifas() {
     nuevaBtn.type = 'button';
     nuevaBtn.setAttribute('data-testid', 'btn-nueva-tarifa');
     nuevaBtn.textContent = '+ Nueva configuración';
-    nuevaBtn.addEventListener('click', () => mostrarModalNuevaTarifa(recargar));
+    nuevaBtn.addEventListener('click', () => mostrarModalNuevaTarifa(recargar, vigente));
     section.appendChild(nuevaBtn);
 
     return section;
@@ -1817,20 +1859,36 @@ export async function initAdminTarifas() {
     return section;
   }
 
+  function renderFormularioEscritorio() {
+    const tarjeta = crear('section', 'tarifa-formulario');
+    tarjeta.setAttribute('data-testid', 'tarifa-formulario');
+    tarjeta.setAttribute('aria-labelledby', 'tarifa-formulario-titulo');
+    const titulo = crear('h2', 'tarifa-formulario__titulo');
+    titulo.id = 'tarifa-formulario-titulo';
+    titulo.textContent = 'Nueva configuración de tarifa';
+    const descripcion = crear('p', 'tarifa-formulario__texto');
+    descripcion.textContent = 'Se aplica a todos los pedidos nuevos a partir de este momento.';
+    tarjeta.append(titulo, descripcion, crearFormularioTarifa({ vigente, alGuardado: recargar }));
+    return tarjeta;
+  }
+
   function render() {
     content.innerHTML = '';
 
     const headingVigente = crear('p', 'section-heading');
-    headingVigente.style.marginTop = '0';
+    headingVigente.classList.add('section-heading--sin-margen');
     headingVigente.textContent = 'Tarifa vigente';
     content.appendChild(headingVigente);
     content.appendChild(renderVigente());
 
     const headingHistorial = crear('p', 'section-heading');
-    headingHistorial.style.marginTop = '24px';
+    headingHistorial.classList.add('section-heading--separado');
     headingHistorial.textContent = 'Historial';
     content.appendChild(headingHistorial);
     content.appendChild(renderHistorial());
+    if (window.matchMedia('(min-width: 1024px)').matches) {
+      content.appendChild(renderFormularioEscritorio());
+    }
   }
 
   render();
@@ -1983,7 +2041,8 @@ export async function initAdminReembolsos() {
       return;
     }
 
-    const lista = crear('div', 'cliente-admin-list');
+    contenido.appendChild(crearEncabezadoTabla('reembolsos', [{ etiqueta: 'Reembolso' }, { etiqueta: 'Pedido' }, { etiqueta: 'Cliente' }, { etiqueta: 'Comercio' }, { etiqueta: 'Monto' }, { etiqueta: 'Fecha' }, { etiqueta: 'Motivo' }, { etiqueta: '' }], 'encabezado-reembolsos'));
+    const lista = crear('div', 'cliente-admin-list tabla-admin tabla--reembolsos');
     visibles.forEach((nota) => lista.appendChild(renderReembolsoRow(nota, recargar)));
     contenido.appendChild(lista);
   }
@@ -2158,6 +2217,10 @@ function renderTarjetaCambio(cambio, comercio) {
   const titulo = crear('p', 'detail-section__title');
   titulo.textContent = ETIQUETAS_CAMPO_CAMBIO[cambio.campo] || cambio.campo;
   tarjeta.appendChild(titulo);
+  const marca = crear('span', 'cambio-card__marca');
+  marca.hidden = true;
+  marca.textContent = 'Cambió';
+  tarjeta.appendChild(marca);
   if (cambio.campo === 'FOTO_PERFIL') {
     renderCambioFoto(tarjeta, cambio, comercio);
   } else {
@@ -2332,7 +2395,7 @@ function renderResolicitudDetalle(container, resolicitud, onResuelto) {
 
   const hero = crear('div', 'request-hero');
   const avatar = crear('div', 'comercio-detail-header__avatar');
-  avatar.style.marginBottom = '12px';
+  avatar.classList.add('admin-mb-12');
   pintarAvatarComercio(avatar, comercio);
   hero.appendChild(avatar);
   const h1 = document.createElement('h1');
@@ -2360,6 +2423,9 @@ function renderResolicitudDetalle(container, resolicitud, onResuelto) {
   resumen.textContent = cambios.length === 1 ? '1 campo cambió' : `${cambios.length} campos cambiaron`;
   body.appendChild(resumen);
 
+  if (cambios.length > 0) {
+    body.appendChild(crearEncabezadoTabla('cambios', [{ etiqueta: 'Campo' }, { etiqueta: 'Antes' }, { etiqueta: 'Ahora' }, { etiqueta: '' }], 'encabezado-cambios'));
+  }
   cambios.forEach((cambio) => body.appendChild(renderTarjetaCambio(cambio, comercio)));
 
   const camposCambiados = new Set(cambios.map((cambio) => cambio.campo));

@@ -10160,3 +10160,156 @@ a.profile-link {
 .perfil-contenido {
   display: contents;
 }
+
+.app-header__title--admin {
+  position: static;
+  transform: none;
+  margin: 0 auto;
+  color: var(--color-text);
+}
+
+.admin-saludo {
+  margin-bottom: 24px;
+}
+
+.admin-saludo__avatar {
+  background: var(--color-primary);
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+
+.section-heading--separado {
+  margin-top: 24px;
+}
+
+.section-heading--sin-margen {
+  margin-top: 0;
+}
+
+.admin-cerrar-sesion {
+  text-align: center;
+  margin-top: 32px;
+}
+
+.skeleton--bloque-96 {
+  height: 96px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.skeleton--bloque-72 {
+  height: 72px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.skeleton--bloque-120 {
+  height: 120px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.skeleton--tarjeta-128 {
+  height: 128px;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.skeleton--bloque-140 {
+  height: 140px;
+  margin-bottom: 16px;
+}
+
+.skeleton--bloque-96-auto {
+  height: 96px;
+  margin-bottom: 16px;
+}
+
+.skeleton--bloque-64-70 {
+  height: 64px;
+  width: 70%;
+  margin-bottom: 12px;
+}
+
+.skeleton--linea-titulo-55 {
+  height: 16px;
+  width: 55%;
+  margin-bottom: 10px;
+}
+
+.skeleton--linea-titulo-50 {
+  height: 16px;
+  width: 50%;
+  margin-bottom: 10px;
+}
+
+.skeleton--linea-titulo-60 {
+  height: 16px;
+  width: 60%;
+  margin-bottom: 10px;
+}
+
+.skeleton--linea-texto-75 {
+  height: 12px;
+  width: 75%;
+}
+
+.skeleton--linea-texto-80 {
+  height: 12px;
+  width: 80%;
+}
+
+.detail-row__etiqueta-icono {
+  display: flex;
+  align-items: center;
+}
+
+.detail-row__etiqueta-icono > span {
+  margin-left: 6px;
+}
+
+.admin-mb-12 {
+  margin-bottom: 12px;
+}
+
+.admin-mb-16 {
+  margin-bottom: 16px;
+}
+
+.admin-mt-8 {
+  margin-top: 8px;
+}
+
+.admin-h2-centrado {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.admin-h2-mb-16 {
+  margin-bottom: 16px;
+}
+
+.admin-h2-mb-6 {
+  margin-bottom: 6px;
+}
+
+.admin-flex-1 {
+  flex: 1;
+}
+
+.admin-stats-vigente {
+  margin: 12px 0 16px;
+}
+
+.admin-cerrar-sesion .btn-text,
+.comercio-admin-row__detalle {
+  position: relative;
+}
+
+.admin-cerrar-sesion .btn-text::after,
+.comercio-admin-row__detalle::after {
+  content: '';
+  position: absolute;
+  inset: -14px -10px;
+}

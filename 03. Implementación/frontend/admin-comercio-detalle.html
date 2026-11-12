@@ -6,14 +6,15 @@
 <title>Revisión de solicitud — Bajoneá</title>
 <link rel="stylesheet" href="css/styles.css" />
 <link rel="stylesheet" href="css/escritorio.css" media="(min-width: 1024px)" />
+<script type="module" src="js/admin-shell.js"></script>
 </head>
-<body>
+<body data-admin-nav="pendientes">
 <div class="app-shell">
   <header class="app-header">
-    <button class="app-header__back" type="button" onclick="history.back()" aria-label="Volver" data-testid="btn-volver">
+    <button class="app-header__back" type="button" data-volver="admin-comercios-pendientes.html" aria-label="Volver" data-testid="btn-volver">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
-    <span class="app-header__title" style="position:static;transform:none;margin:0 auto;color:var(--color-text);">Revisión de Solicitud</span>
+    <span class="app-header__title app-header__title--admin">Revisión de Solicitud</span>
   </header>
   <main class="app-main">
     <div id="detalle-content" data-testid="detalle-comercio-pendiente"></div>

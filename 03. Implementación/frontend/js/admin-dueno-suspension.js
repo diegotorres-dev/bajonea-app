@@ -109,8 +109,8 @@ function tarjetaDeComercioASuspender(comercio, previa) {
 
 function esperaDeLista(testid) {
   return h('div', { class: 'dueno-comercio dueno-comercio--espera', 'aria-hidden': 'true', 'data-testid': testid }, [
-    h('div', { class: 'skeleton', style: 'height:16px;width:50%;margin-bottom:10px;' }),
-    h('div', { class: 'skeleton', style: 'height:12px;width:80%;' }),
+    h('div', { class: 'skeleton skeleton--linea-titulo-50' }),
+    h('div', { class: 'skeleton skeleton--linea-texto-80' }),
   ]);
 }
 

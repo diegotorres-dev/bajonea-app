@@ -1,5 +1,6 @@
 import { apiFetch, getUsuario } from './api.js';
 import { showToast } from './catalogo.js';
+import { crearEncabezadoTabla } from './tabla-admin.js';
 import { h, mostrarAvisoFijo } from './form-utils.js';
 import { normalizarCampos } from './validators.js';
 import { mensajeDeError } from './documentos-comun.js';
@@ -109,15 +110,16 @@ export async function initAdminDuenos() {
 
   const contador = texto('p', 'cliente-contador', '', { role: 'status', 'aria-live': 'polite', 'data-testid': 'contador-duenos' });
   const avisoDestacado = h('div', { 'data-testid': 'aviso-dueno-destacado' });
-  const lista = h('div', { class: 'cliente-admin-list', id: 'duenos-lista', 'data-testid': 'duenos-lista' });
+  const lista = h('div', { class: 'cliente-admin-list tabla-admin tabla--duenos', id: 'duenos-lista', 'data-testid': 'duenos-lista' });
+  const encabezado = crearEncabezadoTabla('duenos', [{ etiqueta: 'Nombre' }, { etiqueta: 'Contacto' }, { etiqueta: 'Estado' }, { etiqueta: 'Novedades' }, { etiqueta: '' }], 'encabezado-duenos');
   const avisoCarga = h('div', { 'data-testid': 'aviso-duenos' });
 
-  contenedor.replaceChildren(buscador, filtros, contador, avisoDestacado, avisoCarga, lista);
+  contenedor.replaceChildren(buscador, filtros, contador, avisoDestacado, avisoCarga, encabezado, lista);
 
   function esperar() {
     lista.replaceChildren(...[0, 1, 2, 3].map(() => h('div', { class: 'cliente-admin-row cliente-admin-row--espera', 'aria-hidden': 'true' }, [
-      h('div', { class: 'skeleton', style: 'height:16px;width:55%;margin-bottom:10px;' }),
-      h('div', { class: 'skeleton', style: 'height:12px;width:75%;' }),
+      h('div', { class: 'skeleton skeleton--linea-titulo-55' }),
+      h('div', { class: 'skeleton skeleton--linea-texto-75' }),
     ])));
     contador.textContent = '';
   }

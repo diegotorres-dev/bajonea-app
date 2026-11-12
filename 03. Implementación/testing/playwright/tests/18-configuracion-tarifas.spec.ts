@@ -149,8 +149,14 @@ test.describe('Configuración de Tarifas (Administrador)', () => {
 
     const modalConfirmar = page.getByTestId('modal-confirmar-tarifa');
     await expect(modalConfirmar).toBeVisible();
-    await expect(modalConfirmar).toContainText('$250 al cliente');
-    await expect(modalConfirmar).toContainText('3% al comercio');
+    await expect(modalConfirmar).toContainText('¿Aplicar la nueva tarifa?');
+    const comparacion = page.getByTestId('comparacion-tarifa');
+    await expect(comparacion).toContainText(formatearCargoTest(vigenteAntes.cargoCliente, vigenteAntes.tipoCargoCliente));
+    await expect(comparacion).toContainText('$250');
+    await expect(comparacion).toContainText(formatearCargoTest(vigenteAntes.cargoComercio, vigenteAntes.tipoCargoComercio));
+    await expect(comparacion).toContainText('3%');
+    await expect(modalConfirmar).toContainText('Los pedidos ya creados conservan la tarifa con la que se confirmaron');
+    await expect(page.getByTestId('btn-confirmar-nueva-tarifa')).toHaveText('Aplicar tarifa');
 
     await page.getByTestId('btn-cancelar-confirmar-tarifa').click();
     await expect(modalConfirmar).toHaveCount(0);

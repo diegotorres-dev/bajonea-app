@@ -84,8 +84,8 @@ async function pintarBandeja(contenedor) {
     });
     if (estado.cargando) {
       lista.replaceChildren(...[0, 1, 2].map(() => h('div', { class: 'soporte-fila soporte-fila--espera', 'aria-hidden': 'true' }, [
-        h('div', { class: 'skeleton', style: 'height:16px;width:60%;margin-bottom:10px;' }),
-        h('div', { class: 'skeleton', style: 'height:12px;width:80%;' }),
+        h('div', { class: 'skeleton skeleton--linea-titulo-60' }),
+        h('div', { class: 'skeleton skeleton--linea-texto-80' }),
       ])));
       return;
     }
@@ -489,8 +489,8 @@ function pintarDetalle(contenedor, detalle, avisoInicial = null) {
 
 async function iniciarDetalle(contenedor, id) {
   contenedor.replaceChildren(
-    h('div', { class: 'skeleton', style: 'height:140px;margin-bottom:16px;', 'aria-hidden': 'true' }),
-    h('div', { class: 'skeleton', style: 'height:64px;width:70%;margin-bottom:12px;', 'aria-hidden': 'true' }),
+    h('div', { class: 'skeleton skeleton--bloque-140', 'aria-hidden': 'true' }),
+    h('div', { class: 'skeleton skeleton--bloque-64-70', 'aria-hidden': 'true' }),
   );
   try {
     pintarDetalle(contenedor, await apiFetch(`/administrador/reclamos/${id}`, OPCIONES_API));

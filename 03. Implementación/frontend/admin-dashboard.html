@@ -6,14 +6,19 @@
 <title>Panel del administrador — Bajoneá</title>
 <link rel="stylesheet" href="css/styles.css" />
 <link rel="stylesheet" href="css/escritorio.css" media="(min-width: 1024px)" />
+<script type="module" src="js/admin-shell.js"></script>
 </head>
-<body>
+<body data-admin-nav="panel">
 <div class="app-shell">
   <div id="top-bar-slot"></div>
   <main class="app-main">
-    <div class="screen-body">
-      <div class="summary-card" style="margin-bottom:24px;">
-        <div class="summary-card__icon" id="admin-avatar" style="background:var(--color-primary);color:#ffffff;font-family:var(--font-display);font-weight:800;">AD</div>
+    <div class="screen-body admin-panel">
+      <div class="admin-panel__cabecera" hidden>
+        <h1 class="admin-panel__titulo" data-testid="titulo-panel-admin">Panel</h1>
+        <p class="admin-panel__bajada">Lo que necesita tu atención y accesos a la gestión de la plataforma.</p>
+      </div>
+      <div class="summary-card admin-saludo">
+        <div class="summary-card__icon admin-saludo__avatar" id="admin-avatar">AD</div>
         <div class="summary-card__body">
           <p>Administrador</p>
           <h3 id="admin-nombre" data-testid="nombre-admin"><span class="skeleton skeleton-linea-corta"></span></h3>
@@ -21,6 +26,7 @@
       </div>
 
       <p class="section-heading">Requieren Atención</p>
+      <div class="admin-alertas" id="admin-alertas">
       <a class="alert-card" href="admin-comercios-pendientes.html" id="alert-comercios-pendientes" data-testid="btn-comercios-pendientes">
         <div class="alert-card__icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><line x1="3" y1="9" x2="21" y2="9"/></svg>
@@ -61,11 +67,12 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
         </div>
       </a>
+      </div>
 
-      <p class="section-heading" style="margin-top:24px;">Gestión</p>
+      <p class="section-heading section-heading--separado">Gestión</p>
       <div class="stat-tile-grid" id="gestion-grid" data-testid="grilla-gestion-admin"></div>
 
-      <div style="text-align:center;margin-top:32px;">
+      <div class="admin-cerrar-sesion">
         <button type="button" class="btn-text" id="cerrar-sesion-btn" data-testid="btn-cerrar-sesion">Cerrar sesión</button>
       </div>
     </div>

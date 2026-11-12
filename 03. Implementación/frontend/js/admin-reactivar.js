@@ -12,8 +12,8 @@ const LINEAS_QUE_VA_A_PASAR = [
 
 function esperaDeLista() {
   return h('div', { class: 'dueno-comercio dueno-comercio--espera', 'aria-hidden': 'true', 'data-testid': 'reactivar-previa-cargando' }, [
-    h('div', { class: 'skeleton', style: 'height:16px;width:50%;margin-bottom:10px;' }),
-    h('div', { class: 'skeleton', style: 'height:12px;width:80%;' }),
+    h('div', { class: 'skeleton skeleton--linea-titulo-50' }),
+    h('div', { class: 'skeleton skeleton--linea-texto-80' }),
   ]);
 }
 

@@ -6,11 +6,12 @@
 <title>Revisión de re-solicitud — Bajoneá</title>
 <link rel="stylesheet" href="css/styles.css" />
 <link rel="stylesheet" href="css/escritorio.css" media="(min-width: 1024px)" />
+<script type="module" src="js/admin-shell.js"></script>
 </head>
-<body>
+<body data-admin-nav="resolicitudes">
 <div class="app-shell">
   <header class="app-header app-header--con-pill">
-    <button class="app-header__back" type="button" onclick="history.back()" aria-label="Volver" data-testid="btn-volver">
+    <button class="app-header__back" type="button" data-volver="admin-resolicitudes.html" aria-label="Volver" data-testid="btn-volver">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <span class="app-header__title">Re-solicitud</span>
@@ -19,9 +20,9 @@
   <main class="app-main">
     <div id="detalle-content" data-testid="detalle-resolicitud" aria-busy="true">
       <div class="screen-body screen-body--tight">
-        <div class="skeleton" style="height:96px;width:100%;margin-bottom:16px;"></div>
-        <div class="skeleton" style="height:72px;width:100%;margin-bottom:16px;"></div>
-        <div class="skeleton" style="height:120px;width:100%;margin-bottom:16px;"></div>
+        <div class="skeleton skeleton--bloque-96"></div>
+        <div class="skeleton skeleton--bloque-72"></div>
+        <div class="skeleton skeleton--bloque-120"></div>
       </div>
     </div>
   </main>

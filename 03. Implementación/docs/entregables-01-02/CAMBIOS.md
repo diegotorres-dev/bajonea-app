@@ -1615,3 +1615,28 @@ Cambio de interfaz sin cambios de reglas de negocio ni de permisos. A partir de 
 1. **Requisitos no funcionales (usabilidad):** la interfaz del Comercio se adapta a pantallas de 1024 px o más con una composición de escritorio propia (navegación lateral, listas con detalle, tablas y menús de sección) sin perder ninguna función de la versión móvil.
 2. **Historias de usuario del Dueño y del Empleado:** el panel resume el turno con cuatro cifras; en Pedidos se elige un pedido de la lista y se ve y resuelve en el mismo lugar; el perfil se recorre por secciones sin recargar la página.
 3. **Navegación:** el botón "Volver" de las pantallas de Comercio lleva siempre al mismo destino previsible (Pedidos y Productos al panel, el detalle de un pedido a Pedidos, el formulario de producto a Productos, Estadísticas y Avisos al panel, Soporte al perfil).
+
+
+## Interfaz de escritorio, tramo E2: Administrador (2026-11-12)
+
+### Qué cambió
+
+El panel del Administrador (18 pantallas) tiene una composición de escritorio a partir de 1024 px: barra lateral oscura con 12 secciones e insignias de pendientes (Comercios pendientes, Re-solicitudes, Documentos, Soporte, Reclamos y Reembolsos), listas como tablas (Clientes, Dueños, Comercios, Categorías, Tags, Reembolsos, Documentos, Equipo y Actividad), solicitudes en grilla de tarjetas, comparación "antes / ahora" de una re-solicitud en tabla de tres columnas, revisión de documentos en dos paneles, Soporte con la lista de consultas a la izquierda y la conversación a la derecha, y Tarifas con el formulario a la izquierda y la tarifa vigente y el historial a la derecha. "Volver" lleva siempre a la lista de la que se viene (el panel para las listas, Pendientes para una solicitud, Re-solicitudes para una re-solicitud y Documentos para la revisión de un documento).
+
+### Texto nuevo de la confirmación de una tarifa (A03, móvil y escritorio)
+
+Antes de guardar una tarifa nueva se abre una hoja con este texto:
+
+- Título: "¿Aplicar la nueva tarifa?"
+- Comparación: "Cargo al cliente: $200 → $250" y "Cargo al comercio: 1% → 3%" (la tarifa vigente y la nueva).
+- "Se aplica a los pedidos que se confirmen desde ahora. Los pedidos ya creados conservan la tarifa con la que se confirmaron."
+- "Si un cliente está por confirmar su pedido, va a ver el total actualizado antes de pagar."
+- Botones: "Aplicar tarifa" (principal) y "Cancelar".
+
+Fundamento (leído del backend, sin cambios): la tarifa vigente es la última configuración guardada (`fecha_vigencia` = el momento de guardarla); `PedidoService.confirmarPedido` la lee al crear el pedido y guarda el cargo al cliente y el del comercio en el propio pedido, y la preferencia de Mercado Pago usa esos valores guardados, así que un pedido ya creado (incluso uno que espera el pago) no cambia. Un cliente que confirma con el total anterior recibe el aviso de precio cambiado (`PRECIO_CAMBIO`), porque el servidor compara el total esperado.
+
+### Cambios a reflejar en los documentos de requisitos
+
+1. **Requisitos no funcionales (usabilidad):** la interfaz del Administrador se adapta a pantallas de 1024 px o más con navegación lateral permanente, tablas, lista con detalle y paneles, sin perder ninguna función de la versión móvil.
+2. **Historias de usuario del Administrador:** desde cualquier pantalla se puede ir a otra sección sin pasar por el panel y se ve cuántas solicitudes, documentos, consultas, reclamos y reembolsos esperan; en Soporte se elige una consulta de la lista y se responde sin cambiar de pantalla; al cargar una tarifa nueva se muestra qué tarifa reemplaza y desde cuándo rige.
+3. **Reglas de negocio (tarifas):** una tarifa nueva rige para los pedidos que se confirmen desde que se guarda; los pedidos ya creados conservan la tarifa con la que se confirmaron.

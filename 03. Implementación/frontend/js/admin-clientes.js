@@ -5,6 +5,7 @@ import { normalizarCampos } from './validators.js';
 import { atraparFoco, devolverFoco, mensajeDeError } from './documentos-comun.js';
 import { abrirHoja, cajaInformativa, campoTexto, crearDetalle, fechaLegible, plural, texto } from './admin-hojas.js';
 import { abrirHojaReactivarCuenta } from './admin-reactivar.js';
+import { crearEncabezadoTabla } from './tabla-admin.js';
 
 const MIN_MOTIVO = 10;
 
@@ -115,16 +116,17 @@ export async function initAdminClientes() {
   const filtros = h('div', { class: 'chip-row chip-row--wrap cliente-filtros', role: 'group', 'aria-label': 'Filtrar por estado', 'data-testid': 'filtros-clientes' }, chips);
 
   const contador = texto('p', 'cliente-contador', '', { role: 'status', 'aria-live': 'polite', 'data-testid': 'contador-clientes' });
-  const lista = h('div', { class: 'cliente-admin-list', id: 'clientes-lista', 'data-testid': 'clientes-lista' });
+  const lista = h('div', { class: 'cliente-admin-list tabla-admin tabla--clientes', id: 'clientes-lista', 'data-testid': 'clientes-lista' });
+  const encabezado = crearEncabezadoTabla('clientes', [{ etiqueta: 'Nombre' }, { etiqueta: 'Email' }, { etiqueta: 'Estado' }, { etiqueta: 'Novedades' }, { etiqueta: '' }], 'encabezado-clientes');
   const avisoCarga = h('div', { 'data-testid': 'aviso-clientes' });
   const avisoDestacado = h('div', { 'data-testid': 'aviso-cliente-destacado' });
 
-  contenedor.replaceChildren(buscador, filtros, contador, avisoDestacado, avisoCarga, lista);
+  contenedor.replaceChildren(buscador, filtros, contador, avisoDestacado, avisoCarga, encabezado, lista);
 
   function esperar() {
     lista.replaceChildren(...[0, 1, 2, 3].map(() => h('div', { class: 'cliente-admin-row cliente-admin-row--espera', 'aria-hidden': 'true' }, [
-      h('div', { class: 'skeleton', style: 'height:16px;width:55%;margin-bottom:10px;' }),
-      h('div', { class: 'skeleton', style: 'height:12px;width:75%;' }),
+      h('div', { class: 'skeleton skeleton--linea-titulo-55' }),
+      h('div', { class: 'skeleton skeleton--linea-texto-75' }),
     ])));
     contador.textContent = '';
   }
