@@ -49,7 +49,7 @@ export function renderBannerTexto(slot, kind, texto) {
   const icono = new DOMParser().parseFromString(ICONS[kind] || ICONS.info, 'text/html').body.firstElementChild;
   const contenido = h('div');
   contenido.textContent = texto;
-  slot.appendChild(h('div', { class: `banner banner-${kind}`, style: 'margin-bottom:20px;' }, [icono, contenido]));
+  slot.appendChild(h('div', { class: `banner banner-${kind} u-mb-20px` }, [icono, contenido]));
 }
 
 export function mostrarAvisoFijo(slot, texto) {

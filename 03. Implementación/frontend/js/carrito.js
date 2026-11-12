@@ -1,5 +1,6 @@
 import { apiFetch, ApiError, getUsuario } from './api.js';
 import { exigirContextoCliente } from './contexto.js';
+import { pintarImagen, urlImagen } from './imagenes.js';
 import { renderTopBar, renderBottomNav, showToast, pintarAvatarComercio, actualizarContadorCarrito } from './catalogo.js';
 import { normalizarCampos, excedeSubtotalMaximo, mensajeSubtotalMaximoExcedido } from './validators.js';
 import { crearPrecioUnitario } from './precio-cambio.js';
@@ -95,7 +96,7 @@ function renderItem(item, producto, onCambio) {
   const principal = imagenes.find((imagen) => imagen.esPrincipal) || imagenes[0];
   if (principal) {
     const img = document.createElement('img');
-    img.src = principal.url;
+    pintarImagen(img, principal.url, { uso: 'miniatura', diferida: true });
     img.alt = '';
     thumb.appendChild(img);
   }

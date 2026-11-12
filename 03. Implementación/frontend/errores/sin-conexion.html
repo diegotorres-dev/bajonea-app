@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Sin conexión — Bajoneá</title>
 <link rel="stylesheet" href="../css/styles.css" />
+<link rel="stylesheet" href="../css/escritorio.css" media="(min-width: 1024px)" />
 </head>
 <body>
-<div class="app-shell">
+<div class="app-shell app-shell--escritorio app-shell--acceso">
   <header class="app-header app-header--accent">
     <span class="app-header__title">Sin conexión</span>
   </header>
@@ -24,6 +25,13 @@
       </div>
     </div>
   </main>
+  <aside class="panel-marca" hidden data-testid="panel-marca">
+    <img class="panel-marca__logo" src="../assets/img/bajonea-logo-white.png" alt="Bajoneá" />
+    <div class="panel-marca__texto">
+      <p class="panel-marca__titular" data-testid="panel-marca-titular">Sin conexión</p>
+      <p class="panel-marca__bajada">Revisá tu internet y probá de nuevo.</p>
+    </div>
+  </aside>
 </div>
 <script type="module">
 const params = new URLSearchParams(window.location.search);

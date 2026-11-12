@@ -511,3 +511,46 @@ Se agregan y no se renombra ninguno.
 | Botón "Entendido" de la pista | `btn-pista-selector-entendido` | 44 px. |
 
 Sin `data-testid` nuevo: las líneas de esqueleto del perfil del Cliente y del panel del Administrador (se buscan por `.skeleton` dentro de `nombre-cliente-perfil`, `nombre-admin` y `subtitulo-documentos-por-revisar`), y la barra de espera de `lista-perfil` (`aria-busy`).
+
+
+## Tramo E0 de escritorio (2026-11-08)
+
+Sin `data-testid` nuevos ni renombrados. Los specs `121`, `122` y `123` usan los existentes (`btn-ingresar`, `btn-olvide-password`, `btn-ir-a-registro`, `btn-ir-a-invitacion`, `btn-elegir-cliente`, `btn-elegir-comercio`, `input-cuit`, `input-domicilio-fiscal`, `selector-contexto`, `hoja-cuenta-suspendida`...) y, para las capas, las clases CSS (`.modal-sheet`, `.toast`, `.pantalla-completa`, `.visor-documento`, `.app-main`, `.app-header`, `.bottom-nav`) y los `data-testid` que inyectan los propios tests.
+
+## Tramo E0b de escritorio (2026-11-08)
+
+Sin renombres. Los `data-testid` nuevos (todos viven en elementos que la versión móvil no muestra, salvo la lista de pasos que se crea en JavaScript):
+
+| `data-testid` | Dónde | Qué es |
+|---|---|---|
+| `panel-marca` | `<aside>` de las pantallas partidas (login, bienvenida, verificar-email, recuperar-password, reactivar-cuenta, invitacion-empleado, soporte, `errores/*`, splash) | Panel naranja de la izquierda |
+| `panel-marca-titular` | dentro del panel | Titular de 48 px (o el código grande del error) |
+| `panel-legal`, `panel-legal-terminos`, `panel-legal-privacidad`, `panel-legal-faq` | enlaces legales del panel | Reemplazan, a partir de 1024 px, al pie `legal-pie` (que sigue en el HTML y se oculta en las pantallas partidas) |
+| `btn-salir-registro` | cabecera de `registro-comercio` y `registro-cliente` | Enlace "Salir del registro" |
+| `btn-cancelar-registro` | pie del primer paso (comercio y cliente) | "Cancelar", enlace a `registro-tipo-cuenta.html` |
+| `btn-atras-paso-2`, `btn-atras-paso-3`, `btn-atras-paso-4` | pie de los pasos 2 a 4 de `registro-comercio` | "Atrás" |
+| `btn-atras-paso` | paso 2 de `registro-cliente` | "Atrás" |
+| `pasos-laterales` | lista `<ol>` creada por `js/pasos-laterales.js` | Los pasos al costado; cada `<li>` lleva `data-testid="paso-lateral-N"` y `data-estado` (`activo`, `completado` o `pendiente`) |
+| `legal-indice`, `legal-indice-N` | índice lateral de `terminos`, `privacidad` y `faq` (creado por `js/legal.js`) | Nav y botones de cada sección |
+
+Los specs `124` y `125` usan estos y los existentes.
+
+
+## Interfaz de escritorio, tramo E1: Comercio (Dueño y Empleado)
+
+| `data-testid` | Dónde | Notas |
+|---|---|---|
+| `btn-nav-estadisticas`, `btn-nav-documentacion`, `btn-nav-equipo`, `btn-nav-avisos` | barra lateral (solo a partir de 1024 px; el Empleado no tiene los tres primeros) | Se suman a `btn-nav-panel`, `btn-nav-productos`, `btn-nav-pedidos` y `btn-nav-perfil`, que siguen existiendo |
+| `insignia-nav-pedidos`, `insignia-nav-avisos` | insignia roja de la barra lateral | Pedidos pendientes de responder y avisos sin leer; ocultas en móvil |
+| `selector-lateral` | contenedor del selector de comercio de la barra | Contiene al `franja-comercio` existente (se mueve de lugar en escritorio) |
+| `persona-lateral`, `persona-lateral-nombre`, `persona-lateral-rol` | pie de la barra | Nombre (representante o nombre de pila del Empleado) y rol (Dueño o Empleado) |
+| `btn-lateral-cerrar-sesion` | pie de la barra | Abre el mismo `modal-confirmar-logout` |
+| `saludo-comercio`, `metrica-en-preparacion`, `enlace-ver-todos-pedidos` | panel | Nombre del comercio en la bajada, cuarta cifra y enlace a Pedidos (solo escritorio) |
+| `pedido-detalle-panel`, `pedido-detalle-panel-contenido`, `pedido-detalle-vacio` | `comercio-pedidos.html` | Panel derecho del maestro-detalle, su contenido y el estado vacío (elegir, sin pedidos o no encontrado) |
+| `btn-nuevo-producto`, `producto-categoria-<id>`, `producto-estado-<id>`, `btn-editar-producto-<id>` | `comercio-productos.html` | Botón de la cabecera y celdas de la tabla (solo escritorio) |
+| `btn-cancelar-producto` | `comercio-producto-form.html` | "Cancelar" de la barra de acciones (solo escritorio) |
+| `menu-perfil`, `menu-perfil-perfil`, `menu-perfil-legales`, `menu-perfil-datos`, `menu-perfil-operativos`, `menu-perfil-horarios`, `menu-perfil-equipo`, `menu-perfil-mercadopago`, `menu-perfil-password` | `comercio-perfil.html` | Menú de secciones (el Dueño no tiene `operativos` y el Empleado solo `perfil`, `datos`, `operativos` y `horarios`) |
+| `btn-salir-asistente`, `btn-cancelar-asistente`, `btn-atras-asistente-<id del botón>` | `agregar-comercio.html` y `comercio-corregir.html` | "Salir", "Cancelar" del primer paso y "Atrás" de los siguientes (solo escritorio) |
+| `panel-marca`, `panel-marca-titular`, `panel-legal*` | `comercio-pendiente`, `comercio-rechazado` y `comercio-rechazo-definitivo` | Panel de marca de la pantalla partida |
+
+Los specs `126` a `130` usan estos y los existentes.

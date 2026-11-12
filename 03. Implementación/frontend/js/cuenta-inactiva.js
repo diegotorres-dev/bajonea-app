@@ -64,8 +64,7 @@ export function mostrarPantallaCuentaInactiva({ nombreUsuario, password, comerci
   const icono = crear('div', 'suspension-pantalla__icono');
   icono.appendChild(iconoPausa());
   const titulo = crearTexto('h1', 'suspension-pantalla__titulo', 'Tu cuenta está inactiva', { id: 'pantalla-cuenta-inactiva-titulo', 'data-testid': 'titulo-cuenta-inactiva' });
-  const texto = crearTexto('p', 'subtitle', 'Pasaron más de 3 meses sin que ingresaras, así que la dejamos en pausa. Tus datos y tus pedidos están a salvo.', { 'data-testid': 'texto-cuenta-inactiva' });
-  texto.style.marginBottom = '20px';
+  const texto = crearTexto('p', 'subtitle u-mb-20', 'Pasaron más de 3 meses sin que ingresaras, así que la dejamos en pausa. Tus datos y tus pedidos están a salvo.', { 'data-testid': 'texto-cuenta-inactiva' });
 
   const errorSlot = crear('div', 'cuenta-inactiva__error', { role: 'alert', tabindex: '-1', 'data-testid': 'error-reactivar-cuenta' });
   errorSlot.hidden = true;

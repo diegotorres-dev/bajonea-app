@@ -32,6 +32,7 @@ import {
   establecerErrorCampo,
 } from './validators.js';
 import { montarFormularioCliente } from './cliente-form.js';
+import { montarPasosLaterales, enlazarPasoAtras } from './pasos-laterales.js';
 import { renderBanner, renderBannerTexto, bindPasswordToggle, setLoading, construirTelefono, bindNombreUsuario, montarTerminos, validarTerminos, MENSAJE_NOMBRE_USUARIO_EN_USO, MENSAJE_NOMBRE_COMERCIO_EN_USO } from './form-utils.js';
 
 export { LABELS_TIPO_SOCIEDAD, LABELS_CONDICION_IVA, LABELS_TIPO_COMERCIO, LABELS_TIPO_RED_SOCIAL } from './comercio-form.js';
@@ -253,6 +254,7 @@ export function initLogin() {
 export function initRegistroCliente() {
   const formulario = montarFormularioCliente(document.getElementById('registro-cliente-main'), {
     antesDe: document.getElementById('exito-container'),
+    accionCancelar: { href: 'registro-tipo-cuenta.html' },
     onEnviar: async (payload) => {
       await apiFetch('/auth/registro/cliente', { method: 'POST', auth: false, body: payload });
       document.getElementById('ir-a-verificar-link').href = `verificar-email.html?email=${encodeURIComponent(payload.email)}`;
@@ -305,6 +307,8 @@ export function initRegistroComercio() {
       history.back();
     }
   });
+  montarPasosLaterales(document.getElementById('step-progress-container'));
+  enlazarPasoAtras(() => mostrarPaso(Math.max(currentStep - 1, 0)));
 
   const mostrarErrorEnBanner = (mensaje) => {
     renderBanner(bannerSlot, 'error', mensaje);

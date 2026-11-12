@@ -5,25 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Panel del comercio — Bajoneá</title>
 <link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/escritorio.css" media="(min-width: 1024px)" />
 </head>
 <body>
-<div class="app-shell">
+<div class="app-shell app-shell--lateral app-shell--comercio">
   <div id="top-bar-slot"></div>
   <div id="franja-comercio-slot"></div>
   <main class="app-main">
-    <div class="screen-body">
-      <div id="banner-estado-slot" style="margin-bottom:16px;" data-testid="mensaje-estado-comercio"></div>
+    <div class="screen-body panel-escritorio">
+      <div id="banner-estado-slot" data-testid="mensaje-estado-comercio" class="u-mb-16px"></div>
       <div id="pasos-vender-slot" data-testid="slot-pasos-vender"></div>
       <div id="cierre-comercio-slot"></div>
       <div id="sonido-slot" data-testid="sonido-slot"></div>
-      <div class="catalog-greeting" style="padding:0 0 16px;">
+      <div class="catalog-greeting u-p-0-0-16px">
         <h1 id="saludo-titulo" data-testid="mensaje-saludo"></h1>
         <p id="saludo-fecha"></p>
       </div>
       <div id="metrics-row" data-testid="metricas-dashboard"></div>
-      <div class="section-heading" style="margin-top:24px;display:flex;align-items:center;gap:10px;">
+      <div class="section-heading u-encabezado-seccion-fila">
         <span>Pedidos activos</span>
         <span id="badge-pedidos-activos" data-testid="contador-pedidos-activos"></span>
+        <span class="ver-todos-escritorio" hidden><a href="comercio-pedidos.html" data-testid="enlace-ver-todos-pedidos">Ver todos</a></span>
       </div>
       <div id="pedidos-activos-list" data-testid="lista-pedidos-activos"></div>
     </div>

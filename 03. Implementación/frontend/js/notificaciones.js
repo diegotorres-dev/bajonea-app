@@ -1,6 +1,7 @@
 import { apiFetch, getUsuario } from './api.js';
 import { renderTopBar, showToast } from './catalogo.js';
 import { prepararPaginaComercio } from './selector-comercio.js';
+import { montarBarraLateralCompartida } from './comercio-escritorio.js';
 import { getComerciosEnMemoria, refrescarComercios } from './comercio-activo.js';
 import { ROL_AVISO, destinoDeAviso } from './destino-aviso.js';
 import { mostrarEsqueleto, mostrarErrorDeCarga } from './esqueletos.js';
@@ -259,8 +260,11 @@ export async function initNotificaciones() {
   }
 
   botonMarcarTodas = crearAccionMarcarTodas(marcarTodas, { ocultaSinAvisos: !enComercio });
-  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Notificaciones', accion: botonMarcarTodas });
+  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Notificaciones', accion: botonMarcarTodas, destinoVolver: enComercio ? 'comercio-dashboard.html' : null });
 
+  if (enComercio) {
+    await montarBarraLateralCompartida('panel', 'avisos');
+  }
   if (enComercio && !(await prepararPaginaComercio())) {
     return;
   }

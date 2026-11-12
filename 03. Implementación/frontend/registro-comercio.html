@@ -5,14 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Registrar comercio — Bajoneá</title>
 <link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/escritorio.css" media="(min-width: 1024px)" />
 </head>
 <body>
-<div class="app-shell">
+<div class="app-shell app-shell--escritorio app-shell--asistente">
   <header class="app-header">
     <button class="app-header__back" type="button" id="back-btn" aria-label="Volver" data-testid="btn-volver">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <span class="app-header__title">Registrar comercio</span>
+    <a class="app-header__salir" hidden href="registro-tipo-cuenta.html" data-testid="btn-salir-registro">Salir del registro</a>
   </header>
   <main class="app-main">
     <div id="step-progress-container" class="step-progress">
@@ -33,18 +35,18 @@
       <div id="banner-slot" data-testid="mensaje-banner"></div>
       <section id="step-1">
         <h1 class="title-md">Datos de tu negocio</h1>
-        <p class="subtitle" style="margin-bottom:20px;">Esta información será visible para tus clientes.</p>
+        <p class="subtitle u-mb-20">Esta información será visible para tus clientes.</p>
         <form class="form" id="form-step-1" novalidate>
-          <div class="field" style="text-align:center;">
+          <div class="field field--centrado">
             <label class="field__label">Agregá una foto de perfil</label>
-            <span class="field__label-badge" style="align-self:center;margin-bottom:10px;">Obligatorio</span>
-            <button type="button" class="profile-header__avatar" id="foto-comercio-avatar" style="margin:0 auto 10px;border:none;padding:0;cursor:pointer;" data-testid="btn-agregar-foto-comercio">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span class="field__label-badge field__label-badge--centrado">Obligatorio</span>
+            <button type="button" class="profile-header__avatar profile-header__avatar--boton" id="foto-comercio-avatar" data-testid="btn-agregar-foto-comercio">
+              <svg class="icono-28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             </button>
             <input type="file" id="input-foto-comercio" accept="image/jpeg,image/png,image/webp" class="is-hidden" data-testid="input-foto-comercio" />
             <div class="field__error" id="error-foto-comercio" style="display:none;" data-testid="mensaje-error-foto-comercio"></div>
           </div>
-          <div class="field">
+          <div class="field field--ancha">
             <label class="field__label" for="nombre">Nombre del comercio</label>
             <div class="input-shell">
               <input type="text" id="nombre" placeholder="Ingresá el nombre de tu comercio" required maxlength="150" data-testid="input-nombre" />
@@ -53,7 +55,7 @@
             <div class="field__status" id="estado-nombre" style="display:none;" data-testid="estado-nombre-comercio"></div>
             <div class="field__error" id="error-nombre" style="display:none;" data-testid="mensaje-error-nombre"></div>
           </div>
-          <div class="field">
+          <div class="field field--ancha">
             <label class="field__label" for="descripcion">Descripción</label>
             <div class="textarea-shell">
               <textarea id="descripcion" placeholder="Contales a tus clientes qué ofrecés (opcional)" maxlength="2000" data-testid="input-descripcion"></textarea>
@@ -78,7 +80,7 @@
           </div>
           <div class="field">
             <label class="field__label">Modalidades de entrega</label>
-            <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="pila-10">
               <div class="switch-row" aria-pressed="true">
                 <span class="switch-row__label">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
@@ -94,13 +96,13 @@
                 <button type="button" class="switch" id="switch-retiro" aria-pressed="false" data-testid="btn-switch-retiro"><span class="switch__knob"></span></button>
               </div>
             </div>
-            <p class="field__hint" style="padding-left:2px;">Debés ofrecer al menos una modalidad.</p>
+            <p class="field__hint field__hint--sangria">Debés ofrecer al menos una modalidad.</p>
             <div class="field__error" id="error-modalidad" style="display:none;" data-testid="mensaje-error-modalidad"></div>
           </div>
           <div class="form-section">
             <p class="section-heading">Dirección del local</p>
-            <div class="form" style="gap:16px;">
-              <div class="field">
+            <div class="form">
+              <div class="field field--ancha">
                 <label class="field__label" for="calle">Calle</label>
                 <div class="input-shell">
                   <span class="input-shell__icon">
@@ -142,7 +144,7 @@
                 </div>
                 <div class="field__error" id="error-provincia" style="display:none;" data-testid="mensaje-error-provincia"></div>
               </div>
-              <div class="field">
+              <div class="field field--ancha">
                 <label class="field__label" for="localidad">Localidad</label>
                 <div class="select-shell">
                   <select id="localidad" required data-testid="select-localidad"></select>
@@ -153,15 +155,20 @@
             </div>
           </div>
         </form>
-        <button class="btn btn-primary" type="button" id="continuar-btn" style="margin-top:24px;" data-testid="btn-continuar">
-          Continuar
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        <div class="acciones-paso">
+            <div class="acciones-paso__secundaria" hidden>
+              <a class="btn btn-secondary" href="registro-tipo-cuenta.html" data-testid="btn-cancelar-registro">Cancelar</a>
+            </div>
+            <button class="btn btn-primary u-mt-24" type="button" id="continuar-btn" data-testid="btn-continuar">
+            Continuar
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </button>
+          </div>
       </section>
       <section id="step-2" class="is-hidden">
         <h1 class="title-md">Información legal</h1>
-        <p class="subtitle" style="margin-bottom:16px;">Datos fiscales de tu negocio y el acceso a la plataforma.</p>
-        <div class="info-box" style="margin-bottom:24px;">
+        <p class="subtitle u-mb-16">Datos fiscales de tu negocio y el acceso a la plataforma.</p>
+        <div class="info-box u-mb-24">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           <span>Esta información no es visible para los clientes. Es utilizada solo para la gestión administrativa y fiscal.</span>
         </div>
@@ -169,7 +176,7 @@
           <div>
             <p class="section-heading">Datos del representante</p>
             <p class="section-note">La persona física responsable de este comercio ante la plataforma.</p>
-            <div class="form" style="gap:16px;">
+            <div class="form">
               <div class="form-row">
                 <div class="field">
                   <label class="field__label" for="nombreRepresentante">Nombre completo</label>
@@ -219,7 +226,7 @@
           <div class="form-section">
             <p class="section-heading">Datos legales del comercio</p>
             <p class="section-note">Información fiscal, usada solo para la gestión administrativa.</p>
-            <div class="form" style="gap:16px;">
+            <div class="form">
               <div class="field">
                 <label class="field__label" for="cuit">CUIT</label>
                 <div class="input-shell">
@@ -237,7 +244,7 @@
               </div>
               <details class="seccion-plegable" id="datos-adicionales" data-testid="seccion-datos-adicionales">
                 <summary data-testid="resumen-datos-adicionales">Datos adicionales (opcional)<svg class="seccion-plegable__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></summary>
-                <div class="form seccion-plegable__contenido" style="gap:16px;">
+                <div class="form seccion-plegable__contenido">
                 <div class="field">
                   <label class="field__label" for="razonSocial">Razón social</label>
                   <div class="input-shell">
@@ -274,7 +281,7 @@
           </div>
           <div class="form-section">
             <p class="section-heading">Acceso a la plataforma</p>
-            <div class="form" style="gap:16px;">
+            <div class="form">
               <div class="field">
                 <label class="field__label" for="nombreUsuario">Nombre de usuario</label>
                 <div class="input-shell">
@@ -327,15 +334,20 @@
               </div>
             </div>
           </div>
-          <button class="btn btn-primary" type="button" id="continuar-btn-2" style="margin-top:8px;" data-testid="btn-continuar-2">
+          <div class="acciones-paso">
+            <div class="acciones-paso__secundaria" hidden>
+              <button class="btn btn-secondary" type="button" data-accion-asistente="atras" data-testid="btn-atras-paso-2">Atrás</button>
+            </div>
+            <button class="btn btn-primary u-mt-8" type="button" id="continuar-btn-2" data-testid="btn-continuar-2">
             Continuar
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </button>
+          </div>
         </form>
       </section>
       <section id="step-3" class="is-hidden">
         <h1 class="title-md">Horarios de atención</h1>
-        <p class="subtitle" style="margin-bottom:20px;">Cargá al menos una franja horaria de atención.</p>
+        <p class="subtitle u-mb-20">Cargá al menos una franja horaria de atención.</p>
         <form class="form" id="form-step-3" novalidate>
           <div class="segmented-control" role="tablist" data-testid="tabs-horarios">
             <button type="button" class="segmented-control__btn" id="tab-horario-fijo" role="tab" aria-selected="true" data-testid="tab-horario-fijo">Horario fijo</button>
@@ -343,9 +355,9 @@
           </div>
           <div id="panel-horario-fijo" data-testid="panel-horario-fijo">
             <div class="quick-schedule" data-testid="bloque-franja-rapida">
-              <p class="section-note" style="margin-top:0;">Tildá los días y cargá un horario para aplicarlo a todos de una sola vez.</p>
-              <div class="chip-row chip-row--wrap" id="dia-chip-row" style="padding:4px 0;" data-testid="chips-dia-franja-rapida"></div>
-              <div class="form-row" style="margin-top:4px;">
+              <p class="section-note u-mt-0">Tildá los días y cargá un horario para aplicarlo a todos de una sola vez.</p>
+              <div class="chip-row chip-row--wrap chip-row--aire-chico" id="dia-chip-row" data-testid="chips-dia-franja-rapida"></div>
+              <div class="form-row u-mt-4">
                 <div class="field">
                   <label class="field__label" for="franja-rapida-desde">Desde</label>
                   <div class="input-shell">
@@ -361,10 +373,10 @@
               </div>
               <p class="field__hint" data-testid="texto-formato-24hs-rapida">Formato 24 hrs (00:00 a 23:59 hrs)</p>
               <div class="field__error" id="error-franja-rapida" style="display:none;" data-testid="mensaje-error-franja-rapida"></div>
-              <button type="button" class="btn btn-secondary" id="aplicar-franja-rapida-btn" style="margin-top:8px;" data-testid="btn-aplicar-franja-rapida">Aplicar a los días seleccionados</button>
+              <button type="button" class="btn btn-secondary u-mt-8" id="aplicar-franja-rapida-btn" data-testid="btn-aplicar-franja-rapida">Aplicar a los días seleccionados</button>
             </div>
-            <div style="margin-top:20px;">
-              <p class="section-heading" style="margin-top:0;" data-testid="titulo-ya-cargaste">Tus horarios</p>
+            <div class="u-mt-20">
+              <p class="section-heading u-mt-0" data-testid="titulo-ya-cargaste">Tus horarios</p>
               <div id="horario-resumen-fijo" data-testid="resumen-horarios-cargados"></div>
               <p class="field__hint" id="horario-resumen-vacio" data-testid="texto-sin-horarios-cargados">Todavía no cargaste ningún horario.</p>
             </div>
@@ -374,24 +386,34 @@
             <button type="button" class="btn btn-tertiary" id="agregar-horario-btn" data-testid="btn-agregar-horario">+ Agregar franja horaria</button>
             <p class="field__hint" data-testid="texto-formato-24hs">Podés agregar más de una franja por día. Formato 24 hrs (00:00 a 23:59 hrs)</p>
           </div>
-          <div class="field__error" id="error-horarios" style="display:none;margin-top:12px;" data-testid="mensaje-error-horarios"></div>
-          <button class="btn btn-primary" type="button" id="continuar-btn-3" style="margin-top:8px;" data-testid="btn-continuar-3">
+          <div class="field__error u-mt-12" id="error-horarios" style="display:none;" data-testid="mensaje-error-horarios"></div>
+          <div class="acciones-paso">
+            <div class="acciones-paso__secundaria" hidden>
+              <button class="btn btn-secondary" type="button" data-accion-asistente="atras" data-testid="btn-atras-paso-3">Atrás</button>
+            </div>
+            <button class="btn btn-primary u-mt-8" type="button" id="continuar-btn-3" data-testid="btn-continuar-3">
             Continuar
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </button>
+          </div>
         </form>
       </section>
       <section id="step-4" class="is-hidden">
         <h1 class="title-md">Redes sociales</h1>
-        <p class="subtitle" style="margin-bottom:20px;">Cargá al menos una red social. Podés agregar hasta 5.</p>
+        <p class="subtitle u-mb-20">Cargá al menos una red social. Podés agregar hasta 5.</p>
         <form class="form" id="form-step-4" novalidate>
           <div id="red-social-list" class="schedule-list" data-testid="lista-redes-sociales"></div>
           <button type="button" class="btn btn-tertiary" id="agregar-red-social-btn" data-testid="btn-agregar-red-social">+ Agregar red social</button>
           <p class="field__hint is-hidden" id="red-social-max-hint" data-testid="mensaje-maximo-redes-sociales">Alcanzaste el máximo de 5 redes sociales.</p>
-          <div id="terminos-slot" style="margin-top:8px;"></div>
-          <button class="btn btn-primary" type="submit" id="submit-btn" style="margin-top:8px;" data-testid="btn-registrar-comercio">
+          <div class="u-mt-8" id="terminos-slot"></div>
+          <div class="acciones-paso">
+            <div class="acciones-paso__secundaria" hidden>
+              <button class="btn btn-secondary" type="button" data-accion-asistente="atras" data-testid="btn-atras-paso-4">Atrás</button>
+            </div>
+            <button class="btn btn-primary u-mt-8" type="submit" id="submit-btn" data-testid="btn-registrar-comercio">
             Registrar comercio
           </button>
+          </div>
         </form>
       </section>
     </div>

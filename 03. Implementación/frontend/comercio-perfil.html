@@ -5,15 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Mi comercio — Bajoneá</title>
 <link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/escritorio.css" media="(min-width: 1024px)" />
 </head>
 <body>
-<div class="app-shell">
+<div class="app-shell app-shell--lateral app-shell--comercio">
   <div id="top-bar-slot"></div>
   <div id="franja-comercio-slot"></div>
   <main class="app-main">
+    <div class="perfil-escritorio">
+    <div class="perfil-contenido">
     <section id="view-principal" class="perfil-view">
       <div class="profile-header">
-        <button type="button" class="profile-header__avatar" id="perfil-avatar" style="border:none;padding:0;cursor:pointer;" data-testid="btn-foto-perfil-comercio" disabled></button>
+        <button type="button" class="profile-header__avatar u-b-none-p-0-cur-pointer" id="perfil-avatar" data-testid="btn-foto-perfil-comercio" disabled></button>
         <input type="file" id="input-avatar" accept="image/jpeg,image/png,image/webp" class="is-hidden" data-testid="input-foto-comercio" />
         <h2 id="perfil-nombre" data-testid="nombre-comercio-perfil"></h2>
         <p class="perfil-linea is-hidden" id="perfil-telefono-linea" data-testid="telefono-comercio-perfil"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg><span id="perfil-telefono"></span></p>
@@ -154,7 +157,7 @@
           </div>
           <div class="field">
             <label class="field__label">Modalidades de entrega</label>
-            <div style="display:flex;flex-direction:column;gap:10px;">
+            <div class="u-d-flex-fd-column-gap-10px">
               <div class="switch-row" aria-pressed="true">
                 <span class="switch-row__label">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
@@ -170,7 +173,7 @@
                 <button type="button" class="switch" id="switch-retiro" aria-pressed="false" data-testid="btn-switch-retiro"><span class="switch__knob"></span></button>
               </div>
             </div>
-            <p class="field__hint" style="padding-left:2px;">Debés ofrecer al menos una modalidad.</p>
+            <p class="field__hint u-pl-2px">Debés ofrecer al menos una modalidad.</p>
             <div class="field__error" id="error-editar-modalidad" style="display:none;" data-testid="mensaje-error-modalidad"></div>
           </div>
           <button class="btn btn-primary" type="submit" id="guardar-perfil-btn" data-testid="btn-guardar-perfil-comercio" disabled>Guardar cambios</button>
@@ -186,33 +189,33 @@
         <span class="app-header__title">Datos legales</span>
       </header>
       <div class="screen-body">
-        <div class="banner banner-info" style="margin-bottom:20px;">
+        <div class="banner banner-info u-mb-20px">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           <span>Si necesitás modificar tus datos legales, comunicate con soporte.</span>
         </div>
-        <div class="field" style="margin-bottom:16px;">
+        <div class="field u-mb-16px">
           <span class="field__label">Razón social</span>
-          <p id="legal-razon-social" style="font-size:14px;color:var(--color-text-muted);" data-testid="legal-razon-social"></p>
+          <p id="legal-razon-social" data-testid="legal-razon-social" class="u-fs-14px-c-text-muted"></p>
         </div>
-        <div class="field" style="margin-bottom:16px;">
+        <div class="field u-mb-16px">
           <span class="field__label">CUIT</span>
-          <p id="legal-cuit" style="font-size:14px;color:var(--color-text-muted);" data-testid="legal-cuit"></p>
+          <p id="legal-cuit" data-testid="legal-cuit" class="u-fs-14px-c-text-muted"></p>
         </div>
-        <div class="field" style="margin-bottom:16px;">
+        <div class="field u-mb-16px">
           <span class="field__label">Condición ante el IVA</span>
-          <p id="legal-condicion-iva" style="font-size:14px;color:var(--color-text-muted);" data-testid="legal-condicion-iva"></p>
+          <p id="legal-condicion-iva" data-testid="legal-condicion-iva" class="u-fs-14px-c-text-muted"></p>
         </div>
-        <div class="field" style="margin-bottom:16px;">
+        <div class="field u-mb-16px">
           <span class="field__label">Tipo de sociedad</span>
-          <p id="legal-tipo-sociedad" style="font-size:14px;color:var(--color-text-muted);" data-testid="legal-tipo-sociedad"></p>
+          <p id="legal-tipo-sociedad" data-testid="legal-tipo-sociedad" class="u-fs-14px-c-text-muted"></p>
         </div>
-        <div class="field" style="margin-bottom:16px;">
+        <div class="field u-mb-16px">
           <span class="field__label">Domicilio fiscal</span>
-          <p id="legal-domicilio-fiscal" style="font-size:14px;color:var(--color-text-muted);" data-testid="legal-domicilio-fiscal"></p>
+          <p id="legal-domicilio-fiscal" data-testid="legal-domicilio-fiscal" class="u-fs-14px-c-text-muted"></p>
         </div>
         <div class="field">
           <span class="field__label">Fecha de inicio de actividades</span>
-          <p id="legal-fecha-inicio" style="font-size:14px;color:var(--color-text-muted);" data-testid="legal-fecha-inicio"></p>
+          <p id="legal-fecha-inicio" data-testid="legal-fecha-inicio" class="u-fs-14px-c-text-muted"></p>
         </div>
       </div>
     </section>
@@ -335,9 +338,9 @@
           </div>
           <div id="panel-horario-fijo" data-testid="panel-horario-fijo">
             <div class="quick-schedule" data-testid="bloque-franja-rapida">
-              <p class="section-note" style="margin-top:0;">Tildá los días y cargá un horario para aplicarlo a todos de una sola vez.</p>
-              <div class="chip-row chip-row--wrap" id="dia-chip-row" style="padding:4px 0;" data-testid="chips-dia-franja-rapida"></div>
-              <div class="form-row" style="margin-top:4px;">
+              <p class="section-note u-mt-0">Tildá los días y cargá un horario para aplicarlo a todos de una sola vez.</p>
+              <div class="chip-row chip-row--wrap u-p-4px-0" id="dia-chip-row" data-testid="chips-dia-franja-rapida"></div>
+              <div class="form-row u-mt-4px">
                 <div class="field">
                   <label class="field__label" for="franja-rapida-desde">Desde</label>
                   <div class="input-shell">
@@ -353,10 +356,10 @@
               </div>
               <p class="field__hint" data-testid="texto-formato-24hs-rapida">Formato 24 hrs (00:00 a 23:59 hrs)</p>
               <div class="field__error" id="error-franja-rapida" style="display:none;" data-testid="mensaje-error-franja-rapida"></div>
-              <button type="button" class="btn btn-secondary" id="aplicar-franja-rapida-btn" style="margin-top:8px;" data-testid="btn-aplicar-franja-rapida">Aplicar a los días seleccionados</button>
+              <button type="button" class="btn btn-secondary u-mt-8px" id="aplicar-franja-rapida-btn" data-testid="btn-aplicar-franja-rapida">Aplicar a los días seleccionados</button>
             </div>
-            <div style="margin-top:20px;">
-              <p class="section-heading" style="margin-top:0;" data-testid="titulo-ya-cargaste">Tus horarios</p>
+            <div class="u-mt-20px">
+              <p class="section-heading u-mt-0" data-testid="titulo-ya-cargaste">Tus horarios</p>
               <div id="horario-resumen-fijo" data-testid="resumen-horarios-cargados"></div>
               <p class="field__hint" id="horario-resumen-vacio" data-testid="texto-sin-horarios-cargados">Todavía no cargaste ningún horario.</p>
             </div>
@@ -421,12 +424,12 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/><path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
             <div>
               <p id="mp-cuenta-usuario" data-testid="mp-cuenta-usuario"></p>
-              <p id="mp-cuenta-fecha" style="font-size:12px;color:var(--color-text-muted);" data-testid="mp-cuenta-fecha"></p>
+              <p id="mp-cuenta-fecha" data-testid="mp-cuenta-fecha" class="u-fs-12px-c-text-muted"></p>
             </div>
           </div>
           <p class="section-note mp-cuenta-alcance" data-testid="mp-texto-alcance-vinculada">Esta cuenta cobra por todos tus comercios</p>
           <ul class="mp-comercios-lista" id="mp-lista-comercios-vinculada" data-testid="mp-lista-comercios-vinculada"></ul>
-          <button class="btn" type="button" id="btn-desvincular-mp" style="margin-top:16px;background:var(--color-error);color:#ffffff;" data-testid="btn-desvincular-mercadopago">Desvincular cuenta</button>
+          <button class="btn btn-peligro u-mt-16px" type="button" id="btn-desvincular-mp" data-testid="btn-desvincular-mercadopago">Desvincular cuenta</button>
         </div>
       </div>
     </section>
@@ -439,7 +442,7 @@
         <span class="app-header__title">Cambiar contraseña</span>
       </header>
       <div class="screen-body">
-        <div class="banner banner-info" style="margin-bottom:20px;">
+        <div class="banner banner-info u-mb-20px">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           <span>Por seguridad, ingresá tu contraseña actual.</span>
         </div>
@@ -488,6 +491,8 @@
         </form>
       </div>
     </section>
+    </div>
+    </div>
   </main>
   <div id="bottom-nav-slot"></div>
 </div>

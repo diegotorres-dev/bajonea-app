@@ -286,8 +286,8 @@ export async function initComercioEstadisticas() {
   if (!(await exigirDueno())) {
     return;
   }
-  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Estadísticas' });
-  renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'panel');
+  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Estadísticas', destinoVolver: 'comercio-dashboard.html' });
+  renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'panel', { activoLateral: 'estadisticas' });
   if (!(await prepararPaginaComercio({ slotFranja: document.getElementById('franja-comercio-slot') }))) {
     return;
   }

@@ -3,6 +3,7 @@ import { exigirDueno } from './contexto.js';
 import { showToast } from './catalogo.js';
 import { abrirHoja } from './hoja.js';
 import { prepararPaginaComercio } from './selector-comercio.js';
+import { renderBottomNavComercio } from './comercio.js';
 import { h, renderBannerTexto, mostrarAvisoFijo } from './form-utils.js';
 import { establecerErrorCampo } from './validators.js';
 import {
@@ -472,6 +473,7 @@ export async function initComercioDocumentacion() {
   volver.addEventListener('click', () => {
     window.location.href = parametros.get('desde') === 'panel' ? 'comercio-dashboard.html' : 'comercio-perfil.html';
   });
+  renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'perfil', { soloEscritorio: true, activoLateral: 'documentacion' });
   if (!(await prepararPaginaComercio())) {
     return;
   }

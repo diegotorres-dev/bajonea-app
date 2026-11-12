@@ -1,4 +1,5 @@
 import { apiFetch, ApiError, getToken, clearSesion, marcarAvisoInvitacion } from './api.js';
+import { pintarImagen } from './imagenes.js';
 import { crearInputOtp } from './otp.js';
 import { montarFormularioCliente } from './cliente-form.js';
 import { renderBannerTexto, setLoading } from './form-utils.js';
@@ -51,7 +52,7 @@ function pintarAvatar(contenedor, nombre, fotoUrl) {
   const img = document.createElement('img');
   img.alt = '';
   img.addEventListener('error', pintarIniciales);
-  img.src = fotoUrl;
+  pintarImagen(img, fotoUrl, { uso: 'avatar' });
   contenedor.appendChild(img);
 }
 

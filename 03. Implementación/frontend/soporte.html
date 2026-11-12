@@ -5,13 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Contactar a Soporte — Bajoneá</title>
 <link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/escritorio.css" media="(min-width: 1024px)" />
 </head>
 <body>
-<div class="app-shell">
+<div class="app-shell app-shell--escritorio app-shell--acceso">
   <div id="top-bar-slot"></div>
   <main class="app-main">
     <div class="screen-body" id="soporte-contenido" data-testid="contenido-soporte"></div>
   </main>
+  <aside class="panel-marca" hidden data-testid="panel-marca">
+    <img class="panel-marca__logo" src="assets/img/bajonea-logo-white.png" alt="Bajoneá" />
+    <div class="panel-marca__texto">
+      <p class="panel-marca__titular" data-testid="panel-marca-titular">Estamos para ayudarte.</p>
+      <p class="panel-marca__bajada">Contanos qué pasó y te respondemos por email.</p>
+    </div>
+    <nav class="panel-marca__legal" aria-label="Información legal" data-testid="panel-legal">
+      <a class="panel-marca__enlace" href="terminos.html" data-testid="panel-legal-terminos">Términos y Condiciones</a>
+      <a class="panel-marca__enlace" href="privacidad.html" data-testid="panel-legal-privacidad">Política de Privacidad</a>
+      <a class="panel-marca__enlace" href="faq.html" data-testid="panel-legal-faq">Preguntas frecuentes</a>
+    </nav>
+  </aside>
 </div>
 <script type="module">
 import { initSoporte } from './js/soporte.js';

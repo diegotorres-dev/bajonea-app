@@ -1,5 +1,6 @@
 import { apiFetch } from './api.js';
 import { exigirContextoCliente } from './contexto.js';
+import { pintarImagen, urlImagen } from './imagenes.js';
 import { renderTopBar, renderBottomNav, renderEmptyState } from './catalogo.js';
 import { normalizarCampos } from './validators.js';
 import { mostrarEsqueleto } from './esqueletos.js';
@@ -27,7 +28,7 @@ function renderProductoCard(producto) {
   const principal = producto.imagenes.find((imagen) => imagen.esPrincipal) || producto.imagenes[0];
   if (principal) {
     const img = document.createElement('img');
-    img.src = principal.url;
+    pintarImagen(img, principal.url, { uso: 'miniatura', diferida: true });
     img.alt = '';
     thumbWrapper.appendChild(img);
   }

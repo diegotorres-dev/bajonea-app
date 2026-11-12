@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Página no encontrada — Bajoneá</title>
 <link rel="stylesheet" href="../css/styles.css" />
+<link rel="stylesheet" href="../css/escritorio.css" media="(min-width: 1024px)" />
 </head>
 <body>
-<div class="app-shell">
+<div class="app-shell app-shell--escritorio app-shell--acceso">
   <header class="app-header app-header--accent">
     <button class="app-header__back" type="button" onclick="history.back()" aria-label="Volver">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -27,6 +28,13 @@
       </div>
     </div>
   </main>
+  <aside class="panel-marca" hidden data-testid="panel-marca">
+    <img class="panel-marca__logo" src="../assets/img/bajonea-logo-white.png" alt="Bajoneá" />
+    <div class="panel-marca__texto">
+      <p class="panel-marca__titular panel-marca__titular--codigo" data-testid="panel-marca-titular">404</p>
+      <p class="panel-marca__bajada">No encontramos esta página.</p>
+    </div>
+  </aside>
 </div>
 </body>
 </html>

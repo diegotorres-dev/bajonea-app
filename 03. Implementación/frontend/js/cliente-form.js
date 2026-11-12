@@ -3,6 +3,7 @@ import { initGeografiaSelects } from './geografia.js';
 import { validarArchivoImagen, subirFotoPerfilRegistroCliente, CloudinaryUploadError } from './cloudinary.js';
 import { abrirEditorRecorte } from './crop.js';
 import { validarCampoRequeridoYValido, validarCampoOpcionalYValido, bindValidacionCampo } from './comercio-form.js';
+import { montarPasosLaterales, enlazarPasoAtras } from './pasos-laterales.js';
 import { h, crearSvg, renderBannerTexto, bindPasswordToggle, setLoading, construirTelefono, bindNombreUsuario, crearPasos, crearCheckboxTerminos, validarTerminos, MENSAJE_NOMBRE_USUARIO_EN_USO } from './form-utils.js';
 import {
   esPasswordSegura,
@@ -70,8 +71,8 @@ function mensajeError(id, testid) {
   return h('div', { class: 'field__error', id, style: 'display:none;', 'data-testid': testid });
 }
 
-function campo(etiqueta, inputId, shellHijos, errorId, errorTestid, extras = []) {
-  return h('div', { class: 'field' }, [
+function campo(etiqueta, inputId, shellHijos, errorId, errorTestid, extras = [], ancho = false) {
+  return h('div', { class: ancho ? 'field field--ancha' : 'field' }, [
     h('label', { class: 'field__label', for: inputId }, [etiqueta]),
     h('div', { class: 'input-shell' }, shellHijos),
     ...extras,
@@ -79,8 +80,8 @@ function campo(etiqueta, inputId, shellHijos, errorId, errorTestid, extras = [])
   ]);
 }
 
-function selectCampo(etiqueta, selectId, testid, errorId, errorTestid) {
-  return h('div', { class: 'field' }, [
+function selectCampo(etiqueta, selectId, testid, errorId, errorTestid, ancho = false) {
+  return h('div', { class: ancho ? 'field field--ancha' : 'field' }, [
     h('label', { class: 'field__label', for: selectId }, [etiqueta]),
     h('div', { class: 'select-shell' }, [
       h('select', { id: selectId, required: true, 'data-testid': testid }),
@@ -92,6 +93,15 @@ function selectCampo(etiqueta, selectId, testid, errorId, errorTestid) {
 
 function botonToggle(id, testid) {
   return h('button', { type: 'button', class: 'input-shell__toggle', id, 'aria-label': 'Mostrar contraseña', 'data-testid': testid }, [crearSvg(FIGURAS_OJO)]);
+}
+
+function construirAccionesPaso(secundaria, principal) {
+  const hijos = [];
+  if (secundaria) {
+    hijos.push(h('div', { class: 'acciones-paso__secundaria', hidden: true }, [secundaria]));
+  }
+  hijos.push(principal);
+  return h('div', { class: 'acciones-paso' }, hijos);
 }
 
 function construirProgreso() {
@@ -107,7 +117,7 @@ function construirProgreso() {
   ]);
 }
 
-function construirPaso1({ incluirEmail, mostrarEnlaceLogin }) {
+function construirPaso1({ incluirEmail, mostrarEnlaceLogin, accionCancelar }) {
   const fotoAvatar = h(
     'button',
     {
@@ -121,7 +131,7 @@ function construirPaso1({ incluirEmail, mostrarEnlaceLogin }) {
   );
 
   const campos = [
-    h('div', { class: 'field', style: 'text-align:center;' }, [
+    h('div', { class: 'field field--centrado' }, [
       h('label', { class: 'field__label' }, ['Agregá una foto de perfil']),
       h('span', { class: 'field__label-badge field__label-badge--opcional', style: 'align-self:center;margin-bottom:10px;' }, ['Opcional']),
       fotoAvatar,
@@ -198,7 +208,10 @@ function construirPaso1({ incluirEmail, mostrarEnlaceLogin }) {
     h('h1', { class: 'title-md' }, ['Tus datos personales']),
     h('p', { class: 'subtitle', style: 'margin-bottom:20px;' }, ['Completá la información para crear tu cuenta.']),
     h('form', { class: 'form', id: 'form-step-1', novalidate: true }, campos),
-    h('button', { class: 'btn btn-primary', type: 'button', id: 'continuar-btn', style: 'margin-top:24px;', 'data-testid': 'btn-continuar' }, ['Continuar', crearSvg(FIGURAS_FLECHA)]),
+    construirAccionesPaso(
+      accionCancelar ? h('a', { class: 'btn btn-secondary', href: accionCancelar.href, 'data-testid': 'btn-cancelar-registro' }, [accionCancelar.texto || 'Cancelar']) : null,
+      h('button', { class: 'btn btn-primary', type: 'button', id: 'continuar-btn', style: 'margin-top:24px;', 'data-testid': 'btn-continuar' }, ['Continuar', crearSvg(FIGURAS_FLECHA)]),
+    ),
   ];
   if (mostrarEnlaceLogin) {
     hijos.push(h('p', { class: 'form-footer-link' }, ['¿Ya tenés cuenta? ', h('a', { class: 'link', href: 'login.html' }, ['Iniciá sesión'])]));
@@ -211,15 +224,18 @@ function construirPaso2({ textoBotonFinal }) {
     h('h1', { class: 'title-md' }, ['Tu dirección de entrega']),
     h('p', { class: 'subtitle', style: 'margin-bottom:20px;' }, ['Esta será tu dirección principal para recibir pedidos.']),
     h('form', { class: 'form', id: 'form-step-2', novalidate: true }, [
-      campo('Calle', 'calle', [iconoDeCampo(FIGURAS_UBICACION), h('input', { type: 'text', id: 'calle', placeholder: 'Nombre de la calle', required: true, 'data-testid': 'input-calle' })], 'error-calle', 'mensaje-error-calle'),
+      campo('Calle', 'calle', [iconoDeCampo(FIGURAS_UBICACION), h('input', { type: 'text', id: 'calle', placeholder: 'Nombre de la calle', required: true, 'data-testid': 'input-calle' })], 'error-calle', 'mensaje-error-calle', [], true),
       h('div', { class: 'form-row' }, [
         campo('Número', 'numero', [h('input', { type: 'text', id: 'numero', inputmode: 'numeric', placeholder: '1234', required: true, 'data-testid': 'input-numero' })], 'error-numero', 'mensaje-error-numero'),
         campo('Piso / Dpto', 'pisoDepto', [h('input', { type: 'text', id: 'pisoDepto', placeholder: 'Opcional', 'data-testid': 'input-piso-depto' })], 'error-pisoDepto', 'mensaje-error-piso-depto'),
       ]),
       campo('Código Postal', 'codigoPostal', [h('span', { class: 'input-shell__icon' }, ['#']), h('input', { type: 'text', id: 'codigoPostal', placeholder: '9420', required: true, 'data-testid': 'input-codigo-postal' })], 'error-codigoPostal', 'mensaje-error-codigo-postal'),
       selectCampo('Provincia', 'provincia', 'select-provincia', 'error-provincia', 'mensaje-error-provincia'),
-      selectCampo('Localidad', 'localidad', 'select-localidad', 'error-localidad', 'mensaje-error-localidad'),
-      h('button', { class: 'btn btn-primary', type: 'submit', id: 'submit-btn', 'data-testid': 'btn-crear-cuenta' }, [textoBotonFinal]),
+      selectCampo('Localidad', 'localidad', 'select-localidad', 'error-localidad', 'mensaje-error-localidad', true),
+      construirAccionesPaso(
+        h('button', { class: 'btn btn-secondary', type: 'button', 'data-accion-asistente': 'atras', 'data-testid': 'btn-atras-paso' }, ['Atrás']),
+        h('button', { class: 'btn btn-primary', type: 'submit', id: 'submit-btn', 'data-testid': 'btn-crear-cuenta' }, [textoBotonFinal]),
+      ),
     ]),
   ]);
 }
@@ -250,6 +266,7 @@ export function montarFormularioCliente(contenedor, opciones) {
     mostrarEnlaceLogin = true,
     edadMinima = EDAD_MINIMA_POR_DEFECTO,
     textos = {},
+    accionCancelar = null,
   } = opciones;
   const mensajeEdadInsuficiente = textos.edadInsuficiente || `Tenés que tener al menos ${edadMinima} años para poder registrarte.`;
   const textoBotonFinal = textos.botonFinal || 'Crear mi cuenta';
@@ -259,9 +276,10 @@ export function montarFormularioCliente(contenedor, opciones) {
   const progreso = construirProgreso();
   const asistente = h('div', { id: 'wizard-container', class: 'screen-body screen-body--tight' }, [
     h('div', { id: 'banner-slot', 'data-testid': 'mensaje-banner' }),
-    construirPaso1({ incluirEmail, mostrarEnlaceLogin }),
+    construirPaso1({ incluirEmail, mostrarEnlaceLogin, accionCancelar }),
     construirPaso2({ textoBotonFinal }),
   ]);
+  montarPasosLaterales(progreso);
   contenedor.insertBefore(progreso, antesDe);
   contenedor.insertBefore(asistente, antesDe);
 
@@ -271,6 +289,8 @@ export function montarFormularioCliente(contenedor, opciones) {
     barras: progreso.querySelectorAll('.step-progress__bar'),
     etiquetas: progreso.querySelectorAll('.step-progress__labels span'),
   });
+
+  enlazarPasoAtras(() => pasos.mostrar(0));
 
   let fotoClienteStaged = null;
   const fotoClienteAvatar = document.getElementById('foto-cliente-avatar');
@@ -301,9 +321,7 @@ export function montarFormularioCliente(contenedor, opciones) {
         const img = document.createElement('img');
         img.src = fotoClienteStaged.previewUrl;
         img.alt = '';
-        img.style.width = '100%';
-        img.style.height = '100%';
-        img.style.objectFit = 'cover';
+        img.className = 'imagen-avatar-previa';
         fotoClienteAvatar.appendChild(img);
       },
     });

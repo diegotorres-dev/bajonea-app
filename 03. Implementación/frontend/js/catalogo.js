@@ -1,5 +1,6 @@
 import { apiFetch, ApiError, consumirToastPendiente, esContextoComercio, getUsuario, mostrarModalCuentaBloqueada } from './api.js';
 import { exigirContextoCliente } from './contexto.js';
+import { pintarImagen, urlImagen } from './imagenes.js';
 import { resolverHomePorRol, LABELS_TIPO_COMERCIO } from './auth.js';
 import { contarNotificacionesNoLeidasActivo, resolverComercioActivo, suscribirComercios } from './comercio-activo.js';
 import { normalizarCampos, excedeSubtotalMaximo, mensajeSubtotalMaximoExcedido } from './validators.js';
@@ -218,18 +219,14 @@ export function renderTopBar(container, { mostrarVolver = false, titulo = null, 
     });
     bar.appendChild(backBtn);
 
-    const titleEl = crear('h1', 'app-header__title');
-    titleEl.style.position = 'static';
-    titleEl.style.transform = 'none';
-    titleEl.style.fontSize = '17px';
+    const titleEl = crear('h1', 'app-header__title app-header__title--en-barra');
     titleEl.textContent = titulo || '';
     bar.appendChild(titleEl);
 
     if (accion) {
       bar.appendChild(accion);
     } else {
-      const spacer = crear('span');
-      spacer.style.width = '24px';
+      const spacer = crear('span', 'top-bar__espaciador');
       bar.appendChild(spacer);
     }
   } else {
@@ -457,7 +454,7 @@ export function pintarAvatarComercio(container, comercio) {
   container.innerHTML = '';
   if (comercio.fotoPerfilUrl) {
     const img = document.createElement('img');
-    img.src = comercio.fotoPerfilUrl;
+    pintarImagen(img, comercio.fotoPerfilUrl, { uso: 'avatar' });
     img.alt = '';
     container.appendChild(img);
   } else {
@@ -472,7 +469,7 @@ export function pintarAvatarUsuario(container, fotoPerfilUrl, textoAlternativo) 
   container.innerHTML = '';
   if (fotoPerfilUrl) {
     const img = document.createElement('img');
-    img.src = fotoPerfilUrl;
+    pintarImagen(img, fotoPerfilUrl, { uso: 'avatar' });
     img.alt = '';
     container.appendChild(img);
   } else {
@@ -695,7 +692,7 @@ function renderProductoRow(producto, onOpen) {
   const principal = producto.imagenes.find((imagen) => imagen.esPrincipal) || producto.imagenes[0];
   if (principal) {
     const img = document.createElement('img');
-    img.src = principal.url;
+    pintarImagen(img, principal.url, { uso: 'miniatura', diferida: true });
     img.alt = '';
     thumbWrapper.appendChild(img);
   }
@@ -721,7 +718,7 @@ function abrirZoomImagen(url) {
   backdrop.setAttribute('data-testid', 'modal-zoom-producto');
 
   const img = document.createElement('img');
-  img.src = url;
+  pintarImagen(img, url, { uso: 'zoom' });
   img.alt = '';
   backdrop.appendChild(img);
 
@@ -759,7 +756,8 @@ function abrirModalProducto(producto) {
 
     const main = crear('div', 'product-gallery__main');
     const mainImg = document.createElement('img');
-    mainImg.src = imagenes[0].url;
+    let originalActual = imagenes[0].url;
+    pintarImagen(mainImg, originalActual, { uso: 'galeria' });
     mainImg.alt = '';
     main.appendChild(mainImg);
 
@@ -774,7 +772,7 @@ function abrirModalProducto(producto) {
     zoomBtn.type = 'button';
     zoomBtn.setAttribute('data-testid', 'btn-zoom-producto');
     zoomBtn.innerHTML = ICONS.zoom;
-    zoomBtn.addEventListener('click', () => abrirZoomImagen(mainImg.src));
+    zoomBtn.addEventListener('click', () => abrirZoomImagen(originalActual));
     main.appendChild(zoomBtn);
 
     gallery.appendChild(main);
@@ -787,11 +785,12 @@ function abrirModalProducto(producto) {
       thumb.setAttribute('data-testid', 'btn-miniatura-producto');
       thumb.setAttribute('data-active', String(index === 0));
       const thumbImg = document.createElement('img');
-      thumbImg.src = imagen.url;
+      pintarImagen(thumbImg, imagen.url, { uso: 'miniatura', diferida: true });
       thumbImg.alt = '';
       thumb.appendChild(thumbImg);
       thumb.addEventListener('click', () => {
-        mainImg.src = imagen.url;
+        originalActual = imagen.url;
+        mainImg.src = urlImagen(imagen.url, 'galeria');
         thumbButtons.forEach((btn, btnIndex) => btn.setAttribute('data-active', String(btnIndex === index)));
       });
       thumbs.appendChild(thumb);
@@ -803,7 +802,7 @@ function abrirModalProducto(producto) {
   } else if (imagenes.length === 1) {
     const gallery = crear('div', 'product-modal-sheet__gallery');
     const img = document.createElement('img');
-    img.src = imagenes[0].url;
+    pintarImagen(img, imagenes[0].url, { uso: 'galeria' });
     img.alt = '';
     gallery.appendChild(img);
 

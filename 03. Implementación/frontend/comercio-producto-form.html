@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Producto — Bajoneá</title>
 <link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/escritorio.css" media="(min-width: 1024px)" />
 </head>
 <body>
-<div class="app-shell">
+<div class="app-shell app-shell--lateral app-shell--comercio">
   <div id="top-bar-slot"></div>
   <main class="app-main">
     <div class="screen-body">
@@ -53,10 +54,13 @@
         </div>
         <div class="field">
           <label class="field__label">Tags / Preferencias alimentarias</label>
-          <div class="chip-row chip-row--wrap" id="tags-chip-row" style="padding:4px 0;" data-testid="fila-chips-tags-producto"></div>
+          <div class="chip-row chip-row--wrap u-p-4px-0" id="tags-chip-row" data-testid="fila-chips-tags-producto"></div>
           <div class="field__error" id="error-producto-tags" style="display:none;" data-testid="mensaje-error-tags-producto"></div>
         </div>
-        <button class="btn btn-primary" type="submit" id="guardar-producto-btn" data-testid="btn-guardar-producto" disabled>Crear producto</button>
+        <div class="form-acciones">
+          <div class="form-acciones__cancelar" hidden><a class="btn btn-secondary" href="comercio-productos.html" data-testid="btn-cancelar-producto">Cancelar</a></div>
+          <button class="btn btn-primary" type="submit" id="guardar-producto-btn" data-testid="btn-guardar-producto" disabled>Crear producto</button>
+        </div>
       </form>
       <button class="profile-link profile-link--danger" type="button" id="descontinuar-producto-link" style="margin-top:16px;border:1px solid var(--color-border);border-radius:var(--radius-lg);display:none;" data-testid="btn-descontinuar-producto">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
@@ -64,6 +68,7 @@
       </button>
     </div>
   </main>
+  <div id="bottom-nav-slot"></div>
 </div>
 <script type="module">
 import { initComercioProductoForm } from './js/comercio.js';

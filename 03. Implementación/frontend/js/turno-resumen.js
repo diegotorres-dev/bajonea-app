@@ -85,7 +85,7 @@ function crearRotulo(resumen) {
   return rotulo;
 }
 
-function crearMetricas(resumen) {
+function crearMetricas(resumen, extras = {}) {
   const sinTurno = resumen.estado === ESTADO_TURNO.SIN_TURNO;
   const barra = crear('div', 'stats-bar');
   const metricas = [
@@ -104,6 +104,20 @@ function crearMetricas(resumen) {
     columna.appendChild(label);
     barra.appendChild(columna);
   });
+  if (extras.enPreparacion !== undefined) {
+    const envoltorio = crear('div', 'stats-bar__escritorio');
+    envoltorio.hidden = true;
+    const columna = crear('div', 'stats-bar__col');
+    columna.setAttribute('data-testid', 'metrica-en-preparacion');
+    const valor = crear('p', 'stats-bar__value');
+    valor.textContent = String(extras.enPreparacion);
+    columna.appendChild(valor);
+    const label = crear('p', 'stats-bar__label');
+    label.textContent = 'En preparación';
+    columna.appendChild(label);
+    envoltorio.appendChild(columna);
+    barra.appendChild(envoltorio);
+  }
   return barra;
 }
 
@@ -156,11 +170,11 @@ function crearDesglose(resumen) {
   return bloque;
 }
 
-export function renderResumenTurno(container, resumen) {
+export function renderResumenTurno(container, resumen, extras = {}) {
   container.innerHTML = '';
   container.className = 'resumen-turno';
   container.appendChild(crearRotulo(resumen));
-  container.appendChild(crearMetricas(resumen));
+  container.appendChild(crearMetricas(resumen, extras));
   if (resumen.conDesglose && resumen.estado !== ESTADO_TURNO.SIN_TURNO) {
     container.appendChild(crearDesglose(resumen));
   }

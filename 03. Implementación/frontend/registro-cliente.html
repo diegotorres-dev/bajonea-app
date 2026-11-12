@@ -5,14 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Crear cuenta — Bajoneá</title>
 <link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/escritorio.css" media="(min-width: 1024px)" />
 </head>
 <body>
-<div class="app-shell">
+<div class="app-shell app-shell--escritorio app-shell--asistente">
   <header class="app-header">
     <button class="app-header__back" type="button" id="back-btn" aria-label="Volver" data-testid="btn-volver">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <span class="app-header__title">Crear cuenta</span>
+    <a class="app-header__salir" hidden href="registro-tipo-cuenta.html" data-testid="btn-salir-registro">Salir del registro</a>
   </header>
   <main class="app-main" id="registro-cliente-main">
     <div id="exito-container" class="state-page is-hidden">

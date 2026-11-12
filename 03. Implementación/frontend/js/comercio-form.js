@@ -225,7 +225,7 @@ export function mostrarModalConfirmarSalida({ texto, textoSeguir, testidSeguir, 
       <div class="modal-sheet__icon">${ICONO_SALIR}</div>
       <h2 class="modal-sheet__title">¿Salir?</h2>
       <p class="modal-sheet__text"></p>
-      <button class="btn btn-primary" type="button" id="seguir-btn" style="margin-bottom:12px;"></button>
+      <button class="btn btn-primary u-mb-12px" type="button" id="seguir-btn"></button>
       <button class="btn btn-tertiary" type="button" id="confirmar-salida-btn" data-testid="btn-confirmar-salida">Salir</button>
     </div>
   `;
@@ -256,9 +256,7 @@ export function initFotoComercio({ urlExistente = null } = {}) {
     const img = document.createElement('img');
     img.src = src;
     img.alt = '';
-    img.style.width = '100%';
-    img.style.height = '100%';
-    img.style.objectFit = 'cover';
+    img.className = 'imagen-avatar-previa';
     avatar.appendChild(img);
   }
 
@@ -698,7 +696,7 @@ export function initHorarios({ mostrarError }) {
         <div class="input-shell">
           <input type="time" class="horario-cierre" required data-testid="input-cierre-horario" />
         </div>
-        <button type="button" class="schedule-chip__remove" aria-label="Quitar franja" style="border:none;background:transparent;color:var(--color-text-muted);cursor:pointer;width:44px;height:48px;flex-shrink:0;" data-testid="btn-eliminar-horario">
+        <button type="button" class="schedule-chip__remove u-boton-quitar-franja" aria-label="Quitar franja" data-testid="btn-eliminar-horario">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
       </div>
@@ -879,14 +877,14 @@ export function initRedesSociales({ mostrarError }) {
     row.dataset.redSocialRow = 'true';
     row.setAttribute('data-testid', 'fila-red-social');
     row.innerHTML = `
-      <div class="select-shell" style="flex:1;">
+      <div class="select-shell u-fx-1">
         <select class="red-social-tipo" required data-testid="select-tipo-red-social"></select>
         <svg class="select-shell__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
-      <div class="input-shell" style="flex:1;">
+      <div class="input-shell u-fx-1">
         <input type="text" class="red-social-url" placeholder="Pegá el link" required data-testid="input-url-red-social" />
       </div>
-      <button type="button" class="schedule-chip__remove" aria-label="Quitar red social" style="border:none;background:transparent;color:var(--color-text-muted);cursor:pointer;width:32px;height:48px;flex-shrink:0;" data-testid="btn-eliminar-red-social">
+      <button type="button" class="schedule-chip__remove u-boton-quitar-red" aria-label="Quitar red social" data-testid="btn-eliminar-red-social">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     `;

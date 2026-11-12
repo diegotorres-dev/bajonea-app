@@ -5,18 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Rechazo definitivo — Bajoneá</title>
 <link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/escritorio.css" media="(min-width: 1024px)" />
 </head>
 <body>
-<div class="app-shell">
+<div class="app-shell app-shell--escritorio app-shell--acceso">
   <header class="app-header app-header--brand">
     <img class="header-logo" src="assets/img/bajonea-logo-orange-header.png" alt="Bajoneá" />
   </header>
   <main class="app-main">
     <div id="cargando-container" class="state-page" aria-busy="true" data-testid="skeleton-rechazo-definitivo">
-      <div class="skeleton" style="height:64px;width:64px;border-radius:50%;margin-bottom:16px;"></div>
-      <div class="skeleton" style="height:28px;width:220px;margin-bottom:12px;"></div>
-      <div class="skeleton" style="height:64px;width:100%;max-width:320px;margin-bottom:24px;"></div>
-      <div class="skeleton" style="height:72px;width:100%;max-width:320px;"></div>
+      <div class="skeleton u-esqueleto-avatar-64"></div>
+      <div class="skeleton u-h-28px-w-220px-mb-12px"></div>
+      <div class="skeleton u-h-64px-w-100-mw-320px-mb-24px"></div>
+      <div class="skeleton u-h-72px-w-100-mw-320px"></div>
     </div>
     <div id="contenido-container" class="state-page is-hidden">
       <div class="state-page__icon state-page__icon--error">
@@ -33,6 +34,18 @@
       </div>
     </div>
   </main>
+  <aside class="panel-marca" hidden data-testid="panel-marca">
+    <img class="panel-marca__logo" src="assets/img/bajonea-logo-white.png" alt="Bajoneá" />
+    <div class="panel-marca__texto">
+      <p class="panel-marca__titular" data-testid="panel-marca-titular">No pudimos aprobar tu comercio.</p>
+      <p class="panel-marca__bajada">Si creés que es un error, escribile a Soporte.</p>
+    </div>
+    <nav class="panel-marca__legal" aria-label="Información legal" data-testid="panel-legal">
+      <a class="panel-marca__enlace" href="terminos.html" data-testid="panel-legal-terminos">Términos y Condiciones</a>
+      <a class="panel-marca__enlace" href="privacidad.html" data-testid="panel-legal-privacidad">Política de Privacidad</a>
+      <a class="panel-marca__enlace" href="faq.html" data-testid="panel-legal-faq">Preguntas frecuentes</a>
+    </nav>
+  </aside>
 </div>
 <script type="module">
 import { logout } from './js/auth.js';

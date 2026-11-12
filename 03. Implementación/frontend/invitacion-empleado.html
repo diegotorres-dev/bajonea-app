@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Tengo una invitación — Bajoneá</title>
 <link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/escritorio.css" media="(min-width: 1024px)" />
 </head>
 <body>
-<div class="app-shell">
+<div class="app-shell app-shell--escritorio app-shell--acceso">
   <header class="app-header" id="invitacion-header">
     <button class="app-header__back" type="button" id="back-btn" aria-label="Volver" data-testid="btn-volver">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
@@ -41,9 +42,9 @@
     <section id="vista-existente" class="state-page state-page--inline is-hidden" data-testid="vista-invitacion-existente">
       <div id="avatar-comercio" class="profile-header__avatar" data-testid="avatar-comercio-invitacion"></div>
       <h1 class="state-page__title" id="existente-comercio" data-testid="nombre-comercio-invitacion"></h1>
-      <p class="state-page__text" style="margin-bottom:6px;">Te invitaron a sumarte a su equipo.</p>
+      <p class="state-page__text u-mb-6">Te invitaron a sumarte a su equipo.</p>
       <p class="state-page__text" data-testid="cuenta-invitacion">Cuenta: <strong id="existente-email"></strong></p>
-      <div id="banner-slot-existente" style="width:100%;max-width:320px;" data-testid="mensaje-banner-aceptar"></div>
+      <div class="slot-estrecho" id="banner-slot-existente" data-testid="mensaje-banner-aceptar"></div>
       <div class="state-page__actions">
         <button class="btn btn-primary" type="button" id="aceptar-btn" data-testid="btn-aceptar-invitacion">Aceptar invitación</button>
         <a class="btn btn-tertiary" href="login.html" data-testid="btn-ahora-no">Ahora no</a>
@@ -51,7 +52,7 @@
     </section>
 
     <section id="vista-nueva" class="is-hidden" data-testid="vista-invitacion-cuenta-nueva">
-      <div class="screen-body screen-body--tight" style="padding-bottom:0;">
+      <div class="screen-body screen-body--tight screen-body--sin-pie">
         <p class="subtitle" id="nueva-subtitulo" data-testid="subtitulo-cuenta-nueva"></p>
       </div>
     </section>
@@ -66,6 +67,18 @@
       </div>
     </section>
   </main>
+  <aside class="panel-marca" hidden data-testid="panel-marca">
+    <img class="panel-marca__logo" src="assets/img/bajonea-logo-white.png" alt="Bajoneá" />
+    <div class="panel-marca__texto">
+      <p class="panel-marca__titular" data-testid="panel-marca-titular">Sumate al equipo de un comercio.</p>
+      <p class="panel-marca__bajada">Ingresá el código de tu invitación para empezar a trabajar.</p>
+    </div>
+    <nav class="panel-marca__legal" aria-label="Información legal" data-testid="panel-legal">
+      <a class="panel-marca__enlace" href="terminos.html" data-testid="panel-legal-terminos">Términos y Condiciones</a>
+      <a class="panel-marca__enlace" href="privacidad.html" data-testid="panel-legal-privacidad">Política de Privacidad</a>
+      <a class="panel-marca__enlace" href="faq.html" data-testid="panel-legal-faq">Preguntas frecuentes</a>
+    </nav>
+  </aside>
 </div>
 <script type="module">
 import { initInvitacionEmpleado } from './js/invitacion-empleado.js';

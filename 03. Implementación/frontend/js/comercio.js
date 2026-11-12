@@ -1,4 +1,5 @@
 import { apiFetch, ApiError, guardarToastPendiente, esTimeoutAvisado, clearSesion, contextoPuedeCerrarComercio, contextoPuedeEditarCatalogo, contextoPuedeGestionarPedidos, esContextoComercio, esContextoDueno, esContextoEmpleado, getComercioActivoId, getUsuario, setContexto, TIPO_CONTEXTO } from './api.js';
+import { pintarImagen } from './imagenes.js';
 import { enlazarMisConsultas } from './soporte-mis-consultas.js';
 import { crearInterruptorSonido } from './sonido-interruptor.js';
 import { prepararAudio, reproducirDing } from './sonido-avisos.js';
@@ -30,6 +31,7 @@ import { abrirHojaRenuncia } from './renuncia-empleado.js';
 import { montarSwitchCierre } from './cierre-comercio.js';
 import { normalizarResumenTurno, programarRecargaAlFinDelTurno, renderResumenTurno } from './turno-resumen.js';
 import { abrirEquipoComercio, enlazarEquipoComercio } from './equipo-comercio.js';
+import { agregarAccionEscritorio, alCambiarEscritorio, completarBarraLateral, enEscritorio, informarPendientes } from './comercio-escritorio.js';
 import { montarPasosParaVender } from './pasos-vender.js';
 import { algunComercioSuspendido, comercioActivoSuspendido, pintarFranjaPedidos, pintarTarjetaSuspension, protegerPorSuspension, textoDePedidoSuspendido } from './comercio-suspendido.js';
 import { initHorarios } from './comercio-form.js';
@@ -438,7 +440,7 @@ export async function initComercioRechazoDefinitivo() {
   mostrarContenidoEstado();
 }
 
-export function renderBottomNavComercio(container, activo) {
+export function renderBottomNavComercio(container, activo, opciones = {}) {
   if (!esContextoComercio()) {
     return;
   }
@@ -471,10 +473,11 @@ export function renderBottomNavComercio(container, activo) {
     nav.appendChild(link);
   });
   container.appendChild(nav);
+  completarBarraLateral(container, nav, activo, opciones);
 
   if (avatarPerfil) {
     const perfilLink = avatarPerfil.closest('a');
-    if (esContextoDueno()) {
+    if (esContextoDueno() && !opciones.soloEscritorio) {
       perfilLink.classList.add('bottom-nav__item--selector');
       enlazarMantenerApretado(perfilLink, () => abrirPanelComercios());
       prepararPistaSelector(nav);
@@ -667,14 +670,14 @@ function renderPedidosActivos(listContainer, badgeContainer, pedidos) {
   listContainer.innerHTML = '';
   if (activos.length === 0) {
     const empty = crear('p', 'field__hint');
-    empty.style.padding = '4px 0 8px';
+    empty.classList.add('u-p-4px-0-8px');
     empty.textContent = 'No tenés pedidos activos en este momento.';
     listContainer.appendChild(empty);
     return;
   }
 
   const list = crear('div', 'pedido-list');
-  list.style.padding = '4px 0 0';
+  list.classList.add('u-p-4px-0-0');
   activos.forEach((pedido) => list.appendChild(renderPedidoActivoCard(pedido)));
   listContainer.appendChild(list);
 }
@@ -739,11 +742,17 @@ export async function initComercioDashboard() {
   }
 
   document.getElementById('saludo-titulo').textContent = 'Hola 👋';
-  document.getElementById('saludo-fecha').textContent = new Date().toLocaleDateString('es-AR', {
+  const saludoFecha = document.getElementById('saludo-fecha');
+  saludoFecha.textContent = new Date().toLocaleDateString('es-AR', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
   });
+  const saludoComercio = crear('span', 'saludo-comercio');
+  saludoComercio.hidden = true;
+  saludoComercio.setAttribute('data-testid', 'saludo-comercio');
+  saludoComercio.textContent = `${activo.nombre} · `;
+  saludoFecha.prepend(saludoComercio);
 
   let firmaPintada = null;
   let recargando = false;
@@ -767,7 +776,8 @@ export async function initComercioDashboard() {
         return;
       }
       firmaPintada = firma;
-      renderResumenTurno(document.getElementById('metrics-row'), resumenTurno);
+      informarPendientes(resumenTurno.cantidadPendientes);
+      renderResumenTurno(document.getElementById('metrics-row'), resumenTurno, { enPreparacion: pedidos.filter((pedido) => pedido.estado === 'EN_PREPARACION').length });
       renderPedidosActivos(document.getElementById('pedidos-activos-list'), document.getElementById('badge-pedidos-activos'), pedidos);
     } finally {
       recargando = false;
@@ -833,7 +843,7 @@ export async function initComercioPedidos() {
     return;
   }
 
-  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Pedidos' });
+  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Pedidos', destinoVolver: 'comercio-dashboard.html' });
   renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'pedidos');
   if (!(await prepararPaginaComercio({ slotFranja: document.getElementById('franja-comercio-slot') }))) {
     return;
@@ -852,6 +862,8 @@ export async function initComercioPedidos() {
   pintarAvisoDeLaLista();
 
   let filtroEstado = null;
+  let seleccionadoId = Number(new URLSearchParams(window.location.search).get('id')) || null;
+  const panelDetalle = document.getElementById('pedido-detalle-panel');
 
   const filtrosSlot = document.getElementById('filtros-slot');
   const chipRow = crear('div', 'chip-row');
@@ -873,6 +885,23 @@ export async function initComercioPedidos() {
 
   const contentEl = document.getElementById('pedidos-content');
 
+  function firmaDelSeleccionado(lista) {
+    const pedido = lista.find((candidato) => candidato.id === seleccionadoId);
+    return pedido ? `${pedido.estado}|${pedido.limiteResolucionSuspension || ''}` : '';
+  }
+
+  function seleccionar(pedidoId) {
+    seleccionadoId = pedidoId;
+    window.history.replaceState(null, '', `comercio-pedidos.html?id=${pedidoId}`);
+    marcarPedidoVisto(pedidoId);
+    renderLista();
+    const tarjeta = contentEl.querySelector('.pedido-card[aria-current="true"]');
+    if (tarjeta) {
+      tarjeta.focus({ preventScroll: true });
+    }
+    renderPanel();
+  }
+
   function renderLista() {
     contentEl.innerHTML = '';
     const filtrados = pedidos
@@ -884,8 +913,7 @@ export async function initComercioPedidos() {
 
     if (filtrados.length === 0) {
       const empty = crear('p', 'field__hint');
-      empty.style.padding = '24px 0';
-      empty.style.textAlign = 'center';
+      empty.classList.add('u-p-24px-0-ta-center');
       empty.textContent = pedidos.length === 0
         ? 'Todavía no recibiste ningún pedido.'
         : 'No hay pedidos con este filtro.';
@@ -894,11 +922,102 @@ export async function initComercioPedidos() {
     }
 
     const list = crear('div', 'pedido-list');
-    filtrados.forEach((pedido) => list.appendChild(renderPedidoActivoCard(pedido)));
+    filtrados.forEach((pedido) => {
+      const tarjeta = renderPedidoActivoCard(pedido);
+      if (pedido.id === seleccionadoId && enEscritorio()) {
+        tarjeta.classList.add('pedido-card--seleccionado');
+        tarjeta.setAttribute('aria-current', 'true');
+      }
+      tarjeta.addEventListener('click', (evento) => {
+        if (!enEscritorio() || evento.metaKey || evento.ctrlKey || evento.shiftKey) {
+          return;
+        }
+        evento.preventDefault();
+        seleccionar(pedido.id);
+      });
+      list.appendChild(tarjeta);
+    });
     contentEl.appendChild(list);
   }
 
+  function crearPanelVacio() {
+    const vacio = crear('div', 'pedido-detalle-vacio');
+    vacio.setAttribute('data-testid', 'pedido-detalle-vacio');
+    const titulo = crear('p', 'pedido-detalle-vacio__titulo');
+    const texto = crear('p', 'pedido-detalle-vacio__texto');
+    if (seleccionadoId) {
+      titulo.textContent = 'No encontramos este pedido';
+      texto.textContent = 'El pedido que buscás no existe o no pertenece a tu comercio.';
+    } else if (pedidos.length === 0) {
+      titulo.textContent = 'Todavía no recibiste ningún pedido';
+      texto.textContent = 'Cuando llegue uno, lo vas a ver acá con todo su detalle.';
+    } else {
+      titulo.textContent = 'Elegí un pedido';
+      texto.textContent = 'Seleccioná un pedido de la lista para ver su detalle y resolverlo.';
+    }
+    vacio.append(titulo, texto);
+    return vacio;
+  }
+
+  async function recargarYMostrar(mensaje) {
+    try {
+      const recientes = await apiFetch('/pedidos/comercio');
+      recientes.forEach(normalizarPedido);
+      pedidos = recientes;
+      renderLista();
+      renderPanel({ avisoInicial: mensaje });
+    } catch {
+    }
+  }
+
+  function renderPanel({ avisoInicial = null } = {}) {
+    if (!panelDetalle || !enEscritorio()) {
+      return;
+    }
+    panelDetalle.replaceChildren();
+    const pedido = pedidos.find((candidato) => candidato.id === seleccionadoId);
+    if (!pedido) {
+      panelDetalle.appendChild(crearPanelVacio());
+      return;
+    }
+    marcarPedidoVisto(pedido.id);
+    const tarjeta = crear('div', 'pedido-detalle-tarjeta');
+    tarjeta.setAttribute('data-testid', 'pedido-detalle-panel-contenido');
+    panelDetalle.appendChild(tarjeta);
+    renderPedidoDetalleComercio(tarjeta, pedido, (actualizado) => {
+      pedidos = pedidos.map((candidato) => (candidato.id === actualizado.id ? actualizado : candidato));
+      renderLista();
+      renderPanel();
+    }, { alConflicto: recargarYMostrar, avisoInicial });
+  }
+
   renderLista();
+  renderPanel();
+  if (seleccionadoId && enEscritorio()) {
+    renderLista();
+  }
+  alCambiarEscritorio((escritorio) => {
+    if (escritorio) {
+      renderLista();
+      renderPanel();
+    }
+  });
+
+  contentEl.addEventListener('keydown', (evento) => {
+    if (!enEscritorio() || (evento.key !== 'ArrowDown' && evento.key !== 'ArrowUp')) {
+      return;
+    }
+    const tarjetas = Array.from(contentEl.querySelectorAll('.pedido-card'));
+    const indice = tarjetas.indexOf(document.activeElement);
+    if (indice === -1) {
+      return;
+    }
+    evento.preventDefault();
+    const siguiente = tarjetas[indice + (evento.key === 'ArrowDown' ? 1 : -1)];
+    if (siguiente) {
+      siguiente.focus();
+    }
+  });
 
   const firmaDeLaLista = (lista) => lista.map((pedido) => {
     const nuevo = esPedidoNuevo(pedido);
@@ -923,8 +1042,15 @@ export async function initComercioPedidos() {
       recientes.forEach(normalizarPedido);
       registrarLineaBase(recientes);
       if (cambio || firmaDeLaLista(recientes) !== firmaDeLaLista(pedidos)) {
+        const cambioElSeleccionado = firmaDelSeleccionado(recientes) !== firmaDelSeleccionado(pedidos);
         pedidos = recientes;
         renderLista();
+        if (cambio || cambioElSeleccionado) {
+          const avisoVisible = panelDetalle && panelDetalle.querySelector('[data-testid="aviso-fijo"]');
+          if (!avisoVisible) {
+            renderPanel();
+          }
+        }
       }
     } catch {
     } finally {
@@ -1100,7 +1226,7 @@ function renderAccionesPendiente(container, pedido, onActualizado, avisoSlot) {
 
   const aceptarBtn = crear('button', 'btn btn-primary');
   aceptarBtn.type = 'button';
-  aceptarBtn.style.marginBottom = '10px';
+  aceptarBtn.classList.add('u-mb-10px');
   aceptarBtn.setAttribute('data-testid', 'btn-aceptar-pedido');
   aceptarBtn.textContent = 'Aceptar pedido';
   aceptarBtn.addEventListener('click', async () => {
@@ -1157,7 +1283,7 @@ function renderAccionesEnPreparacion(container, pedido, onActualizado, avisoSlot
   const textoDespachar = pedido.tipoEntrega === 'DOMICILIO' ? 'Marcar como despachado' : 'Marcar como listo para retirar';
   const despacharBtn = crear('button', 'btn btn-primary');
   despacharBtn.type = 'button';
-  despacharBtn.style.marginBottom = '10px';
+  despacharBtn.classList.add('u-mb-10px');
   despacharBtn.setAttribute('data-testid', 'btn-despachar-pedido');
   despacharBtn.textContent = textoDespachar;
   despacharBtn.addEventListener('click', async () => {
@@ -1247,7 +1373,7 @@ function renderAccionesListoParaRetirar(container, pedido, onActualizado, avisoS
 
   const noRetiradoBtn = crear('button', 'btn btn-peligro-contorno');
   noRetiradoBtn.type = 'button';
-  noRetiradoBtn.style.marginTop = '10px';
+  noRetiradoBtn.classList.add('u-mt-10px');
   noRetiradoBtn.setAttribute('data-testid', 'btn-cerrar-no-retirado');
   noRetiradoBtn.textContent = 'Cerrar como no retirado';
   container.appendChild(noRetiradoBtn);
@@ -1396,7 +1522,7 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado, opciones 
 
   if (pedido.reembolso) {
     const bloqueReembolso = crear('div');
-    bloqueReembolso.style.marginBottom = '12px';
+    bloqueReembolso.classList.add('u-mb-12px');
     bloqueReembolso.appendChild(crearChipReembolso(pedido, 'chip-reembolso-detalle'));
     body.appendChild(bloqueReembolso);
   }
@@ -1417,7 +1543,7 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado, opciones 
   body.appendChild(clienteCard);
 
   const modalidadCard = crear('div', 'summary-card');
-  modalidadCard.style.marginTop = '12px';
+  modalidadCard.classList.add('u-mt-12px');
   const modalidadIcon = crear('div', 'summary-card__icon');
   modalidadIcon.innerHTML = pedido.tipoEntrega === 'DOMICILIO' ? ICONS.truck : ICONS.bag;
   modalidadCard.appendChild(modalidadIcon);
@@ -1441,7 +1567,7 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado, opciones 
   body.appendChild(modalidadCard);
 
   const desglose = crear('div', 'section-heading');
-  desglose.style.marginTop = '20px';
+  desglose.classList.add('u-mt-20px');
   desglose.textContent = 'Desglose del pedido';
   body.appendChild(desglose);
 
@@ -1456,8 +1582,7 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado, opciones 
     body.appendChild(line);
     if (detalle.nota) {
       const nota = crear('p', 'field__hint');
-      nota.style.marginTop = '-4px';
-      nota.style.marginBottom = '6px';
+      nota.classList.add('u-mt-4px-mb-6px');
       nota.textContent = `Nota: "${detalle.nota}"`;
       body.appendChild(nota);
     }
@@ -1534,8 +1659,8 @@ function renderPedidoDetalleComercio(container, pedido, onActualizado, opciones 
       aviso.textContent = textoSuspension;
       body.appendChild(aviso);
     }
-    const accionesSlot = crear('div');
-    accionesSlot.style.marginTop = '12px';
+    const accionesSlot = crear('div', 'acciones-pedido');
+    accionesSlot.classList.add('u-mt-12px');
     body.appendChild(accionesSlot);
     if (!tieneAcciones) {
       accionesSlot.remove();
@@ -1579,11 +1704,16 @@ function renderPedidoNoEncontrado(container) {
 }
 
 export async function initComercioPedidoDetalle() {
+  if (enEscritorio()) {
+    const idDeLaUrl = Number(new URLSearchParams(window.location.search).get('id'));
+    window.location.replace(idDeLaUrl ? `comercio-pedidos.html?id=${idDeLaUrl}` : 'comercio-pedidos.html');
+    return;
+  }
   if (!(await exigirContextoComercio())) {
     return;
   }
 
-  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Pedido' });
+  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Pedido', destinoVolver: 'comercio-pedidos.html' });
   if (!(await prepararPaginaComercio())) {
     return;
   }
@@ -1623,7 +1753,7 @@ export async function initComercioPedidoDetalle() {
   }
 
   function renderActual(opciones = {}) {
-    renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: `Pedido #${pedido.id}` });
+    renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: `Pedido #${pedido.id}`, destinoVolver: 'comercio-pedidos.html' });
     renderPedidoDetalleComercio(container, pedido, (actualizado) => {
       pedido = actualizado;
       renderActual();
@@ -1659,11 +1789,88 @@ export async function initComercioPedidoDetalle() {
   });
 }
 
+let alCambiarVistaDelPerfil = null;
+
 function mostrarVista(id) {
   document.querySelectorAll('.perfil-view').forEach((view) => {
     view.classList.toggle('is-hidden', view.id !== id);
   });
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (alCambiarVistaDelPerfil) {
+    alCambiarVistaDelPerfil(id);
+  }
+}
+
+const SECCIONES_DEL_PERFIL = {
+  dueno: [
+    { clave: 'perfil', etiqueta: 'Mi perfil', vista: 'view-principal', enlace: null },
+    { clave: 'legales', etiqueta: 'Datos legales', vista: 'view-datos-legales', enlace: 'ver-legales-link' },
+    { clave: 'datos', etiqueta: 'Datos del comercio', vista: 'view-editar-perfil', enlace: 'editar-perfil-link' },
+    { clave: 'horarios', etiqueta: 'Horarios', vista: 'view-editar-horarios', enlace: 'editar-horarios-link' },
+    { clave: 'equipo', etiqueta: 'Equipo', vista: 'view-equipo', enlace: 'ver-equipo-link' },
+    { clave: 'mercadopago', etiqueta: 'Mercado Pago', vista: 'view-mercadopago', enlace: 'mercadopago-link' },
+    { clave: 'password', etiqueta: 'Contraseña', vista: 'view-cambiar-password', enlace: 'cambiar-password-link' },
+  ],
+  empleado: [
+    { clave: 'perfil', etiqueta: 'Mi perfil', vista: 'view-principal', enlace: null },
+    { clave: 'datos', etiqueta: 'Datos del comercio', vista: 'view-datos-comercio', enlace: 'ver-datos-comercio-link' },
+    { clave: 'operativos', etiqueta: 'Datos operativos', vista: 'view-editar-datos-comercio', enlace: 'editar-comercio-empleado-link' },
+    { clave: 'horarios', etiqueta: 'Horarios', vista: 'view-editar-horarios', enlace: 'editar-horarios-empleado-link' },
+  ],
+};
+
+function montarMenuDelPerfil() {
+  const secciones = SECCIONES_DEL_PERFIL[esContextoEmpleado() ? 'empleado' : 'dueno'];
+  const envoltorio = document.querySelector('.perfil-escritorio');
+  const menu = crear('nav', 'perfil-menu');
+  menu.hidden = true;
+  menu.setAttribute('aria-label', 'Secciones del perfil');
+  menu.setAttribute('data-testid', 'menu-perfil');
+  const botones = new Map();
+  let yaInicial = false;
+  secciones.forEach((seccion) => {
+    const boton = crear('button', 'perfil-menu__item');
+    boton.type = 'button';
+    boton.textContent = seccion.etiqueta;
+    boton.setAttribute('data-testid', `menu-perfil-${seccion.clave}`);
+    boton.addEventListener('click', () => {
+      if (seccion.enlace) {
+        const enlace = document.getElementById(seccion.enlace);
+        if (enlace && !enlace.disabled) {
+          enlace.click();
+        }
+      } else {
+        mostrarVista(seccion.vista);
+      }
+    });
+    botones.set(seccion.vista, { boton, seccion });
+    menu.appendChild(boton);
+  });
+  envoltorio.insertBefore(menu, envoltorio.firstElementChild);
+  alCambiarVistaDelPerfil = (vistaId) => {
+    botones.forEach(({ boton, seccion }, vista) => {
+      if (vista === vistaId) {
+        boton.setAttribute('aria-current', 'page');
+        if (enEscritorio() && !(pedida && pedida !== seccion.clave && vistaId === 'view-principal' && !yaInicial)) {
+          const parametros = new URLSearchParams(window.location.search);
+          parametros.set('seccion', seccion.clave);
+          window.history.replaceState(null, '', `comercio-perfil.html?${parametros.toString()}`);
+        }
+      } else {
+        boton.removeAttribute('aria-current');
+      }
+    });
+  };
+  const pedida = new URLSearchParams(window.location.search).get('seccion');
+  alCambiarVistaDelPerfil('view-principal');
+  const inicial = secciones.find((seccion) => seccion.clave === pedida);
+  yaInicial = true;
+  if (enEscritorio() && inicial && inicial.vista !== 'view-principal') {
+    const enlace = inicial.enlace ? document.getElementById(inicial.enlace) : null;
+    if (enlace && !enlace.disabled) {
+      enlace.click();
+    }
+  }
 }
 
 function mostrarModalConfirmarLogout() {
@@ -2006,13 +2213,13 @@ function mostrarModalFotoPerfilComercio({ onEditar }) {
   backdrop.innerHTML = `
     <div class="modal-sheet">
       <h2 class="modal-sheet__title">Foto de perfil</h2>
-      <div class="profile-link-list" style="width:100%;margin-bottom:12px;">
+      <div class="profile-link-list u-w-100-mb-12px">
         <button class="profile-link" type="button" id="modal-editar-foto-btn" data-testid="btn-editar-foto-perfil-comercio">
           ${ICONS.edit}
           <span>Editar foto</span>
         </button>
       </div>
-      <button class="btn btn-tertiary" type="button" id="modal-cancelar-foto-btn" style="width:100%;" data-testid="btn-cancelar-foto-perfil-comercio">Cancelar</button>
+      <button class="btn btn-tertiary u-w-100" type="button" id="modal-cancelar-foto-btn" data-testid="btn-cancelar-foto-perfil-comercio">Cancelar</button>
     </div>
   `;
   document.body.appendChild(backdrop);
@@ -2064,7 +2271,7 @@ function pintarHorariosParaEmpleado(contenedor, horarios, pendientes) {
   });
   if (pendientes && pendientes.length > 0) {
     const titulo = crear('p', 'horarios-vigencia__titulo');
-    titulo.style.marginTop = '12px';
+    titulo.classList.add('u-mt-12px');
     titulo.textContent = 'Desde mañana';
     contenedor.appendChild(titulo);
     ordenarFranjas(pendientes).forEach((franja) => {
@@ -2238,7 +2445,7 @@ function mostrarModalCuentaPersonal() {
     <div class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="cuenta-personal-titulo">
       <h2 class="modal-sheet__title" id="cuenta-personal-titulo">Vas a pasar a tu cuenta personal</h2>
       <p class="modal-sheet__text">Para editar tus datos personales vas a salir de este comercio y entrar a tu cuenta de Cliente.</p>
-      <button class="btn btn-primary" type="button" id="continuar-cuenta-personal-btn" style="margin-bottom:12px;" data-testid="btn-continuar-cuenta-personal">Continuar</button>
+      <button class="btn btn-primary u-mb-12px" type="button" id="continuar-cuenta-personal-btn" data-testid="btn-continuar-cuenta-personal">Continuar</button>
       <button class="btn btn-tertiary" type="button" id="cancelar-cuenta-personal-btn" data-testid="btn-cancelar-cuenta-personal">Cancelar</button>
     </div>
   `;
@@ -2368,6 +2575,7 @@ async function iniciarPerfilDelEmpleado(comercio) {
   protegerPorSuspension(document.getElementById('editar-comercio-empleado-link'));
   protegerPorSuspension(document.getElementById('editar-horarios-empleado-link'));
   document.querySelectorAll('.profile-link-list[aria-busy]').forEach((lista) => lista.removeAttribute('aria-busy'));
+  montarMenuDelPerfil();
 }
 
 export async function initComercioPerfil() {
@@ -2712,6 +2920,7 @@ export async function initComercioPerfil() {
   protegerPorSuspension(document.getElementById('editar-perfil-link'));
   protegerPorSuspension(document.getElementById('editar-horarios-link'));
   protegerPorSuspension(avatarPerfil, { conTexto: false });
+  montarMenuDelPerfil();
 }
 
 const ESTADO_PRODUCTO_BADGE = {
@@ -2719,9 +2928,26 @@ const ESTADO_PRODUCTO_BADGE = {
   DESCONTINUADO: { label: 'Descontinuado', className: 'status-badge--descontinuado' },
 };
 
+const ESTADO_PRODUCTO_TEXTO = {
+  DISPONIBLE: 'Disponible',
+  AGOTADO: 'Agotado',
+  DESCONTINUADO: 'Descontinuado',
+};
+
+function crearEncabezadoTablaProductos() {
+  const cabecera = crear('div', 'product-table__head');
+  cabecera.hidden = true;
+  ['Producto', 'Categoría', 'Precio', 'Estado', 'Acciones'].forEach((titulo) => {
+    const celda = document.createElement('span');
+    celda.textContent = titulo;
+    cabecera.appendChild(celda);
+  });
+  return cabecera;
+}
+
 function renderProductoRow(producto, onKebab) {
   const row = crear('div', producto.estado === 'DESCONTINUADO' ? 'product-row product-row--descontinuado' : 'product-row');
-  row.style.cursor = 'default';
+  row.classList.add('u-cur-default');
   row.setAttribute('data-testid', `producto-item-${producto.id}`);
 
   const thumb = crear('div', 'product-row__thumb');
@@ -2733,7 +2959,7 @@ function renderProductoRow(producto, onKebab) {
   const principal = producto.imagenes.find((imagen) => imagen.esPrincipal) || producto.imagenes[0];
   if (principal) {
     const img = document.createElement('img');
-    img.src = principal.url;
+    pintarImagen(img, principal.url, { uso: 'miniatura', diferida: true });
     img.alt = '';
     thumb.appendChild(img);
   }
@@ -2741,10 +2967,7 @@ function renderProductoRow(producto, onKebab) {
 
   const info = crear('div', 'product-row__info');
   const titleRow = document.createElement('div');
-  titleRow.style.display = 'flex';
-  titleRow.style.alignItems = 'center';
-  titleRow.style.gap = '8px';
-  titleRow.style.flexWrap = 'wrap';
+  titleRow.classList.add('u-d-flex-ai-center-gap-8px-fw-wrap');
   const h3 = document.createElement('h3');
   h3.textContent = producto.nombre;
   titleRow.appendChild(h3);
@@ -2759,6 +2982,29 @@ function renderProductoRow(producto, onKebab) {
   precio.textContent = formatearPrecio(producto.precio);
   info.appendChild(precio);
   row.appendChild(info);
+
+  const celdasEscritorio = crear('div', 'product-row__escritorio');
+  celdasEscritorio.hidden = true;
+  const categoria = crear('p', 'product-row__categoria');
+  categoria.setAttribute('data-testid', `producto-categoria-${producto.id}`);
+  categoria.textContent = producto.nombreCategoria || '–';
+  celdasEscritorio.appendChild(categoria);
+  const estadoCelda = crear('p', 'product-row__estado');
+  estadoCelda.setAttribute('data-testid', `producto-estado-${producto.id}`);
+  estadoCelda.dataset.estado = producto.estado;
+  estadoCelda.appendChild(crear('span', 'product-row__punto'));
+  const estadoTexto = document.createElement('span');
+  estadoTexto.textContent = ESTADO_PRODUCTO_TEXTO[producto.estado] || 'Estado no disponible';
+  estadoCelda.appendChild(estadoTexto);
+  celdasEscritorio.appendChild(estadoCelda);
+  if (onKebab) {
+    const editar = crear('a', 'btn btn-secondary product-row__editar');
+    editar.href = `comercio-producto-form.html?id=${producto.id}`;
+    editar.setAttribute('data-testid', `btn-editar-producto-${producto.id}`);
+    editar.textContent = 'Editar';
+    celdasEscritorio.appendChild(editar);
+  }
+  row.appendChild(celdasEscritorio);
 
   if (onKebab) {
     const kebab = crear('button', 'product-row__kebab');
@@ -2783,14 +3029,14 @@ function mostrarModalAccionProducto(producto, { onEditar, onCambiarEstado, onDes
 
   const body = crear('div', 'product-modal-sheet__body');
   const titleRow = crear('div', 'product-modal-sheet__title-row');
-  titleRow.style.marginBottom = '4px';
+  titleRow.classList.add('u-mb-4px');
   const h2 = document.createElement('h2');
-  h2.style.fontSize = '17px';
+  h2.classList.add('u-fs-17px');
   h2.textContent = producto.nombre;
   titleRow.appendChild(h2);
   body.appendChild(titleRow);
   const precio = crear('p', 'product-modal-sheet__description');
-  precio.style.marginBottom = '16px';
+  precio.classList.add('u-mb-16px');
   precio.textContent = formatearPrecio(producto.precio);
   body.appendChild(precio);
 
@@ -2844,7 +3090,7 @@ function mostrarModalAccionProducto(producto, { onEditar, onCambiarEstado, onDes
 
   const cancelBtn = crear('button', 'btn btn-tertiary');
   cancelBtn.type = 'button';
-  cancelBtn.style.marginTop = '16px';
+  cancelBtn.classList.add('u-mt-16px');
   cancelBtn.setAttribute('data-testid', 'btn-cancelar-modal-acciones');
   cancelBtn.textContent = 'Cancelar';
   cancelBtn.addEventListener('click', () => backdrop.remove());
@@ -2888,7 +3134,7 @@ export async function initComercioProductos() {
     return;
   }
 
-  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Mis productos' });
+  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Mis productos', destinoVolver: 'comercio-dashboard.html' });
   renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'productos');
   if (!(await prepararPaginaComercio({ slotFranja: document.getElementById('franja-comercio-slot') }))) {
     return;
@@ -2957,8 +3203,7 @@ export async function initComercioProductos() {
 
     if (filtrados.length === 0) {
       const empty = crear('p', 'field__hint');
-      empty.style.padding = '24px 0';
-      empty.style.textAlign = 'center';
+      empty.classList.add('u-p-24px-0-ta-center');
       empty.textContent = productos.length === 0
         ? (esContextoEmpleado() ? 'Este comercio todavía no tiene productos cargados. Usá el botón + para crear el primero.' : 'Todavía no cargaste ningún producto. Usá el botón + para crear el primero.')
         : 'No encontramos productos con ese filtro.';
@@ -2967,7 +3212,8 @@ export async function initComercioProductos() {
     }
 
     const section = crear('div', 'product-section');
-    section.style.padding = '0';
+    section.classList.add('u-p-0');
+    section.appendChild(crearEncabezadoTablaProductos());
     filtrados.forEach((producto) => {
       section.appendChild(renderProductoRow(producto, contextoPuedeEditarCatalogo() && !comercioActivoSuspendido() ? abrirMenuAccion : null));
     });
@@ -3021,6 +3267,11 @@ export async function initComercioProductos() {
   });
 
   const botonCrearProducto = document.getElementById('crear-producto-fab');
+  const botonNuevoEscritorio = crear('a', 'btn btn-primary');
+  botonNuevoEscritorio.href = 'comercio-producto-form.html';
+  botonNuevoEscritorio.setAttribute('data-testid', 'btn-nuevo-producto');
+  botonNuevoEscritorio.textContent = 'Nuevo producto';
+  agregarAccionEscritorio(document.getElementById('top-bar-slot'), botonNuevoEscritorio);
   if (contextoPuedeEditarCatalogo()) {
     botonCrearProducto.addEventListener('click', () => {
       window.location.href = 'comercio-producto-form.html';
@@ -3034,6 +3285,7 @@ export async function initComercioProductos() {
   function pintarSoloLecturaDeProductos() {
     const suspendido = comercioActivoSuspendido();
     botonCrearProducto.classList.toggle('is-hidden', suspendido || !contextoPuedeEditarCatalogo());
+    botonNuevoEscritorio.classList.toggle('is-hidden', suspendido || !contextoPuedeEditarCatalogo());
     if (suspendido === estabaSuspendido) {
       return;
     }
@@ -3070,7 +3322,9 @@ export async function initComercioProductoForm() {
   renderTopBar(document.getElementById('top-bar-slot'), {
     mostrarVolver: true,
     titulo: esEdicion ? 'Editar producto' : 'Nuevo producto',
+    destinoVolver: 'comercio-productos.html',
   });
+  renderBottomNavComercio(document.getElementById('bottom-nav-slot'), 'productos', { soloEscritorio: true });
   document.getElementById('guardar-producto-btn').textContent = esEdicion ? 'Guardar cambios' : 'Crear producto';
   if (!(await prepararPaginaComercio())) {
     return;
@@ -3248,7 +3502,7 @@ export async function initComercioProductoForm() {
     items.forEach((item, index) => {
       const tile = crear('div', 'photo-gallery__item');
       const img = document.createElement('img');
-      img.src = esEdicion ? item.url : item.previewUrl;
+      pintarImagen(img, esEdicion ? item.url : item.previewUrl, { uso: 'miniatura' });
       img.alt = '';
       tile.appendChild(img);
       if (esEdicion ? item.esPrincipal : index === 0) {

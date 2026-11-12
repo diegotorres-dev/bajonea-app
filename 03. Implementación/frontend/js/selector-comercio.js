@@ -1,4 +1,5 @@
 import { apiFetch, esContextoEmpleado, getComercioActivoId, perderAccesoAlComercio } from './api.js';
+import { pintarImagen } from './imagenes.js';
 import { exigirContextoComercio } from './contexto.js';
 import {
   activarComercio,
@@ -104,7 +105,7 @@ function pintarAvatar(contenedor, comercio) {
   contenedor.replaceChildren();
   if (comercio.fotoPerfilUrl) {
     const img = document.createElement('img');
-    img.src = comercio.fotoPerfilUrl;
+    pintarImagen(img, comercio.fotoPerfilUrl, { uso: 'avatar' });
     img.alt = '';
     img.draggable = false;
     contenedor.appendChild(img);

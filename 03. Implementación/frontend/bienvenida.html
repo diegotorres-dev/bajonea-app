@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Bajoneá — Pedí la mejor comida de tu ciudad</title>
 <link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/escritorio.css" media="(min-width: 1024px)" />
 </head>
 <body>
-<div class="app-shell">
+<div class="app-shell app-shell--escritorio app-shell--acceso">
   <main class="app-main">
     <div class="landing-hero">
       <img src="assets/img/bajonea-logo-white.png" alt="Bajoneá" />
@@ -18,13 +19,25 @@
       <div class="form">
         <a class="btn btn-primary" href="login.html" data-testid="btn-ingresar">Ingresar</a>
         <a class="btn btn-secondary" href="registro-tipo-cuenta.html" data-testid="btn-crear-cuenta">Crear cuenta</a>
-        <button class="btn btn-text" type="button" id="explorar-btn" style="width:100%;justify-content:center;color:var(--color-text-muted);" data-testid="btn-explorar-sin-registro">
+        <button class="btn btn-text btn-text--bloque" type="button" id="explorar-btn" data-testid="btn-explorar-sin-registro">
           Explorar sin registrarme
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
         </button>
       </div>
     </div>
   </main>
+  <aside class="panel-marca" hidden data-testid="panel-marca">
+    <img class="panel-marca__logo" src="assets/img/bajonea-logo-white.png" alt="Bajoneá" />
+    <div class="panel-marca__texto">
+      <p class="panel-marca__titular" data-testid="panel-marca-titular">Pedí lo que se te antoje.</p>
+      <p class="panel-marca__bajada">Comercios gastronómicos de tu zona, en un solo lugar.</p>
+    </div>
+    <nav class="panel-marca__legal" aria-label="Información legal" data-testid="panel-legal">
+      <a class="panel-marca__enlace" href="terminos.html" data-testid="panel-legal-terminos">Términos y Condiciones</a>
+      <a class="panel-marca__enlace" href="privacidad.html" data-testid="panel-legal-privacidad">Política de Privacidad</a>
+      <a class="panel-marca__enlace" href="faq.html" data-testid="panel-legal-faq">Preguntas frecuentes</a>
+    </nav>
+  </aside>
 </div>
 <script type="module">
 document.getElementById('explorar-btn').addEventListener('click', () => {

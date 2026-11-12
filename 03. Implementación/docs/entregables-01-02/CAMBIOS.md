@@ -5,6 +5,26 @@ Los documentos de `01. Análisis de Requerimientos` y `02. Diseño` no se editan
 > **Nota (2026-10-05):** las secciones del tramo C1 y del tramo 5 se reconstruyeron desde git, en modo solo lectura, comparando `01. Análisis de Requerimientos` y `02. Diseño` entre commits: el tramo C1 con `git diff 90933b8 a812465` y el tramo 5 con `git diff c081fb6 90933b8`. Se perdieron cuando se creó este archivo en el tramo C2. Lo que dicen esas dos secciones es lo que muestran los diffs, ni más ni menos. Tener en cuenta que el intervalo `c081fb6..90933b8` no se puede recortar al tramo 5: `c081fb6` es la última actualización de documentación anterior (2026-09-20), así que ese diff reúne todo lo que cambió en `01.` y `02.` hasta el tramo 5B (login por nombre de usuario, verificación del split, reembolsos y expiración de 30 minutos, corrección de comercios rechazados, cuenta de MercadoPago única y desvinculación, entre otros). La sección lo detalla por documento.
 
 
+## Interfaz de escritorio, tramo E0b: pantallas de acceso como app de escritorio (2026-11-08)
+
+Solo frontend. Reemplaza la composición de las pantallas de acceso del tramo E0 (una tarjeta centrada más ancha) por una composición propia de escritorio: pantalla partida con panel de marca (login, bienvenida, verificación, recuperación, reactivación, invitación, soporte, errores y splash), asistente con pasos al costado (registro de Cliente y de Comercio), dos tarjetas grandes (tipo de cuenta), grilla de cuentas (selector de contexto), índice lateral (términos, privacidad y preguntas frecuentes) y conversación con los datos de la consulta a la derecha (soporte).
+
+### Cambios a reflejar en los documentos de requisitos
+
+1. **Requisitos no funcionales** (`requisitos-no-funcionales.md`): donde el tramo E0 dice que las pantallas de acceso usan una tarjeta centrada, corregir: a partir de 1024 px usan composición propia de escritorio (panel de marca y formulario, o pasos al costado y contenido); entre 640 y 1023 px sigue el diseño móvil centrado. La navegación completa por teclado, el foco visible y el hover aplican a estas pantallas.
+2. **Alcance y limitaciones**: sin cambios respecto de E0 (el escritorio sigue siendo parcial hasta E1 a E3). Anotar que `comercio-corregir` y `agregar-comercio` todavía no tienen composición de escritorio.
+3. Sin cambios de requisitos funcionales, casos de uso ni historias de usuario.
+
+## Interfaz de escritorio, tramo E0: base y pantallas de acceso (2026-11-08)
+
+Solo frontend. Es el cimiento de la interfaz de escritorio (a partir de 1024 px, con un solo punto de corte): hojas nuevas por encima de la versión móvil, que no cambia. En las pantallas de acceso la tarjeta pasa a una composición real de escritorio (cabecera de 72 px, tarjeta centrada de 480 o 720 px, campos en dos columnas); las capas compartidas (hojas, toasts, pantalla completa, visor) y el foco y el hover quedan en su forma de escritorio en todas las páginas.
+
+### Cambios a reflejar en los documentos de requisitos
+
+1. **Requisitos no funcionales** (`requisitos-no-funcionales.md`, usabilidad y compatibilidad): la interfaz se diseña primero para móvil y se adapta a escritorio a partir de 1024 px (entre 640 y 1023 px se mantiene el diseño móvil centrado); el contenido de escritorio tiene un ancho máximo de 1280 px (1440 px en el Administrador). El foco por teclado es visible en toda la interfaz y los efectos de pasar el mouse solo existen en dispositivos con mouse.
+2. **Alcance y limitaciones** (`alcance-y-limitaciones.md`): la adaptación a escritorio es parcial hasta terminar los tramos E1 (Comercio), E2 (Administrador) y E3 (Cliente): por ahora solo las pantallas de acceso y las capas compartidas tienen diseño de escritorio. No hay diseño específico de tablet. Las fuentes siguen viniendo de Google Fonts.
+3. Sin cambios de requisitos funcionales ni de casos de uso.
+
 ## Textos legales: ajustes finales de redacción — 2026-11-06
 
 ### Qué cambió
@@ -1584,3 +1604,14 @@ Solo frontend, pruebas y documentación. Textos nuevos o cambiados de la interfa
 2. **Requisitos no funcionales (usabilidad):** toda pantalla del Cliente muestra un indicador de carga (esqueleto) mientras llegan los datos y, si falla la primera carga, un error con la opción de reintentar.
 3. **Historias de usuario del Cliente:** el estado "Esperando al comercio" y los tres textos de "Esperando pago"; la persona entiende si falta pagar, si se está confirmando el pago o si fue rechazado.
 4. **Historias de usuario del Dueño:** la pista de un solo uso sobre el gesto de mantener apretado el avatar para cambiar de comercio.
+
+
+## Interfaz de escritorio, tramo E1: Comercio (Dueño y Empleado, 2026-11-08)
+
+Cambio de interfaz sin cambios de reglas de negocio ni de permisos. A partir de 1024 px el Dueño y el Empleado usan una barra lateral (Panel, Productos, Pedidos, Estadísticas, Documentación, Equipo, Avisos y Perfil del comercio; el Empleado solo los que ya tenía), el panel muestra cuatro cifras (vendido, pedidos del turno, pendientes y en preparación) y una lista de pedidos activos con "Ver todos", Pedidos pasa a una lista con el detalle al costado (se elige un pedido y se resuelve sin cambiar de página), Productos es una tabla con "Nuevo producto" en la cabecera, el perfil del comercio tiene un menú de secciones, y las pantallas de estado y de alta o corrección de comercio tienen su versión de escritorio. En móvil no cambia nada, salvo los destinos del botón "Volver" de las pantallas de Comercio, que ahora son fijos (antes volvían a la pantalla anterior del historial).
+
+### Cambios a reflejar en los documentos de requisitos
+
+1. **Requisitos no funcionales (usabilidad):** la interfaz del Comercio se adapta a pantallas de 1024 px o más con una composición de escritorio propia (navegación lateral, listas con detalle, tablas y menús de sección) sin perder ninguna función de la versión móvil.
+2. **Historias de usuario del Dueño y del Empleado:** el panel resume el turno con cuatro cifras; en Pedidos se elige un pedido de la lista y se ve y resuelve en el mismo lugar; el perfil se recorre por secciones sin recargar la página.
+3. **Navegación:** el botón "Volver" de las pantallas de Comercio lleva siempre al mismo destino previsible (Pedidos y Productos al panel, el detalle de un pedido a Pedidos, el formulario de producto a Productos, Estadísticas y Avisos al panel, Soporte al perfil).

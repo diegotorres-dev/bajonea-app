@@ -1,3 +1,4 @@
+import { montarPasosLaterales, enlazarPasoAtras } from './pasos-laterales.js';
 import { apiFetch, ApiError, getUsuario } from './api.js';
 import { exigirDueno } from './contexto.js';
 import { subirFotoNuevoComercio, CloudinaryUploadError } from './cloudinary.js';
@@ -37,11 +38,11 @@ function renderBannerError(slot, mensaje) {
   }
   const banner = document.createElement('div');
   banner.className = 'banner banner-error';
-  banner.style.marginBottom = '20px';
+  banner.classList.add('u-mb-20px');
   banner.setAttribute('role', 'alert');
   const icono = document.createElement('span');
   icono.innerHTML = ICONO_ERROR;
-  icono.style.display = 'contents';
+  icono.classList.add('u-d-contents');
   const texto = document.createElement('div');
   texto.textContent = mensaje;
   banner.appendChild(icono);
@@ -93,13 +94,9 @@ export async function initAgregarComercio() {
     return Boolean(foto.obtenerArchivo()) || negocio.hayDatosCargados();
   }
 
-  document.getElementById('back-btn').addEventListener('click', () => {
+  function salirDelAsistente() {
     if (!wizardActivo) {
       irAlInicio();
-      return;
-    }
-    if (currentStep > 0) {
-      mostrarPaso(currentStep - 1);
       return;
     }
     if (hayDatosEnElPasoUno()) {
@@ -112,7 +109,23 @@ export async function initAgregarComercio() {
       return;
     }
     irAlInicio();
+  }
+
+  document.getElementById('back-btn').addEventListener('click', () => {
+    if (wizardActivo && currentStep > 0) {
+      mostrarPaso(currentStep - 1);
+      return;
+    }
+    salirDelAsistente();
   });
+  document.querySelectorAll('[data-accion-asistente="cancelar"], [data-testid="btn-salir-asistente"]').forEach((control) => {
+    control.addEventListener('click', (evento) => {
+      evento.preventDefault();
+      salirDelAsistente();
+    });
+  });
+  montarPasosLaterales(document.getElementById('step-progress-container'));
+  enlazarPasoAtras(() => mostrarPaso(Math.max(currentStep - 1, 0)));
 
   let elegibilidad;
   let cuentaMercadoPago;

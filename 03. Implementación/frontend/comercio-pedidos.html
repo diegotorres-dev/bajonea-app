@@ -5,16 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Pedidos — Bajoneá</title>
 <link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/escritorio.css" media="(min-width: 1024px)" />
 </head>
 <body>
-<div class="app-shell">
+<div class="app-shell app-shell--lateral app-shell--comercio">
   <div id="top-bar-slot"></div>
   <div id="franja-comercio-slot"></div>
   <div id="aviso-comercio-slot" class="aviso-comercio-slot"></div>
   <main class="app-main">
-    <div class="screen-body screen-body--tight">
+    <div class="screen-body screen-body--tight pedidos-escritorio">
       <div id="filtros-slot" data-testid="fila-chips-filtro"></div>
       <div id="pedidos-content" data-testid="lista-pedidos"></div>
+      <aside id="pedido-detalle-panel" class="pedido-detalle-panel" aria-live="polite" aria-label="Detalle del pedido" data-testid="pedido-detalle-panel" hidden></aside>
     </div>
   </main>
   <div id="bottom-nav-slot"></div>

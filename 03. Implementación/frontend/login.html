@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Iniciar sesión — Bajoneá</title>
 <link rel="stylesheet" href="css/styles.css" />
+<link rel="stylesheet" href="css/escritorio.css" media="(min-width: 1024px)" />
 </head>
 <body>
-<div class="app-shell">
+<div class="app-shell app-shell--escritorio app-shell--acceso">
   <header class="app-header app-header--brand">
     <img class="header-logo" src="assets/img/bajonea-logo-orange-header.png" alt="Bajoneá" />
   </header>
@@ -40,8 +41,8 @@
           <div id="error-credenciales" class="field__error" style="display:none;" data-testid="mensaje-error-login"></div>
           <p id="warning-bloqueo" class="field__warning" style="display:none;" data-testid="mensaje-advertencia-bloqueo">Cuidado: si fallás una vez más, tu cuenta se bloqueará.</p>
         </div>
-        <div style="display:flex;justify-content:flex-end;">
-          <a class="link" style="font-size:13px;" href="recuperar-password.html" data-testid="btn-olvide-password">¿Olvidaste tu contraseña?</a>
+        <div class="fila-derecha">
+          <a class="link link--chico" href="recuperar-password.html" data-testid="btn-olvide-password">¿Olvidaste tu contraseña?</a>
         </div>
         <button class="btn btn-primary" type="submit" id="submit-btn" data-testid="btn-ingresar">
           Ingresar
@@ -52,6 +53,18 @@
       <p class="form-footer-link form-footer-link--small">¿Te invitaron a un comercio? <a class="link" href="invitacion-empleado.html" data-testid="btn-ir-a-invitacion">Tengo una invitación</a></p>
     </div>
   </main>
+  <aside class="panel-marca" hidden data-testid="panel-marca">
+    <img class="panel-marca__logo" src="assets/img/bajonea-logo-white.png" alt="Bajoneá" />
+    <div class="panel-marca__texto">
+      <p class="panel-marca__titular" data-testid="panel-marca-titular">Pedí a los comercios de tu zona.</p>
+      <p class="panel-marca__bajada">Elegí, pagá y retirá. Si tenés un comercio, también lo manejás desde acá.</p>
+    </div>
+    <nav class="panel-marca__legal" aria-label="Información legal" data-testid="panel-legal">
+      <a class="panel-marca__enlace" href="terminos.html" data-testid="panel-legal-terminos">Términos y Condiciones</a>
+      <a class="panel-marca__enlace" href="privacidad.html" data-testid="panel-legal-privacidad">Política de Privacidad</a>
+      <a class="panel-marca__enlace" href="faq.html" data-testid="panel-legal-faq">Preguntas frecuentes</a>
+    </nav>
+  </aside>
   <nav class="legal-pie legal-pie--sitio" aria-label="Información legal" data-testid="legal-pie">
     <a class="legal-pie__enlace" href="terminos.html" data-testid="legal-pie-terminos">Términos y Condiciones</a>
     <a class="legal-pie__enlace" href="privacidad.html" data-testid="legal-pie-privacidad">Política de Privacidad</a>
