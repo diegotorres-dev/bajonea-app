@@ -219,6 +219,12 @@
     font-size: var(--fs-md);
   }
 
+  @media (max-width: 1279px) {
+    .admin-panel__cabecera {
+      max-width: calc(100% - 280px);
+    }
+  }
+
   .admin-panel {
     position: relative;
   }
@@ -241,6 +247,24 @@
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: var(--space-4);
+  }
+
+  .admin-alertas .alert-card--con-pendientes {
+    background: var(--color-primary-soft);
+    border-color: var(--color-primary);
+  }
+
+  .admin-alertas .alert-card--sin-pendientes {
+    background: var(--color-surface);
+    border-color: var(--color-border);
+  }
+
+  .solo-movil {
+    display: none;
+  }
+
+  .solo-escritorio {
+    display: inline;
   }
 
   .admin-alertas .alert-card {

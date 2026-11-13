@@ -156,6 +156,7 @@ export async function initPerfil() {
 
   document.getElementById('perfil-nombre').textContent = `${cliente.nombre} ${cliente.apellido}`;
   document.getElementById('perfil-email').textContent = cliente.email;
+  document.getElementById('perfil-email').title = cliente.email;
 
 
   const avatarPerfil = document.getElementById('perfil-avatar');

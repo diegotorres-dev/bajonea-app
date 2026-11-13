@@ -56,6 +56,7 @@ function dibujarFila(reclamo) {
     crearEstadoAdmin(reclamo, 'reclamo-item-estado'),
     texto('p', 'soporte-fila__email', reclamo.comercioNombre, { 'data-testid': 'reclamo-item-comercio' }),
     texto('span', 'soporte-fila__fecha', `${formatearMonto(reclamo.total)} · ${tiempoRelativo(reclamo.fechaCreacion)}`, { 'data-testid': 'reclamo-item-hace' }),
+    texto('span', 'reclamo-admin-row__detalle', 'Ver detalle ›', { 'aria-hidden': 'true', 'data-testid': 'reclamo-item-ver-detalle' }),
   ]);
 }
 
@@ -64,7 +65,7 @@ async function pintarBandeja(contenedor) {
   const aviso = crearAvisoDeError('aviso-bandeja-reclamos');
   const contador = texto('p', 'cliente-contador', '', { role: 'status', 'aria-live': 'polite', 'data-testid': 'contador-bandeja-reclamos' });
   const lista = h('div', { class: 'soporte-lista tabla-admin tabla--reclamos', id: 'reclamos-lista', 'data-testid': 'bandeja-reclamos' });
-  const encabezado = crearEncabezadoTabla('reclamos', [{ etiqueta: 'Reclamo' }, { etiqueta: 'Comercio' }, { etiqueta: 'Estado' }, { etiqueta: 'Total y fecha' }], 'encabezado-reclamos');
+  const encabezado = crearEncabezadoTabla('reclamos', [{ etiqueta: 'Reclamo' }, { etiqueta: 'Comercio' }, { etiqueta: 'Estado' }, { etiqueta: 'Total y fecha' }, { etiqueta: '' }], 'encabezado-reclamos');
 
   const chips = FILTROS.map((filtro) => {
     const chip = texto('button', 'chip', filtro.etiqueta, { type: 'button', 'aria-pressed': String(filtro.clave === estado.filtro), 'data-testid': filtro.testid });
@@ -124,7 +125,7 @@ async function pintarBandeja(contenedor) {
   }
 
   contenedor.replaceChildren(
-    texto('h1', 'title-lg', 'Reclamos', { 'data-testid': 'titulo-admin-reclamos' }),
+    texto('h1', 'title-lg titulo-pagina-escritorio', 'Reclamos', { 'data-testid': 'titulo-admin-reclamos' }),
     filtros, contador, aviso, encabezado, lista,
   );
   await cargar();

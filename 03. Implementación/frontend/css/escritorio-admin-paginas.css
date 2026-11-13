@@ -152,7 +152,7 @@
     margin-right: 0;
   }
 
-  .doc-seccion__titulo {
+  #revision-contenido .doc-seccion__titulo {
     display: none;
   }
 
@@ -213,8 +213,15 @@
     padding-right: var(--space-1);
   }
 
-  .soporte-maestro .title-lg {
-    display: none;
+  .titulo-pagina-escritorio {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0 0 var(--space-3);
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
   }
 
   .soporte-maestro .chip-row {

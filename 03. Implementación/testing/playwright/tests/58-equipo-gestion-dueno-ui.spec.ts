@@ -21,7 +21,7 @@ import { sinScrollHorizontal } from './helpers/layout';
 const HEADER = 'X-Comercio-Id';
 const ROJO = 'rgb(217, 48, 37)';
 const BLANCO = 'rgb(255, 255, 255)';
-const OSCURO = 'rgb(26, 26, 26)';
+const NARANJA = 'rgb(255, 71, 0)';
 const NOMBRE = 'Clienta Playwright';
 
 interface Miembro {
@@ -137,7 +137,7 @@ test.describe('Equipo del Dueño en pantalla, E4 entrega B1', () => {
         await expect(fila.locator('.pedido-estado__dot')).toHaveClass(/pedido-estado__dot--positivo/);
         await expect(menuDe(page, activo)).toHaveAttribute('aria-label', `Más acciones de ${NOMBRE}`);
       }
-      await expect(page.getByTestId('chip-miembros-activos')).toHaveCSS('background-color', OSCURO);
+      await expect(page.getByTestId('chip-miembros-activos')).toHaveCSS('background-color', NARANJA);
       await expect(page.getByTestId('chip-miembros-activos')).toHaveCSS('color', BLANCO);
       for (const chip of ['chip-miembros-activos', 'chip-miembros-inactivos']) {
         const caja = await page.getByTestId(chip).boundingBox();
@@ -152,7 +152,7 @@ test.describe('Equipo del Dueño en pantalla, E4 entrega B1', () => {
       await expect(filaMiembro(page, dadoDeBaja.cuenta.email).getByTestId('equipo-estado')).toHaveText(/^Dado de baja el \d{2}\/\d{2}$/);
       await expect(filaMiembro(page, renuncio.cuenta.email).getByTestId('equipo-estado')).toHaveText(/^Renunció el \d{2}\/\d{2}$/);
       await expect(filaMiembro(page, sinHistorial.cuenta.email).getByTestId('equipo-estado')).toHaveText('Inactivo');
-      await expect(page.getByTestId('chip-miembros-inactivos')).toHaveCSS('background-color', OSCURO);
+      await expect(page.getByTestId('chip-miembros-inactivos')).toHaveCSS('background-color', NARANJA);
       await expect(page.getByTestId('tab-equipo-equipo')).toHaveText('Mi equipo · 2');
       await sinScrollHorizontal(page);
       await capturar(page, 'inactivos');

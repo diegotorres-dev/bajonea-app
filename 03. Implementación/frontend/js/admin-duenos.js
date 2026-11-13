@@ -1,6 +1,6 @@
 import { apiFetch, getUsuario } from './api.js';
 import { showToast } from './catalogo.js';
-import { crearEncabezadoTabla } from './tabla-admin.js';
+import { crearEncabezadoTabla, observarColumnaNovedades } from './tabla-admin.js';
 import { h, mostrarAvisoFijo } from './form-utils.js';
 import { normalizarCampos } from './validators.js';
 import { mensajeDeError } from './documentos-comun.js';
@@ -119,6 +119,7 @@ export async function initAdminDuenos() {
   const pie = h('div', { class: 'lista-ver-mas', 'data-testid': 'duenos-pie' });
 
   contenedor.replaceChildren(buscador, filtros, contador, avisoDestacado, avisoCarga, encabezado, lista, pie);
+  observarColumnaNovedades(lista, encabezado);
 
   function esperar() {
     lista.replaceChildren(...[0, 1, 2, 3].map(() => h('div', { class: 'cliente-admin-row cliente-admin-row--espera', 'aria-hidden': 'true' }, [

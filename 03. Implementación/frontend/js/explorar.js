@@ -255,6 +255,11 @@ export async function initExplorar() {
 
   function pintarChipsTags() {
     chipRowTags.innerHTML = '';
+    const sinTags = filtros.tags.length === 0;
+    chipRowTags.classList.toggle('is-hidden', sinTags);
+    if (chipRowTags.previousElementSibling) {
+      chipRowTags.previousElementSibling.classList.toggle('is-hidden', sinTags);
+    }
 
     filtros.tags.forEach((tag) => {
       const chip = crear('button', 'chip');
@@ -276,9 +281,22 @@ export async function initExplorar() {
     });
   }
 
+  function sincronizarBarra(valor) {
+    const barra = document.querySelector('[data-testid="barra-buscador-input"]');
+    if (barra) {
+      barra.value = valor;
+    }
+  }
+
+  document.addEventListener('barra-busqueda', (evento) => {
+    buscadorInput.value = evento.detail;
+    buscadorInput.dispatchEvent(new Event('input'));
+  });
+
   function limpiarFiltros() {
     clearTimeout(busquedaTimeoutId);
     buscadorInput.value = '';
+    sincronizarBarra('');
     busqueda = '';
     categoriaActiva = null;
     tagsActivos.clear();
@@ -297,6 +315,7 @@ export async function initExplorar() {
   limpiarBusquedaBtn.addEventListener('click', () => {
     clearTimeout(busquedaTimeoutId);
     buscadorInput.value = '';
+    sincronizarBarra('');
     busqueda = '';
     paginaActual = 1;
     actualizarResumen(null);
@@ -315,6 +334,7 @@ export async function initExplorar() {
   });
 
   buscadorInput.value = busquedaInicial;
+  sincronizarBarra(busquedaInicial);
   limpiarBusquedaBtn.classList.toggle('is-hidden', busquedaInicial === '');
   pintarChipsCategorias();
   pintarChipsTags();

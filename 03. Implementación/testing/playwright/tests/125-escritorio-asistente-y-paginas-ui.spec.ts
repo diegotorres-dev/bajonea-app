@@ -108,7 +108,7 @@ test.describe('Escritorio E0b: asistente de registro con pasos al costado @escri
     expect(continuar.x + continuar.width).toBeGreaterThan(tarjeta.x + tarjeta.width - 60);
     expect(continuar.width).toBeLessThan(260);
     expect(continuar.height).toBe(52);
-    expect(Math.abs(cancelar.y - continuar.y)).toBeLessThanOrEqual(1);
+    expect(Math.abs((cancelar.y + cancelar.height / 2) - (continuar.y + continuar.height / 2))).toBeLessThanOrEqual(1);
     await expect(page.getByTestId('btn-cancelar-registro')).toHaveAttribute('href', 'registro-tipo-cuenta.html');
     await expect(page.locator('.acciones-paso').first()).toHaveCSS('border-top-style', 'solid');
   });

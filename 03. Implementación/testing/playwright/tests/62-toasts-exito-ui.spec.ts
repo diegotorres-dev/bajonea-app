@@ -182,7 +182,7 @@ test.describe('Toasts de éxito en las acciones que modifican datos (UI)', () =>
       await expect(page.locator('.cart-item')).toHaveCount(1);
     });
 
-    test('bajar la cantidad a cero con el "−" también avisa; cambiar la cantidad sin llegar a cero no avisa', async ({ page, request }) => {
+    test('quitar el último ítem con el ícono de eliminar avisa; cambiar la cantidad sin llegar a cero no avisa', async ({ page, request }) => {
       const { sesion } = await carritoConDosProductos(request);
       await abrirComoUsuario(page, sesion);
       await page.goto('/carrito.html');
@@ -195,7 +195,8 @@ test.describe('Toasts de éxito en las acciones que modifican datos (UI)', () =>
       await expect(filaDeTres.locator('[data-testid^="btn-restar-cantidad-"]')).toBeEnabled();
       await expect(toast(page)).toHaveCount(0);
 
-      await filaDeUno.locator('[data-testid^="btn-restar-cantidad-"]').click();
+      await expect(filaDeUno.locator('[data-testid^="btn-restar-cantidad-"]')).toBeDisabled();
+      await filaDeUno.locator('[data-testid^="btn-eliminar-item-carrito-"]').click();
       await expect(toast(page)).toContainText('Quitaste Milanesa Toast');
       await expect(filas).toHaveCount(1);
     });

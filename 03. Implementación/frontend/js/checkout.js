@@ -139,24 +139,7 @@ export async function initCheckout() {
     return steps[currentStep].querySelector('.btn-primary:not(.is-hidden)');
   }
 
-  function acomodarAccionesDelPaso() {
-    const principal = botonPrincipalDelPaso();
-    if (!enEscritorio() || !principal || currentStep === 3) {
-      return;
-    }
-    if (principal.parentElement.classList.contains('step-acciones-escritorio')) {
-      if (principal.parentElement.firstElementChild !== volverEscritorio) {
-        principal.parentElement.prepend(volverEscritorio);
-      }
-      return;
-    }
-    const fila = h('div', { class: 'step-acciones-escritorio' });
-    principal.before(fila);
-    fila.append(volverEscritorio, principal);
-  }
-
   function sincronizarAccionResumen() {
-    acomodarAccionesDelPaso();
     if (!accionResumen) {
       return;
     }

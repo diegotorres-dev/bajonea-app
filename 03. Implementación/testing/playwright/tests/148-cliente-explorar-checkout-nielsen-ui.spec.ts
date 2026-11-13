@@ -232,7 +232,7 @@ test.describe('Cliente: el checkout avanza al elegir la modalidad (C05)', () => 
     await expect(page.getByTestId('checkout-resumen')).toBeVisible();
     await expect(page.getByTestId('btn-resumen-accion')).toBeHidden();
     await page.getByTestId('btn-modalidad-retiro').click();
-    await expect(page.getByTestId('btn-confirmar-retiro')).toBeVisible();
+    await expect(page.getByTestId('btn-confirmar-retiro')).toBeAttached();
     await expect(page.getByTestId('btn-resumen-accion')).toBeVisible();
     await page.getByTestId('btn-checkout-volver').click();
     await expect(page.getByTestId('btn-modalidad-retiro')).toHaveAttribute('aria-pressed', 'true');

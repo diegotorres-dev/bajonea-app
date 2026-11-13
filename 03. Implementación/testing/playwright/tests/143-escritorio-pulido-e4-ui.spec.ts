@@ -102,7 +102,7 @@ test.describe('Escritorio E4: pulido final @escritorio', () => {
       expect(xs[i]).toBeGreaterThan(xs[i - 1]);
     }
     const encabezados = page.getByTestId('encabezado-reclamos').locator('.tabla-encabezado__celda');
-    await expect(encabezados).toHaveCount(4);
+    await expect(encabezados).toHaveCount(5);
     const xEncabezado = (await caja(encabezados.nth(2))).x;
     expect(Math.abs(xEncabezado - xs[2] + 0)).toBeLessThanOrEqual(2);
     await fila.click();

@@ -202,10 +202,11 @@ test.describe('Escritorio E3: barra superior, catálogo, explorar y detalle del 
     const foto = await caja(tarjetas.first().locator('.explore-product-card__thumb'));
     expect(Math.abs(foto.width / foto.height - 4 / 3)).toBeLessThan(0.02);
     expect((await caja(page.getByTestId('chip-categoria-todas'))).height).toBe(44);
-    await expect(page.getByTestId('input-buscar-producto-explorar')).toBeVisible();
+    await expect(page.getByTestId('input-buscar-producto-explorar')).toBeHidden();
+    await expect(page.getByTestId('barra-buscador-input')).toBeVisible();
   });
 
-  test('el detalle del comercio muestra la ficha en dos columnas y los productos en una grilla de 3 @escritorio', async ({ page, request }) => {
+  test('el detalle del comercio muestra la ficha en dos columnas y los productos en una grilla de 4 columnas @escritorio', async ({ page, request }) => {
     await abrir(page, request, `comercio-detalle.html?id=${e.dueno.comercioId}`);
     await expect(page.getByTestId('nombre-comercio')).toBeVisible();
     const ficha = page.locator('.comercio-ficha');
@@ -216,7 +217,9 @@ test.describe('Escritorio E3: barra superior, catálogo, explorar y detalle del 
     const filas = page.locator('.product-row');
     await expect(filas.first()).toBeVisible();
     const columnas = await filas.evaluateAll((nodos) => new Set(nodos.map((nodo) => Math.round(nodo.getBoundingClientRect().x))).size);
-    expect(columnas).toBe(3);
+    expect(columnas).toBeGreaterThanOrEqual(3);
+    const plantilla = await page.locator('.product-section').first().evaluate((nodo) => getComputedStyle(nodo).gridTemplateColumns.split(' ').length);
+    expect(plantilla).toBe(4);
     const agregar = await caja(filas.first().locator('.product-row__agregar'));
     expect(agregar.height).toBeGreaterThanOrEqual(44);
     await expect(page.getByTestId('estado-comercio')).toContainText('Abierto');

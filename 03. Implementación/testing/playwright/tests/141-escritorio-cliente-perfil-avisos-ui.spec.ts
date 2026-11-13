@@ -21,7 +21,7 @@ test.describe('Escritorio E3: perfil, direcciones y avisos @escritorio', () => {
     await page.goto(`/${ruta}`);
   }
 
-  test('el perfil tiene el menú de secciones de 240 px a la izquierda y la sección activa a la derecha @escritorio', async ({ page, request }) => {
+  test('el perfil tiene el menú de secciones de 280 px a la izquierda y la sección activa a la derecha @escritorio', async ({ page, request }) => {
     await abrir(page, request, 'perfil.html');
     const menu = page.locator('#view-principal');
     const seccion = page.locator('#view-editar-datos');
@@ -29,7 +29,7 @@ test.describe('Escritorio E3: perfil, direcciones y avisos @escritorio', () => {
     await expect(menu).toBeVisible();
     const medidaMenu = await caja(menu);
     const medidaSeccion = await caja(seccion);
-    expect(Math.round(medidaMenu.width)).toBe(240);
+    expect(Math.round(medidaMenu.width)).toBe(280);
     expect(medidaSeccion.x).toBeGreaterThan(medidaMenu.x + medidaMenu.width);
     await expect(page.getByTestId('btn-editar-datos')).toHaveAttribute('aria-current', 'true');
     await expect(page.getByTestId('btn-mis-direcciones')).not.toHaveAttribute('aria-current', 'true');

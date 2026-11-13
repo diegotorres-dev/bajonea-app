@@ -36,10 +36,59 @@ const SOLO = process.env.SOLO ? process.env.SOLO.split(',') : null;
 const AHORA = new Date();
 AHORA.setSeconds(0, 0);
 
-const ANCHOS = [
+const ANCHOS_DISPONIBLES = [
   { ancho: 390, alto: 844, sfx: '390', movil: true },
   { ancho: 1440, alto: 900, sfx: '1440', movil: false },
+  { ancho: 1024, alto: 800, sfx: '1024', movil: false },
+  { ancho: 1280, alto: 800, sfx: '1280', movil: false },
 ];
+const ANCHOS_PEDIDOS = (process.env.ANCHOS || '390,1440').split(',').map((v) => Number(v.trim()));
+const ANCHOS = ANCHOS_DISPONIBLES.filter((a) => ANCHOS_PEDIDOS.includes(a.ancho));
+const MEDIR_TIPOGRAFIA = process.env.MEDIR_TIPOGRAFIA === '1';
+const medicionesTipografia: Array<{ archivo: string; ancho: number; menores12: Array<{ texto: string; px: number; tag: string; clase: string }>; secundarios12a13: Array<{ texto: string; px: number; tag: string; clase: string }>; desborde: number }> = [];
+
+async function medirTipografia(page: Page) {
+  return page.evaluate(() => {
+    const NO_TEXTO = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'SVG', 'PATH']);
+    const resultado = { menores12: [] as any[], secundarios12a13: [] as any[] };
+    const muted = getComputedStyle(document.documentElement).getPropertyValue('--color-text-muted').trim().toLowerCase();
+    const placeholder = getComputedStyle(document.documentElement).getPropertyValue('--color-text-placeholder').trim().toLowerCase();
+    function hexARgb(hex: string) {
+      const h = hex.replace('#', '');
+      if (h.length !== 6) return null;
+      return `rgb(${parseInt(h.slice(0, 2), 16)}, ${parseInt(h.slice(2, 4), 16)}, ${parseInt(h.slice(4, 6), 16)})`;
+    }
+    const grises = [hexARgb(muted), hexARgb(placeholder)].filter(Boolean);
+    const recorrer = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    let nodo: Node | null;
+    while ((nodo = recorrer.nextNode())) {
+      const texto = (nodo.textContent || '').trim();
+      if (!texto) continue;
+      const el = nodo.parentElement;
+      if (!el || NO_TEXTO.has(el.tagName.toUpperCase())) continue;
+      const estilo = getComputedStyle(el);
+      if (estilo.display === 'none' || estilo.visibility === 'hidden' || Number(estilo.opacity) === 0) continue;
+      const caja = el.getBoundingClientRect();
+      if (caja.width < 2 || caja.height < 2) continue;
+      if (el.closest('[hidden], .is-hidden, .sr-only, [aria-hidden="true"]')) continue;
+      let recortado = false;
+      for (let a: Element | null = el; a && a !== document.body; a = a.parentElement) {
+        const e = getComputedStyle(a);
+        if (e.display === 'none' || e.visibility === 'hidden') { recortado = true; break; }
+        if (e.clip && e.clip !== 'auto' && e.position === 'absolute') { recortado = true; break; }
+      }
+      if (recortado) continue;
+      const px = parseFloat(estilo.fontSize);
+      const esContadorDeInsignia = /^\d+\+?$/.test(texto) && texto.length <= 3;
+      if (esContadorDeInsignia) continue;
+      const clase = (el.className && typeof el.className === 'string' ? el.className : '').slice(0, 60);
+      const dato = { texto: texto.slice(0, 40), px, tag: el.tagName.toLowerCase(), clase };
+      if (px < 12) resultado.menores12.push(dato);
+      else if (px < 13 && grises.includes(estilo.color)) resultado.secundarios12a13.push(dato);
+    }
+    return resultado;
+  });
+}
 
 type Rol = 'acceso' | 'cliente' | 'vacio' | 'dueno' | 'empleado' | 'admin';
 
@@ -379,7 +428,7 @@ test('capturas para la crítica de diseño', async ({ browser, request }) => {
     { rol: 'cliente', slug: 'checkout-1-modalidad', ruta: 'checkout.html', previo: async (t) => { await prepararCarrito(request, t, c.productoIds); } },
     { rol: 'cliente', slug: 'checkout-2-direccion', ruta: 'checkout.html', previo: async (t) => { await prepararCarrito(request, t, c.productoIds); }, antes: async (p) => { await clic(p, 'btn-modalidad-domicilio'); await p.waitForTimeout(700); } },
     { rol: 'cliente', slug: 'checkout-3-resumen', ruta: 'checkout.html', previo: async (t) => { await prepararCarrito(request, t, c.productoIds); }, antes: async (p) => { await clic(p, 'btn-modalidad-domicilio'); await p.waitForTimeout(700); await clic(p, 'btn-resumen-accion', 'btn-confirmar-direccion'); await p.waitForTimeout(900); } },
-    { rol: 'cliente', slug: 'checkout-4-pago', ruta: 'checkout.html', previo: async (t) => { await prepararCarrito(request, t, c.productoIds); }, antes: async (p) => { await clic(p, 'btn-modalidad-domicilio'); await p.waitForTimeout(700); await clic(p, 'btn-resumen-accion', 'btn-confirmar-direccion'); await p.waitForTimeout(900); await clic(p, 'btn-resumen-accion', 'btn-confirmar-pedido'); await p.waitForSelector('[data-testid="btn-ir-a-pagar"]', { timeout: 10000 }); await p.waitForTimeout(700); }, nota: 'crea el pedido y queda en el paso de pago' },
+    { rol: 'cliente', slug: 'checkout-4-pago', ruta: 'checkout.html', previo: async (t) => { await prepararCarrito(request, t, c.productoIds); }, antes: async (p) => { await clic(p, 'btn-modalidad-domicilio'); await p.waitForTimeout(700); await clic(p, 'btn-resumen-accion', 'btn-confirmar-direccion'); await p.waitForTimeout(900); await clic(p, 'btn-resumen-accion', 'btn-confirmar-pedido'); await p.waitForSelector('[data-testid="btn-ir-a-pagar"]', { timeout: 10000, state: 'attached' }); await p.waitForTimeout(700); }, nota: 'crea el pedido y queda en el paso de pago' },
 
     { rol: 'dueno', slug: 'panel', ruta: 'comercio-dashboard.html' },
     { rol: 'dueno', slug: 'pedidos', ruta: (an) => (an >= 1024 ? `comercio-pedidos.html?id=${c.pedidos.pendiente}` : 'comercio-pedidos.html'), nota: 'en escritorio con un pedido seleccionado' },
@@ -490,12 +539,18 @@ test('capturas para la crítica de diseño', async ({ browser, request }) => {
               d = await diagnostico(page);
               notas.push(`alto de ventana ampliado a ${alto} px para no recortar un panel con scroll interno`);
             }
+            if (MEDIR_TIPOGRAFIA) {
+              const m = await medirTipografia(page);
+              medicionesTipografia.push({ archivo, ancho: cfg.ancho, menores12: m.menores12, secundarios12a13: m.secundarios12a13, desborde: d.desborde });
+            }
             if (d.cargando > 0) notas.push(`${d.cargando} esqueleto(s) o spinner(s) visibles`);
             if (d.imgsRotas > 0) notas.push(`${d.imgsRotas} imagen(es) sin cargar`);
             if (d.desborde > 1) notas.push(`desborde horizontal de ${d.desborde} px`);
             if (!d.fuenteNunito) notas.push('Nunito no cargó');
             const problemas = notas.filter((n) => !n.startsWith('alto de ventana'));
             if (problemas.length > 0 && intento < 3) continue;
+            await page.mouse.move(0, 0);
+            await page.waitForTimeout(300);
             await page.evaluate(() => window.scrollTo(0, 0));
             await page.screenshot({ path: path.join(DIR, archivo), fullPage: !p.viewport, animations: 'disabled', caret: 'hide' });
             capturado = true;
@@ -516,6 +571,12 @@ test('capturas para la crítica de diseño', async ({ browser, request }) => {
   const todas = [...previas.filter((f) => !filas.some((n) => n.archivo === f.archivo)), ...filas].sort((x, y) => x.archivo.localeCompare(y.archivo));
   writeFileSync(archivoFilas, JSON.stringify(todas, null, 1));
   writeFileSync(path.join(DIR, '_faltan.json'), JSON.stringify(faltan, null, 1));
+  if (MEDIR_TIPOGRAFIA) {
+    writeFileSync(path.join(DIR, '_tipografia.json'), JSON.stringify(medicionesTipografia, null, 1));
+    const total12 = medicionesTipografia.reduce((n, m) => n + m.menores12.length, 0);
+    const total13 = medicionesTipografia.reduce((n, m) => n + m.secundarios12a13.length, 0);
+    console.log(`TIPOGRAFIA menores de 12 px: ${total12}; secundarios (gris) entre 12 y 13 px: ${total13}`);
+  }
   console.log(`CAPTURADAS ${filas.length}; con problemas o faltantes ${faltan.length}`);
   faltan.forEach((f) => console.log('FALTA', f));
 });

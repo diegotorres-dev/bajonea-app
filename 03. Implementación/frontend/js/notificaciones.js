@@ -279,7 +279,7 @@ export async function initNotificaciones() {
   }
 
   botonMarcarTodas = crearAccionMarcarTodas(marcarTodas, { ocultaSinAvisos: !enComercio });
-  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Notificaciones', accion: botonMarcarTodas, destinoVolver: enComercio ? 'comercio-dashboard.html' : 'index.html' });
+  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, primerNivel: true, titulo: 'Notificaciones', accion: botonMarcarTodas, destinoVolver: enComercio ? 'comercio-dashboard.html' : 'index.html' });
   if (!enComercio) {
     montarBarraClienteEnEscritorio({ activo: 'avisos' });
   }

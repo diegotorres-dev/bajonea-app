@@ -138,8 +138,9 @@ function renderItem(item, producto, onCambio) {
   const stepper = crear('div', 'stepper');
   const minusBtn = crear('button', 'stepper__btn');
   minusBtn.type = 'button';
-  minusBtn.innerHTML = item.cantidad === 1 ? ICONS.trash : ICONS.minus;
-  minusBtn.setAttribute('aria-label', item.cantidad === 1 ? 'Eliminar producto' : 'Restar cantidad');
+  minusBtn.innerHTML = ICONS.minus;
+  minusBtn.disabled = item.cantidad <= 1;
+  minusBtn.setAttribute('aria-label', 'Restar cantidad');
   minusBtn.setAttribute('data-testid', `btn-restar-cantidad-${item.id}`);
   const valueSpan = crear('span', 'stepper__value');
   valueSpan.textContent = String(item.cantidad);
@@ -168,7 +169,7 @@ function renderItem(item, producto, onCambio) {
       }
       onCambio(carrito);
     } catch (error) {
-      minusBtn.disabled = false;
+      minusBtn.disabled = item.cantidad <= 1;
       plusBtn.disabled = false;
       showToast(error instanceof ApiError ? error.message : 'No pudimos actualizar la cantidad.', 'error');
     }
@@ -283,7 +284,7 @@ export async function initCarrito() {
     actualizarContadorCarrito();
     const tieneItems = Boolean(carrito.items && carrito.items.length > 0);
     const accion = tieneItems ? crearAccionVaciarHeader(() => pintar({ comercioId: null, nombreComercio: null, items: [], subtotal: 0 })) : null;
-    renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Mi carrito', accion, destinoVolver: tieneItems && carrito.comercioId ? `comercio-detalle.html?id=${carrito.comercioId}` : 'index.html' });
+    renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, primerNivel: true, titulo: 'Mi carrito', accion, destinoVolver: tieneItems && carrito.comercioId ? `comercio-detalle.html?id=${carrito.comercioId}` : 'index.html' });
 
     if (!tieneItems) {
       footerSlot.innerHTML = '';

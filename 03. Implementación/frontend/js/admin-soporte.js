@@ -210,7 +210,7 @@ async function pintarBandeja(contenedor, { maestroDetalle = false, idInicial = n
   }
 
   const bandeja = [
-    texto('h1', 'title-lg', 'Soporte', { 'data-testid': 'titulo-admin-soporte' }),
+    texto('h1', 'title-lg titulo-pagina-escritorio', 'Soporte', { 'data-testid': 'titulo-admin-soporte' }),
     filtros, contador, aviso, lista,
   ];
   if (maestroDetalle) {

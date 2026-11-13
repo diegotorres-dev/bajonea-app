@@ -18,7 +18,7 @@ import type { Dueno } from './helpers/multicomercio';
 import { sinScrollHorizontal } from './helpers/layout';
 
 const HEADER = 'X-Comercio-Id';
-const OSCURO = 'rgb(26, 26, 26)';
+const NARANJA = 'rgb(255, 71, 0)';
 const BLANCO = 'rgb(255, 255, 255)';
 const NOMBRE = 'Clienta Playwright';
 
@@ -201,7 +201,7 @@ test.describe('Equipo del Administrador en pantalla, E4 entrega B3', () => {
       await expect(page.getByTestId('chip-miembros-inactivos')).toHaveText('Inactivos 3');
       await expect(page.getByTestId('chip-miembros-activos')).toHaveAttribute('aria-pressed', 'true');
       await expect(page.getByTestId('chip-miembros-inactivos')).toHaveAttribute('aria-pressed', 'false');
-      await expect(page.getByTestId('chip-miembros-activos')).toHaveCSS('background-color', OSCURO);
+      await expect(page.getByTestId('chip-miembros-activos')).toHaveCSS('background-color', NARANJA);
       await expect(page.getByTestId('chip-miembros-activos')).toHaveCSS('color', BLANCO);
       for (const chip of ['chip-miembros-activos', 'chip-miembros-inactivos']) {
         const caja = (await page.getByTestId(chip).boundingBox())!;
@@ -230,7 +230,7 @@ test.describe('Equipo del Administrador en pantalla, E4 entrega B3', () => {
       await expect(filaRenuncia.getByTestId('equipo-motivo-baja')).toHaveText(/^Dejó de trabajar en el comercio · \d{2}\/\d{2}$/);
       await expect(filaRenuncia.getByTestId('equipo-motivo-baja')).toHaveClass(/equipo-motivo--renuncia/);
       await expect(filaMiembro(page, sinHistorial.email).getByTestId('equipo-motivo-baja')).toHaveText('Inactivo');
-      await expect(page.getByTestId('chip-miembros-inactivos')).toHaveCSS('background-color', OSCURO);
+      await expect(page.getByTestId('chip-miembros-inactivos')).toHaveCSS('background-color', NARANJA);
       await expect(page.getByTestId('tab-equipo-solicitudes')).toHaveText('Solicitudes 0');
       await sinScrollHorizontal(page);
       await capturar(page, 'inactivos');

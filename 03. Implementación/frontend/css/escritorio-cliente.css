@@ -316,6 +316,10 @@
     background: var(--color-surface);
   }
 
+  .app-shell--cliente > #top-bar-slot .top-bar__action--primer-nivel {
+    display: none;
+  }
+
   .app-shell--cliente > #top-bar-slot .app-header__title--en-barra {
     font-size: var(--fs-xl);
     line-height: 1.2;
@@ -442,6 +446,10 @@
   .app-shell--cliente .comercio-list,
   .app-shell--cliente .esqueleto-lista {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .app-shell--cliente #product-list .product-section {
+    --columnas-productos: 4;
   }
 }
 
@@ -581,7 +589,7 @@
 
   .app-shell--cliente #product-list .product-section {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--columnas-productos, 3), minmax(0, 1fr));
     gap: var(--space-6);
     padding: var(--space-6) 0 0;
   }
@@ -594,7 +602,10 @@
   }
 
   .app-shell--cliente .product-row {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto 1fr auto;
+    align-content: stretch;
     gap: 0;
     padding: 0;
     overflow: hidden;
@@ -605,7 +616,8 @@
   }
 
   .app-shell--cliente .product-row__thumb {
-    order: -1;
+    grid-column: 1 / -1;
+    grid-row: 1;
     width: 100%;
     height: auto;
     aspect-ratio: 4 / 3;
@@ -613,26 +625,48 @@
   }
 
   .app-shell--cliente .product-row__info {
+    display: contents;
+  }
+
+  .app-shell--cliente .product-row__info h3 {
+    grid-column: 1 / -1;
+    grid-row: 2;
     padding: var(--space-4) var(--space-5) 0;
-    gap: var(--space-2);
   }
 
   .app-shell--cliente .product-row__info p {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    padding: var(--space-2) var(--space-5) 0;
     -webkit-line-clamp: 2;
     min-height: 2.9em;
   }
 
+  .app-shell--cliente .product-row__price {
+    grid-column: 1;
+    grid-row: 4;
+    align-self: center;
+    padding: var(--space-3) 0 var(--space-4) var(--space-5);
+    font-size: 20px;
+    font-weight: 800;
+  }
+
   .app-shell--cliente .product-row__agregar {
+    grid-column: 2;
+    grid-row: 4;
     display: flex;
     align-items: center;
     justify-content: center;
+    width: auto;
     min-height: 44px;
-    margin: var(--space-4) var(--space-5) var(--space-5);
+    margin: var(--space-3) var(--space-5) var(--space-4) var(--space-3);
+    padding: 0 var(--space-5);
     border-radius: var(--radius-pill);
     background: var(--color-primary);
     color: #ffffff;
     font-size: 14px;
     font-weight: 700;
+    white-space: nowrap;
   }
 
   .app-shell--cliente .product-row:hover .product-row__agregar {
@@ -686,6 +720,14 @@
 }
 
 @media (min-width: 1024px) {
+  #explorar-buscador-propio {
+    display: none;
+  }
+
+  .app-shell--cliente .explore-product-card__price {
+    font-size: 20px;
+  }
+
   .app-shell--cliente .app-main > .screen-body:first-child {
     padding-top: var(--space-8);
   }

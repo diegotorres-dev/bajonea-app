@@ -75,7 +75,7 @@ test.describe('Escritorio E2: tablas y detalles del Administrador @escritorio', 
 
     await page.goto('/admin-comercios.html');
     const encabezadoComercios = page.getByTestId('encabezado-comercios');
-    await expect(encabezadoComercios.locator('.tabla-encabezado__celda')).toHaveText(['', 'Comercio', 'Tipo', 'Estado', '']);
+    await expect(encabezadoComercios.locator('.tabla-encabezado__celda')).toHaveText(['', 'Comercio', 'Localidad', 'Estado', '']);
     const filaComercio = page.locator('[data-testid^="comercio-admin-item-"]').first();
     expect((await caja(filaComercio)).height).toBeGreaterThanOrEqual(56);
     await alineadas(encabezadoComercios, filaComercio, 'h3', 1);

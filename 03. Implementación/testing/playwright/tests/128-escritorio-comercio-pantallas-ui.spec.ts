@@ -66,12 +66,12 @@ test.describe('Escritorio E1: productos, perfil, equipo, estadísticas, document
     await page.waitForURL('**/comercio-producto-form.html');
   });
 
-  test('formulario de producto: galería a la izquierda, campos a la derecha y acciones en los extremos @escritorio', async ({ page, request }) => {
+  test('formulario de producto: galería en una fila a todo el ancho sobre los campos y acciones en los extremos @escritorio', async ({ page, request }) => {
     await dueno(page, request, `/comercio-producto-form.html?id=${escenario.productoIds[0]}`);
     await expect(page.getByTestId('input-nombre-producto')).toHaveValue(/Hamburguesa/);
     const galeria = await caja(page.getByTestId('galeria-fotos-producto'));
     const nombre = await caja(page.getByTestId('input-nombre-producto'));
-    expect(galeria.x + galeria.width).toBeLessThanOrEqual(nombre.x);
+    expect(galeria.y + galeria.height).toBeLessThanOrEqual(nombre.y);
     const precio = await caja(page.getByTestId('input-precio-producto'));
     const categoria = await caja(page.getByTestId('select-categoria-producto'));
     expect(Math.abs(precio.y - categoria.y)).toBeLessThanOrEqual(2);

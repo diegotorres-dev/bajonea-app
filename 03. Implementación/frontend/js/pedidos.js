@@ -282,7 +282,7 @@ function renderPedidoCard(pedido, comercio) {
   card.href = `pedido-detalle.html?id=${pedido.id}`;
   card.setAttribute('data-testid', `pedido-item-${pedido.id}`);
 
-  const top = crear('div', 'pedido-card__top');
+  const top = crear('div', 'pedido-card__top pedido-card__top--estado-aparte');
   const comercioRow = crear('div', 'pedido-card__comercio-row');
   const avatar = crear('div', 'pedido-card__avatar');
   pintarAvatarComercio(avatar, comercio || { nombre: `Pedido #${pedido.id}` });
@@ -339,7 +339,7 @@ export async function initPedidosHistorial() {
     return;
   }
 
-  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Mis pedidos', destinoVolver: 'index.html' });
+  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, primerNivel: true, titulo: 'Mis pedidos', destinoVolver: 'index.html' });
   renderBottomNav(document.getElementById('bottom-nav-slot'), 'pedidos');
   montarBarraClienteEnEscritorio({ activo: 'pedidos' });
 

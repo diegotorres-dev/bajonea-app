@@ -193,12 +193,12 @@ async function cargarBadgeNotificaciones(bellLink) {
   });
 }
 
-export function renderTopBar(container, { mostrarVolver = false, titulo = null, mostrarPerfil = true, mostrarCampana = true, centrarLogo = false, accion = null, destinoVolver = null } = {}) {
+export function renderTopBar(container, { mostrarVolver = false, titulo = null, mostrarPerfil = true, mostrarCampana = true, centrarLogo = false, accion = null, destinoVolver = null, primerNivel = false } = {}) {
   container.innerHTML = '';
   const bar = crear('header', centrarLogo ? 'top-bar top-bar--logo-centrado' : 'top-bar');
 
   if (mostrarVolver) {
-    const backBtn = crear('button', 'top-bar__action');
+    const backBtn = crear('button', primerNivel ? 'top-bar__action top-bar__action--primer-nivel' : 'top-bar__action');
     backBtn.type = 'button';
     backBtn.setAttribute('data-testid', 'btn-volver');
     backBtn.innerHTML = ICONS.chevronLeft;
@@ -877,11 +877,10 @@ function abrirModalProducto(producto) {
   if (producto.estado === 'DISPONIBLE' && !comercioCerradoActual) {
     const usuario = getUsuario();
     if (usuario && usuario.rol === 'CLIENTE') {
-      body.appendChild(crear('div', 'divider'));
-
       let cantidad = 1;
 
       const quantityRow = crear('div', 'quantity-input-row');
+      quantityRow.classList.add('sep-t-20');
       const quantityLabel = document.createElement('span');
       quantityLabel.className = 'field__label';
       quantityLabel.textContent = 'Cantidad';
@@ -980,9 +979,8 @@ function abrirModalProducto(producto) {
         }
       });
     } else {
-      body.appendChild(crear('div', 'divider'));
       const loginLink = document.createElement('a');
-      loginLink.className = 'btn btn-primary';
+      loginLink.className = 'btn btn-primary sep-t-20';
       loginLink.href = 'login.html';
       loginLink.setAttribute('data-testid', 'btn-ir-a-login');
       loginLink.textContent = 'Iniciá sesión para pedir';

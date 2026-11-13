@@ -115,16 +115,17 @@ test.describe('Escritorio E3: carrito y checkout en dos columnas @escritorio', (
     expect(Math.abs(opciones[0].y - opciones[1].y)).toBeLessThan(40);
     await page.getByTestId('btn-modalidad-retiro').click();
 
-    await expect(page.getByTestId('btn-confirmar-retiro')).toBeVisible();
+    await expect(page.getByTestId('btn-confirmar-retiro')).toBeAttached();
     await expect(resumen).toBeVisible();
-    await page.getByTestId('btn-confirmar-retiro').click();
+    await page.getByTestId('btn-resumen-accion').click();
 
-    await expect(page.getByTestId('btn-confirmar-pedido')).toBeVisible();
+    await expect(page.getByTestId('btn-confirmar-pedido')).toBeAttached();
+    await expect(page.getByTestId('btn-confirmar-pedido')).toBeHidden();
     await expect(page.getByTestId('btn-resumen-accion')).toContainText('Ir a pagar');
     await expect(resumen).toBeVisible();
     await page.getByTestId('btn-resumen-accion').click();
 
-    await expect(page.getByTestId('btn-ir-a-pagar')).toBeVisible();
+    await expect(page.getByTestId('btn-ir-a-pagar')).toBeAttached();
     await expect(page.getByTestId('btn-resumen-accion')).toContainText('Ir a pagar con Mercado Pago');
     await expect(page.getByTestId('btn-checkout-volver')).toBeHidden();
     await expect(resumen).toBeVisible();
@@ -133,7 +134,7 @@ test.describe('Escritorio E3: carrito y checkout en dos columnas @escritorio', (
   test('«Volver» retrocede de paso y desde el primero regresa al carrito @escritorio', async ({ page, request }) => {
     await abrir(page, request, 'checkout.html');
     await page.getByTestId('btn-modalidad-retiro').click();
-    await expect(page.getByTestId('btn-confirmar-retiro')).toBeVisible();
+    await expect(page.getByTestId('btn-confirmar-retiro')).toBeAttached();
     await page.getByTestId('btn-checkout-volver').click();
     await expect(page.getByTestId('btn-modalidad-retiro')).toBeVisible();
     await page.getByTestId('btn-checkout-volver').click();
@@ -157,7 +158,7 @@ test.describe('Escritorio E3: carrito y checkout en dos columnas @escritorio', (
     await page.getByTestId('btn-modalidad-retiro').click();
     await page.getByTestId('btn-resumen-accion').click();
     await page.getByTestId('btn-resumen-accion').click();
-    await expect(page.getByTestId('btn-ir-a-pagar')).toBeVisible();
+    await expect(page.getByTestId('btn-ir-a-pagar')).toBeAttached();
     const lista = await apiGet(request, '/pedidos/cliente', sesion.token);
     const pedidos = lista.body.data as Array<{ id: number; estado: string }>;
     const nuevo = pedidos.filter((p) => p.estado === 'PENDIENTE_PAGO').sort((a, b) => b.id - a.id)[0];

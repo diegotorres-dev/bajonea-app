@@ -7,7 +7,7 @@ import { prepararAudio, reproducirDing } from './sonido-avisos.js';
 import { esPedidoNuevo, marcarPedidoVisto, registrarLineaBase, textoVencimientoPedido } from './pedidos-nuevos.js';
 import { exigirContextoComercio, exigirDueno } from './contexto.js';
 import { logout, construirTelefono, resolverHomePorRol, LABELS_TIPO_SOCIEDAD, LABELS_CONDICION_IVA } from './auth.js';
-import { resumenHorarioHoy, renderTopBar, showToast, mostrarToastPendiente, pintarAvatarComercio, renderPedidoEstadoHeader, manejarBloqueoPorCambioPassword, crearBloqueMotivoRechazo } from './catalogo.js';
+import { renderTopBar, showToast, mostrarToastPendiente, pintarAvatarComercio, renderPedidoEstadoHeader, manejarBloqueoPorCambioPassword, crearBloqueMotivoRechazo } from './catalogo.js';
 import { SOPORTE_CONTACTO_URL } from './config.js';
 import { horaConDiaDe, horaMinutoDe, milisegundosHasta } from './fechas.js';
 import { crearSvg, limpiarAvisoFijo, mostrarAvisoFijo, bindNombreComercio, MENSAJE_NOMBRE_COMERCIO_EN_USO } from './form-utils.js';
@@ -714,7 +714,6 @@ export async function initComercioDashboard() {
   const comercio = await apiFetch('/comercios/perfil');
   normalizarComercio(comercio);
 
-  const { resumenHoy } = resumenHorarioHoy(comercio.horarios);
   function pintarBannerEstado() {
     const enMemoria = getComercioActivoEnMemoria();
     if (!enMemoria) {
@@ -726,13 +725,13 @@ export async function initComercioDashboard() {
     if (pintarAvisoComercioNoOperativo(document.getElementById('banner-estado-slot'))) {
       return;
     }
-    const abierto = enMemoria.abiertoAhora;
+    const slot = document.getElementById('banner-estado-slot');
+    if (enMemoria.abiertoAhora) {
+      slot.innerHTML = '';
+      return;
+    }
     const sujeto = esContextoEmpleado() ? 'Este comercio' : 'Tu comercio';
-    renderEstadoBanner(
-      document.getElementById('banner-estado-slot'),
-      abierto,
-      abierto ? `${sujeto} está abierto ahora. ${resumenHoy}` : `${sujeto} está cerrado en este momento`,
-    );
+    renderEstadoBanner(slot, false, `${sujeto} está cerrado en este momento`);
   }
   pintarBannerEstado();
   suscribirComercios(pintarBannerEstado);
@@ -1196,7 +1195,7 @@ function abrirHojaMotivoPedido({ pedido, accion, enviar, disparador }) {
         validar,
         alPulsar: () => enviar({ motivo: select.control.value, comentario: comentario.control.value.trim() }),
       },
-      { etiqueta: 'Cancelar', variante: 'segura', inicial: true, testid: esAnulacion ? 'btn-cancelar-anulacion' : 'btn-cancelar-rechazo' },
+      { etiqueta: 'Volver', variante: 'segura', inicial: true, testid: esAnulacion ? 'btn-cancelar-anulacion' : 'btn-cancelar-rechazo' },
     ],
   });
 }
@@ -1332,7 +1331,7 @@ function mostrarModalNoRetirado(pedido, enviar, disparador) {
     disparador,
     acciones: [
       { etiqueta: 'Cerrar como no retirado', etiquetaEnviando: 'Cerrando…', variante: 'peligro', testid: 'btn-confirmar-no-retirado', alPulsar: enviar },
-      { etiqueta: 'Cancelar', variante: 'segura', inicial: true, testid: 'btn-cancelar-no-retirado' },
+      { etiqueta: 'Volver', variante: 'segura', inicial: true, testid: 'btn-cancelar-no-retirado' },
     ],
   });
 }
@@ -3397,7 +3396,12 @@ export async function initComercioProductoForm() {
   });
 
   const tagsSeleccionados = new Set();
-  tags.filter((tag) => tag.activo).forEach((tag) => {
+  const tagsActivosDisponibles = tags.filter((tag) => tag.activo);
+  const campoTags = chipRowTags.closest('.field');
+  if (campoTags) {
+    campoTags.classList.toggle('is-hidden', tagsActivosDisponibles.length === 0);
+  }
+  tagsActivosDisponibles.forEach((tag) => {
     const chip = crear('button', 'chip');
     chip.type = 'button';
     chip.textContent = tag.nombre;

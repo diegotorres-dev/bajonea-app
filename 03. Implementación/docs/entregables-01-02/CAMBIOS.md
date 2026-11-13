@@ -1708,3 +1708,14 @@ Cambios sugeridos a los documentos de análisis (no se editaron `01.` ni `02.`):
 ### Sin cambios en
 
 Contrato de la API, modelo de datos, reglas de negocio, notificaciones y casos de uso.
+
+## Tramo E6 — correcciones de la crítica de diseño (2026-11-13)
+
+Solo interfaz; sin cambios de contrato, modelo de datos, reglas de negocio ni casos de uso. Lo que ve la persona:
+
+1. **Formularios:** todo campo con error se marca en rojo (no solo el primero); las casillas del código de verificación tienen un borde más marcado.
+2. **Confirmaciones de pedido:** la salida de las hojas de anular, rechazar y cerrar como no retirado dice «Volver».
+3. **Carrito:** con una unidad, el «−» queda deshabilitado y el ícono de la derecha es el único que quita el producto. En la hoja de producto desaparecieron dos líneas sobrantes.
+4. **Listas:** en «Mis pedidos» el estado va en su propia fila; en el catálogo el estado del comercio va debajo del nombre (que puede ocupar dos líneas); las secciones de tags sin tags no se muestran.
+5. **Sonido de avisos:** una sola tarjeta (móvil) o una fila compacta (escritorio), y el aviso para habilitar el audio solo cuando el navegador lo bloquea; en el panel del comercio se quitó la línea repetida del horario.
+6. **Escritorio:** un solo botón principal en el checkout; un solo buscador (el de la barra); tarjeta de producto con precio destacado y acción compacta; textos de al menos 12 px (los secundarios, 13 px); filtros activos en naranja; Comercios del Administrador con localidad en lugar del tipo y fila clicable; Reclamos con «Ver detalle ›».

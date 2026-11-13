@@ -169,6 +169,7 @@ async function pintarTarjetaDocumentos(tarjeta, cantidad) {
   contador.textContent = String(cantidad);
   contador.style.display = cantidad > 0 ? 'flex' : 'none';
   tarjeta.classList.toggle('alert-card--acento', cantidad > 0);
+  marcarPendientes(tarjeta, cantidad);
   if (cantidad === 0) {
     subtitulo.textContent = 'Todo al día';
     return;
@@ -199,6 +200,11 @@ async function cantidadDeReembolsosParaRevisar(opciones = {}) {
   }
 }
 
+function marcarPendientes(tarjeta, cantidad) {
+  tarjeta.classList.toggle('alert-card--con-pendientes', cantidad > 0);
+  tarjeta.classList.toggle('alert-card--sin-pendientes', cantidad === 0);
+}
+
 function pintarContadorRedondo(contador, cantidad) {
   contador.textContent = String(cantidad);
   contador.style.display = cantidad > 0 ? 'flex' : 'none';
@@ -214,6 +220,7 @@ function armarTarjetasDeAtencion() {
       pendientes: (metricas) => metricas.comerciosPendientes,
       pintar: (metricas) => {
         pintarContadorRedondo(comercios.querySelector('[data-count]'), metricas.comerciosPendientes);
+        marcarPendientes(comercios, metricas.comerciosPendientes);
         comercios.querySelector('[data-subtitulo]').textContent = metricas.comerciosPendientes === 1
           ? '1 solicitud de aprobación'
           : `${metricas.comerciosPendientes} solicitudes de aprobación`;
@@ -222,7 +229,10 @@ function armarTarjetasDeAtencion() {
     {
       nodo: resolicitudes,
       pendientes: (metricas) => metricas.resolicitudesPendientes,
-      pintar: (metricas) => pintarContadorRedondo(resolicitudes.querySelector('[data-count]'), metricas.resolicitudesPendientes),
+      pintar: (metricas) => {
+        pintarContadorRedondo(resolicitudes.querySelector('[data-count]'), metricas.resolicitudesPendientes);
+        marcarPendientes(resolicitudes, metricas.resolicitudesPendientes);
+      },
     },
     {
       nodo: documentos,
@@ -977,6 +987,10 @@ function renderComercioAdminRow(comercio, onSuspendido) {
   const p = document.createElement('p');
   p.textContent = labelTipoComercio(comercio.tipoComercio);
   bodyEl.appendChild(p);
+  const localidadEl = crear('p', 'comercio-admin-row__localidad');
+  localidadEl.setAttribute('data-testid', `comercio-admin-localidad-${comercio.id}`);
+  localidadEl.textContent = comercio.direccion && comercio.direccion.nombreLocalidad ? comercio.direccion.nombreLocalidad : '';
+  bodyEl.appendChild(localidadEl);
   const info = BADGE_ESTADO_COMERCIO[comercio.estado] || { label: comercio.estado, className: 'status-badge--neutro' };
   const badge = crear('span', `status-badge ${info.className}`);
   badge.setAttribute('data-testid', `estado-comercio-${comercio.id}`);
@@ -991,6 +1005,11 @@ function renderComercioAdminRow(comercio, onSuspendido) {
   detalleBtn.innerHTML = `<span>Ver detalle</span>${ICONS.chevronRight}`;
   detalleBtn.addEventListener('click', () => mostrarModalDetalleComercio(comercio, onSuspendido));
   row.appendChild(detalleBtn);
+  row.addEventListener('click', (evento) => {
+    if (window.matchMedia('(min-width: 1024px)').matches && !evento.target.closest('button')) {
+      detalleBtn.click();
+    }
+  });
 
   return row;
 }
@@ -1018,7 +1037,7 @@ export async function initAdminComercios() {
     return;
   }
 
-  container.appendChild(crearEncabezadoTabla('comercios', [{ etiqueta: '' }, { etiqueta: 'Comercio' }, { etiqueta: 'Tipo' }, { etiqueta: 'Estado' }, { etiqueta: '' }], 'encabezado-comercios'));
+  container.appendChild(crearEncabezadoTabla('comercios', [{ etiqueta: '' }, { etiqueta: 'Comercio' }, { etiqueta: 'Localidad' }, { etiqueta: 'Estado' }, { etiqueta: '' }], 'encabezado-comercios'));
   comercios
     .sort((a, b) => a.nombre.localeCompare(b.nombre))
     .forEach((comercio) => container.appendChild(renderComercioAdminRow(comercio, initAdminComercios)));

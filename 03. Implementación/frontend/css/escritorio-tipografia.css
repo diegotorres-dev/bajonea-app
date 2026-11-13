@@ -1,0 +1,259 @@
+@media (min-width: 1024px) {
+  :root {
+    --fs-xs: 13px;
+  }
+
+  .field__label-badge {
+    font-size: 12px;
+  }
+  .field__hint {
+    font-size: 13px;
+  }
+  .strength-meter__label {
+    font-size: 13px;
+  }
+  .step-progress__labels span {
+    font-size: 13px;
+  }
+  .avatar-upload__circle span {
+    font-size: 13px;
+  }
+  .avatar-upload__hint {
+    font-size: 13px;
+  }
+  .section-note {
+    font-size: 13px;
+  }
+  .info-box {
+    font-size: 13px;
+  }
+  .comercio-card__meta {
+    font-size: 13px;
+  }
+  .pill {
+    font-size: 13px;
+  }
+  .product-row__thumb--agotado::after {
+    font-size: 12px;
+  }
+  .explore-product-card__thumb--agotado::after {
+    font-size: 12px;
+  }
+  .explore-product-card__comercio {
+    font-size: 13px;
+  }
+  .profile-section__title {
+    font-size: 13px;
+  }
+  .cart-item__unit-price {
+    font-size: 13px;
+  }
+  .cart-item__nota {
+    font-size: 13px;
+  }
+  .delivery-option__body p {
+    font-size: 13px;
+  }
+  .conflict-card__label {
+    font-size: 13px;
+  }
+  .conflict-card__count {
+    font-size: 13px;
+  }
+  .pedido-card__fecha {
+    font-size: 13px;
+  }
+  .stats-bar__label {
+    font-size: 13px;
+  }
+  .notification-item__fecha {
+    font-size: 13px;
+  }
+  .product-row__thumb--descontinuado::after {
+    font-size: 12px;
+  }
+  .photo-gallery__item-badge {
+    font-size: 12px;
+  }
+  .photo-gallery__add span {
+    font-size: 13px;
+  }
+  .stat-tile p {
+    font-size: 13px;
+  }
+  .alert-card__body p {
+    font-size: 13px;
+  }
+  .request-hero__logo {
+    font-size: 13px;
+  }
+  .request-hero__fecha {
+    font-size: 13px;
+  }
+  .detail-section__title {
+    font-size: 13px;
+  }
+  .textarea-counter {
+    font-size: 13px;
+  }
+  .comercio-admin-row__body p {
+    font-size: 13px;
+  }
+  .motivo-rechazo__titulo {
+    font-size: 12px;
+  }
+  .switch-row__ayuda {
+    font-size: 13px;
+  }
+  .request-card__sub {
+    font-size: 13px;
+  }
+  .cambio-fila__etiqueta {
+    font-size: 13px;
+  }
+  .cambio-foto {
+    font-size: 13px;
+  }
+  .panel-comercios__grupo-titulo {
+    font-size: 13px;
+  }
+  .panel-comercios__sub {
+    font-size: 13px;
+  }
+  .panel-comercios__etiqueta {
+    font-size: 13px;
+  }
+  .desvincular-mp__nota {
+    font-size: 13px;
+  }
+  .cierre-card__subtitulo {
+    font-size: 13px;
+  }
+  .comercio-franja__chip {
+    font-size: 13px;
+  }
+  .equipo-header__comercio {
+    font-size: 13px;
+  }
+  .actividad-dia {
+    font-size: 13px;
+  }
+  .actividad-rol {
+    font-size: 13px;
+  }
+  .actividad-fila__hora {
+    font-size: 13px;
+  }
+  .equipo-fila__detalle {
+    font-size: 13px;
+  }
+  .equipo-accion__leyenda {
+    font-size: 13px;
+  }
+  .comercio-franja__insignia {
+    font-size: 12px;
+  }
+  .chip-propio {
+    font-size: 12px;
+  }
+  .recorrido__meta, .recorrido__motivo {
+    font-size: 13px;
+  }
+  .campo-bloqueado__titulo {
+    font-size: 13px;
+  }
+  .equipo-solo-lectura {
+    font-size: 13px;
+  }
+  .leyenda-cruce {
+    font-size: 13px;
+  }
+  .horarios-vigencia__titulo {
+    font-size: 13px;
+  }
+  .estadisticas-periodo {
+    font-size: 13px;
+  }
+  .estadisticas-cifra__etiqueta {
+    font-size: 13px;
+  }
+  .estadisticas-eje {
+    font-size: 13px;
+  }
+  .estadisticas-nota {
+    font-size: 13px;
+  }
+  .chip-predeterminada {
+    font-size: 12px;
+  }
+  .doc-fila__meta {
+    font-size: 13px;
+  }
+  .doc-archivo-elegido__tamano {
+    font-size: 13px;
+  }
+  .suspension-motivo__etiqueta {
+    font-size: 13px;
+  }
+  .bloqueo-suspension__texto {
+    font-size: 13px;
+  }
+  .comercio-suspension__aparte-ayuda {
+    font-size: 13px;
+  }
+  .soporte-burbuja__autor {
+    font-size: 13px;
+  }
+  .soporte-burbuja__fecha {
+    font-size: 13px;
+  }
+  .soporte-fila__fecha {
+    font-size: 13px;
+  }
+  .soporte-cuenta__titulo {
+    font-size: 13px;
+  }
+  .reclamo-fotos__sin-vista {
+    font-size: 13px;
+  }
+  .reclamo-fotos__nombre {
+    font-size: 13px;
+  }
+  .reclamo-fotos-admin__miniatura {
+    font-size: 13px;
+  }
+  .profile-link__leyenda {
+    font-size: 13px;
+  }
+  .u-fs-12px-c-text-muted {
+    font-size: 13px;
+  }
+
+  .barra-admin__rol {
+    font-size: 12px;
+  }
+
+  .field__label-badge {
+    padding: 2px 8px;
+  }
+
+  .photo-gallery__item-badge {
+    padding: 1px 6px;
+  }
+
+  .comercio-estado-badge {
+    height: 24px;
+    font-size: 13px;
+  }
+
+  .status-badge,
+  .precio-unitario__aviso,
+  .equipo-motivo,
+  .doc-chip,
+  .dueno-comercio__chip,
+  .dueno-restauracion__estado,
+  .reclamo-bloque__error-detalle,
+  .equipo-tab__cuenta {
+    font-size: 13px;
+  }
+}

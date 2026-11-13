@@ -5,7 +5,7 @@ import { normalizarCampos } from './validators.js';
 import { atraparFoco, devolverFoco, mensajeDeError } from './documentos-comun.js';
 import { abrirHoja, cajaInformativa, campoTexto, crearDetalle, fechaLegible, plural, texto } from './admin-hojas.js';
 import { abrirHojaReactivarCuenta } from './admin-reactivar.js';
-import { crearEncabezadoTabla } from './tabla-admin.js';
+import { crearEncabezadoTabla, observarColumnaNovedades } from './tabla-admin.js';
 
 const MIN_MOTIVO = 10;
 
@@ -122,6 +122,7 @@ export async function initAdminClientes() {
   const avisoDestacado = h('div', { 'data-testid': 'aviso-cliente-destacado' });
 
   contenedor.replaceChildren(buscador, filtros, contador, avisoDestacado, avisoCarga, encabezado, lista);
+  observarColumnaNovedades(lista, encabezado);
 
   function esperar() {
     lista.replaceChildren(...[0, 1, 2, 3].map(() => h('div', { class: 'cliente-admin-row cliente-admin-row--espera', 'aria-hidden': 'true' }, [

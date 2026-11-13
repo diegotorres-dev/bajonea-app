@@ -21,7 +21,7 @@
   }
 
   .app-shell--lateral-admin .app-header__badge {
-    margin-left: auto;
+    margin-left: 0;
   }
 
   .app-shell--lateral-admin .chip-row {
@@ -56,6 +56,19 @@
     --cols: minmax(0, 1.2fr) minmax(0, 1.8fr) 140px minmax(0, 1.4fr) 44px;
   }
 
+  .tabla--clientes.tabla--sin-novedades,
+  .tabla--duenos.tabla--sin-novedades {
+    --cols: minmax(0, 1.2fr) minmax(0, 1.8fr) 140px 44px;
+  }
+
+  .tabla--sin-novedades .tabla-encabezado__celda:nth-child(4) {
+    display: none;
+  }
+
+  .tabla-admin.tabla--sin-novedades .cliente-admin-row__acciones {
+    grid-column: 4;
+  }
+
   .tabla--comercios {
     --cols: 40px minmax(0, 1.6fr) minmax(0, 1fr) 190px 150px;
   }
@@ -65,11 +78,11 @@
   }
 
   .tabla--reembolsos {
-    --cols: 150px 64px minmax(0, 1fr) minmax(0, 1fr) 90px 92px minmax(0, 1fr) 150px;
+    --cols: 150px 64px minmax(0, 1fr) minmax(0, 1fr) 90px 92px minmax(0, 1fr) 200px;
   }
 
   .tabla--reclamos {
-    --cols: minmax(0, 1.5fr) minmax(0, 1.2fr) 190px 200px;
+    --cols: minmax(0, 1.5fr) minmax(0, 1.2fr) 190px 200px 110px;
   }
 
   .tabla-admin > .cliente-admin-row,
@@ -166,6 +179,18 @@
     grid-column: 3;
     margin: 0;
     font-size: var(--fs-sm);
+  }
+
+  .tabla-admin .comercio-admin-row__body > p:not(.comercio-admin-row__localidad) {
+    display: none;
+  }
+
+  .tabla-admin .comercio-admin-row__body > .comercio-admin-row__localidad {
+    display: block;
+  }
+
+  .tabla-admin > .comercio-admin-row {
+    cursor: pointer;
   }
 
   .tabla-admin .comercio-admin-row .status-badge {
@@ -286,6 +311,16 @@
     font-size: var(--fs-sm);
   }
 
+  .tabla-admin > .reclamo-admin-row > .reclamo-admin-row__detalle {
+    display: inline-flex;
+    grid-column: 5;
+    grid-row: 1;
+    justify-self: end;
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    color: var(--color-primary);
+  }
+
   .tabla-admin > .reclamo-admin-row:last-child {
     border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   }
@@ -358,6 +393,7 @@
     padding: var(--space-2) var(--space-3);
     font-size: var(--fs-sm);
     line-height: 1.2;
+    white-space: nowrap;
   }
 
   .app-shell--lateral-admin .app-main > .chip-row,
@@ -551,8 +587,13 @@
     --cols: minmax(0, 1fr) minmax(0, 1.4fr) 120px 44px 44px;
   }
 
+  .tabla--clientes.tabla--sin-novedades,
+  .tabla--duenos.tabla--sin-novedades {
+    --cols: minmax(0, 1fr) minmax(0, 1.4fr) 120px 44px;
+  }
+
   .tabla--reclamos {
-    --cols: minmax(0, 1.3fr) minmax(0, 1fr) 170px 150px;
+    --cols: minmax(0, 1.3fr) minmax(0, 1fr) 170px 150px 100px;
   }
 
   #clientes-content,

@@ -260,8 +260,16 @@ export function montarBarraCliente({ activo = null } = {}) {
   if (activo === 'explorar' && parametros.get('q')) {
     buscador.querySelector('input').value = parametros.get('q');
   }
+  buscador.querySelector('input').addEventListener('input', (evento) => {
+    if (activo === 'explorar') {
+      document.dispatchEvent(new CustomEvent('barra-busqueda', { detail: evento.target.value }));
+    }
+  });
   buscador.addEventListener('submit', (evento) => {
     evento.preventDefault();
+    if (activo === 'explorar') {
+      return;
+    }
     const texto = buscador.querySelector('input').value.trim();
     window.location.href = texto ? `explorar.html?q=${encodeURIComponent(texto)}` : 'explorar.html';
   });

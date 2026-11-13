@@ -334,23 +334,21 @@
     display: none;
   }
 
-  .step-acciones-escritorio {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-4);
-    margin-top: var(--space-6);
-  }
-
-  .app-shell--cliente:has(#checkout-resumen) .screen-body .step-acciones-escritorio > .btn-primary {
-    margin-top: 0;
-  }
-
   .app-shell--cliente:has(#checkout-resumen) .screen-body {
     padding-bottom: var(--space-8);
   }
 
+  .app-shell--cliente:has(#checkout-resumen) .screen-body section .btn-primary {
+    display: none;
+  }
+
+  .app-shell--cliente:has(#checkout-resumen) > .app-main {
+    align-self: start;
+  }
+
   .checkout-volver {
     position: static;
+    display: flex;
+    margin: var(--space-6) auto 0 0;
   }
 }
