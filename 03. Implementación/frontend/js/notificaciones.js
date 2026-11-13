@@ -6,6 +6,7 @@ import { getComerciosEnMemoria, refrescarComercios } from './comercio-activo.js'
 import { ROL_AVISO, destinoDeAviso } from './destino-aviso.js';
 import { mostrarEsqueleto, mostrarErrorDeCarga } from './esqueletos.js';
 import { RUTA_SELECTOR_CONTEXTO, resolverContextoDeLaPestania } from './contexto.js';
+import { montarBarraClienteEnEscritorio, refrescarAvisosCliente } from './cliente-escritorio.js';
 
 const POLLING_INTERVAL_MS = 15000;
 const TOPE_MARCA_ANTES_DE_NAVEGAR_MS = 1500;
@@ -124,6 +125,10 @@ function renderNotificacion(notificacion, rol) {
     body.appendChild(etiqueta);
   }
   item.appendChild(body);
+  const estadoTabla = crear('span', 'notification-item__estado');
+  estadoTabla.setAttribute('data-testid', `notificacion-estado-tabla-${notificacion.id}`);
+  estadoTabla.textContent = notificacion.leida ? 'Leído' : 'Sin leer';
+  item.appendChild(estadoTabla);
   if (enlace) {
     item.appendChild(crearChevron());
   }
@@ -149,9 +154,11 @@ function renderNotificacion(notificacion, rol) {
     return apiFetch(`/notificaciones/${notificacion.id}/leida`, { method: 'PUT', handleRedGlobally: false, handle5xxGlobally: false })
       .then((actualizada) => {
         notificacion.leida = actualizada.leida;
+        refrescarAvisosCliente();
         if (enlace) {
           item.classList.add('notification-item--leida');
           estado.textContent = '';
+          estadoTabla.textContent = 'Leído';
           return;
         }
         reemplazarPorElementoSinAccion();
@@ -175,6 +182,17 @@ function renderNotificacion(notificacion, rol) {
   });
 
   return item;
+}
+
+function crearCabeceraTabla() {
+  const cabecera = crear('div', 'notification-cabecera');
+  cabecera.setAttribute('aria-hidden', 'true');
+  ['Aviso', 'Fecha', 'Estado'].forEach((texto) => {
+    const celda = document.createElement('span');
+    celda.textContent = texto;
+    cabecera.appendChild(celda);
+  });
+  return cabecera;
 }
 
 function crearAccionMarcarTodas(alMarcar, { ocultaSinAvisos }) {
@@ -249,6 +267,7 @@ export async function initNotificaciones() {
         notificacion.leida = true;
       });
       showToast('Marcaste todos los avisos como leídos');
+      refrescarAvisosCliente();
       pintar();
       await Promise.allSettled([enComercio ? refrescarComercios() : Promise.resolve(), cargarPrimeraPagina()]);
     } catch {
@@ -260,7 +279,10 @@ export async function initNotificaciones() {
   }
 
   botonMarcarTodas = crearAccionMarcarTodas(marcarTodas, { ocultaSinAvisos: !enComercio });
-  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Notificaciones', accion: botonMarcarTodas, destinoVolver: enComercio ? 'comercio-dashboard.html' : null });
+  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Notificaciones', accion: botonMarcarTodas, destinoVolver: enComercio ? 'comercio-dashboard.html' : 'index.html' });
+  if (!enComercio) {
+    montarBarraClienteEnEscritorio({ activo: 'avisos' });
+  }
 
   if (enComercio) {
     await montarBarraLateralCompartida('panel', 'avisos');
@@ -320,7 +342,8 @@ export async function initNotificaciones() {
       actualizarBotonMarcarTodas();
       return;
     }
-    const list = crear('div', 'notification-list');
+    const list = crear('div', 'notification-list notification-list--tabla');
+    list.appendChild(crearCabeceraTabla());
     estado.items.forEach((notificacion) => {
       list.appendChild(renderNotificacion(notificacion, rol));
     });

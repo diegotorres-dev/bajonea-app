@@ -165,3 +165,9 @@ Todo lo que hay que revisar antes de subir Bajoneá al servidor final y que no e
 - **En `practicas3` y en cualquier base con cuentas de prueba reales:** arrancar el backend con `INACTIVIDAD_JOB_HABILITADO=false` si no se quiere que, pasados 3 meses, el proceso inactive cuentas de prueba y mande emails (a emails ficticios).
 - **El email "Tu cuenta quedó inactiva" sale con un solo intento y sin reintentos automáticos**; si falla queda la fila `FALLIDO` en `notificacion` (canal `EMAIL`). No hay pantalla para reenviarlo.
 - **Pantalla de reactivación (entrega B).** Hasta que exista, el login sigue mostrando el enlace "Solicitá la reactivación" que lleva al flujo por código de email (`reactivar-cuenta.html`), que sigue funcionando. `POST /auth/reactivar-cuenta/con-credenciales` y `PUT /administrador/cuentas/{id}/reactivar` no tienen pantalla todavía.
+
+
+### Volumen del catálogo público (tramo E4, 2026-11-13)
+
+- **`GET /api/v1/catalogo/comercios` no pagina:** devuelve todos los comercios `APTO_VENTA` y `CERRADO_TEMPORALMENTE` con sus horarios (dos consultas en bloque y el armado en memoria) y el catálogo del Cliente los pinta todos. En una base de pruebas con 1324 comercios tardaba entre 2,6 y 4,9 s (es lo que hacía lenta la prueba `119:96` en WebKit). Con el volumen real esperado al lanzar (decenas de comercios en Río Grande) no es un problema, pero antes de crecer a cientos hay que paginar el endpoint o filtrar por localidad; el frontend no está preparado para recibir páginas. `GET /catalogo/productos` sí pagina, pero sin un orden fijo de la primera página (dos pedidos seguidos pueden devolver otro orden): conviene ordenar por id o por nombre en la consulta.
+- **Dueños del Administrador:** `GET /administrador/duenos` devuelve todos los dueños; la lista muestra 30 y «Ver más» en el frontend. Con miles de dueños hay que paginar en el servidor.

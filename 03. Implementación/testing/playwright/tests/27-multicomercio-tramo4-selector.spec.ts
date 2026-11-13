@@ -338,11 +338,11 @@ test.describe('Multi-comercio, tramo 4B: selector de comercio del Dueño (UI)', 
   test.describe('cambiar de comercio y abrir pantallas de estado', () => {
     test('elegir un operativo lo activa, lo guarda como último y lleva a su dashboard con su header', async ({ page, request }) => {
       const encabezados = registrarHeaders(page, '/comercios/perfil');
-      await abrirDashboardDe(page, request, grande.dueno);
+      const sesionDelDueno = await abrirDashboardDe(page, request, grande.dueno);
       await seleccionarComercioEnPanel(page, grande.b);
       await irAlPanelDelComercioElegido(page);
       await expect(page.getByTestId('franja-comercio-nombre')).toHaveText(grande.nombres[grande.b]);
-      await expect(page.getByTestId('mensaje-saludo')).toHaveText('Hola 👋');
+      await expect(page.getByTestId('mensaje-saludo')).toHaveText(`Hola, ${sesionDelDueno.usuario.nombre} 👋`);
       expect((await comercioActivoEnSesion(page))?.comercioId).toBe(grande.b);
       expect(await ultimoComercioGuardado(page, grande.dueno.duenoId)).toBe(grande.b);
       await expect.poll(() => encabezados.at(-1)).toBe(String(grande.b));

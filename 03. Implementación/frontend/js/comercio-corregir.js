@@ -1,5 +1,5 @@
 import { montarPasosLaterales, enlazarPasoAtras } from './pasos-laterales.js';
-import { apiFetch, ApiError, getUsuario } from './api.js';
+import { apiFetch, ApiError, actualizarNombreSesion, getUsuario } from './api.js';
 import { exigirDueno } from './contexto.js';
 import { subirFotoCorreccionComercio, CloudinaryUploadError } from './cloudinary.js';
 import { construirTelefono, resolverHomePorRol } from './auth.js';
@@ -316,6 +316,9 @@ export async function initComercioCorregir() {
         payload.legales = legales.leerPayload(construirTelefono);
       }
       const comercio = await apiFetch(`/comercios/${comercioId}/resolicitud`, { method: 'PUT', body: payload });
+      if (comercio.representante) {
+        actualizarNombreSesion(comercio.representante.nombre);
+      }
       document.getElementById('exito-texto').textContent = `${comercio.nombre} está en revisión. El equipo de Bajoneá revisará tu solicitud y te notificaremos cuando tengamos una respuesta`;
       wizardActivo = false;
       ocultar('wizard-container');

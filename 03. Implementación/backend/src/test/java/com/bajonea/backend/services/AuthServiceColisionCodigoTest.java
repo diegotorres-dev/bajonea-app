@@ -69,7 +69,8 @@ class AuthServiceColisionCodigoTest {
                 mock(PasswordEncoder.class),
                 mock(JwtService.class),
                 emailService, mock(EstadoUsuarioService.class), mock(ReactivacionCuentaService.class),
-                mock(ComerciosAlReactivarService.class));
+                mock(ComerciosAlReactivarService.class),
+                mock(com.bajonea.backend.repositories.PersonaFisicaRepository.class));
     }
 
     @Test

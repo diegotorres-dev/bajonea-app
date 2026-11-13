@@ -41,6 +41,26 @@ function aNodos(contenido) {
   return Array.isArray(contenido) ? contenido : [contenido];
 }
 
+const hojasActivas = [];
+
+export function apilarHoja() {
+  const identidad = {};
+  hojasActivas.push(identidad);
+  return {
+    esTope: () => hojasActivas[hojasActivas.length - 1] === identidad,
+    liberar: () => {
+      const posicion = hojasActivas.indexOf(identidad);
+      if (posicion >= 0) {
+        hojasActivas.splice(posicion, 1);
+      }
+    },
+  };
+}
+
+function esVisible(elemento) {
+  return elemento.getClientRects().length > 0 && getComputedStyle(elemento).visibility !== 'hidden';
+}
+
 let ultimoControlTocado = null;
 
 document.addEventListener(
@@ -62,6 +82,7 @@ function elementoActivo() {
 export function activarHoja({ fondo, hoja, disparador: disparadorExplicito = null, inicial = null, ocupada = () => false, alCerrar = null }) {
   const disparador = disparadorExplicito || elementoActivo();
   const overflowPrevio = document.body.style.overflow;
+  const lugar = apilarHoja();
   let cerrada = false;
 
   if (!hoja.getAttribute('role')) {
@@ -74,6 +95,7 @@ export function activarHoja({ fondo, hoja, disparador: disparadorExplicito = nul
       return;
     }
     cerrada = true;
+    lugar.liberar();
     document.removeEventListener('keydown', alTeclear, true);
     fondo.remove();
     document.body.style.overflow = overflowPrevio;
@@ -86,6 +108,9 @@ export function activarHoja({ fondo, hoja, disparador: disparadorExplicito = nul
   }
 
   function alTeclear(evento) {
+    if (!lugar.esTope()) {
+      return;
+    }
     if (evento.key === 'Escape') {
       evento.stopPropagation();
       if (!ocupada()) {
@@ -96,7 +121,7 @@ export function activarHoja({ fondo, hoja, disparador: disparadorExplicito = nul
     if (evento.key !== 'Tab') {
       return;
     }
-    const enfocables = [...hoja.querySelectorAll(SELECTOR_FOCO)].filter((el) => el.offsetParent !== null || el === document.activeElement);
+    const enfocables = [...hoja.querySelectorAll(SELECTOR_FOCO)].filter((el) => esVisible(el) || el === document.activeElement);
     if (enfocables.length === 0) {
       evento.preventDefault();
       return;
@@ -125,9 +150,12 @@ export function activarHoja({ fondo, hoja, disparador: disparadorExplicito = nul
     document.body.appendChild(fondo);
   }
   document.body.style.overflow = 'hidden';
-  const primerEnfocable = inicial || hoja.querySelector(SELECTOR_FOCO);
-  if (primerEnfocable) {
+  const primerEnfocable = [inicial, ...hoja.querySelectorAll(SELECTOR_FOCO)].find((el) => el && esVisible(el));
+  if (primerEnfocable && primerEnfocable !== hoja) {
     primerEnfocable.focus();
+  } else {
+    hoja.setAttribute('tabindex', '-1');
+    hoja.focus();
   }
   return { cerrar, estaCerrada: () => cerrada };
 }

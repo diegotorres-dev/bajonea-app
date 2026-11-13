@@ -1,4 +1,5 @@
-import { apiFetch, ApiError, getToken } from './api.js';
+import { apiFetch, ApiError, getToken, getUsuario, esContextoComercio } from './api.js';
+import { montarBarraClienteEnEscritorio } from './cliente-escritorio.js';
 import { renderTopBar, showToast } from './catalogo.js';
 import { h, setLoading } from './form-utils.js';
 import { texto } from './admin-hojas.js';
@@ -229,9 +230,15 @@ function iniciarPublica(contenedor) {
 }
 
 export function initSoporteConsulta() {
-  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Tu consulta' });
-  const contenedor = document.getElementById('consulta-contenido');
   const id = idDeLaUrl();
+  const sesionCliente = id !== null && Boolean(getToken()) && getUsuario() && getUsuario().rol === 'CLIENTE' && !esContextoComercio();
+  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Tu consulta', destinoVolver: id !== null && getToken() ? 'mis-consultas.html' : null });
+  if (sesionCliente) {
+    const shell = document.querySelector('.app-shell');
+    shell.classList.remove('app-shell--escritorio', 'app-shell--consulta');
+    montarBarraClienteEnEscritorio({ activo: null });
+  }
+  const contenedor = document.getElementById('consulta-contenido');
   if (id !== null && getToken()) {
     iniciarConSesion(contenedor, id);
     return;

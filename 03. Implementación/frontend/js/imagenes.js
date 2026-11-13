@@ -28,3 +28,14 @@ export function pintarImagen(img, url, { uso = 'tarjeta', diferida = false } = {
   img.src = urlImagen(url, uso);
   return img;
 }
+
+export function pintarImagenResponsiva(img, url, { uso = 'miniatura', usoGrande = 'tarjeta', tamanos, diferida = false } = {}) {
+  pintarImagen(img, url, { uso, diferida });
+  if (typeof url === 'string' && PATRON_CLOUDINARY.test(url)) {
+    img.srcset = `${urlImagen(url, uso)} ${USOS[uso]}w, ${urlImagen(url, usoGrande)} ${USOS[usoGrande]}w`;
+    if (tamanos) {
+      img.sizes = tamanos;
+    }
+  }
+  return img;
+}

@@ -1,3 +1,4 @@
+import { apilarHoja } from './hoja.js';
 import { apiFetch, ApiError } from './api.js';
 import { h, crearSvg } from './form-utils.js';
 
@@ -105,8 +106,9 @@ export function devolverFoco(elemento, respaldo = null) {
 }
 
 export function atraparFoco(contenedor, alEscape, estaInactivo = () => false) {
+  const lugar = apilarHoja();
   function alTeclear(evento) {
-    if (estaInactivo()) {
+    if (estaInactivo() || !lugar.esTope()) {
       return;
     }
     if (evento.key === 'Escape') {
@@ -133,7 +135,10 @@ export function atraparFoco(contenedor, alEscape, estaInactivo = () => false) {
     }
   }
   document.addEventListener('keydown', alTeclear);
-  return () => document.removeEventListener('keydown', alTeclear);
+  return () => {
+    lugar.liberar();
+    document.removeEventListener('keydown', alTeclear);
+  };
 }
 
 export function abrirVisorDocumento({ documento, rutaArchivo, alSubirNuevo = null, subtituloExtra = null }) {

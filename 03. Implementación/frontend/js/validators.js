@@ -162,6 +162,15 @@ export function aTitleCase(valor) {
     .replace(/(^|[\s\-'/])\p{L}/gu, (match) => match.toUpperCase());
 }
 
+const PARTICULAS_DE_NOMBRE = new Set(['de', 'del', 'la', 'las', 'los', 'y']);
+
+export function aTitleCaseNombre(valor) {
+  const palabras = aTitleCase(valor).split(' ');
+  return palabras
+    .map((palabra, indice) => (indice > 0 && PARTICULAS_DE_NOMBRE.has(palabra.toLowerCase()) ? palabra.toLowerCase() : palabra))
+    .join(' ');
+}
+
 export function normalizarCampos(objeto, campos) {
   if (!objeto) return objeto;
   for (const campo of campos) {

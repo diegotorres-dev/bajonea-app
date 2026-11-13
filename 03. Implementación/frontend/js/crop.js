@@ -1,3 +1,5 @@
+import { activarHoja } from './hoja.js';
+
 function crear(tag, className) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -38,7 +40,6 @@ export function abrirEditorRecorte({ origen, aspectRatio, onConfirmar, onCancela
     </div>
   `;
   backdrop.appendChild(sheet);
-  document.body.appendChild(backdrop);
 
   const canvas = sheet.querySelector('.crop-canvas');
   const ctx = canvas.getContext('2d');
@@ -79,20 +80,24 @@ export function abrirEditorRecorte({ origen, aspectRatio, onConfirmar, onCancela
     ctx.drawImage(img, offsetX, offsetY, img.naturalWidth * scale, img.naturalHeight * scale);
   }
 
+  let resuelto = false;
+  const control = activarHoja({
+    fondo: backdrop,
+    hoja: sheet,
+    alCerrar: () => {
+      if (!resuelto) {
+        resuelto = true;
+        if (onCancelar) onCancelar();
+      }
+    },
+  });
+
   function cerrar() {
-    backdrop.remove();
+    resuelto = true;
+    control.cerrar();
   }
 
-  cancelarBtn.addEventListener('click', () => {
-    cerrar();
-    if (onCancelar) onCancelar();
-  });
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      cerrar();
-      if (onCancelar) onCancelar();
-    }
-  });
+  cancelarBtn.addEventListener('click', () => control.cerrar());
 
   canvas.addEventListener('pointerdown', (event) => {
     arrastrando = true;
@@ -157,7 +162,6 @@ export function abrirEditorRecorte({ origen, aspectRatio, onConfirmar, onCancela
     dibujar();
     confirmarBtn.disabled = false;
   }).catch(() => {
-    cerrar();
-    if (onCancelar) onCancelar();
+    control.cerrar();
   });
 }

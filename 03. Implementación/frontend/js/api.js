@@ -1,5 +1,6 @@
 import { mostrarPantallaCuentaSuspendida } from './cuenta-suspendida.js';
 import { FalloRecuperable, esperarReintento, mostrarAvisoTimeout, registrarExitoSegundoPlano, registrarFalloSegundoPlano } from './red-aviso.js';
+import { aTitleCaseNombre } from './validators.js';
 
 export const API_BASE_URL = 'http://localhost:8080/api/v1';
 
@@ -54,6 +55,31 @@ export function setSesion(token, usuario) {
 export function getUsuario() {
   const raw = localStorage.getItem(USUARIO_KEY);
   return raw ? JSON.parse(raw) : null;
+}
+
+export function getNombre() {
+  const usuario = getUsuario();
+  const nombre = usuario && typeof usuario.nombre === 'string' ? usuario.nombre.trim() : '';
+  return nombre ? aTitleCaseNombre(nombre) : null;
+}
+
+export function actualizarNombreSesion(nombre) {
+  const usuario = getUsuario();
+  const limpio = typeof nombre === 'string' ? nombre.trim() : '';
+  if (!usuario || !limpio || usuario.nombre === limpio) {
+    return;
+  }
+  usuario.nombre = limpio;
+  localStorage.setItem(USUARIO_KEY, JSON.stringify(usuario));
+}
+
+export function actualizarFotoSesion(fotoPerfilUrl) {
+  const usuario = getUsuario();
+  if (!usuario) {
+    return;
+  }
+  usuario.fotoPerfilUrl = fotoPerfilUrl || null;
+  localStorage.setItem(USUARIO_KEY, JSON.stringify(usuario));
 }
 
 export function clearSesion() {
@@ -285,6 +311,9 @@ function crearModalSesionCerrada({ id, icono, titulo, texto }) {
   function alTeclear(evento) {
     if (evento.key === 'Escape') {
       irAlLogin();
+    } else if (evento.key === 'Tab') {
+      evento.preventDefault();
+      cta.focus();
     }
   }
   document.addEventListener('keydown', alTeclear, true);
@@ -484,6 +513,9 @@ function mostrarAvisoAccesoPerdido({ nombre, acceso }) {
   function alTeclear(evento) {
     if (evento.key === 'Escape') {
       continuar();
+    } else if (evento.key === 'Tab') {
+      evento.preventDefault();
+      entendido.focus();
     }
   }
   document.addEventListener('keydown', alTeclear);

@@ -4,7 +4,7 @@ import { getComercioActivoEnMemoria, INTERVALO_POLLING_COMERCIOS_MS, suscribirCo
 import { comercioActivoSuspendido } from './comercio-suspendido.js';
 import { h, crearSvg, renderBanner } from './form-utils.js';
 import { fechaCortaDe } from './fechas.js';
-import { abrirHoja } from './hoja.js';
+import { abrirHoja, activarHoja } from './hoja.js';
 import { mostrarErrorCampo, limpiarErrorCampo, mapearErroresBackend } from './validators.js';
 import {
   ESTADO_INVITACION,
@@ -394,17 +394,27 @@ function iniciarActualizacion() {
   }, INTERVALO_POLLING_COMERCIOS_MS);
 }
 
+const controlesDeHoja = new WeakMap();
+
 function crearHoja(testid, clase = 'modal-sheet') {
+  const disparador = document.activeElement && document.activeElement !== document.body ? document.activeElement : null;
   const backdrop = h('div', { class: 'modal-backdrop', 'data-testid': testid });
   const hoja = h('div', { class: clase });
   backdrop.append(hoja);
   document.body.append(backdrop);
-  backdrop.addEventListener('click', (evento) => {
-    if (evento.target === backdrop && backdrop.dataset.ocupado !== '1') {
-      backdrop.remove();
-    }
+  queueMicrotask(() => {
+    controlesDeHoja.set(backdrop, activarHoja({ fondo: backdrop, hoja, disparador, ocupada: () => backdrop.dataset.ocupado === '1' }));
   });
   return { backdrop, hoja };
+}
+
+function cerrarHoja(backdrop) {
+  const control = controlesDeHoja.get(backdrop);
+  if (control) {
+    control.cerrar();
+  } else {
+    backdrop.remove();
+  }
 }
 
 function ocupar(backdrop, boton, textoOcupado, ocupado, textoNormal) {
@@ -428,7 +438,7 @@ function abrirAvisoNoSePudoInvitar() {
   cuerpo.textContent = CUERPO_NO_SE_PUEDE_INVITAR;
   const cerrar = h('button', { class: 'btn btn-primary', type: 'button', 'data-testid': 'btn-cerrar-aviso-no-se-pudo-invitar' });
   cerrar.textContent = 'Entendido';
-  cerrar.addEventListener('click', () => backdrop.remove());
+  cerrar.addEventListener('click', () => cerrarHoja(backdrop));
   hoja.append(titulo, cuerpo, cerrar);
 }
 
@@ -491,7 +501,7 @@ function abrirHojaInvitar(emailInicial = '') {
     ocupar(backdrop, enviar, 'Enviando...', true, 'Enviar invitación');
     try {
       const { mensaje } = await apiFetch(`${RUTA_EQUIPO}/invitaciones`, { ...OPCIONES_RED, method: 'POST', body: { email: entrada.value } });
-      backdrop.remove();
+      cerrarHoja(backdrop);
       showToast(mensaje);
       seleccionarPestana('solicitudes');
       cargar({ conEsqueleto: false });
@@ -575,18 +585,18 @@ function abrirMenuInvitacion(invitacion) {
   const acciones = h('div', { class: 'profile-link-list' });
   const reenviarBoton = crearAccionMenu('btn-reenviar-invitacion', FIGURAS_REENVIAR, 'Reenviar código', false);
   reenviarBoton.addEventListener('click', () => {
-    backdrop.remove();
+    cerrarHoja(backdrop);
     reenviar(invitacion);
   });
   const cancelarBoton = crearAccionMenu('btn-cancelar-invitacion', FIGURAS_CANCELAR, 'Cancelar invitación', true);
   cancelarBoton.addEventListener('click', () => {
-    backdrop.remove();
+    cerrarHoja(backdrop);
     abrirConfirmacionCancelar(invitacion);
   });
   acciones.append(reenviarBoton, cancelarBoton);
   const cerrar = h('button', { class: 'btn btn-tertiary equipo-menu__cerrar', type: 'button', 'data-testid': 'btn-cerrar-menu-invitacion' });
   cerrar.textContent = 'Cerrar';
-  cerrar.addEventListener('click', () => backdrop.remove());
+  cerrar.addEventListener('click', () => cerrarHoja(backdrop));
   cuerpo.append(titulo, acciones, cerrar);
   hoja.append(asa, cuerpo);
 }
@@ -632,7 +642,7 @@ function crearEncabezadoDeMenu(miembro, conSubtitulo) {
 function crearBotonCerrarMenu(backdrop) {
   const cerrar = h('button', { class: 'btn btn-tertiary equipo-menu__cerrar', type: 'button', 'data-testid': 'btn-cerrar-menu-miembro' });
   cerrar.textContent = 'Cerrar';
-  cerrar.addEventListener('click', () => backdrop.remove());
+  cerrar.addEventListener('click', () => cerrarHoja(backdrop));
   return cerrar;
 }
 
@@ -671,7 +681,7 @@ function abrirMenuMiembroActivo(miembro) {
   const acciones = h('div', { class: 'profile-link-list' });
   const desactivar = crearAccionDeHoja('btn-desactivar-miembro', FIGURAS_DESACTIVAR, 'Desactivar', '', 'profile-link--peligro-solido');
   desactivar.addEventListener('click', () => {
-    backdrop.remove();
+    cerrarHoja(backdrop);
     abrirConfirmacionDesactivar(miembro);
   });
   acciones.append(desactivar);
@@ -697,7 +707,7 @@ function crearAccionReactivar(miembro, backdrop, aviso) {
     aviso.replaceChildren();
     try {
       const { data } = await apiFetch(`${RUTA_EQUIPO}/miembros/${miembro.empleadoId}/reactivar`, { ...OPCIONES_RED, method: 'PUT' });
-      backdrop.remove();
+      cerrarHoja(backdrop);
       reemplazarMiembro(data);
       showToast(`Reactivaste a ${nombreCompleto(miembro)}`);
     } catch (error) {
@@ -727,7 +737,7 @@ function abrirMenuMiembroInactivo(miembro) {
   } else {
     const invitar = crearAccionDeHoja('btn-invitar-de-nuevo', FIGURAS_REENVIAR, 'Invitar de nuevo', LEYENDA_INVITAR_DE_NUEVO, '');
     invitar.addEventListener('click', () => {
-      backdrop.remove();
+      cerrarHoja(backdrop);
       abrirHojaInvitar(miembro.email);
     });
     acciones.append(invitar);

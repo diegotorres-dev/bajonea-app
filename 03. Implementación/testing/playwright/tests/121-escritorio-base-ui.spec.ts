@@ -261,10 +261,10 @@ test.describe('Escritorio E0: base (CSS, capas, foco y hover) @escritorio', () =
     await expect(page.getByTestId('nav-1')).toHaveCSS('color', 'rgb(255, 255, 255)');
   });
 
-  test('shell del Cliente preparado: barra superior de 72 px y sin barra inferior @escritorio', async ({ page }) => {
+  test('shell del Cliente: sin barra inferior y con el encabezado de página dentro del contenedor (la barra superior de 72 px es .barra-cliente, spec 138) @escritorio', async ({ page }) => {
     await servirShell(page, 'app-shell--cliente');
     await barraInferiorOculta(page);
-    expect((await caja(page.locator('.top-bar'))).height).toBe(72);
+    expect((await caja(page.locator('.top-bar'))).height).toBeLessThan(72);
     expect((await caja(page.locator('.app-shell'))).width).toBe(1440);
   });
 

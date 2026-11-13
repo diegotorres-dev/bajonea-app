@@ -30,6 +30,8 @@ const FILTROS = [
   { clave: 'INACTIVO', etiqueta: 'Inactivos', testid: 'filtro-duenos-inactivos' },
 ];
 
+const DUENOS_POR_PAGINA = 30;
+
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
 function icono(figuras) {
@@ -78,7 +80,7 @@ export async function initAdminDuenos() {
   }
 
   const contenedor = document.getElementById('duenos-content');
-  const estado = { duenos: [], busqueda: '', filtro: 'TODOS', destacado: idDestacadoDeLaUrl() };
+  const estado = { duenos: [], busqueda: '', filtro: 'TODOS', destacado: idDestacadoDeLaUrl(), limite: DUENOS_POR_PAGINA };
 
   const entrada = h('input', {
     type: 'search',
@@ -102,6 +104,7 @@ export async function initAdminDuenos() {
     chip.addEventListener('click', () => {
       estado.filtro = filtro.clave;
       chips.forEach((otro, indice) => otro.setAttribute('aria-pressed', String(FILTROS[indice].clave === estado.filtro)));
+      estado.limite = DUENOS_POR_PAGINA;
       dibujarLista();
     });
     return chip;
@@ -113,8 +116,9 @@ export async function initAdminDuenos() {
   const lista = h('div', { class: 'cliente-admin-list tabla-admin tabla--duenos', id: 'duenos-lista', 'data-testid': 'duenos-lista' });
   const encabezado = crearEncabezadoTabla('duenos', [{ etiqueta: 'Nombre' }, { etiqueta: 'Contacto' }, { etiqueta: 'Estado' }, { etiqueta: 'Novedades' }, { etiqueta: '' }], 'encabezado-duenos');
   const avisoCarga = h('div', { 'data-testid': 'aviso-duenos' });
+  const pie = h('div', { class: 'lista-ver-mas', 'data-testid': 'duenos-pie' });
 
-  contenedor.replaceChildren(buscador, filtros, contador, avisoDestacado, avisoCarga, encabezado, lista);
+  contenedor.replaceChildren(buscador, filtros, contador, avisoDestacado, avisoCarga, encabezado, lista, pie);
 
   function esperar() {
     lista.replaceChildren(...[0, 1, 2, 3].map(() => h('div', { class: 'cliente-admin-row cliente-admin-row--espera', 'aria-hidden': 'true' }, [
@@ -248,9 +252,27 @@ export async function initAdminDuenos() {
   }
 
   function dibujarLista() {
-    const mostrados = visibles();
+    const coincidentes = visibles();
+    const mostrados = coincidentes.slice(0, estado.limite);
     dibujarAvisoDestacado(mostrados);
-    contador.textContent = `Mostrando ${mostrados.length} ${plural(mostrados.length, 'dueño', 'dueños')}`;
+    contador.textContent = coincidentes.length > mostrados.length
+      ? `Mostrando ${mostrados.length} de ${coincidentes.length} ${plural(coincidentes.length, 'dueño', 'dueños')}`
+      : `Mostrando ${mostrados.length} ${plural(mostrados.length, 'dueño', 'dueños')}`;
+    pie.replaceChildren();
+    if (coincidentes.length > mostrados.length) {
+      const verMas = texto('button', 'btn btn-secondary', 'Ver más', { type: 'button', 'data-testid': 'btn-ver-mas-duenos' });
+      verMas.addEventListener('click', () => {
+        estado.limite += DUENOS_POR_PAGINA;
+        dibujarLista();
+        const filas = lista.querySelectorAll('[data-testid^="dueno-item-"]');
+        const primeraNueva = filas[estado.limite - DUENOS_POR_PAGINA];
+        const boton = primeraNueva ? primeraNueva.querySelector('button') : null;
+        if (boton) {
+          boton.focus();
+        }
+      });
+      pie.appendChild(verMas);
+    }
     if (estado.duenos.length === 0) {
       lista.replaceChildren(h('div', { class: 'state-page', 'data-testid': 'duenos-sin-registros' }, [
         h('div', { class: 'state-page__icon' }, [iconoUsuarios()]),
@@ -267,12 +289,14 @@ export async function initAdminDuenos() {
 
   entrada.addEventListener('input', () => {
     estado.busqueda = entrada.value;
+    estado.limite = DUENOS_POR_PAGINA;
     botonLimpiar.classList.toggle('is-hidden', entrada.value === '');
     dibujarLista();
   });
   botonLimpiar.addEventListener('click', () => {
     entrada.value = '';
     estado.busqueda = '';
+    estado.limite = DUENOS_POR_PAGINA;
     botonLimpiar.classList.add('is-hidden');
     dibujarLista();
     entrada.focus();

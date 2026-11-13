@@ -309,6 +309,7 @@ test.describe('Edición del comercio, productos y cierre para el Empleado, E3 en
       const nombre = `Nuevo Prod ${sufijoUnico().slice(-6).replace(/[0-9]/g, (digito) => 'abcdefghij'[Number(digito)])}`;
       await abrirComoEmpleado(page);
       await page.goto('/comercio-productos.html');
+      await page.waitForLoadState('networkidle');
       await page.getByTestId('btn-crear-producto').click();
       await page.waitForURL('**/comercio-producto-form.html');
 

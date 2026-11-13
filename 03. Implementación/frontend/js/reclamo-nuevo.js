@@ -1,5 +1,6 @@
 import { apiFetch, getUsuario } from './api.js';
 import { exigirContextoCliente } from './contexto.js';
+import { montarBarraClienteEnEscritorio } from './cliente-escritorio.js';
 import { renderTopBar, showToast } from './catalogo.js';
 import { h, crearSvg, setLoading } from './form-utils.js';
 import { establecerErrorCampo } from './validators.js';
@@ -152,10 +153,11 @@ export async function initReclamoNuevo() {
     window.location.href = 'login.html';
     return;
   }
-  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Reclamo' });
-  const contenedor = document.getElementById('reclamo-contenido');
   const valor = new URLSearchParams(window.location.search).get('pedido');
   const pedidoId = valor && /^\d+$/.test(valor) ? Number(valor) : null;
+  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Reclamo', destinoVolver: pedidoId === null ? 'pedidos.html' : `pedido-detalle.html?id=${pedidoId}` });
+  montarBarraClienteEnEscritorio({ activo: 'pedidos' });
+  const contenedor = document.getElementById('reclamo-contenido');
   if (pedidoId === null) {
     pintarSinAcceso(contenedor, null, 'No encontramos el pedido que querés reclamar.');
     return;

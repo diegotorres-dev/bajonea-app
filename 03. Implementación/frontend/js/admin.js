@@ -6,7 +6,7 @@ import { recordarNombreDelComercio } from './admin-comercio-nombre.js';
 import { cruzaMedianoche, recortarHora, textoRango } from './horarios.js';
 import { diasDesde } from './documentos-comun.js';
 import { crearControlesSuspension } from './admin-comercio-suspension.js';
-import { abrirHoja, campoTextarea, crearAviso } from './hoja.js';
+import { abrirHoja, activarHoja, campoTextarea, crearAviso } from './hoja.js';
 import { crearEncabezadoTabla } from './tabla-admin.js';
 
 function normalizarComercioAdmin(comercio) {
@@ -885,6 +885,7 @@ async function cargarResumenEquipo(seccion, comercioId) {
 }
 
 function mostrarModalDetalleComercio(comercio, onSuspendido) {
+  let control = null;
   const backdrop = crear('div', 'modal-backdrop');
   backdrop.setAttribute('data-testid', 'modal-detalle-comercio');
   const sheet = crear('div', 'product-modal-sheet');
@@ -926,7 +927,7 @@ function mostrarModalDetalleComercio(comercio, onSuspendido) {
 
   const controles = crearControlesSuspension(comercio, {
     alExito: async () => {
-      backdrop.remove();
+      control.cerrar();
       await onSuspendido();
       const volver = document.querySelector(`[data-testid="btn-ver-detalle-comercio-${comercio.id}"]`);
       if (volver) volver.focus();
@@ -952,18 +953,13 @@ function mostrarModalDetalleComercio(comercio, onSuspendido) {
   cerrarBtn.type = 'button';
   cerrarBtn.setAttribute('data-testid', 'btn-cerrar-modal-detalle-comercio');
   cerrarBtn.textContent = 'Cerrar';
-  cerrarBtn.addEventListener('click', () => backdrop.remove());
+  cerrarBtn.addEventListener('click', () => control.cerrar());
   accionesModal.appendChild(cerrarBtn);
   body.appendChild(accionesModal);
 
   sheet.appendChild(body);
   backdrop.appendChild(sheet);
-  document.body.appendChild(backdrop);
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
-  });
+  control = activarHoja({ fondo: backdrop, hoja: sheet });
 }
 
 function renderComercioAdminRow(comercio, onSuspendido) {
@@ -1033,6 +1029,7 @@ function labelCantidadProductos(cantidad) {
 }
 
 function mostrarModalCategoria(categoriaExistente, onGuardado) {
+  let control = null;
   const esEdicion = Boolean(categoriaExistente);
   const backdrop = crear('div', 'modal-backdrop');
   backdrop.setAttribute('data-testid', 'modal-categoria');
@@ -1110,7 +1107,7 @@ function mostrarModalCategoria(categoriaExistente, onGuardado) {
   cancelBtn.type = 'button';
   cancelBtn.setAttribute('data-testid', 'btn-cancelar-categoria');
   cancelBtn.textContent = 'Cancelar';
-  cancelBtn.addEventListener('click', () => backdrop.remove());
+  cancelBtn.addEventListener('click', () => control.cerrar());
   form.appendChild(cancelBtn);
 
   function mostrarErrorNombre(mensaje) {
@@ -1153,7 +1150,7 @@ function mostrarModalCategoria(categoriaExistente, onGuardado) {
         }
         showToast('Categoría creada correctamente');
       }
-      backdrop.remove();
+      control.cerrar();
       onGuardado();
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
@@ -1169,12 +1166,7 @@ function mostrarModalCategoria(categoriaExistente, onGuardado) {
   body.appendChild(form);
   sheet.appendChild(body);
   backdrop.appendChild(sheet);
-  document.body.appendChild(backdrop);
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
-  });
+  control = activarHoja({ fondo: backdrop, hoja: sheet });
 }
 
 function crearEstadoDeFila(activo, textoActivo, textoInactivo) {
@@ -1310,6 +1302,7 @@ export async function initAdminCategorias() {
 }
 
 function mostrarModalTag(tagExistente, onGuardado) {
+  let control = null;
   const esEdicion = Boolean(tagExistente);
   const backdrop = crear('div', 'modal-backdrop');
   backdrop.setAttribute('data-testid', 'modal-tag');
@@ -1388,7 +1381,7 @@ function mostrarModalTag(tagExistente, onGuardado) {
   cancelBtn.type = 'button';
   cancelBtn.setAttribute('data-testid', 'btn-cancelar-tag');
   cancelBtn.textContent = 'Cancelar';
-  cancelBtn.addEventListener('click', () => backdrop.remove());
+  cancelBtn.addEventListener('click', () => control.cerrar());
   form.appendChild(cancelBtn);
 
   function mostrarErrorNombre(mensaje) {
@@ -1431,7 +1424,7 @@ function mostrarModalTag(tagExistente, onGuardado) {
         }
         showToast('Tag creado correctamente');
       }
-      backdrop.remove();
+      control.cerrar();
       onGuardado();
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
@@ -1447,12 +1440,7 @@ function mostrarModalTag(tagExistente, onGuardado) {
   body.appendChild(form);
   sheet.appendChild(body);
   backdrop.appendChild(sheet);
-  document.body.appendChild(backdrop);
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
-  });
+  control = activarHoja({ fondo: backdrop, hoja: sheet });
 }
 
 function renderTagRow(tag, { onEditar }) {
@@ -1749,6 +1737,7 @@ function crearFormularioTarifa({ vigente, alGuardado, alCancelar = null }) {
 }
 
 function mostrarModalNuevaTarifa(onGuardado, vigente) {
+  let control = null;
   const backdrop = crear('div', 'modal-backdrop');
   backdrop.setAttribute('data-testid', 'modal-nueva-tarifa');
   const sheet = crear('div', 'product-modal-sheet');
@@ -1769,20 +1758,14 @@ function mostrarModalNuevaTarifa(onGuardado, vigente) {
   body.appendChild(crearFormularioTarifa({
     vigente,
     alGuardado: async () => {
-      backdrop.remove();
+      control.cerrar();
       await onGuardado();
     },
-    alCancelar: () => backdrop.remove(),
+    alCancelar: () => control.cerrar(),
   }));
   sheet.appendChild(body);
   backdrop.appendChild(sheet);
-  document.body.appendChild(backdrop);
-
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
-  });
+  control = activarHoja({ fondo: backdrop, hoja: sheet });
 }
 
 export async function initAdminTarifas() {

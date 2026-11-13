@@ -16,6 +16,8 @@ import {
   FIGURAS_MAS,
 } from './direcciones.js';
 import { h, crearSvg } from './form-utils.js';
+import { alCambiarEscritorio, enEscritorio } from './escritorio.js';
+import { montarBarraClienteEnEscritorio } from './cliente-escritorio.js';
 
 const CLAVE_CHECKOUT_PENDIENTE = 'bajonea_checkout_pendiente';
 const MENSAJE_SIN_DIRECCIONES = 'No tenés una dirección registrada. Agregá una para recibir tu pedido a domicilio.';
@@ -56,7 +58,7 @@ function renderBanner(slot, kind, texto, testid) {
   }
   slot.innerHTML = '';
   const banner = crear('div', `banner banner-${kind}`);
-  banner.style.marginBottom = '20px';
+  banner.classList.add('sep-b-20');
   if (testid) {
     banner.setAttribute('data-testid', testid);
   }
@@ -72,7 +74,7 @@ function renderBanner(slot, kind, texto, testid) {
 function renderAvisoCierre(slot, texto, botonAccion) {
   slot.innerHTML = '';
   const banner = crearBannerCierre(texto);
-  banner.style.marginBottom = '20px';
+  banner.classList.add('sep-b-20');
   slot.appendChild(banner);
   botonAccion.disabled = true;
   botonAccion.classList.add('is-hidden');
@@ -81,7 +83,11 @@ function renderAvisoCierre(slot, texto, botonAccion) {
     anterior.remove();
   }
   const volver = crearBotonVolverAlCatalogo();
-  volver.style.marginTop = botonAccion.style.marginTop;
+  botonAccion.classList.forEach((clase) => {
+    if (clase.startsWith('sep-t-')) {
+      volver.classList.add(clase);
+    }
+  });
   botonAccion.after(volver);
 }
 
@@ -95,7 +101,10 @@ export async function initCheckout() {
     return;
   }
 
+  montarBarraClienteEnEscritorio({ activo: 'carrito' });
   const bannerSlot = document.getElementById('banner-slot');
+  const volverEscritorio = document.getElementById('checkout-volver-escritorio');
+  const resumenSlot = document.getElementById('checkout-resumen');
   const steps = [document.getElementById('step-1'), document.getElementById('step-2'), document.getElementById('step-3'), document.getElementById('step-4')];
   const bars = document.querySelectorAll('.step-progress__bar');
   const labels = document.querySelectorAll('.step-progress__labels span');
@@ -113,9 +122,75 @@ export async function initCheckout() {
     labels.forEach((label, i) => label.classList.toggle('is-active', i === index));
     currentStep = index;
     backBtn.style.visibility = index === 3 ? 'hidden' : 'visible';
+    volverEscritorio.hidden = index === 3;
+    pintarResumen();
     renderBanner(bannerSlot, 'info', '');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+
+  volverEscritorio.addEventListener('click', () => backBtn.click());
+
+  let accionResumen = null;
+
+  function botonPrincipalDelPaso() {
+    return steps[currentStep].querySelector('.btn-primary:not(.is-hidden)');
+  }
+
+  function acomodarAccionesDelPaso() {
+    const principal = botonPrincipalDelPaso();
+    if (!enEscritorio() || !principal || currentStep === 3) {
+      return;
+    }
+    if (principal.parentElement.classList.contains('step-acciones-escritorio')) {
+      if (principal.parentElement.firstElementChild !== volverEscritorio) {
+        principal.parentElement.prepend(volverEscritorio);
+      }
+      return;
+    }
+    const fila = h('div', { class: 'step-acciones-escritorio' });
+    principal.before(fila);
+    fila.append(volverEscritorio, principal);
+  }
+
+  function sincronizarAccionResumen() {
+    acomodarAccionesDelPaso();
+    if (!accionResumen) {
+      return;
+    }
+    const boton = botonPrincipalDelPaso();
+    accionResumen.disabled = !boton || boton.disabled;
+    accionResumen.textContent = boton ? boton.textContent : 'Continuar';
+  }
+
+  function pintarResumen() {
+    if (!resumenSlot || !enEscritorio() || !carrito) {
+      return;
+    }
+    const cargo = carrito.cargoServicioCliente || 0;
+    const total = carrito.subtotal + cargo;
+    const lineas = h('div', { class: 'checkout-resumen__lineas' }, carrito.items.map((item) => h('div', { class: 'order-line' }, [
+      h('span', {}, [`${item.cantidad}x ${item.nombreProducto}`]),
+      h('span', {}, [formatearPrecio(item.subtotal)]),
+    ])));
+    accionResumen = h('button', { type: 'button', class: 'btn btn-primary checkout-resumen__boton', 'data-testid': 'btn-resumen-accion' }, ['Continuar']);
+    accionResumen.addEventListener('click', () => {
+      const boton = botonPrincipalDelPaso();
+      if (boton && !boton.disabled) {
+        boton.click();
+      }
+    });
+    resumenSlot.replaceChildren(
+      h('h2', { class: 'checkout-resumen__titulo' }, [`Tu pedido en ${carrito.nombreComercio}`]),
+      lineas,
+      h('div', { class: 'order-line' }, [h('span', {}, ['Subtotal']), h('span', { 'data-testid': 'resumen-subtotal' }, [formatearPrecio(carrito.subtotal)])]),
+      h('div', { class: 'order-line' }, [h('span', {}, ['Cargo por servicio']), h('span', { 'data-testid': 'resumen-cargo-servicio' }, [formatearPrecio(cargo)])]),
+      h('div', { class: 'order-line order-line--total' }, [h('span', {}, ['Total']), h('span', { 'data-testid': 'resumen-total' }, [formatearPrecio(total)])]),
+      accionResumen,
+    );
+    sincronizarAccionResumen();
+  }
+
+  new MutationObserver(sincronizarAccionResumen).observe(document.querySelector('.app-main .screen-body'), { childList: true, subtree: true, attributes: true, attributeFilter: ['disabled', 'class'], characterData: true });
 
   backBtn.addEventListener('click', () => {
     if (currentStep === 3) {
@@ -238,7 +313,7 @@ export async function initCheckout() {
       reintentar.addEventListener('click', renderEntregaDomicilio);
       const aviso = crear('div', 'banner banner-error');
       aviso.setAttribute('role', 'alert');
-      aviso.style.marginTop = '16px';
+      aviso.classList.add('sep-t-16');
       aviso.setAttribute('data-testid', 'error-direcciones-entrega');
       const texto = document.createElement('span');
       texto.textContent = 'No pudimos cargar tus direcciones.';
@@ -280,7 +355,7 @@ export async function initCheckout() {
     if (direcciones.length === 0) {
       const banner = crear('div', 'banner banner-error');
       banner.setAttribute('role', 'alert');
-      banner.style.marginTop = '16px';
+      banner.classList.add('sep-t-16');
       banner.innerHTML = ICONS.warning;
       const text = document.createElement('span');
       text.textContent = MENSAJE_SIN_DIRECCIONES;
@@ -318,7 +393,7 @@ export async function initCheckout() {
       const aviso = crear('div', 'banner banner-info');
       aviso.id = 'aviso-cupo-checkout';
       aviso.setAttribute('role', 'status');
-      aviso.style.marginTop = '12px';
+      aviso.classList.add('sep-t-12');
       aviso.setAttribute('data-testid', 'aviso-cupo-checkout');
       const texto = document.createElement('span');
       texto.append(`${MENSAJE_CUPO_LLENO} `);
@@ -338,7 +413,7 @@ export async function initCheckout() {
 
     const confirmBtn = crear('button', 'btn btn-primary');
     confirmBtn.type = 'button';
-    confirmBtn.style.marginTop = '16px';
+    confirmBtn.classList.add('sep-t-16');
     confirmBtn.setAttribute('data-testid', 'btn-confirmar-direccion');
     confirmBtn.textContent = 'Confirmar dirección';
     confirmBtn.addEventListener('click', () => {
@@ -370,12 +445,10 @@ export async function initCheckout() {
       step2Content.appendChild(card);
 
       const info = crear('div', 'info-box');
-      info.style.marginTop = '20px';
-      info.style.flexDirection = 'column';
-      info.style.gap = '10px';
+      info.classList.add('sep-t-20');
+      info.classList.add('info-box--columna');
       const infoTitle = document.createElement('p');
-      infoTitle.style.fontWeight = '700';
-      infoTitle.style.color = 'var(--color-text)';
+      infoTitle.classList.add('info-box__titulo');
       infoTitle.textContent = '¿Cómo funciona el retiro?';
       info.appendChild(infoTitle);
       ['Confirmás el pedido.', 'El comercio lo prepara y te avisa cuando está listo.', 'Vas al local con tu nombre y número de pedido.'].forEach((linea) => {
@@ -387,7 +460,7 @@ export async function initCheckout() {
 
       const confirmBtn = crear('button', 'btn btn-primary');
       confirmBtn.type = 'button';
-      confirmBtn.style.marginTop = '24px';
+      confirmBtn.classList.add('sep-t-24');
       confirmBtn.setAttribute('data-testid', 'btn-confirmar-retiro');
       confirmBtn.textContent = 'Confirmar retiro';
       confirmBtn.addEventListener('click', () => {
@@ -407,7 +480,7 @@ export async function initCheckout() {
     step3Content.appendChild(h1);
 
     const modalidadCard = crear('div', 'summary-card');
-    modalidadCard.style.marginTop = '16px';
+    modalidadCard.classList.add('sep-t-16');
     const iconWrap = crear('div', 'summary-card__icon');
     iconWrap.innerHTML = tipoEntregaSeleccionado === 'DOMICILIO' ? ICONS.truck : ICONS.bag;
     modalidadCard.appendChild(iconWrap);
@@ -436,7 +509,7 @@ export async function initCheckout() {
     step3Content.appendChild(modalidadCard);
 
     const desglose = crear('div', 'section-heading');
-    desglose.style.marginTop = '24px';
+    desglose.classList.add('sep-t-24');
     desglose.textContent = 'Desglose del pedido';
     step3Content.appendChild(desglose);
 
@@ -483,7 +556,7 @@ export async function initCheckout() {
 
     const confirmBtn = crear('button', 'btn btn-primary');
     confirmBtn.type = 'button';
-    confirmBtn.style.marginTop = '24px';
+    confirmBtn.classList.add('sep-t-24');
     confirmBtn.setAttribute('data-testid', montosActualizados ? 'btn-confirmar-nuevo-total' : 'btn-confirmar-pedido');
     const textoBoton = `${montosActualizados ? 'Confirmar con el nuevo total' : 'Ir a pagar'} - ${formatearPrecio(totalConCargo)}`;
     confirmBtn.textContent = textoBoton;
@@ -544,6 +617,7 @@ export async function initCheckout() {
       }
     });
     step3Content.appendChild(confirmBtn);
+    pintarResumen();
   }
 
   function renderStep4(pedido) {
@@ -560,7 +634,7 @@ export async function initCheckout() {
     step4Content.appendChild(p);
 
     const totalLine = crear('div', 'order-line order-line--total');
-    totalLine.style.marginTop = '16px';
+    totalLine.classList.add('sep-t-16');
     const totalLabel = document.createElement('span');
     totalLabel.textContent = 'Total';
     totalLine.appendChild(totalLabel);
@@ -571,7 +645,7 @@ export async function initCheckout() {
 
     const irAPagarBtn = crear('button', 'btn btn-primary');
     irAPagarBtn.type = 'button';
-    irAPagarBtn.style.marginTop = '24px';
+    irAPagarBtn.classList.add('sep-t-24');
     irAPagarBtn.setAttribute('data-testid', 'btn-ir-a-pagar');
     irAPagarBtn.textContent = 'Ir a pagar con Mercado Pago';
     irAPagarBtn.addEventListener('click', async () => {
@@ -608,6 +682,11 @@ export async function initCheckout() {
     step4Content.appendChild(irAPagarBtn);
   }
 
+  alCambiarEscritorio((escritorio) => {
+    if (escritorio) {
+      pintarResumen();
+    }
+  });
   mostrarPaso(0);
 
   let pendiente = null;

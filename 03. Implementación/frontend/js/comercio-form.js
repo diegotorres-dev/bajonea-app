@@ -2,6 +2,7 @@ import { initGeografiaSelects, preseleccionarGeografia } from './geografia.js';
 import { validarArchivoImagen } from './cloudinary.js';
 import { abrirEditorRecorte } from './crop.js';
 import { bindNombreComercio } from './form-utils.js';
+import { activarHoja } from './hoja.js';
 import {
   franjasSeSuperponen,
   leyendaCruce,
@@ -217,6 +218,7 @@ export function quitarPrefijoTelefono(telefono) {
 }
 
 export function mostrarModalConfirmarSalida({ texto, textoSeguir, testidSeguir, onSalir }) {
+  let control = null;
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
   backdrop.setAttribute('data-testid', 'modal-confirmar-salida');
@@ -233,16 +235,11 @@ export function mostrarModalConfirmarSalida({ texto, textoSeguir, testidSeguir, 
   const seguirBtn = backdrop.querySelector('#seguir-btn');
   seguirBtn.textContent = textoSeguir;
   seguirBtn.setAttribute('data-testid', testidSeguir);
-  document.body.appendChild(backdrop);
-  seguirBtn.addEventListener('click', () => backdrop.remove());
+  control = activarHoja({ fondo: backdrop, hoja: backdrop.querySelector('.modal-sheet') });
+  seguirBtn.addEventListener('click', () => control.cerrar());
   backdrop.querySelector('#confirmar-salida-btn').addEventListener('click', () => {
-    backdrop.remove();
+    control.cerrar();
     onSalir();
-  });
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
   });
 }
 

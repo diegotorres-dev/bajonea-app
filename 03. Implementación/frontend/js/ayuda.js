@@ -1,4 +1,6 @@
 import { esContextoComercio, getUsuario } from './api.js';
+import { montarBarraClienteEnEscritorio } from './cliente-escritorio.js';
+import { montarBarraLateralCompartida } from './comercio-escritorio.js';
 import { renderTopBar } from './catalogo.js';
 import { crearSvg, h } from './form-utils.js';
 import { enlazarMisConsultas } from './soporte-mis-consultas.js';
@@ -39,6 +41,11 @@ export function initAyuda() {
   }
   const destinoPerfil = esContextoComercio() ? 'comercio-perfil.html' : 'perfil.html';
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Ayuda', destinoVolver: destinoPerfil });
+  if (esContextoComercio()) {
+    montarBarraLateralCompartida('perfil');
+  } else if (usuario.rol === 'CLIENTE') {
+    montarBarraClienteEnEscritorio({ activo: null });
+  }
 
   const consultas = h('button', { class: 'profile-link', type: 'button', 'data-testid': 'btn-ayuda-mis-consultas' }, contenidoDeFila(ICONO_CONSULTAS, 'Mis consultas a Soporte', true));
   const lista = h('div', { class: 'profile-link-list', 'data-testid': 'lista-ayuda' }, [

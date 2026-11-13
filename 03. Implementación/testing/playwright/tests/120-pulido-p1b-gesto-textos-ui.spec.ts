@@ -98,7 +98,7 @@ test.describe('Pulido P1b: gesto de "Tus comercios", textos del Cliente, saludo 
       await abrirComoUsuario(page, dueno.sesion);
       await page.goto('/comercio-dashboard.html');
       await expect(page.getByTestId('btn-nav-perfil')).toBeVisible();
-      await expect(page.getByTestId('mensaje-saludo')).toHaveText('Hola 👋');
+      await expect(page.getByTestId('mensaje-saludo')).toHaveText(`Hola, ${dueno.sesion.usuario.nombre} 👋`);
       await page.waitForTimeout(800);
       await expect(page.getByTestId('pista-selector-comercios')).toHaveCount(0);
     });
@@ -192,11 +192,11 @@ test.describe('Pulido P1b: gesto de "Tus comercios", textos del Cliente, saludo 
     });
   });
 
-  test('el panel del comercio saluda sin usar el nombre del comercio como si fuera una persona (K05)', async ({ page }) => {
+  test('el panel del comercio saluda con el nombre de la persona y nunca con el del comercio (K05)', async ({ page }) => {
     await abrirComoUsuario(page, dueno.sesion);
     await page.goto('/comercio-dashboard.html');
     const saludo = page.getByTestId('mensaje-saludo');
-    await expect(saludo).toHaveText('Hola 👋');
+    await expect(saludo).toHaveText(`Hola, ${dueno.sesion.usuario.nombre} 👋`);
     await expect(saludo).not.toContainText(dueno.nombre);
   });
 

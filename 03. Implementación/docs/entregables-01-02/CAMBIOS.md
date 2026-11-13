@@ -1640,3 +1640,57 @@ Fundamento (leído del backend, sin cambios): la tarifa vigente es la última co
 1. **Requisitos no funcionales (usabilidad):** la interfaz del Administrador se adapta a pantallas de 1024 px o más con navegación lateral permanente, tablas, lista con detalle y paneles, sin perder ninguna función de la versión móvil.
 2. **Historias de usuario del Administrador:** desde cualquier pantalla se puede ir a otra sección sin pasar por el panel y se ve cuántas solicitudes, documentos, consultas, reclamos y reembolsos esperan; en Soporte se elige una consulta de la lista y se responde sin cambiar de pantalla; al cargar una tarifa nueva se muestra qué tarifa reemplaza y desde cuándo rige.
 3. **Reglas de negocio (tarifas):** una tarifa nueva rige para los pedidos que se confirmen desde que se guarda; los pedidos ya creados conservan la tarifa con la que se confirmaron.
+
+## Tramo B1: el login devuelve el nombre de pila (2026-11-12)
+
+### Qué cambió
+
+El objeto `usuario` de la respuesta del login (y de la reactivación de una cuenta inactiva con usuario y contraseña, y de las respuestas de foto de perfil) suma el campo opcional `nombre`: el nombre de pila de la persona que inicia sesión. Cliente, Empleado y Administrador reciben el nombre de su propia cuenta; el Dueño recibe el del representante de su cuenta (el mismo que ve el Administrador en la ficha del comercio). Si la cuenta no tiene nombre, el campo no viaja. No va en el JWT (quedaría desactualizado al editar el perfil) y no aparece en ninguna respuesta de error: una contraseña incorrecta, una cuenta suspendida o una inactiva siguen sin revelar nada de la persona.
+
+### Cambio sugerido al contrato de la API (sección Autenticación)
+
+`POST /api/v1/auth/login` y `POST /api/v1/auth/reactivar-cuenta/con-credenciales`, respuesta `200`: `data.usuario` pasa de `{ id, email, rol, estado, fotoPerfilUrl }` a `{ id, email, rol, estado, fotoPerfilUrl, nombre? }`. El cambio es aditivo: los consumidores que ignoran campos desconocidos siguen funcionando.
+
+### Cambios a reflejar en los documentos de requisitos
+
+1. **Historias de usuario (Cliente, Dueño y Empleado):** al iniciar sesión, la aplicación saluda por el nombre de pila («Hola, Lucía») en el catálogo del Cliente y en el panel del comercio, y el pie de la barra lateral del comercio muestra a la persona con su nombre; si el nombre no está disponible, el saludo es «Hola» y el pie muestra el rol.
+2. **Requisitos no funcionales (rendimiento y usabilidad):** la identidad que muestra la interfaz se obtiene del inicio de sesión y no de consultas adicionales; al cambiar el nombre en el perfil la interfaz lo refleja sin volver a iniciar sesión.
+3. **Privacidad:** el nombre de pila forma parte de la respuesta autenticada de la propia persona; ninguna respuesta pública ni de error lo incluye.
+
+## Tramo E3: el Cliente en escritorio (2026-11-12)
+
+### Qué cambió
+
+Solo la interfaz web del Cliente, sin cambios de API ni de datos: a partir de 1024 px las pantallas del Cliente tienen composición de escritorio (barra superior de navegación, catálogo en grilla, carrito y checkout con resumen fijo, Mis pedidos con lista y detalle, perfil con menú de secciones y avisos como tabla, también para el Comercio). Debajo de 1024 px la aplicación es la de siempre, con una sola excepción: el botón «Volver» de varias pantallas del Cliente va a un destino fijo (inicio, comercio, Mis pedidos, perfil…) en lugar de «la pantalla anterior».
+
+### Cambios a reflejar en los documentos de requisitos
+
+1. **Requisitos no funcionales (usabilidad y compatibilidad):** el Cliente dispone de una interfaz adaptada a pantallas de escritorio (ancho mínimo 1024 px) con navegación por barra superior, menú de cuenta operable con teclado y selección con teclado en las listas; la versión para celulares no cambia. Las pantallas de escritorio mantienen el color de marca y los textos de la versión móvil.
+2. **Historias de usuario del Cliente:** (a) en escritorio puede ver su historial de pedidos y el detalle de uno de ellos en la misma pantalla, sin cambiar de página, y filtrar por En curso, Entregados y Cancelados; (b) puede buscar productos desde la barra superior, que lo lleva a Explorar con el texto; (c) en el checkout ve siempre el resumen del pedido y el total mientras completa los pasos; (d) accede a su perfil, sus direcciones, sus consultas y a cerrar sesión desde el menú del avatar.
+3. **Navegación («Volver»):** el botón «Volver» del Cliente lleva a un destino definido: el detalle de un comercio vuelve al inicio (o a Explorar si se entró desde un producto), el carrito al comercio del carrito (o al inicio si está vacío), Mis pedidos al inicio, el detalle de un pedido a Mis pedidos, el reclamo al pedido, las notificaciones al inicio, Mis consultas al perfil y la conversación de soporte a Mis consultas.
+4. **Accesibilidad:** diálogo del producto con foco atrapado y cierre con Escape, menú del avatar con flechas, Home, End y Escape, anillo de foco visible en los elementos interactivos y áreas de 44 px en la barra superior y los filtros.
+5. **Enlaces compartibles:** `pedidos.html?id=N` abre la lista con el pedido N elegido (los avisos y los enlaces de pago siguen funcionando: `pedido-detalle.html?id=N` redirige en escritorio); `perfil.html?seccion=datos|direcciones|password` abre una sección del perfil y `explorar.html?q=texto` abre Explorar con la búsqueda hecha.
+
+### Sin cambios en
+
+Contrato de la API, modelo de datos, reglas de negocio, notificaciones y diagramas de casos de uso (no hay casos de uso nuevos).
+
+
+---
+
+## Tramo E4 (pulido final del escritorio, 2026-11-13)
+
+Solo frontend: sin cambios de API, modelo de datos ni reglas de negocio.
+
+### Cambios a reflejar en los documentos de requisitos
+
+1. **Requisitos no funcionales (usabilidad y accesibilidad):** en escritorio todas las pantallas se pueden recorrer con el teclado, con anillo de foco visible, un enlace «Saltar al contenido» (el primer Tab en las páginas con barra lateral o superior) y diálogos modales que atrapan el foco, se cierran con Escape y devuelven el foco a quien los abrió; con la preferencia de sistema «reducir movimiento» se anulan las animaciones y transiciones de escritorio. Ninguna acción esencial depende de pasar el mouse por encima.
+2. **Historias de usuario del Administrador:** (a) Reclamos se muestra como tabla (reclamo, comercio, estado, total y fecha) en escritorio; (b) la lista de Dueños muestra de a 30 y se amplía con «Ver más».
+3. **Historias de usuario del Dueño y del Empleado:** (a) el control de sonido del panel es un único botón «Sonido activado / desactivado»; (b) la pantalla de Ayuda tiene la barra lateral del comercio; (c) Soporte, con sesión iniciada, muestra la barra del comercio (o la del Cliente) y no la pantalla de bienvenida.
+4. **Pantallas públicas:** los enlaces a Términos y Condiciones, Política de Privacidad y Preguntas frecuentes están al pie de la columna blanca de las pantallas de acceso en escritorio, no en el panel naranja (contraste).
+5. **Textos:** el nombre de la persona respeta las partículas en minúscula en el saludo («María de los Ángeles»); el rótulo de la tarjeta de producto del Cliente en escritorio dice «Ver y agregar».
+6. **Tamaño de la ventana:** al pasar de escritorio a móvil (o al revés) con «Mis pedidos» abierta, la pantalla se recarga con el diseño que corresponde.
+
+### Sin cambios en
+
+Contrato de la API, modelo de datos, reglas de negocio, notificaciones y diagramas de casos de uso (no hay casos de uso nuevos).

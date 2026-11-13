@@ -19,7 +19,7 @@ import { abrirComoUsuarioConContexto, sumarAlEquipo } from './helpers/empleado';
 import { sinScrollHorizontal } from './helpers/layout';
 import type { Dueno } from './helpers/multicomercio';
 import { agregarComercioApto, prepararAprobado, reemplazarHorarios } from './helpers/multicomercio';
-import { hoyEnZona } from './helpers/zona';
+import { evitarMedianoche, hoyEnZona } from './helpers/zona';
 
 const DIA = 24 * 60 * 60_000;
 const DIAS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
@@ -116,6 +116,8 @@ test.describe('Fase 2, T5 (UI): estadísticas del Dueño', () => {
   }
 
   test.beforeAll(async ({ request }) => {
+    test.setTimeout(420_000);
+    await evitarMedianoche();
     adminToken = (await fijarPasswordAdminYLoguear(request)).token;
     localidadId = await obtenerLocalidadRioGrande(request);
     categoriaId = await crearCategoria(request, adminToken, `Cat Estadisticas UI ${sufijoUnico()}`);

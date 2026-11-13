@@ -7,7 +7,7 @@
   .app-shell--acceso {
     display: grid;
     grid-template-columns: minmax(0, 1fr) var(--col-form);
-    grid-template-rows: auto 1fr;
+    grid-template-rows: auto 1fr auto;
     background: var(--color-surface);
   }
 
@@ -20,10 +20,10 @@
   .app-shell--acceso > .panel-marca {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: var(--space-8);
     grid-column: 1;
-    grid-row: 1 / 3;
+    grid-row: 1 / 4;
     position: sticky;
     top: 0;
     height: 100vh;
@@ -35,7 +35,7 @@
 
   .app-shell--acceso > .app-main {
     grid-column: 2;
-    grid-row: 1 / 3;
+    grid-row: 2;
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
@@ -168,26 +168,37 @@
     color: #ffffff;
   }
 
-  .panel-marca__legal {
+  .app-shell--acceso > .acceso-legal {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     column-gap: var(--space-6);
+    grid-column: 2;
+    grid-row: 3;
+    padding: var(--space-4) var(--space-6) var(--space-6);
+    background: var(--color-surface);
   }
 
-  .panel-marca__enlace {
+  .acceso-legal__enlace {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
     font-size: var(--fs-sm);
-    font-weight: 700;
-    color: #ffffff;
+    font-weight: 600;
+    color: var(--color-text-muted);
     text-decoration: underline;
     text-underline-offset: 3px;
   }
 
-  .panel-marca__enlace:focus-visible {
-    outline: 2px solid #ffffff;
+  .acceso-legal__enlace:focus-visible {
+    outline: 2px solid var(--color-primary);
     outline-offset: 2px;
+  }
+
+  @media (hover: hover) {
+    .acceso-legal__enlace:hover {
+      color: var(--color-text);
+    }
   }
 
   .app-shell--acceso .form-footer-link,

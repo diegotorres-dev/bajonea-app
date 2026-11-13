@@ -5,6 +5,8 @@ import { normalizarCampos } from './validators.js';
 import { abrirHoja } from './hoja.js';
 import { mostrarEsqueleto, mostrarErrorDeCarga } from './esqueletos.js';
 import { crearBloqueReclamoCliente, crearChipReclamoDeLista, fechaDelReclamo } from './reclamos-comun.js';
+import { enEscritorio, recargarAlCambiarDeModo } from './escritorio.js';
+import { montarBarraClienteEnEscritorio } from './cliente-escritorio.js';
 
 function normalizarPedido(pedido) {
   normalizarCampos(pedido, ['nombreCliente']);
@@ -337,8 +339,9 @@ export async function initPedidosHistorial() {
     return;
   }
 
-  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Mis pedidos' });
+  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Mis pedidos', destinoVolver: 'index.html' });
   renderBottomNav(document.getElementById('bottom-nav-slot'), 'pedidos');
+  montarBarraClienteEnEscritorio({ activo: 'pedidos' });
 
   const container = document.getElementById('pedidos-content');
   mostrarEsqueleto(container, 'pedidos');
@@ -364,6 +367,12 @@ export async function initPedidosHistorial() {
       'Cuando realices un pedido, vas a poder seguir su estado acá.',
       ICONS.list,
     );
+    return;
+  }
+
+  recargarAlCambiarDeModo();
+  if (enEscritorio()) {
+    iniciarVistaMaestroDetalle({ container, pedidos, comercios, params: new URLSearchParams(window.location.search) });
     return;
   }
 
@@ -473,7 +482,7 @@ function renderAccionesCliente(container, pedido, onActualizado, { procesando = 
       container.appendChild(ayuda);
       const cancelarSinPagar = crear('button', 'btn btn-peligro-contorno');
       cancelarSinPagar.type = 'button';
-      cancelarSinPagar.style.marginTop = '12px';
+      cancelarSinPagar.classList.add('sep-t-12');
       cancelarSinPagar.setAttribute('data-testid', 'btn-cancelar-pedido');
       cancelarSinPagar.textContent = 'Cancelar pedido';
       cancelarSinPagar.addEventListener('click', (evento) => abrirHojaCancelarPedido(pedido, onActualizado, evento.currentTarget));
@@ -579,63 +588,47 @@ function renderReclamoCliente(body, pedido) {
   body.appendChild(seccion);
 }
 
-export async function initPedidoDetalle() {
-  if (!(await exigirContextoCliente())) {
-    return;
-  }
-  const usuario = getUsuario();
-  if (!usuario || usuario.rol !== 'CLIENTE') {
-    window.location.href = 'login.html';
-    return;
-  }
+const MENSAJE_PROCESANDO = 'Tu pago se está procesando. Esto puede tardar unos segundos.';
+const MENSAJE_PENDIENTE = 'Tu pago está pendiente de confirmación.';
+const MENSAJE_PAGADO = 'Tu pago se realizó correctamente';
+const MENSAJE_RECHAZADO = 'El pago no se pudo procesar. Podés intentar de nuevo desde la sección "Mis pedidos".';
+const INTERVALO_SINCRONIZACION_MS = 3000;
+const MAX_INTENTOS_SINCRONIZACION = 15;
+const INTERVALO_LISTA_MS = 15000;
 
-  const params = new URLSearchParams(window.location.search);
-  const pedidoId = Number(params.get('id'));
-  const container = document.getElementById('detalle-content');
-
+function leerVueltaDeMercadoPago(params) {
   const vueltaMpParam = params.get('pago');
   const vueltaMp = ['exito', 'pendiente', 'fallo'].includes(vueltaMpParam) ? vueltaMpParam : null;
   const paymentIdParam = params.get('payment_id') || params.get('collection_id');
   const paymentId = paymentIdParam && /^[0-9]{1,20}$/.test(paymentIdParam) ? paymentIdParam : null;
-  const MENSAJE_PROCESANDO = 'Tu pago se está procesando. Esto puede tardar unos segundos.';
-  const MENSAJE_PENDIENTE = 'Tu pago está pendiente de confirmación.';
-  const MENSAJE_PAGADO = 'Tu pago se realizó correctamente';
-  const MENSAJE_RECHAZADO = 'El pago no se pudo procesar. Podés intentar de nuevo desde la sección "Mis pedidos".';
-  const INTERVALO_MS = 3000;
-  const MAX_INTENTOS = 15;
+  return { vueltaMp, paymentId };
+}
 
-  if (!pedidoId) {
-    renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Pedido' });
-    renderNoEncontrado(container);
-    return;
+function crearDetallePedido({ container, comercios, pedido: pedidoInicial, vueltaMp, paymentId, alRenderizar = null, alCambiarPedido = null }) {
+  let pedido = pedidoInicial;
+  let abandonado = false;
+  let ultimoEstado = `${pedido.estado}|${pedido.pagoEstado}`;
+
+  function comercioActual() {
+    return comercios.find((c) => c.id === pedido.comercioId);
   }
 
-  async function cargarPedido(opciones) {
-    const lista = await apiFetch('/pedidos/cliente', opciones);
-    lista.forEach(normalizarPedido);
-    return lista.find((p) => p.id === pedidoId);
+  function pagoEnProceso() {
+    return (vueltaMp === 'exito' || vueltaMp === 'pendiente')
+      && pedido.estado === 'PENDIENTE_PAGO'
+      && pedido.pagoEstado === 'PENDIENTE';
   }
 
-  const comercios = await apiFetch('/catalogo/comercios', { auth: false });
-  normalizarComercios(comercios);
-  let pedido = await cargarPedido();
-
-  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: pedido ? `Pedido #${pedido.id}` : 'Pedido' });
-
-  if (!pedido) {
-    renderNoEncontrado(container);
-    return;
-  }
-
-  const comercio = comercios.find((c) => c.id === pedido.comercioId);
-  const nombreDelComercio = comercio ? comercio.nombre : (pedido.comercioNombre || 'El comercio');
-
-  function renderActual() {
-    renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: `Pedido #${pedido.id}` });
-    renderDetalle();
+  function fijarPedido(nuevo) {
+    pedido = nuevo;
+    if (alCambiarPedido) {
+      alCambiarPedido(nuevo);
+    }
   }
 
   function renderDetalle() {
+    const comercio = comercioActual();
+    const nombreDelComercio = comercio ? comercio.nombre : (pedido.comercioNombre || 'El comercio');
     const info = infoDeEstadoPedido(pedido.estado, pedido);
 
     let motivoInfo = null;
@@ -665,7 +658,7 @@ export async function initPedidoDetalle() {
       const franja = crear('div', 'banner banner-warning');
       franja.setAttribute('role', 'status');
       franja.setAttribute('data-testid', 'franja-comercio-no-disponible');
-      franja.style.marginBottom = '16px';
+      franja.classList.add('sep-b-16');
       franja.textContent = TEXTO_COMERCIO_NO_DISPONIBLE;
       body.appendChild(franja);
     }
@@ -698,7 +691,7 @@ export async function initPedidoDetalle() {
     body.appendChild(modalidadCard);
 
     const desglose = crear('div', 'section-heading');
-    desglose.style.marginTop = '20px';
+    desglose.classList.add('sep-t-20');
     desglose.textContent = 'Desglose del pedido';
     body.appendChild(desglose);
 
@@ -713,8 +706,8 @@ export async function initPedidoDetalle() {
       body.appendChild(line);
       if (detalle.nota) {
         const nota = crear('p', 'field__hint');
-        nota.style.marginTop = '-4px';
-        nota.style.marginBottom = '6px';
+        nota.classList.add('sep-t-neg-4');
+        nota.classList.add('sep-b-6');
         nota.textContent = `Nota: "${detalle.nota}"`;
         body.appendChild(nota);
       }
@@ -740,18 +733,18 @@ export async function initPedidoDetalle() {
 
     renderReclamoCliente(body, pedido);
 
-    const accionesSlot = crear('div');
-    accionesSlot.style.marginTop = '24px';
+    const accionesSlot = crear('div', 'pedido-acciones');
+    accionesSlot.classList.add('sep-t-24');
     body.appendChild(accionesSlot);
     renderAccionesCliente(accionesSlot, pedido, (actualizado) => {
-      pedido = actualizado;
+      fijarPedido(actualizado);
       renderActual();
     }, { procesando: pagoEnProceso() });
 
     if (comercio) {
       const verComercio = document.createElement('a');
       verComercio.className = 'btn btn-secondary';
-      verComercio.style.marginTop = '12px';
+      verComercio.classList.add('sep-t-12');
       verComercio.href = `comercio-detalle.html?id=${comercio.id}`;
       verComercio.setAttribute('data-testid', 'btn-ver-comercio');
       verComercio.textContent = 'Ver comercio';
@@ -761,33 +754,12 @@ export async function initPedidoDetalle() {
     container.appendChild(body);
   }
 
-  function pagoEnProceso() {
-    return (vueltaMp === 'exito' || vueltaMp === 'pendiente')
-      && pedido.estado === 'PENDIENTE_PAGO'
-      && pedido.pagoEstado === 'PENDIENTE';
+  function renderActual() {
+    if (alRenderizar) {
+      alRenderizar(pedido);
+    }
+    renderDetalle();
   }
-
-  renderDetalle();
-
-  if (!vueltaMp) {
-    window.setInterval(async () => {
-      if (document.hidden || ESTADOS_FINALES_PEDIDO.has(pedido.estado)) {
-        return;
-      }
-      try {
-        const vigente = await cargarPedido({ segundoPlano: true });
-        if (vigente && firmaDelPedido(vigente) !== firmaDelPedido(pedido)) {
-          pedido = vigente;
-          renderActual();
-        }
-      } catch {
-      }
-    }, 15000);
-    return;
-  }
-
-  let abandonado = false;
-  window.addEventListener('pagehide', () => { abandonado = true; });
 
   function mostrarResultado(finalizado) {
     if (pedido.pagoEstado === 'PAGADO') {
@@ -804,7 +776,7 @@ export async function initPedidoDetalle() {
   }
 
   async function sincronizar() {
-    const actualizado = await apiFetch(`/pedidos/cliente/${pedidoId}/pago/sincronizar`, {
+    const actualizado = await apiFetch(`/pedidos/cliente/${pedido.id}/pago/sincronizar`, {
       method: 'POST',
       body: paymentId ? { paymentId } : undefined,
     });
@@ -816,16 +788,15 @@ export async function initPedidoDetalle() {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  let ultimoEstado = `${pedido.estado}|${pedido.pagoEstado}`;
-
   async function ciclo() {
-    const maxIntentos = vueltaMp === 'fallo' ? 1 : MAX_INTENTOS;
+    window.addEventListener('pagehide', () => { abandonado = true; });
+    const maxIntentos = vueltaMp === 'fallo' ? 1 : MAX_INTENTOS_SINCRONIZACION;
     for (let intento = 1; intento <= maxIntentos; intento += 1) {
       if (abandonado) {
         return;
       }
       try {
-        pedido = await sincronizar();
+        fijarPedido(await sincronizar());
       } catch (error) {
         if (error instanceof ApiError && (error.status === 401 || error.status === 404)) {
           return;
@@ -851,9 +822,304 @@ export async function initPedidoDetalle() {
       if (ultimo) {
         return;
       }
-      await esperar(INTERVALO_MS);
+      await esperar(INTERVALO_SINCRONIZACION_MS);
     }
   }
 
-  await ciclo();
+  return { renderActual, renderDetalle, ciclo, fijarPedido, obtenerPedido: () => pedido };
+}
+
+export async function initPedidoDetalle() {
+  if (!(await exigirContextoCliente())) {
+    return;
+  }
+  const usuario = getUsuario();
+  if (!usuario || usuario.rol !== 'CLIENTE') {
+    window.location.href = 'login.html';
+    return;
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  const pedidoId = Number(params.get('id'));
+  const container = document.getElementById('detalle-content');
+  const { vueltaMp, paymentId } = leerVueltaDeMercadoPago(params);
+
+  if (enEscritorio() && pedidoId) {
+    window.location.replace(`pedidos.html${window.location.search}`);
+    return;
+  }
+
+  montarBarraClienteEnEscritorio({ activo: 'pedidos' });
+
+  if (!pedidoId) {
+    renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Pedido', destinoVolver: 'pedidos.html' });
+    renderNoEncontrado(container);
+    return;
+  }
+
+  async function cargarPedido(opciones) {
+    const lista = await apiFetch('/pedidos/cliente', opciones);
+    lista.forEach(normalizarPedido);
+    return lista.find((p) => p.id === pedidoId);
+  }
+
+  const comercios = await apiFetch('/catalogo/comercios', { auth: false });
+  normalizarComercios(comercios);
+  const pedido = await cargarPedido();
+
+  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: pedido ? `Pedido #${pedido.id}` : 'Pedido', destinoVolver: 'pedidos.html' });
+
+  if (!pedido) {
+    renderNoEncontrado(container);
+    return;
+  }
+
+  const detalle = crearDetallePedido({
+    container,
+    comercios,
+    pedido,
+    vueltaMp,
+    paymentId,
+    alRenderizar: (actual) => renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: `Pedido #${actual.id}`, destinoVolver: 'pedidos.html' }),
+  });
+
+  detalle.renderDetalle();
+
+  if (!vueltaMp) {
+    window.setInterval(async () => {
+      const actual = detalle.obtenerPedido();
+      if (document.hidden || ESTADOS_FINALES_PEDIDO.has(actual.estado)) {
+        return;
+      }
+      try {
+        const vigente = await cargarPedido({ segundoPlano: true });
+        if (vigente && firmaDelPedido(vigente) !== firmaDelPedido(actual)) {
+          detalle.fijarPedido(vigente);
+          detalle.renderActual();
+        }
+      } catch {
+      }
+    }, 15000);
+    return;
+  }
+
+  await detalle.ciclo();
+}
+
+const FILTROS_PEDIDOS = [
+  { clave: 'todos', etiqueta: 'Todos', coincide: () => true },
+  { clave: 'en-curso', etiqueta: 'En curso', coincide: (pedido) => !ESTADOS_FINALES_PEDIDO.has(pedido.estado) },
+  { clave: 'entregados', etiqueta: 'Entregados', coincide: (pedido) => pedido.estado === 'ENTREGADO' || pedido.estado === 'NO_RETIRADO' },
+  { clave: 'cancelados', etiqueta: 'Cancelados', coincide: (pedido) => ['RECHAZADO', 'CANCELADO', 'CANCELADO_POR_SISTEMA', 'ANULADO', 'EXPIRADO'].includes(pedido.estado) },
+];
+
+function iniciarVistaMaestroDetalle({ container, pedidos: pedidosIniciales, comercios, params }) {
+  const comercioPorId = new Map(comercios.map((comercio) => [comercio.id, comercio]));
+  let pedidos = [...pedidosIniciales].sort((a, b) => new Date(b.fechaCreacion) - new Date(a.fechaCreacion));
+  let seleccionId = Number(params.get('id')) || null;
+  let filtroActivo = 'todos';
+  let detalle = null;
+  let vueltaPendiente = leerVueltaDeMercadoPago(params);
+  let firmaListaPintada = null;
+
+  const columnaLista = crear('div', 'pedidos-escritorio__columna');
+  const filtros = crear('div', 'chip-row pedidos-filtros');
+  filtros.setAttribute('role', 'group');
+  filtros.setAttribute('aria-label', 'Filtrar pedidos por estado');
+  filtros.setAttribute('data-testid', 'filtros-pedidos');
+  const lista = crear('div', 'pedido-list');
+  lista.setAttribute('data-testid', 'lista-pedidos-escritorio');
+  columnaLista.append(filtros, lista);
+  const panel = crear('section', 'pedidos-escritorio__detalle');
+  panel.setAttribute('aria-live', 'polite');
+  panel.setAttribute('aria-label', 'Detalle del pedido');
+  panel.setAttribute('data-testid', 'detalle-pedido-escritorio');
+  const maestro = crear('div', 'pedidos-escritorio');
+  maestro.append(columnaLista, panel);
+  container.replaceChildren(maestro);
+
+  function visibles() {
+    const filtro = FILTROS_PEDIDOS.find((f) => f.clave === filtroActivo);
+    return pedidos.filter(filtro.coincide);
+  }
+
+  function reflejarSeleccionEnUrl() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('pago');
+    url.searchParams.delete('payment_id');
+    url.searchParams.delete('collection_id');
+    if (seleccionId) {
+      url.searchParams.set('id', String(seleccionId));
+    } else {
+      url.searchParams.delete('id');
+    }
+    window.history.replaceState(null, '', `${url.pathname}${url.search}`);
+  }
+
+  function pintarFiltros() {
+    filtros.replaceChildren(...FILTROS_PEDIDOS.map((filtro) => {
+      const chip = crear('button', 'chip');
+      chip.type = 'button';
+      chip.textContent = filtro.etiqueta;
+      chip.setAttribute('aria-pressed', String(filtro.clave === filtroActivo));
+      chip.setAttribute('data-testid', `filtro-pedidos-${filtro.clave}`);
+      chip.addEventListener('click', () => {
+        filtroActivo = filtro.clave;
+        pintarFiltros();
+        pintarLista();
+      });
+      return chip;
+    }));
+  }
+
+  function firmaLista() {
+    return JSON.stringify([filtroActivo, seleccionId, pedidos.map((pedido) => `${pedido.id}:${firmaDelPedido(pedido)}`)]);
+  }
+
+  function pintarLista() {
+    firmaListaPintada = firmaLista();
+    const items = visibles();
+    if (items.length === 0) {
+      const vacio = crear('p', 'pedidos-escritorio__vacio');
+      vacio.setAttribute('data-testid', 'pedidos-filtro-vacio');
+      vacio.textContent = 'No hay pedidos con este filtro.';
+      lista.replaceChildren(vacio);
+      return;
+    }
+    lista.replaceChildren(...items.map((pedido) => {
+      const tarjeta = renderPedidoCard(pedido, comercioDelPedido(pedido, comercioPorId));
+      tarjeta.href = `pedidos.html?id=${pedido.id}`;
+      if (pedido.id === seleccionId) {
+        tarjeta.setAttribute('aria-current', 'true');
+      }
+      tarjeta.addEventListener('click', (evento) => {
+        if (evento.ctrlKey || evento.metaKey || evento.shiftKey || evento.altKey || evento.button !== 0) {
+          return;
+        }
+        evento.preventDefault();
+        seleccionar(pedido.id, { enfocar: true });
+      });
+      return tarjeta;
+    }));
+  }
+
+  function pintarPanelVacio(titulo, texto) {
+    const vacio = crear('div', 'pedidos-escritorio__vacio');
+    vacio.setAttribute('data-testid', 'pedidos-elegi-uno');
+    const bloque = document.createElement('div');
+    const t = crear('p', 'state-page__title');
+    t.textContent = titulo;
+    bloque.appendChild(t);
+    if (texto) {
+      const p = crear('p', 'state-page__text');
+      p.textContent = texto;
+      bloque.appendChild(p);
+    }
+    vacio.appendChild(bloque);
+    panel.replaceChildren(vacio);
+    detalle = null;
+  }
+
+  function pintarPanel() {
+    const pedido = pedidos.find((p) => p.id === seleccionId);
+    if (!seleccionId) {
+      pintarPanelVacio('Elegí un pedido', 'Seleccioná un pedido de la lista para ver su detalle.');
+      return;
+    }
+    if (!pedido) {
+      pintarPanelVacio('No encontramos este pedido', 'El pedido que buscás no existe o no pertenece a tu cuenta.');
+      return;
+    }
+    const vuelta = vueltaPendiente && vueltaPendiente.pedidoId === pedido.id ? vueltaPendiente : null;
+    detalle = crearDetallePedido({
+      container: panel,
+      comercios,
+      pedido,
+      vueltaMp: vuelta ? vuelta.vueltaMp : null,
+      paymentId: vuelta ? vuelta.paymentId : null,
+      alCambiarPedido: (nuevo) => {
+        const indice = pedidos.findIndex((p) => p.id === nuevo.id);
+        if (indice >= 0) {
+          pedidos[indice] = nuevo;
+        }
+        if (firmaLista() !== firmaListaPintada) {
+          pintarLista();
+        }
+      },
+    });
+    detalle.renderDetalle();
+    if (vuelta && vuelta.vueltaMp) {
+      vueltaPendiente = null;
+      detalle.ciclo();
+    }
+  }
+
+  function seleccionar(id, { enfocar = false } = {}) {
+    seleccionId = id;
+    reflejarSeleccionEnUrl();
+    pintarLista();
+    pintarPanel();
+    if (enfocar) {
+      const tarjeta = lista.querySelector('[aria-current="true"]');
+      if (tarjeta) {
+        tarjeta.focus({ preventScroll: true });
+      }
+    }
+  }
+
+  lista.addEventListener('keydown', (evento) => {
+    if (evento.key !== 'ArrowDown' && evento.key !== 'ArrowUp') {
+      return;
+    }
+    const tarjetas = [...lista.querySelectorAll('.pedido-card')];
+    const actual = tarjetas.indexOf(document.activeElement);
+    if (actual < 0) {
+      return;
+    }
+    evento.preventDefault();
+    const destino = tarjetas[Math.max(0, Math.min(tarjetas.length - 1, actual + (evento.key === 'ArrowDown' ? 1 : -1)))];
+    destino.focus();
+  });
+
+  if (vueltaPendiente.vueltaMp && seleccionId) {
+    vueltaPendiente = { ...vueltaPendiente, pedidoId: seleccionId };
+  } else {
+    vueltaPendiente = null;
+  }
+
+  pintarFiltros();
+  pintarLista();
+  pintarPanel();
+  if (seleccionId) {
+    reflejarSeleccionEnUrl();
+  }
+
+  window.setInterval(async () => {
+    if (document.hidden) {
+      return;
+    }
+    try {
+      const lote = await apiFetch('/pedidos/cliente', { segundoPlano: true });
+      lote.forEach(normalizarPedido);
+      const nuevos = [...lote].sort((a, b) => new Date(b.fechaCreacion) - new Date(a.fechaCreacion));
+      const firmaAntes = pedidos.map((pedido) => `${pedido.id}:${firmaDelPedido(pedido)}`).join('|');
+      const firmaDespues = nuevos.map((pedido) => `${pedido.id}:${firmaDelPedido(pedido)}`).join('|');
+      if (firmaAntes === firmaDespues) {
+        return;
+      }
+      const anterior = pedidos.find((p) => p.id === seleccionId);
+      pedidos = nuevos;
+      pintarLista();
+      const vigente = pedidos.find((p) => p.id === seleccionId);
+      if (vigente && (!anterior || firmaDelPedido(anterior) !== firmaDelPedido(vigente))) {
+        if (detalle) {
+          detalle.fijarPedido(vigente);
+          detalle.renderActual();
+        } else {
+          pintarPanel();
+        }
+      }
+    } catch {
+    }
+  }, INTERVALO_LISTA_MS);
 }

@@ -123,7 +123,7 @@ Rol: público, salvo `cambiar-password` y `logout` (autenticado, cualquier rol)
 
 **`LoginResponseDTO`**: `token: String`, `usuario: UsuarioResponseDTO`.
 
-**`UsuarioResponseDTO`**: `id: Integer`, `email: String`, `rol: RolUsuario`, `estado: EstadoUsuario` (nunca password).
+**`UsuarioResponseDTO`**: `id: Integer`, `email: String`, `rol: RolUsuario`, `estado: EstadoUsuario`, `fotoPerfilUrl: String` y `nombre: String` (nunca password). `nombre` es el nombre de pila de la persona (de `persona_fisica.nombre`; para el Dueño, el del representante de su cuenta), solo viaja en las respuestas que lo resuelven (login, reactivación con credenciales y foto de perfil) y se omite cuando no existe; no va en el JWT ni en ninguna respuesta de error. Tramo B1, 2026-11-12.
 
 **`RecuperacionPasswordRequestDTO`**: `email: String` (`@NotBlank @Email`).
 
@@ -688,3 +688,24 @@ Solo frontend y pruebas. A partir de 1024 px las páginas de Comercio (`comercio
 - Soporte (`admin-soporte.js`): con la pantalla de escritorio al cargar, bandeja de 440 px y detalle a la derecha sin navegar (`pushState` con `?id=`, sondeo de 15 s que no pisa lo que se escribe); en móvil la bandeja y la consulta siguen siendo dos páginas.
 - Revisión de documentos en dos paneles (columna derecha de 420 px, "Abrir en pestaña nueva" con un `blob:` y desplegable de otros documentos). Tarifas: formulario en línea a la izquierda y vigente e historial a la derecha; la confirmación (móvil y escritorio) usa `abrirHoja` con "Antes → Ahora" y el alcance (A03).
 - Detalle en `docs/MAPEO-ARCHIVOS-TRAMO-E2.md`.
+
+## Tramo E3 (Cliente en escritorio)
+
+- Hojas nuevas `css/escritorio-cliente.css`, `escritorio-cliente-pedidos.css`, `escritorio-cliente-perfil.css` y `escritorio-cliente-otras.css` (se importan desde `escritorio.css`, enlazado con `media="(min-width: 1024px)"`). El shell del Cliente es `app-shell--cliente`: lo agrega `montarBarraCliente` a la página y trae la barra superior de 72 px; las páginas con pie o resumen lateral usan una grilla de cuatro columnas armada con `:has()`.
+- `js/cliente-escritorio.js`: la barra (logo, tres enlaces, buscador de 320 px que manda a `explorar.html?q=`, carrito con insignia, campana con punto, avatar con menú accesible) se arma solo en escritorio. El sondeo de avisos del Cliente (15 s) es uno solo y alimenta la campana de la cabecera móvil y la de la barra; el contador del carrito se agrupa si hay consultas simultáneas. «Cambiar de cuenta» aparece si la persona es Empleado de algún comercio (se guarda la respuesta por usuario en `sessionStorage`).
+- Catálogo y Explorar: grilla de 4 columnas (3 entre 1024 y 1279 px) con portada de 150 px. Detalle del comercio: `.comercio-ficha` de dos columnas, productos en grilla de 3 con el rótulo «Agregar» (la tarjeta entera abre el diálogo), diálogo de producto centrado de hasta 880 px (dos columnas si tiene fotos).
+- Carrito y checkout: columna de 412 px a la derecha con el resumen fijo; en el checkout el resumen replica el botón principal del paso (`btn-resumen-accion`) y el «Volver» de escritorio va junto al botón principal de cada paso. El asistente de pasos no cambió.
+- Mis pedidos: en escritorio es lista de 440 px y detalle sin navegar (`iniciarVistaMaestroDetalle`), con `?id=`, filtros por estado, flechas, sondeo que conserva la selección y la vuelta de Mercado Pago (`crearDetallePedido`, compartido con `pedido-detalle.html`, que en escritorio redirige a la lista con el pedido elegido).
+- Perfil: la vista principal es el menú de 240 px y las demás vistas la sección de la derecha (`?seccion=datos|direcciones|password`). Avisos: tabla con columnas Aviso, Fecha y Estado, para el Cliente y para el Comercio.
+- Detalle en `docs/MAPEO-ARCHIVOS-TRAMO-E3.md`.
+
+## Tramo E4 (pulido final del escritorio)
+
+- `js/escritorio.js` suma `montarSaltarAlContenido()` (botón `.saltar-contenido`, oculto salvo con foco y solo en escritorio; lo llaman `renderAdminNav`, `completarBarraLateral` y `montarBarraCliente`) y `recargarAlCambiarDeModo()` (recarga la página al cruzar los 1024 px; la usa Mis pedidos del Cliente, que decide su diseño al cargar).
+- `js/hoja.js`: `activarHoja` lleva una pila de hojas activas (solo la de arriba atiende `Escape` y `Tab`), ignora para el foco inicial los elementos ocultos y, si no hay ninguno visible, enfoca la propia hoja (`tabindex="-1"`). Migradas a `activarHoja`: detalle de comercio, categoría, tag y nueva tarifa del Administrador, fotos de perfil, acciones de producto, cuenta personal, salida con cambios, conflicto de comercio del carrito, zoom de foto, contraseña del nombre de usuario, hojas del equipo, cierre del comercio, panel de comercios, cambio de cuenta y recorte de imagen. Las hojas bloqueantes de `api.js` atrapan `Tab` en su propio `keydown`.
+- `js/validators.js`: `aTitleCaseNombre` (partículas en minúscula) que usa `getNombre()` de `js/api.js`.
+- Acceso: `nav.acceso-legal` (enlaces legales al pie de la columna blanca) en las diez pantallas partidas; `css/escritorio-acceso.css` con filas `1fr auto`.
+- Administrador: Reclamos como tabla (`tabla--reclamos`), paginación de Dueños en el frontend (`DUENOS_POR_PAGINA = 30`, `btn-ver-mas-duenos`), ajustes de 1024 a 1279 px en `css/escritorio-admin-tablas.css` y `.lista-ver-mas`.
+- Comercio: botón único de sonido (`sonido-avisos__estado`, solo escritorio), saludo sin corte y Ayuda con barra lateral (`js/ayuda.js`). Cliente: `soporte.html` con sesión usa el shell del contexto y el rótulo de producto dice «Ver y agregar».
+- `css/escritorio-base.css`: `prefers-reduced-motion` en escritorio y estilos de `.saltar-contenido`. `css/styles.css`: `.request-card__rows .comercio-info__row > span` parte el email largo, `.sonido-avisos__estado` y `[role='dialog'][tabindex='-1']:focus`.
+- Herramientas: `testing/playwright/capturas/` y `playwright.capturas.config.ts` (revisión visual, no son parte de la suite). Detalle en `docs/MAPEO-ARCHIVOS-TRAMO-E4.md`.

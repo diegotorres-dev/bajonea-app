@@ -1,3 +1,4 @@
+import { pintarSaludo } from './saludo.js';
 import { apiFetch, ApiError, guardarToastPendiente, esTimeoutAvisado, clearSesion, contextoPuedeCerrarComercio, contextoPuedeEditarCatalogo, contextoPuedeGestionarPedidos, esContextoComercio, esContextoDueno, esContextoEmpleado, getComercioActivoId, getUsuario, setContexto, TIPO_CONTEXTO } from './api.js';
 import { pintarImagen } from './imagenes.js';
 import { enlazarMisConsultas } from './soporte-mis-consultas.js';
@@ -741,7 +742,7 @@ export async function initComercioDashboard() {
     montarPasosParaVender(document.getElementById('pasos-vender-slot'));
   }
 
-  document.getElementById('saludo-titulo').textContent = 'Hola 👋';
+  pintarSaludo(document.getElementById('saludo-titulo'));
   const saludoFecha = document.getElementById('saludo-fecha');
   saludoFecha.textContent = new Date().toLocaleDateString('es-AR', {
     weekday: 'long',
@@ -2207,6 +2208,7 @@ function limpiarParametrosMercadoPago() {
 }
 
 function mostrarModalFotoPerfilComercio({ onEditar }) {
+  let control = null;
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
   backdrop.setAttribute('data-testid', 'modal-foto-perfil-comercio');
@@ -2222,17 +2224,12 @@ function mostrarModalFotoPerfilComercio({ onEditar }) {
       <button class="btn btn-tertiary u-w-100" type="button" id="modal-cancelar-foto-btn" data-testid="btn-cancelar-foto-perfil-comercio">Cancelar</button>
     </div>
   `;
-  document.body.appendChild(backdrop);
+  control = activarHoja({ fondo: backdrop, hoja: backdrop.querySelector('.modal-sheet') });
   document.getElementById('modal-editar-foto-btn').addEventListener('click', () => {
-    backdrop.remove();
+    control.cerrar();
     onEditar();
   });
-  document.getElementById('modal-cancelar-foto-btn').addEventListener('click', () => backdrop.remove());
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
-  });
+  document.getElementById('modal-cancelar-foto-btn').addEventListener('click', () => control.cerrar());
 }
 
 const DIAS_DE_LA_SEMANA = [
@@ -2439,6 +2436,7 @@ function pintarCamposBloqueadosDelEmpleado(comercio) {
 }
 
 function mostrarModalCuentaPersonal() {
+  let control = null;
   const backdrop = crear('div', 'modal-backdrop');
   backdrop.setAttribute('data-testid', 'modal-cuenta-personal');
   backdrop.innerHTML = `
@@ -2449,16 +2447,11 @@ function mostrarModalCuentaPersonal() {
       <button class="btn btn-tertiary" type="button" id="cancelar-cuenta-personal-btn" data-testid="btn-cancelar-cuenta-personal">Cancelar</button>
     </div>
   `;
-  document.body.appendChild(backdrop);
-  document.getElementById('cancelar-cuenta-personal-btn').addEventListener('click', () => backdrop.remove());
+  control = activarHoja({ fondo: backdrop, hoja: backdrop.querySelector('.modal-sheet') });
+  document.getElementById('cancelar-cuenta-personal-btn').addEventListener('click', () => control.cerrar());
   document.getElementById('continuar-cuenta-personal-btn').addEventListener('click', () => {
     setContexto(TIPO_CONTEXTO.CLIENTE, null, true);
     window.location.href = 'perfil.html';
-  });
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
   });
 }
 
@@ -3020,6 +3013,7 @@ function renderProductoRow(producto, onKebab) {
 }
 
 function mostrarModalAccionProducto(producto, { onEditar, onCambiarEstado, onDescontinuar }) {
+  let control = null;
   const backdrop = crear('div', 'modal-backdrop');
   backdrop.setAttribute('data-testid', 'modal-acciones-producto');
   const sheet = crear('div', 'product-modal-sheet');
@@ -3052,7 +3046,7 @@ function mostrarModalAccionProducto(producto, { onEditar, onCambiarEstado, onDes
     editarBtn.setAttribute('data-testid', 'btn-editar-producto');
     editarBtn.innerHTML = `${ICONS.edit}<span>Editar producto</span>`;
     editarBtn.addEventListener('click', () => {
-      backdrop.remove();
+      control.cerrar();
       onEditar();
     });
     list.appendChild(editarBtn);
@@ -3063,13 +3057,13 @@ function mostrarModalAccionProducto(producto, { onEditar, onCambiarEstado, onDes
     if (producto.estado === 'DISPONIBLE') {
       estadoBtn.innerHTML = `${ICONS.ban}<span>Marcar como agotado</span>`;
       estadoBtn.addEventListener('click', () => {
-        backdrop.remove();
+        control.cerrar();
         onCambiarEstado('AGOTADO');
       });
     } else {
       estadoBtn.innerHTML = `${ICONS.check}<span>Marcar como disponible</span>`;
       estadoBtn.addEventListener('click', () => {
-        backdrop.remove();
+        control.cerrar();
         onCambiarEstado('DISPONIBLE');
       });
     }
@@ -3080,7 +3074,7 @@ function mostrarModalAccionProducto(producto, { onEditar, onCambiarEstado, onDes
     descontinuarBtn.setAttribute('data-testid', 'btn-descontinuar-producto');
     descontinuarBtn.innerHTML = `${ICONS.xCircle}<span>Descontinuar producto</span>`;
     descontinuarBtn.addEventListener('click', () => {
-      backdrop.remove();
+      control.cerrar();
       onDescontinuar();
     });
     list.appendChild(descontinuarBtn);
@@ -3093,17 +3087,12 @@ function mostrarModalAccionProducto(producto, { onEditar, onCambiarEstado, onDes
   cancelBtn.classList.add('u-mt-16px');
   cancelBtn.setAttribute('data-testid', 'btn-cancelar-modal-acciones');
   cancelBtn.textContent = 'Cancelar';
-  cancelBtn.addEventListener('click', () => backdrop.remove());
+  cancelBtn.addEventListener('click', () => control.cerrar());
   body.appendChild(cancelBtn);
 
   sheet.appendChild(body);
   backdrop.appendChild(sheet);
-  document.body.appendChild(backdrop);
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
-  });
+  control = activarHoja({ fondo: backdrop, hoja: sheet });
 }
 
 function mostrarModalConfirmarDescontinuar(producto, enviar) {

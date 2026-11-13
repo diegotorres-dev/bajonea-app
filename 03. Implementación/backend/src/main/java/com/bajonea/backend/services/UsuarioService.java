@@ -5,6 +5,7 @@ import com.bajonea.backend.dto.response.CloudinarySignatureResponseDTO;
 import com.bajonea.backend.dto.response.UsuarioResponseDTO;
 import com.bajonea.backend.entities.Usuario;
 import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
+import com.bajonea.backend.repositories.PersonaFisicaRepository;
 import com.bajonea.backend.repositories.UsuarioRepository;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final CloudinaryService cloudinaryService;
+    private final PersonaFisicaRepository personaFisicaRepository;
 
     public CloudinarySignatureResponseDTO generarFirmaFotoPerfil(Integer idPath, Integer usuarioIdAutenticado) {
         validarPropioUsuario(idPath, usuarioIdAutenticado);
@@ -67,7 +69,8 @@ public class UsuarioService {
     }
 
     private UsuarioResponseDTO aResponseDTO(Usuario usuario) {
+        String nombre = personaFisicaRepository.findNombreByUsuarioId(usuario.getId()).orElse(null);
         return new UsuarioResponseDTO(
-                usuario.getId(), usuario.getEmail(), usuario.getRol(), usuario.getEstado(), usuario.getFotoPerfilUrl());
+                usuario.getId(), usuario.getEmail(), usuario.getRol(), usuario.getEstado(), usuario.getFotoPerfilUrl(), nombre);
     }
 }

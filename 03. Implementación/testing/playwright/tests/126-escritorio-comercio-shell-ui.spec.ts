@@ -197,8 +197,7 @@ test.describe('Escritorio E1: shell lateral y panel del comercio @escritorio', (
     const productos = page.getByTestId('btn-nav-productos');
     const fondoAntes = await productos.evaluate((nodo) => getComputedStyle(nodo).backgroundColor);
     await productos.hover();
-    const fondoHover = await productos.evaluate((nodo) => getComputedStyle(nodo).backgroundColor);
-    expect(fondoHover).not.toBe(fondoAntes);
+    await expect.poll(() => productos.evaluate((nodo) => getComputedStyle(nodo).backgroundColor)).not.toBe(fondoAntes);
     await tieneAnilloDeFoco(page.getByTestId('btn-nav-estadisticas'));
     await tieneAnilloDeFoco(page.getByTestId('btn-lateral-cerrar-sesion'));
     await page.getByTestId('btn-nav-productos').focus();

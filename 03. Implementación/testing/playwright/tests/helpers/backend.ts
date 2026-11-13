@@ -386,7 +386,7 @@ export async function registrarYVerificarComercio(
 
 export interface SesionApi {
   token: string;
-  usuario: { id: number; rol: string };
+  usuario: { id: number; rol: string; nombre?: string };
 }
 
 export async function login(request: APIRequestContext, nombreUsuario: string, password: string): Promise<SesionApi> {

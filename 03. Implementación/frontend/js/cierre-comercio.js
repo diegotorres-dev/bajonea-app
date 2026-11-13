@@ -1,5 +1,6 @@
 import { ApiError } from './api.js';
 import { showToast } from './catalogo.js';
+import { activarHoja } from './hoja.js';
 import { limpiarAvisoFijo, mostrarAvisoFijo } from './form-utils.js';
 import { getComercioActivoEnMemoria, refrescarComercios, suscribirComercios } from './comercio-activo.js';
 import { abrirComercio, cerrarComercio, modoSwitchCierre, tieneCierre } from './apertura-comercio.js';
@@ -60,32 +61,19 @@ function pedirConfirmacionCierre(disparador) {
 
     hoja.append(titulo, texto, confirmar, cancelar);
     backdrop.appendChild(hoja);
-    document.body.appendChild(backdrop);
-    cancelar.focus();
-
-    function terminar(resultado) {
-      document.removeEventListener('keydown', alTeclear);
-      backdrop.remove();
-      if (disparador && document.contains(disparador)) {
-        disparador.focus();
-      }
-      resolver(resultado);
-    }
-
-    function alTeclear(evento) {
-      if (evento.key === 'Escape') {
-        terminar(false);
+    let resuelto = false;
+    function resolverUnaVez(resultado) {
+      if (!resuelto) {
+        resuelto = true;
+        resolver(resultado);
       }
     }
-
-    document.addEventListener('keydown', alTeclear);
-    backdrop.addEventListener('click', (evento) => {
-      if (evento.target === backdrop) {
-        terminar(false);
-      }
+    const control = activarHoja({ fondo: backdrop, hoja, inicial: cancelar, disparador, alCerrar: () => resolverUnaVez(false) });
+    cancelar.addEventListener('click', () => control.cerrar());
+    confirmar.addEventListener('click', () => {
+      resolverUnaVez(true);
+      control.cerrar();
     });
-    cancelar.addEventListener('click', () => terminar(false));
-    confirmar.addEventListener('click', () => terminar(true));
   });
 }
 

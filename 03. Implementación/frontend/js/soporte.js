@@ -1,4 +1,6 @@
-import { apiFetch, esTimeoutAvisado, getToken, getUsuario } from './api.js';
+import { apiFetch, esContextoComercio, esTimeoutAvisado, getToken, getUsuario } from './api.js';
+import { montarBarraClienteEnEscritorio } from './cliente-escritorio.js';
+import { montarBarraLateralCompartida } from './comercio-escritorio.js';
 import { renderTopBar, showToast } from './catalogo.js';
 import { h, crearSvg, setLoading } from './form-utils.js';
 import { establecerErrorCampo } from './validators.js';
@@ -74,6 +76,14 @@ export function initSoporte() {
   const contenedor = document.getElementById('soporte-contenido');
   const usuario = getUsuario();
   const conSesion = Boolean(getToken() && usuario);
+  if (conSesion && (esContextoComercio() || usuario.rol === 'CLIENTE')) {
+    document.querySelector('.app-shell').classList.remove('app-shell--escritorio', 'app-shell--acceso');
+    if (esContextoComercio()) {
+      montarBarraLateralCompartida('perfil');
+    } else {
+      montarBarraClienteEnEscritorio({ activo: null });
+    }
+  }
 
   const aviso = crearAvisoDeError('aviso-soporte');
   const email = h('input', {

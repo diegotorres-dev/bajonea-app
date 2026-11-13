@@ -1,4 +1,6 @@
-import { apiFetch, ApiError, getUsuario } from './api.js';
+import { apiFetch, ApiError, actualizarFotoSesion, actualizarNombreSesion, getUsuario } from './api.js';
+import { alCambiarEscritorio, enEscritorio } from './escritorio.js';
+import { montarBarraClienteEnEscritorio } from './cliente-escritorio.js';
 import { enlazarMisConsultas } from './soporte-mis-consultas.js';
 import { crearInterruptorSonido } from './sonido-interruptor.js';
 import { exigirContextoCliente, consultarComerciosDelEmpleado } from './contexto.js';
@@ -10,7 +12,7 @@ import { validarArchivoImagen, subirFotoPerfilUsuario, eliminarFotoPerfilUsuario
 import { abrirEditorRecorte } from './crop.js';
 import { enlazarEdicionDatosPersonales, enlazarCambioPassword } from './perfil-cuenta.js';
 import { initMisDirecciones } from './direcciones.js';
-import { abrirHoja } from './hoja.js';
+import { abrirHoja, activarHoja } from './hoja.js';
 
 const ICONS = {
   logout: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
@@ -18,21 +20,66 @@ const ICONS = {
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
 };
 
-function mostrarVista(id) {
-  document.querySelectorAll('.perfil-view').forEach((view) => {
-    view.classList.toggle('is-hidden', view.id !== id);
+const SECCIONES = {
+  datos: { vista: 'view-editar-datos', enlace: 'editar-datos-link' },
+  direcciones: { vista: 'view-direcciones', enlace: 'mis-direcciones-link' },
+  password: { vista: 'view-cambiar-password', enlace: 'cambiar-password-link' },
+};
+
+let vistaActual = 'view-principal';
+
+function marcarSeccionActiva(vista) {
+  Object.values(SECCIONES).forEach((seccion) => {
+    const enlace = document.getElementById(seccion.enlace);
+    if (enlace) {
+      if (enEscritorio() && seccion.vista === vista) {
+        enlace.setAttribute('aria-current', 'true');
+      } else {
+        enlace.removeAttribute('aria-current');
+      }
+    }
   });
-  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function reflejarSeccionEnUrl(vista) {
+  const clave = Object.keys(SECCIONES).find((nombre) => SECCIONES[nombre].vista === vista);
+  if (!clave) {
+    return;
+  }
+  const url = new URL(window.location.href);
+  url.searchParams.delete('vista');
+  url.searchParams.set('seccion', clave);
+  window.history.replaceState(null, '', `${url.pathname}${url.search}`);
+}
+
+function mostrarVista(id) {
+  if (enEscritorio() && id === 'view-principal') {
+    document.getElementById('editar-datos-link').click();
+    return;
+  }
+  vistaActual = id;
+  const escritorio = enEscritorio();
+  document.querySelectorAll('.perfil-view').forEach((view) => {
+    const visible = view.id === id || (escritorio && view.id === 'view-principal');
+    view.classList.toggle('is-hidden', !visible);
+  });
+  marcarSeccionActiva(id);
+  if (escritorio) {
+    reflejarSeccionEnUrl(id);
+  } else {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 }
 
 function mostrarModalFotoPerfil({ onEditar, onEliminar }) {
+  let control = null;
   const backdrop = document.createElement('div');
   backdrop.className = 'modal-backdrop';
   backdrop.setAttribute('data-testid', 'modal-foto-perfil');
   backdrop.innerHTML = `
     <div class="modal-sheet">
       <h2 class="modal-sheet__title">Foto de perfil</h2>
-      <div class="profile-link-list" style="width:100%;margin-bottom:12px;">
+      <div class="profile-link-list ancho-completo sep-b-12">
         <button class="profile-link" type="button" id="modal-editar-foto-btn" data-testid="btn-editar-foto-perfil">
           ${ICONS.edit}
           <span>Editar foto</span>
@@ -42,24 +89,19 @@ function mostrarModalFotoPerfil({ onEditar, onEliminar }) {
           <span>Eliminar foto</span>
         </button>
       </div>
-      <button class="btn btn-tertiary" type="button" id="modal-cancelar-foto-btn" style="width:100%;" data-testid="btn-cancelar-foto-perfil">Cancelar</button>
+      <button class="btn btn-tertiary ancho-completo" type="button" id="modal-cancelar-foto-btn" data-testid="btn-cancelar-foto-perfil">Cancelar</button>
     </div>
   `;
-  document.body.appendChild(backdrop);
+  control = activarHoja({ fondo: backdrop, hoja: backdrop.querySelector('.modal-sheet') });
   document.getElementById('modal-editar-foto-btn').addEventListener('click', () => {
-    backdrop.remove();
+    control.cerrar();
     onEditar();
   });
   document.getElementById('modal-eliminar-foto-btn').addEventListener('click', () => {
-    backdrop.remove();
+    control.cerrar();
     onEliminar();
   });
-  document.getElementById('modal-cancelar-foto-btn').addEventListener('click', () => backdrop.remove());
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
-  });
+  document.getElementById('modal-cancelar-foto-btn').addEventListener('click', () => control.cerrar());
 }
 
 function mostrarModalConfirmarLogout() {
@@ -87,6 +129,8 @@ export async function initPerfil() {
 
   renderTopBar(document.getElementById('top-bar-slot'), { mostrarPerfil: false, mostrarCampana: false, centrarLogo: true });
   renderBottomNav(document.getElementById('bottom-nav-slot'), 'perfil');
+  montarBarraClienteEnEscritorio({ activo: null });
+  document.querySelector('.app-main').classList.add('app-main--perfil');
 
   document.getElementById('cerrar-sesion-link').addEventListener('click', mostrarModalConfirmarLogout);
   enlazarMisConsultas(document.getElementById('mis-consultas-link'));
@@ -106,6 +150,9 @@ export async function initPerfil() {
   const cliente = await apiFetch('/clientes/perfil');
   normalizarCampos(cliente, ['nombre', 'apellido']);
   normalizarCampos(cliente.direccion, ['calle']);
+  if (usuarioSesion.rol === 'CLIENTE') {
+    actualizarNombreSesion(cliente.nombre);
+  }
 
   document.getElementById('perfil-nombre').textContent = `${cliente.nombre} ${cliente.apellido}`;
   document.getElementById('perfil-email').textContent = cliente.email;
@@ -152,6 +199,7 @@ export async function initPerfil() {
         try {
           const actualizado = await subirFotoPerfilUsuario(cliente.id, archivoRecortado);
           cliente.fotoPerfilUrl = actualizado.fotoPerfilUrl;
+          actualizarFotoSesion(actualizado.fotoPerfilUrl);
           actualizarAvatares();
           showToast('Foto de perfil actualizada');
         } catch (error) {
@@ -173,6 +221,7 @@ export async function initPerfil() {
         try {
           const actualizado = await eliminarFotoPerfilUsuario(cliente.id);
           cliente.fotoPerfilUrl = actualizado.fotoPerfilUrl;
+          actualizarFotoSesion(actualizado.fotoPerfilUrl);
           actualizarAvatares();
           showToast('Foto de perfil eliminada');
         } catch (error) {
@@ -201,12 +250,33 @@ export async function initPerfil() {
     }
     mostrarVista('view-principal');
   });
-  if (parametros.get('vista') === 'direcciones') {
-    misDirecciones.abrir();
+  if (vieneDelCheckout) {
+    document.querySelector('.app-main').classList.add('perfil-desde-checkout');
   }
 
   document.getElementById('editar-datos-link').disabled = false;
   document.getElementById('cambiar-password-link').disabled = false;
   avatarPerfil.disabled = false;
   document.querySelectorAll('.profile-link-list[aria-busy]').forEach((lista) => lista.removeAttribute('aria-busy'));
+
+  const seccionPedida = parametros.get('seccion') || (parametros.get('vista') === 'direcciones' ? 'direcciones' : null);
+  if (seccionPedida === 'direcciones') {
+    misDirecciones.abrir();
+  } else if (seccionPedida === 'password') {
+    document.getElementById('cambiar-password-link').click();
+  } else if (enEscritorio()) {
+    document.getElementById('editar-datos-link').click();
+  }
+  let inicial = true;
+  alCambiarEscritorio(() => {
+    if (inicial) {
+      inicial = false;
+      return;
+    }
+    if (vistaActual === 'view-principal' && enEscritorio()) {
+      document.getElementById('editar-datos-link').click();
+    } else {
+      mostrarVista(vistaActual);
+    }
+  });
 }

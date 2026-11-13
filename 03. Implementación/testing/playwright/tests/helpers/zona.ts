@@ -43,3 +43,11 @@ export function fechaRelativaEnZona(anios: number, dias = 0): string {
   const fecha = new Date(Date.UTC(anio - anios, mes - 1, dia + dias));
   return fecha.toISOString().slice(0, 10);
 }
+
+export async function evitarMedianoche(margenMinutos = 4): Promise<void> {
+  const p = partes(Date.now());
+  const segundosHastaMedianoche = (23 - Number(p.hour)) * 3600 + (59 - Number(p.minute)) * 60 + (60 - Number(p.second));
+  if (segundosHastaMedianoche < margenMinutos * 60) {
+    await new Promise((resolver) => setTimeout(resolver, (segundosHastaMedianoche + 3) * 1000));
+  }
+}

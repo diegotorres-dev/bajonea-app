@@ -1,4 +1,5 @@
 import { showToast } from './catalogo.js';
+import { crearSvg } from './form-utils.js';
 import { activarAudio, audioBloqueado, fijarSonido, reproducirDing, sonidoActivado, suscribirSonido } from './sonido-avisos.js';
 
 let contador = 0;
@@ -36,6 +37,13 @@ export function crearInterruptorSonido() {
   boton.setAttribute('aria-describedby', idSubtitulo);
   boton.setAttribute('data-testid', 'switch-sonido-avisos');
   boton.appendChild(crear('span', 'cierre-switch__perilla'));
+  const estadoVisible = crear('span', 'sonido-avisos__estado');
+  estadoVisible.setAttribute('data-testid', 'sonido-avisos-estado');
+  const iconoActivo = crearSvg([['path', { d: 'M11 5 6 9H2v6h4l5 4V5z' }], ['path', { d: 'M15.54 8.46a5 5 0 0 1 0 7.07' }], ['path', { d: 'M19.07 4.93a10 10 0 0 1 0 14.14' }]], { 'aria-hidden': 'true' });
+  const iconoInactivo = crearSvg([['path', { d: 'M11 5 6 9H2v6h4l5 4V5z' }], ['line', { x1: '23', y1: '9', x2: '17', y2: '15' }], ['line', { x1: '17', y1: '9', x2: '23', y2: '15' }]], { 'aria-hidden': 'true' });
+  const textoEstado = crear('span');
+  estadoVisible.append(iconoActivo, iconoInactivo, textoEstado);
+  boton.appendChild(estadoVisible);
 
   tarjeta.append(texto, boton);
 
@@ -54,6 +62,9 @@ export function crearInterruptorSonido() {
   function pintar() {
     const activo = sonidoActivado();
     boton.setAttribute('aria-checked', String(activo));
+    textoEstado.textContent = activo ? 'Sonido activado' : 'Sonido desactivado';
+    iconoActivo.style.display = activo ? '' : 'none';
+    iconoInactivo.style.display = activo ? 'none' : '';
     ayuda.hidden = !(activo && audioBloqueado());
   }
 

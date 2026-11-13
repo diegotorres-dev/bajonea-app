@@ -12,7 +12,7 @@ import {
 } from './helpers/backend';
 import type { Dueno } from './helpers/multicomercio';
 import { agregarComercioApto, prepararAprobado, reemplazarHorarios } from './helpers/multicomercio';
-import { diaDeLaSemanaEnZona, fechaHoraSqlEnZona } from './helpers/zona';
+import { diaDeLaSemanaEnZona, evitarMedianoche, fechaHoraSqlEnZona } from './helpers/zona';
 
 const MINUTO = 60_000;
 const DIAS = ['DOMINGO', 'LUNES', 'MARTES', 'MIERCOLES', 'JUEVES', 'VIERNES', 'SABADO'];
@@ -28,6 +28,8 @@ test.describe('Fase 2, T1 (API): turnos que cruzan la medianoche en el catálogo
   let dueno: Dueno;
 
   test.beforeAll(async ({ request }) => {
+    test.setTimeout(420_000);
+    await evitarMedianoche();
     const adminToken = (await fijarPasswordAdminYLoguear(request)).token;
     const localidadId = await obtenerLocalidadRioGrande(request);
     dueno = await prepararAprobado(request, adminToken, localidadId, true, todoElDia());

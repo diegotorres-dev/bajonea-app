@@ -32,6 +32,7 @@ import com.bajonea.backend.exceptions.RecursoNoEncontradoException;
 import com.bajonea.backend.exceptions.ValidacionException;
 import com.bajonea.backend.repositories.ComercioRepository;
 import com.bajonea.backend.repositories.HistorialCambioNombreUsuarioRepository;
+import com.bajonea.backend.repositories.PersonaFisicaRepository;
 import com.bajonea.backend.repositories.SesionRepository;
 import com.bajonea.backend.repositories.TokenRepository;
 import com.bajonea.backend.repositories.UsuarioRepository;
@@ -101,6 +102,7 @@ public class AuthService {
     private final EstadoUsuarioService estadoUsuarioService;
     private final ReactivacionCuentaService reactivacionCuentaService;
     private final ComerciosAlReactivarService comerciosAlReactivarService;
+    private final PersonaFisicaRepository personaFisicaRepository;
 
     public LoginResponseDTO login(LoginRequestDTO request, String ipOrigen, String userAgent) {
         // findByNombreUsuarioConBloqueo (SELECT ... FOR UPDATE): serializa requests concurrentes contra
@@ -592,7 +594,8 @@ public class AuthService {
     }
 
     private UsuarioResponseDTO aResponseDTO(Usuario usuario) {
+        String nombre = personaFisicaRepository.findNombreByUsuarioId(usuario.getId()).orElse(null);
         return new UsuarioResponseDTO(
-                usuario.getId(), usuario.getEmail(), usuario.getRol(), usuario.getEstado(), usuario.getFotoPerfilUrl());
+                usuario.getId(), usuario.getEmail(), usuario.getRol(), usuario.getEstado(), usuario.getFotoPerfilUrl(), nombre);
     }
 }

@@ -1,4 +1,5 @@
-import { apiFetch, esContextoComercio, getToken } from './api.js';
+import { apiFetch, esContextoComercio, getToken, getUsuario } from './api.js';
+import { montarBarraClienteEnEscritorio } from './cliente-escritorio.js';
 import { montarBarraLateralCompartida } from './comercio-escritorio.js';
 import { renderTopBar } from './catalogo.js';
 import { h } from './form-utils.js';
@@ -63,9 +64,11 @@ export async function initMisConsultas() {
     window.location.href = 'login.html';
     return;
   }
-  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Soporte', destinoVolver: esContextoComercio() ? 'comercio-perfil.html' : null });
+  renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Soporte', destinoVolver: esContextoComercio() ? 'comercio-perfil.html' : 'perfil.html' });
   if (esContextoComercio()) {
     await montarBarraLateralCompartida('perfil');
+  } else if (getUsuario() && getUsuario().rol === 'CLIENTE') {
+    montarBarraClienteEnEscritorio({ activo: null });
   }
   const contenedor = document.getElementById('mis-consultas-contenido');
   const aviso = crearAvisoDeError('aviso-mis-consultas');

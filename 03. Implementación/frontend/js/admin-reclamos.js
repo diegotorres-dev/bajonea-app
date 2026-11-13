@@ -1,6 +1,7 @@
 import { apiFetch, ApiError, getUsuario } from './api.js';
 import { renderTopBar, showToast } from './catalogo.js';
 import { h, setLoading } from './form-utils.js';
+import { crearEncabezadoTabla } from './tabla-admin.js';
 import { establecerErrorCampo } from './validators.js';
 import { atraparFoco, devolverFoco, elementoQueAbrio, tiempoRelativo } from './documentos-comun.js';
 import { abrirHoja, texto } from './admin-hojas.js';
@@ -47,7 +48,7 @@ function crearEstadoAdmin(reclamo, testid) {
 
 function dibujarFila(reclamo) {
   return h('a', {
-    class: 'soporte-fila',
+    class: 'soporte-fila reclamo-admin-row',
     href: `admin-reclamos.html?id=${reclamo.id}`,
     'data-testid': `reclamo-item-${reclamo.id}`,
   }, [
@@ -62,7 +63,8 @@ async function pintarBandeja(contenedor) {
   const estado = { filtro: 'PENDIENTES', contadores: null, reclamos: [], cargando: true, secuencia: 0 };
   const aviso = crearAvisoDeError('aviso-bandeja-reclamos');
   const contador = texto('p', 'cliente-contador', '', { role: 'status', 'aria-live': 'polite', 'data-testid': 'contador-bandeja-reclamos' });
-  const lista = h('div', { class: 'soporte-lista', id: 'reclamos-lista', 'data-testid': 'bandeja-reclamos' });
+  const lista = h('div', { class: 'soporte-lista tabla-admin tabla--reclamos', id: 'reclamos-lista', 'data-testid': 'bandeja-reclamos' });
+  const encabezado = crearEncabezadoTabla('reclamos', [{ etiqueta: 'Reclamo' }, { etiqueta: 'Comercio' }, { etiqueta: 'Estado' }, { etiqueta: 'Total y fecha' }], 'encabezado-reclamos');
 
   const chips = FILTROS.map((filtro) => {
     const chip = texto('button', 'chip', filtro.etiqueta, { type: 'button', 'aria-pressed': String(filtro.clave === estado.filtro), 'data-testid': filtro.testid });
@@ -83,7 +85,7 @@ async function pintarBandeja(contenedor) {
       chip.setAttribute('aria-pressed', String(filtro.clave === estado.filtro));
     });
     if (estado.cargando) {
-      lista.replaceChildren(...[0, 1, 2].map(() => h('div', { class: 'soporte-fila soporte-fila--espera', 'aria-hidden': 'true' }, [
+      lista.replaceChildren(...[0, 1, 2].map(() => h('div', { class: 'soporte-fila soporte-fila--espera reclamo-admin-row reclamo-admin-row--espera', 'aria-hidden': 'true' }, [
         h('div', { class: 'skeleton skeleton--linea-titulo-60' }),
         h('div', { class: 'skeleton skeleton--linea-texto-80' }),
       ])));
@@ -123,7 +125,7 @@ async function pintarBandeja(contenedor) {
 
   contenedor.replaceChildren(
     texto('h1', 'title-lg', 'Reclamos', { 'data-testid': 'titulo-admin-reclamos' }),
-    filtros, contador, aviso, lista,
+    filtros, contador, aviso, encabezado, lista,
   );
   await cargar();
 }

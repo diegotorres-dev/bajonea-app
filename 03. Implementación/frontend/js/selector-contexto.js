@@ -1,3 +1,4 @@
+import { activarHoja } from './hoja.js';
 import {
   getContexto,
   getUltimoContexto,
@@ -179,7 +180,6 @@ export function abrirHojaCambiarCuenta() {
     return;
   }
   const elementoPrevio = document.activeElement;
-  const overflowPrevio = document.body.style.overflow;
 
   const backdrop = crear('div', 'modal-backdrop');
   backdrop.id = ID_HOJA;
@@ -209,22 +209,6 @@ export function abrirHojaCambiarCuenta() {
 
   backdrop.appendChild(hoja);
   document.body.appendChild(backdrop);
-  document.body.style.overflow = 'hidden';
-
-  function cerrar() {
-    document.removeEventListener('keydown', alTeclear);
-    document.body.style.overflow = overflowPrevio;
-    backdrop.remove();
-    if (elementoPrevio && typeof elementoPrevio.focus === 'function' && document.contains(elementoPrevio)) {
-      elementoPrevio.focus();
-    }
-  }
-
-  function alTeclear(evento) {
-    if (evento.key === 'Escape') {
-      cerrar();
-    }
-  }
 
   async function cargar() {
     pintarEsqueleto(lista);
@@ -236,14 +220,8 @@ export function abrirHojaCambiarCuenta() {
     }
   }
 
-  document.addEventListener('keydown', alTeclear);
-  backdrop.addEventListener('click', (evento) => {
-    if (evento.target === backdrop) {
-      cerrar();
-    }
-  });
-  asa.addEventListener('click', cerrar);
-  asa.focus();
+  const control = activarHoja({ fondo: backdrop, hoja, inicial: getComputedStyle(asa).display === 'none' ? hoja : asa, disparador: elementoPrevio });
+  asa.addEventListener('click', () => control.cerrar());
   cargar();
 }
 

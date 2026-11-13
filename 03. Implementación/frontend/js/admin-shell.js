@@ -2,6 +2,7 @@ import { apiFetch, getUsuario } from './api.js';
 import { h, crearSvg } from './form-utils.js';
 import { abrirHoja } from './hoja.js';
 import { logout } from './auth.js';
+import { montarSaltarAlContenido } from './escritorio.js';
 
 const MEDIA_ESCRITORIO = '(min-width: 1024px)';
 const INTERVALO_INSIGNIAS_MS = 15000;
@@ -137,6 +138,7 @@ export function renderAdminNav(shell, activo) {
   const nav = h('nav', { class: 'barra-admin', hidden: true, 'aria-label': 'Navegación del Administrador', 'data-testid': 'barra-admin' }, [logo, lista, h('div', { class: 'barra-admin__pie' }, [salir])]);
   shell.classList.add('app-shell--lateral', 'app-shell--lateral-admin');
   shell.insertBefore(nav, shell.firstChild);
+  montarSaltarAlContenido();
   let sondeando = false;
   function alCambiar(coincide) {
     if (coincide && !sondeando) {

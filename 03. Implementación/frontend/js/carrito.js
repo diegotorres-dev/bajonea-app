@@ -6,6 +6,7 @@ import { normalizarCampos, excedeSubtotalMaximo, mensajeSubtotalMaximoExcedido }
 import { crearPrecioUnitario } from './precio-cambio.js';
 import { abrirHoja } from './hoja.js';
 import { mostrarEsqueleto, mostrarErrorDeCarga } from './esqueletos.js';
+import { montarBarraClienteEnEscritorio } from './cliente-escritorio.js';
 
 const ICONS = {
   bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-5h15L21 9"/><path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><line x1="3" y1="9" x2="21" y2="9"/></svg>',
@@ -268,6 +269,7 @@ export async function initCarrito() {
   }
 
   renderBottomNav(document.getElementById('bottom-nav-slot'), 'carrito');
+  montarBarraClienteEnEscritorio({ activo: 'carrito' });
 
   const container = document.getElementById('carrito-content');
   const footerSlot = document.getElementById('carrito-footer-slot');
@@ -281,7 +283,7 @@ export async function initCarrito() {
     actualizarContadorCarrito();
     const tieneItems = Boolean(carrito.items && carrito.items.length > 0);
     const accion = tieneItems ? crearAccionVaciarHeader(() => pintar({ comercioId: null, nombreComercio: null, items: [], subtotal: 0 })) : null;
-    renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Mi carrito', accion });
+    renderTopBar(document.getElementById('top-bar-slot'), { mostrarVolver: true, titulo: 'Mi carrito', accion, destinoVolver: tieneItems && carrito.comercioId ? `comercio-detalle.html?id=${carrito.comercioId}` : 'index.html' });
 
     if (!tieneItems) {
       footerSlot.innerHTML = '';

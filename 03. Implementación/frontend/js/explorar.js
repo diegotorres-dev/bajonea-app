@@ -1,6 +1,7 @@
 import { apiFetch } from './api.js';
 import { exigirContextoCliente } from './contexto.js';
-import { pintarImagen, urlImagen } from './imagenes.js';
+import { pintarImagenResponsiva } from './imagenes.js';
+import { montarBarraClienteEnEscritorio } from './cliente-escritorio.js';
 import { renderTopBar, renderBottomNav, renderEmptyState } from './catalogo.js';
 import { normalizarCampos } from './validators.js';
 import { mostrarEsqueleto } from './esqueletos.js';
@@ -28,7 +29,7 @@ function renderProductoCard(producto) {
   const principal = producto.imagenes.find((imagen) => imagen.esPrincipal) || producto.imagenes[0];
   if (principal) {
     const img = document.createElement('img');
-    pintarImagen(img, principal.url, { uso: 'miniatura', diferida: true });
+    pintarImagenResponsiva(img, principal.url, { uso: 'miniatura', usoGrande: 'tarjeta', tamanos: '(min-width: 1024px) 300px, 80px', diferida: true });
     img.alt = '';
     thumbWrapper.appendChild(img);
   }
@@ -142,6 +143,7 @@ export async function initExplorar() {
   }
   const topBarSlot = document.getElementById('top-bar-slot');
   renderTopBar(topBarSlot, { mostrarPerfil: false, centrarLogo: true });
+  montarBarraClienteEnEscritorio({ activo: 'explorar' });
 
   const bottomNavSlot = document.getElementById('bottom-nav-slot');
   renderBottomNav(bottomNavSlot, 'explorar');
@@ -157,7 +159,8 @@ export async function initExplorar() {
 
   let categoriaActiva = null;
   const tagsActivos = new Set();
-  let busqueda = '';
+  const busquedaInicial = (new URLSearchParams(window.location.search).get('q') || '').trim().slice(0, 80);
+  let busqueda = busquedaInicial.toLowerCase();
   let paginaActual = 1;
   let busquedaTimeoutId = null;
   let solicitudActual = 0;
@@ -266,6 +269,7 @@ export async function initExplorar() {
     }, 300);
   });
 
+  buscadorInput.value = busquedaInicial;
   pintarChipsCategorias();
   pintarChipsTags();
   await cargarYPintar();

@@ -92,6 +92,7 @@ test.describe('CRUD de producto del Comercio', () => {
 
     await loginUi(page, comercioUsuario, comercioPassword);
     await page.goto('/comercio-productos.html');
+    await page.waitForLoadState('networkidle');
     await page.getByTestId('btn-crear-producto').click();
     await page.waitForURL('**/comercio-producto-form.html');
 

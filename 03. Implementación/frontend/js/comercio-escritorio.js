@@ -1,22 +1,13 @@
-import { apiFetch, esContextoDueno, esContextoEmpleado, getComercioActivoId } from './api.js';
+import { apiFetch, esContextoDueno, esContextoEmpleado, getComercioActivoId, getNombre } from './api.js';
 import { contarNotificacionesNoLeidasActivo, resolverComercioActivo, suscribirComercios } from './comercio-activo.js';
 import { crearSvg } from './form-utils.js';
 import { abrirHoja } from './hoja.js';
 import { logout } from './auth.js';
 import { iniciales, montarFranjaComercio } from './selector-comercio.js';
 
-export const MEDIA_ESCRITORIO = '(min-width: 1024px)';
+import { MEDIA_ESCRITORIO, enEscritorio, alCambiarEscritorio, montarSaltarAlContenido } from './escritorio.js';
 
-const consultaEscritorio = window.matchMedia(MEDIA_ESCRITORIO);
-
-export function enEscritorio() {
-  return consultaEscritorio.matches;
-}
-
-export function alCambiarEscritorio(oyente) {
-  oyente(consultaEscritorio.matches);
-  consultaEscritorio.addEventListener('change', (evento) => oyente(evento.matches));
-}
+export { MEDIA_ESCRITORIO, enEscritorio, alCambiarEscritorio };
 
 const ICONOS = {
   panel: [['path', { d: 'M3 10.5 12 3l9 7.5' }], ['path', { d: 'M5 9.5V21h14V9.5' }], ['path', { d: 'M10 21v-6h4v6' }]],
@@ -98,19 +89,6 @@ function mostrarModalCerrarSesion() {
   });
 }
 
-async function resolverNombrePersona() {
-  try {
-    if (esContextoEmpleado()) {
-      const perfil = await apiFetch('/clientes/perfil', { segundoPlano: true });
-      return perfil.nombre || null;
-    }
-    const comercio = await apiFetch('/comercios/perfil', { segundoPlano: true });
-    return (comercio.representante && comercio.representante.nombre) || null;
-  } catch {
-    return null;
-  }
-}
-
 function crearPieLateral() {
   const pie = crear('div', 'barra-lateral__pie', { hidden: true });
   const persona = crear('div', 'persona', { 'data-testid': 'persona-lateral' });
@@ -120,7 +98,12 @@ function crearPieLateral() {
   const nombre = crear('span', 'persona__nombre', { 'data-testid': 'persona-lateral-nombre' });
   const rol = crear('span', 'persona__rol', { 'data-testid': 'persona-lateral-rol' });
   rol.textContent = esContextoEmpleado() ? 'Empleado' : 'Dueño';
-  nombre.textContent = rol.textContent;
+  const nombrePersona = getNombre();
+  nombre.textContent = nombrePersona || rol.textContent;
+  if (nombrePersona) {
+    nombre.title = nombrePersona;
+    avatar.textContent = iniciales(nombrePersona);
+  }
   textos.append(nombre, rol);
   persona.append(avatar, textos);
   const salir = crear('button', 'barra-lateral__salir', { type: 'button', 'data-testid': 'btn-lateral-cerrar-sesion' });
@@ -130,12 +113,6 @@ function crearPieLateral() {
   salir.appendChild(textoSalir);
   salir.addEventListener('click', mostrarModalCerrarSesion);
   pie.append(persona, salir);
-  resolverComercioActivo().then(resolverNombrePersona).then((nombrePersona) => {
-    if (nombrePersona) {
-      nombre.textContent = nombrePersona;
-      avatar.textContent = iniciales(nombrePersona);
-    }
-  });
   return pie;
 }
 
@@ -177,6 +154,7 @@ export function completarBarraLateral(contenedor, nav, activo, { activoLateral =
   const shell = contenedor.closest('.app-shell');
   if (shell) {
     shell.classList.add('app-shell--lateral', 'app-shell--comercio');
+    montarSaltarAlContenido();
   }
   if (soloEscritorio) {
     contenedor.hidden = true;

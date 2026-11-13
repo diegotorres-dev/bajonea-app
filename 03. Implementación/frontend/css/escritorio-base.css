@@ -151,6 +151,30 @@
     }
   }
 
+  .saltar-contenido[hidden] {
+    display: block;
+  }
+
+  .saltar-contenido {
+    position: fixed;
+    top: var(--space-2);
+    left: var(--space-2);
+    z-index: 10000;
+    min-height: 44px;
+    padding: 0 var(--space-5);
+    border: 2px solid var(--color-primary);
+    border-radius: var(--radius-md);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-weight: 700;
+    cursor: pointer;
+    transform: translateY(-300%);
+  }
+
+  .saltar-contenido:focus-visible {
+    transform: none;
+  }
+
   .app-shell--escritorio {
     max-width: none;
     margin: 0;
@@ -392,5 +416,16 @@
   .app-shell--lateral-admin > .app-main,
   .app-shell--lateral-admin > #top-bar-slot {
     width: min(100%, var(--container-max-width-admin));
+  }
+}
+
+@media (min-width: 1024px) and (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

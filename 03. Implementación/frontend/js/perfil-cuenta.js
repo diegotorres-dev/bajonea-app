@@ -1,4 +1,4 @@
-import { apiFetch, ApiError, clearSesion } from './api.js';
+import { apiFetch, ApiError, actualizarNombreSesion, clearSesion } from './api.js';
 import { construirTelefono, bindNombreUsuario } from './auth.js';
 import {
   esPasswordSegura,
@@ -15,6 +15,7 @@ import {
   establecerErrorCampo,
 } from './validators.js';
 import { showToast, manejarBloqueoPorCambioPassword } from './catalogo.js';
+import { activarHoja } from './hoja.js';
 
 const ICONS = {
   error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
@@ -29,7 +30,7 @@ export function renderBanner(slot, kind, texto) {
   }
   const banner = document.createElement('div');
   banner.className = `banner banner-${kind}`;
-  banner.style.marginBottom = '20px';
+  banner.classList.add('sep-b-20');
   const icono = document.createElement('span');
   icono.innerHTML = ICONS[kind] || ICONS.warning;
   const contenido = document.createElement('div');
@@ -67,7 +68,7 @@ function mostrarModalConfirmarNombreUsuario({ onConfirmar, onErrorNoPassword }) 
       <div class="modal-sheet__icon">${ICONS.lock}</div>
       <h2 class="modal-sheet__title">Confirmá tu contraseña</h2>
       <p class="modal-sheet__text">Por seguridad, ingresá tu contraseña para confirmar el cambio de nombre de usuario.</p>
-      <div class="field" style="width:100%;">
+      <div class="field ancho-completo">
         <div class="input-shell" id="shell-password-confirmar-nombre-usuario">
           <input type="password" id="password-confirmar-nombre-usuario" placeholder="Tu contraseña actual" data-testid="input-password-confirmar-nombre-usuario" />
           <button type="button" class="input-shell__toggle" id="toggle-password-confirmar-nombre-usuario" aria-label="Mostrar contraseña" data-testid="btn-mostrar-password-confirmar-nombre-usuario">
@@ -77,8 +78,8 @@ function mostrarModalConfirmarNombreUsuario({ onConfirmar, onErrorNoPassword }) 
         <div class="field__error" id="error-password-confirmar-nombre-usuario" style="display:none;" data-testid="mensaje-error-password-confirmar-nombre-usuario"></div>
         <p class="field__warning" id="warning-bloqueo-confirmar-nombre-usuario" style="display:none;" data-testid="mensaje-advertencia-bloqueo-confirmar-nombre-usuario">Cuidado: si fallás una vez más, tu cuenta se bloqueará.</p>
       </div>
-      <button class="btn btn-primary" type="button" id="confirmar-nombre-usuario-btn" style="width:100%;margin-bottom:12px;margin-top:8px;" data-testid="btn-confirmar-nombre-usuario">Confirmar</button>
-      <button class="btn btn-tertiary" type="button" id="cancelar-nombre-usuario-btn" style="width:100%;" data-testid="btn-cancelar-nombre-usuario">Cancelar</button>
+      <button class="btn btn-primary ancho-completo sep-b-12 sep-t-8" type="button" id="confirmar-nombre-usuario-btn" data-testid="btn-confirmar-nombre-usuario">Confirmar</button>
+      <button class="btn btn-tertiary ancho-completo" type="button" id="cancelar-nombre-usuario-btn" data-testid="btn-cancelar-nombre-usuario">Cancelar</button>
     </div>
   `;
   document.body.appendChild(backdrop);
@@ -90,16 +91,13 @@ function mostrarModalConfirmarNombreUsuario({ onConfirmar, onErrorNoPassword }) 
   const confirmarBtn = document.getElementById('confirmar-nombre-usuario-btn');
   bindPasswordToggle(document.getElementById('toggle-password-confirmar-nombre-usuario'), passwordInput);
 
+  const control = activarHoja({ fondo: backdrop, hoja: backdrop.querySelector('.modal-sheet'), inicial: passwordInput, ocupada: () => confirmarBtn.disabled });
+
   function cerrar() {
-    backdrop.remove();
+    control.cerrar();
   }
 
   document.getElementById('cancelar-nombre-usuario-btn').addEventListener('click', cerrar);
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      cerrar();
-    }
-  });
 
   confirmarBtn.addEventListener('click', async () => {
     shell.classList.remove('input-shell--error');
@@ -187,6 +185,7 @@ export function enlazarEdicionDatosPersonales({ cliente, mostrarVista, alActuali
         },
       });
       normalizarCampos(actualizado, ['nombre', 'apellido']);
+      actualizarNombreSesion(actualizado.nombre);
       cliente.nombre = actualizado.nombre;
       cliente.apellido = actualizado.apellido;
       cliente.telefono = actualizado.telefono;

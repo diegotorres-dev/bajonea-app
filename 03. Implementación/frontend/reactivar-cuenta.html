@@ -65,12 +65,12 @@
       <p class="panel-marca__titular" data-testid="panel-marca-titular">Tu cuenta te está esperando.</p>
       <p class="panel-marca__bajada">Reactivala con el código que te enviamos por email.</p>
     </div>
-    <nav class="panel-marca__legal" aria-label="Información legal" data-testid="panel-legal">
-      <a class="panel-marca__enlace" href="terminos.html" data-testid="panel-legal-terminos">Términos y Condiciones</a>
-      <a class="panel-marca__enlace" href="privacidad.html" data-testid="panel-legal-privacidad">Política de Privacidad</a>
-      <a class="panel-marca__enlace" href="faq.html" data-testid="panel-legal-faq">Preguntas frecuentes</a>
-    </nav>
   </aside>
+  <nav class="acceso-legal" hidden aria-label="Información legal" data-testid="panel-legal">
+    <a class="acceso-legal__enlace" href="terminos.html" data-testid="panel-legal-terminos">Términos y Condiciones</a>
+    <a class="acceso-legal__enlace" href="privacidad.html" data-testid="panel-legal-privacidad">Política de Privacidad</a>
+    <a class="acceso-legal__enlace" href="faq.html" data-testid="panel-legal-faq">Preguntas frecuentes</a>
+  </nav>
 </div>
 <script type="module">
 import { initReactivarCuentaSolicitar } from './js/auth.js';

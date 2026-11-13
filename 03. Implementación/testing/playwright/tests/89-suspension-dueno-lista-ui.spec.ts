@@ -112,7 +112,7 @@ test.describe('Fase 5, S3 (UI B): lista de Dueños y hojas de suspender y levant
     await page.getByTestId('tile-gestion-duenos').click();
     await page.waitForURL('**/admin-duenos.html');
     await expect(page.locator('.app-header__title')).toHaveText('Dueños');
-    await expect(page.getByTestId('contador-duenos')).toContainText(/Mostrando \d+ dueños?/);
+    await expect(page.getByTestId('contador-duenos')).toContainText(/Mostrando (\d+ de )?\d+ dueños?/);
     await expect(page.getByTestId('filtros-duenos').getByRole('button')).toHaveText(['Todos', 'Suspendidos', 'Bloqueados', 'Inactivos']);
     await sinScrollHorizontal(page);
   });
@@ -151,6 +151,7 @@ test.describe('Fase 5, S3 (UI B): lista de Dueños y hojas de suspender y levant
     await expect(page.getByTestId(`dueno-item-${bloqueado.duenoId}`).getByTestId('estado-dueno')).toHaveText('Bloqueado');
     await expect(page.getByTestId(`dueno-item-${suspendido.duenoId}`)).toHaveCount(0);
     await page.getByTestId('filtro-duenos-todos').click();
+    await buscar(page, activo.email);
     await expect(page.getByTestId(`dueno-item-${activo.duenoId}`)).toBeVisible();
 
     await buscar(page, 'admin@bajonea.ar');

@@ -85,6 +85,19 @@ p {
   margin: 0;
 }
 
+.saludo {
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.saludo__nombre {
+  display: inline-block;
+  max-width: calc(100% - 9ch);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -1948,6 +1961,11 @@ img {
   width: 14px;
   height: 14px;
   flex-shrink: 0;
+}
+
+.request-card__rows .comercio-info__row > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .comercio-description {
@@ -9436,6 +9454,10 @@ button.panel-comercios__fila:focus-visible {
   margin-bottom: 8px;
 }
 
+.sonido-avisos__estado {
+  display: none;
+}
+
 .sonido-avisos__ayuda {
   display: flex;
   align-items: center;
@@ -10312,4 +10334,116 @@ a.profile-link {
   content: '';
   position: absolute;
   inset: -14px -10px;
+}
+
+.barra-cliente,
+.product-row__agregar,
+.checkout-titulo,
+.checkout-resumen,
+.checkout-volver,
+.notification-item__estado,
+.notification-cabecera {
+  display: none;
+}
+
+.comercio-ficha {
+  display: contents;
+}
+
+.sep-b-10 {
+  margin-bottom: 10px;
+}
+
+.sep-b-12 {
+  margin-bottom: 12px;
+}
+
+.sep-b-16 {
+  margin-bottom: 16px;
+}
+
+.sep-b-20 {
+  margin-bottom: 20px;
+}
+
+.sep-b-24 {
+  margin-bottom: 24px;
+}
+
+.sep-b-6 {
+  margin-bottom: 6px;
+}
+
+.sep-t-10 {
+  margin-top: 10px;
+}
+
+.sep-t-12 {
+  margin-top: 12px;
+}
+
+.sep-t-16 {
+  margin-top: 16px;
+}
+
+.sep-t-18 {
+  margin-top: 18px;
+}
+
+.sep-t-20 {
+  margin-top: 20px;
+}
+
+.sep-t-24 {
+  margin-top: 24px;
+}
+
+.sep-t-neg-4 {
+  margin-top: -4px;
+}
+
+.sep-t-8 {
+  margin-top: 8px;
+}
+
+.ancho-completo {
+  width: 100%;
+}
+
+.screen-body--sin-pie {
+  padding-bottom: 0;
+}
+
+.screen-body--sin-bordes-v {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.chip-row--ajustado {
+  padding-top: 5px;
+}
+
+.profile-header__avatar--accion {
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.top-bar__action--carrito {
+  position: relative;
+  color: var(--color-primary);
+}
+
+.info-box--columna {
+  flex-direction: column;
+  gap: 10px;
+}
+
+.info-box .info-box__titulo {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+[role='dialog'][tabindex='-1']:focus {
+  outline: none;
 }

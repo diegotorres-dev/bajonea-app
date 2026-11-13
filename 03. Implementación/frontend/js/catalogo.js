@@ -1,6 +1,10 @@
+import { pintarSaludo } from './saludo.js';
 import { apiFetch, ApiError, consumirToastPendiente, esContextoComercio, getUsuario, mostrarModalCuentaBloqueada } from './api.js';
 import { exigirContextoCliente } from './contexto.js';
-import { pintarImagen, urlImagen } from './imagenes.js';
+import { pintarImagen, pintarImagenResponsiva, urlImagen } from './imagenes.js';
+import { enEscritorio } from './escritorio.js';
+import { montarBarraClienteEnEscritorio, suscribirAvisosCliente } from './cliente-escritorio.js';
+import { activarHoja } from './hoja.js';
 import { resolverHomePorRol, LABELS_TIPO_COMERCIO } from './auth.js';
 import { contarNotificacionesNoLeidasActivo, resolverComercioActivo, suscribirComercios } from './comercio-activo.js';
 import { normalizarCampos, excedeSubtotalMaximo, mensajeSubtotalMaximoExcedido } from './validators.js';
@@ -178,8 +182,7 @@ async function cargarBadgeNotificaciones(bellLink) {
     resolverComercioActivo().then(() => pintarBadgeDueno(bellLink)).catch(() => {});
     return;
   }
-  async function consultar(opciones) {
-    const contador = await apiFetch('/notificaciones/no-leidas/contador', opciones);
+  suscribirAvisosCliente((contador) => {
     bellLink.querySelectorAll('.top-bar__badge-dot').forEach((el) => el.remove());
     if (contador > 0) {
       const dot = crear('span', 'top-bar__badge-dot');
@@ -187,18 +190,7 @@ async function cargarBadgeNotificaciones(bellLink) {
       dot.textContent = contador > 9 ? '9+' : String(contador);
       bellLink.appendChild(dot);
     }
-    vigilarAvisos('cliente', contador);
-  }
-  try {
-    await consultar();
-  } catch {
-  }
-  const intervalo = window.setInterval(() => {
-    if (!document.hidden && document.contains(bellLink)) {
-      consultar({ segundoPlano: true }).catch(() => {});
-    }
-  }, INTERVALO_CAMPANA_CLIENTE_MS);
-  window.addEventListener('pagehide', () => window.clearInterval(intervalo));
+  });
 }
 
 export function renderTopBar(container, { mostrarVolver = false, titulo = null, mostrarPerfil = true, mostrarCampana = true, centrarLogo = false, accion = null, destinoVolver = null } = {}) {
@@ -276,8 +268,7 @@ export function crearAccionCarritoHeader() {
   link.href = 'carrito.html';
   link.className = 'top-bar__action';
   link.id = 'header-carrito-link';
-  link.style.position = 'relative';
-  link.style.color = 'var(--color-primary)';
+  link.classList.add('top-bar__action--carrito');
   link.setAttribute('data-testid', 'btn-carrito-header');
   link.innerHTML = ICONS.cart;
   const badge = crear('span', 'top-bar__badge-dot');
@@ -288,7 +279,18 @@ export function crearAccionCarritoHeader() {
   return link;
 }
 
-export async function actualizarContadorCarrito() {
+let consultaCarritoEnVuelo = null;
+
+export function actualizarContadorCarrito() {
+  if (!consultaCarritoEnVuelo) {
+    consultaCarritoEnVuelo = actualizarContadorCarritoSinAgrupar().finally(() => {
+      consultaCarritoEnVuelo = null;
+    });
+  }
+  return consultaCarritoEnVuelo;
+}
+
+async function actualizarContadorCarritoSinAgrupar() {
   const usuario = getUsuario();
   let cantidad = 0;
   if (usuario && usuario.rol === 'CLIENTE') {
@@ -305,6 +307,16 @@ export async function actualizarContadorCarrito() {
     badgeHeader.textContent = textoContador;
   }
 
+  const badgeBarra = document.getElementById('barra-carrito-badge');
+  if (badgeBarra) {
+    badgeBarra.textContent = textoContador;
+    badgeBarra.hidden = cantidad <= 0;
+    const enlaceBarra = badgeBarra.closest('a');
+    if (enlaceBarra) {
+      enlaceBarra.setAttribute('aria-label', cantidad > 0 ? `Carrito, ${cantidad} ${cantidad === 1 ? 'producto' : 'productos'}` : 'Carrito');
+    }
+  }
+
   const linkFooterCarrito = document.querySelector('.bottom-nav__item[data-testid="btn-nav-carrito"] .bottom-nav__icon-wrap');
   if (linkFooterCarrito) {
     linkFooterCarrito.querySelectorAll('.top-bar__badge-dot').forEach((el) => el.remove());
@@ -319,7 +331,9 @@ export async function actualizarContadorCarrito() {
 
 async function cargarAvatarFooter(link) {
   try {
-    const cliente = await apiFetch('/clientes/perfil');
+    const sesion = getUsuario();
+    const sesionCompleta = Boolean(sesion) && typeof sesion.nombre === 'string' && sesion.nombre.trim() !== '' && 'fotoPerfilUrl' in sesion;
+    const cliente = sesionCompleta ? sesion : await apiFetch('/clientes/perfil');
     normalizarCampos(cliente, ['nombre']);
     const inicial = (cliente.nombre || '?').trim().charAt(0).toUpperCase();
     const avatar = crear('div', 'bottom-nav__avatar');
@@ -450,11 +464,15 @@ export function crearBloqueMotivoRechazo({ titulo, motivo, testid }) {
   return bloque;
 }
 
-export function pintarAvatarComercio(container, comercio) {
+export function pintarAvatarComercio(container, comercio, { portada = false } = {}) {
   container.innerHTML = '';
   if (comercio.fotoPerfilUrl) {
     const img = document.createElement('img');
-    pintarImagen(img, comercio.fotoPerfilUrl, { uso: 'avatar' });
+    if (portada) {
+      pintarImagenResponsiva(img, comercio.fotoPerfilUrl, { uso: 'avatar', usoGrande: 'tarjeta', tamanos: '(min-width: 1024px) 300px, 72px' });
+    } else {
+      pintarImagen(img, comercio.fotoPerfilUrl, { uso: 'avatar' });
+    }
     img.alt = '';
     container.appendChild(img);
   } else {
@@ -489,7 +507,7 @@ export function renderComercioCard(comercio) {
   card.dataset.apertura = comercio.estadoApertura;
 
   const avatar = crear('div', 'comercio-card__avatar');
-  pintarAvatarComercio(avatar, comercio);
+  pintarAvatarComercio(avatar, comercio, { portada: true });
   card.appendChild(avatar);
 
   const body = crear('div', 'comercio-card__body');
@@ -556,7 +574,7 @@ export function renderEmptyState(container, titulo, texto, { textoBoton, hrefBot
   if (textoBoton && hrefBoton) {
     const boton = document.createElement('a');
     boton.className = 'btn btn-primary';
-    boton.style.marginTop = '16px';
+    boton.classList.add('sep-t-16');
     boton.href = hrefBoton;
     boton.setAttribute('data-testid', 'btn-estado-vacio-accion');
     boton.textContent = textoBoton;
@@ -579,6 +597,7 @@ export async function initCatalogo() {
 
   const topBarSlot = document.getElementById('top-bar-slot');
   renderTopBar(topBarSlot, { mostrarPerfil: false, centrarLogo: true });
+  montarBarraClienteEnEscritorio({ activo: 'inicio' });
 
   const listContainer = document.getElementById('comercio-list');
   mostrarEsqueleto(listContainer, 'comercios');
@@ -586,16 +605,8 @@ export async function initCatalogo() {
   const greetingTitle = document.getElementById('greeting-title');
   const greetingSubtitle = document.getElementById('greeting-subtitle');
   if (usuario) {
-    greetingTitle.textContent = 'Hola 👋';
+    pintarSaludo(greetingTitle);
     greetingSubtitle.textContent = '¿Qué comemos hoy?';
-    if (usuario.rol === 'CLIENTE') {
-      try {
-        const cliente = await apiFetch('/clientes/perfil');
-        normalizarCampos(cliente, ['nombre']);
-        greetingTitle.textContent = `Hola, ${cliente.nombre} 👋`;
-      } catch {
-      }
-    }
   } else {
     greetingTitle.textContent = 'Iniciá sesión para bajonear ;)';
     greetingSubtitle.textContent = '';
@@ -692,11 +703,16 @@ function renderProductoRow(producto, onOpen) {
   const principal = producto.imagenes.find((imagen) => imagen.esPrincipal) || producto.imagenes[0];
   if (principal) {
     const img = document.createElement('img');
-    pintarImagen(img, principal.url, { uso: 'miniatura', diferida: true });
+    pintarImagenResponsiva(img, principal.url, { uso: 'miniatura', usoGrande: 'tarjeta', tamanos: '(min-width: 1024px) 300px, 80px', diferida: true });
     img.alt = '';
     thumbWrapper.appendChild(img);
   }
   row.appendChild(thumbWrapper);
+
+  const agregar = crear('span', 'product-row__agregar');
+  agregar.setAttribute('aria-hidden', 'true');
+  agregar.textContent = producto.estado === 'AGOTADO' ? 'Agotado' : 'Ver y agregar';
+  row.appendChild(agregar);
 
   return row;
 }
@@ -726,19 +742,17 @@ function abrirZoomImagen(url) {
   closeBtn.type = 'button';
   closeBtn.setAttribute('data-testid', 'btn-cerrar-zoom-producto');
   closeBtn.innerHTML = ICONS.close;
-  closeBtn.addEventListener('click', () => backdrop.remove());
   backdrop.appendChild(closeBtn);
+  backdrop.setAttribute('role', 'dialog');
+  backdrop.setAttribute('aria-label', 'Foto ampliada del producto');
 
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
-  });
-
-  document.body.appendChild(backdrop);
+  const control = activarHoja({ fondo: backdrop, hoja: backdrop, inicial: closeBtn });
+  closeBtn.addEventListener('click', () => control.cerrar());
 }
 
 function abrirModalProducto(producto) {
+  let controlHoja = null;
+  const cerrarModal = () => (controlHoja ? controlHoja.cerrar() : backdrop.remove());
   const backdrop = crear('div', 'modal-backdrop');
   backdrop.id = 'product-modal-backdrop';
   backdrop.setAttribute('data-testid', 'modal-detalle-producto');
@@ -765,7 +779,7 @@ function abrirModalProducto(producto) {
     closeBtn.type = 'button';
     closeBtn.setAttribute('data-testid', 'btn-cerrar-modal-producto');
     closeBtn.innerHTML = ICONS.close;
-    closeBtn.addEventListener('click', () => backdrop.remove());
+    closeBtn.addEventListener('click', () => cerrarModal());
     main.appendChild(closeBtn);
 
     const zoomBtn = crear('button', 'gallery-zoom-btn');
@@ -810,7 +824,7 @@ function abrirModalProducto(producto) {
     closeBtn.type = 'button';
     closeBtn.setAttribute('data-testid', 'btn-cerrar-modal-producto');
     closeBtn.innerHTML = ICONS.close;
-    closeBtn.addEventListener('click', () => backdrop.remove());
+    closeBtn.addEventListener('click', () => cerrarModal());
     gallery.appendChild(closeBtn);
 
     const zoomBtn = crear('button', 'gallery-zoom-btn');
@@ -843,7 +857,7 @@ function abrirModalProducto(producto) {
   }
 
   const pills = crear('div', 'pill-row');
-  pills.style.marginBottom = '16px';
+  pills.classList.add('sep-b-16');
   const categoriaPill = crear('span', 'pill');
   categoriaPill.textContent = producto.nombreCategoria;
   pills.appendChild(categoriaPill);
@@ -895,7 +909,7 @@ function abrirModalProducto(producto) {
       body.appendChild(quantityRow);
 
       const notaField = crear('div', 'field');
-      notaField.style.marginTop = '12px';
+      notaField.classList.add('sep-t-12');
       const notaLabel = document.createElement('label');
       notaLabel.className = 'field__label';
       notaLabel.textContent = 'Nota (opcional)';
@@ -914,7 +928,7 @@ function abrirModalProducto(producto) {
 
       const addBtn = crear('button', 'btn btn-primary');
       addBtn.type = 'button';
-      addBtn.style.marginTop = '18px';
+      addBtn.classList.add('sep-t-18');
       addBtn.setAttribute('data-testid', 'btn-agregar-carrito');
       addBtn.textContent = `Agregar al carrito - ${formatearPrecio(producto.precio * cantidad)}`;
       body.appendChild(addBtn);
@@ -949,12 +963,12 @@ function abrirModalProducto(producto) {
         addBtn.textContent = 'Agregando...';
         try {
           await agregarAlCarrito(producto, cantidad, notaInput.value.trim());
-          backdrop.remove();
+          cerrarModal();
           showToast('Producto agregado al carrito');
           actualizarContadorCarrito();
         } catch (error) {
           if (error instanceof ApiError && error.status === 409 && error.message && error.message.includes('otro comercio')) {
-            backdrop.remove();
+            cerrarModal();
             await mostrarModalConflictoComercio(producto, cantidad, notaInput.value.trim());
           } else if (esConflictoDeCierre(error)) {
             addBtn.replaceWith(crearAvisoCierre(error.message));
@@ -981,11 +995,15 @@ function abrirModalProducto(producto) {
 
   backdrop.addEventListener('click', (event) => {
     if (event.target === backdrop) {
-      backdrop.remove();
+      cerrarModal();
     }
   });
 
   document.body.appendChild(backdrop);
+  if (enEscritorio()) {
+    sheet.setAttribute('aria-label', producto.nombre);
+    controlHoja = activarHoja({ fondo: backdrop, hoja: sheet, disparador: document.activeElement });
+  }
 }
 
 async function agregarAlCarrito(producto, cantidad, nota) {
@@ -996,6 +1014,7 @@ async function agregarAlCarrito(producto, cantidad, nota) {
 }
 
 async function mostrarModalConflictoComercio(producto, cantidad, nota) {
+  let control = null;
   const carritoActual = await apiFetch('/carrito');
   normalizarCampos(carritoActual, ['nombreComercio']);
 
@@ -1018,7 +1037,7 @@ async function mostrarModalConflictoComercio(producto, cantidad, nota) {
   sheet.appendChild(text);
 
   const actualCard = crear('div', 'conflict-card');
-  actualCard.style.marginBottom = '10px';
+  actualCard.classList.add('sep-b-10');
   const actualIcon = crear('div', 'conflict-card__icon');
   actualIcon.innerHTML = ICONS.bag;
   actualCard.appendChild(actualIcon);
@@ -1036,7 +1055,7 @@ async function mostrarModalConflictoComercio(producto, cantidad, nota) {
   sheet.appendChild(actualCard);
 
   const nuevoCard = crear('div', 'conflict-card conflict-card--new');
-  nuevoCard.style.marginBottom = '24px';
+  nuevoCard.classList.add('sep-b-24');
   const nuevoIcon = crear('div', 'conflict-card__icon');
   nuevoIcon.innerHTML = ICONS.bag;
   nuevoCard.appendChild(nuevoIcon);
@@ -1055,7 +1074,7 @@ async function mostrarModalConflictoComercio(producto, cantidad, nota) {
 
   const confirmBtn = crear('button', 'btn btn-primary');
   confirmBtn.type = 'button';
-  confirmBtn.style.marginBottom = '12px';
+  confirmBtn.classList.add('sep-b-12');
   confirmBtn.setAttribute('data-testid', 'btn-vaciar-y-agregar');
   confirmBtn.textContent = 'Vaciar carrito y agregar';
   sheet.appendChild(confirmBtn);
@@ -1068,12 +1087,7 @@ async function mostrarModalConflictoComercio(producto, cantidad, nota) {
 
   backdrop.appendChild(sheet);
 
-  cancelBtn.addEventListener('click', () => backdrop.remove());
-  backdrop.addEventListener('click', (event) => {
-    if (event.target === backdrop) {
-      backdrop.remove();
-    }
-  });
+  cancelBtn.addEventListener('click', () => control.cerrar());
 
   confirmBtn.addEventListener('click', async () => {
     confirmBtn.disabled = true;
@@ -1081,7 +1095,7 @@ async function mostrarModalConflictoComercio(producto, cantidad, nota) {
     try {
       await apiFetch('/carrito', { method: 'DELETE' });
       await agregarAlCarrito(producto, cantidad, nota);
-      backdrop.remove();
+      control.cerrar();
       showToast('Producto agregado al carrito');
       actualizarContadorCarrito();
     } catch (error) {
@@ -1091,7 +1105,7 @@ async function mostrarModalConflictoComercio(producto, cantidad, nota) {
     }
   });
 
-  document.body.appendChild(backdrop);
+  control = activarHoja({ fondo: backdrop, hoja: sheet, ocupada: () => confirmBtn.disabled });
 }
 
 export async function initComercioDetalle() {
@@ -1102,9 +1116,11 @@ export async function initComercioDetalle() {
   const comercioId = Number(params.get('id'));
   const topBarSlot = document.getElementById('top-bar-slot');
   const mainContent = document.getElementById('main-content');
+  const destinoVolver = params.get('producto') ? 'explorar.html' : 'index.html';
+  montarBarraClienteEnEscritorio({ activo: null });
 
   if (!comercioId) {
-    renderTopBar(topBarSlot, { mostrarVolver: true, titulo: 'Comercio' });
+    renderTopBar(topBarSlot, { mostrarVolver: true, titulo: 'Comercio', destinoVolver });
     renderEmptyState(mainContent, 'Comercio no encontrado', 'El enlace que seguiste no es válido.');
     return;
   }
@@ -1117,14 +1133,14 @@ export async function initComercioDetalle() {
   const comercio = comercios.find((c) => c.id === comercioId);
 
   if (!comercio) {
-    renderTopBar(topBarSlot, { mostrarVolver: true, titulo: 'Comercio' });
+    renderTopBar(topBarSlot, { mostrarVolver: true, titulo: 'Comercio', destinoVolver });
     renderEmptyState(mainContent, 'Comercio no encontrado', 'Este comercio no está disponible en este momento.');
     return;
   }
 
   const usuarioActual = getUsuario();
   const accionCarrito = usuarioActual && usuarioActual.rol === 'CLIENTE' ? crearAccionCarritoHeader() : null;
-  renderTopBar(topBarSlot, { mostrarVolver: true, titulo: comercio.nombre, accion: accionCarrito });
+  renderTopBar(topBarSlot, { mostrarVolver: true, titulo: comercio.nombre, accion: accionCarrito, destinoVolver });
   if (accionCarrito) {
     actualizarContadorCarrito();
     window.addEventListener('pageshow', (event) => {
@@ -1134,7 +1150,7 @@ export async function initComercioDetalle() {
     });
   }
 
-  pintarAvatarComercio(document.getElementById('comercio-hero').parentElement, comercio);
+  pintarAvatarComercio(document.getElementById('comercio-hero').parentElement, comercio, { portada: true });
 
   document.getElementById('comercio-nombre').textContent = comercio.nombre;
 
@@ -1172,7 +1188,7 @@ export async function initComercioDetalle() {
   }
 
   const pills = crear('div', 'pill-row');
-  pills.style.marginTop = '10px';
+  pills.classList.add('sep-t-10');
   if (comercio.aceptaDelivery) {
     const pill = crear('span', 'pill');
     pill.innerHTML = `${ICONS.truck}<span>Delivery</span>`;

@@ -570,3 +570,25 @@ Los specs `126` a `130` usan estos y los existentes.
 | `tarifa-formulario`, `comparacion-tarifa` | `admin-tarifas.html` | Formulario en línea (escritorio) y comparación "Antes → Ahora" de la hoja de confirmación (móvil y escritorio) |
 
 Los specs `131` a `135` usan estos y los existentes.
+
+## Tramo B1: nombre de pila en el login (2026-11-12)
+
+| `data-testid` | Dónde | Qué es |
+|---|---|---|
+| `saludo-nombre` | `index.html` y `comercio-dashboard.html` | `span` con el nombre de pila dentro del saludo `mensaje-saludo` (con `title` igual al nombre completo; solo existe si la sesión tiene nombre) |
+
+`persona-lateral-nombre` (pie de la barra lateral de escritorio) ahora toma el nombre de la sesión y suma el atributo `title` con el nombre completo. Los specs `136` y `137` usan estos y los existentes.
+
+## Tramo E3 (Cliente en escritorio)
+
+Barra superior (solo escritorio): `barra-cliente`, `barra-logo`, `barra-enlace-inicio`, `barra-enlace-explorar`, `barra-enlace-pedidos`, `barra-buscador`, `barra-buscador-input`, `barra-carrito`, `barra-contador-carrito`, `barra-avisos`, `barra-punto-avisos`, `barra-avatar`, `barra-avatar-imagen`, `barra-menu`, `barra-menu-perfil`, `barra-menu-direcciones`, `barra-menu-consultas`, `barra-menu-cambiar-cuenta`, `barra-menu-cerrar-sesion` y `barra-ingresar` (sin sesión). Se eligieron nombres propios para no repetir los de la barra inferior móvil (`btn-nav-*`) ni los de la campana de la cabecera móvil.
+
+Checkout: `checkout-resumen` (la columna de la derecha), `resumen-subtotal`, `resumen-cargo-servicio`, `resumen-total`, `btn-resumen-accion` (el botón principal del resumen, que replica el del paso) y `btn-checkout-volver` (el «Volver» de escritorio, junto al botón principal de cada paso).
+
+Mis pedidos (escritorio): `lista-pedidos-escritorio`, `detalle-pedido-escritorio`, `pedidos-elegi-uno` (panel sin selección o con un pedido inexistente), `pedidos-filtro-vacio`, `filtros-pedidos` y `filtro-pedidos-todos|en-curso|entregados|cancelados`. La tarjeta de la lista conserva `pedido-item-{id}` y suma `aria-current="true"` cuando está elegida.
+
+Avisos: `notificacion-estado-tabla-{id}` («Sin leer» o «Leído»). Perfil: los enlaces del menú conservan sus `data-testid` (`btn-editar-datos`, `btn-mis-direcciones`, `btn-cambiar-password`, `btn-mis-consultas`, `btn-cerrar-sesion`) y el de la sección activa lleva `aria-current="true"`.
+
+## Tramo E4 (pulido final del escritorio)
+
+`btn-saltar-contenido` (el botón «Saltar al contenido», primer elemento enfocable del `<body>` en las páginas con barra lateral o superior; solo se ve en escritorio y con foco). `sonido-avisos-estado` (el texto «Sonido activado» o «Sonido desactivado» dentro del botón único del panel del comercio; `switch-sonido-avisos`, `btn-activar-sonido` y `ayuda-sonido-bloqueado` no cambian). `btn-ver-mas-duenos` y `duenos-pie` (paginación de Dueños). `encabezado-reclamos` (encabezado de la tabla de Reclamos; la fila conserva `reclamo-item-{id}` y sus cuatro hijos `reclamo-item-titulo`, `reclamo-item-estado`, `reclamo-item-comercio` y `reclamo-item-hace`). `panel-legal` y `panel-legal-terminos|privacidad|faq` ahora están en `nav.acceso-legal`, al pie de la columna blanca, y no dentro de `panel-marca`.
