@@ -114,6 +114,8 @@ export async function initCheckout() {
   let montosActualizados = false;
   let direcciones = [];
   let direccionElegida = null;
+  let avanzarAlElegir = false;
+  let modalidadUnica = false;
 
   function mostrarPaso(index) {
     steps.forEach((step, i) => step.classList.toggle('is-hidden', i !== index));
@@ -123,6 +125,7 @@ export async function initCheckout() {
     currentStep = index;
     backBtn.style.visibility = index === 3 ? 'hidden' : 'visible';
     volverEscritorio.hidden = index === 3;
+    document.getElementById('continuar-modalidad-btn').classList.toggle('is-hidden', index !== 0 || !tipoEntregaSeleccionado);
     pintarResumen();
     renderBanner(bannerSlot, 'info', '');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -158,6 +161,7 @@ export async function initCheckout() {
       return;
     }
     const boton = botonPrincipalDelPaso();
+    accionResumen.classList.toggle('is-hidden', !boton);
     accionResumen.disabled = !boton || boton.disabled;
     accionResumen.textContent = boton ? boton.textContent : 'Continuar';
   }
@@ -196,7 +200,7 @@ export async function initCheckout() {
     if (currentStep === 3) {
       return;
     }
-    if (currentStep > 0) {
+    if (currentStep > (modalidadUnica ? 1 : 0)) {
       mostrarPaso(currentStep - 1);
     } else {
       window.location.href = 'carrito.html';
@@ -261,6 +265,9 @@ export async function initCheckout() {
       opcionesContainer.querySelectorAll('.delivery-option').forEach((el) => el.setAttribute('aria-pressed', 'false'));
       btn.setAttribute('aria-pressed', 'true');
       continuarBtn.disabled = false;
+      if (avanzarAlElegir) {
+        continuarBtn.click();
+      }
     });
     return btn;
   }
@@ -279,6 +286,7 @@ export async function initCheckout() {
   if (!comercio.aceptaDelivery && !comercio.aceptaRetiro) {
     renderBanner(bannerSlot, 'error', 'Este comercio no tiene modalidades de entrega disponibles en este momento.');
   } else if (opcionesContainer.children.length === 1) {
+    modalidadUnica = true;
     opcionesContainer.children[0].click();
   }
 
@@ -505,7 +513,9 @@ export async function initCheckout() {
     editBtn.setAttribute('data-testid', 'btn-editar-modalidad');
     editBtn.textContent = 'Editar';
     editBtn.addEventListener('click', () => mostrarPaso(0));
-    modalidadCard.appendChild(editBtn);
+    if (!modalidadUnica) {
+      modalidadCard.appendChild(editBtn);
+    }
     step3Content.appendChild(modalidadCard);
 
     const desglose = crear('div', 'section-heading');
@@ -703,5 +713,10 @@ export async function initCheckout() {
       direccionElegida = pendiente.direccionId ? { id: pendiente.direccionId } : null;
       continuarBtn.click();
     }
+  }
+
+  avanzarAlElegir = true;
+  if (modalidadUnica && currentStep === 0 && tipoEntregaSeleccionado) {
+    continuarBtn.click();
   }
 }

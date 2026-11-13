@@ -153,6 +153,9 @@ export async function initExplorar() {
   const chipRowTags = document.getElementById('chip-row-tags');
   const listContainer = document.getElementById('producto-list');
   const paginationSlot = document.getElementById('pagination-slot');
+  const limpiarBusquedaBtn = document.getElementById('btn-limpiar-busqueda');
+  const limpiarFiltrosBtn = document.getElementById('btn-limpiar-filtros');
+  const contadorEl = document.getElementById('explorar-contador');
 
   mostrarEsqueleto(listContainer, 'productos');
   const filtros = await apiFetch('/catalogo/filtros', { auth: false });
@@ -164,6 +167,20 @@ export async function initExplorar() {
   let paginaActual = 1;
   let busquedaTimeoutId = null;
   let solicitudActual = 0;
+
+  function hayFiltrosActivos() {
+    return Boolean(busqueda) || categoriaActiva !== null || tagsActivos.size > 0;
+  }
+
+  function actualizarResumen(total) {
+    if (total === null) {
+      contadorEl.textContent = '';
+    } else {
+      contadorEl.textContent = total === 1 ? '1 resultado' : `${total} resultados`;
+    }
+    limpiarFiltrosBtn.classList.toggle('is-hidden', !hayFiltrosActivos());
+    limpiarBusquedaBtn.classList.toggle('is-hidden', buscadorInput.value === '');
+  }
 
   async function cargarYPintar() {
     const solicitudId = ++solicitudActual;
@@ -183,12 +200,11 @@ export async function initExplorar() {
 
     listContainer.innerHTML = '';
     paginationSlot.innerHTML = '';
-
-    const hayFiltrosActivos = busqueda || categoriaActiva !== null || tagsActivos.size > 0;
+    actualizarResumen(resultado.totalProductos);
 
     if (resultado.totalProductos === 0) {
-      const titulo = hayFiltrosActivos ? 'Sin resultados' : 'Todavía no hay productos disponibles';
-      const texto = hayFiltrosActivos
+      const titulo = hayFiltrosActivos() ? 'Sin resultados' : 'Todavía no hay productos disponibles';
+      const texto = hayFiltrosActivos()
         ? 'Probá con otro filtro o con otra búsqueda para ver más productos.'
         : 'Estamos incorporando negocios locales en Tierra del Fuego. Volvé a revisar pronto.';
       renderEmptyState(listContainer, titulo, texto);
@@ -260,7 +276,36 @@ export async function initExplorar() {
     });
   }
 
+  function limpiarFiltros() {
+    clearTimeout(busquedaTimeoutId);
+    buscadorInput.value = '';
+    busqueda = '';
+    categoriaActiva = null;
+    tagsActivos.clear();
+    paginaActual = 1;
+    pintarChipsCategorias();
+    pintarChipsTags();
+    actualizarResumen(null);
+    cargarYPintar();
+  }
+
+  limpiarFiltrosBtn.addEventListener('click', () => {
+    limpiarFiltros();
+    buscadorInput.focus();
+  });
+
+  limpiarBusquedaBtn.addEventListener('click', () => {
+    clearTimeout(busquedaTimeoutId);
+    buscadorInput.value = '';
+    busqueda = '';
+    paginaActual = 1;
+    actualizarResumen(null);
+    cargarYPintar();
+    buscadorInput.focus();
+  });
+
   buscadorInput.addEventListener('input', () => {
+    limpiarBusquedaBtn.classList.toggle('is-hidden', buscadorInput.value === '');
     clearTimeout(busquedaTimeoutId);
     busquedaTimeoutId = setTimeout(() => {
       busqueda = buscadorInput.value.trim().toLowerCase();
@@ -270,6 +315,7 @@ export async function initExplorar() {
   });
 
   buscadorInput.value = busquedaInicial;
+  limpiarBusquedaBtn.classList.toggle('is-hidden', busquedaInicial === '');
   pintarChipsCategorias();
   pintarChipsTags();
   await cargarYPintar();

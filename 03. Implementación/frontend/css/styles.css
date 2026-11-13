@@ -138,7 +138,6 @@ img {
     border-radius: 24px;
     box-shadow: var(--shadow-card);
     overflow: hidden;
-    overflow: clip;
   }
 }
 
@@ -10446,4 +10445,32 @@ a.profile-link {
 
 [role='dialog'][tabindex='-1']:focus {
   outline: none;
+}
+
+.explorar-resumen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+}
+
+.explorar-resumen__contador {
+  margin: 0;
+}
+
+.explorar-resumen__limpiar {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.explorar-resumen__limpiar.is-hidden {
+  display: none;
 }

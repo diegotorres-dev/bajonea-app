@@ -109,7 +109,6 @@ test.describe('Fase 3 (UI): direcciones múltiples del Cliente, entrega B', () =
     await abrirComoCliente(page, cuenta);
     await page.goto('/checkout.html');
     await page.getByTestId('btn-modalidad-domicilio').click();
-    await page.getByTestId('btn-continuar-modalidad').click();
     await expect(page.getByTestId('radiogroup-direcciones')).toBeVisible();
   }
 
@@ -646,7 +645,6 @@ test.describe('Fase 3 (UI): direcciones múltiples del Cliente, entrega B', () =
     await abrirComoCliente(page, cuenta);
     await page.goto('/checkout.html');
     await page.getByTestId('btn-modalidad-domicilio').click();
-    await page.getByTestId('btn-continuar-modalidad').click();
 
     await expect(page.getByText('No tenés una dirección registrada')).toBeVisible();
     await expect(page.getByTestId('btn-agregar-primera-direccion')).toBeVisible();

@@ -237,3 +237,17 @@ El A01 (navegación del Administrador) es severidad 3 pero costo L: queda dentro
 - Bloque 4 completo (Comercio: 5 hallazgos).
 - Bloque 5 completo (Administrador: 5 hallazgos).
 - Bloque 6 completo (este documento).
+
+## Estado de los hallazgos de acceso y checkout tras el tramo E5 (2026-11-13)
+
+| Id | Estado | Nota |
+|---|---|---|
+| P01 | Resuelto | Confirmación de descarte y aviso del navegador en los registros de Cliente y de Comercio (`js/descarte.js`). |
+| P02 | Resuelto | El splash redirige de inmediato con sesión; sin sesión conserva los 900 ms. |
+| P03 | Resuelto en parte | El texto dice que el código vence y que se puede pedir uno nuevo, sin cifra: el frontend no conoce el valor de vencimiento del backend. Espera de 30 s entre reenvíos. |
+| P04 | Resuelto | «Volver al inicio» resuelve el destino por rol en las cinco páginas de error. `index.html` no redirige por rol (el destino lo calcula `js/errores.js`). |
+| C04 | Resuelto | `aria-label`, botón de borrar, contador y «Limpiar filtros». Las filas de chips con scroll horizontal no se tocaron. |
+| C05 | Resuelto | Tocar la modalidad avanza; con una sola modalidad se saltea el paso. |
+| C06 | Abierto | Pide un endpoint de avisos personales (fuera de alcance: no hay cambios de backend). |
+
+Detalle en `docs/MAPEO-ARCHIVOS-TRAMO-E5.md`.

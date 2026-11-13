@@ -33,6 +33,7 @@ import {
 } from './validators.js';
 import { montarFormularioCliente } from './cliente-form.js';
 import { montarPasosLaterales, enlazarPasoAtras } from './pasos-laterales.js';
+import { protegerDescarte } from './descarte.js';
 import { renderBanner, renderBannerTexto, bindPasswordToggle, setLoading, construirTelefono, bindNombreUsuario, montarTerminos, validarTerminos, MENSAJE_NOMBRE_USUARIO_EN_USO, MENSAJE_NOMBRE_COMERCIO_EN_USO } from './form-utils.js';
 
 export { LABELS_TIPO_SOCIEDAD, LABELS_CONDICION_IVA, LABELS_TIPO_COMERCIO, LABELS_TIPO_RED_SOCIAL } from './comercio-form.js';
@@ -252,11 +253,13 @@ export function initLogin() {
 }
 
 export function initRegistroCliente() {
+  const descarte = protegerDescarte(document.getElementById('registro-cliente-main'));
   const formulario = montarFormularioCliente(document.getElementById('registro-cliente-main'), {
     antesDe: document.getElementById('exito-container'),
     accionCancelar: { href: 'registro-tipo-cuenta.html' },
     onEnviar: async (payload) => {
       await apiFetch('/auth/registro/cliente', { method: 'POST', auth: false, body: payload });
+      descarte.desactivar();
       document.getElementById('ir-a-verificar-link').href = `verificar-email.html?email=${encodeURIComponent(payload.email)}`;
       formulario.ocultar();
       document.getElementById('exito-container').classList.remove('is-hidden');
@@ -268,7 +271,7 @@ export function initRegistroCliente() {
     if (formulario.pasoActual() === 1) {
       formulario.mostrarPaso(0);
     } else {
-      history.back();
+      descarte.confirmar(() => history.back());
     }
   });
 }
@@ -300,11 +303,13 @@ export function initRegistroComercio() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  const descarte = protegerDescarte(document.getElementById('wizard-container'));
+
   document.getElementById('back-btn').addEventListener('click', () => {
     if (currentStep > 0) {
       mostrarPaso(currentStep - 1);
     } else {
-      history.back();
+      descarte.confirmar(() => history.back());
     }
   });
   montarPasosLaterales(document.getElementById('step-progress-container'));
@@ -429,6 +434,7 @@ export function initRegistroComercio() {
     };
     try {
       await apiFetch('/auth/registro/comercio', { method: 'POST', auth: false, body: payload });
+      descarte.desactivar();
       document.getElementById('ir-a-verificar-link').href = `verificar-email.html?email=${encodeURIComponent(payload.email)}`;
       document.getElementById('wizard-container').classList.add('is-hidden');
       document.getElementById('exito-container').classList.remove('is-hidden');
@@ -490,10 +496,10 @@ export function initVerificarEmail() {
 
   if (pideEmail) {
     emailFieldEl.classList.remove('is-hidden');
-    textoEl.textContent = 'Ingresá el email con el que te registraste y el código de 6 dígitos que te enviamos.';
+    textoEl.textContent = 'Ingresá el email con el que te registraste y el código de 6 dígitos que te enviamos. El código vence: si ya no te sirve, pedí uno nuevo.';
     emailInputEl.addEventListener('input', () => limpiarErrorCampo('error-email-verificacion'));
   } else {
-    textoEl.textContent = `Te enviamos un código de 6 dígitos al email ${emailParam}. Ingresalo acá para activar tu cuenta.`;
+    textoEl.textContent = `Te enviamos un código de 6 dígitos al email ${emailParam}. Ingresalo acá para activar tu cuenta. El código vence: si ya no te sirve, pedí uno nuevo.`;
   }
 
   function obtenerEmail() {
@@ -530,9 +536,36 @@ export function initVerificarEmail() {
       errorEl.classList.add('is-hidden');
       otp.reset();
       renderBanner(bannerSlot, 'info', 'Te enviamos un nuevo código.');
+      iniciarEsperaReenvio();
     } catch (error) {
       renderBanner(bannerSlot, 'error', error instanceof ApiError ? error.message : 'No pudimos reenviar el código. Intentá nuevamente.');
     }
+  }
+
+  const ESPERA_REENVIO_SEGUNDOS = 30;
+  const botonesReenvio = [
+    { boton: reenviarBtn, etiqueta: 'Reenviar código' },
+    { boton: errorReenviarBtn, etiqueta: 'Pedir un código nuevo' },
+  ];
+  let esperaReenvio = null;
+
+  function iniciarEsperaReenvio() {
+    clearInterval(esperaReenvio);
+    let restantes = ESPERA_REENVIO_SEGUNDOS;
+    const pintar = () => {
+      botonesReenvio.forEach(({ boton, etiqueta }) => {
+        boton.disabled = restantes > 0;
+        boton.textContent = restantes > 0 ? `${etiqueta} (${restantes} s)` : etiqueta;
+      });
+    };
+    pintar();
+    esperaReenvio = setInterval(() => {
+      restantes -= 1;
+      pintar();
+      if (restantes <= 0) {
+        clearInterval(esperaReenvio);
+      }
+    }, 1000);
   }
 
   reenviarBtn.addEventListener('click', reenviarCodigo);

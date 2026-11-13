@@ -1694,3 +1694,17 @@ Solo frontend: sin cambios de API, modelo de datos ni reglas de negocio.
 ### Sin cambios en
 
 Contrato de la API, modelo de datos, reglas de negocio, notificaciones y diagramas de casos de uso (no hay casos de uso nuevos).
+
+## Tramo E5: pulido de acceso y checkout (2026-11-13)
+
+Cambios sugeridos a los documentos de análisis (no se editaron `01.` ni `02.`):
+
+1. **Requisitos funcionales y historias de usuario del Cliente:** (a) en el checkout, elegir la modalidad (envío a domicilio o retiro) avanza al paso siguiente sin un botón «Continuar»; si el comercio ofrece una sola modalidad, el paso se omite; (b) en Explorar, el buscador tiene botón para borrar, un contador de resultados y «Limpiar filtros».
+2. **Requisitos de registro (Cliente y Comercio):** si la persona cargó datos y quiere salir del registro, la aplicación le pregunta si descarta lo escrito; el navegador también avisa al cerrar o recargar la pestaña.
+3. **Verificación de cuenta:** la pantalla indica que el código vence y que se puede pedir uno nuevo, y exige una espera corta entre reenvíos (30 segundos, de interfaz).
+4. **Pantallas de error:** «Volver al inicio» lleva al inicio del rol de la persona (panel del Dueño, del Empleado o del Administrador; catálogo del Cliente).
+5. **Pantalla de carga:** con la sesión iniciada no hay espera, se redirige de inmediato.
+
+### Sin cambios en
+
+Contrato de la API, modelo de datos, reglas de negocio, notificaciones y casos de uso.

@@ -498,8 +498,6 @@ test.describe('Cierre manual del comercio (UI), tramo C1', () => {
       await abrirComoUsuario(page, sesion);
       await page.goto('/checkout.html');
 
-      await page.getByTestId('btn-modalidad-retiro').click();
-      await page.getByTestId('btn-continuar-modalidad').click();
       await page.getByTestId('btn-confirmar-retiro').click();
       await expect(page.getByTestId('btn-confirmar-pedido')).toBeVisible();
 
@@ -562,8 +560,6 @@ test.describe('Cierre manual del comercio (UI), tramo C1', () => {
       await agregarItemCarrito(request, sesion.token, productoId, 1);
       await abrirComoUsuario(page, sesion);
       await page.goto('/checkout.html');
-      await page.getByTestId('btn-modalidad-retiro').click();
-      await page.getByTestId('btn-continuar-modalidad').click();
       await page.getByTestId('btn-confirmar-retiro').click();
       await expect(page.getByTestId('btn-confirmar-pedido')).toBeVisible();
 

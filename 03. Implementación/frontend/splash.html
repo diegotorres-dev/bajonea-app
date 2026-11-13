@@ -37,9 +37,13 @@ const destino = (() => {
   return 'index.html';
 })();
 
-setTimeout(() => {
-  window.location.href = destino;
-}, 900);
+if (usuario) {
+  window.location.replace(destino);
+} else {
+  setTimeout(() => {
+    window.location.href = destino;
+  }, 900);
+}
 </script>
 </body>
 </html>

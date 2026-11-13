@@ -1,4 +1,8 @@
 @media (min-width: 1024px) {
+  .app-shell {
+    overflow: clip;
+  }
+
   .modal-backdrop {
     align-items: center;
     padding: var(--space-6);

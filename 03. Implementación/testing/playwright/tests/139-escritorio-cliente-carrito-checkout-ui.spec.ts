@@ -107,19 +107,13 @@ test.describe('Escritorio E3: carrito y checkout en dos columnas @escritorio', (
     const medida = await caja(resumen);
     expect(Math.round(medida.width)).toBe(412 - 32);
     await expect(page.getByTestId('resumen-total')).toHaveText('$16.400');
-    await expect(page.getByTestId('btn-resumen-accion')).toBeDisabled();
+    await expect(page.getByTestId('btn-resumen-accion')).toBeHidden();
 
     await expect(page.getByTestId('btn-modalidad-retiro')).toBeVisible();
     const opciones = await Promise.all([caja(page.getByTestId('btn-modalidad-domicilio')), caja(page.getByTestId('btn-modalidad-retiro'))]);
     expect(opciones[1].x).toBeGreaterThan(opciones[0].x + opciones[0].width - 1);
     expect(Math.abs(opciones[0].y - opciones[1].y)).toBeLessThan(40);
     await page.getByTestId('btn-modalidad-retiro').click();
-    await expect(page.getByTestId('btn-resumen-accion')).toBeEnabled();
-    const volver = await caja(page.getByTestId('btn-checkout-volver'));
-    const continuar = await caja(page.getByTestId('btn-continuar-modalidad'));
-    expect(volver.x).toBeLessThan(continuar.x);
-    expect(Math.abs(volver.y + volver.height / 2 - (continuar.y + continuar.height / 2))).toBeLessThan(6);
-    await page.getByTestId('btn-resumen-accion').click();
 
     await expect(page.getByTestId('btn-confirmar-retiro')).toBeVisible();
     await expect(resumen).toBeVisible();
@@ -139,7 +133,6 @@ test.describe('Escritorio E3: carrito y checkout en dos columnas @escritorio', (
   test('«Volver» retrocede de paso y desde el primero regresa al carrito @escritorio', async ({ page, request }) => {
     await abrir(page, request, 'checkout.html');
     await page.getByTestId('btn-modalidad-retiro').click();
-    await page.getByTestId('btn-continuar-modalidad').click();
     await expect(page.getByTestId('btn-confirmar-retiro')).toBeVisible();
     await page.getByTestId('btn-checkout-volver').click();
     await expect(page.getByTestId('btn-modalidad-retiro')).toBeVisible();
@@ -150,7 +143,6 @@ test.describe('Escritorio E3: carrito y checkout en dos columnas @escritorio', (
   test('el envío a domicilio muestra las direcciones en una grilla de dos columnas @escritorio', async ({ page, request }) => {
     await abrir(page, request, 'checkout.html');
     await page.getByTestId('btn-modalidad-domicilio').click();
-    await page.getByTestId('btn-continuar-modalidad').click();
     const grupo = page.getByTestId('radiogroup-direcciones');
     await expect(grupo).toBeVisible();
     const tarjetas = grupo.locator('[role="radio"]');
@@ -163,7 +155,6 @@ test.describe('Escritorio E3: carrito y checkout en dos columnas @escritorio', (
   test('el recorrido completo crea el pedido y, tras el pago simulado, queda elegible en Mis pedidos @escritorio', async ({ page, request }) => {
     const sesion = await abrir(page, request, 'checkout.html');
     await page.getByTestId('btn-modalidad-retiro').click();
-    await page.getByTestId('btn-resumen-accion').click();
     await page.getByTestId('btn-resumen-accion').click();
     await page.getByTestId('btn-resumen-accion').click();
     await expect(page.getByTestId('btn-ir-a-pagar')).toBeVisible();

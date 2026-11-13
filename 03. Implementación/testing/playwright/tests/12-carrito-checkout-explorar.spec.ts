@@ -141,10 +141,11 @@ test.describe('Checkout: habilitación de botón y bloqueo sin dirección', () =
     await page.getByTestId('btn-confirmar-pedido').click();
     await page.waitForURL('**/checkout.html');
 
-    const continuarBtn = page.getByTestId('btn-continuar-modalidad');
-    await expect(continuarBtn).toBeDisabled();
+    await expect(page.getByTestId('btn-continuar-modalidad')).toBeHidden();
+    await expect(page.locator('#step-2')).toBeHidden();
     await page.getByTestId('btn-modalidad-domicilio').click();
-    await expect(continuarBtn).toBeEnabled();
+    await expect(page.locator('#step-2')).toBeVisible();
+    await expect(page.locator('#step-1')).toBeHidden();
   });
 
   test('checkout DOMICILIO sin dirección cargada muestra un mensaje real, no una pantalla rota (rama de UI sin vía real de API para ejercitarla)', async ({
@@ -169,7 +170,6 @@ test.describe('Checkout: habilitación de botón y bloqueo sin dirección', () =
     await page.waitForURL('**/checkout.html');
 
     await page.getByTestId('btn-modalidad-domicilio').click();
-    await page.getByTestId('btn-continuar-modalidad').click();
 
     await expect(page.getByText('No tenés una dirección registrada')).toBeVisible();
     await expect(page.getByTestId('btn-confirmar-direccion')).toHaveCount(0);
@@ -186,7 +186,6 @@ test.describe('Checkout: habilitación de botón y bloqueo sin dirección', () =
     await page.getByTestId('btn-confirmar-pedido').click();
     await page.waitForURL('**/checkout.html');
     await page.getByTestId('btn-modalidad-retiro').click();
-    await page.getByTestId('btn-continuar-modalidad').click();
     await page.getByTestId('btn-confirmar-retiro').click();
 
     const paso3 = await page.getByTestId('btn-confirmar-pedido').locator('..').innerText();

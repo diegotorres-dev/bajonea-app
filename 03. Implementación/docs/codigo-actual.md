@@ -709,3 +709,14 @@ Solo frontend y pruebas. A partir de 1024 px las páginas de Comercio (`comercio
 - Comercio: botón único de sonido (`sonido-avisos__estado`, solo escritorio), saludo sin corte y Ayuda con barra lateral (`js/ayuda.js`). Cliente: `soporte.html` con sesión usa el shell del contexto y el rótulo de producto dice «Ver y agregar».
 - `css/escritorio-base.css`: `prefers-reduced-motion` en escritorio y estilos de `.saltar-contenido`. `css/styles.css`: `.request-card__rows .comercio-info__row > span` parte el email largo, `.sonido-avisos__estado` y `[role='dialog'][tabindex='-1']:focus`.
 - Herramientas: `testing/playwright/capturas/` y `playwright.capturas.config.ts` (revisión visual, no son parte de la suite). Detalle en `docs/MAPEO-ARCHIVOS-TRAMO-E4.md`.
+
+## Tramo E5 (diferencia de la móvil y pulido de acceso y checkout, 2026-11-13)
+
+- `css/styles.css`: `.app-shell` vuelve a `overflow: hidden` desde 640 px (se quitó `overflow: clip`); suma `.explorar-resumen`, `.explorar-resumen__contador` y `.explorar-resumen__limpiar`. `css/escritorio-base.css`: `.app-shell { overflow: clip }` solo desde 1024 px.
+- `js/descarte.js` (nuevo): `protegerDescarte(contenedor)` devuelve `{ confirmar(continuar), desactivar() }`; marca la pantalla como tocada con eventos de confianza (`input` y `change`), pregunta con `abrirHoja` antes de salir por un enlace o «Volver» y registra `beforeunload`. Lo usan `initRegistroCliente` e `initRegistroComercio` de `js/auth.js`.
+- `js/errores.js` (nuevo): `inicioDelUsuario()` y `enlazarVolverAlInicio()` (destino por rol, sin llamadas a la API); lo cargan las cinco páginas de `errores/`.
+- `js/auth.js`: texto de `verificar-email` con el vencimiento del código y espera de 30 s entre reenvíos (`iniciarEsperaReenvio`).
+- `splash.html`: con sesión redirige con `location.replace` sin esperar.
+- `js/explorar.js` y `explorar.html`: `aria-label`, botón de borrar, contador y «Limpiar filtros» (`hayFiltrosActivos`, `actualizarResumen`, `limpiarFiltros`).
+- `js/checkout.js` y `checkout.html`: `avanzarAlElegir` y `modalidadUnica` (tocar una modalidad avanza; con una sola se saltea el primer paso y «Volver» del segundo va al carrito); `btn-continuar-modalidad` oculto salvo al volver con una elección; la acción del resumen de escritorio se oculta sin botón principal.
+- Detalle en `docs/MAPEO-ARCHIVOS-TRAMO-E5.md`.

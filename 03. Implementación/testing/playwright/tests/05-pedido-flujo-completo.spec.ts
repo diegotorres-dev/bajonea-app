@@ -109,8 +109,6 @@ test.describe('Flujo completo de pedido: Cliente pide, Comercio resuelve, ambos 
       await clientePage.getByTestId('btn-confirmar-pedido').click();
       await clientePage.waitForURL('**/checkout.html');
 
-      await clientePage.getByTestId('btn-modalidad-domicilio').click();
-      await clientePage.getByTestId('btn-continuar-modalidad').click();
       await clientePage.getByTestId('btn-confirmar-direccion').click();
       await expect(clientePage.getByTestId('total-carrito')).toHaveText(formatearPrecio(precio + CARGO_SERVICIO_CLIENTE_FIJO));
 
@@ -199,8 +197,6 @@ test.describe('Flujo completo de pedido: Cliente pide, Comercio resuelve, ambos 
       await clientePage.getByTestId('btn-confirmar-pedido').click();
       await clientePage.waitForURL('**/checkout.html');
 
-      await clientePage.getByTestId('btn-modalidad-retiro').click();
-      await clientePage.getByTestId('btn-continuar-modalidad').click();
       await clientePage.getByTestId('btn-confirmar-retiro').click();
       await expect(clientePage.getByTestId('total-carrito')).toHaveText(formatearPrecio(precio + CARGO_SERVICIO_CLIENTE_FIJO));
 

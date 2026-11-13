@@ -493,8 +493,6 @@ test.describe('Fase 5, S2 (UI B2): Dueño, Empleado y Cliente con el comercio su
       await page.goto('/carrito.html');
       await page.getByTestId('btn-confirmar-pedido').click();
       await page.waitForURL('**/checkout.html');
-      await page.getByTestId('btn-modalidad-retiro').click();
-      await page.getByTestId('btn-continuar-modalidad').click();
       await page.getByTestId('btn-confirmar-retiro').click();
       await expect(page.getByTestId('btn-confirmar-pedido')).toBeVisible();
 

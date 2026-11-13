@@ -221,8 +221,6 @@ test.describe('Comercio bloqueado por la cuenta del Dueño (UI), tramo C2', () =
       await abrirComoUsuario(page, sesion);
       await page.goto('/checkout.html');
 
-      await page.getByTestId('btn-modalidad-retiro').click();
-      await page.getByTestId('btn-continuar-modalidad').click();
       await page.getByTestId('btn-confirmar-retiro').click();
       await expect(page.getByTestId('btn-confirmar-pedido')).toBeVisible();
 

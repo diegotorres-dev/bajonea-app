@@ -17,7 +17,10 @@
         <span class="input-shell__icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         </span>
-        <input type="text" id="buscador-input" placeholder="Buscar producto por nombre" data-testid="input-buscar-producto-explorar" />
+        <input type="text" id="buscador-input" placeholder="Buscar producto por nombre" aria-label="Buscar producto por nombre" autocomplete="off" data-testid="input-buscar-producto-explorar" />
+        <button type="button" class="cliente-busqueda__limpiar is-hidden" id="btn-limpiar-busqueda" aria-label="Borrar búsqueda" data-testid="btn-limpiar-busqueda-explorar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
       <p class="section-heading sep-t-20">Filtrar por categoría</p>
     </div>
@@ -26,6 +29,10 @@
       <p class="section-heading">Filtrar por tags</p>
     </div>
     <div id="chip-row-tags" class="chip-row chip-row--ajustado" data-testid="fila-chips-tags"></div>
+    <div class="screen-body screen-body--tight screen-body--sin-bordes-v explorar-resumen" data-testid="resumen-explorar">
+      <p class="cliente-contador explorar-resumen__contador" id="explorar-contador" role="status" data-testid="contador-resultados-explorar"></p>
+      <button type="button" class="explorar-resumen__limpiar is-hidden" id="btn-limpiar-filtros" data-testid="btn-limpiar-filtros-explorar">Limpiar filtros</button>
+    </div>
     <div id="producto-list" class="comercio-list" data-testid="lista-productos-explorar"></div>
     <div id="pagination-slot" data-testid="paginacion-explorar"></div>
   </main>

@@ -117,7 +117,7 @@ test.describe('Escritorio E0: la versión móvil no cambia', () => {
   });
 
   for (const ancho of [375, 700]) {
-    test(`un pie sticky queda pegado al borde inferior de la ventana a ${ancho} px`, async ({ page }) => {
+    test(`un pie sticky ${ancho < 640 ? 'queda pegado al borde inferior de la ventana' : 'sigue al contenido, sin pegarse a la ventana,'} a ${ancho} px`, async ({ page }) => {
       await page.setViewportSize({ width: ancho, height: 800 });
       await page.goto('/login.html');
       await page.evaluate(() => {
@@ -131,7 +131,12 @@ test.describe('Escritorio E0: la versión móvil no cambia', () => {
         window.scrollTo(0, 800);
       });
       const pie = await caja(page.locator('#pie-sonda'));
-      expect(Math.round(pie.y + pie.height)).toBe(800);
+      const abajo = Math.round(pie.y + pie.height);
+      if (ancho < 640) {
+        expect(abajo).toBe(800);
+      } else {
+        expect(abajo).toBeGreaterThan(800);
+      }
     });
   }
 

@@ -34,10 +34,12 @@
   </aside>
 </div>
 <script type="module">
+import { enlazarVolverAlInicio } from '../js/errores.js';
+const inicio = enlazarVolverAlInicio();
 const params = new URLSearchParams(window.location.search);
 const retorno = params.get('retorno');
 document.getElementById('reintentar-btn').addEventListener('click', () => {
-  window.location.href = '../' + (retorno || 'index.html');
+  window.location.href = '../' + (retorno || inicio);
 });
 </script>
 </body>
