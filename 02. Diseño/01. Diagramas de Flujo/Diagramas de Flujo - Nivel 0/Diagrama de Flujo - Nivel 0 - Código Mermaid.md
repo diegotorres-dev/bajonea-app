@@ -1,4 +1,5 @@
 flowchart LR
+    VISITANTE["Visitante\n(sin sesión)"]
     CLIENTE["Cliente"]
     DUENO["Dueño"]
     EMPLEADO["Empleado"]
@@ -7,17 +8,20 @@ flowchart LR
 
     SISTEMA(("App Bajoneá"))
 
-    CLIENTE  -- "Registro, sesión,\npedidos y reclamos"      --> SISTEMA
-    SISTEMA  -- "Comercios, menús,\nnotificaciones y estados" --> CLIENTE
+    VISITANTE -- "Consultas a Soporte\ny acceso a su conversación" --> SISTEMA
+    SISTEMA   -- "Código de consulta,\nrespuestas y términos públicos" --> VISITANTE
 
-    DUENO    -- "Datos fiscales, comercios,\nempleados y Mercado Pago" --> SISTEMA
-    SISTEMA  -- "Aprobaciones, notificaciones\ny estado de sus comercios" --> DUENO
+    CLIENTE  -- "Registro, sesión, direcciones,\npedidos, reclamos y consultas" --> SISTEMA
+    SISTEMA  -- "Comercios, menús, avisos\ny estado de pedidos y reclamos" --> CLIENTE
+
+    DUENO    -- "Datos fiscales, comercios, documentos,\nempleados y Mercado Pago" --> SISTEMA
+    SISTEMA  -- "Aprobaciones, avisos, estadísticas\ny estado de sus comercios" --> DUENO
 
     EMPLEADO -- "Gestión de productos\ny pedidos del comercio asignado" --> SISTEMA
-    SISTEMA  -- "Pedidos entrantes\ny notificaciones" --> EMPLEADO
+    SISTEMA  -- "Pedidos entrantes\ny avisos" --> EMPLEADO
 
-    ADMIN    -- "Gestión de comercios,\nusuarios, catálogo y tarifas" --> SISTEMA
-    SISTEMA  -- "Solicitudes, listados\ny reclamos pendientes"  --> ADMIN
+    ADMIN    -- "Gestión de comercios, documentos, cuentas,\nreclamos, soporte, catálogo y tarifas" --> SISTEMA
+    SISTEMA  -- "Solicitudes, listados, consultas\ny reclamos pendientes"  --> ADMIN
 
     MP       -- "Webhook de pago\ny confirmación de reembolso" --> SISTEMA
     SISTEMA  -- "Solicitud de cobro\ny reembolso"               --> MP
