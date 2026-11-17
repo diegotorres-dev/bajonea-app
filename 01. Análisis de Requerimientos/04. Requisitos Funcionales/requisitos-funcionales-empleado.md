@@ -3,14 +3,12 @@
 Requisitos del rol Empleado: una persona invitada por un Dueño que opera, con permisos
 acotados, uno o varios comercios en representación de sus respectivos Dueños.
 
-> **Estado de implementación (2026-10-15):** lo descrito en este documento está
-> **implementado** en los tramos E1 (invitaciones), E2 (acceso), E3 (operación delegada) y
-> E4 (gestión del equipo, renuncia y pérdida de acceso), que quedan pendientes de la
-> confirmación final del dueño del proyecto. Las estructuras (`Empleado`,
-> `EmpleadoComercio`, `InvitacionEmpleado`, `HistorialEmpleadoComercio`,
-> `HistorialEdicionComercio`) están en las migraciones `V29` a `V35`. Lo que sigue
-> pendiente se lista en Alcance y Limitaciones (por ejemplo, el rediseño de la suspensión de
-> comercios). La edición de horarios existe desde el tramo T1 de la Fase 2.
+> **Estado de implementación:** lo descrito en este documento está **implementado**: invitaciones
+> (E1), acceso (E2), operación delegada (E3), gestión del equipo, renuncia y pérdida de acceso (E4),
+> y el comportamiento con el comercio suspendido (Fase 5, tramos S2, S2.1 y S3). Las estructuras
+> (`Empleado`, `EmpleadoComercio`, `InvitacionEmpleado`, `HistorialEmpleadoComercio`,
+> `HistorialEdicionComercio`) están en las migraciones `V29` a `V35`. Lo que sigue pendiente se
+> lista en Alcance y Limitaciones. La edición de horarios existe desde el tramo T1 de la Fase 2.
 
 ---
 
@@ -87,8 +85,8 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
   Dueño o un Administrador ("No se puede aceptar esta invitación con esta cuenta"), o el
   comercio no se puede aceptar ("Esta invitación ya no está disponible"). Con un código
   incorrecto sigue valiendo la respuesta 401 única, sin revelar nada de la cuenta.
-- Se puede aceptar una invitación mientras el comercio esté Aprobado, Apto para Venta,
-  Cerrado Temporalmente o Suspendido; no se puede si está Pendiente, Rechazado, con
+- Se puede aceptar una invitación mientras el comercio esté Aprobado, Apto para Venta o
+  Cerrado Temporalmente; no se puede si está Suspendido, Pendiente, Rechazado, con
   Rechazo Definitivo o Inactivo. (Para invitar, en cambio, el comercio tiene que estar
   Aprobado o Apto para Venta.)
 - Reenviar y aceptar una invitación responden 200; no hay creación de recurso nuevo para
@@ -126,40 +124,57 @@ acotados, uno o varios comercios en representación de sus respectivos Dueños.
   "Cliente" y cada comercio, y entra al contexto que elige (ver Requisitos Funcionales —
   Generales, sección Autenticación y selector de contexto). Dentro de un comercio ve el
   mismo panel y las mismas cuatro pestañas (Panel, Productos, Pedidos, Perfil) que el
-  Dueño, con el distintivo "Empleado" debajo del nombre del comercio, con la campana de
+  Dueño (a partir de 1024 px, la barra lateral con solo las secciones que le corresponden), con el distintivo "Empleado" debajo del nombre del comercio, con la campana de
   notificaciones del comercio abierto (con su contador), sin "Agregar comercio" ni avisos
   de cobro. Para cambiar de comercio o
   pasar a su cuenta de Cliente usa "Cambiar de cuenta" en su perfil.
 - El selector del Empleado muestra los comercios donde su relación está Activa y el
   comercio es operativo (Aprobado o Apto para Venta), más los Suspendidos y los Cerrados
-  Temporalmente con su estado y un aviso corto (se pueden elegir y entran en solo
-  lectura). No aparecen los comercios Inactivos, de Rechazo definitivo, Pendientes ni
+  Temporalmente con su estado y un aviso corto (se pueden elegir). Un comercio suspendido dice
+  "Comercio suspendido. Solo podés resolver pedidos en curso."; uno cerrado temporalmente por el
+  bloqueo de la cuenta del Dueño dice "No se aceptan pedidos nuevos.". El Empleado nunca ve el
+  motivo ni la fecha de la suspensión. No aparecen los comercios Inactivos, de Rechazo definitivo, Pendientes ni
   Rechazados.
 - Cuando el comercio no es operativo (Suspendido o Cerrado Temporalmente), lo que el
   Empleado puede hacer depende del estado de cada pedido:
-  - **Pendiente de confirmación:** solo puede rechazarlo (con devolución inmediata del
-    pago); no puede aceptarlo.
-  - **En preparación:** puede despacharlo o anularlo.
+  - **Pendiente de confirmación:** con el comercio Suspendido el sistema los rechaza solos al
+    suspender, con devolución total del pago; si alguno todavía aparece (por unos segundos) dice
+    "Se va a rechazar y reembolsar solo." y no se puede aceptar. Con el comercio Cerrado
+    Temporalmente no puede aceptarlo (conflicto 409, código COMERCIO_SIN_OPERACION) pero sí
+    rechazarlo.
+  - **En preparación:** puede despacharlo o anularlo antes de la hora límite (90 minutos desde la
+    suspensión); pasada esa hora el sistema lo cancela solo, con reembolso total.
   - **En camino:** no puede hacer nada. Lo confirma el Cliente o el sistema (aviso a los 75
     minutos y autoconfirmación a los 90).
   - **Listo para retirar:** puede entregarlo, o cerrarlo como No Retirado una vez cumplida
-    la espera mínima (ver "Pedido no retirado").
+    la espera mínima (ver "Pedido no retirado"); pasada la hora límite el sistema lo cierra solo
+    como No Retirado, sin reembolso.
 
-  Sobre el catálogo y el perfil la regla depende del estado: con el comercio **Suspendido**
-  no puede modificar productos, imágenes ni la descripción y el teléfono (responde conflicto
-  409 con el código COMERCIO_SUSPENDIDO); con el comercio **Cerrado Temporalmente** sí puede
-  hacerlo. En ambos estados no puede abrir ni cerrar el comercio (409 con el código
-  COMERCIO_NO_OPERATIVO). Intentar aceptar un pedido nuevo responde 409 con el código
-  COMERCIO_SIN_OPERACION. Con un comercio operativo cerrado a mano (la bandera de cierre
-  manual encendida), el Empleado sí puede aceptar los pedidos pendientes: el cierre solo
-  frena los pedidos nuevos de los Clientes. Rechazar, despachar, entregar y anular no
-  tienen una regla propia del estado del comercio: las permite o no el estado de cada
-  pedido, igual que para el Dueño. Por ahora el Dueño queda sin cambios en estos estados
-  (puede, por ejemplo, editar productos y perfil con el comercio Suspendido: hueco conocido
-  que se resuelve en el tramo de rediseño de la suspensión). Los cambios de estado de un
-  comercio no tocan las relaciones de sus Empleados. *(Esta regla reemplaza a la del bloque
-  A0b, donde rechazar con el comercio no operativo respondía 409; implementada en el bloque
-  A2 de E3.)*
+  Una franja arriba de la lista de pedidos dice hasta qué hora hay para resolver los pedidos
+  en curso, y cada pedido dice qué se puede hacer. Sobre el catálogo y el perfil la regla depende
+  del estado: con el comercio **Suspendido** no puede modificar productos, imágenes, la
+  descripción, el teléfono ni los horarios (responde conflicto 409 con el código
+  COMERCIO_SUSPENDIDO); con el comercio **Cerrado Temporalmente** sí puede hacerlo. En ambos
+  estados no puede abrir ni cerrar el comercio (409 con el código COMERCIO_NO_OPERATIVO).
+  Con un comercio operativo cerrado a mano (la bandera de cierre manual encendida), el Empleado
+  sí puede aceptar los pedidos pendientes: el cierre solo frena los pedidos nuevos de los
+  Clientes. Rechazar, despachar, entregar y anular no tienen una regla propia del estado del
+  comercio: las permite o no el estado de cada pedido, igual que para el Dueño, que tiene las
+  mismas restricciones que el Empleado (ver Requisitos Funcionales — Dueño). Con el comercio
+  Suspendido el equipo queda en solo lectura: no se invita, no se da de baja y no se acepta una
+  invitación pendiente. Los cambios de estado de un comercio no tocan las relaciones de sus
+  Empleados.
+- Cuando se suspende la cuenta del Dueño y el Empleado sigue activo, puede despachar, entregar,
+  cerrar o anular los pedidos en curso de los comercios afectados (no aceptar pedidos nuevos ni
+  editar nada), con el mismo tope de 90 minutos. Si el comercio no tiene ningún Empleado activo
+  que lo atienda, los pedidos en preparación o listos para retirar se anulan o cancelan al
+  instante con reembolso total. La cuenta de un Empleado que está suspendida, bloqueada o
+  inactiva no cuenta como equipo activo.
+- El Empleado recibe un aviso dentro de la aplicación cuando suspenden el comercio y otro cuando
+  levantan la suspensión, sin el motivo ni el mensaje y sin email (por cada comercio afectado
+  cuando es la suspensión de la cuenta del Dueño).
+- Un pedido que el sistema anuló porque el comercio quedó sin quien lo atienda dice "Este
+  pedido se anuló automáticamente." en lugar de "El comercio anuló este pedido.".
 - Al desactivar su relación con un comercio, la próxima acción del Empleado sobre ese
   comercio responde "no encontrado" (404). La aplicación detecta la pérdida en esa acción
   o en el sondeo de cada 15 segundos, consulta una sola vez el acceso propio
@@ -289,8 +304,7 @@ puede:
   la notificación T36.
 - Recibir y ver las notificaciones operativas del comercio.
 
-**Futuros delegables** (hoy no tienen endpoint): grupos de extras y extras. Se
-clasificarán como delegables cuando existan. La edición de horarios ya es delegable (tramo T1 de la Fase 2).
+Los extras de producto (grupos de extras y extras) fueron descartados del alcance de esta versión: no existen y no hay nada que delegar. La edición de horarios ya es delegable (tramo T1 de la Fase 2).
 
 ---
 
@@ -309,7 +323,9 @@ El Empleado no tiene acceso, en ningún comercio, a las acciones exclusivas del 
   Empleados, ni ver la actividad del comercio.
 - No puede dar de alta comercios adicionales ni corregir o re-solicitar un comercio
   rechazado.
-- No puede acceder a la futura documentación de habilitación del comercio.
+- No puede ver ni subir los documentos de habilitación del comercio (ni la pantalla ni los archivos).
+- No ve los reclamos de los Clientes sobre los pedidos del comercio, ni su motivo, estado o monto.
+- No ve el motivo ni la fecha de la suspensión de un comercio o de la cuenta del Dueño.
 
 Todo endpoint o pantalla que no esté explícitamente clasificado como delegable queda
 bloqueado para el Empleado por defecto.
@@ -321,7 +337,9 @@ bloqueado para el Empleado por defecto.
 > **Estado de implementación:** tramo E3, entrega B, etapa 1.
 
 - La lista de pedidos del comercio (y los "Pedidos activos" del panel) muestra cada pedido en una fila sin botones, con el cliente, el número, la cantidad de productos, la hora, el estado, el total y un chevron. Un pedido que el Empleado hizo como Cliente lleva además el chip "Tu pedido". Todas las acciones están dentro del detalle.
-- Con el comercio Suspendido o Cerrado Temporalmente el Empleado ve arriba de la lista (y en el panel) el aviso "Comercio suspendido. No se aceptan pedidos nuevos." o "Comercio cerrado temporalmente. No se aceptan pedidos nuevos." El botón "Aceptar pedido" sigue habilitado: si el servidor lo rechaza, el motivo aparece en un aviso fijo.
+- Con el comercio Suspendido el Empleado ve arriba de la lista (y en el panel) la franja que dice hasta qué hora hay para resolver los pedidos en curso, y con el comercio Cerrado Temporalmente el aviso "Comercio cerrado temporalmente. No se aceptan pedidos nuevos." Si el servidor rechaza una acción (por ejemplo, aceptar con el comercio sin operación), el motivo aparece en un aviso fijo.
+- La lista de pedidos y el panel se actualizan solos cada 15 segundos con la pantalla visible; el pedido que llegó queda marcado como nuevo hasta que se abre su detalle, y con el interruptor "Sonido activado / desactivado" encendido suena un aviso con la aplicación abierta (no hay notificaciones fuera de la aplicación). Cada pedido pendiente de respuesta dice "Vence en N minutos": 30 minutos desde que se confirma el pago, calculado por el servidor y actualizado con la recarga de 15 segundos; pasado ese plazo el pedido expira solo y se devuelve el pago. El Cliente no ve ese plazo. Rechazar y anular piden una confirmación que explica que el Cliente recibe la devolución de todo el pago.
+- En escritorio la lista de pedidos tiene el detalle del pedido elegido al costado, y el panel muestra cuatro cifras (vendido, pedidos del turno, pendientes y en preparación).
 - En el detalle de un pedido que no es propio, el Empleado tiene las mismas acciones que el Dueño según el estado: pendiente (aceptar, rechazar), en preparación (despachar o dejar listo, anular) y listo para retirar ("Entregar" y "Cerrar como no retirado"). Debajo ve el "Recorrido del pedido": una línea de tiempo con el texto de cada paso, la hora y "nombre, rol" de quien actuó (el sistema figura solo como "Sistema").
 - "Entregar" está siempre habilitado. "Cerrar como no retirado" aparece apagado mientras no haya pasado la espera mínima, con la ayuda "Disponible en N min (desde las HH:mm)" que se actualiza sola; al cumplirse se habilita. Antes de cerrar, una confirmación avisa que no se devuelve el pago al Cliente.
 - Cuando el servidor rechaza una acción por una regla de negocio (conflicto 409), el mensaje aparece en un aviso fijo rojo sobre los botones, que se queda hasta la próxima acción. Los demás errores se muestran como avisos temporales.
@@ -343,7 +361,7 @@ bloqueado para el Empleado por defecto.
 
 - En el panel del comercio el Empleado ve la campana en el encabezado, igual que el Dueño, con el contador de avisos sin leer del comercio que tiene abierto (el mismo valor que informa el servidor para ese comercio; "9+" a partir de diez). Al tocarla abre la pantalla de notificaciones sin salir del contexto del comercio.
 - Cada contexto muestra solo lo suyo: dentro de un comercio el Empleado ve únicamente los avisos de ese comercio (los de su equipo), y en su cuenta de Cliente ve únicamente los avisos de sus propias compras, con su propia campana y contador. La campana de un contexto no cuenta los avisos del otro.
-- En cada aviso de un pedido, "Ver pedido" lleva al detalle del pedido del comercio (el Cliente, al detalle de su pedido) y marca el aviso como leído; tocar el aviso entero hace lo mismo.
+- En cada aviso de un pedido, "Ver pedido" lleva al detalle del pedido del comercio (el Cliente, al detalle de su pedido) y marca el aviso como leído; tocar el aviso entero hace lo mismo. Los avisos con otra pantalla relacionada (el cambio de cuenta, el panel, el equipo) llevan a ella, y los puramente informativos solo se marcan como leídos; un Empleado nunca recibe un destino que no puede ver. Un aviso sin leer se distingue por un fondo suave, un punto y el texto "No leída", no solo por el color. La lista se carga de a 20 con "Ver más".
 - En el encabezado de la pantalla hay un botón "Marcar todas" (también para el Dueño) que deja leídos todos los avisos del comercio abierto, solo los propios: no cambia los avisos del Dueño ni los de otros compañeros. Está apagado cuando no hay avisos sin leer y, si el servidor falla, muestra un aviso temporal y queda disponible. El Cliente, fuera de un comercio, no lo ve.
 - Sin avisos, la pantalla dice "Te vamos a avisar acá cuando haya novedades en este comercio." dentro de un comercio, y "Te vamos a avisar acá cuando haya novedades sobre tus pedidos." en la cuenta de Cliente.
 - Si el Empleado pierde la relación con el comercio, la pantalla de notificaciones muestra la hoja "Ya no tenés acceso a este comercio" en lugar de los avisos.
@@ -419,10 +437,13 @@ En el detalle de su propio pedido el Empleado ve la nota "Hiciste este pedido co
 ## Notificaciones
 
 - Cada Empleado Activo recibe las notificaciones operativas del comercio (pedido nuevo
-  T1, pedido cancelado por el cliente T9, pedido expirado sin respuesta T13 y el aviso de
+  T1 —"Pedido nuevo #N de {Nombre Apellido}."—, pedido cancelado por el cliente T9, pedido expirado sin respuesta
+  T13 —"El pedido #N se canceló porque nadie lo respondió a tiempo."— y el aviso de
   pedido autoconfirmado T30, cuando el sistema confirma solo la entrega de un pedido a
-  domicilio porque el Cliente no respondió en el plazo configurado, 90 minutos por defecto). No recibe las administrativas (aprobación,
-  rechazo, suspensión) ni las de cobro.
+  domicilio porque el Cliente no respondió en el plazo configurado, 90 minutos por defecto). No recibe las administrativas dirigidas al Dueño (aprobación,
+  rechazo, el motivo de una suspensión) ni las de cobro, ni los avisos de documentos ni de reclamos. Sí
+  recibe, sin motivo y sin email, los avisos de equipo cuando suspenden el comercio y cuando levantan
+  la suspensión.
 - Cada Empleado tiene su propia copia de cada aviso: que otro lo lea (o el Dueño) no cambia
   el suyo, y viceversa. Solo ve los avisos posteriores a su alta o reactivación: al activarlo
   o reactivarlo se borran sus avisos anteriores de ese comercio. Si lo desactivan, deja de
@@ -476,8 +497,10 @@ En el detalle de su propio pedido el Empleado ve la nota "Hiciste este pedido co
 - El perfil del Empleado dentro de un comercio es una sola lista de filas, sin títulos de
   sección: "Ver datos del comercio" (descripción, dirección, teléfono, horarios y estado,
   sin datos fiscales ni legales), "Editar datos del comercio" (descripción y teléfono),
-  "Editar datos personales", "Cambiar de cuenta" y "Cerrar sesión", y debajo la sección
-  "Mi lugar en el equipo" con el botón de renuncia (ver "Renuncia"). Los datos personales
+  "Editar datos personales", "Ayuda" (preguntas frecuentes, escribir a Soporte, mis consultas a Soporte,
+  Términos y Política de privacidad), "Cambiar de cuenta" y "Cerrar sesión", y debajo la sección
+  "Mi lugar en el equipo" con el botón de renuncia (ver "Renuncia"). Al iniciar sesión la aplicación
+  saluda por el nombre de pila ("Hola, Lucía"). Los datos personales
   (nombre, apellido, teléfono, nombre de usuario), el cambio de contraseña y la foto de perfil
   personal se editan desde la cuenta de Cliente: "Editar datos personales" muestra antes una
   hoja "Vas a pasar a tu cuenta personal" y, al continuar, lleva al perfil de Cliente.

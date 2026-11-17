@@ -1,0 +1,94 @@
+@startuml casos-de-uso-empleado
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam defaultFontSize 12
+skinparam usecase {
+  BackgroundColor #FEFEFE
+  BorderColor #555555
+}
+skinparam arrow {
+  Color #555555
+}
+
+left to right direction
+
+actor "Empleado" as empleado
+actor "Sistema"  as sistema
+
+note top of empleado
+  La invitación que origina el alta del Empleado es
+  generada por un Dueño — ver Casos de Uso — Dueño,
+  paquete Gestión de Empleados. El Empleado es un Cliente
+  con una o más relaciones activas con comercios.
+end note
+
+rectangle "Bajoneá — Módulo Empleado" {
+
+  package "Invitación y Alta" {
+    (Aceptar Invitación\nde Empleado)                 as ACCEPT_INVITE
+    (Validar Código de Invitación\ny Edad Mínima)      as VALIDATE_CODE
+    (Crear Cuenta de Empleado\ncon Datos de Cliente)  as CREATE_ACCOUNT
+  }
+
+  package "Acceso a Comercios" {
+    (Operar Varios Comercios\ncon una Sola Cuenta)    as MULTI_COM
+    (Seleccionar Contexto:\nCliente o Comercio)       as SELECT_CONTEXT
+    (Cambiar de Cuenta\nsin Cerrar Sesión)            as SWITCH_CONTEXT
+    (Pasar a la Cuenta Personal\npara Editar Datos)   as GO_PERSONAL
+    (Perder Acceso a un Comercio\nDesactivado)        as LOSE_ACCESS
+    (Consultar la Causa de la\nPérdida de Acceso)     as CHECK_ACCESS
+    (Dejar de Trabajar en\neste Comercio)            as RESIGN
+  }
+
+  package "Operación del Negocio Asignado" {
+    (Operar el Comercio:\nProductos, Pedidos, Horarios\ny Cierre Manual) as OPERATE
+    (Ver Avisos del Comercio y\nMarcarlos como Leídos)    as VIEW_NOTIFS
+  }
+
+  package "Notificaciones" {
+    (Recibir Avisos Operativos\ndel Comercio)         as NOTIF_OPER
+    (Recibir Aviso de Baja\no Reactivación)          as NOTIF_STATUS
+    (Recibir Aviso de Suspensión\no Levantamiento del Comercio) as NOTIF_SUSP
+  }
+}
+
+note bottom of OPERATE
+  Detalle completo de esta operatoria: ver Casos de Uso — Comercio.
+  El Empleado solo edita del comercio la descripción, el teléfono
+  y los horarios. NO tiene acceso a datos fiscales, vinculación de
+  Mercado Pago, documentación, estadísticas, comisión y neto,
+  redes sociales, reclamos, gestión de otros Empleados, ni
+  alta/baja de comercios: acciones exclusivas del Dueño
+  (ver Casos de Uso — Dueño). Tampoco puede gestionar un pedido
+  del que él mismo es el Cliente.
+end note
+
+' ── Asociaciones de actores ──────────────────────────────
+empleado --> ACCEPT_INVITE
+empleado --> MULTI_COM
+empleado --> SELECT_CONTEXT
+empleado --> OPERATE
+empleado --> RESIGN
+empleado --> VIEW_NOTIFS
+
+sistema  --> LOSE_ACCESS
+sistema  --> NOTIF_OPER
+sistema  --> NOTIF_STATUS
+sistema  --> NOTIF_SUSP
+
+' ── <<include>> ──────────────────────────────────────────
+ACCEPT_INVITE ..> VALIDATE_CODE  : <<include>>
+
+' ── <<extend>> ───────────────────────────────────────────
+CREATE_ACCOUNT ..> ACCEPT_INVITE : <<extend>>
+SWITCH_CONTEXT ..> MULTI_COM     : <<extend>>
+SELECT_CONTEXT ..> MULTI_COM     : <<extend>>
+GO_PERSONAL    ..> SWITCH_CONTEXT : <<extend>>
+LOSE_ACCESS    ..> MULTI_COM     : <<extend>>
+CHECK_ACCESS   ..> LOSE_ACCESS   : <<extend>>
+RESIGN         ..> MULTI_COM     : <<extend>>
+NOTIF_OPER     ..> VIEW_NOTIFS   : <<extend>>
+NOTIF_STATUS   ..> VIEW_NOTIFS   : <<extend>>
+NOTIF_SUSP     ..> VIEW_NOTIFS   : <<extend>>
+
+@enduml

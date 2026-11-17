@@ -1,0 +1,146 @@
+@startuml casos-de-uso-comercio
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam defaultFontSize 12
+skinparam usecase {
+  BackgroundColor #FEFEFE
+  BorderColor #555555
+}
+skinparam arrow {
+  Color #555555
+}
+
+left to right direction
+
+actor "Operador de Comercio\n(Dueño o Empleado autorizado)" as operador
+actor "Dueño"       as dueno
+actor "MercadoPago" as mp
+actor "Sistema"     as sistema
+
+dueno --|> operador
+
+note right of operador
+  Representa al Dueño titular del comercio o a un
+  Empleado en estado Activo dentro de ese comercio.
+  Identidad de cuenta, datos fiscales, Mercado Pago,
+  documentación y gestión de empleados: ver Casos de Uso — Dueño.
+  Invitación y alta del Empleado: ver Casos de Uso — Empleado.
+end note
+
+note bottom of dueno
+  Acciones exclusivas del Dueño: perfil completo del
+  comercio, foto, redes sociales. El Empleado solo edita
+  descripción, teléfono y horarios.
+end note
+
+rectangle "Bajoneá — Módulo Comercio (Operación del Negocio)" {
+
+  package "Perfil y Configuración del Negocio" {
+    (Editar Descripción y\nTeléfono del Comercio)       as EDIT_OPER
+    (Editar Perfil Completo\ndel Comercio)               as EDIT_COM
+    (Cargar Foto de Perfil\ndel Comercio)                as PROFILE_PIC_COM
+    (Gestionar Horarios de Atención)                     as HOURS
+    (Agregar Franja Horaria)                             as ADD_HOUR
+    (Editar Franja Horaria)                              as EDIT_HOUR
+    (Eliminar Franja Horaria)                            as DEL_HOUR
+    (Cancelar Cambio de Horario\nProgramado)             as CANCEL_HOUR
+    (Cerrar / Abrir Comercio\nManualmente)               as TOGGLE_CLOSE
+    (Gestionar Redes Sociales)                           as SOCIAL
+  }
+
+  package "Gestión de Productos" {
+    (Crear Producto)                                     as CREATE_PROD
+    (Cargar Imágenes del Producto)                       as PHOTOS
+    (Editar Producto)                                    as EDIT_PROD
+    (Cambiar Precio fuera del\nHorario de Atención)      as CHANGE_PRICE
+    (Marcar Producto Agotado\no Disponible)              as MARK_STOCK
+    (Descontinuar Producto)                              as DISC_PROD
+    (Asignar Categoría)                                  as SET_CAT
+    (Asignar Tags)                                       as SET_TAGS
+  }
+
+  package "Gestión de Pedidos" {
+    (Ver Pedidos Entrantes)                              as VIEW_ORDERS
+    (Aceptar Pedido)                                     as ACCEPT
+    (Rechazar Pedido)                                    as REJECT
+    (Ingresar Motivo Predefinido)                        as MOTIVE
+    (Despachar Pedido o Dejarlo\nListo para Retirar)     as DISPATCH
+    (Confirmar Entrega de Retiro)                        as CONFIRM_PICKUP
+    (Cerrar Pedido\nNo Retirado)                         as CLOSE_PICKUP
+    (Anular Pedido)                                      as NULLIFY
+    (Reembolsar al Cliente)                              as REFUND
+    (Ver Recorrido del Pedido)                           as TRACE
+    (Ver Historial de Pedidos)                           as HISTORY
+    (Ver Resumen del Turno)                              as SHIFT
+  }
+
+  package "Notificaciones" {
+    (Ver Avisos del Comercio y\nMarcarlos como Leídos)   as VIEW_NOTIFS
+    (Recibir Notificación\nde Nuevo Pedido)              as NOTIF_ORDER
+    (Recibir Notificación de Pedido\nCancelado por el Cliente) as NOTIF_CANCEL
+    (Recibir Notificación\nde Pedido Expirado)           as NOTIF_EXPIRED
+    (Recibir Aviso de Entrega\nAutoconfirmada)           as NOTIF_AUTO
+  }
+}
+
+note bottom of VIEW_ORDERS
+  Con el comercio Suspendido el panel queda en solo lectura:
+  solo se resuelven los pedidos en curso. Un Empleado no puede
+  gestionar un pedido del que él mismo es el Cliente.
+end note
+
+' ── Asociaciones de actores ──────────────────────────────
+operador --> EDIT_OPER
+operador --> HOURS
+operador --> TOGGLE_CLOSE
+operador --> CREATE_PROD
+operador --> EDIT_PROD
+operador --> MARK_STOCK
+operador --> DISC_PROD
+operador --> VIEW_ORDERS
+operador --> HISTORY
+operador --> SHIFT
+operador --> VIEW_NOTIFS
+
+dueno    --> EDIT_COM
+dueno    --> SOCIAL
+
+mp       --> REFUND
+
+sistema  --> NOTIF_ORDER
+sistema  --> NOTIF_CANCEL
+sistema  --> NOTIF_EXPIRED
+sistema  --> NOTIF_AUTO
+
+' ── <<include>> ──────────────────────────────────────────
+HOURS        ..> ADD_HOUR : <<include>>
+CREATE_PROD  ..> SET_CAT  : <<include>>
+CREATE_PROD  ..> PHOTOS   : <<include>>
+REJECT       ..> MOTIVE   : <<include>>
+NULLIFY      ..> MOTIVE   : <<include>>
+REJECT       ..> REFUND   : <<include>>
+NULLIFY      ..> REFUND   : <<include>>
+
+' ── <<extend>> ───────────────────────────────────────────
+PROFILE_PIC_COM ..> EDIT_COM    : <<extend>>
+EDIT_HOUR       ..> HOURS       : <<extend>>
+DEL_HOUR        ..> HOURS       : <<extend>>
+CANCEL_HOUR     ..> HOURS       : <<extend>>
+SET_TAGS        ..> CREATE_PROD : <<extend>>
+SET_TAGS        ..> EDIT_PROD   : <<extend>>
+CHANGE_PRICE    ..> EDIT_PROD   : <<extend>>
+PHOTOS          ..> EDIT_PROD   : <<extend>>
+DISC_PROD       ..> MARK_STOCK  : <<extend>>
+ACCEPT          ..> VIEW_ORDERS : <<extend>>
+REJECT          ..> VIEW_ORDERS : <<extend>>
+DISPATCH        ..> VIEW_ORDERS : <<extend>>
+CONFIRM_PICKUP  ..> VIEW_ORDERS : <<extend>>
+CLOSE_PICKUP    ..> VIEW_ORDERS : <<extend>>
+NULLIFY         ..> VIEW_ORDERS : <<extend>>
+TRACE           ..> VIEW_ORDERS : <<extend>>
+NOTIF_ORDER     ..> VIEW_ORDERS : <<extend>>
+NOTIF_CANCEL    ..> VIEW_ORDERS : <<extend>>
+NOTIF_EXPIRED   ..> VIEW_ORDERS : <<extend>>
+NOTIF_AUTO      ..> VIEW_ORDERS : <<extend>>
+
+@enduml

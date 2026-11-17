@@ -1,0 +1,213 @@
+@startuml casos-de-uso-administrador
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam defaultFontSize 12
+skinparam usecase {
+  BackgroundColor #FEFEFE
+  BorderColor #555555
+}
+skinparam arrow {
+  Color #555555
+}
+
+left to right direction
+
+actor "Administrador" as admin
+actor "MercadoPago"   as mp
+
+note top of admin
+  El Administrador no recibe avisos ni campana:
+  el panel muestra contadores de lo pendiente que se
+  actualizan solos cada 30 segundos.
+end note
+
+rectangle "Bajoneá — Módulo Administrador" {
+
+  package "Panel del Administrador" {
+    (Ver Panel con Contadores\nde Pendientes) as PANEL
+  }
+
+  package "Gestión de Comercios" {
+    (Ver Solicitudes Pendientes)                as PENDING
+    (Ver Listado de Comercios\nen Cualquier Estado) as LIST_COM
+    (Ver Detalle de Comercio)                   as DETAIL_COM
+    (Aprobar Comercio)                          as APPROVE
+    (Rechazar Comercio)                         as REJECT_COM
+    (Marcar Rechazo como Definitivo)            as REJECT_FINAL
+    (Suspender Comercio)                        as SUSPEND_COM
+    (Ver Efecto de la Suspensión\nsobre los Pedidos) as PREVIEW_SUSP_COM
+    (Levantar Suspensión de Comercio)           as UNSUSPEND_COM
+    (Ingresar Motivo de Rechazo\no Suspensión)  as MOTIVE_COM
+    (Reenviar Email de Aviso\nal Dueño)         as RESEND_COM
+    (Ver Equipo del Comercio)                   as TEAM
+    (Ver Actividad del Comercio)                as ACTIVITY
+  }
+
+  package "Gestión de Usuarios" {
+    (Ver Listado de Clientes)                   as LIST_USERS
+    (Ver Listado de Dueños)                     as LIST_OWNERS
+    (Buscar y Filtrar por Estado)               as SEARCH_USERS
+    (Ver Detalle de Cuenta)                     as DETAIL_USER
+    (Suspender Cuenta de Cliente o Dueño)       as SUSPEND_USER
+    (Ver Efecto de la Suspensión del Dueño\nsobre Comercios y Pedidos) as PREVIEW_SUSP_OWNER
+    (Levantar Suspensión de Cuenta)             as UNSUSPEND_USER
+    (Reactivar Cuenta Inactiva)                 as REACTIVATE_USER
+    (Reenviar Email de Aviso\na la Persona)     as RESEND_USER
+    (Ingresar Motivo de\nSuspensión)            as MOTIVE_USER
+  }
+
+  package "Gestión de Categorías" {
+    (Ver Categorías)                  as LIST_CAT
+    (Crear Categoría)                 as CREATE_CAT
+    (Editar Categoría)                as EDIT_CAT
+    (Activar / Desactivar\nCategoría) as TOGGLE_CAT
+    (Dar de Baja Categoría)           as DEL_CAT
+  }
+
+  package "Gestión de Tags" {
+    (Ver Tags)                        as LIST_TAG
+    (Crear Tag)                       as CREATE_TAG
+    (Editar Tag)                      as EDIT_TAG
+    (Activar / Desactivar\nTag)       as TOGGLE_TAG
+    (Dar de Baja Tag)                 as DEL_TAG
+  }
+
+  package "Configuración de Plataforma" {
+    (Ver Tarifas Vigentes\ne Historial)       as VIEW_FEES
+    (Configurar Tarifas\nde Servicio)         as CONFIG_FEES
+    (Confirmar Cambio de Tarifa)              as CONFIRM_FEES
+  }
+
+  package "Revisión de Documentos" {
+    (Ver Bandeja de Documentos\nPendientes)       as LIST_DOCS
+    (Revisar Documentos\nde un Comercio)          as REVIEW_DOCS
+    (Aprobar Documento)                           as APPROVE_DOC
+    (Rechazar Documento)                          as REJECT_DOC
+    (Revocar Documento Aprobado)                  as REVOKE_DOC
+    (Ingresar Motivo del Documento)               as MOTIVE_DOC
+  }
+
+  package "Re-solicitudes" {
+    (Ver Re-solicitudes\nde Comercios)            as LIST_REVIEW
+    (Ver Cambios del Dueño\ny Motivo Anterior)    as DETAIL_REVIEW
+    (Aprobar Re-solicitud)                        as APPROVE_REVIEW
+    (Rechazar Re-solicitud)                       as REJECT_REVIEW
+  }
+
+  package "Soporte" {
+    (Ver Bandeja de Consultas\nde Soporte)        as LIST_SUPPORT
+    (Ver Conversación y\nCuenta Asociada)         as DETAIL_SUPPORT
+    (Responder Consulta)                          as REPLY_SUPPORT
+    (Cerrar Consulta)                             as CLOSE_SUPPORT
+    (Reenviar Email de Respuesta)                 as RESEND_SUPPORT
+  }
+
+  package "Gestión de Reclamos" {
+    (Ver Bandeja de Reclamos)                     as LIST_CLAIMS
+    (Ver Detalle y Fotos\ndel Reclamo)            as DETAIL_CLAIM
+    (Aprobar Reclamo con\nReembolso Total)        as APPROVE_FULL
+    (Aprobar Reclamo con\nReembolso Parcial)      as APPROVE_PARTIAL
+    (Rechazar Reclamo)                            as REJECT_CLAIM
+    (Ingresar Motivo de\nRechazo de Reclamo)      as MOTIVE_CLAIM
+  }
+
+  package "Gestión de Reembolsos" {
+    (Ver Reembolsos para Revisión)                as LIST_REFUNDS
+    (Reintentar Reembolso)                        as RETRY_REFUND
+    (Solicitar Reembolso\na Mercado Pago)         as REFUND_MP
+  }
+}
+
+' ── Asociaciones de actores ──────────────────────────────
+admin   --> PANEL
+admin   --> PENDING
+admin   --> LIST_COM
+admin   --> LIST_USERS
+admin   --> LIST_OWNERS
+admin   --> LIST_CAT
+admin   --> LIST_TAG
+admin   --> VIEW_FEES
+admin   --> CONFIG_FEES
+admin   --> LIST_DOCS
+admin   --> LIST_REVIEW
+admin   --> LIST_SUPPORT
+admin   --> LIST_CLAIMS
+admin   --> LIST_REFUNDS
+
+mp      --> REFUND_MP
+
+' ── <<include>> ──────────────────────────────────────────
+REJECT_COM      ..> MOTIVE_COM   : <<include>>
+SUSPEND_COM     ..> MOTIVE_COM   : <<include>>
+SUSPEND_COM     ..> PREVIEW_SUSP_COM : <<include>>
+REJECT_REVIEW   ..> MOTIVE_COM   : <<include>>
+SUSPEND_USER    ..> MOTIVE_USER  : <<include>>
+REJECT_DOC      ..> MOTIVE_DOC   : <<include>>
+REVOKE_DOC      ..> MOTIVE_DOC   : <<include>>
+REJECT_CLAIM    ..> MOTIVE_CLAIM : <<include>>
+CONFIG_FEES     ..> VIEW_FEES    : <<include>>
+CONFIG_FEES     ..> CONFIRM_FEES : <<include>>
+APPROVE_FULL    ..> REFUND_MP    : <<include>>
+APPROVE_PARTIAL ..> REFUND_MP    : <<include>>
+RETRY_REFUND    ..> REFUND_MP    : <<include>>
+
+' ── <<extend>> ───────────────────────────────────────────
+DETAIL_COM        ..> LIST_COM      : <<extend>>
+APPROVE           ..> PENDING       : <<extend>>
+REJECT_COM        ..> PENDING       : <<extend>>
+REJECT_FINAL      ..> REJECT_COM    : <<extend>>
+REJECT_FINAL      ..> REJECT_REVIEW : <<extend>>
+SUSPEND_COM       ..> LIST_COM      : <<extend>>
+UNSUSPEND_COM     ..> LIST_COM      : <<extend>>
+RESEND_COM        ..> DETAIL_COM    : <<extend>>
+TEAM              ..> DETAIL_COM    : <<extend>>
+ACTIVITY          ..> TEAM          : <<extend>>
+
+SEARCH_USERS      ..> LIST_USERS    : <<extend>>
+SEARCH_USERS      ..> LIST_OWNERS   : <<extend>>
+DETAIL_USER       ..> LIST_USERS    : <<extend>>
+DETAIL_USER       ..> LIST_OWNERS   : <<extend>>
+SUSPEND_USER      ..> LIST_USERS    : <<extend>>
+SUSPEND_USER      ..> LIST_OWNERS   : <<extend>>
+PREVIEW_SUSP_OWNER ..> SUSPEND_USER : <<extend>>
+UNSUSPEND_USER    ..> LIST_USERS    : <<extend>>
+UNSUSPEND_USER    ..> LIST_OWNERS   : <<extend>>
+REACTIVATE_USER   ..> LIST_USERS    : <<extend>>
+REACTIVATE_USER   ..> LIST_OWNERS   : <<extend>>
+RESEND_USER       ..> LIST_USERS    : <<extend>>
+RESEND_USER       ..> LIST_OWNERS   : <<extend>>
+
+CREATE_CAT        ..> LIST_CAT      : <<extend>>
+EDIT_CAT          ..> LIST_CAT      : <<extend>>
+TOGGLE_CAT        ..> LIST_CAT      : <<extend>>
+DEL_CAT           ..> LIST_CAT      : <<extend>>
+
+CREATE_TAG        ..> LIST_TAG      : <<extend>>
+EDIT_TAG          ..> LIST_TAG      : <<extend>>
+TOGGLE_TAG        ..> LIST_TAG      : <<extend>>
+DEL_TAG           ..> LIST_TAG      : <<extend>>
+
+REVIEW_DOCS       ..> LIST_DOCS     : <<extend>>
+APPROVE_DOC       ..> REVIEW_DOCS   : <<extend>>
+REJECT_DOC        ..> REVIEW_DOCS   : <<extend>>
+REVOKE_DOC        ..> REVIEW_DOCS   : <<extend>>
+
+DETAIL_REVIEW     ..> LIST_REVIEW   : <<extend>>
+APPROVE_REVIEW    ..> LIST_REVIEW   : <<extend>>
+REJECT_REVIEW     ..> LIST_REVIEW   : <<extend>>
+
+DETAIL_SUPPORT    ..> LIST_SUPPORT  : <<extend>>
+REPLY_SUPPORT     ..> DETAIL_SUPPORT : <<extend>>
+CLOSE_SUPPORT     ..> DETAIL_SUPPORT : <<extend>>
+RESEND_SUPPORT    ..> DETAIL_SUPPORT : <<extend>>
+UNSUSPEND_COM     ..> DETAIL_SUPPORT : <<extend>>
+UNSUSPEND_USER    ..> DETAIL_SUPPORT : <<extend>>
+
+DETAIL_CLAIM      ..> LIST_CLAIMS   : <<extend>>
+APPROVE_FULL      ..> DETAIL_CLAIM  : <<extend>>
+APPROVE_PARTIAL   ..> DETAIL_CLAIM  : <<extend>>
+REJECT_CLAIM      ..> DETAIL_CLAIM  : <<extend>>
+
+RETRY_REFUND      ..> LIST_REFUNDS  : <<extend>>
+
+@enduml

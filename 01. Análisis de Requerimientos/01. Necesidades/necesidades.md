@@ -1,7 +1,7 @@
 # Necesidades
 ## Descripción General
 
-Actualmente, muchos restaurantes y emprendimientos gastronómicos de la ciudad de Río Grande ofrecen productos de
+Actualmente, muchos restaurantes y emprendimientos gastronómicos de la ciudad de Río Grande y del resto de Tierra del Fuego ofrecen productos de
 excelente calidad, pero enfrentan un problema estructural: no logran conectar de manera
 fluida con el consumidor moderno. La ausencia de herramientas digitales integradas genera
 fricciones tanto para el cliente como para el negocio, afectando las ventas, la

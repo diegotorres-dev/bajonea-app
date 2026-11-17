@@ -11,12 +11,12 @@ Como Dueño, quiero registrarme eligiendo un nombre de usuario para mi cuenta, c
 condición frente al IVA, tipo de sociedad e inicio de actividades son opcionales y van en una sección plegable "Datos adicionales (opcional)")
 junto con los datos de mi primer comercio (tipo de comercio, modalidades de entrega,
 horarios de atención), para solicitar mi habilitación con información completa desde
-un único flujo.
+un único flujo. Mi comercio tiene que estar en Río Grande, Ushuaia o Tolhuin (con otra localidad el sistema dice "Esa localidad todavía no está disponible"); el tipo de comercio se elige entre 13 opciones (incluida Hamburguesería); no se me pide un email del comercio, y tengo que aceptar los Términos y Condiciones y la Política de Privacidad. Si salgo del registro con datos cargados, la aplicación me avisa antes de descartarlos.
 
 ## HU-D02: Verificar mi Cuenta
 
-Como Dueño, quiero verificar mi dirección de email tras el registro, para activar mi
-cuenta y quedar en espera de aprobación administrativa de mi primer comercio.
+Como Dueño, quiero verificar mi dirección de email tras el registro con un código de 6 dígitos, para activar mi
+cuenta y quedar en espera de aprobación administrativa de mi primer comercio. Mientras espero, la pantalla se actualiza sola cada 15 segundos y, cuando el Administrador resuelve, paso a la pantalla que corresponde sin recargar.
 
 ## HU-D03: Cargar mi Foto de Perfil Personal
 
@@ -28,7 +28,7 @@ administro.
 
 Como Dueño, quiero vincular mi cuenta de MercadoPago a la plataforma mediante el
 proceso de autorización OAuth una única vez, para habilitar la recepción de pagos y que
-todos mis comercios aprobados comiencen a aparecer en el catálogo y a recibir pedidos.
+todos mis comercios aprobados con su documentación aprobada comiencen a aparecer en el catálogo y a recibir pedidos.
 
 **Criterios de aceptación adicionales (multi-comercio, tramo 5):**
 - Tengo una sola cuenta de MercadoPago para todos mis comercios: si ya tengo una activa, el
@@ -49,6 +49,7 @@ todos mis comercios aprobados comiencen a aparecer en el catálogo y a recibir p
   mis comercios abiertos que estén dentro de su horario, me ofrece "Cerrar comercio" (o
   "Cerrar comercios") para que no entren pedidos nuevos mientras vencen los pendientes. Si
   ya están todos cerrados, solo veo el texto de espera.
+- Con un comercio suspendido puedo vincular la cuenta, pero no desvincularla.
 - Al desvincular, todos mis comercios vuelven a Aprobado (dejan de aparecer en el catálogo y
   de recibir pedidos nuevos), mis pedidos en curso siguen su flujo, y los reembolsos que
   hagan falta después quedan para revisión manual del Administrador.
@@ -59,7 +60,7 @@ Como Dueño, quiero dar de alta comercios adicionales bajo mi cuenta sin volver 
 mis datos fiscales, y elegir desde un selector sobre cuál de mis comercios estoy
 operando en cada momento, para gestionar varios negocios desde una única cuenta. Sé que
 el nombre de cada comercio tiene que ser distinto del de cualquier otro comercio de la
-plataforma, y que el formulario me avisa en vivo si el nombre que elegí ya está tomado.
+plataforma, y que el formulario me avisa en vivo si el nombre que elegí ya está tomado. Cambio de comercio desde la hoja "Cambiar de cuenta" (la primera vez, una pista de un solo uso me explica el gesto de mantener apretado el avatar); en "Tus comercios" veo el estado de cada uno y los que tienen avisos sin leer.
 
 ## HU-D06: Dar de Baja un Comercio
 
@@ -72,7 +73,7 @@ discontinuar un local puntual cuando lo necesite.
 Como Dueño, quiero invitar a una persona por email a operar uno de mis comercios como
 Empleado, para delegar la gestión diaria de productos y pedidos sin compartir mi
 contraseña. Sé que la invitación es por comercio, que solo puedo invitar mientras el
-comercio esté operativo, que vence a los 7 días y que puedo enviar hasta 5 invitaciones
+comercio esté operativo (no suspendido), que vence a los 7 días y que puedo enviar hasta 5 invitaciones
 por hora por comercio.
 
 Criterios de aceptación adicionales:
@@ -131,13 +132,15 @@ Criterios de aceptación adicionales:
 - Veo el historial del equipo (invitación, aceptación, cancelación, baja, renuncia,
   reactivación, con quién lo hizo y cuándo) y la actividad del comercio (quién hizo qué,
   incluido lo que hicieron el Cliente y el sistema con mis pedidos, como "Pedido recibido"
-  o la cancelación del Cliente; el pedido que nunca se pagó no aparece).
+  o la cancelación del Cliente; el pedido que nunca se pagó no aparece). Un pedido que el sistema anuló porque el comercio quedó sin quien lo atienda dice "Este pedido se anuló automáticamente.", no "Anulaste este pedido.".
 - Veo el nombre de quien hizo cada cambio de estado de un pedido y cada cierre o
   reapertura, incluso si el empleado ya está inactivo. En el detalle de cada pedido veo
   su recorrido completo (quién, cuándo y, en rechazos y anulaciones, el motivo).
 - Puedo gestionar cualquier pedido del comercio, incluido el de un empleado que compró
   como cliente; mis empleados no pueden gestionar los suyos.
 - Recibo una notificación cuando un empleado renuncia.
+- Si la cuenta de un empleado fue suspendida por el Administrador, aparece en mi equipo con la etiqueta "Cuenta suspendida" y la fila atenuada, sin el motivo; no cuenta como equipo activo para atender pedidos.
+- Con el comercio suspendido el equipo queda en solo lectura: no invito, no doy de baja y no reactivo.
 - Cada aviso de pedido (pedido nuevo, cancelación del Cliente, vencimiento sin respuesta) me llega a mí y a cada empleado activo del comercio, como una copia de cada uno: que un empleado lo lea no cambia el mío. Los avisos de administración (aprobación, suspensión, altas del equipo) me llegan solo a mí. Con varios comercios, veo en cada uno solo sus avisos.
 
 ## HU-D09: Solicitar Revisión de Solicitud Rechazada
@@ -150,14 +153,17 @@ intentos por comercio, y veo cuántos me quedan; después de eso, o si el admini
 rechaza de forma definitiva, el comercio ya no se puede corregir y solo veo una pantalla
 informativa.
 
-## HU-D10: Contactar Soporte ante Suspensión
+## HU-D10: Contactar a Soporte ante una Suspensión
 
-Como Dueño con un comercio suspendido, quiero poder enviar un mensaje al administrador
-explicando mi situación, para solicitar la revisión de la suspensión de ese comercio.
+Como Dueño con un comercio suspendido (o con mi cuenta suspendida), quiero escribirle al equipo de Soporte explicando mi situación, para solicitar la revisión de la suspensión.
+
+**Criterios de aceptación:**
+- En la tarjeta del comercio suspendido hay un enlace "Contactar a Soporte" (consulta de tipo apelación de comercio). Con la cuenta suspendida, que no me deja iniciar sesión, escribo desde la página pública de Soporte con mi email.
+- La consulta es una conversación por turnos (hasta 20 mensajes) que solo Soporte cierra; veo mis consultas y cuáles esperan mi respuesta en "Mis consultas a Soporte", con un contador en mi perfil.
 
 ## HU-D11: Ver Cuánto Vendí en el Turno
 
-Como Dueño, quiero ver en el panel de cada comercio cuánto se vendió en el turno en curso (o en el último turno terminado, aclarando que ya terminó), cuántos pedidos tuvo y cuántos están pendientes, y poder desplegar la comisión de plataforma y el neto del turno, para saber cuánto factura el comercio y cuánto me queda sin tener que sumar a mano. Un turno que cruza la medianoche cuenta como un solo turno, y el panel me avisa "Sin turno por ahora" cuando no hay ninguno.
+Como Dueño, quiero ver en el panel de cada comercio cuánto se vendió en el turno en curso (o en el último turno terminado, aclarando que ya terminó), cuántos pedidos tuvo y cuántos están pendientes (en escritorio, también cuántos están en preparación), y poder desplegar la comisión de plataforma y el neto del turno, para saber cuánto factura el comercio y cuánto me queda sin tener que sumar a mano. Un turno que cruza la medianoche cuenta como un solo turno, y el panel me avisa "Sin turno por ahora" cuando no hay ninguno.
 
 ## HU-D12: Cambiar Precios Fuera del Horario de Atención
 
@@ -189,3 +195,53 @@ Como Dueño, quiero ver las estadísticas de mi comercio de los últimos 7 o 30 
 - La lista de resultados muestra entregados, no retirados, rechazados, cancelados, anulados, sin respuesta y en curso.
 - Si no hubo pedidos, la pantalla me lo dice; con 7 días me ofrece ver los últimos 30 solo si hubo pedidos en ellos.
 - Las cifras son del comercio que tengo abierto, nunca de todos mis comercios, y se calculan con el estado actual de los pedidos (pueden diferir del email de cierre del turno).
+
+## HU-D15: Ver que mi Comercio Fue Suspendido y Por Qué
+
+Como Dueño, quiero saber que mi comercio fue suspendido y cuál es el motivo, para entender qué puedo y qué no puedo hacer mientras tanto.
+
+**Criterios de aceptación:**
+- Recibo un aviso dentro de la aplicación y un email con el motivo cuando suspenden uno de mis comercios, y otro cuando levantan la suspensión (con el mensaje del equipo, si lo hay). Veo el estado, el motivo y la fecha en mi panel.
+- Con el comercio suspendido entro a mi panel en solo lectura: veo mis pedidos, mis estadísticas y mi documentación, puedo subir documentos y vincular Mercado Pago, pero no puedo editar el comercio, los productos ni los horarios, ni abrir o cerrar, ni desvincular Mercado Pago, ni administrar mi equipo.
+- Subir documentos con el comercio suspendido no lo saca de la suspensión; solo la levanta el Administrador. Al levantarla, el comercio vuelve a vender si tengo Mercado Pago vinculado y al menos un documento aprobado; si no, queda aprobado pero sin poder vender hasta cumplirlo.
+- Los pedidos que esperaban mi respuesta se rechazan solos con reembolso; sobre los demás puedo actuar según su estado, antes de la hora límite que me indica una franja arriba de la lista de pedidos (ver HU-CO16).
+- Si el comercio sigue suspendido por separado cuando levantan la suspensión de mi cuenta, lo sigo viendo suspendido.
+
+## HU-D16: Subir y Seguir la Documentación de mi Comercio
+
+Como Dueño, quiero subir los documentos de habilitación de mi comercio y ver su estado de revisión, para que el comercio quede apto para vender.
+
+**Criterios de aceptación:**
+- Elijo el tipo (libreta sanitaria, carnet de manipulación de alimentos, habilitación comercial u otro) y subo un PDF, JPG, PNG o WebP de hasta 8 MB. Puedo tener hasta 5 documentos en revisión a la vez y 20 en total por comercio.
+- Cada documento se ve como "En revisión", "Aprobado" o "Rechazado" (con el motivo, de hasta 255 caracteres). Solo puedo eliminar uno que sigue en revisión; uno rechazado se conserva y subo uno nuevo.
+- El comercio queda apto para vender con la cuenta de Mercado Pago vinculada, al menos un documento aprobado y ninguno en revisión; para seguir vendiendo alcanza con la cuenta y un documento aprobado, así que subir uno nuevo no corta las ventas.
+- Recibo un aviso dentro de la aplicación cuando se aprueba o se rechaza un documento, cuando el comercio queda apto para vender y cuando deja de serlo. No recibo email.
+- Si se corta la conexión al subir, la aplicación me avisa que revise la lista de documentos antes de volver a subir, para no duplicarlo. Un Empleado no ve la documentación.
+
+## HU-D17: Ver que mi Cuenta Fue Suspendida
+
+Como Dueño, quiero saber que el Administrador suspendió mi cuenta y por qué, para poder pedir su revisión.
+
+**Criterios de aceptación:**
+- No puedo iniciar sesión mientras dure; el mensaje de la pantalla de inicio muestra el motivo, y puedo escribir a Soporte con mi email.
+- Si la suspensión alcanza a mis comercios, recibo un solo email con el motivo y la lista de mis comercios afectados (no uno por comercio) y, al levantarla, otro con los comercios que volvieron a operar y los que siguen suspendidos por separado.
+- Los pedidos que estaban en preparación los atiende mi equipo (con el tope de 90 minutos); si no tengo Empleados activos, se anulan o cancelan y se devuelve el dinero a mis clientes.
+
+## HU-D18: Reactivar mi Cuenta Inactiva
+
+Como Dueño, quiero reactivar mi cuenta cuando quedó inactiva por falta de uso, para recuperar mis comercios.
+
+**Criterios de aceptación:**
+- Al iniciar sesión con mi usuario y contraseña veo "Tu cuenta está inactiva", que me dice qué comercios se van a restablecer y cuáles siguen suspendidos, y un botón para reactivarla; entro en el acto.
+- Mis comercios vuelven a Apto para Venta o a Aprobado según mi cuenta de Mercado Pago y mis documentos.
+- No cuento como inactivo si algún comercio recibió pedidos en los últimos 3 meses, aunque yo no haya entrado.
+
+## HU-D19: Ayuda e Interfaz de Escritorio
+
+Como Dueño, quiero encontrar ayuda en mi perfil y operar cómodo desde una computadora.
+
+**Criterios de aceptación:**
+- Mi perfil tiene "Ayuda" con Preguntas frecuentes, escribir a Soporte, mis consultas, Términos y Política de Privacidad.
+- Al iniciar sesión me saludan por mi nombre de pila.
+- Desde 1024 px uso una barra lateral (Panel, Productos, Pedidos, Estadísticas, Documentación, Equipo, Avisos y Perfil del comercio); en Pedidos elijo uno de la lista y lo veo y resuelvo al costado; Productos es una tabla con "Nuevo producto" en la cabecera; el perfil del comercio se recorre por secciones sin recargar.
+- El botón "Volver" lleva siempre al mismo destino previsible.

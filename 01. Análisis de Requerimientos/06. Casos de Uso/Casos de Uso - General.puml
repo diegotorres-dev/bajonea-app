@@ -1,0 +1,229 @@
+@startuml casos-de-uso-general
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam defaultFontSize 12
+skinparam usecase {
+  BackgroundColor #FEFEFE
+  BorderColor #555555
+}
+skinparam arrow {
+  Color #555555
+}
+
+left to right direction
+
+actor "Cliente"               as cliente
+actor "Dueño"                 as dueno
+actor "Empleado"              as empleado
+actor "Operador de Comercio"  as operador
+actor "Administrador"         as admin
+actor "Sistema"               as sistema
+actor "MercadoPago"           as mp
+
+dueno    --|> operador
+empleado --|> operador
+
+rectangle "Bajoneá — Plataforma Gastronómica" {
+
+  package "Acciones Comunes" {
+    (Iniciar Sesión)                    as LOGIN
+    (Seleccionar Contexto:\nCliente o Comercio) as SELECT_CONTEXT
+    (Cerrar Sesión)                     as LOGOUT
+    (Verificar Email)                   as VERIFY
+    (Recuperar Contraseña)              as RECOVER
+    (Cambiar Contraseña)                as CHANGE_PASS
+    (Validar Código)                    as VALIDATE_TOKEN
+    (Reenviar Verificación)             as RESEND
+    (Reactivar Cuenta Inactiva)         as REACTIVATE
+    (Escribir a Soporte)                as SUPPORT
+    (Ver Ayuda y Páginas Legales)       as HELP
+  }
+
+  package "Módulo Cliente" {
+    (Registrarse como Cliente)           as REG_C
+    (Gestionar Perfil y Direcciones)     as PROFILE_C
+    (Explorar Comercios y Menús)         as EXPLORE
+    (Buscar y Filtrar Productos)         as FILTER
+    (Gestionar Carrito)                  as CART
+    (Realizar Pedido)                    as ORDER
+    (Realizar Pago)                      as PAY
+    (Seguir Estado de Pedido)            as TRACK
+    (Cancelar Pedido)                    as CANCEL_C
+    (Confirmar Entrega)                  as CONFIRM_DEL
+    (Iniciar y Seguir Reclamo)           as CLAIM
+    (Contactar al Comercio)              as CONTACT_COM
+    (Contactar Soporte\npor Suspensión)  as SUPPORT_C
+  }
+
+  package "Módulo Dueño" {
+    (Registrarse como Dueño)           as REG_CO
+    (Vincular Cuenta\nde MP)           as LINK_MP
+    (Administrar Múltiples\nComercios) as MULTI_COM
+    (Gestionar Empleados)              as MANAGE_EMP
+    (Gestionar Documentación\nde Habilitación) as DOCS
+    (Ver Estadísticas del Comercio)    as STATS
+    (Solicitar Revisión)               as REVIEW_REQ
+    (Contactar Soporte\npor Suspensión) as SUPPORT_REQ
+  }
+
+  package "Módulo Empleado" {
+    (Aceptar Invitación\nde Empleado)     as ACCEPT_INVITE
+    (Operar Varios Comercios\ncon una Sola Cuenta) as MULTI_COM_EMP
+    (Dejar de Trabajar en\nun Comercio)   as RESIGN
+  }
+
+  package "Módulo Comercio (Operación del Negocio)" {
+    (Gestionar Perfil y Horarios)   as PROFILE_CO
+    (Cerrar / Abrir Comercio\nManualmente) as TOGGLE_CLOSE
+    (Gestionar Redes Sociales)      as SOCIAL_CO
+    (Gestionar Productos)           as PRODUCTS
+    (Gestionar Pedidos)             as MANAGE_ORDERS
+    (Anular Pedido)                 as NULLIFY
+  }
+
+  package "Módulo Administrador" {
+    (Ver Panel de Pendientes)               as ADMIN_PANEL
+    (Gestionar Solicitudes\nde Comercios)   as ADMIN_COM
+    (Gestionar Usuarios)                    as ADMIN_USERS
+    (Gestionar Categorías y Tags)           as CATALOG
+    (Gestionar Reclamos)                    as ADMIN_CLAIMS
+    (Gestionar Reembolsos)                  as ADMIN_REFUNDS
+    (Revisar Documentos\nde Comercios)      as ADMIN_DOCS
+    (Configurar Tarifas\nde Servicio)       as CONFIG_FEES
+    (Gestionar Re-solicitudes)              as ADMIN_REVIEWS
+    (Atender Soporte\ny Levantar Suspensión) as ADMIN_SUPPORT
+    (Ver Equipo y Actividad\nde un Comercio) as ADMIN_TEAM
+  }
+
+  package "Automatismos del Sistema" {
+    (Gestionar Sesiones)                    as SYS_SESSION
+    (Gestionar Estados de Usuario\ne Inactivar Cuentas) as SYS_STATES
+    (Propagar Estados del Dueño\na sus Comercios)       as SYS_PROPAGATE
+    (Auto-confirmar Entrega)                as SYS_DELIVERY
+    (Emitir Notificaciones)                 as SYS_NOTIF
+    (Gestionar Timeouts de Pedido)          as SYS_TIMEOUT
+    (Gestionar Pedidos de Comercio\nSuspendido)         as SYS_SUSPENDED
+    (Procesar Webhook de Pago)              as SYS_WEBHOOK
+    (Generar Reembolsos)                    as SYS_REFUND
+    (Expirar Tokens)                        as SYS_TOKEN_EXP
+    (Reabrir Cierre Manual\nde Comercios)   as SYS_REOPEN
+    (Vencer Invitaciones\nde Empleado)      as SYS_INVITES
+    (Cerrar Turnos y Enviar\nResumen por Email)         as SYS_SHIFT
+  }
+}
+
+' ── Asociaciones de actores ──────────────────────────────
+cliente  --> LOGIN
+cliente  --> LOGOUT
+cliente  --> RECOVER
+cliente  --> CHANGE_PASS
+cliente  --> REACTIVATE
+cliente  --> SUPPORT
+cliente  --> HELP
+cliente  --> REG_C
+cliente  --> PROFILE_C
+cliente  --> EXPLORE
+cliente  --> CART
+cliente  --> ORDER
+cliente  --> TRACK
+cliente  --> CANCEL_C
+cliente  --> CONFIRM_DEL
+cliente  --> CLAIM
+cliente  --> CONTACT_COM
+cliente  --> SUPPORT_C
+
+dueno    --> LOGIN
+dueno    --> LOGOUT
+dueno    --> RECOVER
+dueno    --> CHANGE_PASS
+dueno    --> REACTIVATE
+dueno    --> SUPPORT
+dueno    --> HELP
+dueno    --> REG_CO
+dueno    --> LINK_MP
+dueno    --> MULTI_COM
+dueno    --> MANAGE_EMP
+dueno    --> DOCS
+dueno    --> STATS
+dueno    --> REVIEW_REQ
+dueno    --> SUPPORT_REQ
+
+empleado --> LOGIN
+empleado --> LOGOUT
+empleado --> RECOVER
+empleado --> CHANGE_PASS
+empleado --> HELP
+empleado --> ACCEPT_INVITE
+empleado --> MULTI_COM_EMP
+empleado --> RESIGN
+
+operador --> PROFILE_CO
+operador --> TOGGLE_CLOSE
+operador --> PRODUCTS
+operador --> MANAGE_ORDERS
+
+dueno    --> SOCIAL_CO
+
+admin    --> LOGIN
+admin    --> LOGOUT
+admin    --> ADMIN_PANEL
+admin    --> ADMIN_COM
+admin    --> ADMIN_USERS
+admin    --> CATALOG
+admin    --> ADMIN_CLAIMS
+admin    --> ADMIN_REFUNDS
+admin    --> ADMIN_DOCS
+admin    --> CONFIG_FEES
+admin    --> ADMIN_REVIEWS
+admin    --> ADMIN_SUPPORT
+admin    --> ADMIN_TEAM
+
+sistema  --> SYS_SESSION
+sistema  --> SYS_STATES
+sistema  --> SYS_PROPAGATE
+sistema  --> SYS_DELIVERY
+sistema  --> SYS_NOTIF
+sistema  --> SYS_TIMEOUT
+sistema  --> SYS_SUSPENDED
+sistema  --> SYS_WEBHOOK
+sistema  --> SYS_REFUND
+sistema  --> SYS_TOKEN_EXP
+sistema  --> SYS_REOPEN
+sistema  --> SYS_INVITES
+sistema  --> SYS_SHIFT
+
+mp       --> PAY
+mp       --> SYS_WEBHOOK
+mp       --> SYS_REFUND
+
+' ── <<include>> ──────────────────────────────────────────
+REG_C          ..> VERIFY         : <<include>>
+REG_CO         ..> VERIFY         : <<include>>
+RECOVER        ..> VALIDATE_TOKEN : <<include>>
+REACTIVATE     ..> VALIDATE_TOKEN : <<include>>
+ORDER          ..> PAY            : <<include>>
+
+' ── <<extend>> ───────────────────────────────────────────
+RESEND       ..> VERIFY         : <<extend>>
+SELECT_CONTEXT ..> LOGIN        : <<extend>>
+FILTER       ..> EXPLORE        : <<extend>>
+CANCEL_C     ..> ORDER          : <<extend>>
+CONFIRM_DEL  ..> ORDER          : <<extend>>
+SYS_DELIVERY ..> ORDER          : <<extend>>
+SYS_TIMEOUT  ..> ORDER          : <<extend>>
+SYS_SUSPENDED ..> ORDER         : <<extend>>
+SYS_WEBHOOK  ..> PAY            : <<extend>>
+NULLIFY      ..> MANAGE_ORDERS  : <<extend>>
+SYS_SESSION  ..> LOGOUT         : <<extend>>
+SYS_NOTIF    ..> MANAGE_ORDERS  : <<extend>>
+SYS_NOTIF    ..> ORDER          : <<extend>>
+CLAIM        ..> ORDER          : <<extend>>
+CONTACT_COM  ..> ORDER          : <<extend>>
+SUPPORT_C    ..> SUPPORT        : <<extend>>
+SUPPORT_REQ  ..> SUPPORT        : <<extend>>
+SUPPORT_C    ..> ADMIN_SUPPORT  : <<extend>>
+SUPPORT_REQ  ..> ADMIN_SUPPORT  : <<extend>>
+SYS_REFUND   ..> SYS_WEBHOOK    : <<extend>>
+SYS_PROPAGATE ..> SYS_STATES    : <<extend>>
+
+@enduml

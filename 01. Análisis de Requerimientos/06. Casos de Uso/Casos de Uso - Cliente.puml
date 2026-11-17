@@ -1,0 +1,163 @@
+@startuml casos-de-uso-cliente
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam defaultFontSize 12
+skinparam usecase {
+  BackgroundColor #FEFEFE
+  BorderColor #555555
+}
+skinparam arrow {
+  Color #555555
+}
+
+left to right direction
+
+actor "Cliente"     as cliente
+actor "MercadoPago" as mp
+actor "Sistema"     as sistema
+
+rectangle "Bajoneá — Módulo Cliente" {
+
+  package "Registro y Cuenta" {
+    (Registrarse como Cliente)          as REG
+    (Aceptar Términos y\nCondiciones)   as ACCEPT_TERMS
+    (Verificar Email)                   as VERIFY
+    (Reenviar Verificación)             as RESEND
+    (Recuperar Contraseña)              as RECOVER
+    (Reactivar Cuenta Inactiva)         as REACTIVATE
+    (Cambiar Contraseña)                as CHANGE_PASS
+    (Editar Datos Personales)           as EDIT_PROFILE
+    (Cambiar Nombre de Usuario)         as CHANGE_USERNAME
+    (Cargar Foto de Perfil)             as PROFILE_PIC
+    (Gestionar Direcciones)             as ADDRESSES
+    (Agregar Dirección)                 as ADD_ADDR
+    (Editar Dirección)                  as EDIT_ADDR
+    (Eliminar Dirección)                as DEL_ADDR
+    (Marcar Dirección Principal)        as MAIN_ADDR
+  }
+
+  package "Exploración" {
+    (Ver Listado de Comercios)          as LIST_COM
+    (Filtrar Comercios\nAbiertos Ahora) as FILTER_OPEN
+    (Buscar Productos\nen Explorar)     as SEARCH
+    (Ver Menú de Comercio)              as VIEW_MENU
+    (Ver Detalle de Producto)           as VIEW_PRODUCT
+    (Filtrar Productos)                 as FILTER
+    (Ver Redes Sociales\ndel Comercio)  as SOCIAL
+  }
+
+  package "Carrito" {
+    (Gestionar Carrito)                 as CART
+    (Agregar Producto)                  as ADD_ITEM
+    (Modificar Cantidad)                as MOD_ITEM
+    (Eliminar Ítem)                     as DEL_ITEM
+    (Vaciar Carrito)                    as CLEAR_CART
+    (Ver Subtotal)                      as SUBTOTAL
+    (Ver Aviso de Cambio\nde Precio)    as PRICE_CHANGE
+  }
+
+  package "Pedidos y Pagos" {
+    (Realizar Pedido)                   as ORDER
+    (Seleccionar Modalidad\nde Entrega) as MODALITY
+    (Elegir Dirección\nde Entrega)      as SELECT_ADDR
+    (Confirmar con\nNuevo Total)        as CONFIRM_NEW_TOTAL
+    (Realizar Pago)                     as PAY
+    (Reintentar Pago Rechazado)         as RETRY_PAY
+    (Ver Historial de Pedidos)          as HISTORY
+    (Ver Detalle de Pedido)             as ORDER_DETAIL
+    (Ver Historial de Estados)          as STATE_HISTORY
+    (Ver Estado del Reembolso)          as REFUND_STATUS
+    (Cancelar Pedido)                   as CANCEL
+    (Confirmar Entrega)                 as CONFIRM_DEL
+    (Iniciar Reclamo por\nProblema con el Pedido) as CLAIM
+    (Ver Estado del Reclamo)            as CLAIM_STATUS
+    (Contactar al Comercio)             as CONTACT_COM
+  }
+
+  package "Notificaciones" {
+    (Ver Avisos y Marcarlos\ncomo Leídos)           as VIEW_NOTIFS
+    (Recibir Notificación\nde Cambio de Estado)     as NOTIF
+    (Recibir Aviso de\nEntrega Automática)          as NOTIF_AUTO
+    (Recibir Aviso de\nReclamo Resuelto)            as NOTIF_CLAIM
+  }
+
+  package "Ayuda y Soporte" {
+    (Ver Ayuda y Páginas Legales)       as HELP
+    (Escribir a Soporte)                as WRITE_SUPPORT
+    (Contactar Soporte\npor Suspensión) as SUPPORT_SUSP
+    (Ver Mis Consultas a Soporte)       as MY_SUPPORT
+    (Acceder a una Consulta con\nEmail y Código)    as ACCESS_CODE
+  }
+}
+
+' ── Asociaciones de actores ──────────────────────────────
+cliente --> REG
+cliente --> RECOVER
+cliente --> REACTIVATE
+cliente --> CHANGE_PASS
+cliente --> EDIT_PROFILE
+cliente --> ADDRESSES
+cliente --> LIST_COM
+cliente --> SEARCH
+cliente --> VIEW_MENU
+cliente --> CART
+cliente --> ORDER
+cliente --> HISTORY
+cliente --> CONFIRM_DEL
+cliente --> CLAIM
+cliente --> CONTACT_COM
+cliente --> VIEW_NOTIFS
+cliente --> HELP
+cliente --> WRITE_SUPPORT
+cliente --> MY_SUPPORT
+cliente --> ACCESS_CODE
+
+mp      --> PAY
+sistema --> NOTIF
+sistema --> NOTIF_AUTO
+sistema --> NOTIF_CLAIM
+
+' ── <<include>> ──────────────────────────────────────────
+REG       ..> VERIFY       : <<include>>
+REG       ..> ACCEPT_TERMS : <<include>>
+ADDRESSES ..> ADD_ADDR     : <<include>>
+ADDRESSES ..> EDIT_ADDR    : <<include>>
+ORDER     ..> MODALITY     : <<include>>
+ORDER     ..> PAY          : <<include>>
+ORDER     ..> CART         : <<include>>
+CART      ..> ADD_ITEM     : <<include>>
+CART      ..> SUBTOTAL     : <<include>>
+HISTORY   ..> ORDER_DETAIL : <<include>>
+
+' ── <<extend>> ───────────────────────────────────────────
+RESEND         ..> VERIFY       : <<extend>>
+CHANGE_USERNAME ..> EDIT_PROFILE : <<extend>>
+PROFILE_PIC    ..> EDIT_PROFILE : <<extend>>
+DEL_ADDR       ..> ADDRESSES    : <<extend>>
+MAIN_ADDR      ..> ADDRESSES    : <<extend>>
+FILTER_OPEN    ..> LIST_COM     : <<extend>>
+VIEW_MENU      ..> LIST_COM     : <<extend>>
+FILTER         ..> VIEW_MENU    : <<extend>>
+VIEW_PRODUCT   ..> VIEW_MENU    : <<extend>>
+SOCIAL         ..> VIEW_MENU    : <<extend>>
+MOD_ITEM       ..> CART         : <<extend>>
+DEL_ITEM       ..> CART         : <<extend>>
+CLEAR_CART     ..> CART         : <<extend>>
+PRICE_CHANGE   ..> CART         : <<extend>>
+SELECT_ADDR    ..> ORDER        : <<extend>>
+CONFIRM_NEW_TOTAL ..> ORDER     : <<extend>>
+RETRY_PAY      ..> PAY          : <<extend>>
+CANCEL         ..> ORDER_DETAIL : <<extend>>
+CONFIRM_DEL    ..> ORDER_DETAIL : <<extend>>
+STATE_HISTORY  ..> ORDER_DETAIL : <<extend>>
+REFUND_STATUS  ..> ORDER_DETAIL : <<extend>>
+CLAIM          ..> ORDER_DETAIL : <<extend>>
+CLAIM_STATUS   ..> ORDER_DETAIL : <<extend>>
+CONTACT_COM    ..> ORDER_DETAIL : <<extend>>
+NOTIF          ..> ORDER        : <<extend>>
+NOTIF_AUTO     ..> ORDER        : <<extend>>
+NOTIF_CLAIM    ..> CLAIM        : <<extend>>
+SUPPORT_SUSP   ..> WRITE_SUPPORT : <<extend>>
+MY_SUPPORT     ..> WRITE_SUPPORT : <<extend>>
+
+@enduml

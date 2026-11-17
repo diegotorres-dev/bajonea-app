@@ -6,8 +6,8 @@ a la que se le suma el rol por invitación (ver Requisitos Funcionales — Emple
 historias operativas que el Empleado ejecuta sobre un comercio (productos, pedidos) están
 detalladas en Historias de Usuario — Comercio, compartidas con el rol Dueño.
 
-> **Estado de implementación (2026-10-15):** todas estas historias están implementadas en los
-> tramos E1 a E4, pendientes de la confirmación final del dueño del proyecto.
+> **Estado de implementación:** todas estas historias están implementadas (tramos E1 a E4 y
+> Fase 5, tramos S2 y S3 para el comercio suspendido).
 
 ## HU-E01: Aceptar una Invitación para Operar un Comercio
 
@@ -30,6 +30,7 @@ Criterios de aceptación adicionales:
   años, el sistema me lo dice ("Tenés que tener 18 años o más para sumarte a un equipo"). La
   edad es la que declaro: el sistema no la verifica.
 - Si ya tengo cuenta, alcanzan mi email y el código.
+- No puedo aceptar la invitación si el comercio está suspendido (ni pendiente, rechazado, inactivo o con rechazo definitivo).
 - La invitación vence a los 7 días y el código admite hasta 5 intentos fallidos; si falla,
   le pido al Dueño que la reenvíe.
 - Al aceptar voy al login: no se inicia sesión automáticamente.
@@ -46,6 +47,7 @@ Criterios de aceptación adicionales:
   que usé resaltado; en una pestaña nueva con la sesión ya iniciada entro directo a ese
   último contexto, si sigue siendo válido. Puedo cambiar desde el perfil con "Cambiar de
   cuenta" sin cerrar sesión.
+- En la hoja "Cambiar de cuenta" veo el estado de cada comercio: uno suspendido dice "Comercio suspendido. Solo podés resolver pedidos en curso." y uno cerrado temporalmente por el bloqueo de la cuenta del Dueño dice "No se aceptan pedidos nuevos.". Nunca veo el motivo ni la fecha de una suspensión.
 - Si no soy Empleado de ningún comercio, entro directo como Cliente.
 - Si inicio sesión en otro dispositivo, mi sesión anterior se cierra en ambos contextos.
 
@@ -72,12 +74,15 @@ exclusivamente al Dueño. Todo lo que no está explícitamente permitido me qued
 
 Criterios de aceptación adicionales:
 - Si el comercio está suspendido o cerrado temporalmente lo veo con un aviso. Según el
-  estado de cada pedido: si está pendiente de confirmación solo puedo rechazarlo (el pago se
-  devuelve en el acto) y no aceptarlo; si está en preparación puedo despacharlo o anularlo;
+  estado de cada pedido: con el comercio suspendido los pendientes de confirmación se rechazan
+  solos con reembolso (si alguno todavía aparece dice "Se va a rechazar y reembolsar solo." y no
+  se puede aceptar); si está en preparación puedo despacharlo o anularlo antes de la hora límite
+  (90 minutos desde la suspensión), pasada la cual el sistema lo cancela solo;
   si está en camino no puedo hacer nada (lo confirma el cliente o el sistema); si está
   listo para retirar puedo entregarlo o cerrarlo como no retirado cuando pasó la espera
-  mínima de 60 minutos (sin devolución del pago). Con el comercio suspendido no puedo
-  modificar productos, imágenes, descripción ni teléfono; con el comercio cerrado
+  mínima de 60 minutos (sin devolución del pago); pasada la hora límite el sistema lo cierra solo
+  como no retirado. Con el comercio suspendido no puedo
+  modificar productos, imágenes, descripción, teléfono ni horarios; con el comercio cerrado
   temporalmente sí. En ninguno de los dos puedo abrir ni cerrar el comercio. Si el comercio
   solo está cerrado a mano (sigue operativo) sí puedo aceptar los pedidos pendientes.
 - Si un pedido de retiro quedó listo y el cliente no vino, puedo cerrarlo como "no
@@ -91,8 +96,10 @@ Criterios de aceptación adicionales:
   persona del equipo.
 - En la lista de pedidos veo mis propios pedidos con el chip "Tu pedido"; al abrirlos veo la
   nota "Hiciste este pedido como cliente. No podés gestionarlo desde acá.", sin botones.
-- Si el comercio está suspendido o cerrado temporalmente, veo arriba de la lista un aviso corto
-  ("Comercio suspendido. No se aceptan pedidos nuevos."). Si intento algo que el sistema no
+- Si el comercio está suspendido, veo arriba de la lista una franja que dice hasta qué hora
+  tengo para resolver los pedidos en curso y, si está cerrado temporalmente, un aviso corto
+  ("No se aceptan pedidos nuevos."). Un pedido que el sistema anuló porque el comercio quedó sin
+  quien lo atienda dice "Este pedido se anuló automáticamente.". Si intento algo que el sistema no
   permite, el motivo aparece en un aviso rojo fijo sobre los botones.
 - En un retiro listo, "Cerrar como no retirado" aparece apagado con "Disponible en N min (desde
   las HH:mm)" hasta que pasa la espera; "Entregar" no espera.
@@ -103,7 +110,16 @@ Criterios de aceptación adicionales:
   leer de ese comercio, y la pantalla muestra solo los avisos del comercio que tengo abierto
   (los de mis compras como cliente están en mi cuenta de Cliente, con su propia campana).
   "Ver pedido" me lleva al detalle del pedido, y "Marcar todas" deja leídos solo mis avisos
-  del comercio, sin tocar los del Dueño ni los de mis compañeros.
+  del comercio, sin tocar los del Dueño ni los de mis compañeros. Tocar el aviso entero también
+  me lleva a la pantalla donde actúo (nunca a una que no puedo ver); los no leídos se distinguen
+  por un fondo suave, un punto y el texto "No leída", y la lista se carga de a 20 con "Ver más".
+  Recibo un aviso, sin motivo y sin email, cuando suspenden el comercio y cuando levantan la
+  suspensión.
+- La lista de pedidos y el panel se actualizan solos cada 15 segundos; cada pedido pendiente me
+  dice "Vence en N minutos"; puedo encender o apagar el "Sonido activado / desactivado" para oír
+  los pedidos nuevos con la aplicación abierta. Rechazar y anular me piden una confirmación que
+  explica que el cliente recibe la devolución de todo el pago.
+- No veo los documentos de habilitación ni los reclamos de los clientes sobre los pedidos del comercio.
 - Si otra persona del equipo ya actuó sobre un pedido y yo toco un botón que quedó viejo,
   el aviso rojo explica por qué y el detalle se actualiza solo con el estado y los botones
   que corresponden, sin borrar el aviso.
@@ -155,3 +171,21 @@ Criterios de aceptación:
   de habilitar el botón rojo "Dejar de trabajar"; con "Volver" no pasa nada.
 - Al terminar voy al selector de cuenta y veo el aviso "Dejaste de trabajar en {comercio}".
   Si algo falla, el mensaje aparece dentro de la hoja y puedo reintentar.
+
+## HU-E07: Seguir Trabajando si Suspenden la Cuenta del Dueño
+
+Como Empleado activo, quiero poder terminar los pedidos en curso cuando el Administrador suspende la cuenta del Dueño, para que los clientes no queden sin su pedido.
+
+**Criterios de aceptación:**
+- Puedo despachar, entregar, cerrar o anular los pedidos en curso del comercio (no aceptar pedidos nuevos ni editar nada), con el mismo tope de 90 minutos.
+- Recibo un aviso dentro de la aplicación por cada comercio suspendido o restaurado, sin el motivo ni email.
+- Si mi propia cuenta está suspendida, bloqueada o inactiva, no cuento como equipo activo y, si es la suspendida, no puedo iniciar sesión ni operar ningún comercio donde trabajo; mi relación con cada comercio no cambia.
+
+## HU-E08: Ayuda e Interfaz de Escritorio
+
+Como Empleado, quiero encontrar ayuda en mi perfil y operar cómodo desde una computadora.
+
+**Criterios de aceptación:**
+- Mi perfil dentro del comercio tiene "Ayuda" con Preguntas frecuentes, escribir a Soporte, mis consultas, Términos y Política de Privacidad.
+- Al iniciar sesión me saludan por mi nombre de pila.
+- Desde 1024 px uso una barra lateral con solo las secciones que me corresponden; en Pedidos elijo uno de la lista y lo resuelvo al costado.

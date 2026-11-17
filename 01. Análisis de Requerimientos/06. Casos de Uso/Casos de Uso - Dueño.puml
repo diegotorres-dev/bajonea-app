@@ -1,0 +1,143 @@
+@startuml casos-de-uso-dueño
+skinparam actorStyle awesome
+skinparam packageStyle rectangle
+skinparam defaultFontSize 12
+skinparam usecase {
+  BackgroundColor #FEFEFE
+  BorderColor #555555
+}
+skinparam arrow {
+  Color #555555
+}
+
+left to right direction
+
+actor "Dueño"       as dueno
+actor "MercadoPago" as mp
+actor "Sistema"     as sistema
+
+rectangle "Bajoneá — Módulo Dueño" {
+
+  package "Registro y Cuenta" {
+    (Registrarse como Dueño)          as REG
+    (Aceptar Términos y\nCondiciones) as ACCEPT_TERMS
+    (Verificar Email)                 as VERIFY
+    (Reenviar Verificación)           as RESEND
+    (Cargar Foto de Perfil\nPersonal) as PROFILE_PIC
+    (Editar Datos Persona Jurídica)   as EDIT_LEGAL
+    (Reactivar Cuenta Inactiva)       as REACTIVATE
+  }
+
+  package "Vinculación de Mercado Pago" {
+    (Vincular Cuenta\nde Mercado Pago)    as LINK_MP
+    (Desvincular Cuenta\nde Mercado Pago) as UNLINK_MP
+    (Ver Efecto de la\nDesvinculación)    as PREVIEW_UNLINK
+    (Cerrar Comercios para\nPoder Desvincular) as CLOSE_FOR_UNLINK
+  }
+
+  package "Gestión de Múltiples Comercios" {
+    (Dar de Alta un\nComercio Adicional) as ADD_COM
+    (Seleccionar Comercio Activo)        as SELECT_COM
+    (Dar de Baja un Comercio)            as DROP_COM
+  }
+
+  package "Gestión de Empleados" {
+    (Invitar Empleado)                          as INVITE_EMP
+    (Validar Combinación de Roles\ny Cuenta Apta) as VALIDATE_ROLES
+    (Reenviar Invitación)                       as RESEND_INV
+    (Cancelar Invitación)                       as CANCEL_INV
+    (Ver Equipo del Comercio:\nMiembros y Solicitudes) as LIST_EMP
+    (Desactivar Empleado)                       as DEACT_EMP
+    (Reactivar Empleado)                        as REACT_EMP
+    (Ver Actividad e Historial\ndel Equipo)     as VIEW_ACTIVITY
+  }
+
+  package "Documentación de Habilitación" {
+    (Subir Documento\nde Habilitación)          as UPLOAD_DOC
+    (Eliminar Documento\nen Revisión)           as DELETE_DOC
+    (Ver Estado de los Documentos)              as VIEW_DOCS
+  }
+
+  package "Operación del Negocio" {
+    (Operar sus Comercios:\nProductos, Pedidos, Horarios\ny Redes Sociales) as OPERATE
+    (Ver Estadísticas\ndel Comercio)            as VIEW_STATS
+    (Ver Comisión y Neto\ndel Turno)            as VIEW_COMMISSION
+    (Ver Reclamo de un Pedido\nen Solo Lectura) as VIEW_CLAIM
+  }
+
+  package "Soporte y Revisiones" {
+    (Solicitar Revisión de\nSolicitud Rechazada) as REVIEW_REQ
+    (Contactar Soporte\npor Suspensión)          as SUPPORT_REQ
+    (Ver Ayuda y Mis Consultas\na Soporte)       as HELP
+  }
+
+  package "Notificaciones" {
+    (Recibir Notificación\nde Gestión Administrativa)   as NOTIF_ADMIN
+    (Recibir Notificación\nde Empleado Aceptado\no Renunciado) as NOTIF_EMP
+    (Recibir Aviso de Documentos\ny Aptitud de Venta)   as NOTIF_DOCS
+    (Recibir Aviso de Reembolso\npor Reclamo)           as NOTIF_CLAIM
+    (Recibir Aviso de Entrega\nAutoconfirmada)          as NOTIF_AUTO
+    (Recibir Resumen de Cierre\nde Turno por Email)     as NOTIF_SHIFT
+  }
+}
+
+note bottom of OPERATE
+  Detalle completo de esta operatoria (productos,
+  pedidos, horarios, redes sociales): ver Casos de Uso — Comercio.
+  Puede ser delegada a un Empleado en estado Activo
+  (ver Casos de Uso — Empleado), salvo las acciones
+  exclusivas del Dueño.
+end note
+
+' ── Asociaciones de actores ──────────────────────────────
+dueno --> REG
+dueno --> REACTIVATE
+dueno --> LINK_MP
+dueno --> ADD_COM
+dueno --> SELECT_COM
+dueno --> DROP_COM
+dueno --> INVITE_EMP
+dueno --> LIST_EMP
+dueno --> EDIT_LEGAL
+dueno --> UPLOAD_DOC
+dueno --> VIEW_DOCS
+dueno --> OPERATE
+dueno --> VIEW_STATS
+dueno --> VIEW_CLAIM
+dueno --> REVIEW_REQ
+dueno --> SUPPORT_REQ
+dueno --> HELP
+
+mp      --> LINK_MP
+
+sistema --> NOTIF_ADMIN
+sistema --> NOTIF_EMP
+sistema --> NOTIF_DOCS
+sistema --> NOTIF_CLAIM
+sistema --> NOTIF_AUTO
+sistema --> NOTIF_SHIFT
+
+' ── <<include>> ──────────────────────────────────────────
+REG          ..> VERIFY         : <<include>>
+REG          ..> ACCEPT_TERMS   : <<include>>
+INVITE_EMP   ..> VALIDATE_ROLES : <<include>>
+UNLINK_MP    ..> PREVIEW_UNLINK : <<include>>
+
+' ── <<extend>> ───────────────────────────────────────────
+RESEND           ..> VERIFY         : <<extend>>
+PROFILE_PIC      ..> REG            : <<extend>>
+UNLINK_MP        ..> LINK_MP        : <<extend>>
+CLOSE_FOR_UNLINK ..> UNLINK_MP      : <<extend>>
+INVITE_EMP       ..> LIST_EMP       : <<extend>>
+RESEND_INV       ..> LIST_EMP       : <<extend>>
+CANCEL_INV       ..> LIST_EMP       : <<extend>>
+DEACT_EMP        ..> LIST_EMP       : <<extend>>
+REACT_EMP        ..> LIST_EMP       : <<extend>>
+VIEW_ACTIVITY    ..> LIST_EMP       : <<extend>>
+NOTIF_EMP        ..> LIST_EMP       : <<extend>>
+DELETE_DOC       ..> VIEW_DOCS      : <<extend>>
+UPLOAD_DOC       ..> VIEW_DOCS      : <<extend>>
+VIEW_COMMISSION  ..> OPERATE        : <<extend>>
+REVIEW_REQ       ..> REG            : <<extend>>
+
+@enduml

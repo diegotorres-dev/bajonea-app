@@ -2,7 +2,7 @@
 
 Requisitos de identidad de cuenta, datos fiscales, medio de cobro y administración de
 la relación con Empleados y con los distintos comercios que un mismo Dueño puede
-operar. Los requisitos operativos del negocio en sí (productos, extras, pedidos,
+operar. Los requisitos operativos del negocio en sí (productos, pedidos,
 horarios) están en Requisitos Funcionales — Comercio, ejecutables tanto por el Dueño como
 por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos del Dueño
 (entre ellas, los enlaces a redes sociales).
@@ -15,7 +15,11 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   los datos de la persona jurídica (CUIT y domicilio fiscal, obligatorios; razón social,
   condición frente al IVA, tipo de sociedad e inicio de actividades, opcionales), los datos del
   representante y los datos de su primer comercio (ver Requisitos Funcionales — Comercio,
-  sección Perfil del Negocio). Para registrarse tiene que aceptar los Términos y Condiciones
+  sección Perfil del Negocio). El comercio debe estar en una de las tres localidades
+  habilitadas de Tierra del Fuego (Río Grande, Ushuaia o Tolhuin); con otra, el sistema responde
+  "Esa localidad todavía no está disponible". El registro no pide un email del comercio: el
+  contacto es el de la cuenta. Si el Dueño sale del registro con datos cargados, la aplicación
+  le avisa antes de descartarlos. Para registrarse tiene que aceptar los Términos y Condiciones
   y la Política de Privacidad (el servidor rechaza con 400 si `aceptaTerminos` falta o es falso;
   la aceptación se valida y no se guarda). El alta de un comercio adicional pide la misma
   aceptación; la corrección de un comercio rechazado no.
@@ -44,8 +48,11 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   (Negocio, Legales solo si todavía no tuvo ningún comercio aprobado, Horarios y Redes) con
   todo precargado, que indica el número de intento y el motivo del rechazo. Si el comercio
   pasó a Rechazo definitivo, el Dueño solo ve una pantalla informativa con el motivo, desde
-  la que puede agregar un comercio nuevo (únicamente si cumple la regla de más abajo) y,
-  cuando exista el módulo de soporte, contactar al soporte.
+  la que puede agregar un comercio nuevo (únicamente si cumple la regla de más abajo) y
+  contactar a Soporte. Las pantallas de espera (comercio pendiente, rechazado o con rechazo
+  definitivo) se actualizan solas cada 15 segundos con la pantalla visible: cuando el
+  Administrador resuelve, el Dueño pasa a la pantalla que corresponde, con un sonido si lo tiene
+  encendido y un aviso de que el comercio fue aprobado, sin recargar.
 - Un Dueño puede agregar un comercio nuevo si tiene al menos un comercio Aprobado o Apto
   para venta, o si tiene al menos un comercio y todos están en Rechazo definitivo.
 - El nombre de un comercio es único en toda la plataforma, sin importar el Dueño ni la
@@ -56,18 +63,26 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   agregar, corregir o editar un comercio, el formulario avisa en vivo si el nombre está
   disponible o no, y el servidor lo verifica de todos modos al guardar. Un nombre tomado
   por una cuenta que nunca llegó a verificarse queda retenido.
-- Un Dueño con un comercio suspendido puede contactar al soporte desde su panel
-  completando un formulario con su descargo. El Administrador recibe la solicitud y
-  decide manualmente.
+- Un Dueño con un comercio suspendido puede contactar a Soporte desde el enlace "Contactar a
+  Soporte" de la tarjeta del comercio suspendido (consulta de tipo apelación de comercio),
+  con su descargo. La consulta es una conversación por turnos con el Administrador (ver
+  Requisitos Funcionales — Generales, sección Ayuda, Soporte y Páginas Legales); el
+  Administrador decide manualmente. Un Dueño con la cuenta suspendida no puede iniciar
+  sesión: escribe a Soporte desde la página pública, con su email.
+- Al iniciar sesión, la aplicación saluda al Dueño por su nombre de pila (por ejemplo, "Hola,
+  Lucía") en el panel del comercio.
 
 ---
 
 ## Selector de Comercio Activo
 
 - El panel del Dueño debe presentar un selector de "comercio activo" cuando administre
-  más de un comercio, de forma que toda acción operativa (productos, extras, pedidos,
+  más de un comercio, de forma que toda acción operativa (productos, pedidos,
   horarios, redes sociales) se ejecute siempre sobre el comercio seleccionado en ese
-  momento.
+  momento. Se cambia de comercio desde la hoja "Cambiar de cuenta", que muestra el estado de
+  cada comercio (con el motivo en los suspendidos, que el Empleado nunca ve); la primera vez
+  una pista de un solo uso explica el gesto de mantener apretado el avatar. En "Tus comercios",
+  los comercios con avisos sin leer lo indican, y tocarlos abre sus notificaciones.
 
 ---
 
@@ -77,7 +92,8 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   vinculación habilita el cobro en todos los comercios aprobados que administre; no se
   repite por cada comercio.
 - Sin esta vinculación, ninguno de sus comercios puede recibir pagos ni pedidos, y
-  ninguno aparece en el catálogo público.
+  ninguno aparece en el catálogo público. La vinculación sola no alcanza para vender: cada
+  comercio necesita además documentación aprobada (ver Documentación de Habilitación).
 - Al desvincular la cuenta, todos los comercios del Dueño quedan bloqueados para
   nuevos pedidos y desaparecen del catálogo hasta que se vuelva a vincular.
 - Un Dueño tiene una sola cuenta de MercadoPago activa para todos sus comercios. Con una
@@ -124,23 +140,23 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
 - El monto recibido en cada cobro refleja el subtotal menos el cargo de servicio al comercio, vía split
   de pagos (ver Requisitos Funcionales — Comercio, sección Gestión de Valores en
   Pedidos).
-- La vinculación se realiza mediante el flujo OAuth authorization_code con PKCE. Al completarla, los comercios Aprobados del Dueño pasan automáticamente a Apto para Venta (APTO_VENTA); al desvincular, vuelven a Aprobado.
+- La vinculación se realiza mediante el flujo OAuth authorization_code con PKCE. Al completarla, los comercios Aprobados del Dueño que además tienen al menos un documento aprobado y ninguno en revisión pasan automáticamente a Apto para Venta (APTO_VENTA); al desvincular, vuelven a Aprobado. Con un comercio Suspendido el Dueño puede vincular la cuenta, pero no desvincularla.
 - Los tokens de acceso y de renovación de MercadoPago se almacenan cifrados. La renovación automática del token no está implementada (ver Alcance y Limitaciones).
 
 ---
 
 ## Gestión de Empleados
 
-> **Estado de implementación (2026-10-15):** invitar, reenviar, cancelar, la vista del equipo y la
-> pestaña Actividad están implementados (tramos E1 y E3). Desactivar, reactivar y el historial del equipo
-> tienen el backend hecho (E4, bloques A1 a A3) y las pantallas del Dueño hechas en E4, entrega B1
-> (Activos e Inactivos, menú de tres puntos, desactivar con confirmación, reactivar directo, filtro
-> "Equipo" en Actividad); los textos son los de esa entrega.
+> **Estado de implementación:** invitar, reenviar, cancelar, la vista del equipo (Mi equipo, Solicitudes y
+> Actividad), desactivar, reactivar y el historial del equipo están implementados, con sus pantallas
+> (tramos E1, E3 y E4).
 
 - El Dueño, desde el panel de un comercio puntual, debe poder acceder a una sección
   "Mi equipo" para invitar personas a operar ese comercio como Empleado, ingresando su
   email. La invitación es por comercio. Solo se puede invitar mientras el comercio sea
-  operativo (Aprobado o Apto para Venta).
+  operativo (Aprobado o Apto para Venta): con el comercio Suspendido el equipo queda en solo
+  lectura (no se invita, no se da de baja, no se reactiva y no se acepta una invitación
+  pendiente).
 - El sistema genera una invitación propia (`InvitacionEmpleado`, no un token): código de
   6 dígitos, vencimiento a 7 días, y se envía por email con el código en el texto y un
   enlace genérico a la pantalla de invitación. El invitado se identifica con email y
@@ -180,6 +196,9 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   El email de regularización nombra solo al comercio que invita, nunca al Dueño.
   Máximo 3 emails de regularización por día por destinatario, contados sobre la tabla de
   notificaciones con canal Email. No se envía a Dueños ni a Administradores.
+- Un integrante cuya cuenta suspendió el Administrador aparece en el equipo con la etiqueta
+  "Cuenta suspendida" y la fila atenuada, sin el motivo. Sigue figurando hasta que el Dueño decida
+  otra cosa, pero no cuenta como equipo activo para atender pedidos.
 - El Dueño debe poder ver el equipo de cada comercio en dos pestañas con su contador:
   "Mi equipo · N" (el contador cuenta solo los integrantes con la relación Activa; debajo
   hay dos filtros, "Activos · N" —el que se ve por defecto— e "Inactivos · N", donde cada integrante muestra
@@ -236,7 +255,9 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
   La actividad la ve el Dueño completa; el Empleado no la
   ve (ni la pestaña ni la pantalla de equipo) y el Administrador la ve en solo lectura.
 - El Dueño recibe una notificación cuando el invitado acepta la invitación (T33) y cuando
-  un Empleado renuncia (T34).
+  un Empleado renuncia (T34). Cada aviso se toca entero: lleva a la pantalla donde se actúa
+  (el pedido, el equipo, la documentación, el panel) y se marca leído; los informativos solo se
+  marcan. La lista se carga de a 20 con "Ver más".
 - El Dueño recibe, igual que cada Empleado Activo, el aviso T30 cuando el sistema confirma solo
   la entrega de un pedido a domicilio porque el Cliente no respondió en el plazo configurado
   (90 minutos por defecto): cada uno tiene su propia copia, con el comercio, que marca como
@@ -253,7 +274,7 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
 ## Gestión de Múltiples Comercios
 
 - El Dueño debe poder dar de alta comercios adicionales bajo su propia cuenta, cada uno
-  con sus propios datos, horarios, productos, extras, redes sociales y equipo de
+  con sus propios datos, horarios, productos, documentos, redes sociales y equipo de
   empleados, sin límite de cantidad.
 - El Dueño debe poder dar de baja o cerrar definitivamente un comercio puntual sin que
   esto afecte a sus demás comercios ni a su cuenta de MercadoPago vinculada.
@@ -262,7 +283,7 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
 
 ## Resumen del Turno en el Panel
 
-- El panel de cada comercio muestra el turno en curso o, entre turnos, el último turno terminado, con su horario y un rótulo ("En curso", "Terminó", "Terminó ayer", "Sin turno por ahora"), y tres contadores: "Vendido en el turno" (el subtotal de los pedidos facturados del turno, sin descontar cargos), "Pedidos del turno" y "Pendientes" (todos los del comercio).
+- El panel de cada comercio muestra el turno en curso o, entre turnos, el último turno terminado, con su horario y un rótulo ("En curso", "Terminó", "Terminó ayer", "Sin turno por ahora"), y sus contadores: "Vendido en el turno" (el subtotal de los pedidos facturados del turno, sin descontar cargos), "Pedidos del turno" y "Pendientes" (todos los del comercio); en pantallas de escritorio, un cuarto contador, "En preparación". El panel y la lista de pedidos se actualizan solos cada 15 segundos con la pantalla visible; en escritorio el panel suma una lista de pedidos activos con "Ver todos".
 - El Dueño puede desplegar, debajo de los contadores, la comisión de plataforma del turno y el neto del turno (el vendido menos la comisión). La comisión y el neto son exclusivos del Dueño: un Empleado ve el mismo resumen sin esos dos datos.
 - Un pedido pertenece al turno en el que se confirmó su pago (el turno que empezó el día anterior si el pago fue de madrugada y el turno cruza la medianoche); si el pago cayó fuera de toda franja, al último turno terminado de los 7 días anteriores. Editar los horarios después no cambia el turno de los pedidos ya pagados.
 
@@ -284,7 +305,7 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
 
 ## Estadísticas del Comercio
 
-- El Dueño ve las estadísticas de un comercio desde el panel, con el enlace "Ver estadísticas" debajo de la barra de métricas del turno. Es exclusivo del Dueño: el Empleado no ve el enlace ni puede abrir la pantalla.
+- El Dueño ve las estadísticas de un comercio desde el panel (en escritorio, desde la barra lateral), con el enlace "Ver estadísticas" debajo de la barra de métricas del turno. Siguen disponibles con el comercio Suspendido. Es exclusivo del Dueño: el Empleado no ve el enlace ni puede abrir la pantalla.
 - Las estadísticas son de un solo comercio, el que el Dueño tiene abierto; nunca un total de todos sus comercios.
 - La pantalla tiene dos rangos, los últimos 7 días y los últimos 30 días (30 por defecto), y muestra cuatro cifras: lo vendido, la comisión de plataforma, el neto y el ticket promedio (lo vendido dividido por los pedidos facturados).
 - Un gráfico de barras muestra lo vendido en cada día del rango, con la fecha en los extremos. El Dueño toca una barra, o la elige con el teclado, y ve el detalle de ese día: la fecha, lo vendido, los pedidos y, debajo, cada uno de sus turnos con lo vendido y los pedidos (los pedidos pagados sin turno aparecen como "Sin turno asignado" y los turnos que cruzan la medianoche con "(día siguiente)").
@@ -300,6 +321,50 @@ por un Empleado autorizado, con las excepciones indicadas en Permisos Exclusivos
 - El precio de un producto no se puede cambiar mientras el comercio está dentro de uno de sus horarios de atención (aunque el comercio esté cerrado a mano o cerrado temporalmente: cuenta el horario, no el estado). Las demás partes del producto (nombre, descripción, categoría, tags, fotos, estado) se siguen editando con normalidad, y el alta de un producto nuevo con su precio no tiene restricción. Un comercio sin horarios cargados no tiene esta restricción.
 - En el formulario de edición, mientras el precio está bloqueado, el campo aparece deshabilitado con un candado y la leyenda "Se puede cambiar fuera de tu horario de atención"; el precio se conserva sin cambios al guardar los demás datos. Si el horario de atención termina con el formulario abierto, el campo se habilita solo a esa hora. Si el servidor igualmente rechaza el cambio, el mensaje "No podés cambiar precios mientras tu comercio está en horario de atención. Hacelo fuera de ese horario." aparece en un aviso fijo y el campo vuelve a su valor.
 - Este bloqueo vale por igual para el Dueño y para el Empleado.
+
+---
+
+## Documentación de Habilitación
+
+- Cada comercio tiene su documentación de habilitación, que el Dueño sube desde la pantalla "Documentación" (en escritorio, desde la barra lateral) y revisa el Administrador. Los documentos son privados del comercio: los ve y los sube solo el Dueño, y los revisa el Administrador; el Empleado no tiene acceso (ni a la pantalla ni a los archivos).
+- Tipos de documento: libreta sanitaria, carnet de manipulación de alimentos, habilitación comercial y otro. Formatos PDF, JPG, PNG y WebP, de hasta 8 MB cada uno, validados por su contenido y no solo por la extensión. Cada comercio puede tener hasta 5 documentos en revisión a la vez y 20 en total (los rechazados cuentan). Los documentos no tienen vencimiento.
+- Un documento nace "En revisión". El Administrador lo aprueba, lo rechaza con un motivo de hasta 255 caracteres o, si ya estaba aprobado, lo revoca. Un documento rechazado se conserva como constancia y el Dueño sube uno nuevo; no se vuelve a resolver. El Dueño solo puede eliminar un documento propio que sigue en revisión.
+- Se puede subir con el comercio Aprobado, Apto para Venta, Cerrado Temporalmente o Suspendido. Con el comercio Suspendido la pantalla avisa "El comercio está suspendido. Podés subir documentos, pero no vuelve a vender hasta que se levante la suspensión." y subir, eliminar o que el Administrador resuelva un documento no saca al comercio de la suspensión: solo la levanta el Administrador.
+- Regla de venta: un comercio entra a Apto para Venta con la cuenta de MercadoPago vinculada, al menos un documento aprobado (de cualquier tipo) y ningún documento en revisión. Para seguir vendiendo alcanza con la cuenta vinculada y un documento aprobado: subir un documento nuevo o que rechacen uno extra no corta las ventas. El comercio pierde la aptitud (vuelve a Aprobado y sale del catálogo) al desvincular MercadoPago, al revocarse su último documento aprobado o al eliminarse ese respaldo. Con la cuenta del Dueño bloqueada, ningún camino deja al comercio a la venta.
+- El Dueño recibe un aviso dentro de la aplicación (sin email) cuando se aprueba o se rechaza un documento (con el motivo), cuando el comercio queda Apto para Venta y cuando pierde la aptitud.
+- La exigencia de documentos es un interruptor de configuración del sistema (`comercio.documentacion.requerida`, activo por defecto): apagado, solo cuenta la cuenta de MercadoPago.
+
+---
+
+## Comercio Suspendido o Inactivo
+
+- Con el comercio Suspendido el Dueño entra a su panel en solo lectura. Ve el estado, el motivo y la fecha de la suspensión, sus pedidos, sus estadísticas y sus documentos; puede subir documentos y vincular su cuenta de Mercado Pago. No puede editar productos, precios, perfil, horarios ni redes sociales (409, código COMERCIO_SUSPENDIDO), ni abrir ni cerrar el comercio (409, código COMERCIO_NO_OPERATIVO), ni aceptar pedidos nuevos (409, código COMERCIO_SIN_OPERACION), ni invitar, dar de baja o reactivar Empleados, ni desvincular Mercado Pago. Sobre los pedidos puede: despachar o anular uno en preparación, y entregar o cerrar como No Retirado uno listo para retirar; los pendientes de confirmación se rechazan solos al suspender, con reembolso total al Cliente. Los pedidos en camino no se tocan. Una franja arriba de la lista de pedidos dice hasta qué hora hay para resolver los pedidos en curso (90 minutos desde la suspensión).
+- Con el comercio Cerrado Temporalmente (cuenta del Dueño bloqueada) no tiene estas restricciones salvo que no se aceptan pedidos nuevos ni se abre o cierra el comercio.
+- El Dueño recibe un aviso dentro de la aplicación y un email con el motivo cuando suspenden uno de sus comercios, y otro cuando levantan la suspensión (con el mensaje del equipo, si lo hay). Cada comercio vuelve a Apto para Venta si cumple la regla de seguir vendiendo, a Aprobado si no, o a Cerrado Temporalmente si la cuenta del Dueño está bloqueada.
+- Si el comercio quedó sin quien lo atienda (por ejemplo, por la suspensión de su Dueño sin Empleados activos), los pedidos en preparación y listos para retirar se anulan o cancelan solos con reembolso total; en el detalle del pedido el Dueño ve "Este pedido se anuló automáticamente." (motivo "El comercio no está disponible"), no "Anulaste este pedido.".
+- Con el comercio Inactivo (por la inactividad del Dueño) el panel está en solo lectura: "El comercio está inactivo: por ahora no se puede modificar.".
+
+---
+
+## Suspensión e Inactividad de la Cuenta del Dueño
+
+- El Administrador puede suspender la cuenta de un Dueño con un motivo de 10 a 500 caracteres. La suspensión alcanza en cascada a todos sus comercios Aprobados, Aptos para Venta y Cerrados Temporalmente; un comercio que ya estaba suspendido por separado sigue así cuando se levanta la del Dueño. El Dueño no puede iniciar sesión mientras dure: la pantalla de inicio muestra el motivo, y puede escribir a Soporte con su email.
+- El Dueño recibe un solo email con el motivo y la lista de sus comercios afectados (no uno por comercio) y, al levantarse la suspensión, otro con los comercios que volvieron a operar y los que siguen suspendidos por separado. Los pedidos que estaban en preparación los atiende el equipo (con el tope de 90 minutos); si no hay Empleados activos se anulan o cancelan al instante y se devuelve el dinero.
+- A los 3 meses sin usar la cuenta (considerando como actividad que algún comercio recibió pedidos), el sistema la pasa a Inactiva sin aviso previo, y sus comercios Aprobados, Aptos para Venta o Cerrados Temporalmente pasan a Inactivos: salen del catálogo y no reciben pedidos. Al iniciar sesión con su usuario y contraseña ve la pantalla "Tu cuenta está inactiva", que indica qué comercios se van a restablecer y cuáles siguen suspendidos, y puede reactivarla; el Administrador también puede reactivarla desde su ficha.
+
+---
+
+## Reclamos de Pedidos del Comercio
+
+- El Dueño ve, en el detalle de un pedido del comercio con reclamo, un bloque de solo lectura "Reclamo del Cliente" con el estado y el motivo; si hubo reembolso, "Se reembolsaron $X al Cliente." (o "Se están reembolsando $X al Cliente."). No ve el mensaje del Cliente ni las fotos, que ve solo el Administrador, y no puede resolver ni responder el reclamo. El Empleado no ve nada del reclamo.
+- Cuando un reclamo se resuelve con reembolso, el Dueño recibe un aviso dentro de la aplicación: "Reembolsamos {monto} al Cliente por un reclamo del pedido #{n}. Mercado Pago lo descuenta de tu cuenta en la parte que te corresponde.".
+
+---
+
+## Ayuda e Interfaz
+
+- El perfil del Dueño tiene la pantalla "Ayuda", con Preguntas frecuentes, Escribir a Soporte, Mis consultas a Soporte (con un contador de las que esperan su respuesta), Términos y condiciones y Política de privacidad.
+- A partir de 1024 px el panel del Dueño usa una barra lateral (Panel, Productos, Pedidos, Estadísticas, Documentación, Equipo, Avisos y Perfil del comercio), Pedidos muestra la lista con el detalle al costado, Productos es una tabla y el perfil del comercio se recorre por secciones; en móvil no cambia nada. El botón "Volver" de las pantallas del comercio lleva siempre a un destino fijo.
 
 ---
 
@@ -321,13 +386,12 @@ Activo al comercio:
 - Gestionar los enlaces a redes sociales del comercio.
 - Todo lo relacionado con MercadoPago, incluido ver el enlace de pago de un pedido.
 - Corregir y volver a solicitar un comercio rechazado, y dar de alta comercios adicionales.
-- La futura documentación de habilitación del comercio.
+- Subir y eliminar los documentos de habilitación del comercio y ver su estado de revisión.
+- Ver el reclamo de un pedido del comercio (estado, motivo y monto), sin el mensaje del Cliente.
 - Dar de baja o cerrar definitivamente un comercio puntual.
 - Crear comercios nuevos bajo su propio perfil de Dueño.
 
-Con el comercio Suspendido o Cerrado Temporalmente, hoy el Dueño no tiene las restricciones
-que sí tiene el Empleado (por ejemplo, puede editar productos y perfil con el comercio
-Suspendido): es un hueco conocido que se resuelve en el tramo de rediseño de la suspensión.
+Con el comercio Suspendido, el Dueño tiene las mismas restricciones que el Empleado y alguna más (ver Comercio Suspendido o Inactivo). Con el comercio Cerrado Temporalmente no tiene estas restricciones.
 
 Todo lo que no esté explícitamente clasificado como delegable (ver Requisitos Funcionales
 — Empleado, sección Permisos Delegados) queda reservado al Dueño por defecto.

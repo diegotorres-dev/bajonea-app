@@ -15,7 +15,7 @@ comercios se encuentran en Requisitos Funcionales — Dueño.
   nombre, descripción, foto de perfil del negocio, teléfono, dirección operativa (solo
   Tierra del Fuego: Río Grande, Tolhuin o Ushuaia), tipo de comercio (Restaurante, Emprendimiento,
   Rotisería, Heladería, Cafetería, Panadería, Pizzería, Parrilla, Bar, Kiosco, Food
-  Truck u Otro) y modalidades de entrega aceptadas (acepta_delivery, acepta_retiro —
+  Truck, Hamburguesería u Otro) y modalidades de entrega aceptadas (acepta_delivery, acepta_retiro —
   al menos una obligatoria). La foto de perfil del comercio es obligatoria desde el
   alta inicial. El nombre del comercio es único en toda la plataforma (ver los requisitos
   del Dueño): el formulario avisa en vivo, al salir del campo, si el nombre está disponible.
@@ -57,24 +57,19 @@ comercios se encuentran en Requisitos Funcionales — Dueño.
 ## Estados del Comercio
 
 - **Pendiente:** registrado y en espera de aprobación o rechazo por el Administrador.
-- **Aprobado:** habilitado para operar. Aparece en catálogo solo si además su Dueño
-  tiene la cuenta de MercadoPago vinculada y está en estado Activo, dentro del horario
-  de atención del comercio, y `cerrado_manualmente = false`.
-- **Apto para Venta (APTO_VENTA):** comercio Aprobado cuyo Dueño vinculó su cuenta de MercadoPago. Se alcanza automáticamente al vincular la cuenta y vuelve a Aprobado al desvincularla. Es el estado que habilita la visibilidad en el catálogo y la recepción de pedidos.
+- **Aprobado:** aceptado por el Administrador, pero todavía sin vender: no aparece en el catálogo ni recibe pedidos hasta cumplir los requisitos de Apto para Venta (cuenta de MercadoPago vinculada y documentación aprobada). Un comercio que pierde la aptitud vuelve a este estado.
+- **Apto para Venta (APTO_VENTA):** comercio Aprobado cuyo Dueño vinculó su cuenta de MercadoPago y que tiene al menos un documento aprobado y ningún documento en revisión. Se alcanza automáticamente cuando se cumple (al vincular la cuenta o al aprobarse el documento) y, para seguir vendiendo, alcanza con la cuenta vinculada y al menos un documento aprobado: un documento nuevo en revisión no lo frena. Vuelve a Aprobado al desvincular la cuenta o al revocarse el único documento aprobado. Es el estado que habilita la visibilidad en el catálogo y la recepción de pedidos. Un solo documento aprobado, de cualquier tipo, alcanza.
 - **Rechazado:** solicitud denegada por el Administrador con motivo registrado. El Dueño puede corregir los datos y volver a solicitar la aprobación (hasta 3 veces por comercio).
 - **Rechazo definitivo:** solicitud denegada de forma definitiva, a pedido del Administrador o porque se agotaron las re-solicitudes. No tiene salida desde la aplicación; no aparece en el catálogo ni recibe pedidos.
-- **Suspendido:** inhabilitado por el Administrador ante una infracción. Se oculta del
-  catálogo. Afecta únicamente a este comercio puntual, no a los demás comercios del
-  mismo Dueño.
-- **Inactivo:** el Dueño titular lleva 3 meses sin actividad. Se oculta del catálogo.
-  Su información histórica, productos y pedidos se conservan en el sistema.
+- **Suspendido:** inhabilitado por el Administrador ante una infracción, de forma individual o porque se suspendió la cuenta de su Dueño. Se oculta del catálogo y no recibe pedidos nuevos; el Dueño y el equipo ven el panel en solo lectura. Los pedidos en curso siguen su camino con los plazos de 90 minutos descritos en Requisitos Funcionales — Sistema. Solo el Administrador lo levanta: ningún otro evento (documentos, MercadoPago, bloqueo del Dueño, cierre manual) lo saca de ese estado. Al levantarlo vuelve a Apto para Venta si cumple la regla de seguir vendiendo, a Aprobado si no, o a Cerrado Temporalmente si cumple pero la cuenta del Dueño está bloqueada. Una suspensión individual afecta solo a ese comercio y no a los demás del mismo Dueño; una suspensión individual sobrevive a que se levante la del Dueño.
+- **Inactivo:** el Dueño titular quedó inactivo por falta de uso (3 meses sin actividad). Se oculta del catálogo y no recibe pedidos; el equipo lo ve en solo lectura ("El comercio está inactivo: por ahora no se puede modificar."). Su información histórica, productos y pedidos se conservan. Al reactivarse la cuenta del Dueño, vuelve a Apto para Venta o a Aprobado según la cuenta de MercadoPago y los documentos; los comercios suspendidos por separado siguen suspendidos.
 - **Cerrado Temporalmente:** el Dueño titular del comercio está en estado Bloqueado y el
   comercio estaba en Apto para Venta. Un comercio Aprobado (sin cuenta de MercadoPago
   vinculada) no cambia de estado: no está en el catálogo ni recibe pedidos, así que no hay
   nada que cerrar. Visible en el catálogo con indicador de "temporalmente cerrado", sin
   hora de reapertura, pero no puede recibir pedidos. Se revierte automáticamente al
   desbloquear la cuenta del Dueño vía recuperación de contraseña, restaurando a Apto para
-  Venta (si el Dueño tiene la cuenta de MercadoPago vinculada) o a Aprobado (si no) todos
+  Venta (si siguen cumpliendo la regla de seguir vendiendo: cuenta de MercadoPago vinculada y un documento aprobado) o a Aprobado (si no) todos
   los comercios de ese Dueño que estuvieran en este estado. Un cierre manual hecho antes
   del bloqueo sigue vigente al desbloquear. Con el Dueño en estado Bloqueado ningún
   comercio queda a la venta: si el Administrador aprueba un comercio pendiente de ese
@@ -96,14 +91,14 @@ comercios se encuentran en Requisitos Funcionales — Dueño.
 ## Regla de Visibilidad en Catálogo
 
 Un comercio aparece en el catálogo público si su estado es Apto para Venta (Aprobado con
-la cuenta de MercadoPago de su Dueño vinculada), o si su estado es Cerrado Temporalmente. En el
+la cuenta de MercadoPago de su Dueño vinculada y su documentación aprobada), o si su estado es Cerrado Temporalmente. En el
 segundo caso, aparece con indicador de "temporalmente cerrado" y sin posibilidad de
 recibir pedidos.
 
 Un comercio se muestra como abierto y disponible para recibir pedidos solo si se
 cumplen simultáneamente:
 - `Comercio.estado == APTO_VENTA` (Aprobado, con la cuenta de MercadoPago del Dueño
-  vinculada)
+  vinculada y documentación aprobada)
 - `Comercio.dueño.usuario.estado == ACTIVO`
 - El horario de consulta está dentro de las franjas horarias del comercio.
 - `Comercio.cerrado_manualmente == false`
@@ -168,8 +163,8 @@ horario, también con el aviso de cuándo reabre.
   pantalla.
 - El cierre manual se revierte automáticamente al empezar la primera franja horaria
   posterior al momento del cierre (la próxima franja, incluso el mismo día), o antes si el
-  comercio se reabre a mano. Las franjas que cruzan la medianoche se cargan como dos
-  filas y no se unen (ver Alcance y Limitaciones).
+  comercio se reabre a mano. Una franja que cruza la medianoche (por ejemplo, de
+  20:00 a 02:00) es un solo turno.
 - Un comercio fuera de su horario de atención también aparece como cerrado, con el aviso
   de cuándo reabre.
 
@@ -178,8 +173,7 @@ horario, también con el aviso de cuándo reabre.
 ## Gestión de Productos
 
 - El comercio aprobado con MP vinculado debe poder crear productos con nombre,
-  descripción, precio, categoría (obligatoria), tags (opcionales), grupos de extras
-  asociados (opcionales) e imágenes (entre 1 y 5; el comercio define el orden y cuál se
+  descripción, precio, categoría (obligatoria), tags (opcionales) e imágenes (entre 1 y 5; el comercio define el orden y cuál se
   muestra como principal).
 - El Dueño o un Empleado autorizado debe poder editar los datos de los productos del
   comercio en cualquier momento. Cuando el servidor rechaza una escritura del catálogo por
@@ -208,21 +202,7 @@ horario, también con el aviso de cuándo reabre.
 
 ## Gestión de Extras
 
-- El Dueño, y un Empleado autorizado una vez que exista la función, debe poder crear,
-  editar y dar de baja grupos de
-  extras propios del comercio (por ejemplo, "Agregados" o "Elegí tu salsa"), definiendo
-  nombre, cantidad máxima de opciones seleccionables y si el grupo es obligatorio para
-  confirmar el pedido.
-- Dentro de cada grupo, debe poder crear, editar y dar de baja extras individuales con
-  nombre y precio adicional (se suma al precio del producto).
-- Un mismo grupo de extras puede asociarse a uno o varios productos del comercio. Un
-  producto sin grupos de extras asociados no ofrece extras.
-- Dar de baja un grupo de extras o un extra es una baja lógica: no afecta los pedidos
-  ya confirmados que lo incluyan (el precio queda congelado como snapshot histórico) ni
-  los ítems ya presentes en carritos activos.
-- Al confirmar un pedido, el sistema valida que todo grupo de extras obligatorio
-  asociado a cada producto del pedido tenga al menos un extra elegido, rechazando la
-  confirmación con un mensaje claro en caso contrario.
+- Los extras de producto (grupos de extras con opciones adicionales y precio) fueron descartados del alcance de esta versión por decisión del dueño del proyecto (18/10/2026). El modelo de datos conserva las tablas `GrupoExtra`, `Extra`, `ProductoGrupoExtra`, `ItemCarritoExtra` y `DetallePedidoExtra` sin uso: no existen endpoints, pantallas ni reglas de negocio asociadas, y ningún pedido los incluye. Queda registrado como posible trabajo futuro.
 
 ---
 
@@ -237,8 +217,9 @@ horario, también con el aviso de cuándo reabre.
 - El sistema debe validar que el horario de confirmación del pedido esté dentro de las
   franjas horarias del comercio. Si está cerrado, se informa al cliente el horario de
   atención disponible.
+- La lista de pedidos y el panel del comercio se actualizan solos cada 15 segundos (con la pantalla visible), marcan como nuevos los pedidos que llegaron hasta que se abre su detalle y, con el interruptor "Sonido de avisos" encendido, suenan los avisos nuevos con la aplicación abierta (las notificaciones fuera de la aplicación quedan fuera de alcance). Cada pedido pendiente de respuesta informa el tiempo restante ("Vence en N minutos"): 30 minutos desde que se confirma el pago, calculado por el servidor; el Cliente no ve ese plazo. En escritorio la lista de pedidos tiene el detalle del pedido elegido al costado.
 - El Dueño o un Empleado autorizado debe poder aceptar o rechazar un pedido en estado
-  PENDIENTE_CONFIRMACION_COMERCIO. El rechazo requiere seleccionar un **motivo predefinido** de la siguiente
+  PENDIENTE_CONFIRMACION_COMERCIO. Rechazar y anular piden una confirmación ("¿Rechazar el pedido #N?" / "¿Anular el pedido #N?") que explica: "El cliente recibe la devolución de todo el pago por Mercado Pago. Puede demorar en verse en su cuenta. Le avisamos el motivo y tu comentario.". El rechazo requiere seleccionar un **motivo predefinido** de la siguiente
   lista: Sin Stock, Local Cerrado, Alto Volumen de Pedidos, Producto No Disponible
   Temporalmente, Sin Delivery Disponible, Problema Técnico u Otro. Si el motivo es
   "Otro", debe ingresar obligatoriamente una descripción adicional. Para cualquier
@@ -290,20 +271,8 @@ horario, también con el aviso de cuándo reabre.
   en la corrida siguiente) y solo la llamada a MercadoPago ocurre después de confirmar.
 - Las entregas de los pedidos a domicilio EN_CAMINO no las confirma el comercio: las confirma
   el Cliente o el sistema (aviso a los 75 minutos y autoconfirmación a los 90).
-- Con el comercio Suspendido o Cerrado Temporalmente, lo que un Empleado puede hacer con los
-  pedidos depende del estado de cada uno: PENDIENTE_CONFIRMACION_COMERCIO solo se puede
-  rechazar (con el reembolso inmediato), no aceptar (409, código COMERCIO_SIN_OPERACION);
-  EN_PREPARACION se puede despachar o anular; EN_CAMINO no se puede tocar (lo resuelve el
-  Cliente o el sistema); LISTO_PARA_RETIRAR se puede entregar o cerrar como NO_RETIRADO (con
-  la espera de 60 minutos). Sobre el catálogo y el perfil: con el comercio Suspendido el
-  Empleado no puede modificar productos, imágenes, descripción ni teléfono (409, código
-  COMERCIO_SUSPENDIDO); con el comercio Cerrado Temporalmente sí puede. En los dos estados no
-  puede abrir ni cerrar el comercio (409, código COMERCIO_NO_OPERATIVO, igual que el Dueño).
-  Con un comercio operativo cerrado a mano, el Empleado sí acepta pedidos pendientes. El Dueño
-  queda sin cambios por ahora (puede, por ejemplo, editar productos y perfil con el comercio
-  Suspendido); la diferencia se resuelve en el tramo de rediseño de la suspensión. (Esta
-  regla reemplaza a la del bloque A0b, que hacía responder 409 al rechazo; implementada en el
-  bloque A2.)
+- Con el comercio Suspendido, tanto el Dueño como el Empleado tienen el panel en solo lectura (no editan productos, imágenes, datos, horarios ni redes: 409, código COMERCIO_SUSPENDIDO; no abren ni cierran: 409, código COMERCIO_NO_OPERATIVO; no aceptan pedidos nuevos: 409, código COMERCIO_SIN_OPERACION) y resuelven los pedidos en curso según el estado de cada uno: los pendientes de confirmación se rechazan solos al suspender (si alguno todavía aparece, por unos segundos, dice "Se va a rechazar y reembolsar solo." y no se puede aceptar); EN_PREPARACION se puede despachar o anular antes de la hora límite; EN_CAMINO no se toca (lo resuelve el Cliente o el sistema); LISTO_PARA_RETIRAR se puede entregar o cerrar como NO_RETIRADO. Una franja arriba de la lista de pedidos dice hasta qué hora hay para resolver los pedidos en curso, y cada pedido dice qué se puede hacer. Con el comercio Cerrado Temporalmente (Dueño bloqueado) se pueden editar productos y perfil y resolver pedidos, pero no aceptar pedidos nuevos ni abrir o cerrar (la hoja "Cambiar de cuenta" del Empleado dice "No se aceptan pedidos nuevos."). Con un comercio operativo cerrado a mano, el Empleado sí acepta pedidos pendientes.
+- Un pedido que el sistema anuló porque el comercio quedó sin quien lo atienda dice "Este pedido se anuló automáticamente." (con el motivo "El comercio no está disponible").
 - Cerrar y abrir el comercio a mano solo se puede dentro de un horario de atención y con el
   comercio operativo; si no, responde 409 con el código COMERCIO_NO_OPERATIVO o
   FUERA_DE_HORARIO. Un Empleado puede abrir un cierre manual aunque lo haya hecho el Dueño.
@@ -323,8 +292,7 @@ horario, también con el aviso de cuándo reabre.
 
 - El Dueño o un Empleado autorizado debe poder visualizar el historial completo de
   pedidos del comercio con filtros por estado, fecha y cliente.
-- El sistema debe notificar ante: nuevo pedido recibido, aprobación, rechazo o
-  suspensión del comercio, pedido expirado por no respuesta.
+- El sistema debe notificar ante: nuevo pedido recibido ("Pedido nuevo #N de {Nombre Apellido}."), aprobación, rechazo o suspensión del comercio, pedido expirado por no respuesta ("El pedido #N se canceló porque nadie lo respondió a tiempo."), aptitud de venta ganada o perdida por los documentos y reembolsos por reclamo. Cada aviso se toca entero: lleva a la pantalla donde se actúa, según el tipo y el rol de quien lo recibe (un Empleado nunca recibe un destino que no puede ver), y se marca como leído; los informativos solo se marcan. Un aviso sin leer se distingue por un fondo suave, un punto y el texto "No leída". La lista se carga de a 20 con "Ver más" y los comercios con avisos sin leer lo muestran en "Tus comercios".
 - El Dueño o un Empleado autorizado debe poder ver el recorrido de un pedido (quién hizo
   cada paso, con nombre, rol, hora y, en rechazos y anulaciones, el motivo) con
   `GET /api/v1/pedidos/comercio/{id}/trazabilidad`; el Cliente no lo ve.
