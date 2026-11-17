@@ -1,6 +1,14 @@
 # Modelo Relacional — Bajoneá (v3)
 
-Actualizado a `diccionario-de-datos.md` v1.16: 49 tablas. La v1.16 (tramo E3, bloque A6) es un cambio solo de documentación: no hay migración y el diagrama no cambia (el aviso T30 ya estaba en el ENUM de `notificacion.tipo`). Antes, la v1.15 (`V34`, tramo E3, bloque A4b) no cambia ninguna tabla ni columna ni clave: solo agrega valores a tres ENUM (`pedido.estado` e `historial_estado_pedido.estado` suman `NO_RETIRADO`; `notificacion.tipo` suma `PEDIDO_NO_RETIRADO`), así que el diagrama no se regenera. Antes, en la v1.14 (`V33`, tramo E3, bloque A4) `Notificacion` suma la columna `comercio_id` (sin clave foránea, a propósito) y el índice `idx_notificacion_usuario_comercio`; el diagrama muestra además `entidad_tipo` y `entidad_id`, que ya existían y faltaban. Antes, en la v1.13: 49 tablas. En la v1.13 `HistorialEdicionComercio` (`V32`, tramo E3, bloque A1) deja de ser planificada y pasa a existir en la base (con los índices `idx_hed_comercio_fecha` e `idx_hed_usuario` y las claves `fk_hed_*`); el estado `NO_RETIRADO` del pedido y la notificación T36 (`V34`, bloque A4b) están ya implementados (v1.15) y no cambian la estructura que muestra el diagrama. Antes, en la v1.11: La v1.11 suma tres tablas **planificadas** del rol Empleado (`InvitacionEmpleado`, `HistorialEmpleadoComercio` y `HistorialEdicionComercio` (antes propuesta como `ActividadComercio`), migraciones `V30` a `V32`, tramo E1), todavía inexistentes en la base, y cambia el ENUM de `EmpleadoComercio.estado` (`V29`, de `PENDIENTE`/`ACTIVO`/`DESACTIVADO` a `ACTIVO`/`INACTIVO`). Antes, en la v1.10: 46 tablas (el bloque suma `HistorialCierreComercio`, tabla del cierre manual del comercio, y `HistorialCambioComercio`, que el encabezado anterior no contaba; antes se agregaron `CodigoVinculacionMp`, `AlertaWebhookMp` y `HistorialCambioNombreUsuario`; `Usuario` suma `nombre_usuario` y `AlertaWebhookMp` suma `monto_esperado`/`monto_capturado`; los conteos de campos y relaciones no se recalcularon). Pegar el bloque en [mermaid.live](https://mermaid.live) para exportar el PNG.
+Actualizado a `diccionario-de-datos.md` v1.37: **56 tablas**. Este diagrama se regeneró completo a partir de las tablas del diccionario (columnas, tipos, claves primarias, foráneas y únicas). Respecto de la versión anterior (v1.16, 49 tablas):
+
+- **Tablas nuevas (8):** `CierreTurno` (control del email de cierre de turno), `DocumentoComercio` y `DocumentoComercioArchivo` (documentación de habilitación del comercio), `TicketSoporte`, `MensajeSoporte` y `SoporteLimite` (soporte con conversación y límites antiabuso), `ReclamoFoto` y `ReclamoFotoArchivo` (fotos de los reclamos).
+- **Tabla eliminada (1):** `Soporte` (se reemplazó por `TicketSoporte` y `MensajeSoporte`).
+- **Columnas nuevas más relevantes:** `Direccion` (`nombre`, `referencia`, `principal_activa_cliente_id`), `Horario` (vigencia), `Usuario` (`motivo_suspension`, `suspendido_desde`), `Comercio` (suspensión de Dueño, `nombre_unico`), `Pedido` (copia de la dirección de entrega, turno), `Reclamo` (motivo, resolución, monto), `NotaCredito` (`reclamo_id`) y `DetallePedido` (`nota_credito_id`).
+- Las tablas `GrupoExtra`, `Extra`, `ProductoGrupoExtra`, `ItemCarritoExtra` y `DetallePedidoExtra` siguen en el modelo, pero el sistema no las usa: los extras se descartaron (18/10/2026).
+- Las relaciones se leen como "padre ‖——o{ hijo": la tabla de la izquierda es la referenciada y la de la derecha guarda la clave foránea (el nombre entre comillas).
+
+Convenciones: `PK` clave primaria, `FK` clave foránea, `UK` clave única. Los tipos `ENUM_*` remiten a la sección 1 del diccionario de datos.
 
 ```mermaid
 erDiagram
@@ -15,22 +23,25 @@ erDiagram
     }
     Direccion {
         INT id PK
+        VARCHAR40 nombre
         VARCHAR150 calle
         VARCHAR10 numero
         VARCHAR30 piso_depto
         VARCHAR10 codigo_postal
+        VARCHAR150 referencia
         VARCHAR15 localidad_id FK
         INT cliente_id FK
-        INT comercio_id FK
+        INT comercio_id FK,UK
         TINYINT1 principal
         TINYINT1 eliminada
         DATETIME fecha_creacion
         DATETIME fecha_modificacion
         DATETIME fecha_baja
+        INT principal_activa_cliente_id UK
     }
     Usuario {
         INT id PK
-        VARCHAR150 email UK
+        VARCHAR254 email UK
         VARCHAR20 nombre_usuario UK
         VARCHAR255 password_hash
         ENUM_RolUsuario rol
@@ -38,9 +49,20 @@ erDiagram
         TINYINT1 email_verificado
         VARCHAR500 foto_perfil_url
         INT intentos_fallidos
+        VARCHAR500 motivo_suspension
+        DATETIME suspendido_desde
         DATETIME fecha_registro
         DATETIME fecha_ultimo_acceso
         DATETIME fecha_actualizacion
+    }
+    HistorialEstadoUsuario {
+        INT id PK
+        INT usuario_id FK
+        INT administrador_id FK
+        ENUM_EstadoUsuario estado_origen
+        ENUM_EstadoUsuario estado_destino
+        VARCHAR500 motivo
+        DATETIME fecha_hora
     }
     HistorialCambioNombreUsuario {
         INT id PK
@@ -48,14 +70,6 @@ erDiagram
         VARCHAR20 nombre_usuario_anterior
         VARCHAR20 nombre_usuario_nuevo
         DATETIME fecha_cambio
-    }
-    HistorialEstadoUsuario {
-        INT id PK
-        INT usuario_id FK
-        ENUM_EstadoUsuario estado_origen
-        ENUM_EstadoUsuario estado_destino
-        VARCHAR500 motivo
-        DATETIME fecha_hora
     }
     Persona {
         INT id PK,FK
@@ -90,12 +104,14 @@ erDiagram
     }
     Dueno {
         INT id PK,FK
+        INT persona_fisica_id FK,UK
         DATETIME fecha_creacion
     }
     Comercio {
         INT id PK
-        INT dueño_id FK
+        INT dueno_id FK
         VARCHAR150 nombre
+        VARCHAR150 nombre_unico UK
         TEXT descripcion
         VARCHAR500 foto_perfil_url
         VARCHAR30 telefono
@@ -104,6 +120,9 @@ erDiagram
         TINYINT1 acepta_delivery
         TINYINT1 acepta_retiro
         ENUM_EstadoComercio estado
+        ENUM_OrigenSuspension suspension_origen
+        DATETIME suspendido_desde
+        VARCHAR500 motivo_suspension
         TINYINT1 cerrado_manualmente
         DATETIME fecha_resolicitud
         INT cantidad_resolicitudes
@@ -117,6 +136,8 @@ erDiagram
         ENUM_DiaSemana dia_semana
         TIME hora_apertura
         TIME hora_cierre
+        DATE vigente_desde
+        DATE vigente_hasta
     }
     RedSocial {
         INT id PK
@@ -129,7 +150,7 @@ erDiagram
     }
     CuentaMercadoPago {
         INT id PK
-        INT dueño_id FK
+        INT dueno_id FK,UK
         VARCHAR50 mp_user_id
         VARCHAR500 access_token
         VARCHAR500 refresh_token
@@ -157,7 +178,6 @@ erDiagram
         DATETIME fecha_alta
         DATETIME fecha_baja
     }
-    %% PLANIFICADO (V30, tramo E1): todavía no existe en la base
     InvitacionEmpleado {
         INT id PK
         INT comercio_id FK
@@ -172,7 +192,6 @@ erDiagram
         DATETIME fecha_resolucion
         TINYINT1 pendiente_clave
     }
-    %% PLANIFICADO (V31, tramo E1): todavía no existe en la base
     HistorialEmpleadoComercio {
         INT id PK
         INT comercio_id FK
@@ -188,7 +207,7 @@ erDiagram
         INT id PK
         INT comercio_id FK
         INT usuario_id FK
-        ENUM_RolActorComercio actor_rol
+        ENUM_ActorEdicion actor_rol
         ENUM_TipoEntidadEdicion entidad_tipo
         INT entidad_id
         VARCHAR150 entidad_nombre
@@ -203,7 +222,15 @@ erDiagram
         ENUM_EstadoComercio estado_origen
         ENUM_EstadoComercio estado_destino
         VARCHAR500 motivo
+        ENUM_OrigenSuspension suspension_origen
         DATETIME fecha_hora
+    }
+    HistorialCambioComercio {
+        INT id PK
+        INT historial_estado_comercio_id FK
+        VARCHAR40 campo
+        TEXT valor_anterior
+        TEXT valor_nuevo
     }
     HistorialCierreComercio {
         INT id PK
@@ -213,12 +240,44 @@ erDiagram
         ENUM_ActorCierre actor_rol
         DATETIME fecha_hora
     }
-    HistorialCambioComercio {
+    CierreTurno {
         INT id PK
-        INT historial_estado_comercio_id FK
-        VARCHAR40 campo
-        TEXT valor_anterior
-        TEXT valor_nuevo
+        INT comercio_id FK
+        DATE turno_fecha
+        INT horario_id FK
+        DATETIME inicio
+        DATETIME fin
+        INT cantidad_pedidos
+        DECIMAL14,2 vendido
+        DECIMAL14,2 comision
+        DECIMAL14,2 neto
+        INT pendientes_al_cierre
+        DATETIME fecha_cierre
+        ENUM_EstadoEmailCierreTurno email_estado
+        INT email_intentos
+        DATETIME email_proximo_intento
+        DATETIME email_envio_iniciado
+        DATETIME email_fecha_envio
+        VARCHAR500 email_ultimo_error
+    }
+    DocumentoComercio {
+        INT id PK
+        INT comercio_id FK
+        ENUM_TipoDocumentoComercio tipo
+        VARCHAR100 descripcion
+        VARCHAR255 nombre_original
+        VARCHAR100 tipo_mime
+        INT tamano_bytes
+        ENUM_EstadoDocumentoComercio estado
+        VARCHAR255 motivo_rechazo
+        DATETIME fecha_subida
+        DATETIME fecha_resolucion
+        INT administrador_id FK
+        INT subido_por_usuario_id FK
+    }
+    DocumentoComercioArchivo {
+        INT documento_id PK,FK
+        LONGBLOB contenido
     }
     ConfiguracionTarifa {
         INT id PK
@@ -234,10 +293,10 @@ erDiagram
         INT usuario_id FK
         ENUM_TipoToken tipo
         VARCHAR36 token UK
-        DATETIME fecha_creacion
         DATETIME fecha_vencimiento
         DATETIME fecha_uso
         ENUM_EstadoToken estado
+        INT intentos_fallidos
     }
     Sesion {
         INT id PK
@@ -264,25 +323,57 @@ erDiagram
         INT entidad_id
         INT comercio_id
     }
-    Soporte {
+    TicketSoporte {
         INT id PK
+        VARCHAR8 codigo UK
+        VARCHAR254 email
         INT usuario_id FK
-        TEXT mensaje_descargo
-        DATETIME fecha_envio
-        TINYINT1 atendido
-        INT administrador_id FK
-        ENUM_ResolucionSoporte resolucion
-        DATETIME fecha_resolucion
+        ENUM_TipoTicketSoporte tipo
+        ENUM_EstadoTicketSoporte estado
+        VARCHAR45 ip
+        INT cantidad_mensajes
+        DATETIME creado_en
+        DATETIME actualizado_en
+        DATETIME cerrado_en
+    }
+    MensajeSoporte {
+        INT id PK
+        INT ticket_id FK
+        ENUM_AutorMensajeSoporte autor
+        VARCHAR1000 texto
+        DATETIME creado_en
+        TINYINT1 email_enviado
+    }
+    SoporteLimite {
+        VARCHAR300 clave PK
+        INT cantidad
+        DATETIME ventana_inicio
     }
     Reclamo {
         INT id PK
-        INT pedido_id FK
+        INT pedido_id FK,UK
+        ENUM_MotivoReclamo motivo
         TEXT descripcion
         DATETIME fecha_creacion
         ENUM_EstadoReclamo estado
+        ENUM_TipoResolucionReclamo tipo_resolucion
+        DECIMAL10,2 monto_aprobado
         INT administrador_id FK
         VARCHAR500 nota_resolucion
         DATETIME fecha_resolucion
+    }
+    ReclamoFoto {
+        INT id PK
+        INT reclamo_id FK
+        INT orden
+        VARCHAR255 nombre_original
+        VARCHAR50 tipo_contenido
+        INT tamano_bytes
+        DATETIME fecha_creacion
+    }
+    ReclamoFotoArchivo {
+        INT foto_id PK,FK
+        LONGBLOB contenido
     }
     Categoria {
         INT id PK
@@ -348,7 +439,7 @@ erDiagram
     }
     Carrito {
         INT id PK
-        INT cliente_id FK
+        INT cliente_id FK,UK
         INT comercio_id FK
         TINYINT1 activo
     }
@@ -358,6 +449,7 @@ erDiagram
         INT producto_id FK
         INT cantidad
         VARCHAR255 nota
+        DECIMAL10,2 precio_visto
     }
     ItemCarritoExtra {
         INT id PK
@@ -371,6 +463,12 @@ erDiagram
         INT cliente_id FK
         INT comercio_id FK
         INT direccion_id FK
+        VARCHAR150 entrega_calle
+        VARCHAR10 entrega_numero
+        VARCHAR30 entrega_piso_depto
+        VARCHAR10 entrega_codigo_postal
+        VARCHAR15 entrega_localidad_id
+        VARCHAR150 entrega_referencia
         ENUM_ModalidadEntrega modalidad_entrega
         ENUM_EstadoPedido estado
         ENUM_EstadoPagoPedido pago_estado
@@ -381,12 +479,15 @@ erDiagram
         DATETIME suspension_retiro_expira
         TINYINT1 primer_aviso_emitido
         ENUM_MotivoRechazo motivo_rechazo
-        VARCHAR500 detalle_rechazo
+        VARCHAR500 comentario_rechazo
         DECIMAL10,2 subtotal
         DECIMAL10,2 cargo_servicio_cliente
         DECIMAL10,2 cargo_servicio_comercio
         DECIMAL10,2 total
         DATETIME fecha_creacion
+        DATETIME fecha_pago_confirmado
+        DATE turno_fecha
+        INT turno_horario_id FK
     }
     DetallePedido {
         INT id PK
@@ -396,6 +497,9 @@ erDiagram
         DECIMAL10,2 precio_unitario
         VARCHAR255 nota
         DECIMAL10,2 subtotal
+        ENUM_EstadoDetallePedido estado
+        VARCHAR255 motivo_anulacion
+        INT nota_credito_id FK
     }
     DetallePedidoExtra {
         INT id PK
@@ -413,20 +517,9 @@ erDiagram
         ENUM_MotivoTimeoutPedido motivo_timeout
         DATETIME fecha_hora
     }
-    AlertaWebhookMp {
-        INT id PK
-        INT pedido_id FK
-        VARCHAR50 mp_payment_id
-        VARCHAR120 mp_external_reference
-        DECIMAL10,2 monto_esperado
-        DECIMAL10,2 monto_capturado
-        ENUM_MotivoAlertaWebhookMp motivo
-        DATETIME fecha_creacion
-        VARCHAR45 ip_origen
-    }
     Pago {
         INT id PK
-        INT pedido_id FK
+        INT pedido_id FK,UK
         VARCHAR120 mp_preferencia_id
         VARCHAR500 mp_init_point
         VARCHAR500 mp_sandbox_init_point
@@ -437,18 +530,39 @@ erDiagram
         DATETIME fecha_creacion
         DATETIME fecha_confirmacion
     }
+    AlertaWebhookMp {
+        INT id PK
+        INT pedido_id FK
+        VARCHAR50 mp_payment_id
+        VARCHAR120 mp_external_reference
+        ENUM_MotivoAlertaWebhookMp motivo
+        DATETIME fecha_creacion
+        VARCHAR45 ip_origen
+        DECIMAL10,2 monto_esperado
+        DECIMAL10,2 monto_capturado
+    }
     NotaCredito {
         INT id PK
         INT pago_id FK
         DECIMAL10,2 monto
+        ENUM_MotivoNotaCredito motivo
         ENUM_EstadoNotaCredito estado
         INT intentos
         VARCHAR50 refund_id_mp
+        VARCHAR50 mp_payment_id
+        VARCHAR500 ultimo_error
+        INT reclamo_id FK,UK
         DATETIME fecha_emision
         DATETIME fecha_proceso
         DATETIME fecha_fallido
     }
-    Provincia }o--|| Localidad : "provincia_id"
+    Provincia ||--o{ Localidad : "provincia_id"
+    Localidad ||--o{ Direccion : "localidad_id"
+    Cliente |o--o{ Direccion : "cliente_id"
+    Comercio |o--o| Direccion : "comercio_id"
+    Usuario ||--o{ HistorialEstadoUsuario : "usuario_id"
+    Usuario |o--o{ HistorialEstadoUsuario : "administrador_id"
+    Usuario ||--o{ HistorialCambioNombreUsuario : "usuario_id"
     Usuario ||--|| Persona : "id"
     Persona ||--|| PersonaFisica : "id"
     Persona ||--|| PersonaJuridica : "id"
@@ -456,66 +570,72 @@ erDiagram
     PersonaFisica ||--|| Administrador : "id"
     PersonaFisica ||--|| Empleado : "id"
     PersonaJuridica ||--|| Dueno : "id"
-    Dueno }o--|| Comercio : "dueño_id"
-    Localidad }o--|| Direccion : "localidad_id"
-    Cliente }o--|| Direccion : "cliente_id"
-    Comercio ||--|| Direccion : "comercio_id"
-    Usuario }o--|| HistorialEstadoUsuario : "usuario_id"
-    Usuario ||--o{ HistorialCambioNombreUsuario : "usuario_id"
-    Comercio }o--|| Horario : "comercio_id"
-    Comercio }o--|| RedSocial : "comercio_id"
-    Usuario }o--|| Token : "usuario_id"
-    Usuario }o--|| Sesion : "usuario_id"
-    Usuario }o--|| Notificacion : "usuario_id"
-    Usuario }o--|| Soporte : "usuario_id"
-    Administrador }o--|| Soporte : "administrador_id"
-    Pedido ||--|| Reclamo : "pedido_id"
-    Administrador }o--|| Reclamo : "administrador_id"
-    Comercio }o--|| HistorialEstadoComercio : "comercio_id"
-    Administrador }o--|| HistorialEstadoComercio : "administrador_id"
-    HistorialEstadoComercio }o--|| HistorialCambioComercio : "historial_estado_comercio_id"
-    Comercio }o--|| HistorialCierreComercio : "comercio_id"
-    Usuario }o--|| HistorialCierreComercio : "actor_usuario_id"
-    Administrador }o--|| ConfiguracionTarifa : "administrador_id"
-    Dueno ||--|| CuentaMercadoPago : "dueño_id"
-    Empleado }o--|| EmpleadoComercio : "empleado_id"
-    Comercio }o--|| EmpleadoComercio : "comercio_id"
-    %% PLANIFICADO (V30 a V32): relaciones de las tablas nuevas del rol Empleado
-    Comercio }o--|| InvitacionEmpleado : "comercio_id"
-    Usuario }o--|| InvitacionEmpleado : "invitado_por_usuario_id"
-    Usuario }o--|| InvitacionEmpleado : "usuario_aceptante_id"
-    Comercio }o--|| HistorialEmpleadoComercio : "comercio_id"
-    EmpleadoComercio }o--|| HistorialEmpleadoComercio : "empleado_comercio_id"
-    InvitacionEmpleado }o--|| HistorialEmpleadoComercio : "invitacion_id"
-    Usuario }o--|| HistorialEmpleadoComercio : "actor_usuario_id"
-    Comercio }o--|| HistorialEdicionComercio : "comercio_id"
-    Usuario }o--|| HistorialEdicionComercio : "usuario_id"
-    Comercio }o--|| Producto : "comercio_id"
-    Categoria }o--|| Producto : "categoria_id"
-    Producto }o--|| ImagenProducto : "producto_id"
-    Producto }o--|| ProductoTag : "producto_id"
-    Tag }o--|| ProductoTag : "tag_id"
-    Comercio }o--|| GrupoExtra : "comercio_id"
-    GrupoExtra }o--|| Extra : "grupo_extra_id"
-    Producto }o--|| ProductoGrupoExtra : "producto_id"
-    GrupoExtra }o--|| ProductoGrupoExtra : "grupo_extra_id"
-    Cliente ||--|| Carrito : "cliente_id"
-    Comercio }o--|| Carrito : "comercio_id"
-    Carrito }o--|| ItemCarrito : "carrito_id"
-    Producto }o--|| ItemCarrito : "producto_id"
-    ItemCarrito }o--|| ItemCarritoExtra : "item_carrito_id"
-    Extra }o--|| ItemCarritoExtra : "extra_id"
-    Cliente }o--|| Pedido : "cliente_id"
-    Comercio }o--|| Pedido : "comercio_id"
-    Direccion }o--|| Pedido : "direccion_id"
-    Pedido }o--|| DetallePedido : "pedido_id"
-    Producto }o--|| DetallePedido : "producto_id"
-    DetallePedido }o--|| DetallePedidoExtra : "detalle_pedido_id"
-    Extra }o--|| DetallePedidoExtra : "extra_id"
-    Pedido }o--|| HistorialEstadoPedido : "pedido_id"
-    Pedido ||--|| Pago : "pedido_id"
-    Pago ||--|| NotaCredito : "pago_id"
+    PersonaFisica ||--o| Dueno : "persona_fisica_id"
+    Dueno ||--o{ Comercio : "dueno_id"
+    Comercio ||--o{ Horario : "comercio_id"
+    Comercio ||--o{ RedSocial : "comercio_id"
+    Dueno ||--o| CuentaMercadoPago : "dueno_id"
     Dueno ||--o{ CodigoVinculacionMp : "dueno_id"
-    Pedido ||--o{ AlertaWebhookMp : "pedido_id"
-    Usuario ||--o{ HistorialEstadoPedido : "actor_usuario_id"
+    Empleado ||--o{ EmpleadoComercio : "empleado_id"
+    Comercio ||--o{ EmpleadoComercio : "comercio_id"
+    Comercio ||--o{ InvitacionEmpleado : "comercio_id"
+    Usuario ||--o{ InvitacionEmpleado : "invitado_por_usuario_id"
+    Usuario |o--o{ InvitacionEmpleado : "usuario_aceptante_id"
+    Comercio ||--o{ HistorialEmpleadoComercio : "comercio_id"
+    EmpleadoComercio |o--o{ HistorialEmpleadoComercio : "empleado_comercio_id"
+    InvitacionEmpleado |o--o{ HistorialEmpleadoComercio : "invitacion_id"
+    Usuario |o--o{ HistorialEmpleadoComercio : "actor_usuario_id"
+    Comercio ||--o{ HistorialEdicionComercio : "comercio_id"
+    Usuario ||--o{ HistorialEdicionComercio : "usuario_id"
+    Comercio ||--o{ HistorialEstadoComercio : "comercio_id"
+    Administrador |o--o{ HistorialEstadoComercio : "administrador_id"
+    HistorialEstadoComercio ||--o{ HistorialCambioComercio : "historial_estado_comercio_id"
+    Comercio ||--o{ HistorialCierreComercio : "comercio_id"
+    Usuario |o--o{ HistorialCierreComercio : "actor_usuario_id"
+    Comercio ||--o{ CierreTurno : "comercio_id"
+    Horario ||--o{ CierreTurno : "horario_id"
+    Comercio ||--o{ DocumentoComercio : "comercio_id"
+    Administrador |o--o{ DocumentoComercio : "administrador_id"
+    Usuario ||--o{ DocumentoComercio : "subido_por_usuario_id"
+    DocumentoComercio ||--|| DocumentoComercioArchivo : "documento_id"
+    Administrador ||--o{ ConfiguracionTarifa : "administrador_id"
+    Usuario ||--o{ Token : "usuario_id"
+    Usuario ||--o{ Sesion : "usuario_id"
+    Usuario ||--o{ Notificacion : "usuario_id"
+    Usuario |o--o{ TicketSoporte : "usuario_id"
+    TicketSoporte ||--o{ MensajeSoporte : "ticket_id"
+    Pedido ||--o| Reclamo : "pedido_id"
+    Administrador |o--o{ Reclamo : "administrador_id"
+    Reclamo ||--o{ ReclamoFoto : "reclamo_id"
+    ReclamoFoto ||--|| ReclamoFotoArchivo : "foto_id"
+    Comercio ||--o{ Producto : "comercio_id"
+    Categoria ||--o{ Producto : "categoria_id"
+    Producto ||--o{ ImagenProducto : "producto_id"
+    Producto ||--o{ ProductoTag : "producto_id"
+    Tag ||--o{ ProductoTag : "tag_id"
+    Comercio ||--o{ GrupoExtra : "comercio_id"
+    GrupoExtra ||--o{ Extra : "grupo_extra_id"
+    Producto ||--o{ ProductoGrupoExtra : "producto_id"
+    GrupoExtra ||--o{ ProductoGrupoExtra : "grupo_extra_id"
+    Cliente ||--o| Carrito : "cliente_id"
+    Comercio |o--o{ Carrito : "comercio_id"
+    Carrito ||--o{ ItemCarrito : "carrito_id"
+    Producto ||--o{ ItemCarrito : "producto_id"
+    ItemCarrito ||--o{ ItemCarritoExtra : "item_carrito_id"
+    Extra ||--o{ ItemCarritoExtra : "extra_id"
+    Cliente ||--o{ Pedido : "cliente_id"
+    Comercio ||--o{ Pedido : "comercio_id"
+    Direccion |o--o{ Pedido : "direccion_id"
+    Horario |o--o{ Pedido : "turno_horario_id"
+    Pedido ||--o{ DetallePedido : "pedido_id"
+    Producto ||--o{ DetallePedido : "producto_id"
+    NotaCredito |o--o{ DetallePedido : "nota_credito_id"
+    DetallePedido ||--o{ DetallePedidoExtra : "detalle_pedido_id"
+    Extra ||--o{ DetallePedidoExtra : "extra_id"
+    Pedido ||--o{ HistorialEstadoPedido : "pedido_id"
+    Usuario |o--o{ HistorialEstadoPedido : "actor_usuario_id"
+    Pedido ||--o| Pago : "pedido_id"
+    Pedido |o--o{ AlertaWebhookMp : "pedido_id"
+    Pago ||--o{ NotaCredito : "pago_id"
+    Reclamo |o--o| NotaCredito : "reclamo_id"
 ```
