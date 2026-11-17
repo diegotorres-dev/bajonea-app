@@ -1,0 +1,848 @@
+[
+ {
+  "archivo": "01-acceso-login-1024.png",
+  "rol": "acceso",
+  "pantalla": "login",
+  "ancho": 1024,
+  "url": "login.html",
+  "bytes": 130167,
+  "notas": ""
+ },
+ {
+  "archivo": "01-acceso-login-1280.png",
+  "rol": "acceso",
+  "pantalla": "login",
+  "ancho": 1280,
+  "url": "login.html",
+  "bytes": 136697,
+  "notas": ""
+ },
+ {
+  "archivo": "02-acceso-bienvenida-1024.png",
+  "rol": "acceso",
+  "pantalla": "bienvenida",
+  "ancho": 1024,
+  "url": "bienvenida.html",
+  "bytes": 85859,
+  "notas": ""
+ },
+ {
+  "archivo": "02-acceso-bienvenida-1280.png",
+  "rol": "acceso",
+  "pantalla": "bienvenida",
+  "ancho": 1280,
+  "url": "bienvenida.html",
+  "bytes": 89401,
+  "notas": ""
+ },
+ {
+  "archivo": "03-acceso-registro-tipo-cuenta-1024.png",
+  "rol": "acceso",
+  "pantalla": "registro-tipo-cuenta",
+  "ancho": 1024,
+  "url": "registro-tipo-cuenta.html",
+  "bytes": 109904,
+  "notas": ""
+ },
+ {
+  "archivo": "03-acceso-registro-tipo-cuenta-1280.png",
+  "rol": "acceso",
+  "pantalla": "registro-tipo-cuenta",
+  "ancho": 1280,
+  "url": "registro-tipo-cuenta.html",
+  "bytes": 113554,
+  "notas": ""
+ },
+ {
+  "archivo": "04-acceso-registro-cliente-paso1-1024.png",
+  "rol": "acceso",
+  "pantalla": "registro-cliente-paso1",
+  "ancho": 1024,
+  "url": "registro-cliente.html",
+  "bytes": 235536,
+  "notas": ""
+ },
+ {
+  "archivo": "04-acceso-registro-cliente-paso1-1280.png",
+  "rol": "acceso",
+  "pantalla": "registro-cliente-paso1",
+  "ancho": 1280,
+  "url": "registro-cliente.html",
+  "bytes": 237779,
+  "notas": ""
+ },
+ {
+  "archivo": "05-acceso-registro-comercio-paso1-1024.png",
+  "rol": "acceso",
+  "pantalla": "registro-comercio-paso1",
+  "ancho": 1024,
+  "url": "registro-comercio.html",
+  "bytes": 259813,
+  "notas": ""
+ },
+ {
+  "archivo": "05-acceso-registro-comercio-paso1-1280.png",
+  "rol": "acceso",
+  "pantalla": "registro-comercio-paso1",
+  "ancho": 1280,
+  "url": "registro-comercio.html",
+  "bytes": 266659,
+  "notas": ""
+ },
+ {
+  "archivo": "06-acceso-verificar-email-1024.png",
+  "rol": "acceso",
+  "pantalla": "verificar-email",
+  "ancho": 1024,
+  "url": "verificar-email.html?email=lucia.fernandez%40ejemplo.com",
+  "bytes": 124638,
+  "notas": ""
+ },
+ {
+  "archivo": "06-acceso-verificar-email-1280.png",
+  "rol": "acceso",
+  "pantalla": "verificar-email",
+  "ancho": 1280,
+  "url": "verificar-email.html?email=lucia.fernandez%40ejemplo.com",
+  "bytes": 127385,
+  "notas": ""
+ },
+ {
+  "archivo": "07-acceso-recuperar-password-1024.png",
+  "rol": "acceso",
+  "pantalla": "recuperar-password",
+  "ancho": 1024,
+  "url": "recuperar-password.html",
+  "bytes": 124647,
+  "notas": ""
+ },
+ {
+  "archivo": "07-acceso-recuperar-password-1280.png",
+  "rol": "acceso",
+  "pantalla": "recuperar-password",
+  "ancho": 1280,
+  "url": "recuperar-password.html",
+  "bytes": 128926,
+  "notas": ""
+ },
+ {
+  "archivo": "08-cliente-catalogo-1024.png",
+  "rol": "cliente",
+  "pantalla": "catalogo",
+  "ancho": 1024,
+  "url": "index.html",
+  "bytes": 11742670,
+  "notas": ""
+ },
+ {
+  "archivo": "08-cliente-catalogo-1280.png",
+  "rol": "cliente",
+  "pantalla": "catalogo",
+  "ancho": 1280,
+  "url": "index.html",
+  "bytes": 10549086,
+  "notas": ""
+ },
+ {
+  "archivo": "09-cliente-explorar-filtros-1024.png",
+  "rol": "cliente",
+  "pantalla": "explorar-filtros",
+  "ancho": 1024,
+  "url": "explorar.html",
+  "bytes": 797955,
+  "notas": "con una categoría seleccionada"
+ },
+ {
+  "archivo": "09-cliente-explorar-filtros-1280.png",
+  "rol": "cliente",
+  "pantalla": "explorar-filtros",
+  "ancho": 1280,
+  "url": "explorar.html",
+  "bytes": 726034,
+  "notas": "con una categoría seleccionada"
+ },
+ {
+  "archivo": "10-cliente-ficha-comercio-1024.png",
+  "rol": "cliente",
+  "pantalla": "ficha-comercio",
+  "ancho": 1024,
+  "url": "comercio-detalle.html?id=1",
+  "bytes": 1246981,
+  "notas": ""
+ },
+ {
+  "archivo": "10-cliente-ficha-comercio-1280.png",
+  "rol": "cliente",
+  "pantalla": "ficha-comercio",
+  "ancho": 1280,
+  "url": "comercio-detalle.html?id=1",
+  "bytes": 1184462,
+  "notas": ""
+ },
+ {
+  "archivo": "11-cliente-producto-hoja-1024.png",
+  "rol": "cliente",
+  "pantalla": "producto-hoja",
+  "ancho": 1024,
+  "url": "comercio-detalle.html?id=1",
+  "bytes": 631269,
+  "notas": "hoja o diálogo del producto abierto (captura del viewport)"
+ },
+ {
+  "archivo": "11-cliente-producto-hoja-1280.png",
+  "rol": "cliente",
+  "pantalla": "producto-hoja",
+  "ancho": 1280,
+  "url": "comercio-detalle.html?id=1",
+  "bytes": 673837,
+  "notas": "hoja o diálogo del producto abierto (captura del viewport)"
+ },
+ {
+  "archivo": "12-cliente-carrito-1024.png",
+  "rol": "cliente",
+  "pantalla": "carrito",
+  "ancho": 1024,
+  "url": "carrito.html",
+  "bytes": 205587,
+  "notas": "con 3 productos en el carrito"
+ },
+ {
+  "archivo": "12-cliente-carrito-1280.png",
+  "rol": "cliente",
+  "pantalla": "carrito",
+  "ancho": 1280,
+  "url": "carrito.html",
+  "bytes": 207554,
+  "notas": "con 3 productos en el carrito"
+ },
+ {
+  "archivo": "13-cliente-pedidos-1024.png",
+  "rol": "cliente",
+  "pantalla": "pedidos",
+  "ancho": 1024,
+  "url": "pedidos.html",
+  "bytes": 1615377,
+  "notas": ""
+ },
+ {
+  "archivo": "13-cliente-pedidos-1280.png",
+  "rol": "cliente",
+  "pantalla": "pedidos",
+  "ancho": 1280,
+  "url": "pedidos.html",
+  "bytes": 1687510,
+  "notas": ""
+ },
+ {
+  "archivo": "14-cliente-pedido-detalle-en-curso-1024.png",
+  "rol": "cliente",
+  "pantalla": "pedido-detalle-en-curso",
+  "ancho": 1024,
+  "url": "pedidos.html?id=7",
+  "bytes": 1664035,
+  "notas": ""
+ },
+ {
+  "archivo": "14-cliente-pedido-detalle-en-curso-1280.png",
+  "rol": "cliente",
+  "pantalla": "pedido-detalle-en-curso",
+  "ancho": 1280,
+  "url": "pedidos.html?id=7",
+  "bytes": 1736674,
+  "notas": ""
+ },
+ {
+  "archivo": "15-cliente-pedido-detalle-entregado-1024.png",
+  "rol": "cliente",
+  "pantalla": "pedido-detalle-entregado",
+  "ancho": 1024,
+  "url": "pedidos.html?id=8",
+  "bytes": 1675202,
+  "notas": ""
+ },
+ {
+  "archivo": "15-cliente-pedido-detalle-entregado-1280.png",
+  "rol": "cliente",
+  "pantalla": "pedido-detalle-entregado",
+  "ancho": 1280,
+  "url": "pedidos.html?id=8",
+  "bytes": 1747577,
+  "notas": ""
+ },
+ {
+  "archivo": "16-cliente-perfil-1024.png",
+  "rol": "cliente",
+  "pantalla": "perfil",
+  "ancho": 1024,
+  "url": "perfil.html?seccion=datos",
+  "bytes": 199902,
+  "notas": ""
+ },
+ {
+  "archivo": "16-cliente-perfil-1280.png",
+  "rol": "cliente",
+  "pantalla": "perfil",
+  "ancho": 1280,
+  "url": "perfil.html?seccion=datos",
+  "bytes": 205691,
+  "notas": ""
+ },
+ {
+  "archivo": "17-cliente-direcciones-1024.png",
+  "rol": "cliente",
+  "pantalla": "direcciones",
+  "ancho": 1024,
+  "url": "perfil.html?seccion=direcciones",
+  "bytes": 188857,
+  "notas": ""
+ },
+ {
+  "archivo": "17-cliente-direcciones-1280.png",
+  "rol": "cliente",
+  "pantalla": "direcciones",
+  "ancho": 1280,
+  "url": "perfil.html?seccion=direcciones",
+  "bytes": 191503,
+  "notas": ""
+ },
+ {
+  "archivo": "18-cliente-avisos-1024.png",
+  "rol": "cliente",
+  "pantalla": "avisos",
+  "ancho": 1024,
+  "url": "notificaciones.html",
+  "bytes": 564221,
+  "notas": ""
+ },
+ {
+  "archivo": "18-cliente-avisos-1280.png",
+  "rol": "cliente",
+  "pantalla": "avisos",
+  "ancho": 1280,
+  "url": "notificaciones.html",
+  "bytes": 524157,
+  "notas": ""
+ },
+ {
+  "archivo": "19-cliente-checkout-1-modalidad-1024.png",
+  "rol": "cliente",
+  "pantalla": "checkout-1-modalidad",
+  "ancho": 1024,
+  "url": "checkout.html",
+  "bytes": 178294,
+  "notas": ""
+ },
+ {
+  "archivo": "19-cliente-checkout-1-modalidad-1280.png",
+  "rol": "cliente",
+  "pantalla": "checkout-1-modalidad",
+  "ancho": 1280,
+  "url": "checkout.html",
+  "bytes": 176123,
+  "notas": ""
+ },
+ {
+  "archivo": "20-cliente-checkout-2-direccion-1024.png",
+  "rol": "cliente",
+  "pantalla": "checkout-2-direccion",
+  "ancho": 1024,
+  "url": "checkout.html",
+  "bytes": 202301,
+  "notas": ""
+ },
+ {
+  "archivo": "20-cliente-checkout-2-direccion-1280.png",
+  "rol": "cliente",
+  "pantalla": "checkout-2-direccion",
+  "ancho": 1280,
+  "url": "checkout.html",
+  "bytes": 208236,
+  "notas": ""
+ },
+ {
+  "archivo": "21-cliente-checkout-3-resumen-1024.png",
+  "rol": "cliente",
+  "pantalla": "checkout-3-resumen",
+  "ancho": 1024,
+  "url": "checkout.html",
+  "bytes": 187537,
+  "notas": ""
+ },
+ {
+  "archivo": "21-cliente-checkout-3-resumen-1280.png",
+  "rol": "cliente",
+  "pantalla": "checkout-3-resumen",
+  "ancho": 1280,
+  "url": "checkout.html",
+  "bytes": 191938,
+  "notas": ""
+ },
+ {
+  "archivo": "22-cliente-checkout-4-pago-1024.png",
+  "rol": "cliente",
+  "pantalla": "checkout-4-pago",
+  "ancho": 1024,
+  "url": "checkout.html",
+  "bytes": 141250,
+  "notas": "crea el pedido y queda en el paso de pago"
+ },
+ {
+  "archivo": "22-cliente-checkout-4-pago-1280.png",
+  "rol": "cliente",
+  "pantalla": "checkout-4-pago",
+  "ancho": 1280,
+  "url": "checkout.html",
+  "bytes": 143843,
+  "notas": "crea el pedido y queda en el paso de pago"
+ },
+ {
+  "archivo": "23-dueno-panel-1024.png",
+  "rol": "dueno",
+  "pantalla": "panel",
+  "ancho": 1024,
+  "url": "comercio-dashboard.html",
+  "bytes": 332196,
+  "notas": ""
+ },
+ {
+  "archivo": "23-dueno-panel-1280.png",
+  "rol": "dueno",
+  "pantalla": "panel",
+  "ancho": 1280,
+  "url": "comercio-dashboard.html",
+  "bytes": 338848,
+  "notas": ""
+ },
+ {
+  "archivo": "24-dueno-pedidos-1024.png",
+  "rol": "dueno",
+  "pantalla": "pedidos",
+  "ancho": 1024,
+  "url": "comercio-pedidos.html?id=1",
+  "bytes": 720646,
+  "notas": "en escritorio con un pedido seleccionado; alto de ventana ampliado a 956 px para no recortar un panel con scroll interno"
+ },
+ {
+  "archivo": "24-dueno-pedidos-1280.png",
+  "rol": "dueno",
+  "pantalla": "pedidos",
+  "ancho": 1280,
+  "url": "comercio-pedidos.html?id=1",
+  "bytes": 703754,
+  "notas": "en escritorio con un pedido seleccionado"
+ },
+ {
+  "archivo": "25-dueno-pedido-detalle-1024.png",
+  "rol": "dueno",
+  "pantalla": "pedido-detalle",
+  "ancho": 1024,
+  "url": "comercio-pedidos.html?id=3",
+  "bytes": 731929,
+  "notas": "alto de ventana ampliado a 1033 px para no recortar un panel con scroll interno"
+ },
+ {
+  "archivo": "25-dueno-pedido-detalle-1280.png",
+  "rol": "dueno",
+  "pantalla": "pedido-detalle",
+  "ancho": 1280,
+  "url": "comercio-pedidos.html?id=3",
+  "bytes": 715691,
+  "notas": "alto de ventana ampliado a 882 px para no recortar un panel con scroll interno"
+ },
+ {
+  "archivo": "26-dueno-productos-1024.png",
+  "rol": "dueno",
+  "pantalla": "productos",
+  "ancho": 1024,
+  "url": "comercio-productos.html",
+  "bytes": 373700,
+  "notas": ""
+ },
+ {
+  "archivo": "26-dueno-productos-1280.png",
+  "rol": "dueno",
+  "pantalla": "productos",
+  "ancho": 1280,
+  "url": "comercio-productos.html",
+  "bytes": 388622,
+  "notas": ""
+ },
+ {
+  "archivo": "27-dueno-producto-form-1024.png",
+  "rol": "dueno",
+  "pantalla": "producto-form",
+  "ancho": 1024,
+  "url": "comercio-producto-form.html?id=1",
+  "bytes": 307733,
+  "notas": "edición de un producto con imágenes"
+ },
+ {
+  "archivo": "27-dueno-producto-form-1280.png",
+  "rol": "dueno",
+  "pantalla": "producto-form",
+  "ancho": 1280,
+  "url": "comercio-producto-form.html?id=1",
+  "bytes": 306531,
+  "notas": "edición de un producto con imágenes"
+ },
+ {
+  "archivo": "28-dueno-estadisticas-1024.png",
+  "rol": "dueno",
+  "pantalla": "estadisticas",
+  "ancho": 1024,
+  "url": "comercio-estadisticas.html",
+  "bytes": 207539,
+  "notas": ""
+ },
+ {
+  "archivo": "28-dueno-estadisticas-1280.png",
+  "rol": "dueno",
+  "pantalla": "estadisticas",
+  "ancho": 1280,
+  "url": "comercio-estadisticas.html",
+  "bytes": 208577,
+  "notas": ""
+ },
+ {
+  "archivo": "29-dueno-equipo-1024.png",
+  "rol": "dueno",
+  "pantalla": "equipo",
+  "ancho": 1024,
+  "url": "comercio-perfil.html?seccion=equipo",
+  "bytes": 168347,
+  "notas": ""
+ },
+ {
+  "archivo": "29-dueno-equipo-1280.png",
+  "rol": "dueno",
+  "pantalla": "equipo",
+  "ancho": 1280,
+  "url": "comercio-perfil.html?seccion=equipo",
+  "bytes": 170500,
+  "notas": ""
+ },
+ {
+  "archivo": "30-dueno-documentacion-1024.png",
+  "rol": "dueno",
+  "pantalla": "documentacion",
+  "ancho": 1024,
+  "url": "comercio-documentacion.html",
+  "bytes": 217315,
+  "notas": ""
+ },
+ {
+  "archivo": "30-dueno-documentacion-1280.png",
+  "rol": "dueno",
+  "pantalla": "documentacion",
+  "ancho": 1280,
+  "url": "comercio-documentacion.html",
+  "bytes": 220637,
+  "notas": ""
+ },
+ {
+  "archivo": "31-dueno-perfil-1024.png",
+  "rol": "dueno",
+  "pantalla": "perfil",
+  "ancho": 1024,
+  "url": "comercio-perfil.html?seccion=perfil",
+  "bytes": 190516,
+  "notas": ""
+ },
+ {
+  "archivo": "31-dueno-perfil-1280.png",
+  "rol": "dueno",
+  "pantalla": "perfil",
+  "ancho": 1280,
+  "url": "comercio-perfil.html?seccion=perfil",
+  "bytes": 192580,
+  "notas": ""
+ },
+ {
+  "archivo": "32-empleado-panel-1024.png",
+  "rol": "empleado",
+  "pantalla": "panel",
+  "ancho": 1024,
+  "url": "comercio-dashboard.html",
+  "bytes": 313786,
+  "notas": ""
+ },
+ {
+  "archivo": "32-empleado-panel-1280.png",
+  "rol": "empleado",
+  "pantalla": "panel",
+  "ancho": 1280,
+  "url": "comercio-dashboard.html",
+  "bytes": 320302,
+  "notas": ""
+ },
+ {
+  "archivo": "33-empleado-pedidos-1024.png",
+  "rol": "empleado",
+  "pantalla": "pedidos",
+  "ancho": 1024,
+  "url": "comercio-pedidos.html",
+  "bytes": 632849,
+  "notas": ""
+ },
+ {
+  "archivo": "33-empleado-pedidos-1280.png",
+  "rol": "empleado",
+  "pantalla": "pedidos",
+  "ancho": 1280,
+  "url": "comercio-pedidos.html",
+  "bytes": 619668,
+  "notas": ""
+ },
+ {
+  "archivo": "34-admin-panel-1024.png",
+  "rol": "admin",
+  "pantalla": "panel",
+  "ancho": 1024,
+  "url": "admin-dashboard.html",
+  "bytes": 236979,
+  "notas": ""
+ },
+ {
+  "archivo": "34-admin-panel-1280.png",
+  "rol": "admin",
+  "pantalla": "panel",
+  "ancho": 1280,
+  "url": "admin-dashboard.html",
+  "bytes": 236252,
+  "notas": ""
+ },
+ {
+  "archivo": "35-admin-comercios-pendientes-1024.png",
+  "rol": "admin",
+  "pantalla": "comercios-pendientes",
+  "ancho": 1024,
+  "url": "admin-comercios-pendientes.html",
+  "bytes": 2000673,
+  "notas": ""
+ },
+ {
+  "archivo": "35-admin-comercios-pendientes-1280.png",
+  "rol": "admin",
+  "pantalla": "comercios-pendientes",
+  "ancho": 1280,
+  "url": "admin-comercios-pendientes.html",
+  "bytes": 1609385,
+  "notas": ""
+ },
+ {
+  "archivo": "36-admin-comercios-1024.png",
+  "rol": "admin",
+  "pantalla": "comercios",
+  "ancho": 1024,
+  "url": "admin-comercios.html",
+  "bytes": 1378201,
+  "notas": ""
+ },
+ {
+  "archivo": "36-admin-comercios-1280.png",
+  "rol": "admin",
+  "pantalla": "comercios",
+  "ancho": 1280,
+  "url": "admin-comercios.html",
+  "bytes": 701080,
+  "notas": ""
+ },
+ {
+  "archivo": "37-admin-documento-revision-1024.png",
+  "rol": "admin",
+  "pantalla": "documento-revision",
+  "ancho": 1024,
+  "url": "admin-documento-revision.html?comercioId=2&id=3",
+  "bytes": 201506,
+  "notas": ""
+ },
+ {
+  "archivo": "37-admin-documento-revision-1280.png",
+  "rol": "admin",
+  "pantalla": "documento-revision",
+  "ancho": 1280,
+  "url": "admin-documento-revision.html?comercioId=2&id=3",
+  "bytes": 226220,
+  "notas": ""
+ },
+ {
+  "archivo": "38-admin-soporte-ticket-abierto-1024.png",
+  "rol": "admin",
+  "pantalla": "soporte-ticket-abierto",
+  "ancho": 1024,
+  "url": "admin-soporte.html?id=2",
+  "bytes": 1743708,
+  "notas": "con una consulta abierta; alto de ventana ampliado a 7000 px para no recortar un panel con scroll interno"
+ },
+ {
+  "archivo": "38-admin-soporte-ticket-abierto-1280.png",
+  "rol": "admin",
+  "pantalla": "soporte-ticket-abierto",
+  "ancho": 1280,
+  "url": "admin-soporte.html?id=2",
+  "bytes": 1773234,
+  "notas": "con una consulta abierta; alto de ventana ampliado a 7000 px para no recortar un panel con scroll interno"
+ },
+ {
+  "archivo": "39-admin-reclamos-1024.png",
+  "rol": "admin",
+  "pantalla": "reclamos",
+  "ancho": 1024,
+  "url": "admin-reclamos.html",
+  "bytes": 767303,
+  "notas": ""
+ },
+ {
+  "archivo": "39-admin-reclamos-1280.png",
+  "rol": "admin",
+  "pantalla": "reclamos",
+  "ancho": 1280,
+  "url": "admin-reclamos.html",
+  "bytes": 735427,
+  "notas": ""
+ },
+ {
+  "archivo": "40-admin-reembolsos-1024.png",
+  "rol": "admin",
+  "pantalla": "reembolsos",
+  "ancho": 1024,
+  "url": "admin-reembolsos.html",
+  "bytes": 1654786,
+  "notas": ""
+ },
+ {
+  "archivo": "40-admin-reembolsos-1280.png",
+  "rol": "admin",
+  "pantalla": "reembolsos",
+  "ancho": 1280,
+  "url": "admin-reembolsos.html",
+  "bytes": 1274041,
+  "notas": ""
+ },
+ {
+  "archivo": "41-admin-clientes-1024.png",
+  "rol": "admin",
+  "pantalla": "clientes",
+  "ancho": 1024,
+  "url": "admin-clientes.html",
+  "bytes": 4994117,
+  "notas": ""
+ },
+ {
+  "archivo": "41-admin-clientes-1280.png",
+  "rol": "admin",
+  "pantalla": "clientes",
+  "ancho": 1280,
+  "url": "admin-clientes.html",
+  "bytes": 4949480,
+  "notas": ""
+ },
+ {
+  "archivo": "42-admin-duenos-1024.png",
+  "rol": "admin",
+  "pantalla": "duenos",
+  "ancho": 1024,
+  "url": "admin-duenos.html",
+  "bytes": 787402,
+  "notas": ""
+ },
+ {
+  "archivo": "42-admin-duenos-1280.png",
+  "rol": "admin",
+  "pantalla": "duenos",
+  "ancho": 1280,
+  "url": "admin-duenos.html",
+  "bytes": 797181,
+  "notas": ""
+ },
+ {
+  "archivo": "43-admin-tarifas-1024.png",
+  "rol": "admin",
+  "pantalla": "tarifas",
+  "ancho": 1024,
+  "url": "admin-tarifas.html",
+  "bytes": 183823,
+  "notas": ""
+ },
+ {
+  "archivo": "43-admin-tarifas-1280.png",
+  "rol": "admin",
+  "pantalla": "tarifas",
+  "ancho": 1280,
+  "url": "admin-tarifas.html",
+  "bytes": 191027,
+  "notas": ""
+ },
+ {
+  "archivo": "44-dueno-estado-hoja-anular-pedido-1024.png",
+  "rol": "dueno",
+  "pantalla": "estado-hoja-anular-pedido",
+  "ancho": 1024,
+  "url": "comercio-pedidos.html?id=3",
+  "bytes": 260899,
+  "notas": "hoja de anulación abierta (captura del viewport)"
+ },
+ {
+  "archivo": "44-dueno-estado-hoja-anular-pedido-1280.png",
+  "rol": "dueno",
+  "pantalla": "estado-hoja-anular-pedido",
+  "ancho": 1280,
+  "url": "comercio-pedidos.html?id=3",
+  "bytes": 300360,
+  "notas": "hoja de anulación abierta (captura del viewport)"
+ },
+ {
+  "archivo": "45-acceso-estado-error-de-campo-1024.png",
+  "rol": "acceso",
+  "pantalla": "estado-error-de-campo",
+  "ancho": 1024,
+  "url": "registro-cliente.html",
+  "bytes": 284470,
+  "notas": "Continuar sin completar el paso 1"
+ },
+ {
+  "archivo": "45-acceso-estado-error-de-campo-1280.png",
+  "rol": "acceso",
+  "pantalla": "estado-error-de-campo",
+  "ancho": 1280,
+  "url": "registro-cliente.html",
+  "bytes": 287300,
+  "notas": "Continuar sin completar el paso 1"
+ },
+ {
+  "archivo": "46-cliente-estado-vacio-sin-pedidos-1024.png",
+  "rol": "cliente (sin pedidos)",
+  "pantalla": "estado-vacio-sin-pedidos",
+  "ancho": 1024,
+  "url": "pedidos.html",
+  "bytes": 80900,
+  "notas": ""
+ },
+ {
+  "archivo": "46-cliente-estado-vacio-sin-pedidos-1280.png",
+  "rol": "cliente (sin pedidos)",
+  "pantalla": "estado-vacio-sin-pedidos",
+  "ancho": 1280,
+  "url": "pedidos.html",
+  "bytes": 83524,
+  "notas": ""
+ },
+ {
+  "archivo": "47-acceso-estado-error-404-1024.png",
+  "rol": "acceso",
+  "pantalla": "estado-error-404",
+  "ancho": 1024,
+  "url": "errores/404.html",
+  "bytes": 69963,
+  "notas": ""
+ },
+ {
+  "archivo": "47-acceso-estado-error-404-1280.png",
+  "rol": "acceso",
+  "pantalla": "estado-error-404",
+  "ancho": 1280,
+  "url": "errores/404.html",
+  "bytes": 74544,
+  "notas": ""
+ }
+]

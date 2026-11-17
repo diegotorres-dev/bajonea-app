@@ -1,0 +1,660 @@
+[
+ {
+  "archivo": "01-acceso-login-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "02-acceso-bienvenida-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "03-acceso-registro-tipo-cuenta-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "04-acceso-registro-cliente-paso1-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "05-acceso-registro-comercio-paso1-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "06-acceso-verificar-email-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "07-acceso-recuperar-password-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "45-acceso-estado-error-de-campo-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "47-acceso-estado-error-404-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "01-acceso-login-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "02-acceso-bienvenida-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "03-acceso-registro-tipo-cuenta-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "04-acceso-registro-cliente-paso1-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "05-acceso-registro-comercio-paso1-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "06-acceso-verificar-email-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "07-acceso-recuperar-password-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "45-acceso-estado-error-de-campo-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "47-acceso-estado-error-404-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "08-cliente-catalogo-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "09-cliente-explorar-filtros-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "10-cliente-ficha-comercio-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "11-cliente-producto-hoja-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "12-cliente-carrito-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "13-cliente-pedidos-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "14-cliente-pedido-detalle-en-curso-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "15-cliente-pedido-detalle-entregado-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "16-cliente-perfil-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "17-cliente-direcciones-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "18-cliente-avisos-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "19-cliente-checkout-1-modalidad-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "20-cliente-checkout-2-direccion-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "21-cliente-checkout-3-resumen-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "22-cliente-checkout-4-pago-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "08-cliente-catalogo-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "09-cliente-explorar-filtros-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "10-cliente-ficha-comercio-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "11-cliente-producto-hoja-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "12-cliente-carrito-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "13-cliente-pedidos-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "14-cliente-pedido-detalle-en-curso-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "15-cliente-pedido-detalle-entregado-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "16-cliente-perfil-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "17-cliente-direcciones-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "18-cliente-avisos-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "19-cliente-checkout-1-modalidad-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "20-cliente-checkout-2-direccion-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "21-cliente-checkout-3-resumen-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "22-cliente-checkout-4-pago-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "46-cliente-estado-vacio-sin-pedidos-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "46-cliente-estado-vacio-sin-pedidos-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "23-dueno-panel-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "24-dueno-pedidos-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "25-dueno-pedido-detalle-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "26-dueno-productos-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "27-dueno-producto-form-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "28-dueno-estadisticas-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "29-dueno-equipo-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "30-dueno-documentacion-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "31-dueno-perfil-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "44-dueno-estado-hoja-anular-pedido-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "23-dueno-panel-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "24-dueno-pedidos-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "25-dueno-pedido-detalle-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "26-dueno-productos-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "27-dueno-producto-form-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "28-dueno-estadisticas-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "29-dueno-equipo-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "30-dueno-documentacion-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "31-dueno-perfil-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "44-dueno-estado-hoja-anular-pedido-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "32-empleado-panel-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "33-empleado-pedidos-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "32-empleado-panel-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "33-empleado-pedidos-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "34-admin-panel-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "35-admin-comercios-pendientes-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "36-admin-comercios-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "37-admin-documento-revision-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "38-admin-soporte-ticket-abierto-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "39-admin-reclamos-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "40-admin-reembolsos-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "41-admin-clientes-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "42-admin-duenos-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "43-admin-tarifas-1024.png",
+  "ancho": 1024,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "34-admin-panel-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "35-admin-comercios-pendientes-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "36-admin-comercios-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "37-admin-documento-revision-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "38-admin-soporte-ticket-abierto-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "39-admin-reclamos-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "40-admin-reembolsos-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "41-admin-clientes-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "42-admin-duenos-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ },
+ {
+  "archivo": "43-admin-tarifas-1280.png",
+  "ancho": 1280,
+  "menores12": [],
+  "secundarios12a13": [],
+  "desborde": 0
+ }
+]

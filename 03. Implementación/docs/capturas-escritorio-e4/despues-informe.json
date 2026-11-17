@@ -1,0 +1,3621 @@
+[
+ {
+  "pagina": "acceso-login",
+  "ancho": 1024,
+  "url": "/login.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-login",
+  "ancho": 1280,
+  "url": "/login.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-login",
+  "ancho": 1440,
+  "url": "/login.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-login",
+  "ancho": 1920,
+  "url": "/login.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-bienvenida",
+  "ancho": 1024,
+  "url": "/bienvenida.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "button[btn-explorar-sin-registro] 420x20 Explorar sin registr"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-bienvenida",
+  "ancho": 1280,
+  "url": "/bienvenida.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "button[btn-explorar-sin-registro] 420x20 Explorar sin registr"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-bienvenida",
+  "ancho": 1440,
+  "url": "/bienvenida.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "button[btn-explorar-sin-registro] 420x20 Explorar sin registr"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-bienvenida",
+  "ancho": 1920,
+  "url": "/bienvenida.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "button[btn-explorar-sin-registro] 420x20 Explorar sin registr"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-registro-tipo-cuenta",
+  "ancho": 1024,
+  "url": "/registro-tipo-cuenta.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-registro-tipo-cuenta",
+  "ancho": 1280,
+  "url": "/registro-tipo-cuenta.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-registro-tipo-cuenta",
+  "ancho": 1440,
+  "url": "/registro-tipo-cuenta.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-registro-tipo-cuenta",
+  "ancho": 1920,
+  "url": "/registro-tipo-cuenta.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-registro-cliente",
+  "ancho": 1024,
+  "url": "/registro-cliente.html",
+  "sobran": 0,
+  "nChicos": 3,
+  "chicos": [
+   "input[input-acepta-terminos] 20x20 ",
+   "a[enlace-terminos] 151x15 Términos y Condicion",
+   "a[enlace-privacidad] 134x15 Política de Privacid"
+  ],
+  "desbordan": [],
+  "altoDoc": 1249,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-registro-cliente",
+  "ancho": 1280,
+  "url": "/registro-cliente.html",
+  "sobran": 0,
+  "nChicos": 3,
+  "chicos": [
+   "input[input-acepta-terminos] 20x20 ",
+   "a[enlace-terminos] 151x15 Términos y Condicion",
+   "a[enlace-privacidad] 134x15 Política de Privacid"
+  ],
+  "desbordan": [],
+  "altoDoc": 1249,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-registro-cliente",
+  "ancho": 1440,
+  "url": "/registro-cliente.html",
+  "sobran": 0,
+  "nChicos": 3,
+  "chicos": [
+   "input[input-acepta-terminos] 20x20 ",
+   "a[enlace-terminos] 151x15 Términos y Condicion",
+   "a[enlace-privacidad] 134x15 Política de Privacid"
+  ],
+  "desbordan": [],
+  "altoDoc": 1249,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-registro-cliente",
+  "ancho": 1920,
+  "url": "/registro-cliente.html",
+  "sobran": 0,
+  "nChicos": 3,
+  "chicos": [
+   "input[input-acepta-terminos] 20x20 ",
+   "a[enlace-terminos] 151x15 Términos y Condicion",
+   "a[enlace-privacidad] 134x15 Política de Privacid"
+  ],
+  "desbordan": [],
+  "altoDoc": 1249,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-registro-comercio",
+  "ancho": 1024,
+  "url": "/registro-comercio.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[btn-switch-delivery] 44x24 ",
+   "button[btn-switch-retiro] 44x24 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1538,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-registro-comercio",
+  "ancho": 1280,
+  "url": "/registro-comercio.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[btn-switch-delivery] 44x24 ",
+   "button[btn-switch-retiro] 44x24 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1538,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-registro-comercio",
+  "ancho": 1440,
+  "url": "/registro-comercio.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[btn-switch-delivery] 44x24 ",
+   "button[btn-switch-retiro] 44x24 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1538,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-registro-comercio",
+  "ancho": 1920,
+  "url": "/registro-comercio.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[btn-switch-delivery] 44x24 ",
+   "button[btn-switch-retiro] 44x24 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1538,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-recuperar-password",
+  "ancho": 1024,
+  "url": "/recuperar-password.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-recuperar-password",
+  "ancho": 1280,
+  "url": "/recuperar-password.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-recuperar-password",
+  "ancho": 1440,
+  "url": "/recuperar-password.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-recuperar-password",
+  "ancho": 1920,
+  "url": "/recuperar-password.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-verificar-email",
+  "ancho": 1024,
+  "url": "/verificar-email.html?email=a%40b.com",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-verificar-email",
+  "ancho": 1280,
+  "url": "/verificar-email.html?email=a%40b.com",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-verificar-email",
+  "ancho": 1440,
+  "url": "/verificar-email.html?email=a%40b.com",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-verificar-email",
+  "ancho": 1920,
+  "url": "/verificar-email.html?email=a%40b.com",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-reactivar-cuenta",
+  "ancho": 1024,
+  "url": "/reactivar-cuenta.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-reactivar-cuenta",
+  "ancho": 1280,
+  "url": "/reactivar-cuenta.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-reactivar-cuenta",
+  "ancho": 1440,
+  "url": "/reactivar-cuenta.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-reactivar-cuenta",
+  "ancho": 1920,
+  "url": "/reactivar-cuenta.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-invitacion-empleado",
+  "ancho": 1024,
+  "url": "/invitacion-empleado.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-invitacion-empleado",
+  "ancho": 1280,
+  "url": "/invitacion-empleado.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-invitacion-empleado",
+  "ancho": 1440,
+  "url": "/invitacion-empleado.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-invitacion-empleado",
+  "ancho": 1920,
+  "url": "/invitacion-empleado.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-soporte",
+  "ancho": 1024,
+  "url": "/soporte.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "a[enlace-faq] 143x16 Preguntas frecuentes",
+   "a[enlace-privacidad] 134x15 Política de privacid"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-soporte",
+  "ancho": 1280,
+  "url": "/soporte.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "a[enlace-faq] 143x16 Preguntas frecuentes",
+   "a[enlace-privacidad] 134x15 Política de privacid"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-soporte",
+  "ancho": 1440,
+  "url": "/soporte.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "a[enlace-faq] 143x16 Preguntas frecuentes",
+   "a[enlace-privacidad] 134x15 Política de privacid"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-soporte",
+  "ancho": 1920,
+  "url": "/soporte.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "a[enlace-faq] 143x16 Preguntas frecuentes",
+   "a[enlace-privacidad] 134x15 Política de privacid"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-terminos",
+  "ancho": 1024,
+  "url": "/terminos.html",
+  "sobran": 0,
+  "nChicos": 4,
+  "chicos": [
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 145x16 Política de Privacid",
+   "a[] 109x16 info@bajonea.ar"
+  ],
+  "desbordan": [],
+  "altoDoc": 3898,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-terminos",
+  "ancho": 1280,
+  "url": "/terminos.html",
+  "sobran": 0,
+  "nChicos": 4,
+  "chicos": [
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 145x16 Política de Privacid",
+   "a[] 109x16 info@bajonea.ar"
+  ],
+  "desbordan": [],
+  "altoDoc": 3674,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-terminos",
+  "ancho": 1440,
+  "url": "/terminos.html",
+  "sobran": 0,
+  "nChicos": 4,
+  "chicos": [
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 145x16 Política de Privacid",
+   "a[] 109x16 info@bajonea.ar"
+  ],
+  "desbordan": [],
+  "altoDoc": 3674,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-terminos",
+  "ancho": 1920,
+  "url": "/terminos.html",
+  "sobran": 0,
+  "nChicos": 4,
+  "chicos": [
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 145x16 Política de Privacid",
+   "a[] 109x16 info@bajonea.ar"
+  ],
+  "desbordan": [],
+  "altoDoc": 3674,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-privacidad",
+  "ancho": 1024,
+  "url": "/privacidad.html",
+  "sobran": 0,
+  "nChicos": 5,
+  "chicos": [
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar"
+  ],
+  "desbordan": [],
+  "altoDoc": 2863,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-privacidad",
+  "ancho": 1280,
+  "url": "/privacidad.html",
+  "sobran": 0,
+  "nChicos": 5,
+  "chicos": [
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar"
+  ],
+  "desbordan": [],
+  "altoDoc": 2729,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-privacidad",
+  "ancho": 1440,
+  "url": "/privacidad.html",
+  "sobran": 0,
+  "nChicos": 5,
+  "chicos": [
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar"
+  ],
+  "desbordan": [],
+  "altoDoc": 2729,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-privacidad",
+  "ancho": 1920,
+  "url": "/privacidad.html",
+  "sobran": 0,
+  "nChicos": 5,
+  "chicos": [
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 109x16 info@bajonea.ar"
+  ],
+  "desbordan": [],
+  "altoDoc": 2729,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-faq",
+  "ancho": 1024,
+  "url": "/faq.html",
+  "sobran": 0,
+  "nChicos": 3,
+  "chicos": [
+   "a[] 109x16 info@bajonea.ar",
+   "a[] 200x16 formulario público d",
+   "a[faq-enlace-soporte] 140x16 Escribinos a Soporte"
+  ],
+  "desbordan": [],
+  "altoDoc": 1955,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-faq",
+  "ancho": 1280,
+  "url": "/faq.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "a[] 109x16 info@bajonea.ar",
+   "a[faq-enlace-soporte] 140x16 Escribinos a Soporte"
+  ],
+  "desbordan": [],
+  "altoDoc": 1955,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-faq",
+  "ancho": 1440,
+  "url": "/faq.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "a[] 109x16 info@bajonea.ar",
+   "a[faq-enlace-soporte] 140x16 Escribinos a Soporte"
+  ],
+  "desbordan": [],
+  "altoDoc": 1955,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-faq",
+  "ancho": 1920,
+  "url": "/faq.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "a[] 109x16 info@bajonea.ar",
+   "a[faq-enlace-soporte] 140x16 Escribinos a Soporte"
+  ],
+  "desbordan": [],
+  "altoDoc": 1955,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-splash",
+  "ancho": 1024,
+  "url": "/bienvenida.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "button[btn-explorar-sin-registro] 420x20 Explorar sin registr"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-splash",
+  "ancho": 1280,
+  "url": "/bienvenida.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "button[btn-explorar-sin-registro] 420x20 Explorar sin registr"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-splash",
+  "ancho": 1440,
+  "url": "/bienvenida.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "button[btn-explorar-sin-registro] 420x20 Explorar sin registr"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-splash",
+  "ancho": 1920,
+  "url": "/bienvenida.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "button[btn-explorar-sin-registro] 420x20 Explorar sin registr"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-404",
+  "ancho": 1024,
+  "url": "/errores/404.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-404",
+  "ancho": 1280,
+  "url": "/errores/404.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-404",
+  "ancho": 1440,
+  "url": "/errores/404.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-404",
+  "ancho": 1920,
+  "url": "/errores/404.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-500",
+  "ancho": 1024,
+  "url": "/errores/500.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-500",
+  "ancho": 1280,
+  "url": "/errores/500.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-500",
+  "ancho": 1440,
+  "url": "/errores/500.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-500",
+  "ancho": 1920,
+  "url": "/errores/500.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-acceso-denegado",
+  "ancho": 1024,
+  "url": "/errores/acceso-denegado.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-acceso-denegado",
+  "ancho": 1280,
+  "url": "/errores/acceso-denegado.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-acceso-denegado",
+  "ancho": 1440,
+  "url": "/errores/acceso-denegado.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-acceso-denegado",
+  "ancho": 1920,
+  "url": "/errores/acceso-denegado.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-sesion-expirada",
+  "ancho": 1024,
+  "url": "/errores/sesion-expirada.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-sesion-expirada",
+  "ancho": 1280,
+  "url": "/errores/sesion-expirada.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-sesion-expirada",
+  "ancho": 1440,
+  "url": "/errores/sesion-expirada.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-sesion-expirada",
+  "ancho": 1920,
+  "url": "/errores/sesion-expirada.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-sin-conexion",
+  "ancho": 1024,
+  "url": "/errores/sin-conexion.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-sin-conexion",
+  "ancho": 1280,
+  "url": "/errores/sin-conexion.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-sin-conexion",
+  "ancho": 1440,
+  "url": "/errores/sin-conexion.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-sin-conexion",
+  "ancho": 1920,
+  "url": "/errores/sin-conexion.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-timeout",
+  "ancho": 1024,
+  "url": "/errores/timeout.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-timeout",
+  "ancho": 1280,
+  "url": "/errores/timeout.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-timeout",
+  "ancho": 1440,
+  "url": "/errores/timeout.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "acceso-errores-timeout",
+  "ancho": 1920,
+  "url": "/errores/timeout.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-dashboard",
+  "ancho": 1024,
+  "url": "/comercio-dashboard.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[switch-cierre-comercio] 48x28 ",
+   "a[enlace-ver-todos-pedidos] 64x16 Ver todos"
+  ],
+  "desbordan": [],
+  "altoDoc": 1715,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-dashboard",
+  "ancho": 1280,
+  "url": "/comercio-dashboard.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[switch-cierre-comercio] 48x28 ",
+   "a[enlace-ver-todos-pedidos] 64x16 Ver todos"
+  ],
+  "desbordan": [],
+  "altoDoc": 1027,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-dashboard",
+  "ancho": 1440,
+  "url": "/comercio-dashboard.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[switch-cierre-comercio] 48x28 ",
+   "a[enlace-ver-todos-pedidos] 64x16 Ver todos"
+  ],
+  "desbordan": [],
+  "altoDoc": 965,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-dashboard",
+  "ancho": 1920,
+  "url": "/comercio-dashboard.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[switch-cierre-comercio] 48x28 ",
+   "a[enlace-ver-todos-pedidos] 64x16 Ver todos"
+  ],
+  "desbordan": [],
+  "altoDoc": 965,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-productos",
+  "ancho": 1024,
+  "url": "/comercio-productos.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "input[input-buscar-producto] 374x20 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-productos",
+  "ancho": 1280,
+  "url": "/comercio-productos.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "input[input-buscar-producto] 374x20 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-productos",
+  "ancho": 1440,
+  "url": "/comercio-productos.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "input[input-buscar-producto] 374x20 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-productos",
+  "ancho": 1920,
+  "url": "/comercio-productos.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "input[input-buscar-producto] 374x20 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-producto-form",
+  "ancho": 1024,
+  "url": "/comercio-producto-form.html",
+  "sobran": 0,
+  "nChicos": 13,
+  "chicos": [
+   "button[chip-tag-producto-18] 170x30 Tag CRUD E2E 1794545",
+   "button[chip-tag-producto-19] 170x30 Tag Duplicado E2E 17",
+   "button[chip-tag-producto-20] 123x30 Tag Tactil 320116",
+   "button[chip-tag-producto-21] 170x30 Tag Explorar E2E 179",
+   "button[chip-tag-producto-22] 170x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-23] 170x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-24] 170x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-25] 170x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-26] 170x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-27] 170x30 Tag Validaciones E2E"
+  ],
+  "desbordan": [],
+  "altoDoc": 1161,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-producto-form",
+  "ancho": 1280,
+  "url": "/comercio-producto-form.html",
+  "sobran": 0,
+  "nChicos": 13,
+  "chicos": [
+   "button[chip-tag-producto-18] 281x30 Tag CRUD E2E 1794545",
+   "button[chip-tag-producto-19] 251x30 Tag Duplicado E2E 17",
+   "button[chip-tag-producto-20] 123x30 Tag Tactil 320116",
+   "button[chip-tag-producto-21] 255x30 Tag Explorar E2E 179",
+   "button[chip-tag-producto-22] 289x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-23] 289x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-24] 289x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-25] 289x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-26] 289x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-27] 289x30 Tag Validaciones E2E"
+  ],
+  "desbordan": [],
+  "altoDoc": 1070,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-producto-form",
+  "ancho": 1440,
+  "url": "/comercio-producto-form.html",
+  "sobran": 0,
+  "nChicos": 13,
+  "chicos": [
+   "button[chip-tag-producto-18] 281x30 Tag CRUD E2E 1794545",
+   "button[chip-tag-producto-19] 251x30 Tag Duplicado E2E 17",
+   "button[chip-tag-producto-20] 123x30 Tag Tactil 320116",
+   "button[chip-tag-producto-21] 255x30 Tag Explorar E2E 179",
+   "button[chip-tag-producto-22] 289x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-23] 289x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-24] 289x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-25] 289x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-26] 289x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-27] 289x30 Tag Validaciones E2E"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-producto-form",
+  "ancho": 1920,
+  "url": "/comercio-producto-form.html",
+  "sobran": 0,
+  "nChicos": 13,
+  "chicos": [
+   "button[chip-tag-producto-18] 281x30 Tag CRUD E2E 1794545",
+   "button[chip-tag-producto-19] 251x30 Tag Duplicado E2E 17",
+   "button[chip-tag-producto-20] 123x30 Tag Tactil 320116",
+   "button[chip-tag-producto-21] 255x30 Tag Explorar E2E 179",
+   "button[chip-tag-producto-22] 289x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-23] 289x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-24] 289x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-25] 289x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-26] 289x30 Tag Validaciones E2E",
+   "button[chip-tag-producto-27] 289x30 Tag Validaciones E2E"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-pedidos",
+  "ancho": 1024,
+  "url": "/comercio-pedidos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1223,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-pedidos",
+  "ancho": 1280,
+  "url": "/comercio-pedidos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1179,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-pedidos",
+  "ancho": 1440,
+  "url": "/comercio-pedidos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1179,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-pedidos",
+  "ancho": 1920,
+  "url": "/comercio-pedidos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1179,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-pedido-detalle",
+  "ancho": 1024,
+  "url": "/comercio-pedidos.html?id=755",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1223,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-pedido-detalle",
+  "ancho": 1280,
+  "url": "/comercio-pedidos.html?id=755",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1179,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-pedido-detalle",
+  "ancho": 1440,
+  "url": "/comercio-pedidos.html?id=755",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1179,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-pedido-detalle",
+  "ancho": 1920,
+  "url": "/comercio-pedidos.html?id=755",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1179,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-perfil",
+  "ancho": 1024,
+  "url": "/comercio-perfil.html?seccion=perfil",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-perfil",
+  "ancho": 1280,
+  "url": "/comercio-perfil.html?seccion=perfil",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-perfil",
+  "ancho": 1440,
+  "url": "/comercio-perfil.html?seccion=perfil",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-perfil",
+  "ancho": 1920,
+  "url": "/comercio-perfil.html?seccion=perfil",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-estadisticas",
+  "ancho": 1024,
+  "url": "/comercio-estadisticas.html",
+  "sobran": 0,
+  "nChicos": 30,
+  "chicos": [
+   "button[estadisticas-barra] 17x259 ",
+   "button[estadisticas-barra] 17x259 ",
+   "button[estadisticas-barra] 17x259 ",
+   "button[estadisticas-barra] 17x259 ",
+   "button[estadisticas-barra] 17x259 ",
+   "button[estadisticas-barra] 17x259 ",
+   "button[estadisticas-barra] 17x259 ",
+   "button[estadisticas-barra] 17x259 ",
+   "button[estadisticas-barra] 17x259 ",
+   "button[estadisticas-barra] 17x259 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1173,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-estadisticas",
+  "ancho": 1280,
+  "url": "/comercio-estadisticas.html",
+  "sobran": 0,
+  "nChicos": 30,
+  "chicos": [
+   "button[estadisticas-barra] 26x259 ",
+   "button[estadisticas-barra] 26x259 ",
+   "button[estadisticas-barra] 26x259 ",
+   "button[estadisticas-barra] 26x259 ",
+   "button[estadisticas-barra] 26x259 ",
+   "button[estadisticas-barra] 26x259 ",
+   "button[estadisticas-barra] 26x259 ",
+   "button[estadisticas-barra] 26x259 ",
+   "button[estadisticas-barra] 26x259 ",
+   "button[estadisticas-barra] 26x259 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1134,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-estadisticas",
+  "ancho": 1440,
+  "url": "/comercio-estadisticas.html",
+  "sobran": 0,
+  "nChicos": 30,
+  "chicos": [
+   "button[estadisticas-barra] 31x259 ",
+   "button[estadisticas-barra] 31x259 ",
+   "button[estadisticas-barra] 31x259 ",
+   "button[estadisticas-barra] 31x259 ",
+   "button[estadisticas-barra] 31x259 ",
+   "button[estadisticas-barra] 31x259 ",
+   "button[estadisticas-barra] 31x259 ",
+   "button[estadisticas-barra] 31x259 ",
+   "button[estadisticas-barra] 31x259 ",
+   "button[estadisticas-barra] 31x259 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1134,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-estadisticas",
+  "ancho": 1920,
+  "url": "/comercio-estadisticas.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1134,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-documentacion",
+  "ancho": 1024,
+  "url": "/comercio-documentacion.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-documentacion",
+  "ancho": 1280,
+  "url": "/comercio-documentacion.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-documentacion",
+  "ancho": 1440,
+  "url": "/comercio-documentacion.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-comercio-documentacion",
+  "ancho": 1920,
+  "url": "/comercio-documentacion.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-notificaciones",
+  "ancho": 1024,
+  "url": "/notificaciones.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "button[btn-marcar-todas-leidas] 81x15 Marcar todas"
+  ],
+  "desbordan": [],
+  "altoDoc": 1301,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-notificaciones",
+  "ancho": 1280,
+  "url": "/notificaciones.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "button[btn-marcar-todas-leidas] 81x15 Marcar todas"
+  ],
+  "desbordan": [],
+  "altoDoc": 1078,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-notificaciones",
+  "ancho": 1440,
+  "url": "/notificaciones.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "button[btn-marcar-todas-leidas] 81x15 Marcar todas"
+  ],
+  "desbordan": [],
+  "altoDoc": 1057,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-notificaciones",
+  "ancho": 1920,
+  "url": "/notificaciones.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "button[btn-marcar-todas-leidas] 81x15 Marcar todas"
+  ],
+  "desbordan": [],
+  "altoDoc": 1037,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-mis-consultas",
+  "ancho": 1024,
+  "url": "/mis-consultas.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-mis-consultas",
+  "ancho": 1280,
+  "url": "/mis-consultas.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-mis-consultas",
+  "ancho": 1440,
+  "url": "/mis-consultas.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-mis-consultas",
+  "ancho": 1920,
+  "url": "/mis-consultas.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-ayuda",
+  "ancho": 1024,
+  "url": "/ayuda.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-ayuda",
+  "ancho": 1280,
+  "url": "/ayuda.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-ayuda",
+  "ancho": 1440,
+  "url": "/ayuda.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-ayuda",
+  "ancho": 1920,
+  "url": "/ayuda.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-agregar-comercio",
+  "ancho": 1024,
+  "url": "/agregar-comercio.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[btn-switch-delivery] 44x24 ",
+   "button[btn-switch-retiro] 44x24 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1438,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-agregar-comercio",
+  "ancho": 1280,
+  "url": "/agregar-comercio.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[btn-switch-delivery] 44x24 ",
+   "button[btn-switch-retiro] 44x24 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1419,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-agregar-comercio",
+  "ancho": 1440,
+  "url": "/agregar-comercio.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[btn-switch-delivery] 44x24 ",
+   "button[btn-switch-retiro] 44x24 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1419,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-agregar-comercio",
+  "ancho": 1920,
+  "url": "/agregar-comercio.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[btn-switch-delivery] 44x24 ",
+   "button[btn-switch-retiro] 44x24 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1419,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-seleccionar-contexto",
+  "ancho": 1024,
+  "url": "/comercio-dashboard.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[switch-cierre-comercio] 48x28 ",
+   "a[enlace-ver-todos-pedidos] 64x16 Ver todos"
+  ],
+  "desbordan": [],
+  "altoDoc": 1715,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-seleccionar-contexto",
+  "ancho": 1280,
+  "url": "/comercio-dashboard.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[switch-cierre-comercio] 48x28 ",
+   "a[enlace-ver-todos-pedidos] 64x16 Ver todos"
+  ],
+  "desbordan": [],
+  "altoDoc": 1027,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-seleccionar-contexto",
+  "ancho": 1440,
+  "url": "/comercio-dashboard.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[switch-cierre-comercio] 48x28 ",
+   "a[enlace-ver-todos-pedidos] 64x16 Ver todos"
+  ],
+  "desbordan": [],
+  "altoDoc": 965,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-seleccionar-contexto",
+  "ancho": 1920,
+  "url": "/comercio-dashboard.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[switch-cierre-comercio] 48x28 ",
+   "a[enlace-ver-todos-pedidos] 64x16 Ver todos"
+  ],
+  "desbordan": [],
+  "altoDoc": 965,
+  "errores": []
+ },
+ {
+  "pagina": "dueno-soporte-consulta",
+  "ancho": 1024,
+  "url": "/soporte-consulta.html?id=116",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": [
+   "Failed to load resource: the server responded with a status of 404 ()"
+  ]
+ },
+ {
+  "pagina": "dueno-soporte-consulta",
+  "ancho": 1280,
+  "url": "/soporte-consulta.html?id=116",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": [
+   "Failed to load resource: the server responded with a status of 404 ()"
+  ]
+ },
+ {
+  "pagina": "dueno-soporte-consulta",
+  "ancho": 1440,
+  "url": "/soporte-consulta.html?id=116",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": [
+   "Failed to load resource: the server responded with a status of 404 ()"
+  ]
+ },
+ {
+  "pagina": "dueno-soporte-consulta",
+  "ancho": 1920,
+  "url": "/soporte-consulta.html?id=116",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": [
+   "Failed to load resource: the server responded with a status of 404 ()"
+  ]
+ },
+ {
+  "pagina": "empleado-comercio-dashboard",
+  "ancho": 1024,
+  "url": "/comercio-dashboard.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[switch-cierre-comercio] 48x28 ",
+   "a[enlace-ver-todos-pedidos] 64x16 Ver todos"
+  ],
+  "desbordan": [],
+  "altoDoc": 1371,
+  "errores": []
+ },
+ {
+  "pagina": "empleado-comercio-dashboard",
+  "ancho": 1280,
+  "url": "/comercio-dashboard.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[switch-cierre-comercio] 48x28 ",
+   "a[enlace-ver-todos-pedidos] 64x16 Ver todos"
+  ],
+  "desbordan": [],
+  "altoDoc": 923,
+  "errores": []
+ },
+ {
+  "pagina": "empleado-comercio-dashboard",
+  "ancho": 1440,
+  "url": "/comercio-dashboard.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[switch-cierre-comercio] 48x28 ",
+   "a[enlace-ver-todos-pedidos] 64x16 Ver todos"
+  ],
+  "desbordan": [],
+  "altoDoc": 909,
+  "errores": []
+ },
+ {
+  "pagina": "empleado-comercio-dashboard",
+  "ancho": 1920,
+  "url": "/comercio-dashboard.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "button[switch-cierre-comercio] 48x28 ",
+   "a[enlace-ver-todos-pedidos] 64x16 Ver todos"
+  ],
+  "desbordan": [],
+  "altoDoc": 909,
+  "errores": []
+ },
+ {
+  "pagina": "empleado-comercio-productos",
+  "ancho": 1024,
+  "url": "/comercio-productos.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "input[input-buscar-producto] 374x20 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "empleado-comercio-productos",
+  "ancho": 1280,
+  "url": "/comercio-productos.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "input[input-buscar-producto] 374x20 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "empleado-comercio-productos",
+  "ancho": 1440,
+  "url": "/comercio-productos.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "input[input-buscar-producto] 374x20 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "empleado-comercio-productos",
+  "ancho": 1920,
+  "url": "/comercio-productos.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "input[input-buscar-producto] 374x20 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "empleado-comercio-pedidos",
+  "ancho": 1024,
+  "url": "/comercio-pedidos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1223,
+  "errores": []
+ },
+ {
+  "pagina": "empleado-comercio-pedidos",
+  "ancho": 1280,
+  "url": "/comercio-pedidos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1179,
+  "errores": []
+ },
+ {
+  "pagina": "empleado-comercio-pedidos",
+  "ancho": 1440,
+  "url": "/comercio-pedidos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1179,
+  "errores": []
+ },
+ {
+  "pagina": "empleado-comercio-pedidos",
+  "ancho": 1920,
+  "url": "/comercio-pedidos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1179,
+  "errores": []
+ },
+ {
+  "pagina": "empleado-comercio-perfil",
+  "ancho": 1024,
+  "url": "/comercio-perfil.html?seccion=perfil",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "empleado-comercio-perfil",
+  "ancho": 1280,
+  "url": "/comercio-perfil.html?seccion=perfil",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "empleado-comercio-perfil",
+  "ancho": 1440,
+  "url": "/comercio-perfil.html?seccion=perfil",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "empleado-comercio-perfil",
+  "ancho": 1920,
+  "url": "/comercio-perfil.html?seccion=perfil",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "empleado-notificaciones",
+  "ancho": 1024,
+  "url": "/notificaciones.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "button[btn-marcar-todas-leidas] 81x15 Marcar todas"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "empleado-notificaciones",
+  "ancho": 1280,
+  "url": "/notificaciones.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "button[btn-marcar-todas-leidas] 81x15 Marcar todas"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "empleado-notificaciones",
+  "ancho": 1440,
+  "url": "/notificaciones.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "button[btn-marcar-todas-leidas] 81x15 Marcar todas"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "empleado-notificaciones",
+  "ancho": 1920,
+  "url": "/notificaciones.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "button[btn-marcar-todas-leidas] 81x15 Marcar todas"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-dashboard",
+  "ancho": 1024,
+  "url": "/admin-dashboard.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-dashboard",
+  "ancho": 1280,
+  "url": "/admin-dashboard.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-dashboard",
+  "ancho": 1440,
+  "url": "/admin-dashboard.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-dashboard",
+  "ancho": 1920,
+  "url": "/admin-dashboard.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-comercios-pendientes",
+  "ancho": 1024,
+  "url": "/admin-comercios-pendientes.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 16616,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-comercios-pendientes",
+  "ancho": 1280,
+  "url": "/admin-comercios-pendientes.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 14155,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-comercios-pendientes",
+  "ancho": 1440,
+  "url": "/admin-comercios-pendientes.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 13972,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-comercios-pendientes",
+  "ancho": 1920,
+  "url": "/admin-comercios-pendientes.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 10141,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-comercios",
+  "ancho": 1024,
+  "url": "/admin-comercios.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 92247,
+  "errores": [
+   "Failed to load resource: the server responded with a status of 404 ()",
+   "Failed to load resource: the server responded with a status of 404 ()"
+  ]
+ },
+ {
+  "pagina": "admin-admin-comercios",
+  "ancho": 1280,
+  "url": "/admin-comercios.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 75095,
+  "errores": [
+   "Failed to load resource: the server responded with a status of 404 ()",
+   "Failed to load resource: the server responded with a status of 404 ()"
+  ]
+ },
+ {
+  "pagina": "admin-admin-comercios",
+  "ancho": 1440,
+  "url": "/admin-comercios.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 75095,
+  "errores": [
+   "Failed to load resource: the server responded with a status of 404 ()",
+   "Failed to load resource: the server responded with a status of 404 ()"
+  ]
+ },
+ {
+  "pagina": "admin-admin-comercios",
+  "ancho": 1920,
+  "url": "/admin-comercios.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 75095,
+  "errores": [
+   "Failed to load resource: the server responded with a status of 404 ()",
+   "Failed to load resource: the server responded with a status of 404 ()"
+  ]
+ },
+ {
+  "pagina": "admin-admin-resolicitudes",
+  "ancho": 1024,
+  "url": "/admin-resolicitudes.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1465,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-resolicitudes",
+  "ancho": 1280,
+  "url": "/admin-resolicitudes.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1357,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-resolicitudes",
+  "ancho": 1440,
+  "url": "/admin-resolicitudes.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1357,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-resolicitudes",
+  "ancho": 1920,
+  "url": "/admin-resolicitudes.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 965,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-documentos",
+  "ancho": 1024,
+  "url": "/admin-documentos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 3993,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-documentos",
+  "ancho": 1280,
+  "url": "/admin-documentos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 3330,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-documentos",
+  "ancho": 1440,
+  "url": "/admin-documentos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 3330,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-documentos",
+  "ancho": 1920,
+  "url": "/admin-documentos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 3330,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-soporte",
+  "ancho": 1024,
+  "url": "/admin-soporte.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 924,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-soporte",
+  "ancho": 1280,
+  "url": "/admin-soporte.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 924,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-soporte",
+  "ancho": 1440,
+  "url": "/admin-soporte.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 924,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-soporte",
+  "ancho": 1920,
+  "url": "/admin-soporte.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 924,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-clientes",
+  "ancho": 1024,
+  "url": "/admin-clientes.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 42282,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-clientes",
+  "ancho": 1280,
+  "url": "/admin-clientes.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 42136,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-clientes",
+  "ancho": 1440,
+  "url": "/admin-clientes.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 42127,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-clientes",
+  "ancho": 1920,
+  "url": "/admin-clientes.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 42127,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-duenos",
+  "ancho": 1024,
+  "url": "/admin-duenos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 2199,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-duenos",
+  "ancho": 1280,
+  "url": "/admin-duenos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 2059,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-duenos",
+  "ancho": 1440,
+  "url": "/admin-duenos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 2059,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-duenos",
+  "ancho": 1920,
+  "url": "/admin-duenos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 2059,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-reembolsos",
+  "ancho": 1024,
+  "url": "/admin-reembolsos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1234,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-reembolsos",
+  "ancho": 1280,
+  "url": "/admin-reembolsos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-reembolsos",
+  "ancho": 1440,
+  "url": "/admin-reembolsos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-reembolsos",
+  "ancho": 1920,
+  "url": "/admin-reembolsos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-tarifas",
+  "ancho": 1024,
+  "url": "/admin-tarifas.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-tarifas",
+  "ancho": 1280,
+  "url": "/admin-tarifas.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-tarifas",
+  "ancho": 1440,
+  "url": "/admin-tarifas.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-tarifas",
+  "ancho": 1920,
+  "url": "/admin-tarifas.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-categorias",
+  "ancho": 1024,
+  "url": "/admin-categorias.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 9953,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-categorias",
+  "ancho": 1280,
+  "url": "/admin-categorias.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 9949,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-categorias",
+  "ancho": 1440,
+  "url": "/admin-categorias.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 9949,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-categorias",
+  "ancho": 1920,
+  "url": "/admin-categorias.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 9949,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-tags",
+  "ancho": 1024,
+  "url": "/admin-tags.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1226,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-tags",
+  "ancho": 1280,
+  "url": "/admin-tags.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1226,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-tags",
+  "ancho": 1440,
+  "url": "/admin-tags.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1226,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-tags",
+  "ancho": 1920,
+  "url": "/admin-tags.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1226,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-reclamos",
+  "ancho": 1024,
+  "url": "/admin-reclamos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 2216,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-reclamos",
+  "ancho": 1280,
+  "url": "/admin-reclamos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1946,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-reclamos",
+  "ancho": 1440,
+  "url": "/admin-reclamos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1946,
+  "errores": []
+ },
+ {
+  "pagina": "admin-admin-reclamos",
+  "ancho": 1920,
+  "url": "/admin-reclamos.html",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1946,
+  "errores": []
+ },
+ {
+  "pagina": "admin-comercio-detalle",
+  "ancho": 1024,
+  "url": "/admin-comercio-detalle.html?id=1234",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1277,
+  "errores": []
+ },
+ {
+  "pagina": "admin-comercio-detalle",
+  "ancho": 1280,
+  "url": "/admin-comercio-detalle.html?id=1234",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-comercio-detalle",
+  "ancho": 1440,
+  "url": "/admin-comercio-detalle.html?id=1234",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-comercio-detalle",
+  "ancho": 1920,
+  "url": "/admin-comercio-detalle.html?id=1234",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-resolicitud-detalle",
+  "ancho": 1024,
+  "url": "/admin-resolicitud-detalle.html?id=1237",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1409,
+  "errores": []
+ },
+ {
+  "pagina": "admin-resolicitud-detalle",
+  "ancho": 1280,
+  "url": "/admin-resolicitud-detalle.html?id=1237",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-resolicitud-detalle",
+  "ancho": 1440,
+  "url": "/admin-resolicitud-detalle.html?id=1237",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-resolicitud-detalle",
+  "ancho": 1920,
+  "url": "/admin-resolicitud-detalle.html?id=1237",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-documento-revision",
+  "ancho": 1024,
+  "url": "/admin-documento-revision.html?comercioId=1233&id=80",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 968,
+  "errores": []
+ },
+ {
+  "pagina": "admin-documento-revision",
+  "ancho": 1280,
+  "url": "/admin-documento-revision.html?comercioId=1233&id=80",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 940,
+  "errores": []
+ },
+ {
+  "pagina": "admin-documento-revision",
+  "ancho": 1440,
+  "url": "/admin-documento-revision.html?comercioId=1233&id=80",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-documento-revision",
+  "ancho": 1920,
+  "url": "/admin-documento-revision.html?comercioId=1233&id=80",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-comercio-equipo",
+  "ancho": 1024,
+  "url": "/admin-comercio-equipo.html?id=1233",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-comercio-equipo",
+  "ancho": 1280,
+  "url": "/admin-comercio-equipo.html?id=1233",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-comercio-equipo",
+  "ancho": 1440,
+  "url": "/admin-comercio-equipo.html?id=1233",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-comercio-equipo",
+  "ancho": 1920,
+  "url": "/admin-comercio-equipo.html?id=1233",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "admin-comercio-actividad",
+  "ancho": 1024,
+  "url": "/admin-comercio-actividad.html?id=1233",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1470,
+  "errores": []
+ },
+ {
+  "pagina": "admin-comercio-actividad",
+  "ancho": 1280,
+  "url": "/admin-comercio-actividad.html?id=1233",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1309,
+  "errores": []
+ },
+ {
+  "pagina": "admin-comercio-actividad",
+  "ancho": 1440,
+  "url": "/admin-comercio-actividad.html?id=1233",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1309,
+  "errores": []
+ },
+ {
+  "pagina": "admin-comercio-actividad",
+  "ancho": 1920,
+  "url": "/admin-comercio-actividad.html?id=1233",
+  "sobran": 0,
+  "nChicos": 0,
+  "chicos": [],
+  "desbordan": [],
+  "altoDoc": 1301,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-index",
+  "ancho": 1024,
+  "url": "/index.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 47630,
+  "errores": [
+   "Failed to load resource: the server responded with a status of 404 ()"
+  ]
+ },
+ {
+  "pagina": "cliente-index",
+  "ancho": 1280,
+  "url": "/index.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 35898,
+  "errores": [
+   "Failed to load resource: the server responded with a status of 404 ()"
+  ]
+ },
+ {
+  "pagina": "cliente-index",
+  "ancho": 1440,
+  "url": "/index.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 35898,
+  "errores": [
+   "Failed to load resource: the server responded with a status of 404 ()"
+  ]
+ },
+ {
+  "pagina": "cliente-index",
+  "ancho": 1920,
+  "url": "/index.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 35898,
+  "errores": [
+   "Failed to load resource: the server responded with a status of 404 ()"
+  ]
+ },
+ {
+  "pagina": "cliente-explorar",
+  "ancho": 1024,
+  "url": "/explorar.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 5812,
+  "errores": [
+   "Failed to load resource: the server responded with a status of 404 ()",
+   "Failed to load resource: the server responded with a status of 404 ()"
+  ]
+ },
+ {
+  "pagina": "cliente-explorar",
+  "ancho": 1280,
+  "url": "/explorar.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 4339,
+  "errores": [
+   "Failed to load resource: the server responded with a status of 404 ()",
+   "Failed to load resource: the server responded with a status of 404 ()",
+   "Failed to load resource: the server responded with a status of 404 ()"
+  ]
+ },
+ {
+  "pagina": "cliente-explorar",
+  "ancho": 1440,
+  "url": "/explorar.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 4339,
+  "errores": [
+   "Failed to load resource: the server responded with a status of 404 ()",
+   "Failed to load resource: the server responded with a status of 404 ()"
+  ]
+ },
+ {
+  "pagina": "cliente-explorar",
+  "ancho": 1920,
+  "url": "/explorar.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 4339,
+  "errores": [
+   "Failed to load resource: the server responded with a status of 404 ()",
+   "Failed to load resource: the server responded with a status of 404 ()"
+  ]
+ },
+ {
+  "pagina": "cliente-comercio-detalle",
+  "ancho": 1024,
+  "url": "/comercio-detalle.html?id=1232",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1067,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-comercio-detalle",
+  "ancho": 1280,
+  "url": "/comercio-detalle.html?id=1232",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1070,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-comercio-detalle",
+  "ancho": 1440,
+  "url": "/comercio-detalle.html?id=1232",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1070,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-comercio-detalle",
+  "ancho": 1920,
+  "url": "/comercio-detalle.html?id=1232",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1070,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-carrito",
+  "ancho": 1024,
+  "url": "/carrito.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "a[barra-logo] 71x28 ",
+   "button[btn-eliminar-item-carrito-996] 28x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-carrito",
+  "ancho": 1280,
+  "url": "/carrito.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "a[barra-logo] 71x28 ",
+   "button[btn-eliminar-item-carrito-996] 28x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-carrito",
+  "ancho": 1440,
+  "url": "/carrito.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "a[barra-logo] 71x28 ",
+   "button[btn-eliminar-item-carrito-996] 28x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-carrito",
+  "ancho": 1920,
+  "url": "/carrito.html",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "a[barra-logo] 71x28 ",
+   "button[btn-eliminar-item-carrito-996] 28x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-checkout",
+  "ancho": 1024,
+  "url": "/checkout.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-checkout",
+  "ancho": 1280,
+  "url": "/checkout.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-checkout",
+  "ancho": 1440,
+  "url": "/checkout.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-checkout",
+  "ancho": 1920,
+  "url": "/checkout.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-pedidos",
+  "ancho": 1024,
+  "url": "/pedidos.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1817,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-pedidos",
+  "ancho": 1280,
+  "url": "/pedidos.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1817,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-pedidos",
+  "ancho": 1440,
+  "url": "/pedidos.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1817,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-pedidos",
+  "ancho": 1920,
+  "url": "/pedidos.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1817,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-pedidos-id",
+  "ancho": 1024,
+  "url": "/pedidos.html?id=761",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1817,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-pedidos-id",
+  "ancho": 1280,
+  "url": "/pedidos.html?id=761",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1817,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-pedidos-id",
+  "ancho": 1440,
+  "url": "/pedidos.html?id=761",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1817,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-pedidos-id",
+  "ancho": 1920,
+  "url": "/pedidos.html?id=761",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1817,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-pedido-detalle",
+  "ancho": 1024,
+  "url": "/pedidos.html?id=761",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1817,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-pedido-detalle",
+  "ancho": 1280,
+  "url": "/pedidos.html?id=761",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1817,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-pedido-detalle",
+  "ancho": 1440,
+  "url": "/pedidos.html?id=761",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1817,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-pedido-detalle",
+  "ancho": 1920,
+  "url": "/pedidos.html?id=761",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1817,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-perfil",
+  "ancho": 1024,
+  "url": "/perfil.html?seccion=datos",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "a[barra-logo] 71x28 ",
+   "button[switch-sonido-avisos] 48x28 Sonido activado"
+  ],
+  "desbordan": [],
+  "altoDoc": 935,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-perfil",
+  "ancho": 1280,
+  "url": "/perfil.html?seccion=datos",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "a[barra-logo] 71x28 ",
+   "button[switch-sonido-avisos] 48x28 Sonido activado"
+  ],
+  "desbordan": [],
+  "altoDoc": 935,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-perfil",
+  "ancho": 1440,
+  "url": "/perfil.html?seccion=datos",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "a[barra-logo] 71x28 ",
+   "button[switch-sonido-avisos] 48x28 Sonido activado"
+  ],
+  "desbordan": [],
+  "altoDoc": 935,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-perfil",
+  "ancho": 1920,
+  "url": "/perfil.html?seccion=datos",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "a[barra-logo] 71x28 ",
+   "button[switch-sonido-avisos] 48x28 Sonido activado"
+  ],
+  "desbordan": [],
+  "altoDoc": 935,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-notificaciones",
+  "ancho": 1024,
+  "url": "/notificaciones.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1269,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-notificaciones",
+  "ancho": 1280,
+  "url": "/notificaciones.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1066,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-notificaciones",
+  "ancho": 1440,
+  "url": "/notificaciones.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1066,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-notificaciones",
+  "ancho": 1920,
+  "url": "/notificaciones.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 1066,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-mis-consultas",
+  "ancho": 1024,
+  "url": "/mis-consultas.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-mis-consultas",
+  "ancho": 1280,
+  "url": "/mis-consultas.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-mis-consultas",
+  "ancho": 1440,
+  "url": "/mis-consultas.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-mis-consultas",
+  "ancho": 1920,
+  "url": "/mis-consultas.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-reclamo-nuevo",
+  "ancho": 1024,
+  "url": "/reclamo-nuevo.html?pedido=762",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "a[barra-logo] 71x28 ",
+   "input[input-reclamo-foto] 1x1 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-reclamo-nuevo",
+  "ancho": 1280,
+  "url": "/reclamo-nuevo.html?pedido=762",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "a[barra-logo] 71x28 ",
+   "input[input-reclamo-foto] 1x1 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-reclamo-nuevo",
+  "ancho": 1440,
+  "url": "/reclamo-nuevo.html?pedido=762",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "a[barra-logo] 71x28 ",
+   "input[input-reclamo-foto] 1x1 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-reclamo-nuevo",
+  "ancho": 1920,
+  "url": "/reclamo-nuevo.html?pedido=762",
+  "sobran": 0,
+  "nChicos": 2,
+  "chicos": [
+   "a[barra-logo] 71x28 ",
+   "input[input-reclamo-foto] 1x1 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-ayuda",
+  "ancho": 1024,
+  "url": "/ayuda.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-ayuda",
+  "ancho": 1280,
+  "url": "/ayuda.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-ayuda",
+  "ancho": 1440,
+  "url": "/ayuda.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-ayuda",
+  "ancho": 1920,
+  "url": "/ayuda.html",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-soporte-consulta",
+  "ancho": 1024,
+  "url": "/soporte-consulta.html?id=116",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-soporte-consulta",
+  "ancho": 1280,
+  "url": "/soporte-consulta.html?id=116",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-soporte-consulta",
+  "ancho": 1440,
+  "url": "/soporte-consulta.html?id=116",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-soporte-consulta",
+  "ancho": 1920,
+  "url": "/soporte-consulta.html?id=116",
+  "sobran": 0,
+  "nChicos": 1,
+  "chicos": [
+   "a[barra-logo] 71x28 "
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-soporte",
+  "ancho": 1024,
+  "url": "/soporte.html",
+  "sobran": 0,
+  "nChicos": 3,
+  "chicos": [
+   "a[barra-logo] 71x28 ",
+   "a[enlace-faq] 143x16 Preguntas frecuentes",
+   "a[enlace-privacidad] 134x15 Política de privacid"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-soporte",
+  "ancho": 1280,
+  "url": "/soporte.html",
+  "sobran": 0,
+  "nChicos": 3,
+  "chicos": [
+   "a[barra-logo] 71x28 ",
+   "a[enlace-faq] 143x16 Preguntas frecuentes",
+   "a[enlace-privacidad] 134x15 Política de privacid"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-soporte",
+  "ancho": 1440,
+  "url": "/soporte.html",
+  "sobran": 0,
+  "nChicos": 3,
+  "chicos": [
+   "a[barra-logo] 71x28 ",
+   "a[enlace-faq] 143x16 Preguntas frecuentes",
+   "a[enlace-privacidad] 134x15 Política de privacid"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ },
+ {
+  "pagina": "cliente-soporte",
+  "ancho": 1920,
+  "url": "/soporte.html",
+  "sobran": 0,
+  "nChicos": 3,
+  "chicos": [
+   "a[barra-logo] 71x28 ",
+   "a[enlace-faq] 143x16 Preguntas frecuentes",
+   "a[enlace-privacidad] 134x15 Política de privacid"
+  ],
+  "desbordan": [],
+  "altoDoc": 900,
+  "errores": []
+ }
+]

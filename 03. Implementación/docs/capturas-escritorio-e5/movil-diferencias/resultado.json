@@ -1,0 +1,2268 @@
+[
+ {
+  "pagina": "acceso-login",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/login.html",
+  "rutaActual": "/login.html"
+ },
+ {
+  "pagina": "acceso-login",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/login.html",
+  "rutaActual": "/login.html"
+ },
+ {
+  "pagina": "acceso-login",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/login.html",
+  "rutaActual": "/login.html"
+ },
+ {
+  "pagina": "acceso-bienvenida",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/bienvenida.html",
+  "rutaActual": "/bienvenida.html"
+ },
+ {
+  "pagina": "acceso-bienvenida",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/bienvenida.html",
+  "rutaActual": "/bienvenida.html"
+ },
+ {
+  "pagina": "acceso-bienvenida",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/bienvenida.html",
+  "rutaActual": "/bienvenida.html"
+ },
+ {
+  "pagina": "acceso-registro-tipo-cuenta",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/registro-tipo-cuenta.html",
+  "rutaActual": "/registro-tipo-cuenta.html"
+ },
+ {
+  "pagina": "acceso-registro-tipo-cuenta",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/registro-tipo-cuenta.html",
+  "rutaActual": "/registro-tipo-cuenta.html"
+ },
+ {
+  "pagina": "acceso-registro-tipo-cuenta",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/registro-tipo-cuenta.html",
+  "rutaActual": "/registro-tipo-cuenta.html"
+ },
+ {
+  "pagina": "acceso-registro-cliente",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/registro-cliente.html",
+  "rutaActual": "/registro-cliente.html",
+  "soloBase": [],
+  "soloActual": [
+   "DIV:20,1141,335,76"
+  ],
+  "cantidadBase": 119,
+  "cantidadActual": 120
+ },
+ {
+  "pagina": "acceso-registro-cliente",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/registro-cliente.html",
+  "rutaActual": "/registro-cliente.html",
+  "soloBase": [],
+  "soloActual": [
+   "DIV:20,1141,350,76"
+  ],
+  "cantidadBase": 119,
+  "cantidadActual": 120
+ },
+ {
+  "pagina": "acceso-registro-cliente",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/registro-cliente.html",
+  "rutaActual": "/registro-cliente.html",
+  "soloBase": [],
+  "soloActual": [
+   "DIV:140,1147,420,76"
+  ],
+  "cantidadBase": 119,
+  "cantidadActual": 120
+ },
+ {
+  "pagina": "acceso-registro-comercio",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/registro-comercio.html",
+  "rutaActual": "/registro-comercio.html",
+  "soloBase": [],
+  "soloActual": [
+   "DIV:20,1439,335,76"
+  ],
+  "cantidadBase": 116,
+  "cantidadActual": 117
+ },
+ {
+  "pagina": "acceso-registro-comercio",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/registro-comercio.html",
+  "rutaActual": "/registro-comercio.html",
+  "soloBase": [],
+  "soloActual": [
+   "DIV:20,1439,350,76"
+  ],
+  "cantidadBase": 116,
+  "cantidadActual": 117
+ },
+ {
+  "pagina": "acceso-registro-comercio",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/registro-comercio.html",
+  "rutaActual": "/registro-comercio.html",
+  "soloBase": [],
+  "soloActual": [
+   "DIV:140,1463,420,76"
+  ],
+  "cantidadBase": 116,
+  "cantidadActual": 117
+ },
+ {
+  "pagina": "acceso-recuperar-password",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/recuperar-password.html",
+  "rutaActual": "/recuperar-password.html"
+ },
+ {
+  "pagina": "acceso-recuperar-password",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/recuperar-password.html",
+  "rutaActual": "/recuperar-password.html"
+ },
+ {
+  "pagina": "acceso-recuperar-password",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/recuperar-password.html",
+  "rutaActual": "/recuperar-password.html"
+ },
+ {
+  "pagina": "acceso-verificar-email",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/verificar-email.html?email=a%40b.com",
+  "rutaActual": "/verificar-email.html?email=a%40b.com"
+ },
+ {
+  "pagina": "acceso-verificar-email",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/verificar-email.html?email=a%40b.com",
+  "rutaActual": "/verificar-email.html?email=a%40b.com"
+ },
+ {
+  "pagina": "acceso-verificar-email",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/verificar-email.html?email=a%40b.com",
+  "rutaActual": "/verificar-email.html?email=a%40b.com"
+ },
+ {
+  "pagina": "acceso-reactivar-cuenta",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/reactivar-cuenta.html",
+  "rutaActual": "/reactivar-cuenta.html"
+ },
+ {
+  "pagina": "acceso-reactivar-cuenta",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/reactivar-cuenta.html",
+  "rutaActual": "/reactivar-cuenta.html"
+ },
+ {
+  "pagina": "acceso-reactivar-cuenta",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/reactivar-cuenta.html",
+  "rutaActual": "/reactivar-cuenta.html"
+ },
+ {
+  "pagina": "acceso-invitacion-empleado",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/invitacion-empleado.html",
+  "rutaActual": "/invitacion-empleado.html"
+ },
+ {
+  "pagina": "acceso-invitacion-empleado",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/invitacion-empleado.html",
+  "rutaActual": "/invitacion-empleado.html"
+ },
+ {
+  "pagina": "acceso-invitacion-empleado",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/invitacion-empleado.html",
+  "rutaActual": "/invitacion-empleado.html"
+ },
+ {
+  "pagina": "acceso-soporte",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/soporte.html",
+  "rutaActual": "/soporte.html"
+ },
+ {
+  "pagina": "acceso-soporte",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/soporte.html",
+  "rutaActual": "/soporte.html"
+ },
+ {
+  "pagina": "acceso-soporte",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/soporte.html",
+  "rutaActual": "/soporte.html"
+ },
+ {
+  "pagina": "acceso-terminos",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/terminos.html",
+  "rutaActual": "/terminos.html"
+ },
+ {
+  "pagina": "acceso-terminos",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/terminos.html",
+  "rutaActual": "/terminos.html"
+ },
+ {
+  "pagina": "acceso-terminos",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/terminos.html",
+  "rutaActual": "/terminos.html"
+ },
+ {
+  "pagina": "acceso-privacidad",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/privacidad.html",
+  "rutaActual": "/privacidad.html"
+ },
+ {
+  "pagina": "acceso-privacidad",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/privacidad.html",
+  "rutaActual": "/privacidad.html"
+ },
+ {
+  "pagina": "acceso-privacidad",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/privacidad.html",
+  "rutaActual": "/privacidad.html"
+ },
+ {
+  "pagina": "acceso-faq",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/faq.html",
+  "rutaActual": "/faq.html"
+ },
+ {
+  "pagina": "acceso-faq",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/faq.html",
+  "rutaActual": "/faq.html"
+ },
+ {
+  "pagina": "acceso-faq",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/faq.html",
+  "rutaActual": "/faq.html"
+ },
+ {
+  "pagina": "acceso-splash",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/bienvenida.html",
+  "rutaActual": "/bienvenida.html"
+ },
+ {
+  "pagina": "acceso-splash",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/bienvenida.html",
+  "rutaActual": "/bienvenida.html"
+ },
+ {
+  "pagina": "acceso-splash",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/bienvenida.html",
+  "rutaActual": "/bienvenida.html"
+ },
+ {
+  "pagina": "acceso-errores-404",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/errores/404.html",
+  "rutaActual": "/errores/404.html"
+ },
+ {
+  "pagina": "acceso-errores-404",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/errores/404.html",
+  "rutaActual": "/errores/404.html"
+ },
+ {
+  "pagina": "acceso-errores-404",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/errores/404.html",
+  "rutaActual": "/errores/404.html"
+ },
+ {
+  "pagina": "acceso-errores-500",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/errores/500.html",
+  "rutaActual": "/errores/500.html"
+ },
+ {
+  "pagina": "acceso-errores-500",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/errores/500.html",
+  "rutaActual": "/errores/500.html"
+ },
+ {
+  "pagina": "acceso-errores-500",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/errores/500.html",
+  "rutaActual": "/errores/500.html"
+ },
+ {
+  "pagina": "acceso-errores-acceso-denegado",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/errores/acceso-denegado.html",
+  "rutaActual": "/errores/acceso-denegado.html"
+ },
+ {
+  "pagina": "acceso-errores-acceso-denegado",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/errores/acceso-denegado.html",
+  "rutaActual": "/errores/acceso-denegado.html"
+ },
+ {
+  "pagina": "acceso-errores-acceso-denegado",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/errores/acceso-denegado.html",
+  "rutaActual": "/errores/acceso-denegado.html"
+ },
+ {
+  "pagina": "acceso-errores-sesion-expirada",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/errores/sesion-expirada.html",
+  "rutaActual": "/errores/sesion-expirada.html"
+ },
+ {
+  "pagina": "acceso-errores-sesion-expirada",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/errores/sesion-expirada.html",
+  "rutaActual": "/errores/sesion-expirada.html"
+ },
+ {
+  "pagina": "acceso-errores-sesion-expirada",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/errores/sesion-expirada.html",
+  "rutaActual": "/errores/sesion-expirada.html"
+ },
+ {
+  "pagina": "acceso-errores-sin-conexion",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/errores/sin-conexion.html",
+  "rutaActual": "/errores/sin-conexion.html"
+ },
+ {
+  "pagina": "acceso-errores-sin-conexion",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/errores/sin-conexion.html",
+  "rutaActual": "/errores/sin-conexion.html"
+ },
+ {
+  "pagina": "acceso-errores-sin-conexion",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/errores/sin-conexion.html",
+  "rutaActual": "/errores/sin-conexion.html"
+ },
+ {
+  "pagina": "acceso-errores-timeout",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/errores/timeout.html",
+  "rutaActual": "/errores/timeout.html"
+ },
+ {
+  "pagina": "acceso-errores-timeout",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/errores/timeout.html",
+  "rutaActual": "/errores/timeout.html"
+ },
+ {
+  "pagina": "acceso-errores-timeout",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/errores/timeout.html",
+  "rutaActual": "/errores/timeout.html"
+ },
+ {
+  "pagina": "dueno-comercio-dashboard",
+  "ancho": 375,
+  "iguales": false,
+  "pixelesDistintos": 2272,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/comercio-dashboard.html",
+  "rutaActual": "/comercio-dashboard.html",
+  "soloBase": [],
+  "soloActual": [
+   "SPAN:90,421,177,31"
+  ],
+  "cantidadBase": 168,
+  "cantidadActual": 169
+ },
+ {
+  "pagina": "dueno-comercio-dashboard",
+  "ancho": 390,
+  "iguales": false,
+  "pixelesDistintos": 2272,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/comercio-dashboard.html",
+  "rutaActual": "/comercio-dashboard.html",
+  "soloBase": [],
+  "soloActual": [
+   "SPAN:90,421,177,31"
+  ],
+  "cantidadBase": 168,
+  "cantidadActual": 169
+ },
+ {
+  "pagina": "dueno-comercio-dashboard",
+  "ancho": 700,
+  "iguales": false,
+  "pixelesDistintos": 2272,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/comercio-dashboard.html",
+  "rutaActual": "/comercio-dashboard.html",
+  "soloBase": [],
+  "soloActual": [
+   "SPAN:210,445,177,31"
+  ],
+  "cantidadBase": 168,
+  "cantidadActual": 169
+ },
+ {
+  "pagina": "dueno-comercio-productos",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-productos.html",
+  "rutaActual": "/comercio-productos.html"
+ },
+ {
+  "pagina": "dueno-comercio-productos",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-productos.html",
+  "rutaActual": "/comercio-productos.html"
+ },
+ {
+  "pagina": "dueno-comercio-productos",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-productos.html",
+  "rutaActual": "/comercio-productos.html"
+ },
+ {
+  "pagina": "dueno-producto-form",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/comercio-producto-form.html",
+  "rutaActual": "/comercio-producto-form.html",
+  "soloBase": [],
+  "soloActual": [
+   "DIV:20,708,335,52"
+  ],
+  "cantidadBase": 65,
+  "cantidadActual": 66
+ },
+ {
+  "pagina": "dueno-producto-form",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/comercio-producto-form.html",
+  "rutaActual": "/comercio-producto-form.html",
+  "soloBase": [],
+  "soloActual": [
+   "DIV:20,708,350,52"
+  ],
+  "cantidadBase": 65,
+  "cantidadActual": 66
+ },
+ {
+  "pagina": "dueno-producto-form",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/comercio-producto-form.html",
+  "rutaActual": "/comercio-producto-form.html",
+  "soloBase": [],
+  "soloActual": [
+   "DIV:140,732,420,52"
+  ],
+  "cantidadBase": 65,
+  "cantidadActual": 66
+ },
+ {
+  "pagina": "dueno-comercio-pedidos",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-pedidos.html",
+  "rutaActual": "/comercio-pedidos.html"
+ },
+ {
+  "pagina": "dueno-comercio-pedidos",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-pedidos.html",
+  "rutaActual": "/comercio-pedidos.html"
+ },
+ {
+  "pagina": "dueno-comercio-pedidos",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-pedidos.html",
+  "rutaActual": "/comercio-pedidos.html"
+ },
+ {
+  "pagina": "dueno-pedido-detalle",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-pedido-detalle.html?id=1",
+  "rutaActual": "/comercio-pedido-detalle.html?id=1"
+ },
+ {
+  "pagina": "dueno-pedido-detalle",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-pedido-detalle.html?id=1",
+  "rutaActual": "/comercio-pedido-detalle.html?id=1"
+ },
+ {
+  "pagina": "dueno-pedido-detalle",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-pedido-detalle.html?id=1",
+  "rutaActual": "/comercio-pedido-detalle.html?id=1"
+ },
+ {
+  "pagina": "dueno-comercio-perfil",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-perfil.html",
+  "rutaActual": "/comercio-perfil.html"
+ },
+ {
+  "pagina": "dueno-comercio-perfil",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-perfil.html",
+  "rutaActual": "/comercio-perfil.html"
+ },
+ {
+  "pagina": "dueno-comercio-perfil",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-perfil.html",
+  "rutaActual": "/comercio-perfil.html"
+ },
+ {
+  "pagina": "dueno-comercio-estadisticas",
+  "ancho": 375,
+  "iguales": false,
+  "pixelesDistintos": 17,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-estadisticas.html",
+  "rutaActual": "/comercio-estadisticas.html"
+ },
+ {
+  "pagina": "dueno-comercio-estadisticas",
+  "ancho": 390,
+  "iguales": false,
+  "pixelesDistintos": 17,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-estadisticas.html",
+  "rutaActual": "/comercio-estadisticas.html"
+ },
+ {
+  "pagina": "dueno-comercio-estadisticas",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-estadisticas.html",
+  "rutaActual": "/comercio-estadisticas.html"
+ },
+ {
+  "pagina": "dueno-comercio-documentacion",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-documentacion.html",
+  "rutaActual": "/comercio-documentacion.html"
+ },
+ {
+  "pagina": "dueno-comercio-documentacion",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-documentacion.html",
+  "rutaActual": "/comercio-documentacion.html"
+ },
+ {
+  "pagina": "dueno-comercio-documentacion",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-documentacion.html",
+  "rutaActual": "/comercio-documentacion.html"
+ },
+ {
+  "pagina": "dueno-notificaciones",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/notificaciones.html",
+  "rutaActual": "/notificaciones.html"
+ },
+ {
+  "pagina": "dueno-notificaciones",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/notificaciones.html",
+  "rutaActual": "/notificaciones.html"
+ },
+ {
+  "pagina": "dueno-notificaciones",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/notificaciones.html",
+  "rutaActual": "/notificaciones.html"
+ },
+ {
+  "pagina": "dueno-mis-consultas",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/mis-consultas.html",
+  "rutaActual": "/mis-consultas.html"
+ },
+ {
+  "pagina": "dueno-mis-consultas",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/mis-consultas.html",
+  "rutaActual": "/mis-consultas.html"
+ },
+ {
+  "pagina": "dueno-mis-consultas",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/mis-consultas.html",
+  "rutaActual": "/mis-consultas.html"
+ },
+ {
+  "pagina": "dueno-ayuda",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/ayuda.html",
+  "rutaActual": "/ayuda.html"
+ },
+ {
+  "pagina": "dueno-ayuda",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/ayuda.html",
+  "rutaActual": "/ayuda.html"
+ },
+ {
+  "pagina": "dueno-ayuda",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/ayuda.html",
+  "rutaActual": "/ayuda.html"
+ },
+ {
+  "pagina": "dueno-agregar-comercio",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/agregar-comercio.html",
+  "rutaActual": "/agregar-comercio.html",
+  "soloBase": [],
+  "soloActual": [
+   "DIV:20,1478,335,76"
+  ],
+  "cantidadBase": 113,
+  "cantidadActual": 114
+ },
+ {
+  "pagina": "dueno-agregar-comercio",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/agregar-comercio.html",
+  "rutaActual": "/agregar-comercio.html",
+  "soloBase": [],
+  "soloActual": [
+   "DIV:20,1478,350,76"
+  ],
+  "cantidadBase": 113,
+  "cantidadActual": 114
+ },
+ {
+  "pagina": "dueno-agregar-comercio",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/agregar-comercio.html",
+  "rutaActual": "/agregar-comercio.html",
+  "soloBase": [],
+  "soloActual": [
+   "DIV:140,1483,420,76"
+  ],
+  "cantidadBase": 113,
+  "cantidadActual": 114
+ },
+ {
+  "pagina": "empleado-comercio-dashboard",
+  "ancho": 375,
+  "iguales": false,
+  "pixelesDistintos": 1370,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/comercio-dashboard.html",
+  "rutaActual": "/comercio-dashboard.html",
+  "soloBase": [],
+  "soloActual": [
+   "SPAN:90,441,86,31"
+  ],
+  "cantidadBase": 155,
+  "cantidadActual": 156
+ },
+ {
+  "pagina": "empleado-comercio-dashboard",
+  "ancho": 390,
+  "iguales": false,
+  "pixelesDistintos": 1370,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/comercio-dashboard.html",
+  "rutaActual": "/comercio-dashboard.html",
+  "soloBase": [],
+  "soloActual": [
+   "SPAN:90,426,86,31"
+  ],
+  "cantidadBase": 155,
+  "cantidadActual": 156
+ },
+ {
+  "pagina": "empleado-comercio-dashboard",
+  "ancho": 700,
+  "iguales": false,
+  "pixelesDistintos": 1370,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/comercio-dashboard.html",
+  "rutaActual": "/comercio-dashboard.html",
+  "soloBase": [],
+  "soloActual": [
+   "SPAN:210,450,86,31"
+  ],
+  "cantidadBase": 155,
+  "cantidadActual": 156
+ },
+ {
+  "pagina": "empleado-comercio-productos",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-productos.html",
+  "rutaActual": "/comercio-productos.html"
+ },
+ {
+  "pagina": "empleado-comercio-productos",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-productos.html",
+  "rutaActual": "/comercio-productos.html"
+ },
+ {
+  "pagina": "empleado-comercio-productos",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-productos.html",
+  "rutaActual": "/comercio-productos.html"
+ },
+ {
+  "pagina": "empleado-comercio-pedidos",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-pedidos.html",
+  "rutaActual": "/comercio-pedidos.html"
+ },
+ {
+  "pagina": "empleado-comercio-pedidos",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-pedidos.html",
+  "rutaActual": "/comercio-pedidos.html"
+ },
+ {
+  "pagina": "empleado-comercio-pedidos",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-pedidos.html",
+  "rutaActual": "/comercio-pedidos.html"
+ },
+ {
+  "pagina": "empleado-comercio-perfil",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-perfil.html",
+  "rutaActual": "/comercio-perfil.html"
+ },
+ {
+  "pagina": "empleado-comercio-perfil",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-perfil.html",
+  "rutaActual": "/comercio-perfil.html"
+ },
+ {
+  "pagina": "empleado-comercio-perfil",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-perfil.html",
+  "rutaActual": "/comercio-perfil.html"
+ },
+ {
+  "pagina": "empleado-notificaciones",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/notificaciones.html",
+  "rutaActual": "/notificaciones.html"
+ },
+ {
+  "pagina": "empleado-notificaciones",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/notificaciones.html",
+  "rutaActual": "/notificaciones.html"
+ },
+ {
+  "pagina": "empleado-notificaciones",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/notificaciones.html",
+  "rutaActual": "/notificaciones.html"
+ },
+ {
+  "pagina": "empleado-ayuda",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/ayuda.html",
+  "rutaActual": "/ayuda.html"
+ },
+ {
+  "pagina": "empleado-ayuda",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/ayuda.html",
+  "rutaActual": "/ayuda.html"
+ },
+ {
+  "pagina": "empleado-ayuda",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/ayuda.html",
+  "rutaActual": "/ayuda.html"
+ },
+ {
+  "pagina": "admin-admin-dashboard",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/admin-dashboard.html",
+  "rutaActual": "/admin-dashboard.html",
+  "soloBase": [],
+  "soloActual": [
+   "DIV:20,199,335,258"
+  ],
+  "cantidadBase": 124,
+  "cantidadActual": 125
+ },
+ {
+  "pagina": "admin-admin-dashboard",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/admin-dashboard.html",
+  "rutaActual": "/admin-dashboard.html",
+  "soloBase": [],
+  "soloActual": [
+   "DIV:20,199,350,258"
+  ],
+  "cantidadBase": 124,
+  "cantidadActual": 125
+ },
+ {
+  "pagina": "admin-admin-dashboard",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/admin-dashboard.html",
+  "rutaActual": "/admin-dashboard.html",
+  "soloBase": [],
+  "soloActual": [
+   "DIV:140,223,420,258"
+  ],
+  "cantidadBase": 124,
+  "cantidadActual": 125
+ },
+ {
+  "pagina": "admin-admin-comercios-pendientes",
+  "ancho": 375,
+  "iguales": false,
+  "pixelesDistintos": 30782,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/admin-comercios-pendientes.html",
+  "rutaActual": "/admin-comercios-pendientes.html",
+  "soloBase": [
+   "DIV:0,56,375,675",
+   "DIV:20,68,335,189",
+   "DIV:37,121,301,75",
+   "DIV:37,175,301,15",
+   "svg:37,176,14,14",
+   "rect:38,178,12,9",
+   "path:38,179,12,4",
+   "SPAN:57,175,296,15"
+  ],
+  "soloActual": [
+   "DIV:0,56,375,720",
+   "DIV:20,68,335,204",
+   "DIV:37,121,301,90",
+   "DIV:37,175,301,30",
+   "svg:37,183,14,14",
+   "rect:38,185,12,9",
+   "path:38,187,12,4",
+   "SPAN:57,175,281,30"
+  ],
+  "cantidadBase": 84,
+  "cantidadActual": 84
+ },
+ {
+  "pagina": "admin-admin-comercios-pendientes",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-comercios-pendientes.html",
+  "rutaActual": "/admin-comercios-pendientes.html"
+ },
+ {
+  "pagina": "admin-admin-comercios-pendientes",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-comercios-pendientes.html",
+  "rutaActual": "/admin-comercios-pendientes.html"
+ },
+ {
+  "pagina": "admin-admin-comercios",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-comercios.html",
+  "rutaActual": "/admin-comercios.html"
+ },
+ {
+  "pagina": "admin-admin-comercios",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-comercios.html",
+  "rutaActual": "/admin-comercios.html"
+ },
+ {
+  "pagina": "admin-admin-comercios",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-comercios.html",
+  "rutaActual": "/admin-comercios.html"
+ },
+ {
+  "pagina": "admin-admin-resolicitudes",
+  "ancho": 375,
+  "iguales": false,
+  "pixelesDistintos": 20,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-resolicitudes.html",
+  "rutaActual": "/admin-resolicitudes.html"
+ },
+ {
+  "pagina": "admin-admin-resolicitudes",
+  "ancho": 390,
+  "iguales": false,
+  "pixelesDistintos": 20,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-resolicitudes.html",
+  "rutaActual": "/admin-resolicitudes.html"
+ },
+ {
+  "pagina": "admin-admin-resolicitudes",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-resolicitudes.html",
+  "rutaActual": "/admin-resolicitudes.html"
+ },
+ {
+  "pagina": "admin-admin-documentos",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-documentos.html",
+  "rutaActual": "/admin-documentos.html"
+ },
+ {
+  "pagina": "admin-admin-documentos",
+  "ancho": 390,
+  "iguales": false,
+  "pixelesDistintos": 20,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-documentos.html",
+  "rutaActual": "/admin-documentos.html"
+ },
+ {
+  "pagina": "admin-admin-documentos",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-documentos.html",
+  "rutaActual": "/admin-documentos.html"
+ },
+ {
+  "pagina": "admin-admin-soporte",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-soporte.html",
+  "rutaActual": "/admin-soporte.html"
+ },
+ {
+  "pagina": "admin-admin-soporte",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-soporte.html",
+  "rutaActual": "/admin-soporte.html"
+ },
+ {
+  "pagina": "admin-admin-soporte",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-soporte.html",
+  "rutaActual": "/admin-soporte.html"
+ },
+ {
+  "pagina": "admin-admin-clientes",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-clientes.html",
+  "rutaActual": "/admin-clientes.html"
+ },
+ {
+  "pagina": "admin-admin-clientes",
+  "ancho": 390,
+  "iguales": false,
+  "pixelesDistintos": 165,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-clientes.html",
+  "rutaActual": "/admin-clientes.html"
+ },
+ {
+  "pagina": "admin-admin-clientes",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-clientes.html",
+  "rutaActual": "/admin-clientes.html"
+ },
+ {
+  "pagina": "admin-admin-duenos",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-duenos.html",
+  "rutaActual": "/admin-duenos.html"
+ },
+ {
+  "pagina": "admin-admin-duenos",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-duenos.html",
+  "rutaActual": "/admin-duenos.html"
+ },
+ {
+  "pagina": "admin-admin-duenos",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-duenos.html",
+  "rutaActual": "/admin-duenos.html"
+ },
+ {
+  "pagina": "admin-admin-reembolsos",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-reembolsos.html",
+  "rutaActual": "/admin-reembolsos.html"
+ },
+ {
+  "pagina": "admin-admin-reembolsos",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-reembolsos.html",
+  "rutaActual": "/admin-reembolsos.html"
+ },
+ {
+  "pagina": "admin-admin-reembolsos",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-reembolsos.html",
+  "rutaActual": "/admin-reembolsos.html"
+ },
+ {
+  "pagina": "admin-admin-tarifas",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-tarifas.html",
+  "rutaActual": "/admin-tarifas.html"
+ },
+ {
+  "pagina": "admin-admin-tarifas",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-tarifas.html",
+  "rutaActual": "/admin-tarifas.html"
+ },
+ {
+  "pagina": "admin-admin-tarifas",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-tarifas.html",
+  "rutaActual": "/admin-tarifas.html"
+ },
+ {
+  "pagina": "admin-admin-categorias",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-categorias.html",
+  "rutaActual": "/admin-categorias.html"
+ },
+ {
+  "pagina": "admin-admin-categorias",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-categorias.html",
+  "rutaActual": "/admin-categorias.html"
+ },
+ {
+  "pagina": "admin-admin-categorias",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-categorias.html",
+  "rutaActual": "/admin-categorias.html"
+ },
+ {
+  "pagina": "admin-admin-tags",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-tags.html",
+  "rutaActual": "/admin-tags.html"
+ },
+ {
+  "pagina": "admin-admin-tags",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-tags.html",
+  "rutaActual": "/admin-tags.html"
+ },
+ {
+  "pagina": "admin-admin-tags",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-tags.html",
+  "rutaActual": "/admin-tags.html"
+ },
+ {
+  "pagina": "admin-admin-reclamos",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-reclamos.html",
+  "rutaActual": "/admin-reclamos.html"
+ },
+ {
+  "pagina": "admin-admin-reclamos",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-reclamos.html",
+  "rutaActual": "/admin-reclamos.html"
+ },
+ {
+  "pagina": "admin-admin-reclamos",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-reclamos.html",
+  "rutaActual": "/admin-reclamos.html"
+ },
+ {
+  "pagina": "admin-comercio-detalle",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-comercio-detalle.html?id=3",
+  "rutaActual": "/admin-comercio-detalle.html?id=3"
+ },
+ {
+  "pagina": "admin-comercio-detalle",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-comercio-detalle.html?id=3",
+  "rutaActual": "/admin-comercio-detalle.html?id=3"
+ },
+ {
+  "pagina": "admin-comercio-detalle",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-comercio-detalle.html?id=3",
+  "rutaActual": "/admin-comercio-detalle.html?id=3"
+ },
+ {
+  "pagina": "admin-resolicitud-detalle",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-resolicitud-detalle.html?id=6",
+  "rutaActual": "/admin-resolicitud-detalle.html?id=6"
+ },
+ {
+  "pagina": "admin-resolicitud-detalle",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-resolicitud-detalle.html?id=6",
+  "rutaActual": "/admin-resolicitud-detalle.html?id=6"
+ },
+ {
+  "pagina": "admin-resolicitud-detalle",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-resolicitud-detalle.html?id=6",
+  "rutaActual": "/admin-resolicitud-detalle.html?id=6"
+ },
+ {
+  "pagina": "admin-documento-revision",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-documento-revision.html?comercioId=2&id=3",
+  "rutaActual": "/admin-documento-revision.html?comercioId=2&id=3"
+ },
+ {
+  "pagina": "admin-documento-revision",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-documento-revision.html?comercioId=2&id=3",
+  "rutaActual": "/admin-documento-revision.html?comercioId=2&id=3"
+ },
+ {
+  "pagina": "admin-documento-revision",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-documento-revision.html?comercioId=2&id=3",
+  "rutaActual": "/admin-documento-revision.html?comercioId=2&id=3"
+ },
+ {
+  "pagina": "admin-comercio-equipo",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-comercio-equipo.html?id=2",
+  "rutaActual": "/admin-comercio-equipo.html?id=2"
+ },
+ {
+  "pagina": "admin-comercio-equipo",
+  "ancho": 390,
+  "iguales": false,
+  "pixelesDistintos": 34,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-comercio-equipo.html?id=2",
+  "rutaActual": "/admin-comercio-equipo.html?id=2"
+ },
+ {
+  "pagina": "admin-comercio-equipo",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-comercio-equipo.html?id=2",
+  "rutaActual": "/admin-comercio-equipo.html?id=2"
+ },
+ {
+  "pagina": "admin-comercio-actividad",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-comercio-actividad.html?id=2",
+  "rutaActual": "/admin-comercio-actividad.html?id=2"
+ },
+ {
+  "pagina": "admin-comercio-actividad",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-comercio-actividad.html?id=2",
+  "rutaActual": "/admin-comercio-actividad.html?id=2"
+ },
+ {
+  "pagina": "admin-comercio-actividad",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/admin-comercio-actividad.html?id=2",
+  "rutaActual": "/admin-comercio-actividad.html?id=2"
+ },
+ {
+  "pagina": "cliente-index",
+  "ancho": 375,
+  "iguales": false,
+  "pixelesDistintos": 15,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/index.html",
+  "rutaActual": "/index.html",
+  "soloBase": [],
+  "soloActual": [
+   "SPAN:90,76,86,31"
+  ],
+  "cantidadBase": 89,
+  "cantidadActual": 90
+ },
+ {
+  "pagina": "cliente-index",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/index.html",
+  "rutaActual": "/index.html",
+  "soloBase": [],
+  "soloActual": [
+   "SPAN:90,76,86,31"
+  ],
+  "cantidadBase": 89,
+  "cantidadActual": 90
+ },
+ {
+  "pagina": "cliente-index",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": false,
+  "rutaBase": "/index.html",
+  "rutaActual": "/index.html",
+  "soloBase": [],
+  "soloActual": [
+   "SPAN:210,100,86,31"
+  ],
+  "cantidadBase": 89,
+  "cantidadActual": 90
+ },
+ {
+  "pagina": "cliente-explorar",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/explorar.html",
+  "rutaActual": "/explorar.html"
+ },
+ {
+  "pagina": "cliente-explorar",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/explorar.html",
+  "rutaActual": "/explorar.html"
+ },
+ {
+  "pagina": "cliente-explorar",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/explorar.html",
+  "rutaActual": "/explorar.html"
+ },
+ {
+  "pagina": "cliente-comercio-detalle",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-detalle.html?id=1",
+  "rutaActual": "/comercio-detalle.html?id=1"
+ },
+ {
+  "pagina": "cliente-comercio-detalle",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-detalle.html?id=1",
+  "rutaActual": "/comercio-detalle.html?id=1"
+ },
+ {
+  "pagina": "cliente-comercio-detalle",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/comercio-detalle.html?id=1",
+  "rutaActual": "/comercio-detalle.html?id=1"
+ },
+ {
+  "pagina": "cliente-carrito",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/carrito.html",
+  "rutaActual": "/carrito.html"
+ },
+ {
+  "pagina": "cliente-carrito",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/carrito.html",
+  "rutaActual": "/carrito.html"
+ },
+ {
+  "pagina": "cliente-carrito",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/carrito.html",
+  "rutaActual": "/carrito.html"
+ },
+ {
+  "pagina": "cliente-checkout",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/checkout.html",
+  "rutaActual": "/checkout.html"
+ },
+ {
+  "pagina": "cliente-checkout",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/checkout.html",
+  "rutaActual": "/checkout.html"
+ },
+ {
+  "pagina": "cliente-checkout",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/checkout.html",
+  "rutaActual": "/checkout.html"
+ },
+ {
+  "pagina": "cliente-pedidos",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/pedidos.html",
+  "rutaActual": "/pedidos.html"
+ },
+ {
+  "pagina": "cliente-pedidos",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/pedidos.html",
+  "rutaActual": "/pedidos.html"
+ },
+ {
+  "pagina": "cliente-pedidos",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/pedidos.html",
+  "rutaActual": "/pedidos.html"
+ },
+ {
+  "pagina": "cliente-pedido-detalle",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/pedido-detalle.html?id=7",
+  "rutaActual": "/pedido-detalle.html?id=7"
+ },
+ {
+  "pagina": "cliente-pedido-detalle",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/pedido-detalle.html?id=7",
+  "rutaActual": "/pedido-detalle.html?id=7"
+ },
+ {
+  "pagina": "cliente-pedido-detalle",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/pedido-detalle.html?id=7",
+  "rutaActual": "/pedido-detalle.html?id=7"
+ },
+ {
+  "pagina": "cliente-perfil",
+  "ancho": 375,
+  "iguales": false,
+  "pixelesDistintos": 22,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/perfil.html",
+  "rutaActual": "/perfil.html"
+ },
+ {
+  "pagina": "cliente-perfil",
+  "ancho": 390,
+  "iguales": false,
+  "pixelesDistintos": 22,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/perfil.html",
+  "rutaActual": "/perfil.html"
+ },
+ {
+  "pagina": "cliente-perfil",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/perfil.html",
+  "rutaActual": "/perfil.html"
+ },
+ {
+  "pagina": "cliente-notificaciones",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/notificaciones.html",
+  "rutaActual": "/notificaciones.html"
+ },
+ {
+  "pagina": "cliente-notificaciones",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/notificaciones.html",
+  "rutaActual": "/notificaciones.html"
+ },
+ {
+  "pagina": "cliente-notificaciones",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/notificaciones.html",
+  "rutaActual": "/notificaciones.html"
+ },
+ {
+  "pagina": "cliente-mis-consultas",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/mis-consultas.html",
+  "rutaActual": "/mis-consultas.html"
+ },
+ {
+  "pagina": "cliente-mis-consultas",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/mis-consultas.html",
+  "rutaActual": "/mis-consultas.html"
+ },
+ {
+  "pagina": "cliente-mis-consultas",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/mis-consultas.html",
+  "rutaActual": "/mis-consultas.html"
+ },
+ {
+  "pagina": "cliente-reclamo-nuevo",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/reclamo-nuevo.html?pedido=8",
+  "rutaActual": "/reclamo-nuevo.html?pedido=8"
+ },
+ {
+  "pagina": "cliente-reclamo-nuevo",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/reclamo-nuevo.html?pedido=8",
+  "rutaActual": "/reclamo-nuevo.html?pedido=8"
+ },
+ {
+  "pagina": "cliente-reclamo-nuevo",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/reclamo-nuevo.html?pedido=8",
+  "rutaActual": "/reclamo-nuevo.html?pedido=8"
+ },
+ {
+  "pagina": "cliente-ayuda",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/ayuda.html",
+  "rutaActual": "/ayuda.html"
+ },
+ {
+  "pagina": "cliente-ayuda",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/ayuda.html",
+  "rutaActual": "/ayuda.html"
+ },
+ {
+  "pagina": "cliente-ayuda",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/ayuda.html",
+  "rutaActual": "/ayuda.html"
+ },
+ {
+  "pagina": "cliente-soporte-consulta",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/soporte-consulta.html?id=1",
+  "rutaActual": "/soporte-consulta.html?id=1"
+ },
+ {
+  "pagina": "cliente-soporte-consulta",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/soporte-consulta.html?id=1",
+  "rutaActual": "/soporte-consulta.html?id=1"
+ },
+ {
+  "pagina": "cliente-soporte-consulta",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/soporte-consulta.html?id=1",
+  "rutaActual": "/soporte-consulta.html?id=1"
+ },
+ {
+  "pagina": "cliente-soporte",
+  "ancho": 375,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/soporte.html",
+  "rutaActual": "/soporte.html"
+ },
+ {
+  "pagina": "cliente-soporte",
+  "ancho": 390,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/soporte.html",
+  "rutaActual": "/soporte.html"
+ },
+ {
+  "pagina": "cliente-soporte",
+  "ancho": 700,
+  "iguales": true,
+  "pixelesDistintos": 0,
+  "mismoTamano": true,
+  "cajasIguales": true,
+  "rutaBase": "/soporte.html",
+  "rutaActual": "/soporte.html"
+ }
+]
