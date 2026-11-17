@@ -1,0 +1,38 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Quién cierra el pedido<br>EN_CAMINO?"}
+    B -- "Cliente: Confirmar que recibí mi pedido" --> R0["Hoja: ¿Ya tenés tu pedido?<br>Si no lo recibiste, no lo confirmes todavía.<br>Botones Sí, lo recibí y Volver"]
+    B -- "Sistema (job cada 60 s)" --> J0["avisar75MinYAutoconfirmar<br>recorre los pedidos EN_CAMINO, uno por transacción"]
+
+    R0 --> R0a{"¿Qué elige?"}
+    R0a -- Volver --> FIN4([Fin])
+    R0a -- "Sí, lo recibí" --> R1["Botón: Confirmando...<br>PUT /pedidos/cliente/id/entregar<br>Rol CLIENTE, sin cuerpo, sin X-Comercio-Id"]
+    R1 --> R2{"¿Es un pedido del Cliente?"}
+    R2 -- No --> R2a[/"HTTP 404: Pedido no encontrado"/]
+    R2a --> FIN5([Fin])
+    R2 -- Sí --> R3
+    subgraph TXR [Transacción BD - confirmar recepción]
+        R3["Bloqueos: usuarios y pedido (FOR UPDATE)"] --> R4{"¿Estado EN_CAMINO?"}
+        R4 -- No --> R4a[/"HTTP 409 según estado:<br>Tu pedido todavía no está en camino / Este pedido ya figura como entregado / El pedido ya fue resuelto"/]
+        R4 -- Sí --> R5["UPDATE pedido: estado = ENTREGADO, fuente_entrega = CLIENTE, fecha_entrega = ahora"]
+        R5 --> R6["INSERT historial_estado_pedido: ENTREGADO, actor CLIENTE<br>Sin aviso al comercio ni al Cliente"]
+    end
+    R4a --> E1[/"El mensaje del servidor queda en pantalla y se recarga el pedido"/]
+    E1 --> FIN7([Fin])
+    R6 --> R7[/"HTTP 200: Entrega confirmada correctamente<br>Toast: Entrega confirmada<br>El detalle muestra Entregado y, si corresponde, la opción de reclamar (ver P4.08)"/]
+    R7 --> FIN6([Fin])
+
+    J0 --> J1
+    subgraph TXJ [Transacción BD - por cada pedido EN_CAMINO]
+        J1["Bloqueos: usuarios del Cliente, del Dueño y candidatos a equipo, relaciones, pedido (FOR UPDATE)<br>Revalida estado EN_CAMINO"] --> J2["SELECT última fila EN_CAMINO de historial_estado_pedido<br>minutos = ahora menos esa hora"]
+        J2 --> J3{"¿Hay fila de EN_CAMINO?"}
+        J3 -- No --> J3a["No hace nada"]
+        J3 -- Sí --> J4{"¿Minutos mayor o igual a 90?<br>(autoconfirmacion-en-camino-minutos)"}
+        J4 -- Sí --> J5["UPDATE pedido: estado = ENTREGADO, fuente_entrega = SISTEMA, fecha_entrega = ahora<br>INSERT historial_estado_pedido: ENTREGADO, actor SISTEMA, motivo_timeout TIMEOUT_ENTREGA<br>INSERT aviso al Cliente PEDIDO_AUTOCONFIRMADO: Marcamos tu pedido número como entregado. Si tuviste algún problema, podés reclamar dentro de los 7 días desde esta fecha.<br>INSERT aviso al equipo (Dueño y Empleados activos) PEDIDO_AUTOCONFIRMADO_COMERCIO: El pedido número se confirmó automáticamente como entregado porque el cliente no respondió en 90 minutos."]
+        J4 -- No --> J6{"¿Minutos mayor o igual a 75 y primer aviso sin emitir?<br>(aviso-en-camino-minutos)"}
+        J6 -- Sí --> J7["UPDATE pedido: primer_aviso_emitido = verdadero<br>INSERT aviso al Cliente AVISO_75MIN_SIN_CONFIRMACION:<br>Tu pedido número sigue en camino. Si ya lo recibiste, confirmalo para cerrarlo.<br>(una sola vez; sin aviso al comercio; sin email)"]
+        J6 -- No --> J8["No hace nada"]
+    end
+    J3a --> FIN8([Fin])
+    J5 --> FIN9([Fin])
+    J7 --> FIN10([Fin])
+    J8 --> FIN11([Fin])

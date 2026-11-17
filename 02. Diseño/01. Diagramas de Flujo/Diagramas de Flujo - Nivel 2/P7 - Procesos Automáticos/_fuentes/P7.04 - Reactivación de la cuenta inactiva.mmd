@@ -1,0 +1,66 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Por dónde se reactiva la cuenta INACTIVO?"}
+    B -- "Login con usuario y contraseña" --> C["POST /auth/login con la cuenta inactiva"]
+    B -- "Recuperar la contraseña" --> R0["confirmarRecuperacionPassword (ver P1)"]
+    B -- "Código de 6 dígitos por email" --> K0["reactivar-cuenta.html (ninguna pantalla enlaza a ella)"]
+    B -- "Administrador" --> AD0["PUT /administrador/cuentas/id/reactivar (previa: GET .../reactivar/previa)"]
+
+    C --> C1{"¿Contraseña correcta?"}
+    C1 -- No --> C1a{"¿Ya son 3 intentos fallidos?"}
+    C1a -- Sí --> C1b[/"HTTP 409: Cuenta bloqueada. Recuperá tu contraseña para desbloquearla<br>(la cuenta sigue INACTIVO, no pasa a BLOQUEADO)"/]
+    C1a -- No --> C1c[/"Mensaje de credenciales incorrectas con intentos restantes (suma un intento)"/]
+    C1b --> FIN1([Fin])
+    C1c --> FIN2([Fin])
+    C1 -- Sí --> C2["Pone intentos en 0 y responde HTTP 409 CUENTA_INACTIVA con la lista de comercios<br>(comercioId, nombre, estadoActual, resultado VUELVE o SIGUE_SUSPENDIDO; vacía si no es Dueño)"]
+    C2 --> C3[/"Pantalla: Tu cuenta está inactiva<br>Pasaron más de 3 meses sin que ingresaras, así que la dejamos en pausa. Tus datos y tus pedidos están a salvo.<br>Tus comercios: (nombre) vuelve a estar disponible. / (nombre) sigue suspendido. Si creés que es un error, escribinos.<br>Botones Reactivar mi cuenta, Contactar a Soporte, Volver a ingresar<br>El usuario y la contraseña quedan solo en memoria"/]
+    C3 --> C4{"¿Qué elige?"}
+    C4 -- "Volver a ingresar" --> FIN3([Fin])
+    C4 -- "Contactar a Soporte" --> C4a[/"Va a soporte.html?tipo=NO_PUEDO_ENTRAR"/]
+    C4a --> FIN4([Fin])
+    C4 -- "Reactivar mi cuenta" --> C5["Botón: Reactivando...<br>POST /auth/reactivar-cuenta/con-credenciales (público)"]
+    C5 --> C6{"¿Cuenta inactiva y credenciales correctas?"}
+    C6 -- No --> C6a[/"HTTP 401 de credenciales incorrectas (cuenta inexistente o no inactiva) o 409 por 3 intentos<br>Error: No pudimos reactivar tu cuenta. Probá de nuevo."/]
+    C6a --> FIN5([Fin])
+    C6 -- Sí --> X1
+
+    K0 --> K1[/"Ingresá tu email y te enviaremos un código de 6 dígitos para reactivarla. El código vence en 24 horas."/]
+    K1 --> K2["POST /auth/reactivar-cuenta<br>Si el email existe (en cualquier estado): invalida los tokens pendientes del mismo tipo, INSERT token REACTIVACION_CUENTA de 6 dígitos con vencimiento a 24 horas<br>Después del commit: email Tu código de reactivación de cuenta — Bajoneá con el código y Si vos no solicitaste esta reactivación, podés ignorar este email.<br>Respuesta uniforme (no revela el estado)"]
+    K2 --> K3[/"Te enviamos un código de 6 dígitos a tu email. Ingresalo para reactivar tu cuenta. Botón Reactivar cuenta"/]
+    K3 --> K4["POST /auth/reactivar-cuenta/confirmar"]
+    K4 --> K5{"¿Código válido (5 intentos fallidos lo agotan)?"}
+    K5 -- No --> K5a[/"Error de código inválido o vencido"/]
+    K5a --> FIN6([Fin])
+    K5 -- Sí --> K6["Toma la fila del usuario, consume el código y reactiva (si la cuenta no estaba inactiva, el código se consume igual y no pasa nada)<br>No inicia sesión"]
+    K6 --> X1
+
+    R0 --> R1{"¿La cuenta está INACTIVO?"}
+    R1 -- No --> R1a["Si está SUSPENDIDO, no se reactiva"]
+    R1a --> FIN7([Fin])
+    R1 -- Sí --> R2["Reactiva con motivo Recuperación de contraseña y cierra la sesión activa con FORZADO"]
+    R2 --> X1
+
+    AD0 --> AD1{"¿La cuenta es INACTIVO y no es Administrador?"}
+    AD1 -- No --> AD1a[/"HTTP 409: La cuenta no está inactiva"/]
+    AD1a --> FIN8([Fin])
+    AD1 -- Sí --> AD2["Reactiva con motivo Reactivación por el Administrador"]
+    AD2 --> X1
+
+    subgraph TX ["Transacción BD - reactivar, con la fila del usuario ya bloqueada"]
+        X1{"¿Estado INACTIVO?"} -- No --> X1a["No hace nada"]
+        X1 -- Sí --> X2["UPDATE usuario: estado = ACTIVO, fecha_ultimo_acceso = ahora, intentos_fallidos = 0<br>INSERT historial_estado_usuario: INACTIVO a ACTIVO, con el motivo de la vía"]
+        X2 --> X3{"¿Es Dueño?"}
+        X3 -- No --> X6["Sin más cambios"]
+        X3 -- Sí --> X4["Por cada comercio INACTIVO: lo bloquea por clave primaria y recalcula la aptitud:<br>vuelve a APTO_VENTA si hay cuenta de Mercado Pago activa y (si la documentación es requerida) un documento aprobado; si no, a APROBADO<br>INSERT historial_estado_comercio por comercio<br>Un comercio SUSPENDIDO no cambia"]
+        X4 --> X5["Avisos: APROBADO destino genera T41 COMERCIO_SIN_APTITUD: Tu comercio (nombre) dejó de recibir pedidos: (falta vincular Mercado Pago y tener un documento aprobado / falta vincular Mercado Pago / falta tener un documento aprobado / no cumple los requisitos para vender)<br>Volver a APTO_VENTA desde INACTIVO no genera T40"]
+    end
+    X1a --> FIN9([Fin])
+    X6 --> Y
+    X5 --> Y
+    Y{"¿Cuál fue la vía?"}
+    Y -- "Login con credenciales" --> Y1["Inicia sesión y guarda el toast Cuenta reactivada. ¡Qué bueno verte de nuevo!<br>Sigue el camino del login normal"]
+    Y -- "Código por email o Administrador" --> Y2["Sin sesión: la persona entra por el login"]
+    Y -- "Recuperar contraseña" --> Y3["Sin sesión (se cerró)"]
+    Y1 --> Z[/"No se restituye: la sesión previa (ya cerrada), los avisos T24 y T25 siguen ahí sin leer, el carrito nunca se tocó"/]
+    Y2 --> Z
+    Y3 --> Z
+    Z --> FIN10([Fin])

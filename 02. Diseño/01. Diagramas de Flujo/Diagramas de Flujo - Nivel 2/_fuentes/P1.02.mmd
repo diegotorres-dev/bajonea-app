@@ -1,0 +1,81 @@
+flowchart TD
+    A([Inicio]) --> B[/"Paso 1 Negocio: foto del comercio, nombre, teléfono,<br>tipo de comercio, modalidades (delivery y retiro)<br>y dirección"/]
+    B --> B2["Consulta de disponibilidad del nombre<br>del comercio al salir del campo (ver P1.17)"]
+    B2 --> C[/"Paso 2 Datos legales y cuenta: CUIT, domicilio fiscal,<br>datos del representante, nombre de usuario,<br>email y contraseña"/]
+    C --> C2["Consulta de disponibilidad del nombre<br>de usuario al salir del campo (ver P1.17)"]
+    C2 --> D[/"Paso 3 Horarios: franjas de atención"/]
+    D --> E[/"Paso 4 Redes sociales y<br>aceptar Términos y Condiciones"/]
+    E --> F{"¿Pasa las validaciones<br>del formulario en cada paso?"}
+    F -- No --> F1[/"Mensaje de error bajo el campo. Ej.:<br>Agregá una foto de perfil de tu comercio<br>Debés ofrecer al menos una modalidad de entrega.<br>El CUIT debe tener 11 dígitos numéricos<br>Cargá al menos una franja horaria de atención."/]
+    F1 --> FIN1([Fin])
+    F -- Sí --> G["POST /auth/registro/comercio/foto-firma<br>(límite 5 por minuto por IP)<br>y subida de la foto del comercio a Cloudinary"]
+    G --> G1{"¿Falló la subida?"}
+    G1 -- Sí --> G2[/"No pudimos subir la foto.<br>Intentá nuevamente.<br>(vuelve al paso 1)"/]
+    G2 --> FIN2([Fin])
+    G1 -- No --> H["POST /auth/registro/comercio<br>Normalizar: CUIT solo dígitos, trim y minúsculas<br>en email y nombre de usuario,<br>DNI del representante sin puntos"]
+    H --> H1{"¿Los datos cumplen las<br>validaciones del DTO?"}
+    H1 -- No --> H2[/"Error 400: campo: mensaje<br>(todas las violaciones). Ej.:<br>Debe ser mayor de 18 años<br>Debés cargar al menos una red social<br>Tenés que aceptar los Términos y Condiciones"/]
+    H2 --> FIN3([Fin])
+    H1 -- Sí --> I["SELECT usuario<br>WHERE email = email_ingresado"]
+    I --> I1{"¿Ya existe el email?"}
+    I1 -- Sí --> I2[/"Error 409: Ya existe una cuenta<br>registrada con ese email"/]
+    I2 --> FIN4([Fin])
+    I1 -- No --> J["SELECT usuario<br>WHERE nombre_usuario = nombre_ingresado"]
+    J --> J1{"¿Es un nombre reservado<br>o ya existe?"}
+    J1 -- Sí --> J2[/"Error 409: Ese nombre de usuario<br>ya está en uso"/]
+    J2 --> FIN5([Fin])
+    J1 -- No --> K["SELECT persona_juridica<br>WHERE cuit = cuit_ingresado"]
+    K --> K1{"¿Ya existe el CUIT?"}
+    K1 -- Sí --> K2[/"Error 409: Ya existe una cuenta<br>registrada con ese CUIT"/]
+    K2 --> FIN6([Fin])
+    K1 -- No --> L["SELECT persona_fisica<br>WHERE dni = dni_representante"]
+    L --> L1{"¿Ya existe el DNI?"}
+    L1 -- Sí --> L2[/"Error 409: Ya existe una cuenta<br>registrada con ese DNI"/]
+    L2 --> FIN7([Fin])
+    L1 -- No --> M{"¿Alguna franja tiene<br>cierre igual a apertura?"}
+    M -- Sí --> M1[/"Error 400: La hora de cierre no puede ser igual a la de<br>apertura. Si atendés las 24 horas, cargá de 00:00 a 23:59."/]
+    M1 --> FIN8([Fin])
+    M -- No --> M2{"¿Dos franjas se<br>superponen?"}
+    M2 -- Sí --> M3{"¿Son del<br>mismo día?"}
+    M3 -- Sí --> M4[/"Error 400: Ya tenés un horario cargado el [día]<br>de [HH:mm] a [HH:mm], que se superpone con este"/]
+    M4 --> FIN9([Fin])
+    M3 -- No --> M5[/"Error 400: El turno del [día] de [HH:mm] a [HH:mm]<br>se superpone con el del [día] de [HH:mm] a [HH:mm]"/]
+    M5 --> FIN10([Fin])
+    M2 -- No --> N{"¿Hay dos redes sociales<br>del mismo tipo?"}
+    N -- Sí --> N1[/"Error 400: No podés cargar dos redes<br>sociales del mismo tipo"/]
+    N1 --> FIN11([Fin])
+    N -- No --> O{"¿Rechaza delivery<br>y retiro a la vez?"}
+    O -- Sí --> O1[/"Error 400: El comercio debe ofrecer al menos una<br>modalidad de entrega (delivery o retiro)"/]
+    O1 --> FIN12([Fin])
+    O -- No --> P["SELECT localidad<br>WHERE id = localidadId"]
+    P --> P1{"¿Existe la localidad?"}
+    P1 -- No --> P2[/"Error 404: La localidad<br>indicada no existe"/]
+    P2 --> FIN13([Fin])
+    P1 -- Sí --> P3{"¿Está habilitada?<br>(Río Grande, Ushuaia o Tolhuin)"}
+    P3 -- No --> P4[/"Error 400: Esa localidad<br>todavía no está disponible"/]
+    P4 --> FIN14([Fin])
+    P3 -- Sí --> Q["SELECT comercio<br>WHERE nombre_unico = nombre normalizado"]
+    Q --> Q1{"¿Ya existe un comercio<br>con ese nombre?"}
+    Q1 -- Sí --> Q2[/"Error 409: Ya existe un comercio<br>con ese nombre. Elegí otro."/]
+    Q2 --> FIN15([Fin])
+    Q1 -- No --> T1
+    subgraph TX [Transacción BD]
+        T1["INSERT usuario:<br>nombre_usuario, email, password_hash (BCrypt),<br>rol = DUENO, estado = PENDIENTE,<br>intentos_fallidos = 0, foto_perfil_url = NULL,<br>fecha_registro = NOW()"] --> T2["INSERT persona"]
+        T2 --> T3["INSERT persona_fisica:<br>datos del representante<br>(nombre, apellido, dni, fecha_nacimiento, telefono)"]
+        T3 --> T4["INSERT persona_juridica:<br>razon_social, cuit, condicion_iva, tipo_sociedad,<br>domicilio_fiscal, fecha_inicio_actividades"]
+        T4 --> T5["INSERT dueno:<br>persona_juridica, persona_fisica,<br>fecha_creacion = NOW()"]
+        T5 --> T6["INSERT comercio:<br>nombre, descripcion, telefono, tipo_comercio,<br>acepta_delivery, acepta_retiro,<br>estado = PENDIENTE, foto_perfil_url,<br>dueno_id, fecha_registro = NOW()"]
+        T6 --> T7["INSERT direccion:<br>dirección del comercio (comercio_id)"]
+        T7 --> T8["INSERT horario:<br>una fila por franja"]
+        T8 --> T9["INSERT red_social:<br>una fila por red social"]
+        T9 --> T10["INSERT token:<br>tipo = VERIFICACION_EMAIL, código de 6 dígitos,<br>estado = PENDIENTE, vence en 24 horas,<br>intentos_fallidos = 0"]
+    end
+    T10 --> R{"¿Falló la transacción?"}
+    R -- Sí --> R1[/"Se revierte todo. Según la causa:<br>Error 409: Ese nombre de usuario ya está en uso<br>Error 409: Ya existe un comercio con ese nombre. Elegí otro.<br>Error 409: Ya existe un registro con alguno<br>de los datos ingresados<br>Error 500: No pudimos generar el código de verificación.<br>Intentá nuevamente en unos instantes.<br>Error 500: No se pudo procesar la solicitud,<br>intentá nuevamente"/]
+    R1 --> FIN16([Fin])
+    R -- No --> S["Enviar email de verificación (después del commit)<br>Asunto: Tu código de verificación — Bajoneá<br>Si el envío falla, el registro no se revierte"]
+    S --> S1["El comercio queda PENDIENTE en la bandeja<br>de revisión del Administrador (ver P2.02)"]
+    S1 --> U[/"HTTP 201: Comercio registrado correctamente,<br>verificá tu email<br>(no se inicia sesión)"/]
+    U --> V[/"Registro enviado: Te enviamos un código de 6 dígitos a tu email.<br>Verificá tu cuenta y luego un administrador va a revisar tu<br>comercio y te vamos a avisar por email cuando quede aprobado."/]
+    V --> W["Botón: Ingresar código de verificación"]
+    W --> FIN17([Fin])

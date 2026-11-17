@@ -1,0 +1,43 @@
+flowchart TD
+    A([Inicio]) --> B["Redes sociales del comercio<br>El backend tiene los 4 endpoints, pero ninguna pantalla los llama:<br>un comercio aprobado no puede editarlas desde la interfaz.<br>Se cargan en el alta (ver P2.01) y se corrigen<br>en la re-solicitud de un rechazado (ver P2.02)"]
+    B --> C{"Llamada a la API<br>(rol DUENO con X-Comercio-Id;<br>un Empleado recibe 403)"}
+    C -- "GET /comercios/redes-sociales" --> D1["SELECT red_social activas del comercio"]
+    D1 --> D2[/"HTTP 200: lista de redes"/]
+    D2 --> FIN1([Fin])
+    C -- "POST /comercios/redes-sociales" --> E{"¿Cuerpo válido?<br>Tipo: Instagram, Facebook, TikTok, WhatsApp, X, Sitio web u Otro<br>Link con letra y punto, sin espacios, hasta 500"}
+    C -- "PUT /comercios/redes-sociales/id" --> E
+    C -- "DELETE /comercios/redes-sociales/id" --> G
+    E -- No --> E1[/"HTTP 400: Seleccioná el tipo de red social<br>o El link es obligatorio<br>o Ingresá un link válido<br>o El link no puede superar los 500 caracteres"/]
+    E1 --> FIN2([Fin])
+    E -- Sí --> F["El servidor normaliza el link agregando el esquema"]
+    F --> G
+    subgraph TX [Transacción BD]
+        G["Cuenta del actor no suspendida<br>SELECT comercio (lectura compartida)"] --> G1{"¿Estado SUSPENDIDO o INACTIVO?"}
+        G1 -- Sí --> G2[/"HTTP 409 COMERCIO_SUSPENDIDO o COMERCIO_INACTIVO:<br>por ahora no se puede modificar."/]
+        G1 -- No --> I{"¿Qué operación?"}
+        I -- Agregar --> J{"¿Ya hay una red activa de ese tipo?"}
+        J -- Sí --> J1[/"HTTP 409: El comercio ya tiene una red social activa de tipo TIPO"/]
+        J -- No --> K{"¿Ya hay 5 redes activas?"}
+        K -- Sí --> K1[/"HTTP 409: El comercio ya tiene el máximo de 5 redes sociales activas"/]
+        K -- No --> L{"¿Hay una red dada de baja<br>del mismo tipo? (UNIQUE comercio, tipo)"}
+        L -- Sí --> L1["UPDATE red_social: reactiva (fecha_baja = NULL) con el link nuevo"]
+        L -- No --> L2["INSERT red_social"]
+        L1 --> L3["INSERT historial_edicion_comercio: RED_SOCIAL, CREAR"]
+        L2 --> L3
+        I -- Editar --> M{"¿La red existe y es del comercio?"}
+        M -- No --> M1[/"HTTP 404: Red social no encontrada"/]
+        M -- Sí --> M2["UPDATE red_social: tipo y link<br>INSERT historial_edicion_comercio: RED_SOCIAL, EDITAR"]
+        I -- Baja --> N{"¿La red existe y es del comercio?"}
+        N -- No --> M1
+        N -- Sí --> N1["UPDATE red_social: fecha_baja = ahora (baja lógica)<br>INSERT historial_edicion_comercio: RED_SOCIAL, ELIMINAR"]
+    end
+    G2 --> FIN3([Fin])
+    J1 --> FIN4([Fin])
+    K1 --> FIN5([Fin])
+    M1 --> FIN6([Fin])
+    L3 --> R1[/"HTTP 201: Red social agregada correctamente"/]
+    M2 --> R2[/"HTTP 200: Red social actualizada correctamente"/]
+    N1 --> R3[/"HTTP 200: Red social dada de baja correctamente"/]
+    R1 --> FIN7([Fin])
+    R2 --> FIN8([Fin])
+    R3 --> FIN9([Fin])

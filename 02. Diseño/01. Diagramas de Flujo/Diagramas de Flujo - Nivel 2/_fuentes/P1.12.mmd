@@ -1,0 +1,75 @@
+flowchart TD
+    A([Inicio]) --> B["Perfil del comercio, Ver equipo, pestaña Mi equipo<br>(solo el Dueño; filtros Activos e Inactivos)"]
+    B --> C{"¿Qué acción?"}
+
+    C -- "Desactivar" --> D1[/"¿Desactivar a nombre?<br>nombre va a dejar de tener acceso a comercio y se le avisa.<br>Si cambiás de idea, la podés reactivar desde Inactivos.<br>Botones: Desactivar, Volver"/]
+    D1 --> D2{"¿Confirma?"}
+    D2 -- Volver --> FIN1([Fin])
+    D2 -- Desactivar --> D3["PUT /comercios/equipo/miembros/id/desactivar<br>(rol DUENO, header X-Comercio-Id)"]
+
+    C -- "Reactivar" --> R1{"¿La baja fue del Dueño?<br>(puedeReactivar)"}
+    R1 -- No --> R1A[/"Botón: Invitar de nuevo<br>Le llega un código por email y tiene que aceptar<br>(ver P1.10)<br>Si renunció: Dejó el equipo por su cuenta.<br>Para que vuelva, tiene que aceptar una invitación nueva."/]
+    R1A --> FIN2([Fin])
+    R1 -- Sí --> R2[/"Botón: Reactivar<br>Vuelve al equipo ahora, sin invitación"/]
+    R2 --> R3["PUT /comercios/equipo/miembros/id/reactivar<br>(rol DUENO, header X-Comercio-Id)"]
+
+    D3 --> X1
+    R3 --> X1
+    X1{"¿El comercio del header es del Dueño?"}
+    X1 -- No --> X1A[/"Error 400: Falta indicar el comercio<br>Error 400: El comercio indicado no es válido<br>Error 404: Comercio no encontrado"/]
+    X1A --> FIN3([Fin])
+    X1 -- Sí --> X2{"¿El empleadoId es distinto del Dueño?"}
+    X2 -- No --> X2A[/"Error 404: Miembro no encontrado"/]
+    X2A --> FIN4([Fin])
+    X2 -- Sí --> X3["SELECT usuario del Dueño y del Empleado<br>en orden de id<br>(desactivar: bloqueo compartido; reactivar: Dueño FOR UPDATE)"]
+    X3 --> X3A{"¿Existen ambos?"}
+    X3A -- No --> X3B[/"Error 404: Miembro no encontrado<br>o Comercio no encontrado"/]
+    X3B --> FIN5([Fin])
+    X3A -- Sí --> X4["SELECT empleado_comercio<br>WHERE empleado_id AND comercio_id (FOR UPDATE)"]
+    X4 --> X4A{"¿Existe la relación?"}
+    X4A -- No --> X2A
+    X4A -- Sí --> X5{"¿Desactivar o reactivar?"}
+
+    X5 -- Desactivar --> Y1{"¿El comercio está SUSPENDIDO?"}
+    Y1 -- Sí --> Y1A[/"Error 409: El comercio está suspendido:<br>el equipo se puede ver, pero no modificar"/]
+    Y1A --> FIN6([Fin])
+    Y1 -- No --> Y2{"¿La relación ya está INACTIVO?"}
+    Y2 -- Sí --> Y2A[/"HTTP 200: El miembro ya estaba inactivo"/]
+    Y2A --> FIN7([Fin])
+    Y2 -- No --> Y3
+    subgraph TXD [Transacción BD: desactivar]
+        Y3["UPDATE empleado_comercio:<br>estado = INACTIVO, fecha_baja = NOW()"] --> Y4["INSERT historial_empleado_comercio:<br>motivo = BAJA_DUENO, ACTIVO a INACTIVO,<br>actor = el Dueño"]
+        Y4 --> Y5["DELETE avisos anteriores del Empleado<br>de ese comercio (por clave primaria)"]
+        Y5 --> Y6["INSERT aviso al Empleado (tipo EMPLEADO_DESACTIVADO, personal):<br>comercio te dio de baja del equipo.<br>Ya no tenés acceso a ese comercio."]
+    end
+    Y6 --> Y7[/"HTTP 200: Miembro dado de baja"/]
+    Y7 --> Y8[/"Desactivaste a nombre"/]
+    Y8 --> Z
+
+    X5 -- Reactivar --> W1{"¿La relación ya está ACTIVO?"}
+    W1 -- Sí --> W1A[/"HTTP 200: El miembro ya estaba activo"/]
+    W1A --> FIN8([Fin])
+    W1 -- No --> W2{"¿El comercio está APROBADO<br>o APTO_VENTA?"}
+    W2 -- No --> W2A[/"Error 409: Este comercio no puede reactivar empleados<br>en este momento"/]
+    W2A --> FIN9([Fin])
+    W2 -- Sí --> W3{"¿La última baja fue BAJA_DUENO?"}
+    W3 -- No --> W3A[/"Error 409: Esta persona dejó el equipo por su cuenta.<br>Para que vuelva, invitala de nuevo.<br>o Esta persona no se puede reactivar directamente.<br>Para que vuelva, invitala de nuevo."/]
+    W3A --> FIN10([Fin])
+    W3 -- Sí --> W4{"¿Hay una invitación PENDIENTE vigente<br>de ese email en este comercio?"}
+    W4 -- Sí --> W4A[/"Error 409: Hay una invitación pendiente para esta persona.<br>Cancelala primero."/]
+    W4A --> FIN11([Fin])
+    W4 -- No --> W5{"¿La cuenta es apta?<br>(no es Dueño ni Administrador,<br>está ACTIVO y tiene 18 años o más)"}
+    W5 -- No --> W5A[/"Error 409: No se puede reactivar a esta persona<br>(sin decir el motivo ni enviar email)"/]
+    W5A --> FIN12([Fin])
+    W5 -- Sí --> W6
+    subgraph TXR [Transacción BD: reactivar]
+        W6["UPDATE empleado_comercio:<br>estado = ACTIVO, fecha_baja = NULL"] --> W7["INSERT historial_empleado_comercio:<br>motivo = REACTIVACION, INACTIVO a ACTIVO,<br>actor = el Dueño"]
+        W7 --> W8["DELETE avisos anteriores del Empleado<br>de ese comercio"]
+        W8 --> W9["INSERT aviso al Empleado (tipo EMPLEADO_REACTIVADO, personal):<br>comercio te reactivó en el equipo.<br>Ya podés volver a trabajar ahí."]
+    end
+    W9 --> W10[/"HTTP 200: Miembro reactivado"/]
+    W10 --> W11[/"Reactivaste a nombre"/]
+    W11 --> Z
+
+    Z["Sin email y sin cerrar sesiones:<br>el Empleado pierde o recupera el acceso en su próxima request,<br>porque cada request con X-Comercio-Id vuelve a consultar la relación<br>(ver P1.16 y P1.21)"]
+    Z --> FIN13([Fin])

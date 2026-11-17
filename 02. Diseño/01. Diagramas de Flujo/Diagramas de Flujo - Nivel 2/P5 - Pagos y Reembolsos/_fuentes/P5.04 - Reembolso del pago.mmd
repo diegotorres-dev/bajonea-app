@@ -1,0 +1,34 @@
+flowchart TD
+    A([Inicio]) --> B["Un cambio de estado del pedido pide el reembolso total, dentro de su propia transacción y con el pedido bloqueado:<br>Rechazo del comercio (RECHAZO_COMERCIO), cancelación del Cliente de un pedido pagado (CANCELACION_CLIENTE),<br>anulación (ANULACION_COMERCIO), sin respuesta del comercio (EXPIRACION_SIN_RESPUESTA),<br>suspensión del comercio o del Cliente (SUSPENSION_COMERCIO, SUSPENSION_CLIENTE),<br>pago tardío (PAGO_TARDIO)<br>Un reclamo aprobado usa otro camino (ver P4.09)"]
+    B --> C
+    subgraph TX [Transacción BD - del cambio de estado]
+        C["SELECT pago del pedido (FOR UPDATE)"] --> D{"¿Hay pago aprobado y confirmado<br>(mp_estado = approved, fecha_confirmacion e id_transaccion_mp)?"}
+        D -- No --> D1["No hay nada que devolver: el pedido cambia de estado igual, sin nota de crédito"]
+        D -- Sí --> E{"¿El Dueño tiene cuenta de Mercado Pago activa?"}
+        E -- No --> E1["INSERT nota_credito: monto = pago.monto, motivo, estado PENDIENTE_REVISION_MANUAL, intentos = 0,<br>ultimo_error: La cuenta de Mercado Pago del comercio está desvinculada: el reembolso no se intentó automáticamente"]
+        E -- Sí --> E2["INSERT nota_credito: monto = pago.monto, motivo, estado PENDIENTE, intentos = 0, mp_payment_id"]
+        E2 --> F{"¿Otras notas del pago ya cubren el monto completo?<br>(PENDIENTE, PROCESADO, PENDIENTE_REINTENTO, PENDIENTE_REVISION_MANUAL)"}
+        F -- Sí --> F1["DELETE de la nota recién creada (no duplica)"]
+        F -- No --> F2["Registra la llamada a Mercado Pago para después del commit"]
+        E1 --> G["El aviso del cambio de estado dice Estamos gestionando la devolución de tu pago<br>porque el pedido tiene nota"]
+        F1 --> G
+        F2 --> G
+    end
+    D1 --> FIN1([Fin])
+    G --> H{"¿Se confirmó el commit?"}
+    H -- No --> H1["La transición perdió una carrera: no se pide plata"]
+    H1 --> FIN2([Fin])
+    H -- Sí --> I{"¿La nota quedó PENDIENTE (cuenta activa)?"}
+    I -- No --> I1["Espera la revisión manual del Administrador (ver P5.05)"]
+    I1 --> FIN3([Fin])
+    I -- Sí --> J["Fuera de transacción: POST (API de Mercado Pago)/v1/payments/id/refunds<br>Token del Dueño, X-Idempotency-Key = nc-(id de la nota)-(intentos + 1), conexión 5 s, respuesta 5 s, un solo intento<br>Total: cuerpo vacío. Parcial (solo reclamo): cuerpo con amount"]
+    J --> K{"¿Mercado Pago respondió con id y status approved o in_process?"}
+    K -- Sí --> L["Transacción corta: UPDATE nota_credito: PROCESADO, intentos + 1, refund_id_mp, ultimo_error = nulo, fecha_proceso"]
+    K -- No --> M["Transacción corta: UPDATE nota_credito: FALLIDO, intentos + 1, ultimo_error (hasta 500), fecha_fallido<br>Textos: Mercado Pago no devolvió un id de reembolso / Mercado Pago devolvió el reembolso (id) con status (estado) /<br>Mercado Pago respondió (código): (cuerpo) / No se pudo contactar a Mercado Pago (mensaje)<br>Si el cuerpo habla de fondos o saldo: El comercio no tiene saldo suficiente en Mercado Pago para este reembolso."]
+    L --> N[/"El Cliente ve en el pedido: Te devolvimos $X a tu medio de pago."/]
+    M --> O[/"El Cliente ve: No pudimos completar la devolución de tu pago automáticamente. La estamos revisando manualmente.<br>El Administrador la ve en Reembolsos como Fallido (ver P5.05)"/]
+    I1 -.-> O
+    N --> FIN4([Fin])
+    O --> FIN5([Fin])
+    K -.-> Z["Si el servidor se cae después del commit y antes de registrar el resultado, la nota queda PENDIENTE sin job que la retome<br>Estados y textos mientras tanto:<br>PENDIENTE o PENDIENTE_REINTENTO: Estamos procesando la devolución de $X."]
+    Z --> FIN6([Fin])

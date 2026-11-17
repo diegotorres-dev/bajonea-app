@@ -1,0 +1,36 @@
+flowchart TD
+    A([Inicio]) --> B["Cliente abre el detalle de su pedido<br>(pedido-detalle.html)"]
+    B --> C{"Estado del pedido"}
+    C -- "PENDIENTE_CONFIRMACION_COMERCIO<br>o EN_PREPARACION" --> D["Muestra el botón Cancelar pedido"]
+    C -- "PENDIENTE_PAGO" --> C1{"¿El comercio está suspendido<br>(comercioNoDisponible)?"}
+    C1 -- Sí --> D
+    C1 -- No --> C2[/"Sin botón de cancelar<br>(el backend lo permitiría: queda a la espera del vencimiento de 30 minutos)"/]
+    C2 --> FIN1([Fin])
+    C -- "EN_CAMINO o estados finales" --> C3[/"Sin botón de cancelar"/]
+    C3 --> FIN2([Fin])
+    D --> E[/"Hoja: ¿Cancelar el pedido número?<br>Si ya se pagó: Ya lo pagaste. Si lo cancelás, te devolvemos los $X a Mercado Pago. Puede demorar en verse en tu cuenta.<br>Si no: Todavía no lo pagaste, así que no se te cobra nada.<br>Botones: Sí, cancelar pedido y Volver (foco inicial)"/]
+    E --> F{"¿Qué elige?"}
+    F -- Volver --> FIN3([Fin])
+    F -- "Sí, cancelar pedido" --> G["Botón: Cancelando...<br>PUT /pedidos/cliente/id/cancelar<br>Rol CLIENTE, sin cuerpo, sin X-Comercio-Id"]
+    G --> H{"¿Es un pedido del Cliente?"}
+    H -- No --> H1[/"HTTP 404: Pedido no encontrado"/]
+    H1 --> FIN4([Fin])
+    H -- Sí --> I
+    subgraph TX [Transacción BD - cancelar]
+        I["Bloqueos: usuarios del Cliente, del Dueño y de los Empleados candidatos<br>(LOCK IN SHARE MODE, id ascendente), relaciones, pedido (FOR UPDATE)"] --> J{"¿El Cliente está SUSPENDIDO?"}
+        J -- Sí --> J1[/"HTTP 409 CUENTA_SUSPENDIDA con el motivo<br>(una cuenta suspendida no puede cancelar)"/]
+        J -- No --> K{"¿Estado PENDIENTE_PAGO,<br>PENDIENTE_CONFIRMACION_COMERCIO o EN_PREPARACION?<br>(sin plazo, sin importar la modalidad ni el estado del comercio)"}
+        K -- No --> K1[/"HTTP 409: El pedido ya no se puede cancelar"/]
+        K -- Sí --> L["UPDATE pedido: estado = CANCELADO, cancelado_por = CLIENTE"]
+        L --> M{"¿Venía de PENDIENTE_PAGO?"}
+        M -- Sí --> M1["INSERT historial_estado_pedido: CANCELADO, actor CLIENTE,<br>motivo_timeout CANCELACION_SIN_PAGO<br>Sin nota de crédito, sin aviso y sin tocar el carrito"]
+        M -- No --> M2["INSERT historial_estado_pedido: CANCELADO, actor CLIENTE<br>INSERT nota_credito CANCELACION_CLIENTE (reembolso total, ver P5.04)<br>INSERT aviso in-app al Dueño y a cada Empleado activo PEDIDO_CANCELADO_CLIENTE:<br>El cliente canceló el pedido número.<br>(no al Cliente, ni email)"]
+    end
+    J1 --> N
+    K1 --> N
+    N[/"El mensaje del servidor queda dentro de la hoja, que no se cierra<br>El botón vuelve a Sí, cancelar pedido<br>El detalle se actualiza con el sondeo de 15 s"/] --> FIN5([Fin])
+    M1 --> O[/"HTTP 200: Pedido cancelado correctamente"/]
+    M2 --> M3["Después del commit: reembolso en Mercado Pago (ver P5.04)<br>Un pago aprobado que llegue después sobre un pedido cancelado sin pagar<br>se devuelve en el webhook (PAGO_TARDIO, ver P5.03 y P5.04)"]
+    M3 --> O
+    O --> P[/"Cierra la hoja. Toast: Pedido cancelado<br>o, si trae reembolso: Pedido cancelado. Estamos gestionando la devolución de tu pago.<br>Detalle: Cancelado. Cancelaste este pedido. (con reembolso: ... Estamos gestionando la devolución de tu pago.)<br>Reembolso: Te devolvimos $X a tu medio de pago. / Estamos procesando la devolución de $X. /<br>No pudimos completar la devolución de tu pago automáticamente. La estamos revisando manualmente."/]
+    P --> FIN6([Fin])

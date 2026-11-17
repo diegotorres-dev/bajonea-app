@@ -1,0 +1,76 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Quién consulta?"}
+    B -- "Administrador" --> B1[/"No tiene pantalla de avisos: notificaciones.html lo manda a login.html<br>Ve contadores en el panel y en el menú (ver P5.05 y P4.09)"/]
+    B1 --> FIN1([Fin])
+    B -- "Cliente, Dueño o Empleado" --> C{"¿Cliente sin contexto de la pestaña?"}
+    C -- Sí --> C1[/"Va a seleccionar-contexto.html"/]
+    C1 --> FIN2([Fin])
+    C -- No --> D["notificaciones.html: skeleton de avisos<br>GET /notificaciones?limite=20 (Dueño con X-Comercio-Id obligatorio; Cliente con X-Comercio-Id solo en contexto Empleado)"]
+    D --> E{"¿Parámetros válidos?"}
+    E -- "limite menor a 1" --> E1[/"HTTP 400: El límite tiene que ser de al menos 1"/]
+    E -- "cursor mal formado" --> E2[/"HTTP 400: El cursor no es válido"/]
+    E -- Sí --> F{"¿Hay comercio abierto?"}
+    F -- "Sí (Dueño, o Cliente con contexto Empleado)" --> F1{"¿El Empleado tiene relación ACTIVA?"}
+    F1 -- No --> F1a[/"HTTP 404 COMERCIO_NO_DISPONIBLE"/]
+    F1 -- Sí --> G["SELECT notificacion del usuario y del comercio<br>ORDER BY fecha_creacion DESC, id DESC, pide límite + 1"]
+    F -- "No (Cliente)" --> G2["SELECT notificacion personales: comercio_id nulo y canal PUSH<br>ORDER BY fecha_creacion DESC, id DESC, pide límite + 1"]
+    G --> H["HTTP 200: Notificaciones obtenidas correctamente<br>Cabecera X-Siguiente-Cursor si hay otra página"]
+    G2 --> H
+    H --> I{"¿Hay avisos?"}
+    I -- No --> I1[/"Todavía no tenés notificaciones<br>Cliente: Te vamos a avisar acá cuando haya novedades sobre tus pedidos.<br>Comercio: Te vamos a avisar acá cuando haya novedades en este comercio."/]
+    I1 --> FIN3([Fin])
+    I -- Sí --> J[/"Tabla: Aviso, Fecha, Estado (Leído o Sin leer)<br>Etiqueta de destino y flecha si hay enlace<br>Botón Marcar todas<br>Con otra página: botón Ver más"/]
+    J --> K{"¿Qué hace?"}
+    K -- "Espera" --> L["Cada 15 s con la pestaña visible, GET en segundo plano de la primera página y la fusiona con lo ya cargado<br>Al volver a ver la pestaña recarga al instante<br>Contador: campana del Cliente cada 15 s, comercio por GET mis-comercios cada 15 s (cantidadNotificacionesNoLeidas)"]
+    L --> L1["Si el contador sube suena el ding (ver P4.11)"]
+    L1 --> FIN4([Fin])
+    K -- "Ver más" --> M["GET /notificaciones con cursor"]
+    M --> M1{"¿Cargó?"}
+    M1 -- No --> M1a[/"No pudimos cargar más avisos. Botón Reintentar"/]
+    M1a --> FIN5([Fin])
+    M1 -- Sí --> J
+    K -- "Marcar todas" --> N{"¿Contexto?"}
+    N -- Cliente --> N1["PUT /notificaciones/personales/leidas"]
+    N -- "Dueño o Empleado" --> N2["PUT /notificaciones/leidas con X-Comercio-Id"]
+    N1 --> N3
+    N2 --> N3
+    subgraph TXM [Transacción BD - marcar todas]
+        N3["SELECT ids no leídos y UPDATE leida = verdadero por clave primaria en lotes de 500 (idempotente)"]
+    end
+    N3 --> N4{"¿Salió bien?"}
+    N4 -- Sí --> N4a[/"HTTP 200 con la cantidad marcada<br>Toast: Marcaste todos los avisos como leídos"/]
+    N4a --> FIN6([Fin])
+    N4 -- No --> N4b[/"Toast: No pudimos marcar las notificaciones como leídas"/]
+    N4b --> FIN7([Fin])
+    K -- "Toca un aviso" --> O{"¿Tiene destino?"}
+    O -- No --> O1["Si no está leído: PUT /notificaciones/id/leida y reemplaza el elemento"]
+    O1 --> FIN8([Fin])
+    O -- Sí --> P["Marca como leído (tope de 1500 ms) y navega<br>Con Ctrl, Cmd, Shift, Alt o botón distinto marca sin navegar"]
+    P --> Q
+    subgraph TXL [Transacción BD - marcar una]
+        Q{"¿Es del usuario y, si tiene comercio, sigue siendo Dueño o Empleado ACTIVO?"} -- No --> Q1[/"HTTP 404: Notificación no encontrada"/]
+        Q -- Sí --> Q2["UPDATE notificacion: leida = verdadero"]
+    end
+    Q2 --> R{"¿Dónde lleva? (destinoDeAviso)"}
+    R -- "Aviso de PEDIDO" --> R1[/"Cliente: pedido-detalle.html?id=... Dueño y Empleado: comercio-pedido-detalle.html?id=...<br>Texto Ver pedido (Ver reclamo en reclamo aprobado, rechazado o reembolso al Dueño)"/]
+    R -- "Dueño: comercio aprobado, suspendido, suspensión levantada, apto para vender, sin aptitud" --> R2[/"comercio-dashboard.html: Ver panel, Ir al panel o Ver qué falta"/]
+    R -- "Dueño: documentos" --> R3[/"comercio-documentacion.html: Ver documentación"/]
+    R -- "Dueño: invitación o Empleado desactivado" --> R4[/"comercio-perfil.html?vista=equipo: Ver equipo"/]
+    R -- "Dueño: comercio rechazado" --> R5[/"comercio-rechazo-definitivo.html o comercio-rechazado.html (Ver comercio) o comercio-dashboard.html (Ver panel)"/]
+    R -- "Empleado: comercio suspendido o levantado" --> R6[/"comercio-dashboard.html: Ver panel"/]
+    R -- "Cliente: Empleado reactivado" --> R7[/"seleccionar-contexto.html: Cambiar de cuenta"/]
+    R -- "Cliente: producto removido del carrito" --> R8[/"carrito.html: Ver carrito"/]
+    R -- "Resto (cuenta suspendida, inactivada, comercio inactivado, Dueño suspendido)" --> R9[/"Sin destino: solo se marca como leído"/]
+    R1 --> FIN9([Fin])
+    R2 --> FIN10([Fin])
+    R3 --> FIN11([Fin])
+    R4 --> FIN12([Fin])
+    R5 --> FIN13([Fin])
+    R6 --> FIN14([Fin])
+    R7 --> FIN15([Fin])
+    R8 --> FIN16([Fin])
+    R9 --> FIN17([Fin])
+    Q1 --> FIN18([Fin])
+    E1 --> FIN19([Fin])
+    E2 --> FIN20([Fin])
+    F1a --> FIN21([Fin])

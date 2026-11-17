@@ -1,0 +1,41 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Qué origina el cierre<br>de la sesión?"}
+    B -- "El usuario (manual)" --> M1["Botón: Cerrar sesión"]
+    M1 --> M2["POST /auth/logout<br>con el token JWT"]
+    M2 --> M3{"¿Token válido y<br>sesión activa?"}
+    M3 -- No --> M4[/"Error 401: No autenticado: token ausente,<br>inválido, expirado o sesión cerrada"/]
+    M3 -- Sí --> M5["SELECT sesion<br>WHERE id = sesionId del token"]
+    M5 --> M6{"¿Existe la sesión?"}
+    M6 -- No --> M7[/"Error 404: Sesión no encontrada"/]
+    M6 -- Sí --> M8["UPDATE sesion:<br>activa = false<br>tipo_cierre = MANUAL<br>fecha_cierre = NOW()"]
+    M8 --> M9[/"HTTP 200: Sesión cerrada correctamente"/]
+    M4 --> M10
+    M7 --> M10
+    M9 --> M10["El navegador ignora cualquier error y borra<br>el token, el usuario, el comercio activo y el contexto"]
+    M10 --> M11["Redirigir a login.html"]
+    M11 --> FIN1([Fin])
+    B -- "El sistema (forzado)" --> F1{"¿Qué lo dispara?"}
+    F1 -- "Login exitoso con<br>otra sesión activa" --> F2
+    F1 -- "3er intento de contraseña<br>fallido (bloqueo)" --> F2
+    F1 -- "Recuperación de contraseña<br>(cuenta no suspendida)" --> F2
+    F1 -- "Cambio de contraseña<br>con sesión" --> F2
+    F2["SELECT sesion<br>WHERE usuario_id = id_usuario AND activa = true"] --> F3{"¿Tiene una<br>sesión activa?"}
+    F3 -- No --> F4["No hay nada que cerrar"]
+    F4 --> FIN2([Fin])
+    F3 -- Sí --> F5["UPDATE sesion:<br>activa = false<br>tipo_cierre = FORZADO<br>fecha_cierre = NOW()"]
+    F5 --> F6["No se envía email ni aviso al otro dispositivo"]
+    F6 --> COMUN
+    B -- "Inactividad de la cuenta<br>(automático)" --> I1["Job diario a las 03:30 (hora de Ushuaia):<br>cuenta ACTIVO sin uso hace 3 meses<br>(ver P7.06)"]
+    I1 --> I2["UPDATE sesion (la activa de la cuenta):<br>activa = false<br>tipo_cierre = INACTIVIDAD<br>fecha_cierre = NOW()"]
+    I2 --> COMUN
+    B -- "Suspensión de la cuenta" --> S1["El Administrador suspende a un Cliente<br>o a un Dueño (ver P1.13 y P1.14)"]
+    S1 --> S2["UPDATE sesion:<br>activa = false<br>tipo_cierre = SUSPENSION<br>fecha_cierre = NOW()"]
+    S2 --> S3[/"Próxima solicitud, Error 401: Tu cuenta fue suspendida<br>(CUENTA_SUSPENDIDA, con el motivo)"/]
+    S3 --> S4[/"Pantalla completa: Tu cuenta fue suspendida"/]
+    S4 --> S5["Botones: Mis consultas, Contactar a Soporte<br>y Cerrar sesión"]
+    S5 --> FIN3([Fin])
+    B -- "Vencimiento del token<br>(24 horas)" --> V1["El token JWT vence a las 24 horas"]
+    V1 --> V2["En la próxima solicitud el filtro rechaza el token.<br>La fila de sesion no se modifica:<br>queda activa = true hasta el próximo inicio de sesión"]
+    V2 --> COMUN
+    COMUN[/"Próxima solicitud, Error 401. El navegador borra la sesión<br>local y muestra Sesión cerrada:<br>Tu sesión terminó. Iniciá sesión de nuevo."/]
+    COMUN --> FIN4([Fin])

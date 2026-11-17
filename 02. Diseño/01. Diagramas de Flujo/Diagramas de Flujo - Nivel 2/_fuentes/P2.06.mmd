@@ -1,0 +1,31 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Qué dispara el flujo?"}
+    B -- "Pago aprobado de un pedido<br>(ver P5.03)" --> C1["TurnoPedidoService.asignar<br>Hora = Clock (zona app.zona-horaria, por defecto Ushuaia)"]
+    B -- "Panel de pedidos del comercio<br>(Dueño o Empleado)" --> R1["GET /pedidos/comercio/resumen-turno<br>Rol DUENO o Empleado (delegable), X-Comercio-Id obligatorio"]
+    C1 --> C2["Busca el turno que contiene el instante del pago:<br>prueba el horario de hoy y el de ayer<br>(un turno es una fila de horario;<br>su día es el de apertura; cruza la medianoche si cierre es menor que apertura;<br>cierre 23:59 sin cruce vale 24:00;<br>solo rigen las filas vigentes en la fecha de apertura)"]
+    C2 --> C3{"¿Algún turno contiene el instante del pago<br>(inicio menor o igual al pago y pago menor que fin)?"}
+    C3 -- Sí --> C6
+    C3 -- No --> C4["Busca el último turno terminado<br>dentro de turno.pago-fuera-franja-dias (7 días)"]
+    C4 --> C5{"¿Hay un turno terminado<br>en esos días?"}
+    C5 -- No --> C7["El pedido queda sin turno<br>(turno_fecha y turno_horario_id en NULL)"]
+    C5 -- Sí --> C6["UPDATE pedido:<br>turno_fecha = fecha de apertura del turno,<br>turno_horario_id = versión del horario<br>(un pago de madrugada de un turno que cruza va al turno del día anterior)<br>Solo lee, sin bloqueos propios<br>El cierre automático del turno y su email al Dueño: ver P7.05"]
+    C6 --> FIN1([Fin])
+    C7 --> FIN2([Fin])
+    R1 --> R2{"¿Acceso válido?<br>(Empleado con relación ACTIVO, comercio accesible)"}
+    R2 -- No --> R3[/"HTTP 404 COMERCIO_NO_DISPONIBLE: Comercio no encontrado"/]
+    R3 --> FIN3([Fin])
+    R2 -- Sí --> R4{"¿Hay un turno en curso ahora?"}
+    R4 -- Sí --> R5["Estado EN_CURSO: turno actual"]
+    R4 -- No --> R6{"¿Hubo un turno terminado en los últimos 7 días?"}
+    R6 -- Sí --> R7["Estado TERMINADO: último turno terminado"]
+    R6 -- No --> R8["Estado SIN_TURNO"]
+    R5 --> R9
+    R7 --> R9
+    R9["vendido = suma de subtotal de los pedidos del turno en estados<br>EN_PREPARACION, EN_CAMINO, LISTO_PARA_RETIRAR, ENTREGADO y NO_RETIRADO<br>cantidadPedidos del turno<br>cantidadPendientes = todos los PENDIENTE_CONFIRMACION_COMERCIO del comercio<br>Comisión y neto solo en la respuesta del Dueño"]
+    R8 --> R10[/"HTTP 200: resumen con estado SIN_TURNO"/]
+    R9 --> R11[/"HTTP 200: resumen del turno (EN_CURSO o TERMINADO)<br>Lectura pura, sin bloqueos"/]
+    R10 --> RP
+    R11 --> RP
+    RP["Pantalla del panel (pide en paralelo el resumen y la lista de pedidos)<br>Rótulo del turno: punto verde si EN_CURSO, gris si no<br>SIN_TURNO: Sin turno por ahora<br>EN_CURSO: En curso, En curso desde ayer o En curso desde el dd/mm, con el rango<br>TERMINADO: Terminó, Terminó ayer o Terminó el dd/mm, con el rango<br>Rango HH:mm a HH:mm (día siguiente si cruza la medianoche)"] --> RQ
+    RQ[/"Contadores: Vendido en el turno, Pedidos del turno y Pendientes<br>En SIN_TURNO los dos primeros muestran un guion<br>Solo en escritorio: En preparación (se cuenta en la pantalla, no viene del servidor)<br>Botón Ver comisión y neto / Ocultar (solo si la respuesta trae comisión y neto,<br>no se muestra en SIN_TURNO)"/] --> RR
+    RR["Recarga sola: al terminar el turno (fin más 1,5 s), cada 15 s con la lista de comercios,<br>al volver a la pestaña y al volver desde el caché<br>Banners: tarjeta de suspensión (ver P2.09); para el Empleado:<br>Comercio cerrado temporalmente. No se aceptan pedidos nuevos.;<br>si no está abierto: Tu comercio está cerrado en este momento"] --> FIN4([Fin])

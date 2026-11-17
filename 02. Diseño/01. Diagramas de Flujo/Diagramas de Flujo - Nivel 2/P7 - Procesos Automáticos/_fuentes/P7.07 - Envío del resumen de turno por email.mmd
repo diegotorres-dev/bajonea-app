@@ -1,0 +1,32 @@
+flowchart TD
+    A([Inicio]) --> B["Job CierreTurnoJob cada 60 s, fase 2: envío del resumen<br>(después de la fase 1, ver P7.05)"]
+    B --> C["UPDATE cierre_turno: ENVIANDO con email_envio_iniciado anterior a ahora menos 15 minutos pasa a PENDIENTE<br>(el envío es al menos una vez; aviso en el log si recuperó alguno)"]
+    C --> D["SELECT cierres con email_estado = PENDIENTE y (email_proximo_intento nulo o vencido)<br>con comercio, Dueño y su nombre, ORDER BY Dueño, fin, id<br>Agrupa por Dueño: un Dueño que falla no frena a los demás"]
+    D --> E{"¿Quedan Dueños?"}
+    E -- No --> FIN1([Fin])
+    E -- Sí --> F{"¿La cuenta del Dueño está ACTIVO?"}
+    F -- No --> F1["UPDATE cierre_turno: OMITIDO, motivo La cuenta del Dueño no está activa<br>(BLOQUEADO, SUSPENDIDO, INACTIVO o PENDIENTE; definitivo: reactivar después no reenvía)"]
+    F1 --> E
+    F -- Sí --> G
+    subgraph TX [Transacción BD corta - reclamar]
+        G["UPDATE cierre_turno por clave primaria: PENDIENTE a ENVIANDO, email_envio_iniciado = ahora<br>(solo gana quien devuelve 1 fila)"]
+    end
+    G --> H{"¿Reclamó algún cierre?"}
+    H -- No --> E
+    H -- Sí --> I["Arma un solo mail por Dueño con todos sus cierres reclamados<br>Clave de idempotencia cierre-turno-(ids ordenados)-i(intentos)"]
+    I --> J{"¿Cuántos cierres?"}
+    J -- 1 --> J1["Asunto: Cerró tu turno en (Comercio): neto (monto) o sin pedidos<br>Cuerpo: Hola (nombre), Cerró el turno de (Comercio) del (día dd/MM), de HH:mm a HH:mm (día siguiente si corresponde).<br>Sin pedidos: No hubo pedidos en este turno. Con pedidos: Vendido en el turno, Comisión de Bajoneá, Neto del turno, Pedidos del turno<br>Con pendientes: Quedó 1 pedido sin responder al cerrar el turno. No está incluido en estos montos. (o Quedaron (n) pedidos ... No están incluidos ...)<br>Podés ver el detalle en el panel de Bajoneá. / Equipo de Bajoneá"]
+    J -- "2 o más" --> J2["Asunto: Cerraron los turnos de tus comercios<br>Cuerpo: Hola (nombre), Cerraron estos turnos: y por cada uno (Comercio) — (día), (rango) con No hubo pedidos o los cuatro renglones de montos y Pedidos sin responder al cierre: (n) (no incluidos en estos montos)<br>Equipo de Bajoneá"]
+    J1 --> K
+    J2 --> K
+    K["Sin transacción: envío por Resend (cabecera Idempotency-Key)<br>Solo al Dueño titular, a su email, con su nombre de pila (el Empleado no lo recibe)"]
+    K --> L{"¿Salió?"}
+    L -- Sí --> L1["UPDATE cierre_turno por cierre: ENVIADO, email_fecha_envio, limpia el próximo intento y el reclamo"]
+    L -- No --> M{"¿Intentos + 1 es 5 o más?"}
+    M -- Sí --> M1["UPDATE cierre_turno: FALLIDO, error de Resend recortado a 500, error en el log<br>Queda solo en la base: sin pantalla ni reproceso automático"]
+    M -- No --> M2["UPDATE cierre_turno: vuelve a PENDIENTE, intentos + 1, email_proximo_intento = ahora + retroceso<br>Retroceso: intento 1 a 10 min, 2 a 30 min, 3 a 60 min, 4 a 60 min"]
+    L1 --> E
+    M1 --> E
+    M2 --> E
+    K -.-> X["Si la corrida se interrumpe entre reclamar y registrar: ENVIANDO se recupera a los 15 minutos con la misma clave de idempotencia<br>Una falla del servicio de email nunca afecta el cierre ni a otros Dueños"]
+    X --> FIN2([Fin])

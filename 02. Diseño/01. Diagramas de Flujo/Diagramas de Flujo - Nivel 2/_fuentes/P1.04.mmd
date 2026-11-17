@@ -1,0 +1,89 @@
+flowchart TD
+    A([Inicio]) --> B[/"Nombre de usuario y contraseña"/]
+    B --> C{"¿Completó usuario<br>y contraseña?"}
+    C -- No --> C1[/"Completá tu nombre de usuario y tu contraseña.<br>Ingresá tu nombre de usuario.<br>Ingresá tu contraseña.<br>(según el campo que falte)"/]
+    C1 --> FIN1([Fin])
+    C -- Sí --> D["POST /auth/login<br>Normalizar: nombre de usuario con trim y minúsculas"]
+    D --> D1{"¿Algún campo llega vacío?"}
+    D1 -- Sí --> D2[/"Error 400: No debe estar vacío"/]
+    D2 --> FIN2([Fin])
+    D1 -- No --> E["SELECT usuario<br>WHERE nombre_usuario = nombre_ingresado<br>(bloqueo FOR UPDATE)"]
+    E --> F{"¿Existe el usuario?"}
+    F -- No --> F1[/"Error 401: Usuario o contraseña incorrectos"/]
+    F1 --> FEG
+    F -- Sí --> G{"¿Estado de<br>la cuenta?"}
+    G -- Pendiente --> G1[/"Error 409: Verificá tu email antes de iniciar sesión"/]
+    G1 --> G2[/"Todavía no verificaste tu email. Ingresá el código de<br>6 dígitos que te enviamos al registrarte en la<br>pantalla de verificación."/]
+    G2 --> G3["Enlace a la pantalla de verificación de email"]
+    G3 --> FIN3([Fin])
+    G -- Bloqueado --> BLQ[/"Error 409: Cuenta bloqueada.<br>Recuperá tu contraseña para desbloquearla"/]
+    G -- Inactivo --> I{"¿intentos_fallidos >= 3?"}
+    I -- Sí --> BLQ
+    BLQ --> BLQ2[/"Tu cuenta está bloqueada por intentos fallidos.<br>Recuperá tu contraseña para desbloquearla."/]
+    BLQ2 --> BLQ3["Enlaces: Recuperar contraseña<br>y Contactar a Soporte"]
+    BLQ3 --> FIN4([Fin])
+    I -- No --> J
+    G -- "Activo o Suspendido" --> J["Comparar la contraseña con BCrypt"]
+    J --> K{"¿Contraseña correcta?"}
+    K -- No --> L{"¿Estado de<br>la cuenta?"}
+    L -- Suspendido --> L1[/"Error 401: Usuario o contraseña incorrectos<br>(no suma intentos)"/]
+    L1 --> FEG
+    L -- Inactivo --> L2["UPDATE usuario:<br>intentos_fallidos = intentos_fallidos + 1"]
+    L2 --> L3[/"Error 401: Usuario o contraseña incorrectos<br>intentosRestantes = máximo entre 3 - intentos_fallidos y 0"/]
+    L3 --> FER
+    L -- Activo --> M["UPDATE usuario:<br>intentos_fallidos = intentos_fallidos + 1"]
+    M --> N{"¿intentos_fallidos >= 3?"}
+    N -- No --> L3
+    N -- Sí --> B1
+    subgraph TXB ["Transacción BD (se confirma aunque responda 401)"]
+        B1["UPDATE usuario:<br>estado = BLOQUEADO"] --> B2["INSERT historial_estado_usuario:<br>ACTIVO a BLOQUEADO<br>motivo = Bloqueo de cuenta por intentos fallidos"]
+        B2 --> B3["UPDATE sesion (la activa, si existe):<br>activa = false, tipo_cierre = FORZADO,<br>fecha_cierre = NOW()"]
+        B3 --> B4{"¿El usuario<br>es Dueño?"}
+        B4 -- Sí --> B5["UPDATE comercio (APROBADO o APTO_VENTA):<br>estado = CERRADO_TEMPORALMENTE"]
+        B5 --> B6["INSERT historial_estado_comercio<br>(uno por comercio)<br>motivo = Bloqueo de cuenta por intentos fallidos"]
+    end
+    B4 -- No --> L3
+    B6 --> L3
+    FER{"¿intentosRestantes = 1?"}
+    FER -- Sí --> FEW[/"Cuidado: si fallás una vez más,<br>tu cuenta se bloqueará."/]
+    FEW --> FEG
+    FER -- No --> FEG[/"Usuario o contraseña incorrectos.<br>Intentá nuevamente."/]
+    FEG --> FIN5([Fin])
+    K -- Sí --> O{"¿Estado de<br>la cuenta?"}
+    O -- Suspendido --> O1[/"Error 409: Tu cuenta fue suspendida<br>(CUENTA_SUSPENDIDA, con el motivo)"/]
+    O1 --> O2[/"Hoja Cuenta suspendida con el Motivo"/]
+    O2 --> O3["Botones: Contactar a Soporte y Cerrar"]
+    O3 --> FIN6([Fin])
+    O -- Inactivo --> P["UPDATE usuario:<br>intentos_fallidos = 0"]
+    P --> P1[/"Error 409: Cuenta inactiva. Solicitá la reactivación<br>de tu cuenta (CUENTA_INACTIVA, con la<br>lista de comercios afectados)"/]
+    P1 --> P2["Mostrar la pantalla Tu cuenta está inactiva<br>(ver P1.07)"]
+    P2 --> FIN7([Fin])
+    O -- Activo --> S1
+    subgraph TXS [Transacción BD]
+        S1["UPDATE usuario:<br>intentos_fallidos = 0<br>fecha_ultimo_acceso = NOW()"] --> S2{"¿Tiene otra<br>sesión activa?"}
+        S2 -- Sí --> S3["UPDATE sesion (la anterior):<br>activa = false, tipo_cierre = FORZADO,<br>fecha_cierre = NOW()<br>(sin email ni aviso)"]
+        S3 --> S4
+        S2 -- No --> S4["INSERT sesion:<br>usuario_id, activa = true, fecha_inicio = NOW(),<br>ip_origen, navegador"]
+    end
+    S4 --> S5["Generar token JWT<br>(usuario, rol y sesión; vence a las 24 horas)"]
+    S5 --> Q[/"HTTP 200: Login exitoso<br>(token y datos del usuario)"/]
+    Q --> R["Guardar token y usuario<br>en el navegador"]
+    R --> T{"¿Rol del<br>usuario?"}
+    T -- Administrador --> T1["Ir a admin-dashboard.html"]
+    T1 --> FIN8([Fin])
+    T -- Cliente --> U["GET /empleados/mis-comercios"]
+    U --> U1{"¿Es Empleado de<br>algún comercio?"}
+    U1 -- Sí --> U2["Ir a la selección de contexto<br>(ver P1.16)"]
+    U2 --> FIN9([Fin])
+    U1 -- No --> U3["Ir a index.html como Cliente"]
+    U3 --> FIN10([Fin])
+    T -- Dueño --> V["GET /comercios/mis-comercios"]
+    V --> V1{"¿Estado de<br>sus comercios?"}
+    V1 -- "Sin comercios" --> V2[/"No pudimos verificar el estado de tu comercio.<br>Intentá nuevamente."/]
+    V2 --> FIN11([Fin])
+    V1 -- "Operativo (Aprobado, Apto para<br>venta, Suspendido, etc.)" --> V3["Ir a comercio-dashboard.html"]
+    V3 --> FIN12([Fin])
+    V1 -- "Solo Pendiente, Rechazado<br>o Rechazo definitivo" --> V4["Ir a la pantalla del comercio<br>según su estado"]
+    V4 --> FIN13([Fin])
+    V1 -- "Ninguno operativo<br>ni en revisión" --> V5[/"Tu comercio no está operativo en este momento.<br>Contactar a Soporte para más información."/]
+    V5 --> FIN14([Fin])

@@ -1,0 +1,34 @@
+flowchart TD
+    A([Inicio]) --> B["Un servicio de negocio emite un aviso dentro de su transacción<br>(ya tomó los bloqueos de usuarios y relaciones antes del pedido)"]
+    B --> C{"¿A quién va dirigido el tipo de aviso?<br>(audiencia fija por tipo en TipoNotificacion)"}
+    C -- "Cliente (o Cliente o Dueño)" --> D["crearParaCliente: una fila para el usuario, comercio_id = nulo"]
+    C -- "Dueño (o Cliente o Dueño)" --> E["crearParaDueno: una fila para el Dueño con comercio_id"]
+    C -- "Equipo" --> F["crearParaEquipo: una copia por el Dueño y por cada Empleado ACTIVO (en id ascendente)<br>Excluye al Cliente del pedido si es Empleado del comercio<br>Con comercio_id"]
+    C -- "Empleados" --> G["crearParaEmpleados: una copia por Empleado, sin el Dueño, con comercio_id"]
+    C -- "Administrador" --> H[/"No existe camino de creación: T17, T18, T19, T22 y T27 nunca se emiten<br>(T26 PEDIDO_CERRADO_TIMER_SUSPENSION tampoco)"/]
+    H --> FIN1([Fin])
+    D --> I{"¿El tipo coincide con el camino?"}
+    E --> I
+    F --> I
+    G --> I
+    I -- No --> I1["IllegalArgumentException: revierte la transacción de negocio<br>(se detecta en pruebas, no en producción)"]
+    I1 --> FIN2([Fin])
+    I -- Sí --> J
+    subgraph TX [Transacción BD - la del negocio]
+        J["INSERT notificacion: usuario_id, tipo, mensaje (hasta 500 caracteres, se trunca), leida = falso,<br>fecha_creacion, canal PUSH, entidad_tipo, entidad_id, comercio_id"]
+    end
+    J --> K{"¿El aviso lleva email?"}
+    K -- "No (pedidos, reembolsos, pagos, T14, T15, reclamo al Dueño)" --> FIN3([Fin])
+    K -- "Sí (cuenta suspendida o inactivada, suspensión levantada, Dueño o comercio suspendido o levantado, reclamo resuelto)" --> L{"¿El commit se confirmó?"}
+    L -- No --> L1["No se envía ningún email"]
+    L1 --> FIN4([Fin])
+    L -- Sí --> M{"¿email.envio-habilitado?"}
+    M -- No --> M1["No envía y devuelve deshabilitado"]
+    M1 --> FIN5([Fin])
+    M -- Sí --> N["Después del commit: EmailService envía por Resend, un solo intento, sin reintentos"]
+    N --> O{"¿Salió?"}
+    O -- Sí --> P["INSERT notificacion: canal EMAIL, estado ENVIADO, fecha_envio"]
+    O -- No --> Q["INSERT notificacion: canal EMAIL, estado FALLIDO (el error se traga)"]
+    P --> R[/"Las filas EMAIL nunca salen en la campana<br>Un Administrador puede reenviar los emails de cuenta fallidos"/]
+    Q --> R
+    R --> FIN6([Fin])

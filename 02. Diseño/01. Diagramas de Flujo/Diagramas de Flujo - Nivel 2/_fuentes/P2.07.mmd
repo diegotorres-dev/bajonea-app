@@ -1,0 +1,69 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Qué dispara el flujo?"}
+    B -- "Dueño o Empleado toca<br>Cerrar o Abrir" --> C["PUT /comercios/cerrar o PUT /comercios/abrir<br>(sin body, X-Comercio-Id obligatorio, delegable al Empleado)"]
+    B -- "Job ReaperturaComerciosJob<br>(cada 60 segundos)" --> J1
+    B -- "Bloqueo o restauración<br>de la cuenta del Dueño" --> K1
+    C --> D
+    subgraph TX1 [Transacción BD - cerrar o abrir]
+        D{"¿La cuenta del actor está suspendida?"} -- Sí --> D1[/"Cuenta suspendida (CuentaSuspendidaException)"/]
+        D -- No --> E{"¿Es Empleado con relación ACTIVO?"}
+        E -- No --> E1[/"HTTP 404 COMERCIO_NO_DISPONIBLE"/]
+        E -- Sí --> F["SELECT comercio (FOR UPDATE)<br>La hora se toma después del bloqueo, truncada a segundos"]
+        F --> G{"¿Estado APROBADO o APTO_VENTA?"}
+        G -- No --> G1[/"HTTP 409 COMERCIO_NO_OPERATIVO:<br>Este comercio no está operativo"/]
+        G -- Sí --> H{"¿Está dentro de una franja de horario?"}
+        H -- No --> H1[/"HTTP 409 FUERA_DE_HORARIO:<br>Solo podés abrir o cerrar dentro de tu horario"/]
+        H -- Sí --> I{"¿Cambia la bandera cerrado_manualmente?"}
+        I -- Sí --> I1["UPDATE comercio: cerrado_manualmente<br>INSERT historial_cierre_comercio:<br>CERRADO o REABIERTO, actor DUENO o EMPLEADO"]
+        I -- No --> I2["No escribe nada"]
+    end
+    D1 --> FIN1([Fin])
+    E1 --> FIN2([Fin])
+    G1 --> FIN3([Fin])
+    H1 --> FIN4([Fin])
+    I1 --> I3[/"HTTP 200: Estado de apertura actualizado correctamente<br>cerradoManualmente, abiertoAhora, puedeCambiarCierre, textoReapertura<br>Cerrar solo frena pedidos nuevos (carrito y confirmación);<br>no toca pedidos en curso"/]
+    I2 --> I3
+    I3 --> PA
+    PA["Pantalla: la tarjeta con interruptor solo existe si el comercio es APTO_VENTA<br>y el usuario es Dueño o Empleado (ven lo mismo)<br>Con CERRADO_TEMPORALMENTE o SUSPENDIDO la tarjeta no se dibuja"] --> PB{"Modo del interruptor"}
+    PB -- "ABIERTO" --> PB1[/"Recibiendo pedidos<br>Pausalo cuando quieras dentro de tu horario<br>Interruptor encendido"/]
+    PB -- "PAUSADO" --> PB2[/"Pedidos pausados<br>Subtítulo: textoReapertura (oculto si viene vacío)<br>Interruptor apagado"/]
+    PB -- "FUERA_DE_HORARIO" --> PB3[/"Fuera de horario<br>Podés pausar dentro de tu horario<br>Apagado, el toque no hace nada"/]
+    PB1 --> PC{"¿Qué toca?"}
+    PB2 --> PC
+    PB3 --> FIN5([Fin])
+    PC -- "Cerrar" --> PD[/"Hoja de confirmación:<br>¿Dejar de recibir pedidos?<br>Los pedidos en curso siguen su camino.<br>Botones Cerrar y Cancelar (foco inicial en Cancelar)"/]
+    PC -- "Abrir" --> PE["Abre directo, sin confirmación"]
+    PD --> PF{"¿Confirma?"}
+    PF -- Cancelar --> FIN11([Fin])
+    PF -- Cerrar --> PE
+    PE --> PG{"Respuesta de la pantalla"}
+    PG -- Éxito --> PG1[/"Toast: Comercio cerrado o Comercio abierto<br>Refresca la lista de comercios"/]
+    PG -- "409 con mensaje" --> PG2[/"Aviso fijo con el texto del servidor<br>(por ejemplo Solo podés abrir o cerrar dentro de tu horario)"/]
+    PG -- "Otro error" --> PG3[/"Toast: No pudimos actualizar el estado. Probá de nuevo."/]
+    PG1 --> FIN12([Fin])
+    PG2 --> FIN13([Fin])
+    PG3 --> FIN14([Fin])
+    J1["SELECT comercios con cerrado_manualmente = true"] --> J2
+    subgraph TX2 [Transacción BD por comercio - reabrirSiVencido]
+        J2["SELECT comercio (FOR UPDATE)<br>No revisa el estado del comercio:<br>también reabre uno SUSPENDIDO o INACTIVO"] --> J3["Toma la última fila CERRADO de historial_cierre_comercio"]
+        J3 --> J4{"¿Hay fila CERRADO y hay franjas?"}
+        J4 -- No --> J5["Reabre y deja log.warn"]
+        J4 -- Sí --> J6["Primera franja que empieza estrictamente después del cierre<br>(hasta 7 días adelante)"]
+        J6 --> J7{"¿ahora llegó a ese inicio?"}
+        J7 -- No --> J8["No hace nada"]
+        J7 -- Sí --> J9["UPDATE comercio: cerrado_manualmente = false<br>INSERT historial_cierre_comercio:<br>REABIERTO, actor SISTEMA, usuario NULL"]
+        J5 --> J9
+    end
+    J8 --> FIN6([Fin])
+    J9 --> J10["Sin aviso in-app ni email"]
+    J10 --> FIN7([Fin])
+    K1{"¿Qué pasó con la cuenta?"} -- "Se bloquea" --> K2{"¿El comercio estaba APTO_VENTA?"}
+    K2 -- Sí --> K3["AptitudVentaComercioService.cerrarPorBloqueo:<br>UPDATE comercio: estado = CERRADO_TEMPORALMENTE<br>INSERT historial_estado_comercio (sin administrador)"]
+    K2 -- No --> K4["Sin cambio"]
+    K1 -- "Se restaura" --> K5["AptitudVentaComercioService.restaurar (DUENO_RESTAURADO):<br>sin bloqueo, desde CERRADO_TEMPORALMENTE o INACTIVO:<br>vuelve a APTO_VENTA si cumple la aptitud (ver P2.04),<br>si no a APROBADO"]
+    K1 -- "Se aprueba el comercio o se vincula Mercado Pago<br>con el Dueño bloqueado" --> K6["La regla de aptitud lo deja en CERRADO_TEMPORALMENTE<br>(ver P2.02 y P2.04)"]
+    K3 --> K7[/"CERRADO_TEMPORALMENTE: no se opera desde el panel<br>(cerrar y abrir dan 409 COMERCIO_NO_OPERATIVO),<br>no se reabre solo y no usa cerrado_manualmente<br>Carrito y pedido nuevo: Este comercio está cerrado en este momento<br>Los pedidos en curso siguen su flujo"/]
+    K4 --> FIN8([Fin])
+    K5 --> FIN9([Fin])
+    K6 --> K7
+    K7 --> FIN10([Fin])

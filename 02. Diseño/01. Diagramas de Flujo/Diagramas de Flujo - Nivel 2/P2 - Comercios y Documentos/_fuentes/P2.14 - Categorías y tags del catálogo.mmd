@@ -1,0 +1,57 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Qué hace el Administrador en admin-categorias.html o admin-tags.html?"}
+    B -- "Ver el listado" --> C["GET /api/v1/categorias o GET /api/v1/tags (cualquier usuario autenticado)"]
+    C --> D["SELECT categoria o tag (todas, activas e inactivas, sin orden explícito)<br>Por cada fila: COUNT de productos asociados"]
+    D --> E{"¿Hay registros?"}
+    E -- No --> E1[/"No hay categorías para mostrar / No hay tags para mostrar"/]
+    E1 --> FIN1([Fin])
+    E -- Sí --> F[/"Chips Todas, Activas e Inactivas con cantidad<br>Fila: nombre, 1 producto asociado o N productos asociados, estado Activa o Inactiva (escritorio)<br>Botones: Editar y Crear categoría o Crear tag"/]
+    F --> FIN2([Fin])
+    B -- "Crear" --> G[/"Modal Nueva Categoría o Nuevo Tag: Nombre (máximo 100)<br>Botón: Crear Categoría o Crear Tag"/]
+    G --> H{"¿El nombre está vacío tras recortar espacios?"}
+    H -- Sí --> H1[/"El nombre de la categoría es obligatorio. / El nombre del tag es obligatorio."/]
+    H1 --> FIN3([Fin])
+    H -- No --> I["POST /api/v1/categorias o /api/v1/tags con nombre (rol ADMINISTRADOR)"]
+    I --> J{"¿Pasa la validación del DTO?"}
+    J -- No --> J1[/"HTTP 400: nombre: No debe estar vacío<br>Más de 100 caracteres: mensaje por defecto de Hibernate Validator (texto exacto sin verificar)"/]
+    J1 --> J2["Toast de error: No pudimos guardar la categoría / No pudimos guardar el tag"]
+    J2 --> FIN4([Fin])
+    J -- Sí --> K
+    subgraph TX1 ["Transacción BD - crear (sin bloqueos)"]
+        K["SELECT existsByNombre (collation utf8mb4_unicode_ci: no distingue mayúsculas ni tildes)"] --> K1{"¿Ya existe?"}
+        K1 -- Sí --> K2["Conflicto de nombre"]
+        K1 -- No --> K3["INSERT categoria o tag: nombre tal cual llega, activo = true, fecha_creacion = ahora"]
+    end
+    K2 --> K4[/"HTTP 409: Ya existe una categoría con ese nombre / Ya existe un tag con ese nombre<br>Si dos altas chocan a la vez: Ya existe un registro con alguno de los datos ingresados"/]
+    K4 --> K5["El modal lo muestra bajo el campo"]
+    K5 --> FIN5([Fin])
+    K3 --> K6[/"HTTP 201: Categoría creada correctamente / Tag creado correctamente<br>Toast con el mismo texto"/]
+    K6 --> FIN6([Fin])
+    B -- "Editar" --> L[/"Modal Editar Categoría o Editar Tag: nombre e interruptor Categoría activa o Tag activo<br>Solo las categorías activas pueden asignarse a productos. / Solo los tags activos pueden asignarse a productos.<br>Botón: Guardar Cambios"/]
+    L --> L1["PUT /api/v1/categorias/(id) o /tags/(id) con nombre"]
+    L1 --> M
+    subgraph TX2 ["Transacción BD - editar (sin bloqueos)"]
+        M["SELECT categoria o tag WHERE id"] --> M1{"¿Existe?"}
+        M1 -- No --> M2["RecursoNoEncontrado"]
+        M1 -- Sí --> M3{"¿El nombre nuevo es distinto del actual (comparación sensible a mayúsculas) y existsByNombre es verdadero?"}
+        M3 -- Sí --> M4["Conflicto de nombre"]
+        M3 -- No --> M5["UPDATE categoria o tag: nombre, fecha_modificacion = ahora<br>No toca activo"]
+    end
+    M2 --> M6[/"HTTP 404: Categoría no encontrada / Tag no encontrado"/]
+    M4 --> M7[/"HTTP 409: Ya existe una categoría con ese nombre / Ya existe un tag con ese nombre<br>También salta si solo cambian mayúsculas o tildes"/]
+    M6 --> FIN7([Fin])
+    M7 --> FIN8([Fin])
+    M5 --> N{"¿Cambió el interruptor de activo?"}
+    N -- No --> N1[/"HTTP 200: Categoría actualizada correctamente / Tag actualizado correctamente"/]
+    N1 --> FIN9([Fin])
+    N -- "Se desactivó" --> O
+    N -- "Se activó" --> P
+    B -- "Dar de baja desde el interruptor" --> O["DELETE /api/v1/categorias/(id) o /tags/(id)<br>UPDATE activo = false, fecha_baja = ahora (no mira productos, no bloquea, repetirla pisa fecha_baja)"]
+    O --> O1[/"HTTP 200: Categoría dada de baja correctamente / Tag dado de baja correctamente"/]
+    O1 --> Q
+    B -- "Reactivar" --> P["PUT /api/v1/categorias/(id)/reactivar o /tags/(id)/reactivar<br>UPDATE activo = true, fecha_baja = null"]
+    P --> P1[/"HTTP 200: Categoría reactivada correctamente / Tag reactivado correctamente"/]
+    P1 --> Q["En edición son dos llamadas seguidas, no atómicas<br>Solo hay baja lógica, no existe eliminación física"]
+    Q --> FIN10([Fin])
+    B -- "Efecto sobre productos y catálogo" --> R["La baja no modifica productos ni sus relaciones (producto.categoria_id, producto_tag)<br>El servidor no valida activo al asignar categoría o tags a un producto (ver P2.08)<br>Los filtros del catálogo del Cliente salen de los productos visibles y no filtran por activo<br>El formulario del Dueño y del Empleado oculta las inactivas en el cliente: al editar un producto con categoría inactiva el selector queda sin valor y los tags inactivos se pierden al guardar"]
+    R --> FIN11([Fin])

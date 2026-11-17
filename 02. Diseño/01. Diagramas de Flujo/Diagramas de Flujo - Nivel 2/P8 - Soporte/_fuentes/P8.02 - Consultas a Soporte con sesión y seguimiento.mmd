@@ -1,0 +1,58 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Qué hace la persona con sesión? (Cliente, Dueño o Empleado, cualquier rol, sin X-Comercio-Id)"}
+    B -- "Crear una consulta" --> C[/"soporte.html con sesión: el email aparece deshabilitado (Es el email de tu cuenta.)<br>Completa Tipo de consulta y Contanos qué pasó<br>Botón: Enviar consulta"/]
+    C --> C1["POST /api/v1/soporte/consultas con solo tipo y mensaje"]
+    C1 --> C2{"¿Pasa la validación del DTO?"}
+    C2 -- No --> C3[/"HTTP 400: Elegí el motivo de tu consulta / Escribí tu mensaje / El mensaje debe tener entre 10 y 1000 caracteres"/]
+    C3 --> FIN1([Fin])
+    C2 -- Sí --> C4["SELECT usuario con bloqueo compartido y toma usuario.email en minúsculas"]
+    C4 --> C5{"¿Existe el usuario?"}
+    C5 -- No --> C6[/"HTTP 404: Usuario no encontrado"/]
+    C6 --> FIN2([Fin])
+    C5 -- Sí --> C7["Mismo núcleo que P8.01 (ver P8.01): cerrojos CREAR_EMAIL y CREAR_IP, límites de 3 por 24 h, 3 abiertas y 10 por IP, código de 8 caracteres<br>INSERT ticket_soporte con usuario_id = id del usuario<br>INSERT ticket_soporte_mensaje: autor PERSONA<br>Email Recibimos tu consulta al email de la cuenta (ver P8.01)"]
+    C7 --> C8[/"HTTP 201 o error 429 / 503 con los mismos textos de P8.01<br>Éxito: Recibimos tu consulta, código, botón Ver mi consulta a soporte-consulta.html con el id"/]
+    C8 --> FIN3([Fin])
+    B -- "Ver mis consultas" --> D["Entradas: fila Mis consultas a Soporte en Perfil, Ayuda o menú del escritorio<br>Muestra el número de consultas que esperan su respuesta"]
+    D --> D1["GET /api/v1/soporte/mis-consultas/contador<br>SELECT COUNT ticket_soporte propias en estado ESPERA_PERSONA"]
+    D1 --> D2["GET /api/v1/soporte/mis-consultas<br>SELECT ticket_soporte WHERE usuario_id = (id) OR email = (email de la cuenta) ORDER BY actualizado_en DESC"]
+    D2 --> D3{"¿Hay consultas?"}
+    D3 -- No --> D4[/"Todavía no hiciste ninguna consulta<br>Cuando le escribas a Soporte, vas a ver acá la conversación y las respuestas.<br>Botón: Nueva consulta"/]
+    D4 --> FIN4([Fin])
+    D3 -- Sí --> D5[/"Lista: tipo, Enviada el (fecha) y estado<br>Te toca responder / Esperando a Soporte / Cerrada"/]
+    D5 --> E
+    B -- "Abrir una consulta" --> E["GET /api/v1/soporte/mis-consultas/(id)<br>SELECT ticket_soporte WHERE id AND (usuario_id = (id) OR email = (email))<br>Una consulta sin sesión con el mismo email también aparece"]
+    E --> E1{"¿Es suya?"}
+    E1 -- No --> E2[/"HTTP 404: Consulta no encontrada<br>La pantalla: No encontramos esa consulta. Botón: Ir a mis consultas"/]
+    E2 --> FIN5([Fin])
+    E1 -- Sí --> E3[/"Conversación con mensajes, estado y puedeResponder (solo en ESPERA_PERSONA)<br>Avisos: Soporte todavía no respondió. Vas a poder escribir cuando lo haga. / Esta consulta está cerrada. Si necesitás algo más, enviá una consulta nueva."/]
+    E3 --> F
+    B -- "Responder" --> F[/"Escribe Tu respuesta y toca Enviar respuesta"/]
+    F --> F1["POST /api/v1/soporte/mis-consultas/(id)/mensajes con texto"]
+    F1 --> F2{"¿Pasa la validación?"}
+    F2 -- No --> F3[/"HTTP 400: Escribí tu mensaje / El mensaje no puede superar los 1000 caracteres"/]
+    F3 --> FIN6([Fin])
+    F2 -- Sí --> G
+    subgraph TX ["Transacción BD - responder con sesión"]
+        G["SELECT id de ticket_soporte de la persona (id o email)"] --> G1{"¿Existe y es suyo?"}
+        G1 -- No --> G2["RecursoNoEncontrado"]
+        G1 -- Sí --> G3["SELECT ticket_soporte WHERE id FOR UPDATE"]
+        G3 --> G4{"¿Estado del ticket?"}
+        G4 -- CERRADO --> G5["Conflicto: consulta cerrada"]
+        G4 -- ESPERA_SOPORTE --> G6["Conflicto: no le toca a la persona"]
+        G4 -- ESPERA_PERSONA --> G7["INSERT ticket_soporte_mensaje: autor PERSONA, email_enviado true<br>UPDATE ticket_soporte: cantidad_mensajes + 1, actualizado_en"]
+        G7 --> G8{"¿El total llegó a 20?"}
+        G8 -- Sí --> G9["UPDATE ticket_soporte: estado CERRADO, cerrado_en = ahora<br>El mensaje 20 lo escribe quien le tocaba y cierra"]
+        G8 -- No --> G10["UPDATE ticket_soporte: estado ESPERA_SOPORTE"]
+    end
+    G2 --> H1[/"HTTP 404: Consulta no encontrada"/]
+    G5 --> H2[/"HTTP 409: Esta consulta está cerrada. Si necesitás algo más, enviá una consulta nueva."/]
+    G6 --> H3[/"HTTP 409: Soporte todavía no respondió. Vas a poder escribir cuando lo haga."/]
+    H1 --> H4["La pantalla muestra No encontramos esa consulta"]
+    H2 --> H5["Un 409 recarga la consulta y muestra el mensaje del servidor"]
+    H3 --> H5
+    H4 --> FIN7([Fin])
+    H5 --> FIN8([Fin])
+    G9 --> I[/"HTTP 200: Enviamos tu mensaje<br>Toast: Respuesta enviada. Si fue el mensaje 20: Llegamos al máximo de mensajes de esta consulta. Si necesitás algo más, enviá una consulta nueva."/]
+    G10 --> I
+    I -.-> J["No se envía email ni aviso al Administrador al escribir la persona<br>Una cuenta SUSPENDIDO puede usar todas estas rutas (filtro JWT, prefijo /api/v1/soporte/)"]
+    I --> FIN9([Fin])

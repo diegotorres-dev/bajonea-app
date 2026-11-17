@@ -1,0 +1,50 @@
+flowchart TD
+    A([Inicio]) --> B["El usuario sale del campo<br>(nombre de usuario o nombre del comercio)"]
+    B --> C{"¿El campo está vacío o es igual<br>al valor original que se está editando?"}
+    C -- Sí --> C1["No se consulta nada"]
+    C1 --> FIN1([Fin])
+    C -- No --> D["Normalizar en el navegador:<br>nombre de usuario con trim y minúsculas (reescribe el campo)<br>nombre de comercio con trim y espacios colapsados"]
+    D --> E{"¿Tiene formato válido<br>en el navegador?"}
+    E -- No --> E1[/"Error bajo el campo.<br>Nombre de comercio: Ingresá un nombre de comercio válido."/]
+    E1 --> FIN2([Fin])
+    E -- Sí --> F[/"Verificando…"/]
+    F --> G{"¿Qué nombre<br>se consulta?"}
+    G -- "Nombre de usuario" --> H["GET /auth/nombre-usuario/disponibilidad<br>?nombreUsuario=valor"]
+    G -- "Nombre de comercio" --> I["GET /auth/comercio-nombre/disponibilidad<br>?nombre=valor"]
+    H --> J{"¿Más de 30 consultas por minuto<br>desde la misma IP?<br>(contador compartido entre ambas consultas)"}
+    I --> J
+    J -- Sí --> J1[/"Error 429: Demasiadas solicitudes.<br>Esperá un minuto e intentá de nuevo."/]
+    J1 --> J2["El navegador no muestra ningún texto:<br>oculta la línea de estado"]
+    J2 --> FIN3([Fin])
+    J -- No --> K{"¿Qué nombre<br>se consulta?"}
+    K -- "Nombre de usuario" --> L["Normalizar: trim y minúsculas"]
+    L --> L1{"¿Cumple el formato?<br>(obligatorio, solo letras y números,<br>al menos una letra, de 8 a 20 caracteres)"}
+    L1 -- No --> L2[/"Error 400, según la regla que falle:<br>El nombre de usuario es obligatorio<br>Solo se permiten letras y números<br>El nombre de usuario debe contener al menos una letra.<br>El nombre de usuario debe tener al menos 8 caracteres<br>El nombre de usuario no puede superar los 20 caracteres"/]
+    L2 --> J2
+    L1 -- Sí --> L3{"¿Es un nombre reservado?<br>(administrador, administrator, bajonea, soporte,<br>support, comercio, cliente, empleado,<br>duenio, superadmin)"}
+    L3 -- Sí --> L4["disponible = false"]
+    L3 -- No --> L5["SELECT usuario<br>WHERE nombre_usuario = nombre_normalizado"]
+    L5 --> L6{"¿Ya existe?"}
+    L6 -- Sí --> L4
+    L6 -- No --> L7["disponible = true"]
+    K -- "Nombre de comercio" --> M["Normalizar: trim"]
+    M --> M1{"¿Está vacío?"}
+    M1 -- Sí --> M2[/"Error 400: El nombre del comercio es obligatorio"/]
+    M2 --> J2
+    M1 -- No --> M3{"¿Tiene más de<br>150 caracteres?"}
+    M3 -- Sí --> M4[/"Error 400: El nombre no puede superar<br>los 150 caracteres"/]
+    M4 --> J2
+    M3 -- No --> M5{"¿Tiene al menos una<br>letra o un número?"}
+    M5 -- No --> M6[/"Error 400: Ingresá un nombre de comercio válido"/]
+    M6 --> J2
+    M5 -- Sí --> M7["SELECT comercio<br>WHERE nombre_unico = nombre normalizado<br>(sin mayúsculas, acentos ni espacios de más;<br>cuentan todos los estados salvo RECHAZO_DEFINITIVO)"]
+    M7 --> M8{"¿Ya existe?"}
+    M8 -- Sí --> L4
+    M8 -- No --> L7
+    L4 --> N[/"HTTP 200: Consulta realizada correctamente<br>disponible = false<br>(solo lectura: no reserva el nombre)"/]
+    L7 --> O[/"HTTP 200: Consulta realizada correctamente<br>disponible = true<br>(solo lectura: no reserva el nombre)"/]
+    N --> P[/"Nombre de usuario: Ese nombre de usuario ya está en uso<br>Nombre de comercio: Ya existe un comercio con ese nombre. Elegí otro."/]
+    O --> Q[/"Nombre de usuario: Nombre de usuario disponible<br>Nombre de comercio: Nombre disponible"/]
+    P --> R["La unicidad se vuelve a controlar al registrar<br>(Error 409 si el nombre ya está en uso)"]
+    Q --> R
+    R --> FIN4([Fin])

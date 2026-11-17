@@ -1,0 +1,42 @@
+flowchart TD
+    A([Inicio]) --> B["Dueño o Empleado abre los pedidos del comercio activo (comercio-pedidos.html)<br>GET /pedidos/comercio con X-Comercio-Id"]
+    B --> C["SELECT pedido del comercio con alguna fila PENDIENTE_CONFIRMACION_COMERCIO en historial_estado_pedido<br>(todo pedido que llegó a estar pagado, sin límite de fecha ni de cantidad, sin paginación)<br>Excluye PENDIENTE_PAGO y pedidos nunca pagados"]
+    C --> D{"¿Cargó bien?"}
+    D -- No --> D1[/"Error de carga de la lista con Reintentar"/]
+    D1 --> FIN1([Fin])
+    D -- Sí --> E["Registra la línea base de pedidos vistos<br>sessionStorage bajonea_pedidos_vistos_(comercio): ids de la primera carga"]
+    E --> F{"¿Hay pedidos?"}
+    F -- No --> F1[/"Todavía no recibiste ningún pedido.<br>Escritorio: Cuando llegue uno, lo vas a ver acá con todo su detalle."/]
+    F1 --> FIN2([Fin])
+    F -- Sí --> G[/"Lista con chips: Todos, Pendientes, En preparación, En camino, Listo para retirar, Rechazados<br>(los demás finales solo aparecen en Todos)<br>Sin coincidencias: No hay pedidos con este filtro.<br>Tarjeta con etiqueta Nuevo si el id no estaba en la línea base ni fue visto<br>Plazo: Respondé antes de N minutos (nuevo) o Vence en N minutos / Está por vencer<br>Chip Tu pedido si el Empleado es el Cliente"/]
+    G --> H{"¿Qué hace?"}
+    H -- "Abre un pedido" --> I["marcarPedidoVisto(id): se agrega a vistos<br>Detalle: escritorio en el panel derecho, móvil en comercio-pedido-detalle.html"]
+    I --> J{"¿El pedido existe y es del comercio?"}
+    J -- No --> J1[/"No encontramos este pedido<br>El pedido que buscás no existe o no pertenece a tu comercio."/]
+    J1 --> FIN3([Fin])
+    J -- Sí --> K{"¿Quién es y de quién es el pedido?"}
+    K -- "Empleado y es su propio pedido" --> K1[/"Nota: Hiciste este pedido como cliente. No podés gestionarlo desde acá.<br>Sin botones y sin recorrido"/]
+    K1 --> FIN4([Fin])
+    K -- "Dueño o Empleado (otro pedido)" --> L[/"Datos del pedido (el Empleado no ve clienteId, nombre del comercio, estado del pago, cargo del comercio, reclamo)<br>Bloque Reclamo del Cliente solo para el Dueño y solo lectura (ver P4.08)<br>Acciones según el estado (ver P4.03, P4.04, P4.06, P4.07)"/]
+    L --> M["GET /pedidos/comercio/id/trazabilidad (Dueño y Empleado, solo pedidos que no son propios)"]
+    M --> N["SELECT historial_estado_pedido del pedido ORDER BY fecha_hora, id<br>(sin PENDIENTE_PAGO ni TIMEOUT_PAGO)"]
+    N --> O{"¿Cargó?"}
+    O -- No --> O1[/"No pudimos cargar el recorrido del pedido."/]
+    O1 --> FIN5([Fin])
+    O -- Sí --> P[/"Recorrido del pedido, de más viejo a más nuevo:<br>texto de la acción (Pedido recibido, Aceptó el pedido, Rechazó el pedido, Despachó el pedido,<br>Dejó el pedido listo para retirar, Marcó el pedido como entregado, Cerró el pedido como no retirado, Anuló el pedido,<br>Canceló el pedido, Confirmó la recepción del pedido y los textos del sistema)<br>Hora y Nombre Apellido, Dueño, Empleado o Cliente (o Sistema sin nombre)<br>Motivo solo en rechazo y anulación"/]
+    P --> FIN6([Fin])
+    H -- "Espera" --> Q["Sondeo cada 15 s de la lista (ver P4.03)<br>Los ids nuevos se agregan a la línea base solo si no hay registro: los llegados después quedan como Nuevo"]
+    Q --> G
+    G --> R["Cada 15 s el comercio activo informa cantidadNotificacionesNoLeidas (campana)"]
+    R --> S{"¿El contador de avisos no leídos subió?<br>(vigilarAvisos)"}
+    S -- No --> FIN7([Fin])
+    S -- Sí --> T["GET /notificaciones y busca el aviso sin leer más nuevo"]
+    T --> U{"¿Es mayor al último visto?"}
+    U -- No --> FIN8([Fin])
+    U -- Sí --> V{"¿Sonido activado?<br>(localStorage bajonea_sonido_avisos distinto de 0, por defecto activado)"}
+    V -- No --> FIN9([Fin])
+    V -- Sí --> W{"¿El navegador permite audio<br>(hubo un clic o tecla en la página)?"}
+    W -- No --> W1[/"Para que suene, tocá una vez en esta pantalla. Botón Activar sonido"/]
+    W1 --> FIN10([Fin])
+    W -- Sí --> X[/"Suena el ding (880 a 1175 Hz, 0,42 s) por cualquier aviso nuevo, no solo por un pedido nuevo"/]
+    X --> FIN11([Fin])

@@ -1,0 +1,59 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Cómo llega el Visitante a su consulta?"}
+    B -- "Enlace del email (fragmento con código y email)" --> B1["El front lee el fragmento y limpia la URL con history.replaceState antes de consultar"]
+    B -- "Formulario Ver mi consulta" --> B2[/"Ingresa Tu email y Código (ej. ABCD-2345)<br>Botón: Ver mi consulta"/]
+    B1 --> C
+    B2 --> C["POST /api/v1/soporte/publico/consultas/ver con email y código (público, sin JWT)"]
+    C --> D{"¿Pasa la validación del DTO?"}
+    D -- No --> D1[/"HTTP 400: El código es obligatorio / El código es demasiado largo / mensajes de email"/]
+    D1 --> FIN1([Fin])
+    D -- Sí --> E
+    subgraph TX ["Transacción BD - acceso por código"]
+        E["Normaliza el código: sin espacios ni guiones, en mayúsculas<br>INSERT soporte_limite INTENTO_EMAIL y después INTENTO_IP, SELECT FOR UPDATE de cada fila"] --> F{"¿Intentos del email 30 o más, o de la IP 10 o más, dentro de la ventana de 60 minutos?"}
+        F -- Sí --> F1["Error de límite: sin consultar el código aunque sea correcto"]
+        F -- No --> G{"¿El código tiene exactamente 8 caracteres?"}
+        G -- No --> H["Se trata como no encontrado, sin consultar"]
+        G -- Sí --> I["SELECT ticket_soporte WHERE email = (email) AND codigo = (código)"]
+        I --> J{"¿Existe?"}
+        J -- No --> H
+        H --> H1["UPDATE soporte_limite: cantidad + 1 en INTENTO_EMAIL e INTENTO_IP<br>Si la ventana venció, reinicia en 1 con ventana_inicio = ahora"]
+        J -- Sí --> K["SELECT ticket_soporte_mensaje del ticket<br>Un acceso correcto no suma ni resetea intentos"]
+    end
+    F1 --> L[/"HTTP 429: Hiciste demasiados intentos. Probá de nuevo en una hora."/]
+    H1 --> M[/"HTTP 404: No encontramos una consulta con esos datos. Revisá el email y el código.<br>Mismo 404 para email inexistente, código incorrecto o combinación ajena"/]
+    L --> N["La pantalla muestra el formulario de acceso con el mensaje del servidor<br>Botón de texto: ¿Perdiste el código? (ver P8.04)"]
+    M --> N
+    N --> FIN2([Fin])
+    K --> O[/"HTTP 200: Consulta obtenida correctamente<br>Conversación, estado y aviso. Una consulta CERRADA se puede ver pero no responder"/]
+    O --> P{"¿Qué hace el Visitante?"}
+    P -- "Solo leer" --> FIN3([Fin])
+    P -- "Responder (le toca a él)" --> Q[/"Escribe Tu respuesta y toca Enviar respuesta"/]
+    Q --> R["POST /api/v1/soporte/publico/consultas/responder con email, código y texto"]
+    R --> S{"¿Pasa la validación?"}
+    S -- No --> S1[/"HTTP 400: Escribí tu mensaje / El mensaje no puede superar los 1000 caracteres"/]
+    S1 --> FIN4([Fin])
+    S -- Sí --> T
+    subgraph TX2 ["Transacción BD - responder sin sesión"]
+        T["Mismos pasos de acceso: cerrojos INTENTO, límite de intentos, normalizar el código y buscar el id del ticket por email y código<br>Si no existe: suma un intento fallido"] --> U{"¿Acceso permitido y ticket encontrado?"}
+        U -- No --> U1["Error 429 o 404 como en el acceso"]
+        U -- Sí --> V["SELECT ticket_soporte WHERE id FOR UPDATE"]
+        V --> W{"¿Estado del ticket?"}
+        W -- CERRADO --> W1["Conflicto: consulta cerrada"]
+        W -- ESPERA_SOPORTE --> W2["Conflicto: no le toca a la persona"]
+        W -- ESPERA_PERSONA --> X["INSERT ticket_soporte_mensaje: autor PERSONA, email_enviado true<br>UPDATE ticket_soporte: cantidad_mensajes + 1, actualizado_en"]
+        X --> Y{"¿El total llegó a 20?"}
+        Y -- Sí --> Y1["UPDATE ticket_soporte: estado CERRADO, cerrado_en = ahora"]
+        Y -- No --> Y2["UPDATE ticket_soporte: estado ESPERA_SOPORTE"]
+    end
+    U1 --> Z1[/"HTTP 429 o 404 con los textos del acceso"/]
+    W1 --> Z2[/"HTTP 409: Esta consulta está cerrada. Si necesitás algo más, enviá una consulta nueva."/]
+    W2 --> Z3[/"HTTP 409: Soporte todavía no respondió. Vas a poder escribir cuando lo haga."/]
+    Z1 --> Z4["La pantalla muestra el error en el formulario de acceso"]
+    Z2 --> Z5["Un 409 recarga la conversación con consultas/ver y muestra el mensaje del servidor"]
+    Z3 --> Z5
+    Z4 --> FIN5([Fin])
+    Z5 --> FIN6([Fin])
+    Y1 --> AA[/"HTTP 200: Enviamos tu mensaje<br>Toast: Respuesta enviada"/]
+    Y2 --> AA
+    AA -.-> AB["No se envía email ni aviso al Administrador al escribir la persona"]
+    AA --> FIN7([Fin])

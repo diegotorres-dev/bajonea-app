@@ -1,0 +1,42 @@
+flowchart TD
+    A([Inicio]) --> P0["Pantalla comercio-estadisticas.html (solo Dueño)<br>Entrada: enlace Ver estadísticas debajo de las métricas del panel<br>Chips 7 días y 30 días (por defecto 30), son de la pantalla:<br>hasta = hoy en la zona del comercio, desde = hasta menos (N menos 1) días<br>El rango incluye hoy<br>Pide en paralelo agrupar=DIA y agrupar=TURNO (no hay selector en pantalla)<br>Guarda las respuestas hasta recargar la página; un error borra la entrada"]
+    P0 --> B["Dueño pide las estadísticas de su comercio<br>GET /comercios/estadisticas?desde&hasta&agrupar=DIA o TURNO<br>Rol DUENO con X-Comercio-Id obligatorio<br>(un Empleado recibe 403: no está delegado)"]
+    B --> C{"¿X-Comercio-Id válido<br>y del Dueño?"}
+    C -- No --> C1[/"HTTP 400: Falta indicar el comercio o El comercio indicado no es válido<br>o HTTP 404 COMERCIO_NO_DISPONIBLE: Comercio no encontrado"/]
+    C1 --> FIN1([Fin])
+    C -- Sí --> D{"¿Vinieron desde y hasta?"}
+    D -- No --> D1[/"HTTP 400: Indicá las fechas desde y hasta"/]
+    D1 --> FIN2([Fin])
+    D -- Sí --> E{"¿Las fechas tienen formato AAAA-MM-DD?"}
+    E -- No --> E1[/"HTTP 400: La fecha desde tiene que tener el formato AAAA-MM-DD<br>o La fecha hasta tiene que tener el formato AAAA-MM-DD"/]
+    E1 --> FIN3([Fin])
+    E -- Sí --> F{"¿desde es posterior a hasta?"}
+    F -- Sí --> F1[/"HTTP 400: La fecha desde no puede ser posterior a la fecha hasta"/]
+    F1 --> FIN4([Fin])
+    F -- No --> G{"¿El rango supera los 92 días?"}
+    G -- Sí --> G1[/"HTTP 400: El rango no puede superar los 92 días"/]
+    G1 --> FIN5([Fin])
+    G -- No --> H{"¿agrupar es DIA o TURNO?"}
+    H -- No --> H1[/"HTTP 400: La agrupación tiene que ser DIA o TURNO"/]
+    H1 --> FIN6([Fin])
+    H -- Sí --> I["SELECT pedidos del comercio del período<br>(lectura pura, sin bloqueos; el servicio no usa Clock:<br>las fechas las manda el cliente)<br>El día de cada pedido sale de turno_fecha;<br>los pagados sin turno van por el día de fecha_pago_confirmado<br>(período con turno = null)"]
+    I --> J{"¿Agrupación?"}
+    J -- DIA --> J1["Agrupa por día"]
+    J -- TURNO --> J2["Agrupa por turno (franja horaria)"]
+    J1 --> K
+    J2 --> K
+    K["Por período: vendido (pedidos facturables), cantidad de pedidos facturados,<br>ticket promedio = vendido dividido facturados<br>(HALF_UP, 2 decimales; nulo si no hay facturados)"]
+    K --> L[/"HTTP 200: estadísticas del período"/]
+    L --> M{"Resultado en pantalla"}
+    M -- "Cargando" --> M1["Esqueleto de 4 cifras, gráfico y lista"]
+    M -- "Error" --> M2[/"No pudimos cargar las estadísticas. Probá de nuevo.<br>Botón Reintentar"/]
+    M -- "Sin pedidos en el rango" --> M3[/"No hubo pedidos en los últimos 7 o 30 días.<br>Solo en el rango de 7 días, si en 30 hubo pedidos:<br>botón Ver los últimos 30 días"/]
+    M -- "Con pedidos" --> M4[/"Cifras: Vendido, Comisión, Neto y Ticket promedio (guion si no hay pedidos)<br>Texto: Del dd/mm al dd/mm<br>Gráfico de barras Vendido por día (una barra por día, días en cero vacíos)<br>Nota: Cada pedido cuenta en el día en que abrió su turno.<br>Resultados: Entregados, No retirados, Rechazados, Cancelados,<br>Anulados, Sin respuesta y En curso"/]
+    M4 --> N{"¿Toca una barra?"}
+    N -- Sí --> N1[/"Detalle del día: día y fecha, Vendido, cantidad de pedidos<br>y lista de turnos con rango o Sin turno asignado<br>Un día sin pedidos: No hubo pedidos este día.<br>Volver a tocarla la deselecciona"/]
+    N -- No --> N2[/"Tocá una barra para ver el detalle de ese día."/]
+    M1 --> FIN7([Fin])
+    M2 --> FIN8([Fin])
+    M3 --> FIN9([Fin])
+    N1 --> FIN10([Fin])
+    N2 --> FIN11([Fin])

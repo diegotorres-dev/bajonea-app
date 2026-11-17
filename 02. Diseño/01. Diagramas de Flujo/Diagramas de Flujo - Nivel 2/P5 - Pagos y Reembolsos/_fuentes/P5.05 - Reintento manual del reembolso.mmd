@@ -1,0 +1,43 @@
+flowchart TD
+    A([Inicio]) --> B["Administrador abre Reembolsos (admin-reembolsos.html)<br>GET /administrador/reembolsos"]
+    B --> C["SELECT nota_credito en PENDIENTE_REVISION_MANUAL o FALLIDO, de la más nueva a la más vieja<br>Código NC-(año)-(id de 5 dígitos)"]
+    C --> D{"¿Hay reembolsos?"}
+    D -- No --> D1[/"No hay reembolsos pendientes de revisión"/]
+    D1 --> FIN1([Fin])
+    D -- Sí --> E[/"Tabla: Reembolso, Pedido, Cliente, Comercio, Monto, Fecha, Motivo<br>Chips: Todos, Revisión manual, Fallidos<br>Estado Revisión manual o Fallido, último error en rojo<br>Insignia del menú con la cantidad (sondeo de 15 s)<br>Botón Reintentar reembolso"/]
+    E --> F{"¿Toca Reintentar reembolso?"}
+    F -- No --> FIN2([Fin])
+    F -- Sí --> G["Botón: Reintentando...<br>POST /administrador/reembolsos/id/reintentar (rol ADMINISTRADOR, sin X-Comercio-Id)"]
+    G --> H
+    subgraph TX [Transacción BD - preparar reintento]
+        H["Bloqueos: nota_credito (FOR UPDATE) y después pago (FOR UPDATE)"] --> I{"¿Existe la nota?"}
+        I -- No --> I1[/"HTTP 404: Nota de crédito no encontrada"/]
+        I -- Sí --> J{"¿Tiene pago?"}
+        J -- No --> J1[/"HTTP 404: El pedido de la nota de crédito no tiene ningún pago asociado"/]
+        J -- Sí --> K{"¿Estado de la nota?"}
+        K -- PROCESADO --> K1[/"HTTP 409: Este reembolso ya se procesó"/]
+        K -- "PENDIENTE o PENDIENTE_REINTENTO" --> K2[/"HTTP 409: Este reembolso ya está en proceso o ya no requiere revisión"/]
+        K -- "PENDIENTE_REVISION_MANUAL o FALLIDO" --> L{"¿El pago está aprobado y confirmado?"}
+        L -- No --> L1[/"HTTP 409: El pago del pedido no está aprobado en Mercado Pago: no hay nada que reembolsar"/]
+        L -- Sí --> M{"¿Otros reembolsos más esta nota superan el monto del pago?"}
+        M -- Sí --> M1[/"HTTP 409: El pago ya tiene otro reembolso registrado: reintentar este duplicaría la devolución"/]
+        M -- No --> N{"¿El Dueño tiene cuenta de Mercado Pago activa?"}
+        N -- No --> N1[/"HTTP 409: La cuenta de Mercado Pago del comercio sigue desvinculada. El comercio tiene que volver a vincularla para poder reintentar el reembolso"/]
+        N -- Sí --> O["UPDATE nota_credito: estado = PENDIENTE (sin sumar intentos)"]
+    end
+    O --> P["Fuera de transacción, dentro de la misma request: POST (API de Mercado Pago)/v1/payments/id/refunds<br>X-Idempotency-Key = nc-(id)-(intentos + 1), conexión 5 s, respuesta 5 s (ver P5.04)"]
+    P --> Q{"¿Mercado Pago aceptó el reembolso?"}
+    Q -- Sí --> R["UPDATE nota_credito: PROCESADO, intentos + 1, refund_id_mp, fecha_proceso"]
+    Q -- No --> S["UPDATE nota_credito: FALLIDO, intentos + 1, ultimo_error nuevo"]
+    R --> T[/"HTTP 200: Reembolso procesado correctamente<br>Toast con ese texto y recarga la lista"/]
+    S --> U[/"HTTP 200: Mercado Pago rechazó el reintento del reembolso<br>Toast de error con ese texto, recarga y la nota sigue como Fallido con el nuevo error"/]
+    T --> FIN3([Fin])
+    U --> FIN4([Fin])
+    I1 --> ER
+    J1 --> ER
+    K1 --> ER
+    K2 --> ER
+    L1 --> ER
+    M1 --> ER
+    N1 --> ER
+    ER[/"El mensaje del servidor queda bajo la fila<br>Con 409, además toast: No se pudo reintentar el reembolso"/] --> FIN5([Fin])

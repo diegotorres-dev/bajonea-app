@@ -1,0 +1,41 @@
+flowchart TD
+    A([Inicio]) --> B["El Cliente vuelve de Mercado Pago a pedido-detalle.html con pago = exito, pendiente o fallo<br>y payment_id o collection_id (solo dígitos)"]
+    B --> C["Cada 3 s, hasta 15 veces (1 si fallo): POST /pedidos/cliente/id/pago/sincronizar<br>Rol CLIENTE, sin X-Comercio-Id, cuerpo opcional con paymentId (ver P4.14)"]
+    C --> D{"¿paymentId válido?<br>(solo dígitos, hasta 20)"}
+    D -- No --> D1[/"HTTP 400: El identificador de pago solo puede contener dígitos"/]
+    D1 --> FIN1([Fin])
+    D -- Sí --> E
+    subgraph TX1 [Transacción BD corta 1]
+        E{"¿El pedido es del Cliente?"} -- No --> E1[/"HTTP 404: Pedido no encontrado"/]
+        E -- Sí --> F{"¿Sigue PENDIENTE_PAGO y tiene pago?"}
+        F -- No --> F1["Devuelve el detalle actual del pedido sin llamar a Mercado Pago"]
+    end
+    F -- Sí --> G{"¿Vino paymentId?"}
+    G -- Sí --> H["Sin transacción: GET (API de Mercado Pago)/v1/payments/paymentId (token del Dueño)<br>Conexión 5 s, lectura 5 s"]
+    H --> H1{"¿Respondió?"}
+    H1 -- "Error HTTP" --> H1a[/"HTTP 409: No se pudo consultar el pago (id) en Mercado Pago (estado)"/]
+    H1 -- "Sin información" --> H1b[/"HTTP 409: Mercado Pago no devolvió información del pago (id)"/]
+    H1 -- Sí --> I
+    G -- No --> J["Sin transacción: GET (API de Mercado Pago)/v1/payments/search por external_reference<br>Elige el mejor pago (approved primero, si no el más reciente)"]
+    J --> J1{"¿Qué pasó con la consulta?"}
+    J1 -- "Error HTTP de Mercado Pago" --> J1a["Se ignora y devuelve el detalle actual del pedido"]
+    J1 -- "Falla de red o tiempo agotado" --> J1b[/"HTTP 500 (no se captura en este camino)"/]
+    J1 -- "Respuesta" --> I
+    subgraph TX2 [Transacción BD corta 2]
+        I{"¿external_reference del pago = id del pedido?"} -- No --> I1["Ignora el pago, deja una alerta EXTERNAL_REFERENCE_MISMATCH<br>(nunca confía en el paymentId que manda el frontend)"]
+        I -- Sí --> I2["Aplica el resultado del pago con la rutina del webhook<br>(ver P5.03: approved confirma el pedido, rejected marca pago_estado = RECHAZADO, otro estado solo se registra)"]
+    end
+    I1 --> K[/"HTTP 200: Pago sincronizado correctamente con el detalle actual del pedido"/]
+    I2 --> K
+    F1 --> K
+    J1a --> K
+    K --> L{"¿El pedido dejó de esperar el pago?"}
+    L -- Sí --> L1[/"Toast según el resultado:<br>Tu pago se realizó correctamente / El pago no se pudo procesar. Podés intentar de nuevo desde la sección Mis pedidos."/]
+    L1 --> FIN2([Fin])
+    L -- No --> L2[/"Toast: Tu pago se está procesando. Esto puede tardar unos segundos. (exito) o Tu pago está pendiente de confirmación.<br>Reintenta a los 3 s"/]
+    L2 --> FIN3([Fin])
+    E1 --> ER[/"Con 401 o 404 se corta el ciclo<br>Con otro error en el último intento muestra el resultado igual"/]
+    H1a --> ER
+    H1b --> ER
+    J1b --> ER
+    ER --> FIN4([Fin])

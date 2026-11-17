@@ -1,0 +1,48 @@
+flowchart TD
+    A([Inicio]) --> AP["Las pantallas que usan estos endpoints están en P3.01, P3.04 y P3.05"]
+    AP --> B{"¿Qué consulta?<br>(endpoints públicos, sin sesión)"}
+    B -- "Menú de un comercio" --> C1["GET /catalogo/comercios/id/productos?categoriaId&tagId"]
+    B -- "Catálogo global de productos" --> G1["GET /catalogo/productos?categoriaId&tagIds&q&pagina"]
+    B -- "Filtros disponibles" --> F1["GET /catalogo/filtros"]
+    B -- "Lista de comercios" --> L1["GET /catalogo/comercios<br>(sin parámetros: ver P3.01)"]
+    L1 --> L2["SELECT comercios en estado APTO_VENTA o CERRADO_TEMPORALMENTE<br>con horarios vigentes, estadoApertura y textoReapertura (ver P3.03)"]
+    L2 --> L3[/"HTTP 200: lista de comercios visibles"/]
+    L3 --> FIN1([Fin])
+    C1 --> C2{"¿El comercio existe y está APTO_VENTA<br>o CERRADO_TEMPORALMENTE?"}
+    C2 -- No --> C3[/"HTTP 404: Comercio no encontrado<br>(un comercio SUSPENDIDO, APROBADO sin Mercado Pago, etc. también da 404)"/]
+    C3 --> FIN2([Fin])
+    C2 -- Sí --> C4["SELECT productos del comercio sin DESCONTINUADO<br>(un AGOTADO sí se incluye, marcado por su estado)"]
+    C4 --> C5["Filtra en memoria por categoría y por un solo tag<br>El servicio no define el orden"]
+    C5 --> C6[/"HTTP 200: productos del comercio"/]
+    C6 --> H
+    G1 --> G2["SELECT productos de comercios en estado APTO_VENTA<br>(a diferencia de los otros listados, no incluye CERRADO_TEMPORALMENTE),<br>sin DESCONTINUADO"]
+    G2 --> G3["Filtra en memoria:<br>categoría, tagIds con AND, q busca en el nombre del producto<br>(minúsculas, contiene)"]
+    G3 --> G4["Orden aleatorio en cada pedido<br>Páginas de 20 (pagina menor a 1 o ausente es la 1)"]
+    G4 --> G5[/"HTTP 200: página de productos"/]
+    G5 --> FIN4([Fin])
+    F1 --> F2["Categorías y tags en uso<br>(solo comercios APTO_VENTA)"]
+    F2 --> F3[/"HTTP 200: categorías y tags"/]
+    F3 --> FIN5([Fin])
+    H["Si el Cliente con sesión agrega un producto al carrito<br>(ver P4.01)"] --> I{"¿Existe el producto?"}
+    I -- No --> I1[/"HTTP 404: Producto no encontrado"/]
+    I1 --> FIN6([Fin])
+    I -- Sí --> J{"¿Está DISPONIBLE?"}
+    J -- No --> J1[/"HTTP 409: El producto no está disponible"/]
+    J1 --> FIN7([Fin])
+    J -- Sí --> K{"validarAceptaPedidos:<br>¿estado del comercio?"}
+    K -- CERRADO_TEMPORALMENTE --> K1[/"HTTP 409: Este comercio está cerrado en este momento"/]
+    K -- SUSPENDIDO --> K2[/"HTTP 409: Este comercio no está recibiendo pedidos por ahora.<br>Probá con otro comercio."/]
+    K -- "Otro distinto de APTO_VENTA" --> K3[/"HTTP 409: Este comercio no está aceptando pedidos en este momento"/]
+    K -- APTO_VENTA --> M{"¿Cerrado manualmente?"}
+    M -- Sí --> K1
+    M -- No --> N{"¿Fuera de una franja de horario?"}
+    N -- Sí --> N1[/"HTTP 409: Este comercio está cerrado en este momento.<br>Podés hacer tu pedido dentro de su horario de atención."/]
+    N -- No --> O{"¿El carrito ya tiene productos de otro comercio?"}
+    O -- Sí --> O1[/"HTTP 409: El carrito ya tiene productos de otro comercio.<br>Vaciá el carrito para agregar de un comercio distinto."/]
+    O -- No --> P["Agrega al carrito (ver P4.01)"]
+    K1 --> FIN8([Fin])
+    K2 --> FIN9([Fin])
+    K3 --> FIN10([Fin])
+    N1 --> FIN11([Fin])
+    O1 --> FIN12([Fin])
+    P --> FIN13([Fin])

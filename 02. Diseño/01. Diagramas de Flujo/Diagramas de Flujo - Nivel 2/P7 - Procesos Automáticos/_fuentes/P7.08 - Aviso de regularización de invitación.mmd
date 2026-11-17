@@ -1,0 +1,23 @@
+flowchart TD
+    A([Inicio]) --> B["Dueño invita o reenvía una invitación a un email que ya tiene cuenta<br>(ver P2 y Ver equipo)"]
+    B --> C{"¿La cuenta del email está ACTIVO?"}
+    C -- Sí --> C1["Sigue la invitación normal<br>Email: (Dueño) te invitó a trabajar en (Comercio), con Tu código, Vence en 7 días y enlace a invitacion-empleado.html"]
+    C1 --> FIN1([Fin])
+    C -- No --> D{"¿Motivo?"}
+    D -- "BLOQUEADA" --> D1["tu cuenta está bloqueada<br>Acción: Recuperá tu contraseña desde el inicio de sesión."]
+    D -- "SUSPENDIDA" --> D2["tu cuenta está suspendida<br>Acción: Contactá a soporte."]
+    D -- "INACTIVA" --> D3["tu cuenta está inactiva<br>Acción: Iniciá sesión para reactivarla."]
+    D -- "SIN_VERIFICAR" --> D4["todavía no verificaste tu email<br>Acción: Verificá tu email para activar tu cuenta."]
+    D1 --> E
+    D2 --> E
+    D3 --> E
+    D4 --> E
+    subgraph TX [Transacción BD - registrar y enviar]
+        E["SELECT COUNT de notificacion con tipo INVITACION_EMPLEADO, canal EMAIL y usuario del destinatario en las últimas 24 horas"] --> F{"¿Ya hay 3 o más?"}
+        F -- Sí --> F1["No escribe ni envía"]
+        F -- No --> G["INSERT notificacion: canal EMAIL, estado ENVIADO, mensaje Invitación de (Comercio) no enviada porque (motivo)<br>(se escribe antes de enviar, aunque el envío falle)"]
+    end
+    F1 --> H
+    G --> G1["Después del commit: un solo intento por Resend, sin reintento<br>Asunto: Un comercio quiso invitarte a trabajar en Bajoneá<br>Cuerpo: (Comercio) quiso invitarte a su equipo en Bajoneá, pero no pudimos enviarte la invitación porque (motivo). / (acción) / Después, pedile al comercio que te invite de nuevo. / Si no esperabas este mensaje, ignoralo.<br>Nombra solo al comercio"]
+    G1 --> H
+    H[/"El Dueño recibe siempre el mismo HTTP 409: No se puede invitar a este email<br>La pantalla muestra: No pudimos invitar a este email."/] --> FIN2([Fin])

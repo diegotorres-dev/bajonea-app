@@ -1,0 +1,41 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Cómo se llega al selector?"}
+    B -- "Después del login" --> C["Login correcto con rol CLIENTE<br>(el Empleado viaja como Cliente: el login no trae datos de comercios; ver P1.04)"]
+    C --> D["GET /empleados/mis-comercios<br>(rol CLIENTE; Dueño y Administrador reciben 403)"]
+    B -- "Pestaña nueva sin contexto" --> P1{"¿El último contexto usado<br>fue de Empleado?"}
+    P1 -- No --> U
+    P1 -- Sí --> D
+    B -- "Cambiar de cuenta desde el perfil" --> Q1["Hoja Cambiar de cuenta<br>(solo se ve si es Empleado de algún comercio)"]
+    Q1 --> D
+
+    D --> D1["SELECT empleado_comercio<br>WHERE empleado_id = id_del_token AND estado = ACTIVO<br>y el comercio está APROBADO, APTO_VENTA, SUSPENDIDO,<br>CERRADO_TEMPORALMENTE o INACTIVO<br>(más horarios vigentes y avisos no leídos por comercio)"]
+    D1 --> D2{"¿La consulta respondió bien?"}
+    D2 -- No --> D3["El navegador la trata como lista vacía<br>(en el cambio de cuenta: No pudimos cargar tus cuentas.<br>Intentá nuevamente. con Reintentar)"]
+    D3 --> U
+    D2 -- Sí --> E{"¿Devolvió al menos un comercio?"}
+    E -- No --> U["setContexto(CLIENTE) y entra a index.html<br>(todo funciona como Cliente; la fila Cambiar de cuenta queda oculta)"]
+    U --> FIN1([Fin])
+    E -- Sí --> F{"¿Es una pestaña nueva<br>y el último comercio sigue en la lista?"}
+    F -- Sí --> H
+    F -- No --> G[/"seleccionar-contexto.html: ¿Cómo querés ingresar?<br>Después podés cambiar de cuenta desde tu perfil.<br>Fila Cliente y una fila por comercio:<br>Empleado, Último que usaste<br>Suspendido: Comercio suspendido. Solo podés resolver pedidos en curso.<br>Cerrado temporalmente: No se aceptan pedidos nuevos."/]
+    G --> G1{"¿Qué elige?"}
+    G1 -- "Cliente" --> U
+    G1 -- "Un comercio" --> H["setContexto(EMPLEADO, comercioId, nombre)<br>sessionStorage: contexto de la pestaña<br>localStorage: último contexto del usuario"]
+    H --> I["Entra a comercio-dashboard.html<br>con la insignia Empleado"]
+    I --> J["Cada request de comercio lleva el header X-Comercio-Id<br>(perfil, productos, pedidos del comercio, notificaciones, equipo, etc.)"]
+    J --> K{"¿Viene el header<br>y es numérico?"}
+    K -- No --> K1[/"Error 400: Falta indicar el comercio<br>Error 400: El comercio indicado no es válido"/]
+    K1 --> FIN2([Fin])
+    K -- Sí --> L["SELECT empleado_comercio<br>WHERE empleado_id AND comercio_id AND estado = ACTIVO<br>y comercio en estado accesible<br>(se consulta en cada request; no viaja en el JWT)"]
+    L --> L1{"¿Existe la relación activa<br>con comercio accesible?"}
+    L1 -- No --> L2[/"Error 404: Comercio no encontrado<br>(COMERCIO_NO_DISPONIBLE; ver P1.21)"/]
+    L2 --> FIN3([Fin])
+    L1 -- Sí --> M{"¿Estado del comercio?"}
+    M -- "APROBADO o APTO_VENTA" --> M1["Opera con normalidad"]
+    M -- "CERRADO_TEMPORALMENTE" --> M2["Opera: no se aceptan pedidos nuevos"]
+    M -- "SUSPENDIDO" --> M3["Solo lectura: puede resolver pedidos en curso;<br>al modificar: El comercio está suspendido:<br>por ahora no se puede modificar."]
+    M -- "INACTIVO" --> M4["Solo lectura: al modificar:<br>El comercio está inactivo: por ahora no se puede modificar."]
+    M1 --> FIN4([Fin])
+    M2 --> FIN5([Fin])
+    M3 --> FIN6([Fin])
+    M4 --> FIN7([Fin])

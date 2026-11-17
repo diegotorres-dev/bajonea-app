@@ -1,0 +1,58 @@
+flowchart TD
+    A([Inicio]) --> B["Dueño abre Cobros con Mercado Pago (comercio-perfil.html, vista mercadopago)<br>GET /oauth/mercadopago/cuenta (rol DUENO, sin X-Comercio-Id)"]
+    B --> C{"¿Hay cuenta activa?"}
+    C -- Sí --> C1[/"Cuenta vinculada: Cuenta de Mercado Pago vinculada (número), Vinculada el (fecha),<br>Esta cuenta cobra por todos tus comercios, botón Desvincular cuenta (ver P5.06)"/]
+    C1 --> FIN1([Fin])
+    C -- No --> D[/"Empezá a cobrar con Mercado Pago<br>Tu comercio todavía no se encuentra visible para tus clientes. Vinculá tu cuenta de Mercado Pago para empezar a recibir pedidos y cobrar directo en tu cuenta.<br>Esta cuenta va a cobrar por todos tus comercios<br>Botón Vincular Mercado Pago"/]
+    D --> E["GET /oauth/mercadopago/iniciar<br>rol DUENO, sin X-Comercio-Id"]
+    E --> F1
+    subgraph TXI [Transacción BD - iniciar vinculación]
+        F1{"¿Existe el Dueño?"} -- No --> F1a[/"HTTP 404: Dueño no encontrado"/]
+        F1 -- Sí --> F2{"¿Ya tiene cuenta activa<br>(cuenta_mercado_pago.activa)?"}
+        F2 -- Sí --> F2a[/"HTTP 409: Ya tenés una cuenta de Mercado Pago vinculada. Desvinculala antes de vincular otra."/]
+        F2 -- No --> F3["DELETE codigo_vinculacion_mp pendientes del Dueño (un solo intento vigente)<br>Genera code_verifier (32 bytes) y state (24 bytes) aleatorios"]
+        F3 --> F4["INSERT codigo_vinculacion_mp: dueno_id, identificador_intento = state,<br>codigo_verificacion = verifier, usado = falso<br>(no tiene vencimiento)"]
+    end
+    F1a --> ERR1
+    F2a --> ERR1
+    ERR1[/"Toast: No pudimos iniciar la vinculación con Mercado Pago (o el mensaje del servidor)"/] --> FIN2([Fin])
+    F4 --> G["Arma la URL de https://auth.mercadopago.com.ar/authorization con client_id, response_type = code,<br>platform_id = mp, redirect_uri, state, code_challenge (SHA-256 del verifier) y S256"]
+    G --> H[/"HTTP 200: URL de autorización generada correctamente<br>El navegador va a Mercado Pago"/]
+    H --> I["El Dueño inicia sesión en Mercado Pago y autoriza<br>Mercado Pago redirige a GET /oauth/mercadopago/callback con code y state<br>(ruta pública, sin JWT)"]
+    I --> J{"¿Vienen code y state?"}
+    J -- No --> R5
+    J -- Sí --> K
+    subgraph TXC1 [Transacción BD corta - leer intento]
+        K{"¿Existe el intento por state con usado = falso?"} -- No --> K1[/"HTTP 409: El intento de vinculación con Mercado Pago no es válido o ya fue usado"/]
+        K -- Sí --> K2["Lee el id del intento, el Dueño y el code_verifier"]
+    end
+    K1 --> R5
+    K2 --> L["Sin transacción: POST (API de Mercado Pago)/oauth/token<br>client_id, client_secret, grant_type = authorization_code, code, code_verifier, redirect_uri, test_token<br>Conexión 5 s, lectura 10 s, sin reintentos"]
+    L --> M{"¿Mercado Pago devolvió un access_token?"}
+    M -- No --> M1[/"HTTP 409: Mercado Pago no devolvió un access_token válido<br>o No se pudo completar la vinculación con Mercado Pago (estado HTTP)<br>El intento queda sin usar"/]
+    M1 --> R5
+    M -- Sí --> N
+    subgraph TXC2 [Transacción BD corta - vincular]
+        N["UPDATE codigo_vinculacion_mp: usado = verdadero (solo si seguía sin usar)"] --> N1{"¿Se marcó?"}
+        N1 -- No --> N1a[/"HTTP 409: El intento de vinculación ... no es válido o ya fue usado"/]
+        N1 -- Sí --> O["Lee el estado del Dueño (LOCK IN SHARE MODE)<br>SELECT cuenta_mercado_pago del Dueño (única por Dueño)"]
+        O --> P{"¿Qué pasa con la cuenta?"}
+        P -- "Activa con otro mp_user_id" --> P1[/"HTTP 409: Ya tenés una cuenta de Mercado Pago vinculada. Desvinculala antes de vincular otra."/]
+        P -- "Otra fila activa de otro Dueño con ese mp_user_id" --> P2[/"HTTP 409: Esa cuenta de Mercado Pago ya está en uso por otro Dueño. Usá otra cuenta, o pedí que la desvinculen primero."/]
+        P -- "Sin fila" --> P3["INSERT cuenta_mercado_pago: mp_user_id, access_token y refresh_token cifrados (AES-GCM),<br>public_key, es_cuenta_prueba, activa = verdadero, token_expira, fecha_vinculacion"]
+        P -- "Misma cuenta o fila inactiva" --> P4["UPDATE cuenta_mercado_pago: tokens nuevos, activa = verdadero,<br>fecha_vinculacion = ahora, fecha_desvinculacion = nulo"]
+        P3 --> Q["Recalcula la aptitud de venta de los comercios del Dueño (motivo MP_VINCULADO)<br>Con documentación aprobada: APROBADO pasa a APTO_VENTA y aviso T40 al Dueño (ver P6.01)<br>Si el Dueño está bloqueado: pasan a CERRADO_TEMPORALMENTE"]
+        P4 --> Q
+    end
+    N1a --> R5
+    P1 --> R3
+    P2 --> R4
+    Q --> R1
+    R1["Redirige (HTTP 302) a comercio-perfil.html con vinculacionMp = exito"] --> S1[/"Toast: Tu cuenta de Mercado Pago quedó vinculada"/]
+    R3["Redirige (HTTP 302) con vinculacionMp = cuenta-ya-vinculada"] --> S3[/"Toast: Ya tenés una cuenta de Mercado Pago vinculada. Desvinculala antes de vincular otra."/]
+    R4["Redirige (HTTP 302) con vinculacionMp = cuenta-en-uso"] --> S4[/"Toast: Esa cuenta de Mercado Pago ya está en uso por otro Dueño. Usá otra cuenta, o pedí que la desvinculen primero."/]
+    R5["Redirige (HTTP 302) con vinculacionMp = error<br>(cualquier otra falla; el detalle se pierde)"] --> S5[/"Toast: No pudimos vincular tu cuenta de Mercado Pago. Probá de nuevo."/]
+    S1 --> FIN3([Fin])
+    S3 --> FIN4([Fin])
+    S4 --> FIN5([Fin])
+    S5 --> FIN6([Fin])

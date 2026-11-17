@@ -1,0 +1,85 @@
+flowchart TD
+    A([Inicio]) --> B[/"Email"/]
+    B --> C{"¿Ingresó un email<br>con formato válido?"}
+    C -- No --> C1[/"Ingresá tu email.<br>Ingresá un email con formato válido."/]
+    C1 --> FIN1([Fin])
+    C -- Sí --> D["POST /auth/recuperar-password"]
+    D --> D1{"¿Pasa las validaciones<br>del DTO?"}
+    D1 -- No --> D2[/"Error 400: No debe estar vacío<br>Ingresá un email con formato válido"/]
+    D2 --> FIN2([Fin])
+    D1 -- Sí --> E["SELECT usuario<br>WHERE email = email_ingresado"]
+    E --> E1{"¿Existe el usuario?"}
+    E1 -- No --> E2["No se genera ningún código<br>(no se avisa que el email no existe)"]
+    E2 --> H
+    E1 -- Sí --> F1
+    subgraph TX1 [Transacción BD]
+        F1["UPDATE token (los PENDIENTE del usuario<br>de tipo RECUPERACION_PASSWORD):<br>estado = UTILIZADO"] --> F2["INSERT token:<br>tipo = RECUPERACION_PASSWORD, código de 6 dígitos,<br>estado = PENDIENTE, vence en 30 minutos,<br>intentos_fallidos = 0<br>(para cualquier estado de cuenta)"]
+    end
+    F2 --> G{"¿Falló la generación<br>del código?"}
+    G -- Sí --> G1[/"Error 500: No pudimos generar el código de verificación.<br>Intentá nuevamente en unos instantes."/]
+    G1 --> FIN3([Fin])
+    G -- No --> G2["Enviar email de recuperación (después del commit)<br>Asunto: Tu código de recuperación de contraseña — Bajoneá"]
+    G2 --> H[/"HTTP 200: Si existe una cuenta asociada a ese email,<br>vas a recibir un código para continuar<br>(igual exista o no el email)"/]
+    H --> I[/"Ingresá tu código: Te enviamos un código<br>de 6 dígitos a tu email."/]
+    I --> I1["Botón: Reenviar código<br>(vuelve a solicitar el código sin espera:<br>Te enviamos un nuevo código.)"]
+    I1 --> D
+    I --> J[/"Código de 6 dígitos"/]
+    J --> K["POST /auth/recuperar-password/validar-codigo<br>(al completar los 6 dígitos)"]
+    K --> K1{"¿Pasa las validaciones<br>del DTO?"}
+    K1 -- No --> K2[/"Error 400: No debe estar vacío<br>El código debe tener 6 dígitos numéricos"/]
+    K2 --> FEC
+    K1 -- Sí --> L["SELECT usuario<br>WHERE email = email_ingresado"]
+    L --> L1{"¿Existe el usuario?"}
+    L1 -- No --> L2[/"Error 401: Código incorrecto o vencido"/]
+    L2 --> FEC
+    L1 -- Sí --> M["SELECT token<br>WHERE usuario_id = id AND tipo = RECUPERACION_PASSWORD<br>AND estado = PENDIENTE (el más reciente)"]
+    M --> M1{"¿Hay un código<br>pendiente?"}
+    M1 -- No --> L2
+    M1 -- Sí --> M2{"¿Venció el código?"}
+    M2 -- Sí --> M3[/"Error 409: El código venció.<br>Solicitá uno nuevo."/]
+    M3 --> FEC
+    M2 -- No --> M4{"¿El código coincide?"}
+    M4 -- No --> M5["UPDATE token:<br>intentos_fallidos = intentos_fallidos + 1<br>(se guarda aunque responda error)"]
+    M5 --> M6{"¿Llegó a 5 intentos?"}
+    M6 -- Sí --> M7["UPDATE token:<br>estado = UTILIZADO, fecha_uso = NOW()"]
+    M7 --> M8[/"Error 409: Superaste el máximo de intentos<br>permitidos. Solicitá un nuevo código."/]
+    M8 --> FEC
+    M6 -- No --> M9[/"Error 401: Código incorrecto.<br>Te quedan N intento(s)."/]
+    M9 --> FEC
+    FEC[/"Se muestra el mensaje del servidor<br>bajo el campo del código"/]
+    FEC --> FIN4([Fin])
+    M4 -- Sí --> N[/"HTTP 200: Código válido<br>(el código no se consume todavía)"/]
+    N --> O[/"Elegí tu nueva contraseña:<br>nueva contraseña y confirmación"/]
+    O --> O1{"¿Cumple las reglas<br>del formulario?"}
+    O1 -- No --> O2[/"Ingresá una nueva contraseña.<br>Repetí tu contraseña.<br>Debe tener mínimo 8 caracteres, una mayúscula,<br>una minúscula y un número.<br>Las contraseñas ingresadas no coinciden."/]
+    O2 --> FIN5([Fin])
+    O1 -- Sí --> P["POST /auth/recuperar-password/confirmar<br>(email, código y nueva contraseña)"]
+    P --> P1{"¿Pasa las validaciones<br>del DTO?"}
+    P1 -- No --> P2[/"Error 400: No debe estar vacío<br>Debe tener mínimo 8 caracteres, una mayúscula,<br>una minúscula y un número"/]
+    P2 --> FEB
+    P1 -- Sí --> Q["SELECT usuario<br>WHERE email = email_ingresado<br>(bloqueo FOR UPDATE)<br>y validar el código otra vez<br>(mismas reglas y errores de arriba)"]
+    Q --> Q1{"¿Código correcto<br>y vigente?"}
+    Q1 -- No --> Q2[/"Error 401 o 409 del código<br>(mismos mensajes de arriba)"/]
+    Q2 --> FEB[/"Vuelve al paso del código con el<br>mensaje del servidor"/]
+    FEB --> FIN6([Fin])
+    Q1 -- Sí --> R1
+    subgraph TX2 [Transacción BD]
+        R1["UPDATE token:<br>estado = UTILIZADO, fecha_uso = NOW()"] --> R2["UPDATE usuario:<br>password_hash = hash BCrypt de la nueva contraseña<br>intentos_fallidos = 0"]
+        R2 --> R3{"¿Estado de<br>la cuenta?"}
+        R3 -- Suspendido --> R4["Solo cambia la contraseña:<br>la cuenta sigue suspendida,<br>no se cierran sesiones ni se tocan comercios"]
+        R3 -- Inactivo --> R5["UPDATE usuario:<br>estado = ACTIVO, fecha_ultimo_acceso = NOW()<br>INSERT historial_estado_usuario:<br>INACTIVO a ACTIVO, motivo = Recuperación de contraseña"]
+        R5 --> R6{"¿El usuario<br>es Dueño?"}
+        R6 -- Sí --> R7["UPDATE comercio (los INACTIVO):<br>estado = APTO_VENTA o APROBADO<br>según Mercado Pago y documentos<br>INSERT historial_estado_comercio<br>motivo = Restauración por recuperación de contraseña"]
+        R3 -- "Pendiente, Activo o Bloqueado" --> R8["UPDATE usuario:<br>estado = ACTIVO<br>INSERT historial_estado_usuario (si cambió de estado):<br>motivo = Recuperación de contraseña"]
+        R8 --> R9{"¿El usuario<br>es Dueño?"}
+        R9 -- Sí --> R10["UPDATE comercio (los CERRADO_TEMPORALMENTE):<br>estado = APTO_VENTA o APROBADO<br>según Mercado Pago y documentos<br>INSERT historial_estado_comercio<br>motivo = Restauración por recuperación de contraseña"]
+        R6 -- No --> R11["UPDATE sesion (la activa, si existe):<br>activa = false, tipo_cierre = FORZADO,<br>fecha_cierre = NOW()"]
+        R7 --> R11
+        R9 -- No --> R11
+        R10 --> R11
+    end
+    R4 --> S
+    R11 --> S[/"HTTP 200: Contraseña actualizada correctamente<br>(sin email de aviso y sin inicio de sesión automático)"/]
+    S --> T[/"Contraseña actualizada: Ya podés iniciar sesión<br>con tu nueva contraseña."/]
+    T --> U["Botón: Ir al inicio de sesión"]
+    U --> FIN7([Fin])

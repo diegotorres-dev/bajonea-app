@@ -1,0 +1,17 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Qué dispara el flujo?"}
+    B -- "El comercio pasa un producto<br>a AGOTADO o DESCONTINUADO (ver P2.08)" --> PR0["ProductoService.cambiarEstado<br>(el producto ya está bloqueado FOR UPDATE)"]
+    PR0 --> PR1
+    B -- "Pago aprobado de un pedido<br>(ver P5.03)" --> PG0["Pago aprobado: vaciarSiEsDelComercio<br>(el carrito es la última hoja del orden de bloqueo)"]
+    PG0 --> PG1["SELECT carrito por Cliente (FOR UPDATE)<br>Si es del comercio del pedido: DELETE de sus ítems<br>y UPDATE carrito: comercio = nulo<br>Un pago rechazado, un vencimiento o una cancelación sin pagar dejan el carrito intacto"]
+    subgraph TX5 [Transacción BD - baja automática de carritos]
+        PR1["SELECT carritos que contienen el producto<br>SELECT usuarios de esos Clientes (LOCK IN SHARE MODE, id ascendente)"] --> PR2["SELECT carritos afectados (FOR UPDATE, id ascendente)<br>DELETE item_carrito del producto"]
+        PR2 --> PR3["INSERT aviso in-app al Cliente al que se le borró un ítem<br>PRODUCTO_REMOVIDO_CARRITO:<br>El producto (nombre) ya no está disponible y fue eliminado de tu carrito.<br>Sin email"]
+        PR3 --> PR4{"¿El carrito quedó vacío?"}
+        PR4 -- Sí --> PR5["UPDATE carrito: comercio = nulo"]
+        PR4 -- No --> PR6["Sin más cambios"]
+    end
+    PR5 --> PR7[/"El Cliente lo ve en la campana con el enlace Ver carrito<br>El carrito no se refresca solo: el ítem desaparece al recargarlo<br>El carrito es la última hoja del orden de bloqueo"/]
+    PR6 --> PR7
+    PR7 --> FIN17([Fin])
+    PG1 --> FIN18([Fin])

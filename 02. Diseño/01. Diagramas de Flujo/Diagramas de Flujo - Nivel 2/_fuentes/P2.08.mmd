@@ -1,0 +1,75 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Qué hace el comercio?<br>(Dueño o Empleado, X-Comercio-Id obligatorio,<br>todas las rutas delegables al Empleado)"}
+    B -- "Crear o editar producto" --> C1[/"Formulario: nombre, descripción, precio, categoría, hasta 5 tags"/]
+    B -- "Cambiar estado" --> S1["PATCH /productos/id/estado"]
+    B -- "Agregar, quitar, ordenar<br>o recortar imágenes" --> I1["POST /productos/id/cloudinary/firma<br>POST /productos/id/imagenes<br>DELETE /productos/id/imagenes/imagenId<br>PATCH /productos/id/imagenes/imagenId/orden<br>POST .../recorte/firma, PATCH .../url"]
+    B -- "Ver la lista" --> L1["GET /productos"]
+    L1 --> L2[/"HTTP 200: productos del comercio"/]
+    L2 --> LP[/"Pantalla de la lista: chips Todos, Disponibles, Agotados, Descontinuados<br>Búsqueda por nombre en memoria (sin debounce, sin quitar tildes)<br>Los DESCONTINUADO van al final<br>Columnas Producto, Categoría, Precio, Estado, Acciones<br>Vacío: Todavía no cargaste ningún producto. Usá el botón + para crear el primero.<br>(Empleado: Este comercio todavía no tiene productos cargados...)<br>Sin coincidencias: No encontramos productos con ese filtro."/]
+    LP --> LQ[/"Menú por producto: Editar producto; Marcar como agotado o Marcar como disponible;<br>Descontinuar producto; Cancelar<br>Un DESCONTINUADO: Este producto está descontinuado y no admite más cambios.<br>Con el comercio SUSPENDIDO: sin botón +, sin menú y el aviso<br>El comercio está suspendido: los productos están en solo lectura."/]
+    LQ --> LR[/"Descontinuar: hoja con el texto Esta acción no se puede deshacer...<br>Casilla obligatoria Entiendo que esta acción es irreversible<br>Botones Sí, descontinuar y Cancelar<br>Toasts: Estado del producto actualizado, Producto descontinuado"/]
+    LR --> FIN1([Fin])
+    C1 --> CF["Formulario: Nuevo producto o Editar producto<br>Hasta 5 fotos JPG, PNG o WEBP de hasta 5 MB, recorte 4:3<br>Precio bloqueado en franja: campo deshabilitado con la leyenda<br>Se puede cambiar fuera de tu horario de atención<br>El botón se habilita al haber al menos una foto<br>En el alta las fotos se suben después de crear el producto<br>(si falla alguna: Creamos el producto, pero no pudimos subir todas las fotos...)"]
+    CF --> CV{"Validación de la pantalla"}
+    CV -- "Con error" --> CV1[/"El nombre del producto es obligatorio.<br>Ingresá un nombre válido (letras, números y espacios, sin símbolos).<br>Seleccioná una categoría.<br>Agregá al menos una foto del producto.<br>El precio es obligatorio. / El precio no puede tener más de 8 dígitos.<br>El precio debe ser mayor a $0.<br>Podés seleccionar hasta 5 tags."/]
+    CV1 --> CF
+    CV -- "Sin errores" --> C2{"¿Es un producto nuevo?"}
+    C2 -- Sí --> C3["POST /productos"]
+    C2 -- No --> C4["PUT /productos/id"]
+    C3 --> D{"Validación del cuerpo:<br>¿nombre, precio, categoría y tags válidos?"}
+    C4 --> D
+    D -- No --> D1[/"HTTP 400 con el mapa campo y mensaje:<br>No debe estar vacío<br>Ingresá un nombre de producto válido (letras, números y espacios)<br>El nombre no puede superar 150 caracteres, la descripción 2000<br>El precio debe ser mayor a $0<br>El precio no puede tener más de 8 dígitos y no admite centavos<br>No podés seleccionar más de 5 tags"/]
+    D1 --> FIN2([Fin])
+    D -- Sí --> E
+    S1 --> E
+    I1 --> E
+    subgraph TX [Transacción BD]
+        E["SELECT usuario que actúa (si es Empleado, relación ACTIVO)<br>SELECT comercio (LOCK IN SHARE MODE)"] --> F{"¿Estado del comercio?"}
+        F -- SUSPENDIDO --> F1[/"HTTP 409 COMERCIO_SUSPENDIDO:<br>El comercio está suspendido: por ahora no se puede modificar."/]
+        F -- INACTIVO --> F2[/"HTTP 409 COMERCIO_INACTIVO:<br>El comercio está inactivo: por ahora no se puede modificar."/]
+        F -- "Otro estado" --> G{"¿Operación nueva?"}
+        G -- Sí --> G1["INSERT producto: estado DISPONIBLE, nombre en Title Case<br>(sin unicidad de nombre)"]
+        G -- No --> H["SELECT producto (FOR UPDATE)"]
+        H --> H1{"¿El producto es de este comercio?"}
+        H1 -- No --> H2[/"HTTP 404: Producto no encontrado"/]
+        H1 -- Sí --> M{"¿Qué operación?"}
+        M -- Editar --> M1{"¿Está DESCONTINUADO?"}
+        M1 -- Sí --> M2[/"HTTP 409: No se puede editar un producto descontinuado"/]
+        M1 -- No --> M3{"¿Le queda al menos una foto?"}
+        M3 -- No --> M4[/"HTTP 409: Agregá al menos una foto del producto antes de guardar los cambios"/]
+        M3 -- Sí --> M5{"¿Cambia el precio, el comercio está dentro de una franja<br>y precio.bloqueo-en-franja.habilitado está activo?"}
+        M5 -- Sí --> M6[/"HTTP 409 PRECIO_BLOQUEADO_EN_FRANJA:<br>No podés cambiar precios mientras tu comercio está en horario de atención.<br>Hacelo fuera de ese horario."/]
+        M5 -- No --> M7["UPDATE producto: nombre, descripción, precio, categoría, tags"]
+        M -- "Cambiar estado" --> N{"¿Transición permitida?<br>DISPONIBLE y AGOTADO entre sí;<br>ambos a DESCONTINUADO (terminal)"}
+        N -- No --> N1[/"HTTP 409: No se puede pasar de X a Y"/]
+        N -- Sí --> N2["UPDATE producto: estado"]
+        N2 --> N3{"¿Nuevo estado AGOTADO o DESCONTINUADO?"}
+        N3 -- Sí --> N4["Quita el producto de todos los carritos<br>(el carrito es la última hoja en el orden de bloqueo)<br>Los pedidos ya creados no se tocan: el detalle guarda una copia"]
+        N3 -- No --> N5["Sin cambios en carritos"]
+        M -- Imágenes --> O{"¿Qué imagen?"}
+        O -- Agregar --> O1{"¿La URL es de Cloudinary, jpg, jpeg, png o webp<br>y de la carpeta productos/comercioId/productoId/?"}
+        O1 -- No --> O2[/"HTTP 400: La URL debe apuntar a un archivo jpg, jpeg, png o webp<br>o La imagen no es válida. Subila de nuevo desde el formulario."/]
+        O1 -- Sí --> O3{"¿Ya tiene 5 imágenes?"}
+        O3 -- Sí --> O4[/"HTTP 409: El producto ya tiene el máximo de 5 imágenes"/]
+        O3 -- No --> O5["INSERT imagen_producto"]
+        O -- "Quitar, ordenar o cambiar URL" --> O6["DELETE o UPDATE imagen_producto<br>El código no borra el archivo en Cloudinary"]
+        G1 --> P
+        M7 --> P
+        N2 --> P
+        N4 --> P
+        N5 --> P
+        O5 --> P
+        O6 --> P
+        P["INSERT historial_edicion_comercio:<br>entidad PRODUCTO, nombres de campos, nunca valores"]
+    end
+    F1 --> FIN3([Fin])
+    F2 --> FIN4([Fin])
+    H2 --> FIN5([Fin])
+    M2 --> FIN6([Fin])
+    M4 --> FIN7([Fin])
+    M6 --> FIN8([Fin])
+    N1 --> FIN9([Fin])
+    O2 --> FIN10([Fin])
+    O4 --> FIN11([Fin])
+    P --> Q[/"HTTP 200 o 201:<br>Producto creado correctamente<br>Producto actualizado correctamente<br>o la respuesta de estado o imagen<br>No existe baja física de productos ni reordenar productos:<br>eliminar es pasar a DESCONTINUADO"/]
+    Q --> FIN12([Fin])

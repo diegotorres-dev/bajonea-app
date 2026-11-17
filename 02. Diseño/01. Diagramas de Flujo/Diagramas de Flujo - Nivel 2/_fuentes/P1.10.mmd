@@ -1,0 +1,96 @@
+flowchart TD
+    A([Inicio]) --> B["Perfil del comercio, fila Ver equipo<br>(solo el Dueño; el Empleado no invita, reenvía ni cancela)"]
+    B --> C{"¿Qué acción?"}
+
+    C -- "Invitar" --> I1[/"Hoja Invitar al equipo: Email<br>Le llega un código que vale 7 días."/]
+    I1 --> I2["POST /comercios/equipo/invitaciones<br>(rol DUENO, header X-Comercio-Id)"]
+    I2 --> I3{"¿Pasa las validaciones del DTO?"}
+    I3 -- No --> I3A[/"Error 400:<br>El email es obligatorio<br>Ingresá un email válido<br>El email no puede superar los 254 caracteres"/]
+    I3A --> FIN1([Fin])
+    I3 -- Sí --> X1
+
+    C -- "Reenviar código" --> R1["POST /comercios/equipo/invitaciones/id/reenviar<br>(rol DUENO, header X-Comercio-Id)"]
+    R1 --> X1
+
+    X1{"¿El comercio del header es del Dueño?"}
+    X1 -- No --> X1A[/"Error 400: Falta indicar el comercio<br>Error 400: El comercio indicado no es válido<br>Error 404: Comercio no encontrado"/]
+    X1A --> FIN2([Fin])
+    X1 -- Sí --> X2["SELECT usuario del Dueño (FOR UPDATE)<br>(serializa toda la secuencia)"]
+    X2 --> X3["SELECT comercio.estado (bloqueo compartido)"]
+    X3 --> X4{"¿El comercio está APROBADO<br>o APTO_VENTA?"}
+    X4 -- No --> X4A[/"Error 409: Este comercio no puede invitar empleados<br>en este momento"/]
+    X4A --> FIN3([Fin])
+    X4 -- Sí --> X5{"¿Invitar o reenviar?"}
+    X5 -- Invitar --> D1
+    X5 -- Reenviar --> R2["SELECT invitacion_empleado<br>WHERE id AND comercio_id (FOR UPDATE)"]
+    R2 --> R3{"¿Existe?"}
+    R3 -- No --> R3A[/"Error 404: Invitación no encontrada"/]
+    R3A --> FIN4([Fin])
+    R3 -- Sí --> R4{"¿Estado PENDIENTE, VENCIDA<br>o INVALIDADA?"}
+    R4 -- No --> R4A[/"Error 409: Esta invitación ya no se puede reenviar"/]
+    R4A --> FIN5([Fin])
+    R4 -- Sí --> R5{"¿Es la más nueva del par<br>comercio y email?"}
+    R5 -- No --> R5A[/"Error 409: Ya hay una invitación pendiente para ese email.<br>Podés reenviarla.<br>o Esta invitación ya no se puede reenviar"/]
+    R5A --> FIN6([Fin])
+    R5 -- Sí --> D1
+
+    D1{"¿El email ya tiene cuenta?"}
+    D1 -- No --> V1
+    D1 -- Sí --> D2{"¿La cuenta puede ser Empleado?<br>(no es Dueño ni Administrador)"}
+    D2 -- No --> D2A[/"Error 409: No se puede invitar a este email"/]
+    D2A --> D2B[/"No pudimos invitar a este email.<br>Por privacidad no podemos contarte el motivo.<br>Podés pedirle a esta persona que revise su correo<br>y volver a intentar más tarde."/]
+    D2B --> FIN7([Fin])
+    D2 -- Sí --> D3{"¿Ya es ACTIVO en este comercio?"}
+    D3 -- Sí --> D3A[/"Error 409: Esa persona ya es parte de tu equipo"/]
+    D3A --> FIN8([Fin])
+    D3 -- No --> D4{"¿La cuenta está ACTIVO?<br>(no PENDIENTE, BLOQUEADO,<br>SUSPENDIDO ni INACTIVO)"}
+    D4 -- No --> D4A{"¿Ya recibió 3 o más emails de<br>regularización en las últimas 24 horas?"}
+    D4A -- No --> D4B["INSERT notificacion (canal EMAIL, ENVIADO):<br>Invitación de comercio no enviada porque motivo<br>Email después del commit a la persona:<br>Un comercio quiso invitarte a trabajar en Bajoneá<br>(motivo y qué hacer según el estado; nombra solo al comercio)"]
+    D4B --> D2A
+    D4A -- Sí --> D2A
+    D4 -- Sí --> D5{"¿Tiene 18 años o más?"}
+    D5 -- No --> D2A
+    D5 -- Sí --> V1
+
+    V1["SELECT invitacion_empleado PENDIENTE del par<br>comercio y email (FOR UPDATE)<br>(al reenviar se excluye la propia)"]
+    V1 --> V2{"¿Hay una pendiente con<br>fecha_vencimiento mayor a ahora?"}
+    V2 -- Sí --> V2A[/"Error 409: Ya hay una invitación pendiente para ese email.<br>Podés reenviarla."/]
+    V2A --> FIN9([Fin])
+    V2 -- No --> V3["SELECT COUNT(*) FROM invitacion_empleado<br>WHERE comercio_id AND fecha_creacion mayor a ahora menos 1 hora<br>(invitar y reenviar suman)"]
+    V3 --> V4{"¿Hay 5 o más?"}
+    V4 -- Sí --> V4A[/"Error 409: Alcanzaste el máximo de 5 invitaciones por hora.<br>Probá de nuevo a las HH:mm"/]
+    V4A --> FIN10([Fin])
+    V4 -- No --> E1
+    subgraph TX [Transacción BD]
+        E1["UPDATE invitacion_empleado PENDIENTE del par:<br>REEMPLAZADA si sigue vigente,<br>VENCIDA si ya venció (fecha_resolucion = NOW())"] --> E2["Generar código de 6 dígitos<br>(reintenta si ya existe un pendiente con ese código;<br>hasta 20 intentos)"]
+        E2 --> E3{"¿Pudo generar y insertar?"}
+        E3 -- No --> E3A[/"Error 500: No pudimos generar el código de la invitación.<br>Intentá nuevamente en unos instantes."/]
+        E3 -- Sí --> E4["INSERT invitacion_empleado:<br>comercio_id, email, codigo, estado = PENDIENTE,<br>intentos_fallidos = 0, invitado_por_usuario_id,<br>fecha_creacion = NOW(), fecha_vencimiento = NOW() + 7 días"]
+        E4 --> E5["INSERT historial_empleado_comercio:<br>motivo = INVITACION, actor = el Dueño"]
+    end
+    E3A --> FIN11([Fin])
+    E5 --> E6["Enviar email después del commit (un solo intento):<br>Asunto: nombreDueño te invitó a trabajar en nombreComercio<br>Tu código: código. Vence en 7 días.<br>Cómo aceptarla: entrar a invitacion-empleado.html,<br>ingresar el email y el código"]
+    E6 --> E7[/"HTTP 201: Invitación enviada a email<br>(al reenviar: HTTP 200 Invitación reenviada a email)"/]
+    E7 --> E8["Se cierra la hoja, pasa a la pestaña Solicitudes<br>y recarga la lista"]
+    E8 --> FIN12([Fin])
+
+    C -- "Cancelar invitación" --> K1[/"¿Cancelar la invitación a email?<br>Botones: Cancelar invitación, Volver"/]
+    K1 --> K1A{"¿Confirma?"}
+    K1A -- Volver --> FIN13([Fin])
+    K1A -- Sí --> K2["PUT /comercios/equipo/invitaciones/id/cancelar<br>(rol DUENO, header X-Comercio-Id)"]
+    K2 --> K3["SELECT usuario del Dueño (bloqueo compartido)<br>SELECT invitacion_empleado WHERE id AND comercio_id (FOR UPDATE)"]
+    K3 --> K3A{"¿Existe?"}
+    K3A -- No --> K3B[/"Error 404: Invitación no encontrada"/]
+    K3B --> FIN14([Fin])
+    K3A -- Sí --> K4{"¿Estado PENDIENTE, VENCIDA<br>o INVALIDADA?"}
+    K4 -- No --> K4A[/"Error 409: Esta invitación ya no se puede cancelar"/]
+    K4A --> FIN15([Fin])
+    K4 -- Sí --> K5{"¿El comercio está SUSPENDIDO?"}
+    K5 -- Sí --> K5A[/"Error 409: El comercio está suspendido:<br>el equipo se puede ver, pero no modificar"/]
+    K5A --> FIN16([Fin])
+    K5 -- No --> K6{"¿Hay una invitación más nueva del par?"}
+    K6 -- Sí --> K4A
+    K6 -- No --> K7["UPDATE invitacion_empleado:<br>estado = CANCELADA, fecha_resolucion = NOW()"]
+    K7 --> K8["INSERT historial_empleado_comercio:<br>motivo = INVITACION_CANCELADA, actor = el Dueño"]
+    K8 --> K9[/"HTTP 200: Invitación cancelada"/]
+    K9 --> FIN17([Fin])

@@ -1,0 +1,29 @@
+flowchart TD
+    A([Inicio]) --> B["Job ReaperturaComerciosJob cada 60 s<br>(comercio.reapertura.job-habilitado, falso en pruebas)<br>Se pone al día solo: cada comercio se evalúa contra su propio cierre"]
+    B --> C{"¿Job habilitado?"}
+    C -- No --> FIN1([Fin])
+    C -- Sí --> D["SELECT id FROM comercio WHERE cerrado_manualmente = verdadero ORDER BY id<br>(sin filtro de estado, sin límite por corrida)"]
+    D --> E{"¿Quedan comercios por evaluar?"}
+    E -- No --> FIN2([Fin])
+    E -- Sí --> F
+    subgraph TX [Transacción BD - un comercio]
+        F["SELECT comercio FOR UPDATE (refresca la fila)"] --> G{"¿cerrado_manualmente sigue verdadero?"}
+        G -- No --> G1["No escribe nada"]
+        G -- Sí --> H["SELECT última fila CERRADO de historial_cierre_comercio"]
+        H --> I{"¿Hay fila CERRADO?"}
+        I -- No --> I1["Aviso en el log: ninguna fila CERRADO en el historial, se reabre"]
+        I -- Sí --> J["SELECT horarios vigentes desde la fecha del cierre<br>Busca hasta 7 días adelante la primera apertura posterior al momento del cierre"]
+        J --> K{"¿Hay próxima franja?"}
+        K -- No --> K1["Aviso en el log: ninguna franja vigente, se reabre"]
+        K -- Sí --> L{"¿Ahora es igual o posterior al inicio de esa franja?"}
+        L -- No --> L1["No reabre"]
+        L -- Sí --> M["UPDATE comercio: cerrado_manualmente = falso<br>INSERT historial_cierre_comercio: accion REABIERTO, actor_rol SISTEMA, actor_usuario_id nulo, fecha_hora = ahora"]
+        I1 --> M
+        K1 --> M
+    end
+    G1 --> E
+    L1 --> E
+    M --> N[/"Sin avisos ni emails<br>El panel y el catálogo pasan a abierto<br>La pestaña Actividad del Dueño muestra REABIERTO por Sistema<br>Mientras está cerrado el catálogo dice: Reabre hoy a las HH:mm, Reabre mañana a las HH:mm o Reabre el (día) a las HH:mm"/]
+    N --> E
+    F -.-> X["Si falla un comercio: error en el log, la bandera queda y se reintenta al minuto siguiente<br>El job no cambia el estado del comercio (también evalúa INACTIVO y SUSPENDIDO)"]
+    X --> FIN3([Fin])

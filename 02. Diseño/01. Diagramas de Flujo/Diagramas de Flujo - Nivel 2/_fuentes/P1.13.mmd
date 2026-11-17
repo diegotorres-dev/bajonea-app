@@ -1,0 +1,100 @@
+flowchart TD
+    A([Inicio]) --> B["Administrador: Clientes (admin-clientes.html)<br>Buscador, filtros Todos, Suspendidos, Bloqueados, Inactivos, Pendientes<br>Un Empleado es un Cliente: se suspende por este mismo flujo"]
+    B --> C{"¿Qué acción?"}
+
+    C -- "Suspender cuenta" --> S1["GET /administrador/clientes/id/suspension/previa<br>cuenta pedidos pagados en curso y pedidos sin pagar (sin bloqueos)"]
+    S1 --> S2[/"Suspender a nombre: No podrá ingresar ni comprar.<br>N pedido(s) pagado(s) sigue(n) su curso<br>N pedido(s) sin pagar se cancela(n)<br>No tiene pedidos en curso<br>Motivo (lo va a ver la persona): Contale por qué se suspende la cuenta"/]
+    S2 --> S3{"¿El motivo tiene 10 caracteres o más?"}
+    S3 -- No --> S3A["El botón Suspender cuenta queda deshabilitado"]
+    S3A --> FIN1([Fin])
+    S3 -- Sí --> S4["PUT /administrador/clientes/id/suspender"]
+    S4 --> S5{"¿Pasa las validaciones del DTO?"}
+    S5 -- No --> S5A[/"Error 400: Ingresá el motivo de la suspensión<br>El motivo debe tener entre 10 y 500 caracteres"/]
+    S5A --> FIN2([Fin])
+    S5 -- Sí --> V1
+
+    C -- "Levantar suspensión" --> L1[/"Levantar suspensión: Suspendida desde fecha y motivo<br>Podrá ingresar y comprar de nuevo.<br>Estaba bloqueada: vuelve activa. / Vuelve a estar inactiva: tiene que reactivar su cuenta para ingresar. / Vuelve a estar pendiente: tiene que verificar su email para ingresar.<br>Mensaje para la persona (opcional)"/]
+    L1 --> L2["PUT /administrador/clientes/id/levantar-suspension"]
+    L2 --> L3{"¿El mensaje tiene hasta 500 caracteres?"}
+    L3 -- No --> L3A[/"Error 400: El motivo no puede superar los 500 caracteres"/]
+    L3A --> FIN3([Fin])
+    L3 -- Sí --> V1
+
+    V1{"¿El objetivo es el mismo Administrador?"}
+    V1 -- Sí --> V1A[/"Error 409: No podés suspender tu propia cuenta"/]
+    V1 -- No --> V2{"¿Existe el usuario?"}
+    V2 -- No --> V2A[/"Error 404: Usuario no encontrado"/]
+    V2 -- Sí --> V3{"¿Qué rol tiene?"}
+    V3 -- ADMINISTRADOR --> V3A[/"Error 409: No se puede suspender a un Administrador"/]
+    V3 -- DUENO --> V3B[/"Error 409: Un Dueño se suspende desde la lista de Dueños (ver P1.14)"/]
+    V3 -- CLIENTE --> V4{"¿Suspender o levantar?"}
+    V1A --> ERR
+    V2A --> ERR
+    V3A --> ERR
+    V3B --> ERR
+    ERR[/"No pudimos suspender la cuenta. Probá de nuevo.<br>o el mensaje del servidor: mensaje. Cerrá esta ventana: la lista se actualiza."/]
+    ERR --> FIN4([Fin])
+
+    V4 -- Suspender --> T1
+    subgraph TXS [Transacción BD: fase 1]
+        T1["SELECT usuario del Administrador (compartido) y del Cliente (FOR UPDATE)<br>en orden de id"] --> T2{"¿El Cliente ya está SUSPENDIDO?"}
+        T2 -- Sí --> T2A[/"Error 409: La cuenta ya está suspendida"/]
+        T2 -- No --> T3["UPDATE usuario: estado = SUSPENDIDO,<br>motivo_suspension, suspendido_desde = NOW()<br>INSERT historial_estado_usuario:<br>estado anterior a SUSPENDIDO, motivo, administrador_id"]
+        T3 --> T4["UPDATE sesion (todas las activas del Cliente):<br>activa = false, tipo_cierre = SUSPENSION, fecha_cierre = NOW()"]
+        T4 --> T5["INSERT aviso al Cliente (CLIENTE_SUSPENDIDO):<br>Tu cuenta fue suspendida. Motivo: motivo<br>Email programado para después del commit"]
+    end
+    T2A --> ERR
+    T5 --> T6["Email al Cliente (un solo intento, fuera de la transacción):<br>Asunto: Tu cuenta de Bajoneá fue suspendida<br>Mientras la cuenta esté suspendida no vas a poder iniciar sesión ni hacer pedidos.<br>Los pedidos que ya pagaste siguen su curso normal<br>y los que todavía no pagaste se cancelaron.<br>INSERT notificacion (canal EMAIL, ENVIADO o FALLIDO)"]
+    T6 --> P1["SELECT pedidos del Cliente en PENDIENTE_PAGO"]
+    P1 --> P2{"¿Hay alguno?"}
+    P2 -- No --> R1
+    P2 -- Sí --> P3["Por cada pedido, una transacción propia:<br>SELECT pedido (FOR UPDATE)"]
+    P3 --> P4{"¿Sigue en PENDIENTE_PAGO?"}
+    P4 -- No --> P6
+    P4 -- Sí --> P5["UPDATE pedido: estado = CANCELADO_POR_SISTEMA,<br>cancelado_por = SISTEMA, motivo = Cuenta suspendida<br>INSERT historial del pedido (actor SISTEMA, motivo SUSPENSION_CLIENTE)"]
+    P5 --> P6{"¿Quedan más pedidos?"}
+    P6 -- Sí --> P3
+    P6 -- No --> R1["Los pedidos ya pagados no se tocan: siguen su curso.<br>Un pago aprobado que llegue después a un pedido cancelado se reembolsa"]
+    R1 --> R2[/"HTTP 200: Cuenta suspendida correctamente<br>usuarioId, estado SUSPENDIDO, pedidosSinPagarCancelados"/]
+    R2 --> R3[/"Cuenta suspendida"/]
+    R3 --> FIN5([Fin])
+
+    V4 -- Levantar --> U1
+    subgraph TXL [Transacción BD]
+        U1["SELECT usuario del Administrador (compartido) y del Cliente (FOR UPDATE)"] --> U2{"¿El Cliente está SUSPENDIDO?"}
+        U2 -- No --> U2A[/"Error 409: La cuenta no está suspendida"/]
+        U2 -- Sí --> U3["SELECT historial_estado_usuario:<br>estado_origen de la última fila con destino SUSPENDIDO"]
+        U3 --> U4{"¿Era PENDIENTE o INACTIVO?"}
+        U4 -- Sí --> U5["destino = ese estado"]
+        U4 -- No --> U6["destino = ACTIVO<br>(incluye BLOQUEADO y sin fila de historial)"]
+        U5 --> U7
+        U6 --> U7["UPDATE usuario: estado = destino, intentos_fallidos = 0,<br>se limpian motivo_suspension y suspendido_desde<br>(si destino ACTIVO: fecha_ultimo_acceso = NOW())<br>INSERT historial_estado_usuario: SUSPENDIDO a destino, administrador_id"]
+        U7 --> U8["INSERT aviso al Cliente (SUSPENSION_LEVANTADA):<br>Levantamos la suspensión de tu cuenta. Mensaje del equipo: mensaje<br>Email programado para después del commit"]
+    end
+    U2A --> ERR
+    U8 --> U9["Email al Cliente (un solo intento):<br>Asunto: Tu cuenta de Bajoneá volvió a estar activa<br>Levantamos la suspensión de tu cuenta de Bajoneá. Ya podés iniciar sesión de nuevo.<br>INSERT notificacion (canal EMAIL)"]
+    U9 --> U10["Las sesiones cerradas no se restauran"]
+    U10 --> U11[/"HTTP 200: Suspensión levantada correctamente<br>usuarioId, estado destino"/]
+    U11 --> U12[/"Suspensión levantada"/]
+    U12 --> FIN6([Fin])
+
+    C -- "Reenviar email<br>(solo si el último falló: No se envió el email)" --> M1["POST /administrador/clientes/id/suspension/reenviar-email"]
+    M1 --> M2{"¿Es el mismo Administrador,<br>no existe, o es Administrador o Dueño?"}
+    M2 -- Sí --> M2A[/"Error 409: No podés suspender tu propia cuenta<br>Error 404: Usuario no encontrado<br>Error 409: No se puede suspender a un Administrador<br>Error 409: Un Dueño se suspende desde la lista de Dueños"/]
+    M2A --> M2B[/"No pudimos reenviar el email. Probá de nuevo."/]
+    M2B --> FIN7([Fin])
+    M2 -- No --> M3{"¿Cuenta SUSPENDIDO?"}
+    M3 -- Sí --> M4["Buscar el último email del tipo CLIENTE_SUSPENDIDO"]
+    M3 -- No --> M5["Buscar el último email del tipo SUSPENSION_LEVANTADA"]
+    M4 --> M6
+    M5 --> M6{"¿Ese último email está FALLIDO?"}
+    M6 -- No --> M6A[/"Error 409: No hay ningún email fallido para reenviar"/]
+    M6A --> M2B
+    M6 -- Sí --> M7["Enviar el email de nuevo fuera de la transacción (un solo intento)<br>con el motivo vigente (o el de la última fila de historial al levantar)"]
+    M7 --> M8["UPDATE notificacion (la misma fila):<br>estado = ENVIADO y fecha_envio = NOW(), o FALLIDO y fecha_envio = NULL<br>(no inserta fila nueva)"]
+    M8 --> M9{"¿Salió el email?"}
+    M9 -- Sí --> M10[/"HTTP 200: Email reenviado correctamente"/]
+    M10 --> M11[/"Email reenviado"/]
+    M11 --> FIN8([Fin])
+    M9 -- No --> M12[/"HTTP 502: No se pudo reenviar el email. Probá de nuevo más tarde"/]
+    M12 --> FIN9([Fin])

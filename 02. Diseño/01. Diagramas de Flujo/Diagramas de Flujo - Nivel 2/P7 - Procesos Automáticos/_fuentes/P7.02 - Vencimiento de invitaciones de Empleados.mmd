@@ -1,0 +1,19 @@
+flowchart TD
+    A([Inicio]) --> B["Job InvitacionVencimientoJob cada 60 s<br>(invitacion.vencimiento.job-habilitado, falso en pruebas)<br>Usa el reloj de la aplicación, nunca NOW() de la base"]
+    B --> C{"¿Job habilitado?"}
+    C -- No --> FIN1([Fin])
+    C -- Sí --> D
+    subgraph TX [Transacción BD corta - un lote de hasta 500]
+        D["SELECT id de invitacion_empleado WHERE estado = PENDIENTE y fecha_vencimiento menor o igual a ahora<br>ORDER BY id, límite 500 (lectura común, sin FOR UPDATE)"] --> E{"¿Hay invitaciones vencidas?"}
+        E -- No --> E1["Lote vacío"]
+        E -- Sí --> F["UPDATE invitacion_empleado por clave primaria: estado = VENCIDA, fecha_resolucion = fecha_vencimiento<br>WHERE id IN (lote) AND estado = PENDIENTE AND fecha_vencimiento menor o igual a ahora<br>(si otra transacción aceptó, canceló o reenvió, esa fila no cambia)"]
+        F --> G["La columna generada pendiente_clave pasa de 1 a NULL y libera los índices únicos de invitaciones pendientes<br>No escribe historial_empleado_comercio, no crea avisos, no envía email, no toca empleado_comercio"]
+    end
+    E1 --> FIN2([Fin])
+    G --> H{"¿El lote tenía 500 o más?"}
+    H -- Sí --> D
+    H -- No --> I["Si venció alguna: log Invitaciones de empleado pasadas a VENCIDA (cantidad)"]
+    I --> J[/"En Ver equipo, Solicitudes: estado Vencida (Vencida hoy, Vencida hace 1 día, Vencida hace N días)<br>Opciones: reenviar o cancelar<br>Los estados ACEPTADA, CANCELADA, REEMPLAZADA, VENCIDA e INVALIDADA no se tocan"/]
+    J --> FIN3([Fin])
+    D -.-> X["Si la corrida falla: error en el log y se reintenta al minuto<br>Si estuvo caída: la primera corrida vence todo; el listado ya muestra Vencida y invitar o reenviar vencen las pendientes del par"]
+    X --> FIN4([Fin])

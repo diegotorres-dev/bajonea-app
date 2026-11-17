@@ -1,0 +1,65 @@
+flowchart TD
+    A([Inicio]) --> B["Mercado Pago notifica: POST /webhooks/mercadopago con pedidoId, data.id y type en la dirección<br>y headers x-signature y x-request-id<br>(ruta pública, sin JWT, sin rol, sin X-Comercio-Id; solo lee la dirección y los headers, no el cuerpo)"]
+    B --> C{"¿type = payment y vienen data.id y pedidoId?"}
+    C -- No --> C1[/"HTTP 200: Notificación ignorada"/]
+    C1 --> FIN1([Fin])
+    C -- Sí --> D{"¿Hay mercadopago.webhook-secret?"}
+    D -- No --> D1["Omite la validación de firma y deja un aviso en el log"]
+    D -- Sí --> D2["Arma el manifest id:(data.id en minúsculas);request-id:(x-request-id);ts:(ts);<br>y compara el HMAC-SHA256 con v1 de x-signature (no valida la antigüedad de ts)"]
+    D2 --> D3{"¿Firma válida?"}
+    D3 -- No --> D3a[/"HTTP 401: Firma inválida"/]
+    D3a --> FIN2([Fin])
+    D3 -- Sí --> E
+    D1 --> E{"¿pedidoId es numérico?"}
+    E -- No --> E1[/"HTTP 500"/]
+    E1 --> FIN3([Fin])
+    E -- Sí --> F
+    subgraph TX1 [Transacción BD corta 1]
+        F{"¿Existe pago del pedido?"} -- No --> F1["Aviso en el log: sin preferencia creada por Bajoneá, se ignora"]
+        F -- Sí --> G{"¿El comercio tiene cuenta de Mercado Pago activa?"}
+        G -- No --> G1[/"HTTP 409: El comercio de este pedido no tiene una cuenta de Mercado Pago vinculada. No se puede procesar el pago."/]
+        G -- Sí --> G2["Lee el access_token del Dueño"]
+    end
+    F1 --> OK1[/"HTTP 200: Notificación procesada"/]
+    G2 --> H["Sin transacción: GET (API de Mercado Pago)/v1/payments/data.id con el token del Dueño<br>Conexión 5 s, lectura 5 s"]
+    H --> H1{"¿Respondió?"}
+    H1 -- No --> H1a[/"HTTP 409: No se pudo consultar el pago (id) en Mercado Pago (estado)<br>Mercado Pago reintenta la notificación"/]
+    H1 -- Sí --> I
+    subgraph TX2 [Transacción BD - aplicar resultado]
+        I{"¿external_reference = pedidoId?"} -- No --> I1["Deja alerta EXTERNAL_REFERENCE_MISMATCH (pedido, pago, referencia, IP de origen) y termina"]
+        I -- Sí --> J["Bloqueos: con approved, usuarios del Cliente, del Dueño y de los Empleados activos (LOCK IN SHARE MODE),<br>relaciones, comercio y pedido (FOR UPDATE); con otro estado, solo el pedido (FOR UPDATE)<br>Luego pago (FOR UPDATE)"]
+        J --> K{"¿Estado del pago en Mercado Pago?"}
+        K -- "approved" --> L{"¿El pago ya estaba aprobado<br>(fecha_confirmacion)?"}
+        L -- "Sí, con otro paymentId" --> L1["Alerta PAGO_APROBADO_DUPLICADO y termina<br>(no devuelve el dinero del duplicado)"]
+        L -- No --> M["UPDATE pago: id_transaccion_mp, mp_estado, metodo_pago, fecha_confirmacion"]
+        M --> N{"¿Estado del pedido?"}
+        N -- "PENDIENTE_PAGO y Cliente suspendido" --> N1["UPDATE pedido: CANCELADO_POR_SISTEMA, cancelado_por = SISTEMA, pago_estado = PAGADO<br>INSERT historial con motivo SUSPENSION_CLIENTE<br>INSERT nota_credito SUSPENSION_CLIENTE por el total (ver P5.04)<br>INSERT aviso al Cliente T11 PEDIDO_CANCELADO_SISTEMA: Tu pedido número fue cancelado automáticamente: tu cuenta fue suspendida y estamos gestionando la devolución de tu pago."]
+        N -- "PENDIENTE_PAGO y comercio suspendido" --> N2["Igual, con nota SUSPENSION_COMERCIO<br>INSERT aviso T11: Cancelamos tu pedido número porque el comercio no está disponible. Te devolvemos el dinero."]
+        N -- "PENDIENTE_PAGO normal" --> N3["UPDATE pedido: pago_estado = PAGADO, estado = PENDIENTE_CONFIRMACION_COMERCIO, fecha_pago_confirmado<br>Asigna el turno (turno_fecha y turno_horario_id)<br>INSERT historial: PENDIENTE_CONFIRMACION_COMERCIO, actor SISTEMA<br>INSERT aviso T1 NUEVO_PEDIDO al Dueño y a cada Empleado activo:<br>Pedido nuevo número de Nombre Apellido.<br>Vacía el carrito del Cliente si es del comercio (ver P4.13)"]
+        N -- "Ya no está PENDIENTE_PAGO y pago_estado no es PAGADO<br>(vencido o cancelado)" --> N4["Alerta PAGO_APROBADO_SOBRE_PEDIDO_CANCELADO<br>INSERT nota_credito por el total, motivo PAGO_TARDIO (o SUSPENSION_CLIENTE o SUSPENSION_COMERCIO según el caso)<br>Sin aviso al Cliente (ver P5.04)"]
+        N -- "Ya está PAGADO" --> N5["No hace nada (notificación repetida)"]
+        N1 --> O
+        N2 --> O
+        N3 --> O
+        N4 --> O
+        O["Verifica el split: fee_details application_fee contra cargo del Cliente + cargo del comercio (tolerancia 0,01)<br>Si no coincide: alerta SPLIT_NO_APLICADO (nunca bloquea)"]
+        K -- "rejected o cancelled" --> P{"¿El pago ya estaba aprobado?"}
+        P -- Sí --> P1["No hace nada"]
+        P -- No --> P2["UPDATE pago: mp_estado<br>Si el pedido sigue PENDIENTE_PAGO y no está PAGADO: pedido.pago_estado = RECHAZADO<br>(el pedido no se cancela: el Cliente puede reintentar hasta el vencimiento)"]
+        K -- "Otro (pending, in_process, authorized, refunded, charged_back)" --> Q{"¿El pago ya estaba aprobado?"}
+        Q -- Sí --> Q1["No hace nada (un contracargo o devolución posterior se ignora)"]
+        Q -- No --> Q2["UPDATE pago: mp_estado con el valor crudo<br>El pedido no cambia"]
+    end
+    I1 --> OK1
+    L1 --> OK1
+    N5 --> OK1
+    O --> OK1
+    P1 --> OK1
+    P2 --> OK1
+    Q1 --> OK1
+    Q2 --> OK1
+    OK1 --> FIN4([Fin])
+    N3 -.-> V[/"Efecto visible: el Cliente ve el pedido como en espera de respuesta del comercio (ver P4.14)<br>No hay pantalla de alertas de webhook"/]
+    V --> FIN5([Fin])
+    G1 --> FIN6([Fin])
+    H1a --> FIN7([Fin])

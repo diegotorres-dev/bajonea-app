@@ -1,0 +1,48 @@
+flowchart TD
+    A([Inicio]) --> B["Abre comercio-detalle.html?id=comercioId<br>(opcional &producto=id)"]
+    B --> C{"¿El id es un número válido y distinto de 0?"}
+    C -- No --> C1[/"Comercio no encontrado<br>El enlace que seguiste no es válido."/]
+    C1 --> FIN1([Fin])
+    C -- Sí --> D["Esqueleto de carga<br>GET /catalogo/comercios (no hay endpoint de detalle:<br>busca el comercio por id en la lista; sin try/catch)"]
+    D --> E{"¿El comercio está en la lista visible?"}
+    E -- No --> E1[/"Comercio no encontrado<br>Este comercio no está disponible en este momento.<br>(barra superior con volver, sin botón de acción ni redirección)"/]
+    E1 --> FIN2([Fin])
+    E -- Sí --> F["GET /catalogo/comercios/id/productos (sin try/catch)<br>Pinta: portada, nombre, chip de estado, descripción (si hay),<br>horario de hoy, textoReapertura (si está cerrado y hay texto),<br>dirección con localidad, pills Delivery y Retiro<br>No muestra tipo, teléfono, redes ni la semana completa<br>Volver: a explorar.html si trae ?producto, si no a index.html<br>Si el usuario es Cliente, ícono de carrito con contador"]
+    F --> G{"¿Tiene productos?"}
+    G -- No --> G1[/"Este comercio aún no cuenta con productos<br>Enlace: Explorá otros comercios"/]
+    G1 --> FIN3([Fin])
+    G -- Sí --> H["Chips: Todos, categorías y tags (en orden de primera aparición)<br>Una categoría y un tag pueden estar activos a la vez (AND)<br>Productos agrupados por categoría<br>Cada fila: nombre, descripción, precio, foto y Ver y agregar,<br>o Agotado con la foto atenuada"]
+    H --> I{"¿El filtro deja productos?"}
+    I -- No --> I1[/"Sin productos para este filtro<br>Probá con otro filtro para ver más opciones del menú."/]
+    I1 --> H
+    I -- Sí --> J{"¿Toca un producto<br>(o llegó con ?producto)?"}
+    J -- No --> FIN4([Fin])
+    J -- Sí --> K["Abre el menú del producto<br>(un AGOTADO también se abre)"]
+    K --> L{"¿Quién mira y en qué estado?"}
+    L -- "No es Cliente<br>(visitante, Dueño o Administrador)" --> L1[/"Botón: Iniciá sesión para pedir (enlace a login.html)"/]
+    L1 --> FIN5([Fin])
+    L -- "Producto AGOTADO" --> L2[/"Este producto está agotado en este momento.<br>Sin cantidad ni botón de agregar"/]
+    L2 --> FIN6([Fin])
+    L -- "Comercio cerrado en el listado<br>(horario, pausa o bloqueo)" --> L3[/"Este comercio está cerrado en este momento.<br>No se ofrece agregar (decide el cliente según estadoApertura)"/]
+    L3 --> FIN7([Fin])
+    L -- "Cliente, DISPONIBLE y abierto" --> M[/"Cantidad (de 1 a 20), Nota opcional (hasta 255, Ej: sin cebolla)<br>Botón: Agregar al carrito - precio por cantidad"/]
+    M --> N{"¿El subtotal excede el máximo?"}
+    N -- Sí --> N1[/"Toast de error con el mensaje de subtotal máximo"/]
+    N1 --> M
+    N -- No --> O["Botón: Agregando...<br>POST /carrito/items (ver P4.01)"]
+    O --> P{"Respuesta"}
+    P -- "Éxito" --> P1[/"Cierra el menú. Toast: Producto agregado al carrito<br>Actualiza el contador del carrito"/]
+    P1 --> FIN8([Fin])
+    P -- "409 que contiene otro comercio" --> Q["Cierra el menú y pide GET /carrito"]
+    Q --> Q1[/"Tu carrito tiene productos de otro comercio<br>Para agregar productos de nuevo necesitás vaciar el carrito con los artículos de actual.<br>Tarjetas: Comercio actual (N productos) y Nuevo pedido (1 producto)<br>Botones: Vaciar carrito y agregar, Cancelar"/]
+    Q1 --> Q2{"¿Qué elige?"}
+    Q2 -- Cancelar --> FIN9([Fin])
+    Q2 -- "Vaciar carrito y agregar" --> Q3["Botón: Vaciando...<br>DELETE /carrito y luego POST /carrito/items"]
+    Q3 --> Q4{"¿Salió bien?"}
+    Q4 -- Sí --> P1
+    Q4 -- No --> Q5[/"Toast con el mensaje del servidor<br>o No pudimos completar la acción. Intentá nuevamente."/]
+    Q5 --> FIN10([Fin])
+    P -- "409 que empieza con Este comercio está cerrado<br>o Este comercio no está aceptando<br>(o COMERCIO_SIN_PEDIDOS)" --> R[/"El botón se reemplaza por un aviso de error con el texto del servidor<br>Botón: Volver al catálogo"/]
+    R --> FIN11([Fin])
+    P -- "Otro error<br>(por ejemplo El producto no está disponible<br>o el aviso de comercio suspendido)" --> S[/"Toast de error con el mensaje del servidor<br>o No pudimos agregar el producto. Intentá nuevamente.<br>El botón se vuelve a habilitar"/]
+    S --> M

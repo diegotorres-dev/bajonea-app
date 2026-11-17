@@ -1,0 +1,61 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Qué hace el Administrador sobre una consulta abierta en admin-soporte.html?"}
+    B -- "Responder" --> C[/"Escribe Tu respuesta y toca Responder<br>Si no le toca: Esperando la respuesta de la persona."/]
+    C --> C1["POST /api/v1/administrador/soporte/(id)/mensajes con texto (rol ADMINISTRADOR)"]
+    C1 --> C2{"¿Pasa la validación?"}
+    C2 -- No --> C3[/"HTTP 400: Escribí tu mensaje / El mensaje no puede superar los 1000 caracteres"/]
+    C3 --> FIN1([Fin])
+    C2 -- Sí --> D
+    subgraph TX ["Transacción BD - responder"]
+        D["SELECT ticket_soporte WHERE id FOR UPDATE (primera lectura del ticket)"] --> D1{"¿Existe?"}
+        D1 -- No --> D2["RecursoNoEncontrado"]
+        D1 -- Sí --> D3{"¿Estado del ticket?"}
+        D3 -- CERRADO --> D4["Conflicto: consulta cerrada"]
+        D3 -- ESPERA_PERSONA --> D5["Conflicto: no le toca a Soporte"]
+        D3 -- ESPERA_SOPORTE --> D6["INSERT ticket_soporte_mensaje: autor SOPORTE, email_enviado false<br>UPDATE ticket_soporte: cantidad_mensajes + 1, actualizado_en"]
+        D6 --> D7{"¿El total llegó a 20?"}
+        D7 -- Sí --> D8["UPDATE ticket_soporte: estado CERRADO, cerrado_en = ahora"]
+        D7 -- No --> D9["UPDATE ticket_soporte: estado ESPERA_PERSONA"]
+        D8 --> D10["Registra el email Soporte respondió tu consulta para después del commit"]
+        D9 --> D10
+    end
+    D2 --> E1[/"HTTP 404: Consulta no encontrada"/]
+    D4 --> E2[/"HTTP 409: Esta consulta está cerrada. Si necesitás algo más, enviá una consulta nueva."/]
+    D5 --> E3[/"HTTP 409: Todavía no respondió la persona. Podés escribir cuando lo haga."/]
+    E1 --> E4["La pantalla muestra No encontramos esa consulta"]
+    E2 --> E5["Un 409 recarga el detalle y muestra el mensaje del servidor"]
+    E3 --> E5
+    E4 --> FIN2([Fin])
+    E5 --> FIN3([Fin])
+    D10 --> F["Después del commit: un solo intento por Resend, sin reintento<br>Asunto: Soporte respondió tu consulta — Bajoneá<br>Cuerpo: Soporte respondió tu consulta (código). / Ver mi consulta: (enlace) / Equipo de Bajoneá"]
+    F --> G["Transacción corta aparte: UPDATE ticket_soporte_mensaje: email_enviado = resultado del envío<br>Si esa marca falla solo se registra en el log"]
+    G --> H[/"HTTP 200: Respuesta enviada, con el detalle recargado<br>Toast: Respuesta enviada"/]
+    H --> FIN4([Fin])
+    B -- "Cerrar consulta" --> I[/"Toca Cerrar consulta<br>Hoja: La persona no va a poder escribir más en esta consulta. Si necesita algo más, tiene que enviar una consulta nueva.<br>Botones: Cerrar consulta y Cancelar"/]
+    I --> I1{"¿Confirma?"}
+    I1 -- Cancelar --> FIN5([Fin])
+    I1 -- Sí --> I2["PUT /api/v1/administrador/soporte/(id)/cerrar"]
+    I2 --> J["Transacción BD: SELECT ticket_soporte WHERE id FOR UPDATE"]
+    J --> J1{"¿Existe?"}
+    J1 -- No --> J2[/"HTTP 404: Consulta no encontrada"/]
+    J2 --> FIN6([Fin])
+    J1 -- Sí --> J3{"¿Ya está CERRADO?"}
+    J3 -- Sí --> J4[/"HTTP 409: Esta consulta ya está cerrada."/]
+    J4 --> FIN7([Fin])
+    J3 -- No --> J5["UPDATE ticket_soporte: estado CERRADO, cerrado_en = ahora, actualizado_en = ahora"]
+    J5 --> J6[/"HTTP 200: Consulta cerrada<br>Toast: Consulta cerrada"/]
+    J6 -.-> J7["No se envía email ni aviso a la persona: ve la consulta cerrada al abrirla<br>No hay reapertura ni cierre automático por inactividad"]
+    J6 --> FIN8([Fin])
+    B -- "Reenviar email fallido" --> K[/"Banner: No se envió el email. La persona no recibió tu última respuesta por email. Podés reenviarlo.<br>Botón: Reenviar email"/]
+    K --> K1["POST /api/v1/administrador/soporte/(id)/reenviar-email"]
+    K1 --> K2["SELECT ticket_soporte_mensaje: último mensaje con autor SOPORTE, sin bloqueo"]
+    K2 --> K3{"¿Existe y tiene email_enviado = false?"}
+    K3 -- No --> K4[/"HTTP 409: No hay ningún email fallido para reenviar"/]
+    K4 --> FIN9([Fin])
+    K3 -- Sí --> K5["Sin transacción: un solo intento por Resend del mismo email Soporte respondió tu consulta<br>UPDATE ticket_soporte_mensaje: email_enviado = resultado, por clave primaria"]
+    K5 --> K6{"¿Se envió?"}
+    K6 -- Sí --> K7[/"HTTP 200: Email reenviado"/]
+    K6 -- No --> K8[/"HTTP 200: No se pudo enviar el email. Probá de nuevo."/]
+    K7 --> FIN10([Fin])
+    K8 --> FIN11([Fin])
+    K5 -.-> K9["Dos reenvíos simultáneos pueden duplicar el email (caso conocido y aceptado)"]

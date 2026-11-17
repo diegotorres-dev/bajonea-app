@@ -1,0 +1,79 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Quién actúa?"}
+    B -- "Administrador<br>(admin-comercios-pendientes.html,<br>admin-resolicitudes.html)" --> C["GET /administrador/comercios/pendientes<br>o GET /administrador/comercios/resolicitudes<br>(más antiguas primero)<br>Etiquetas: Comercio adicional, Intento N de 3, Último intento"]
+    B -- "Dueño con comercio rechazado<br>(comercio-rechazado.html)" --> R0
+    C --> D{"¿Qué decide?"}
+    D -- Aprobar --> E1[/"Confirmación de aprobar"/]
+    D -- Rechazar --> E2[/"Motivo del rechazo (hasta 500 caracteres, obligatorio)<br>Interruptor Rechazo definitivo<br>En la última re-solicitud queda activado y bloqueado.<br>El comercio recibirá una notificación con el motivo del rechazo."/]
+    E1 --> F["PUT /administrador/comercios/id/resolver<br>(rol ADMINISTRADOR, sin X-Comercio-Id)<br>aprobar, motivo, definitivo"]
+    E2 --> F
+    F --> G{"Rechazar sin motivo?"}
+    G -- Sí --> G1[/"HTTP 400: El motivo es obligatorio al rechazar un comercio"/]
+    G1 --> FIN1([Fin])
+    G -- No --> H{"¿Definitivo con aprobar?"}
+    H -- Sí --> H1[/"HTTP 400: El rechazo definitivo solo se puede indicar al rechazar un comercio"/]
+    H1 --> FIN2([Fin])
+    H -- No --> I
+    subgraph TX1 [Transacción BD - resolver]
+        I["SELECT dueno_id del comercio"] --> I1{"¿Existe el comercio<br>y el Administrador?"}
+        I1 -- No --> I2[/"HTTP 404: Comercio no encontrado<br>o Administrador no encontrado"/]
+        I1 -- Sí --> J{"¿Aprueba?"}
+        J -- Sí --> J1{"¿La cuenta del Dueño está suspendida?<br>(usuario, bloqueo compartido)"}
+        J1 -- Sí --> J2[/"HTTP 409: El Dueño tiene la cuenta suspendida.<br>Levantá la suspensión primero."/]
+        J1 -- No --> J3["Lee cuenta de Mercado Pago del Dueño (FOR UPDATE)"]
+        J -- No --> K
+        J3 --> K["SELECT comercio (FOR UPDATE)"]
+        K --> K1{"¿Existe y está PENDIENTE?"}
+        K1 -- No --> K2[/"HTTP 404: Comercio no encontrado<br>o HTTP 409: El comercio ya fue resuelto"/]
+        K1 -- Sí --> L{"¿Aprueba?"}
+        L -- Sí --> L1["UPDATE comercio: estado = APROBADO<br>INSERT historial_estado_comercio<br>(administrador, PENDIENTE a APROBADO, motivo)"]
+        L1 --> L2["Recalcula aptitud de venta (ver P2.04):<br>con Mercado Pago activo y documentación cumplida pasa a APTO_VENTA<br>(segunda fila de historial);<br>si el Dueño está bloqueado, a CERRADO_TEMPORALMENTE;<br>sin documentos aprobados queda en APROBADO sin otro cambio"]
+        L2 --> L3["INSERT notificacion al Dueño (COMERCIO_APROBADO):<br>Tu comercio nombre fue aprobado<br>o fue aprobado y ya podés vender"]
+        L -- No --> M{"¿definitivo es verdadero<br>o cantidad_resolicitudes llegó a 3?"}
+        M -- Sí --> M1["UPDATE comercio: estado = RECHAZO_DEFINITIVO<br>INSERT historial_estado_comercio con el motivo"]
+        M -- No --> M2["UPDATE comercio: estado = RECHAZADO<br>INSERT historial_estado_comercio con el motivo"]
+        M1 --> M3["INSERT notificacion al Dueño (COMERCIO_RECHAZADO):<br>Tu comercio nombre fue rechazado de forma definitiva. Motivo: motivo"]
+        M2 --> M4["INSERT notificacion al Dueño (COMERCIO_RECHAZADO):<br>Tu comercio nombre fue rechazado. Motivo: motivo.<br>Corregilo y volvé a solicitarlo."]
+    end
+    I2 --> FIN3([Fin])
+    J2 --> FIN4([Fin])
+    K2 --> FIN5([Fin])
+    L3 --> N[/"HTTP 200: Comercio resuelto correctamente<br>La pantalla vuelve a la bandeja<br>Sin email al Dueño (las pantallas del registro y de comercio-pendiente.html<br>prometen un email que el código no envía)"/]
+    M3 --> N
+    M4 --> N
+    N --> FIN6([Fin])
+    R0[/"Pantalla: Tu solicitud fue rechazada<br>Podés corregir los datos y volver a solicitarla. Te quedan N intentos.<br>Sin intentos: Ya usaste todos los intentos para volver a solicitar este comercio.<br>Si creés que se trata de un error, contactá a soporte."/] --> R1{"¿Le quedan intentos?"}
+    R1 -- No --> FIN7([Fin])
+    R1 -- Sí --> R2["Botón: Corregir y volver a solicitar<br>GET /comercios/id/correccion (precarga, con tokenVersion)<br>(rol DUENO, comercio por id en la ruta, sin X-Comercio-Id)"]
+    R2 --> R3[/"Formulario precargado: datos del negocio, horarios, redes<br>y datos legales solo si el Dueño nunca tuvo un comercio aprobado<br>Foto: POST /comercios/id/correccion/foto/firma<br>(carpeta comercios/id/perfil/)"/]
+    R3 --> R4["PUT /comercios/id/resolicitud<br>(mismos datos del alta más tokenVersion)"]
+    R4 --> S{"¿Cuerpo válido?"}
+    S -- No --> S1[/"HTTP 400 con el mapa campo y mensaje<br>Pantalla: Revisá los campos marcados."/]
+    S1 --> FIN8([Fin])
+    S -- Sí --> T
+    subgraph TX2 [Transacción BD - re-solicitud]
+        T["SELECT dueno (FOR UPDATE)<br>SELECT comercio del Dueño (FOR UPDATE)"] --> T1{"¿El comercio es del Dueño?"}
+        T1 -- No --> T2[/"HTTP 404: Comercio no encontrado"/]
+        T1 -- Sí --> U{"¿Estado?"}
+        U -- PENDIENTE --> U1[/"HTTP 409: Este comercio ya fue enviado nuevamente a revisión"/]
+        U -- "distinto de RECHAZADO" --> T2
+        U -- RECHAZADO --> V{"¿cantidad_resolicitudes llegó a 3?"}
+        V -- Sí --> V1[/"HTTP 409: Ya usaste todas las re-solicitudes disponibles para este comercio"/]
+        V -- No --> W{"¿tokenVersion coincide con la última fila de historial con destino RECHAZADO?"}
+        W -- No --> W1[/"HTTP 409: La solicitud cambió desde que abriste la corrección.<br>Volvé a abrirla para continuar<br>Botón: Recargar los datos"/]
+        W -- Sí --> X{"¿Envía datos legales<br>y el Dueño ya tuvo un comercio aprobado?"}
+        X -- Sí --> X1[/"HTTP 409: No podés modificar los datos fiscales ni del representante"/]
+        X -- No --> Y["Mismas validaciones de negocio que el alta (ver P2.01):<br>horarios, redes, modalidades, localidad,<br>nombre único excluyendo al propio comercio<br>Foto nueva: carpeta comercios/id/perfil/<br>(si no: La foto de perfil no es válida. Subila de nuevo desde el formulario.)<br>CUIT o DNI repetidos: Ya existe una cuenta registrada con ese CUIT o con ese DNI"]
+        Y --> Z{"¿Cambió algún dato?"}
+        Z -- No --> Z1[/"HTTP 409: Modificá al menos un dato antes de volver a solicitar"/]
+        Z -- Sí --> AA["Aplica cambios: comercio, direccion (en el lugar),<br>horario (borra todas las filas y las inserta de nuevo),<br>red_social (alta, baja o reactivación), persona_juridica y persona_fisica si hay legales"]
+        AA --> AB["UPDATE comercio: cantidad_resolicitudes + 1, fecha_resolicitud = ahora<br>INSERT historial_estado_comercio<br>(RECHAZADO a PENDIENTE, sin administrador, motivo: Nueva solicitud del Dueño)<br>INSERT historial_cambio_comercio (una fila por campo cambiado)"]
+    end
+    T2 --> FIN9([Fin])
+    U1 --> FIN10([Fin])
+    V1 --> FIN11([Fin])
+    W1 --> FIN12([Fin])
+    X1 --> FIN13([Fin])
+    Z1 --> FIN14([Fin])
+    AB --> AC[/"HTTP 200: Comercio enviado nuevamente a revisión.<br>Te avisamos cuando lo resuelva el equipo de Bajoneá<br>Sin aviso al Administrador: el comercio reaparece en la bandeja de re-solicitudes"/]
+    AC --> FIN15([Fin])

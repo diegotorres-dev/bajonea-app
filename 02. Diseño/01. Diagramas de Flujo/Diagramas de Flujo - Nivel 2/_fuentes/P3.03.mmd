@@ -1,0 +1,25 @@
+flowchart TD
+    A([Inicio]) --> B["Entran: comercio, sus horarios vigentes y la hora actual<br>(Clock, zona app.zona-horaria, por defecto Ushuaia)<br>DisponibilidadComercioService.calcular"]
+    B --> C{"¿Dentro de una franja?<br>(una fila de horario por turno; cierre menor que apertura<br>cruza la medianoche; el turno rige por su fecha de apertura)"}
+    C -- Sí --> C1["dentro = verdadero"]
+    C -- No --> C2["dentro = falso"]
+    C1 --> D
+    C2 --> D
+    D{"¿El estado del comercio es CERRADO_TEMPORALMENTE?<br>(bloqueado por cuenta del Dueño)"}
+    D -- Sí --> E1["estadoApertura = CERRADO_TEMPORALMENTE<br>abiertoAhora = falso<br>textoReapertura = nulo"]
+    D -- No --> F{"¿cerrado_manualmente es verdadero?"}
+    F -- Sí --> E2["estadoApertura = CERRADO_MANUAL<br>abiertoAhora = falso"]
+    F -- No --> G{"¿dentro es verdadero?"}
+    G -- Sí --> E3["estadoApertura = ABIERTO<br>abiertoAhora = verdadero<br>textoReapertura = nulo"]
+    G -- No --> E4["estadoApertura = CERRADO_HORARIO<br>abiertoAhora = falso"]
+    E2 --> H
+    E4 --> H
+    H["textoReapertura: se calcula desde el momento del cierre manual<br>(si hay) o desde ahora hasta la próxima franja (hasta 7 días):<br>Reabre hoy a las HH:mm<br>Reabre mañana a las HH:mm<br>Reabre el día a las HH:mm"]
+    E1 --> I
+    E3 --> I
+    H --> I
+    I["puedeCambiarCierre = estado APROBADO o APTO_VENTA<br>y dentro de una franja"]
+    I --> J[/"Resultado: abiertoAhora, estadoApertura, textoReapertura, puedeCambiarCierre<br>Se usa en el catálogo, el detalle, el perfil y panel del Dueño y del Empleado,<br>mis-comercios. En el catálogo público el campo estado es siempre APTO_VENTA:<br>lo que distingue el cierre es estadoApertura"/]
+    J --> K["Para aceptar pedidos (carrito y confirmación)<br>no se usa estadoApertura: validarAceptaPedidos mira<br>el estado, la bandera y la franja (ver P3.02)"]
+    K --> L[/"Cómo lo ve el público: ABIERTO con chip Abierto; CERRADO_HORARIO y CERRADO_MANUAL con tarjeta atenuada y chip Cerrado;<br>CERRADO_TEMPORALMENTE con chip Cerrado temporalmente<br>El mismo texto Cerrado temporalmente se ve en el perfil del comercio y en el panel de Administrador<br>El panel del Dueño no tiene aviso propio para ese estado (ver P2.07)"/]
+    L --> FIN1([Fin])

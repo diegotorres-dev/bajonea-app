@@ -1,0 +1,51 @@
+flowchart TD
+    A([Inicio]) --> B["Perfil, fila Cambiar contraseña<br>(Cliente y Dueño; el Empleado la usa desde su<br>cuenta de Cliente. El Administrador no tiene pantalla)"]
+    B --> C[/"Contraseña actual, nueva contraseña<br>y confirmación"/]
+    C --> D{"¿Cumple las reglas<br>del formulario?"}
+    D -- No --> D1[/"Ingresá tu contraseña actual.<br>Ingresá una nueva contraseña.<br>Repetí tu nueva contraseña.<br>Debe tener mínimo 8 caracteres, una mayúscula,<br>una minúscula y un número.<br>Las contraseñas ingresadas no coinciden."/]
+    D1 --> FIN1([Fin])
+    D -- Sí --> E["POST /auth/cambiar-password<br>con el token JWT (cualquier rol con sesión)"]
+    E --> E1{"¿Token válido y<br>sesión activa?"}
+    E1 -- No --> E2[/"Error 401: No autenticado: token ausente,<br>inválido, expirado o sesión cerrada"/]
+    E2 --> E3[/"Sesión cerrada: Tu sesión terminó.<br>Iniciá sesión de nuevo."/]
+    E3 --> FIN2([Fin])
+    E1 -- Sí --> F{"¿Pasa las validaciones<br>del DTO?"}
+    F -- No --> F1[/"Error 400: No debe estar vacío<br>Debe tener mínimo 8 caracteres, una mayúscula,<br>una minúscula y un número"/]
+    F1 --> FIN3([Fin])
+    F -- Sí --> G["SELECT usuario<br>WHERE id = id_del_token<br>(bloqueo FOR UPDATE)"]
+    G --> G1{"¿Existe el usuario?"}
+    G1 -- No --> G2[/"Error 404: Usuario no encontrado"/]
+    G2 --> FIN4([Fin])
+    G1 -- Sí --> H["Comparar la contraseña actual con BCrypt"]
+    H --> H1{"¿La contraseña<br>actual es correcta?"}
+    H1 -- No --> I["UPDATE usuario:<br>intentos_fallidos = intentos_fallidos + 1"]
+    I --> I1{"¿intentos_fallidos >= 3?"}
+    I1 -- Sí --> B1
+    subgraph TXB ["Transacción BD (se confirma aunque responda 401)"]
+        B1["UPDATE usuario:<br>estado = BLOQUEADO"] --> B2["INSERT historial_estado_usuario:<br>ACTIVO a BLOQUEADO<br>motivo = Bloqueo de cuenta por intentos fallidos"]
+        B2 --> B3["UPDATE sesion (la activa):<br>activa = false, tipo_cierre = FORZADO,<br>fecha_cierre = NOW()"]
+        B3 --> B4{"¿El usuario<br>es Dueño?"}
+        B4 -- Sí --> B5["UPDATE comercio (APROBADO o APTO_VENTA):<br>estado = CERRADO_TEMPORALMENTE<br>INSERT historial_estado_comercio<br>motivo = Bloqueo de cuenta por intentos fallidos"]
+    end
+    I1 -- No --> J
+    B4 -- No --> J
+    B5 --> J[/"Error 401: La contraseña actual es incorrecta<br>(con intentosRestantes)"/]
+    J --> J1{"¿intentosRestantes?"}
+    J1 -- 0 --> J2[/"Cuenta bloqueada: Tu contraseña fue ingresada incorrectamente<br>varias veces y tu cuenta fue bloqueada por seguridad.<br>Para volver a ingresar, recuperá tu contraseña."/]
+    J2 --> FIN5([Fin])
+    J1 -- 1 --> J3[/"La contraseña actual no es correcta.<br>Cuidado: si fallás una vez más, tu cuenta se bloqueará."/]
+    J3 --> FIN6([Fin])
+    J1 -- "Otro valor" --> J4[/"La contraseña actual no es correcta."/]
+    J4 --> FIN7([Fin])
+    H1 -- Sí --> K["Comparar la nueva contraseña con la actual (BCrypt)"]
+    K --> K1{"¿La nueva es igual<br>a la actual?"}
+    K1 -- Sí --> K2[/"Error 400: La nueva contraseña debe ser<br>distinta a la actual"/]
+    K2 --> FIN8([Fin])
+    K1 -- No --> L1
+    subgraph TXC [Transacción BD]
+        L1["UPDATE usuario:<br>password_hash = hash BCrypt de la nueva contraseña<br>intentos_fallidos = 0"] --> L2["UPDATE sesion (la activa, incluida la actual):<br>activa = false, tipo_cierre = FORZADO,<br>fecha_cierre = NOW()"]
+    end
+    L2 --> M[/"HTTP 200: Contraseña cambiada correctamente"/]
+    M --> M1["El navegador borra la sesión local<br>y va a login.html?passwordActualizada=1"]
+    M1 --> M2[/"Tu contraseña se actualizó.<br>Iniciá sesión con tu nueva contraseña."/]
+    M2 --> FIN9([Fin])

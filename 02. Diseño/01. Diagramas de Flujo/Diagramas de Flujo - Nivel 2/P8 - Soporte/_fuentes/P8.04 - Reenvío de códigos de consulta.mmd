@@ -1,0 +1,26 @@
+flowchart TD
+    A([Inicio]) --> B[/"El Visitante toca ¿Perdiste el código? en soporte-consulta.html<br>Escribe Tu email y toca Reenviar código"/]
+    B --> C["POST /api/v1/soporte/publico/codigos/reenviar con email (público, sin JWT)"]
+    C --> D{"¿Pasa la validación del email?"}
+    D -- No --> D1[/"HTTP 400: El email es obligatorio / Ingresá un email válido / El email no puede superar los 254 caracteres"/]
+    D1 --> D2["La pantalla muestra el error<br>Por defecto: No pudimos reenviar el código. Probá de nuevo."]
+    D2 --> FIN1([Fin])
+    D -- Sí --> E
+    subgraph TX ["Transacción BD - reenvío de códigos"]
+        E["INSERT soporte_limite REENVIO_EMAIL y después REENVIO_IP, SELECT FOR UPDATE de cada fila"] --> F{"¿El contador del email o el de la IP ya llegó a 3 en la ventana de 60 minutos?"}
+        F -- Sí --> F1["Error de límite"]
+        F -- No --> G["UPDATE soporte_limite: cantidad + 1 en REENVIO_EMAIL y REENVIO_IP<br>Siempre, existan o no consultas"]
+        G --> H["SELECT ticket_soporte WHERE email = (email) AND estado distinto de CERRADO ORDER BY id"]
+        H --> I{"¿Hay consultas abiertas?"}
+        I -- Sí --> J["Registra el email Tus códigos de consulta para después del commit"]
+        I -- No --> K["No registra ningún email"]
+    end
+    F1 --> L[/"HTTP 429: Hiciste demasiados intentos. Probá de nuevo en una hora."/]
+    L --> L1["La pantalla muestra el error"]
+    L1 --> FIN2([Fin])
+    J --> M["Después del commit: un solo intento por Resend, sin reintento<br>Asunto: Tus códigos de consulta — Bajoneá<br>Cuerpo: Estos son los códigos de tus consultas abiertas en Bajoneá: / una línea por consulta con el código y su enlace / Con tu email y el código podés ver la respuesta y seguir la conversación. / Si no pediste este email, podés ignorarlo. / Equipo de Bajoneá"]
+    M --> N
+    K --> N
+    N[/"HTTP 200: Si hay consultas con ese email, te mandamos los códigos. Revisá tu bandeja de entrada.<br>Siempre la misma respuesta, haya o no consultas"/]
+    N --> O["La pantalla muestra el texto en un banner informativo<br>Botón: Volver a ver mi consulta (ver P8.03)"]
+    O --> FIN3([Fin])

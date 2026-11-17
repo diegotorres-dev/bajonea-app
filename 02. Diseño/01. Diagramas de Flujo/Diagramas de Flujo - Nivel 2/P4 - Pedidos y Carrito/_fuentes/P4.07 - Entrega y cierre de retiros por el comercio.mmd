@@ -1,0 +1,44 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Quién cierra el pedido<br>de retiro en el comercio?"}
+    B -- "Comercio: Entregar" --> C["Botón Entregar (btn-confirmar-retiro), sin modal<br>PUT /pedidos/comercio/id/entregar<br>Dueño o Empleado delegado, X-Comercio-Id obligatorio"]
+    B -- "Comercio: Cerrar como no retirado" --> N0["Botón Cerrar como no retirado (solo RETIRO)<br>Nace deshabilitado con cuenta regresiva:<br>Disponible en N min (desde las HH:mm)<br>Recalculada cada 15 s con el reloj del navegador"]
+    C --> C1
+    subgraph TXC [Transacción BD - entregar retiro]
+        C1["Bloqueos: usuarios (LOCK IN SHARE MODE), relación del Empleado, pedido (FOR UPDATE)"] --> C2{"¿Es un pedido propio del Empleado?"}
+        C2 -- Sí --> C2a[/"HTTP 409 PEDIDO_PROPIO: No podés gestionar tus propios pedidos"/]
+        C2 -- No --> C3{"¿Estado LISTO_PARA_RETIRAR?"}
+        C3 -- No --> C3a[/"HTTP 409 según estado:<br>Primero tenés que aceptar el pedido / El pedido todavía está en preparación /<br>El pedido está en camino: lo confirma el cliente / El pedido ya fue resuelto"/]
+        C3 -- Sí --> C4["UPDATE pedido: estado = ENTREGADO, fuente_entrega = COMERCIO, fecha_entrega = ahora<br>(no valida la modalidad ni el estado del comercio)"]
+        C4 --> C5["INSERT historial_estado_pedido: ENTREGADO, actor DUENO o EMPLEADO<br>Sin aviso al Cliente ni al comercio"]
+    end
+    C2a --> E1
+    C3a --> E1
+    C5 --> C6[/"HTTP 200: Entrega confirmada correctamente<br>Toast: Pedido entregado"/]
+    C6 --> FIN1([Fin])
+
+    N0 --> N1{"¿Ya está habilitado?"}
+    N1 -- No --> N1a[/"El botón sigue deshabilitado"/]
+    N1a --> FIN2([Fin])
+    N1 -- Sí --> N2[/"Hoja: ¿Cerrar el pedido número como no retirado?<br>El cliente no pasó a buscarlo y no se le devuelve el pago, porque el pedido ya estaba preparado.<br>Botones Cerrar como no retirado y Volver"/]
+    N2 --> N3["PUT /pedidos/comercio/id/no-retirado<br>Dueño o Empleado delegado, X-Comercio-Id obligatorio"]
+    N3 --> N4
+    subgraph TXN [Transacción BD - cerrar como no retirado]
+        N4["Mismos bloqueos y control de pedido propio que Entregar"] --> N5{"¿Estado LISTO_PARA_RETIRAR?"}
+        N5 -- No --> N5a[/"HTTP 409 con los mismos textos de Entregar"/]
+        N5 -- Sí --> N6{"¿Modalidad RETIRO?"}
+        N6 -- No --> N6a[/"HTTP 409: Solo se puede cerrar como no retirado un pedido de retiro"/]
+        N6 -- Sí --> N7["SELECT última fila LISTO_PARA_RETIRAR de historial_estado_pedido<br>disponible desde = esa hora + 60 min (pedido.timeout.no-retirado-espera-minutos)"]
+        N7 --> N8{"¿Hay fila y ya pasó la espera?"}
+        N8 -- "No hay fila" --> N8a[/"HTTP 409: No se puede cerrar como no retirado: no se encontró cuándo quedó listo para retirar"/]
+        N8 -- "Falta tiempo" --> N8b[/"HTTP 409 RETIRO_EN_ESPERA: Todavía no podés cerrar este pedido como no retirado.<br>Esperá N minutos más (desde las HH:mm)."/]
+        N8 -- Sí --> N9["UPDATE pedido: estado = NO_RETIRADO<br>(no toca fuente_entrega ni fecha_entrega)"]
+        N9 --> N10["INSERT historial_estado_pedido: NO_RETIRADO, actor DUENO o EMPLEADO<br>INSERT aviso in-app al Cliente PEDIDO_NO_RETIRADO:<br>Tu pedido número no fue retirado y el comercio lo cerró. Como ya estaba preparado, no hay devolución del pago.<br>Sin reembolso, sin email, sin aviso al equipo"]
+    end
+    N5a --> E1
+    N6a --> E1
+    N8a --> E1
+    N8b --> E1
+    N10 --> N11[/"HTTP 200: Pedido cerrado como no retirado<br>Toast: Pedido cerrado como no retirado"/]
+    N11 --> FIN3([Fin])
+
+    E1[/"El mensaje del servidor queda en pantalla y se recarga el pedido<br>Si no es 409: toast No pudimos entregar el pedido"/] --> FIN7([Fin])

@@ -1,0 +1,40 @@
+flowchart TD
+    A([Inicio]) --> B["Dueño autenticado entra por dirección directa a agregar-comercio.html<br>(sin enlaces desde otras pantallas)<br>GET /comercios/alta-adicional/elegibilidad<br>(rol DUENO, sin X-Comercio-Id: actúa sobre el Dueño)"]
+    B --> C{"¿Tiene un comercio APROBADO o APTO_VENTA,<br>o todos sus comercios en RECHAZO_DEFINITIVO?"}
+    C -- No --> C1[/"Todavía no podés agregar otro comercio.<br>Para agregar un nuevo comercio, necesitás tener al menos uno aprobado previamente<br>Botón: Volver al inicio"/]
+    C1 --> FIN1([Fin])
+    C -- Sí --> D[/"Wizard de 3 pasos: Negocio, Horarios, Redes y Términos<br>Aviso: Usamos los datos fiscales de tu cuenta.<br>No hace falta cargarlos de nuevo.<br>Sin datos fiscales, representante, email ni contraseña"/]
+    D --> E["Validaciones en pantalla por paso<br>(mismas del alta, ver P2.01)<br>Disponibilidad del nombre: GET /comercios/nombre/disponibilidad"]
+    E --> F{"¿Hay errores<br>en pantalla?"}
+    F -- Sí --> F1[/"Mensajes por campo (ver P2.01)"/]
+    F1 --> E
+    F -- No --> G["POST /comercios/nuevo/foto/firma<br>carpeta duenos/id/comercios-nuevos/<br>El navegador sube la imagen directo a Cloudinary"]
+    G --> H{"¿Falló la subida<br>de la foto?"}
+    H -- Sí --> H1[/"Vuelve al paso 1 con el mensaje de error"/]
+    H1 --> FIN2([Fin])
+    H -- No --> I["POST /comercios<br>(rol DUENO; un Empleado recibe 403)"]
+    I --> J{"Validación del cuerpo (Bean Validation):<br>¿todos los campos son válidos?<br>Mismos datos del negocio del alta más aceptaTerminos"}
+    J -- No --> J1[/"HTTP 400 con el mapa campo y mensaje"/]
+    J1 --> J2["La pantalla marca el campo<br>y vuelve al paso que corresponde"]
+    J2 --> FIN3([Fin])
+    J -- Sí --> K
+    subgraph TX [Transacción BD]
+        K["SELECT dueno WHERE id = usuario (FOR UPDATE, primera sentencia)<br>Serializa dos altas simultáneas del mismo Dueño"] --> K1{"¿Existe el Dueño?"}
+        K1 -- No --> K2[/"HTTP 404: Dueño no encontrado"/]
+        K1 -- Sí --> L{"¿Es elegible?<br>(misma regla de la elegibilidad)"}
+        L -- No --> L1[/"HTTP 409: Para agregar un nuevo comercio, necesitás tener al menos uno aprobado previamente"/]
+        L -- Sí --> M{"¿La URL de la foto es de Cloudinary,<br>de la cuenta y de la carpeta duenos/id/comercios-nuevos/?"}
+        M -- No --> M1[/"HTTP 400: La foto de perfil no es válida. Subila de nuevo desde el formulario."/]
+        M -- Sí --> N["Validaciones del negocio, en este orden (ver P2.01):<br>horarios, redes del mismo tipo, modalidades de entrega,<br>localidad (404 o 400), nombre único de comercio (409)"]
+        N --> N1{"¿Alguna falló?"}
+        N1 -- Sí --> N2[/"HTTP 400, 404 o 409 con el mismo texto que en P2.01"/]
+        N1 -- No --> O["INSERT comercio: estado PENDIENTE, nombre en Title Case<br>INSERT direccion<br>INSERT horario (una fila por franja)<br>INSERT red_social (una fila por red)<br>No crea usuario, persona ni token<br>No escribe historial_estado_comercio, no crea documentos<br>Sin tope de comercios ni de altas pendientes por Dueño"]
+    end
+    K2 --> Z[/"La pantalla marca el campo y muestra: Revisá los campos marcados.<br>o el mensaje del servidor"/]
+    L1 --> Z
+    M1 --> Z
+    N2 --> Z
+    Z --> FIN4([Fin])
+    O --> P["Sin email al Dueño<br>Sin aviso al Administrador: la solicitud aparece en su bandeja de pendientes"]
+    P --> Q[/"HTTP 201: Comercio enviado a revisión.<br>Te avisamos cuando lo resuelva el equipo de Bajoneá<br>Pantalla: nombre está en revisión."/]
+    Q --> FIN5([Fin])

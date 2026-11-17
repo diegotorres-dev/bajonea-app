@@ -1,0 +1,43 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Qué abre el Administrador?"}
+    B -- "Panel o barra lateral" --> C["GET métricas del Administrador<br>SELECT COUNT ticket_soporte WHERE estado = ESPERA_SOPORTE<br>Muestra la insignia del ítem Soporte y la tarjeta del panel (consultasSoporteEsperando)<br>No existe aviso in-app ni email por una consulta nueva"]
+    C --> B1
+    B -- "Soporte" --> B1{"¿Su usuario es ADMINISTRADOR?"}
+    B1 -- No --> B2["Redirige a login.html"]
+    B2 --> FIN1([Fin])
+    B1 -- Sí --> D["admin-soporte.html: pide las tres listas en paralelo con limite 200<br>GET /api/v1/administrador/soporte con estado ESPERAN, RESPONDIDAS y CERRADAS (por defecto ESPERAN), email opcional exacto en minúsculas, limite 50 por defecto y 200 máximo, pagina 0 por defecto"]
+    D --> E
+    subgraph TX ["Transacción BD de solo lectura - listar"]
+        E{"¿Filtro?"}
+        E -- ESPERAN --> E1["SELECT ticket_soporte WHERE estado = ESPERA_SOPORTE ORDER BY actualizado_en ASC"]
+        E -- RESPONDIDAS --> E2["SELECT ticket_soporte WHERE estado = ESPERA_PERSONA ORDER BY actualizado_en ASC"]
+        E -- CERRADAS --> E3["SELECT ticket_soporte WHERE estado = CERRADO ORDER BY actualizado_en DESC"]
+        E1 --> F
+        E2 --> F
+        E3 --> F
+        F["SELECT en una sola consulta usuario, dueno, persona_fisica y empleado por los emails de la página: marca cuentaSuspendida si el estado es SUSPENDIDO"] --> G["SELECT ids de tickets cuyo último mensaje de Soporte tiene email_enviado = false: emailPendienteDeReenvio"]
+    end
+    G --> H{"¿Hay consultas?"}
+    H -- No --> H1[/"No hay consultas esperando tu respuesta. / No hay consultas respondidas esperando a la persona. / Todavía no cerraste ninguna consulta."/]
+    H1 --> FIN2([Fin])
+    H -- Sí --> I[/"Chips Esperan N, Respondidas N y Cerradas N (200+ si llega al límite)<br>Mostrando N consultas<br>Fila: tipo, email, hace (tiempo), marcas Cuenta suspendida y No se envió el email"/]
+    I --> J{"¿Falló la carga?"}
+    J -- Sí --> J1[/"No pudimos cargar las consultas.<br>Botón: Reintentar"/]
+    J1 --> FIN3([Fin])
+    J -- No --> K{"¿Pantalla de escritorio (1024 px o más) al cargar?"}
+    K -- Sí --> K1["Maestro-detalle: la fila abre el detalle sin navegar (pushState a admin-soporte.html con id)<br>Panel vacío: Elegí una consulta<br>Sondeo cada 15 s: recarga las tres listas y el detalle abierto si no hay texto en curso"]
+    K -- No --> K2["Móvil: la fila navega a admin-soporte.html con id (página de detalle)"]
+    K1 --> L
+    K2 --> L["GET /api/v1/administrador/soporte/(id)<br>SELECT ticket_soporte, mensajes y cuenta asociada por email, sin bloqueo"]
+    L --> M{"¿Existe el ticket?"}
+    M -- No --> M1[/"HTTP 404: Consulta no encontrada<br>La pantalla: No encontramos esa consulta. Botón: Volver a Soporte"/]
+    M1 --> FIN4([Fin])
+    M -- Sí --> N[/"Detalle: tipo, email, Enviada el (fecha y hora), IP, estado (Espera tu respuesta / Esperando a la persona / Cerrada)<br>Cuenta asociada: nombre, rol y estado (Cliente y Empleado si es Empleado), vacío si el email no tiene cuenta<br>Hilo con autor Soporte o Persona<br>Si el último email de Soporte falló: banner No se envió el email"/]
+    N --> O{"¿La cuenta asociada es Dueño o Cliente?"}
+    O -- Dueño --> O1["Enlace Ver cuenta a admin-duenos.html con id (ver P1)"]
+    O -- Cliente --> O2["Enlace Ver cuenta a admin-clientes.html con id (ver P1)"]
+    O -- "Administrador o sin cuenta" --> O3["Sin enlace"]
+    O1 --> P
+    O2 --> P
+    O3 --> P["Responder, cerrar y reenviar el email: ver P8.06<br>El levantamiento de una suspensión no se hace desde Soporte: se hace por los procesos de suspensión (ver P1)<br>No hay datos de comercio ni de la suspensión en el detalle"]
+    P --> FIN5([Fin])

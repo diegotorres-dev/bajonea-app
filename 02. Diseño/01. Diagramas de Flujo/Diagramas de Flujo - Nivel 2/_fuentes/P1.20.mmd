@@ -1,0 +1,58 @@
+flowchart TD
+    A([Inicio]) --> B["Administrador: Dueños (admin-duenos.html)"]
+    B --> C{"¿Qué acción?"}
+
+    C -- "Levantar suspensión" --> L1[/"Levantar suspensión: fecha y motivo de la suspensión<br>Se restablece(n) N comercio(s). / No tiene comercios suspendidos.<br>Por comercio: Vuelve, o Sigue suspendido<br>(Se suspendió aparte. Después de levantar al Dueño, lo levantás desde su ficha.)<br>Los pedidos que se rechazaron o anularon al suspender no vuelven.<br>Mensaje para la persona (opcional)"/]
+    L1 --> L2["PUT /administrador/duenos/id/levantar-suspension"]
+    L2 --> L3{"¿El mensaje tiene hasta 500 caracteres?"}
+    L3 -- No --> L3A[/"Error 400: El motivo no puede superar los 500 caracteres"/]
+    L3A --> FIN1([Fin])
+    L3 -- Sí --> L4{"¿Es el mismo Administrador?"}
+    L4 -- Sí --> ER1[/"Error 409: No podés suspender tu propia cuenta"/]
+    L4 -- No --> L5{"¿Existe y es un Dueño?"}
+    L5 -- No --> ER2[/"Error 404: Dueño no encontrado<br>Error 409: No se puede suspender a un Administrador"/]
+    L5 -- Sí --> L6["SELECT comercios del Dueño y relaciones ACTIVO de sus Empleados<br>(sin bloqueo, fuera de la transacción)"]
+    L6 --> T1
+    subgraph TX [Transacción BD]
+        T1["SELECT usuario: Dueño (FOR UPDATE), Administrador y Empleados candidatos<br>(compartido), en orden de id. Bloquear las relaciones candidatas"] --> T2{"¿El Dueño está SUSPENDIDO?"}
+        T2 -- No --> T2A[/"Error 409: La cuenta no está suspendida"/]
+        T2 -- Sí --> T3["Leer la situación del Dueño: cuenta de Mercado Pago activa,<br>documentos y estado de la cuenta"]
+        T3 --> T4["SELECT comercios del Dueño en estado SUSPENDIDO (FOR UPDATE, se revalida).<br>Los de suspension_origen = DUENO se restauran;<br>los suspendidos por separado siguen suspendidos"]
+        T4 --> T5{"¿El estado previo del Dueño<br>fue PENDIENTE o INACTIVO?"}
+        T5 -- Sí --> T6["destino = ese estado"]
+        T5 -- No --> T7["destino = ACTIVO"]
+        T6 --> T8
+        T7 --> T8["UPDATE usuario (Dueño): estado = destino, intentos_fallidos = 0,<br>se limpian las columnas de suspensión<br>(si ACTIVO: fecha_ultimo_acceso = NOW())<br>INSERT historial_estado_usuario: SUSPENDIDO a destino"]
+        T8 --> T9["Por cada comercio a restaurar, destino según la regla de aptitud vigente:<br>APTO_VENTA o APROBADO<br>(CERRADO_TEMPORALMENTE si la cuenta quedó bloqueada)<br>UPDATE comercio: estado = destino, se limpian suspension_origen,<br>suspendido_desde y motivo_suspension<br>INSERT historial_estado_comercio: SUSPENDIDO a destino, motivo, administrador_id"]
+        T9 --> T10["INSERT avisos in-app:<br>al Dueño, uno por comercio restaurado (SUSPENSION_LEVANTADA): Levantamos la suspensión de tu cuenta y tu comercio nombre volvió a operar. Mensaje del equipo: mensaje<br>a cada Empleado activo (COMERCIO_SUSPENSION_LEVANTADA_EQUIPO): Levantaron la suspensión del comercio nombre. Ya vuelve a funcionar con normalidad.<br>Email al Dueño programado para después del commit"]
+    end
+    ER1 --> ERR
+    ER2 --> ERR
+    T2A --> ERR
+    ERR[/"No pudimos levantar la suspensión. Probá de nuevo.<br>o el mensaje del servidor"/]
+    ERR --> FIN2([Fin])
+    T10 --> U["Email al Dueño (un solo intento, después del commit):<br>Asunto: Tu cuenta de Bajoneá volvió a estar activa<br>Ya podés iniciar sesión de nuevo. Volvieron a operar: lista.<br>Siguen suspendidos por separado: lista. Mensaje del equipo: mensaje<br>INSERT notificacion (DUENO_SUSPENSION_LEVANTADA, canal EMAIL)"]
+    U --> V["Los pedidos rechazados o anulados al suspender no vuelven.<br>Las sesiones cerradas no se restauran"]
+    V --> W[/"HTTP 200: Suspensión levantada correctamente<br>estado, comerciosRestaurados, comerciosQueSiguenSuspendidos"/]
+    W --> X[/"Suspensión levantada"/]
+    X --> FIN3([Fin])
+
+    C -- "Reenviar email<br>(solo si el último falló: No se envió el email)" --> M1["POST /administrador/duenos/id/suspension/reenviar-email"]
+    M1 --> M2{"¿Es el mismo Administrador, es Administrador,<br>no existe o no es Dueño?"}
+    M2 -- Sí --> M2A[/"Error 409: No podés suspender tu propia cuenta<br>Error 409: No se puede suspender a un Administrador<br>Error 404: Dueño no encontrado"/]
+    M2A --> M2B[/"No pudimos reenviar el email. Probá de nuevo."/]
+    M2B --> FIN4([Fin])
+    M2 -- No --> M3{"¿Cuenta SUSPENDIDO?"}
+    M3 -- Sí --> M4["Buscar el último email del tipo DUENO_SUSPENDIDO<br>(se reenvía con el motivo vigente y la lista de comercios<br>SUSPENDIDO con origen DUENO)"]
+    M3 -- No --> M5["Buscar el último email del tipo DUENO_SUSPENSION_LEVANTADA<br>(con comercios restaurados y los que siguen suspendidos)"]
+    M4 --> M6
+    M5 --> M6{"¿Ese último email está FALLIDO?"}
+    M6 -- No --> M6A[/"Error 409: No hay ningún email fallido para reenviar"/]
+    M6A --> M2B
+    M6 -- Sí --> M7["Enviar de nuevo fuera de la transacción (un solo intento)<br>UPDATE notificacion (la misma fila):<br>ENVIADO con fecha_envio, o FALLIDO con fecha_envio = NULL"]
+    M7 --> M8{"¿Salió el email?"}
+    M8 -- Sí --> M9[/"HTTP 200: Email reenviado correctamente"/]
+    M9 --> M10[/"Email reenviado"/]
+    M10 --> FIN5([Fin])
+    M8 -- No --> M11[/"HTTP 502: No se pudo reenviar el email. Probá de nuevo más tarde"/]
+    M11 --> FIN6([Fin])

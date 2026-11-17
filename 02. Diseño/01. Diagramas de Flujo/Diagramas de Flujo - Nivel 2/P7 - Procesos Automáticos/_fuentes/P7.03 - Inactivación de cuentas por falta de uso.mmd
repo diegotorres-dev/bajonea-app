@@ -1,0 +1,33 @@
+flowchart TD
+    A([Inicio]) --> B["Job InactivacionCuentaJob todos los días a las 03:30 (cron, zona Ushuaia)<br>(inactividad.job-habilitado, falso en pruebas)<br>Una sola instancia. Si el servidor estaba caído a esa hora, no recupera la corrida perdida"]
+    B --> C{"¿Job habilitado?"}
+    C -- No --> FIN1([Fin])
+    C -- Sí --> D["Calcula corte = ahora menos 3 meses (inactividad.meses)<br>SELECT id y rol de usuario (solo lectura), ORDER BY fecha_ultimo_acceso, id, límite 200 (inactividad.tope-por-corrida):<br>estado = ACTIVO, rol distinto de ADMINISTRADOR, fecha_ultimo_acceso menor al corte,<br>sin pedido en curso como comprador (PENDIENTE_PAGO, PENDIENTE_CONFIRMACION_COMERCIO, EN_PREPARACION, EN_CAMINO, LISTO_PARA_RETIRAR),<br>sin pedido en curso en sus comercios y sin ningún pedido creado desde el corte en sus comercios<br>No hay aviso previo"]
+    D --> E{"¿Quedan candidatas?"}
+    E -- No --> Z["Log: Inactivación por falta de uso: candidatas, inactivadas, omitidas, con falla"]
+    Z --> FIN2([Fin])
+    E -- Sí --> F{"¿Rol DUENO?"}
+    F -- Sí --> F1["Fuera de la transacción: SELECT ids de sus comercios en APROBADO, APTO_VENTA o CERRADO_TEMPORALMENTE"]
+    F -- No --> G
+    F1 --> G
+    subgraph TX [Transacción BD - una cuenta]
+        G["SELECT usuario FOR UPDATE (primera sentencia)"] --> H{"¿Existe y sigue ACTIVO?"}
+        H -- No --> H1["OMITIDA"]
+        H -- Sí --> I["Bloquea cada comercio del Dueño (FOR UPDATE por clave primaria)"]
+        I --> J{"¿Sigue cumpliendo todas las condiciones<br>(se revalidan con lectura común)?"}
+        J -- No --> H1
+        J -- Sí --> K{"¿Apareció un comercio inactivable que no se bloqueó?"}
+        K -- Sí --> K1["Aviso en el log y OMITIDA (queda para la noche siguiente)"]
+        K -- No --> L["UPDATE usuario: estado = INACTIVO<br>INSERT historial_estado_usuario: ACTIVO a INACTIVO, motivo Inactividad, administrador nulo"]
+        L --> M["UPDATE sesión de cada sesión activa: activa = falso, tipo_cierre = INACTIVIDAD, fecha_cierre = ahora"]
+        M --> N["Por cada comercio todavía inactivable: UPDATE comercio: estado = INACTIVO<br>INSERT historial_estado_comercio: motivo Inactivación automática de la cuenta del Dueño por falta de uso<br>(PENDIENTE, RECHAZADO, RECHAZO_DEFINITIVO, SUSPENDIDO e INACTIVO no se tocan)"]
+        N --> O["INSERT aviso T24 CUENTA_INACTIVADA a la persona: Tu cuenta quedó inactiva por falta de uso.<br>INSERT un aviso T25 COMERCIO_INACTIVADO por cada comercio inactivado: Tu comercio (nombre) dejó de estar disponible porque tu cuenta quedó inactiva.<br>No toca pedidos, reembolsos, Empleados, carrito ni tokens"]
+    end
+    H1 --> Y["Cuenta como omitida"]
+    K1 --> Y
+    Y --> E
+    O --> P["Después del commit: un solo intento de email por Resend (sin transacción)<br>Asunto: Tu cuenta de Bajoneá quedó inactiva por falta de uso<br>Cuerpo: Tu cuenta de Bajoneá quedó inactiva porque pasaron 3 meses sin que la uses. / Tus comercios (nombres) dejaron de estar disponibles: no aparecen en el catálogo ni reciben pedidos nuevos hasta que reactives tu cuenta. (si es Dueño con comercios) / Para volver, iniciá sesión con tu usuario y tu contraseña y elegí reactivar tu cuenta. No perdés ningún dato. / Equipo de Bajoneá"]
+    P --> Q["INSERT notificacion en una transacción aparte: canal EMAIL, estado ENVIADO o FALLIDO<br>Sin reintento ni reenvío manual"]
+    Q --> E
+    G -.-> X["Si falla una cuenta: se revierte todo (estado, sesiones, comercios y avisos), se cuenta como con falla y queda para la noche siguiente"]
+    X --> FIN3([Fin])

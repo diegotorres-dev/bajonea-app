@@ -1,0 +1,110 @@
+flowchart TD
+    A([Inicio]) --> B["Perfil del Cliente (perfil.html)<br>El Empleado dentro de un comercio es redirigido a su panel;<br>entra a su perfil de Cliente cambiando de cuenta (ver P1.16)"]
+    B --> B1["GET /clientes/perfil (rol CLIENTE)<br>SELECT cliente WHERE id = id_del_token"]
+    B1 --> B2{"¿Existe el cliente?"}
+    B2 -- No --> B3[/"Error 404: Cliente no encontrado"/]
+    B3 --> FIN1([Fin])
+    B2 -- Sí --> B4[/"HTTP 200: Perfil obtenido correctamente<br>Encabezado con avatar, nombre y email<br>Filas: Editar datos personales, Mis direcciones, Cambiar contraseña,<br>Cambiar de cuenta, Ayuda, Mis consultas a Soporte, Cerrar sesión"/]
+    B4 --> C{"¿Qué acción?"}
+    C -- "Cambiar contraseña" --> C1["Ver P1.15"]
+    C1 --> FIN2([Fin])
+    C -- "Mis direcciones" --> C2["Ver P1.09"]
+    C2 --> FIN3([Fin])
+
+    C -- "Editar datos personales" --> E1[/"Nombre, Apellido, Teléfono (solo dígitos, máximo 10; se antepone +549),<br>Nombre de usuario (Podés cambiar tu nombre de usuario hasta 3 veces cada 30 días),<br>Email (no se puede modificar), DNI (no se puede modificar)"/]
+    E1 --> E1A["Disponibilidad del nombre de usuario en vivo (ver P1.17)"]
+    E1A --> E2{"¿Pasa las validaciones del navegador?"}
+    E2 -- No --> E2A[/"El nombre es obligatorio.<br>El apellido es obligatorio.<br>Debe contener solo letras, espacios y guiones<br>Ingresá tu teléfono.<br>Ingresá un teléfono argentino válido (código de área + número)."/]
+    E2A --> FIN4([Fin])
+    E2 -- Sí --> E3["PUT /clientes/perfil"]
+    E3 --> E4{"¿Pasa las validaciones del DTO?"}
+    E4 -- No --> E4A[/"Error 400 por campo:<br>El nombre es obligatorio / El apellido es obligatorio<br>Debe contener solo letras, espacios y guiones<br>No debe estar vacío<br>Ingresá un número de teléfono válido (cod. área + número)<br>El nombre no puede superar los 100 caracteres"/]
+    E4A --> E4B[/"No pudimos guardar tus datos. Intentá nuevamente.<br>(o el mensaje del servidor, bajo cada campo)"/]
+    E4B --> FIN5([Fin])
+    E4 -- Sí --> E5["SELECT cliente WHERE id = id_del_token<br>UPDATE persona_fisica:<br>nombre y apellido (Title Case), telefono, fecha_modificacion<br>UPDATE usuario: fecha_actualizacion"]
+    E5 --> E6[/"HTTP 200: Perfil actualizado correctamente"/]
+    E6 --> E7{"¿Cambió el nombre de usuario?"}
+    E7 -- No --> E8[/"Datos actualizados correctamente"/]
+    E8 --> FIN6([Fin])
+    E7 -- Sí --> N1[/"Confirmá tu contraseña<br>Por seguridad, ingresá tu contraseña para confirmar<br>el cambio de nombre de usuario.<br>Tu contraseña actual"/]
+    N1 --> N2{"¿Confirma?"}
+    N2 -- "Cancelar" --> N2A["La hoja se cierra. Los datos personales ya quedaron guardados,<br>el nombre de usuario no cambia y no hay mensaje"]
+    N2A --> FIN7([Fin])
+    N2 -- "Confirmar" --> N3{"¿Escribió la contraseña?"}
+    N3 -- No --> N3A[/"Ingresá tu contraseña actual."/]
+    N3A --> FIN8([Fin])
+    N3 -- Sí --> N4["PUT /clientes/perfil/nombre-usuario<br>con nombreUsuario y passwordActual"]
+    N4 --> N5{"¿Pasa las validaciones del DTO?"}
+    N5 -- No --> N5A[/"Error 400:<br>El nombre de usuario es obligatorio<br>Solo se permiten letras y números<br>El nombre de usuario debe contener al menos una letra.<br>El nombre de usuario debe tener al menos 8 caracteres<br>El nombre de usuario no puede superar los 20 caracteres<br>No debe estar vacío"/]
+    N5A --> N5B["Se cierra la hoja y el error se muestra en la pantalla de edición"]
+    N5B --> FIN9([Fin])
+    N5 -- Sí --> T1
+    subgraph TX [Transacción BD: se confirma aunque responda 401 o 409]
+        T1["SELECT usuario WHERE id = id_del_token (FOR UPDATE)"] --> T2{"¿Existe el usuario?"}
+        T2 -- No --> T2A[/"Error 404: Usuario no encontrado"/]
+        T2 -- Sí --> T3["Comparar la contraseña actual con BCrypt"]
+        T3 --> T4{"¿Es correcta?"}
+        T4 -- No --> T5["UPDATE usuario: intentos_fallidos = intentos_fallidos + 1"]
+        T5 --> T6{"¿intentos_fallidos >= 3?"}
+        T6 -- Sí --> T7["UPDATE usuario: estado = BLOQUEADO<br>INSERT historial_estado_usuario (ACTIVO a BLOQUEADO)<br>UPDATE sesion activa: tipo_cierre = FORZADO"]
+        T6 -- No --> T8
+        T7 --> T8[/"Error 401: La contraseña actual es incorrecta<br>con intentosRestantes"/]
+        T4 -- Sí --> T9{"¿El nombre nuevo es igual al actual?"}
+        T9 -- Sí --> T9A[/"Error 400: Ingresá un nombre de usuario distinto al actual"/]
+        T9 -- No --> T10{"¿Es un nombre reservado<br>o ya existe?"}
+        T10 -- Sí --> T10A[/"Error 409: Ese nombre de usuario ya está en uso"/]
+        T10 -- No --> T11["SELECT historial_cambio_nombre_usuario<br>WHERE usuario_id AND fecha_cambio mayor a ahora menos 30 días"]
+        T11 --> T12{"¿Hay 3 o más cambios?"}
+        T12 -- Sí --> T12A[/"Error 409: Ya alcanzaste el máximo de 3 cambios de nombre de usuario<br>en los últimos 30 días. Podés volver a intentarlo en N días."/]
+        T12 -- No --> T13["UPDATE usuario: nombre_usuario = nuevo,<br>intentos_fallidos = 0, fecha_actualizacion = NOW()<br>INSERT historial_cambio_nombre_usuario:<br>nombre anterior, nombre nuevo, fecha_cambio"]
+    end
+    T2A --> R0["Se cierra la hoja y el error se muestra en la pantalla de edición<br>(bajo el campo, o No pudimos actualizar tu nombre de usuario. Intentá nuevamente.)"]
+    T9A --> R0
+    T10A --> R0
+    T12A --> R0
+    R0 --> FIN10([Fin])
+    T8 --> R1{"¿intentosRestantes?"}
+    R1 -- 0 --> R2["El navegador borra la sesión local y muestra:<br>Cuenta bloqueada: Tu contraseña fue ingresada incorrectamente varias veces<br>y tu cuenta fue bloqueada por seguridad.<br>Para volver a ingresar, recuperá tu contraseña.<br>Botón: Ir al inicio de sesión (va a login.html)"]
+    R2 --> FIN11([Fin])
+    R1 -- 1 --> R3[/"La contraseña actual no es correcta.<br>Cuidado: si fallás una vez más, tu cuenta se bloqueará."/]
+    R3 --> FIN12([Fin])
+    R1 -- "Otro valor" --> R4[/"La contraseña actual no es correcta."/]
+    R4 --> FIN13([Fin])
+    T13 --> S1[/"HTTP 200: Nombre de usuario actualizado correctamente<br>(no cierra la sesión)"/]
+    S1 --> S2[/"Nombre de usuario actualizado correctamente"/]
+    S2 --> FIN14([Fin])
+
+    C -- "Foto de perfil" --> F1{"¿Ya tiene foto?"}
+    F1 -- No --> F3
+    F1 -- Sí --> F2[/"Foto de perfil: Editar foto, Eliminar foto, Cancelar"/]
+    F2 --> F2A{"¿Qué elige?"}
+    F2A -- Cancelar --> FIN15([Fin])
+    F2A -- "Eliminar foto" --> D1["DELETE /usuarios/id/foto-perfil"]
+    D1 --> D2{"¿El id de la ruta es el del usuario autenticado?"}
+    D2 -- No --> D2A[/"Error 404: Usuario no encontrado"/]
+    D2A --> D2B[/"No pudimos eliminar la foto."/]
+    D2B --> FIN16([Fin])
+    D2 -- Sí --> D3["UPDATE usuario: foto_perfil_url = NULL"]
+    D3 --> D4[/"HTTP 200: Foto de perfil eliminada correctamente"/]
+    D4 --> D5[/"Foto de perfil eliminada"/]
+    D5 --> FIN17([Fin])
+    F2A -- "Editar foto" --> F3[/"Selector de archivo (JPG, PNG o WEBP)"/]
+    F3 --> F4{"¿Formato permitido y hasta 5 MB?"}
+    F4 -- No --> F4A[/"Formato no permitido. Usá JPG, PNG o WEBP.<br>La imagen no puede superar los 5 MB."/]
+    F4A --> FIN18([Fin])
+    F4 -- Sí --> F5["Editor de recorte 1:1"]
+    F5 --> F6["POST /usuarios/id/foto-perfil/firma<br>(firma para la carpeta usuarios/id/perfil/)"]
+    F6 --> F6A{"¿El id de la ruta es el del usuario autenticado?"}
+    F6A -- No --> D2A
+    F6A -- Sí --> F7["El navegador sube el archivo directo a Cloudinary<br>(el backend nunca recibe el archivo)"]
+    F7 --> F7A{"¿Cloudinary respondió bien?"}
+    F7A -- No --> F7B[/"No pudimos conectar con el servicio de imágenes. Probá nuevamente.<br>No pudimos subir la imagen.<br>No pudimos subir la foto."/]
+    F7B --> FIN19([Fin])
+    F7A -- Sí --> F8["PATCH /usuarios/id/foto-perfil con la URL"]
+    F8 --> F9{"¿Pasa las validaciones del DTO?"}
+    F9 -- No --> F9A[/"Error 400: No debe estar vacío<br>La URL debe pertenecer al dominio de Cloudinary<br>La URL debe apuntar a un archivo jpg, jpeg, png o webp<br>La URL de la foto de perfil no puede superar los 500 caracteres"/]
+    F9A --> FIN20([Fin])
+    F9 -- Sí --> F10["UPDATE usuario: foto_perfil_url = URL, fecha_actualizacion = NOW()<br>(no se borra la foto anterior de Cloudinary)"]
+    F10 --> F11[/"HTTP 200: Foto de perfil actualizada correctamente"/]
+    F11 --> F12[/"Foto de perfil actualizada"/]
+    F12 --> FIN21([Fin])

@@ -1,0 +1,22 @@
+flowchart TD
+    A([Inicio]) --> B["Arranca la aplicación con @EnableScheduling<br>Un programador de Spring sin configuración propia: los jobs se serializan (fixedDelay: la espera cuenta desde que termina la corrida anterior)<br>Ninguno tiene bloqueo entre instancias: dependen de la idempotencia de cada proceso"]
+    B --> C{"¿pedido.jobs.habilitado?<br>(verdadero por defecto, falso en pruebas)"}
+    C -- No --> FIN1([Fin])
+    C -- Sí --> D["Procesos de pedidos de PedidoSchedulerService"]
+    D --> J1["Cada 60 s: expirarPagosVencidos<br>Pedidos PENDIENTE_PAGO creados hace más de 30 minutos pasan a CANCELADO_POR_SISTEMA (ver P4.14)"]
+    D --> J2["Cada 60 s: avisar75MinYAutoconfirmar<br>Aviso a los 75 minutos y autoconfirmación a los 90 de EN_CAMINO (ver P4.16)"]
+    D --> J3["Cada 300 s: expirarPedidosSinRespuestaComercio<br>Pedidos sin respuesta del comercio en 30 minutos pasan a EXPIRADO con reembolso (ver P4.03 y P5.04)"]
+    D --> J4["Cada 300 s: autoconfirmarRetirosPorSuspension<br>Retiros LISTO_PARA_RETIRAR de un comercio suspendido pasan a NO_RETIRADO a los 90 minutos (ver P4.07)"]
+    D --> J5["Cada 60 s: cancelarPreparacionPorSuspension<br>Pedidos EN_PREPARACION de un comercio suspendido, con reembolso (ver P5.04)"]
+    D --> J6["Cada 60 s: rechazarPendientesPorSuspension<br>Pedidos pendientes de respuesta de un comercio suspendido, con reembolso"]
+    D --> J7["Cada 60 s: procesarPedidosSinAtencionPorSuspensionDeDueno<br>Pedidos sin quién los atienda por la suspensión del Dueño"]
+    J1 --> E
+    J2 --> E
+    J3 --> E
+    J4 --> E
+    J5 --> E
+    J6 --> E
+    J7 --> E
+    E["Cada pedido se procesa en su propia transacción, con bloqueo FOR UPDATE y revalidando el estado"] --> FIN2([Fin])
+    B --> K["Otros procesos automáticos (ver P7.01, P7.02, P7.03 y P7.05):<br>reapertura de comercios cada 60 s, vencimiento de invitaciones cada 60 s,<br>inactivación de cuentas a las 03:30, cierre de turno y envío del resumen cada 60 s<br>Asignación de turnos a pedidos anteriores a V39 una sola vez al arrancar, en un hilo aparte (no relevada a fondo)"]
+    K --> FIN3([Fin])

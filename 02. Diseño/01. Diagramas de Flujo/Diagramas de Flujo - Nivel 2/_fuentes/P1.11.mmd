@@ -1,0 +1,73 @@
+flowchart TD
+    A([Inicio]) --> B["Entrada: enlace del email (invitacion-empleado.html)<br>o botón Tengo una invitación del login o del registro"]
+    B --> C[/"Email y código de 6 dígitos<br>Pedile al comercio que te reenvíe el código si venció."/]
+    C --> D{"¿Pasa las validaciones<br>del navegador?"}
+    D -- No --> D1[/"El email es obligatorio<br>Ingresá un email válido<br>Ingresá el código de 6 dígitos."/]
+    D1 --> FIN1([Fin])
+    D -- Sí --> E["POST /auth/invitaciones-empleado/validar<br>(ruta pública)"]
+    E --> E1{"¿Más de 10 consultas por minuto<br>desde la misma IP?"}
+    E1 -- Sí --> E1A[/"Error 429: Demasiadas solicitudes.<br>Demasiados intentos. Probá de nuevo en un minuto."/]
+    E1A --> FIN2([Fin])
+    E1 -- No --> E2{"¿Pasa las validaciones del DTO?"}
+    E2 -- No --> E2A[/"Error 400: El email es obligatorio / Ingresá un email válido<br>El código es obligatorio<br>El código debe tener 6 dígitos numéricos"/]
+    E2A --> FIN3([Fin])
+    E2 -- Sí --> F["SELECT invitacion_empleado<br>WHERE email AND estado = PENDIENTE<br>AND fecha_vencimiento mayor a ahora"]
+    F --> F1{"¿Alguna coincide con el código?"}
+    F1 -- No --> F2["UPDATE invitacion_empleado (todas las vigentes del email):<br>intentos_fallidos = intentos_fallidos + 1<br>(al llegar a 5: estado = INVALIDADA)<br>El contador se conserva aunque responda 401"]
+    F2 --> F3[/"Error 401: El código es incorrecto o la invitación ya no está vigente.<br>Pedí que te reenvíen la invitación."/]
+    F3 --> FIN4([Fin])
+    F1 -- Sí --> G{"¿El email ya tiene cuenta?"}
+    G -- Sí --> G1{"¿La cuenta y el comercio<br>permiten aceptar?<br>(mismas reglas de la aceptación)"}
+    G1 -- No --> G2[/"Error 409 con el mensaje de la regla que falla<br>(ver más abajo)"/]
+    G2 --> FIN5([Fin])
+    G1 -- Sí --> H
+    G -- No --> H[/"HTTP 200: Invitación válida<br>comercio, foto, cuentaExistente, fecha de vencimiento"/]
+    H --> H1{"¿cuentaExistente?"}
+    H1 -- Sí --> I[/"Invitación: avatar y nombre del comercio<br>Te invitaron a sumarte a su equipo.<br>Cuenta: email<br>Botón: Aceptar invitación"/]
+    H1 -- No --> J[/"Crear tu cuenta: Para sumarte a comercio<br>Asistente de registro de Cliente en dos pasos<br>(sin email; edad mínima 18)<br>Botón: Crear cuenta y aceptar"/]
+    J --> J1{"¿Pasa las validaciones del navegador?<br>(las del registro de Cliente, ver P1.01)"}
+    J1 -- No --> J2[/"Mensajes por campo<br>Tenés que tener 18 años o más para trabajar en este comercio."/]
+    J2 --> FIN6([Fin])
+    J1 -- Sí --> K
+    I --> K["POST /auth/invitaciones-empleado/aceptar<br>(ruta pública, 10 por minuto por IP)"]
+    K --> K1{"¿Pasa el límite por IP<br>y las validaciones del DTO?"}
+    K1 -- No --> K1A[/"Error 429 o Error 400 con los mensajes por campo"/]
+    K1A --> FIN7([Fin])
+    K1 -- Sí --> L
+
+    subgraph TX [Transacción BD]
+        L["Bloquear usuario del invitado (si tiene cuenta)<br>y del Dueño, en orden de id;<br>bloquear las invitaciones del email"] --> L1{"¿Hay una PENDIENTE vigente<br>con ese código?"}
+        L1 -- No --> L1A["UPDATE intentos_fallidos + 1 (a 5: INVALIDADA)<br>se conserva aunque responda 401"]
+        L1 -- Sí --> M{"¿El email ya tiene cuenta?"}
+        M -- Sí --> M1{"¿Es Dueño o Administrador?"}
+        M1 -- Sí --> M1A[/"Error 409: No se puede aceptar esta invitación<br>con esta cuenta"/]
+        M1 -- No --> M2{"¿La cuenta está ACTIVO?"}
+        M2 -- No --> M2A[/"Error 409 con el texto del login para ese estado:<br>PENDIENTE: Verificá tu email antes de iniciar sesión<br>BLOQUEADO: Cuenta bloqueada. Recuperá tu contraseña para desbloquearla<br>INACTIVO: Cuenta inactiva. Solicitá la reactivación de tu cuenta<br>SUSPENDIDO: Cuenta suspendida"/]
+        M2 -- Sí --> M3{"¿Tiene 18 años o más?"}
+        M3 -- No --> M3A[/"Error 409: Tenés que tener 18 años o más<br>para sumarte a un equipo"/]
+        M3 -- Sí --> P
+        M -- No --> N{"¿Datos de la cuenta nueva correctos?"}
+        N -- No --> N1[/"Error 400 por campo:<br>Completá tus datos para crear tu cuenta<br>Tenés que aceptar los Términos y Condiciones<br>Tenés que tener 18 años o más para trabajar en un comercio<br>Esa localidad todavía no está disponible"/]
+        N -- Sí --> O["Crear la cuenta de Cliente ACTIVO (ver P1.01, paso de alta):<br>email único, nombre de usuario libre (Ese nombre de usuario ya está en uso),<br>DNI único (Ya existe una cuenta registrada con ese DNI), localidad<br>INSERT usuario, persona, persona_fisica, cliente, direccion principal<br>(sin email de verificación ni token)"]
+        O --> P["INSERT empleado (si no existe)<br>INSERT empleado_comercio: estado = ACTIVO, fecha_alta = NOW()<br>(si ya existía INACTIVO: UPDATE estado = ACTIVO, fecha_baja = NULL;<br>si ya estaba ACTIVO: no cambia nada)"]
+        P --> Q{"¿El comercio está APROBADO,<br>APTO_VENTA o CERRADO_TEMPORALMENTE?"}
+        Q -- No --> Q1[/"Error 409: Esta invitación ya no está disponible<br>(revierte todo, incluida la cuenta nueva)"/]
+        Q -- Sí --> R["UPDATE invitacion_empleado:<br>estado = ACEPTADA, usuario_aceptante_id, fecha_resolucion = NOW()"]
+        R --> S["INSERT historial_empleado_comercio: ACEPTACION<br>(y REACTIVACION si se reactivó la relación)"]
+        S --> T["DELETE avisos anteriores del Empleado de ese comercio<br>(solo si la relación es nueva o se reactivó)"]
+        T --> U["INSERT aviso al Dueño (tipo INVITACION_EMPLEADO, con comercio_id):<br>nombre apellido aceptó tu invitación y ya es parte del equipo de comercio"]
+    end
+    L1A --> L2[/"Error 401: El código es incorrecto o la invitación ya no está vigente.<br>Pedí que te reenvíen la invitación."/]
+    L2 --> FIN8([Fin])
+    M1A --> V
+    M2A --> V
+    M3A --> V
+    N1 --> V
+    Q1 --> V
+    V["El navegador muestra el error en el campo o en un banner<br>(409 de DNI: error del campo DNI;<br>red o error de servidor: No pudimos conectar. Probá de nuevo.)"]
+    V --> FIN9([Fin])
+    U --> W[/"HTTP 200: Ya sos parte del equipo de comercio<br>(no inicia sesión ni cambia el rol: sigue como CLIENTE)"/]
+    W --> X[/"Ya sos parte del equipo de comercio<br>Botón: ir al login"/]
+    X --> Y["Cierra la sesión guardada (si hay token)<br>y va a login.html"]
+    Y --> Z[/"Listo, ya podés ingresar"/]
+    Z --> FIN10([Fin])

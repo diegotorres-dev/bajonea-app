@@ -1,0 +1,64 @@
+flowchart TD
+    A([Inicio]) --> B["Dueño en comercio-documentacion.html<br>(Documentación del perfil o pasos para vender)"]
+    B --> C{"¿Qué hace?"}
+    C -- "Subir documento" --> D[/"Hoja Subir documento:<br>Tipo: Libreta sanitaria, Carnet de manipulación de alimentos,<br>Habilitación comercial u Otro<br>Descripción (hasta 100 caracteres, obligatoria si el tipo es Otro)<br>Archivo PDF, JPG, PNG o WebP de hasta 8 MB"/]
+    C -- "Eliminar uno en revisión" --> X0[/"¿Eliminar este documento?"/]
+    C -- "Ver o descargar" --> V0["GET /comercios/documentos/id/archivo<br>fetch con Authorization a un blob<br>(Content-Disposition inline, nosniff, no-store)"]
+    V0 --> V1{"¿El documento es de ese comercio?"}
+    V1 -- No --> V2[/"HTTP 404: Documento no encontrado"/]
+    V2 --> FIN1([Fin])
+    V1 -- Sí --> V3[/"Vista previa del archivo"/]
+    V3 --> FIN2([Fin])
+    D --> E{"Validación en pantalla:<br>¿tipo, descripción, archivo y formato válidos?"}
+    E -- No --> E1[/"Elegí el tipo de documento<br>Contanos qué documento es<br>Elegí el archivo que vas a subir<br>Ese formato no está permitido. Subí un archivo PDF, JPG, PNG o WebP.<br>El archivo pesa tamaño y el máximo es 8 MB.<br>El archivo está vacío. Elegí otro."/]
+    E1 --> D
+    E -- Sí --> F["POST /comercios/documentos (multipart, hasta 180 s)<br>Rol DUENO con X-Comercio-Id<br>(un Empleado recibe 403)"]
+    F --> G{"¿X-Comercio-Id válido<br>y del Dueño?"}
+    G -- No --> G1[/"HTTP 400: Falta indicar el comercio<br>o El comercio indicado no es válido<br>o HTTP 404: Comercio no encontrado (COMERCIO_NO_DISPONIBLE)"/]
+    G1 --> FIN3([Fin])
+    G -- Sí --> H{"¿Campos obligatorios completos?"}
+    H -- No --> H1[/"HTTP 400: Elegí el tipo de documento<br>o Contanos qué documento es<br>o La descripción puede tener hasta 100 caracteres<br>o Elegí el archivo que vas a subir"/]
+    H1 --> FIN4([Fin])
+    H -- Sí --> I{"¿El archivo pesa 0 bytes?"}
+    I -- Sí --> I1[/"HTTP 400 DOCUMENTO_FORMATO_NO_PERMITIDO:<br>El archivo está vacío"/]
+    I1 --> FIN5([Fin])
+    I -- No --> J{"¿Pesa más de 8 MB?"}
+    J -- Sí --> J1[/"HTTP 400 DOCUMENTO_TAMANO_EXCEDIDO:<br>El archivo pesa tamaño y el máximo es 8 MB"/]
+    J1 --> FIN6([Fin])
+    J -- No --> K{"¿Se pudo leer el archivo?"}
+    K -- No --> K1[/"HTTP 400: No pudimos leer el archivo. Probá de nuevo"/]
+    K1 --> FIN7([Fin])
+    K -- Sí --> L{"Firma de bytes (no extensión ni Content-Type):<br>¿es PDF, JPG, PNG o WebP?"}
+    L -- No --> L1[/"HTTP 400 DOCUMENTO_FORMATO_NO_PERMITIDO:<br>Solo se aceptan archivos PDF, JPG, PNG o WebP"/]
+    L1 --> FIN8([Fin])
+    L -- Sí --> M
+    subgraph TX [Transacción BD - subir]
+        M["SELECT usuario y cuenta_mercado_pago del Dueño (FOR UPDATE)<br>SELECT comercio (FOR UPDATE)"] --> N{"¿Estado del comercio:<br>APROBADO, APTO_VENTA, CERRADO_TEMPORALMENTE o SUSPENDIDO?"}
+        N -- No --> N1[/"HTTP 409 COMERCIO_ESTADO_NO_PERMITE_DOCUMENTOS:<br>Tu comercio no puede recibir documentos en este momento<br>(PENDIENTE, RECHAZADO, RECHAZO_DEFINITIVO e INACTIVO no pueden subir)"/]
+        N -- Sí --> O{"¿Ya tiene 20 documentos?<br>(los rechazados cuentan)"}
+        O -- Sí --> O1[/"HTTP 409 DOCUMENTO_CUPO_TOTAL:<br>Llegaste al máximo de 20 documentos por comercio"/]
+        O -- No --> P{"¿Ya tiene 5 en revisión?"}
+        P -- Sí --> P1[/"HTTP 409 DOCUMENTO_CUPO_REVISION:<br>Ya tenés 5 documentos en revisión.<br>Esperá a que los revisemos para subir otro"/]
+        P -- No --> Q["INSERT documento_comercio: tipo, descripción (solo si es Otro),<br>nombre_original, tipo_mime por firma, tamano_bytes,<br>estado PENDIENTE, fecha_subida, subido_por_usuario_id<br>INSERT documento_comercio_archivo: contenido LONGBLOB"]
+        Q --> R["Recalcula aptitud (DOCUMENTO_SUBIDO, ver P2.04):<br>un PENDIENTE no corta la venta pero impide entrar a APTO_VENTA"]
+    end
+    N1 --> FIN9([Fin])
+    O1 --> FIN10([Fin])
+    P1 --> FIN11([Fin])
+    R --> S[/"HTTP 201: Documento subido. Lo vamos a revisar a la brevedad<br>Toast: Documento enviado. Lo estamos revisando.<br>Sin email ni aviso al Administrador (lo ve en el contador de documentos pendientes)<br>Cloudinary no interviene: el archivo vive en MySQL"/]
+    S --> FIN12([Fin])
+    X0 --> X1{"¿Confirma?"}
+    X1 -- No --> FIN13([Fin])
+    X1 -- Sí --> X2["DELETE /comercios/documentos/id"]
+    X2 --> X3
+    subgraph TX2 [Transacción BD - eliminar]
+        X3["Bloquea usuario, comercio y documento (FOR UPDATE)"] --> X4{"¿El documento es de ese comercio?"}
+        X4 -- No --> X5[/"HTTP 404: Documento no encontrado"/]
+        X4 -- Sí --> X6{"¿Está PENDIENTE?"}
+        X6 -- No --> X7[/"HTTP 409 DOCUMENTO_NO_ELIMINABLE:<br>Solo podés eliminar documentos que todavía están en revisión"/]
+        X6 -- Sí --> X8["DELETE documento_comercio_archivo<br>DELETE documento_comercio (borrado físico, sin historial)<br>Recalcula aptitud (DOCUMENTO_ELIMINADO):<br>si era el único pendiente puede habilitar APTO_VENTA"]
+    end
+    X5 --> FIN14([Fin])
+    X7 --> FIN15([Fin])
+    X8 --> X9[/"HTTP 200: Documento eliminado"/]
+    X9 --> FIN16([Fin])

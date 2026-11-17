@@ -1,0 +1,54 @@
+flowchart TD
+    A([Inicio]) --> B[/"registro-comercio.html, wizard de 4 pasos (visitante sin sesión)<br>Paso 1 Negocio: nombre, descripción, teléfono, tipo, delivery y retiro,<br>dirección, localidad, foto de perfil<br>Paso 2 Legales y cuenta: CUIT, domicilio fiscal, representante,<br>nombre de usuario, email, contraseña<br>Paso 3 Horarios, Paso 4 Redes y Términos"/]
+    B --> D["Validaciones en pantalla por paso<br>Disponibilidad del nombre en vivo:<br>GET /auth/comercio-nombre/disponibilidad (público, 30 por minuto por IP)"]
+    D --> E{"¿Hay errores<br>en pantalla?"}
+    E -- Sí --> E1[/"Mensajes por campo, por ejemplo:<br>El nombre del comercio es obligatorio<br>Agregá una foto de perfil de tu comercio<br>Cargá al menos una franja horaria de atención.<br>Cargá al menos una red social.<br>Debés ofrecer al menos una modalidad de entrega.<br>Debe ser mayor de 18 años"/]
+    E1 --> D
+    E -- No --> F["POST /auth/registro/comercio/foto-firma<br>(público, 5 por minuto por IP), carpeta comercios/pre-registro/<br>El navegador sube la imagen directo a Cloudinary<br>(JPG, PNG o WEBP, hasta 5 MB)"]
+    F --> G{"¿Falló la subida<br>de la foto?"}
+    G -- Sí --> G1[/"Vuelve al paso 1 con el mensaje de error"/]
+    G1 --> FIN1([Fin])
+    G -- No --> I["POST /auth/registro/comercio"]
+    I --> J{"Validación del cuerpo (Bean Validation):<br>¿todos los campos son válidos?<br>CUIT módulo 11, DNI, 18 años mínimo del representante,<br>teléfono argentino, código postal, URL de foto de res.cloudinary.com<br>(sin validar carpeta ni cuenta), términos aceptados,<br>horarios y redes sin vacíos, máx. 5 redes"}
+    J -- No --> J1[/"HTTP 400 con el mapa campo y mensaje,<br>por ejemplo: Tenés que aceptar los Términos y Condiciones"/]
+    J1 --> J2["La pantalla marca el campo<br>y vuelve al paso que corresponde"]
+    J2 --> FIN2([Fin])
+    J -- Sí --> L1
+    subgraph TX [Transacción BD]
+        L1{"¿El email ya existe?"} -- Sí --> L1X[/"HTTP 409: Ya existe una cuenta registrada con ese email"/]
+        L1 -- No --> L2{"¿El nombre de usuario<br>está reservado o en uso?"}
+        L2 -- Sí --> L2X[/"HTTP 409: Ese nombre de usuario ya está en uso"/]
+        L2 -- No --> L3{"¿El CUIT ya existe?"}
+        L3 -- Sí --> L3X[/"HTTP 409: Ya existe una cuenta registrada con ese CUIT"/]
+        L3 -- No --> L4{"¿El DNI del representante ya existe?"}
+        L4 -- Sí --> L4X[/"HTTP 409: Ya existe una cuenta registrada con ese DNI"/]
+        L4 -- No --> N1{"Horarios: ¿cierre igual a apertura<br>o franjas superpuestas en la semana?"}
+        N1 -- Sí --> N1X[/"HTTP 400: La hora de cierre no puede ser igual a la de apertura...<br>o Ya tenés un horario cargado el día de apertura a cierre,<br>que se superpone con este"/]
+        N1 -- No --> N2{"¿Hay dos redes del mismo tipo?"}
+        N2 -- Sí --> N2X[/"HTTP 400: No podés cargar dos redes sociales del mismo tipo"/]
+        N2 -- No --> N3{"¿Ofrece delivery o retiro?"}
+        N3 -- No --> N3X[/"HTTP 400: El comercio debe ofrecer al menos una modalidad de entrega<br>(delivery o retiro)"/]
+        N3 -- Sí --> N4{"¿Existe la localidad?"}
+        N4 -- No --> N4X[/"HTTP 404: La localidad indicada no existe"/]
+        N4 -- Sí --> N5{"¿Está habilitada?<br>(Río Grande, Ushuaia o Tolhuin)"}
+        N5 -- No --> N5X[/"HTTP 400 en direccion.localidadId:<br>Esa localidad todavía no está disponible"/]
+        N5 -- Sí --> N6{"¿Ya existe un comercio con ese nombre?<br>(sin importar mayúsculas, tildes ni espacios repetidos;<br>un RECHAZADO conserva el nombre,<br>un RECHAZO_DEFINITIVO lo libera)"}
+        N6 -- Sí --> N6X[/"HTTP 409: Ya existe un comercio con ese nombre. Elegí otro."/]
+        N6 -- No --> L5["INSERT usuario (rol DUENO, estado PENDIENTE, contraseña con BCrypt)<br>INSERT persona, persona_fisica, persona_juridica, dueno"]
+        L5 --> N7["INSERT comercio: estado PENDIENTE, nombre en Title Case,<br>cantidad_resolicitudes 0, cerrado_manualmente 0<br>INSERT direccion<br>INSERT horario (una fila por franja, vigente desde 2000-01-01)<br>INSERT red_social (una fila por red)<br>No escribe historial_estado_comercio, no crea documentos<br>aceptaTerminos se valida pero no se guarda"]
+        N7 --> P1["INSERT token VERIFICACION_EMAIL (24 horas)"]
+    end
+    L1X --> Z[/"La pantalla marca el campo y muestra: Revisá los campos marcados."/]
+    L2X --> Z
+    L3X --> Z
+    L4X --> Z
+    N1X --> Z
+    N2X --> Z
+    N3X --> Z
+    N4X --> Z
+    N5X --> Z
+    N6X --> Z
+    Z --> FIN3([Fin])
+    P1 --> P2["Después del commit: email con el código de 6 dígitos<br>(si el envío falla, el alta ya quedó y no se avisa;<br>el código se puede reenviar desde verificar-email.html)<br>Sin aviso al Administrador"]
+    P2 --> Q1[/"HTTP 201: Comercio registrado correctamente, verificá tu email<br>Pantalla: Te enviamos un código de 6 dígitos a tu email.<br>Verificá tu cuenta y luego un administrador va a revisar tu comercio<br>y te vamos a avisar por email cuando quede aprobado.<br>(ese email de aprobación no existe en el código: ver P2.02)<br>Botón: Ingresar código de verificación (ver P1.03)"/]
+    Q1 --> FIN4([Fin])

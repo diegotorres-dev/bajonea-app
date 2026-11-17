@@ -1,0 +1,52 @@
+flowchart TD
+    A([Inicio]) --> B[/"Datos personales: nombre, apellido, DNI,<br>fecha de nacimiento, email, teléfono,<br>nombre de usuario y contraseña"/]
+    B --> B2["Consulta de disponibilidad del nombre<br>de usuario al salir del campo (ver P1.17)"]
+    B2 --> C[/"Dirección: calle, número, piso y departamento,<br>código postal y localidad<br>Foto de perfil (opcional)<br>Aceptar Términos y Condiciones"/]
+    C --> D{"¿Pasa las validaciones<br>del formulario?"}
+    D -- No --> D1[/"Mensaje de error bajo cada campo. Ej.:<br>Tenés que tener al menos 14 años<br>para poder registrarte."/]
+    D1 --> FIN1([Fin])
+    D -- Sí --> E{"¿Cargó foto<br>de perfil?"}
+    E -- Sí --> E1["POST /auth/registro/cliente/foto-firma<br>(límite 5 por minuto por IP)<br>y subida de la foto a Cloudinary"]
+    E1 --> E2{"¿Falló la subida?"}
+    E2 -- Sí --> E3[/"No pudimos subir la foto.<br>Intentá nuevamente."/]
+    E3 --> FIN2([Fin])
+    E2 -- No --> F
+    E -- No --> F["POST /auth/registro/cliente<br>Normalizar: trim y minúsculas en email<br>y nombre de usuario, DNI sin puntos,<br>teléfono sin espacios ni guiones"]
+    F --> G{"¿Los datos cumplen las<br>validaciones del DTO?"}
+    G -- No --> G1[/"Error 400: campo: mensaje<br>(todas las violaciones). Ej.:<br>El DNI debe tener un formato válido"/]
+    G1 --> FIN3([Fin])
+    G -- Sí --> H["SELECT usuario<br>WHERE email = email_ingresado"]
+    H --> H1{"¿Ya existe el email?"}
+    H1 -- Sí --> H2[/"Error 409: Ya existe una cuenta<br>registrada con ese email"/]
+    H2 --> FIN4([Fin])
+    H1 -- No --> I["SELECT usuario<br>WHERE nombre_usuario = nombre_ingresado"]
+    I --> I1{"¿Es un nombre reservado<br>o ya existe?"}
+    I1 -- Sí --> I2[/"Error 409: Ese nombre de usuario<br>ya está en uso"/]
+    I2 --> FIN5([Fin])
+    I1 -- No --> J["SELECT persona_fisica<br>WHERE dni = dni_ingresado"]
+    J --> J1{"¿Ya existe el DNI?"}
+    J1 -- Sí --> J2[/"Error 409: Ya existe una cuenta<br>registrada con ese DNI"/]
+    J2 --> FIN6([Fin])
+    J1 -- No --> K["SELECT localidad<br>WHERE id = localidadId"]
+    K --> K1{"¿Existe la localidad?"}
+    K1 -- No --> K2[/"Error 404: La localidad<br>indicada no existe"/]
+    K2 --> FIN7([Fin])
+    K1 -- Sí --> K3{"¿Está habilitada?<br>(Río Grande, Ushuaia o Tolhuin)"}
+    K3 -- No --> K4[/"Error 400: Esa localidad<br>todavía no está disponible"/]
+    K4 --> FIN8([Fin])
+    K3 -- Sí --> T1
+    subgraph TX [Transacción BD]
+        T1["INSERT usuario:<br>nombre_usuario, email, password_hash (BCrypt),<br>rol = CLIENTE, estado = PENDIENTE,<br>intentos_fallidos = 0, foto_perfil_url,<br>fecha_registro = NOW()"] --> T2["INSERT persona"]
+        T2 --> T3["INSERT persona_fisica:<br>nombre, apellido, dni,<br>fecha_nacimiento, telefono"]
+        T3 --> T4["INSERT cliente"]
+        T4 --> T5["INSERT direccion:<br>calle, numero, piso_depto, codigo_postal,<br>localidad_id, principal = true"]
+        T5 --> T6["INSERT token:<br>tipo = VERIFICACION_EMAIL, código de 6 dígitos,<br>estado = PENDIENTE, vence en 24 horas,<br>intentos_fallidos = 0"]
+    end
+    T6 --> L{"¿Falló la transacción?"}
+    L -- Sí --> L1[/"Se revierte todo. Según la causa:<br>Error 409: Ese nombre de usuario ya está en uso<br>Error 409: Ya existe un registro con alguno<br>de los datos ingresados<br>Error 500: No pudimos generar el código de verificación.<br>Intentá nuevamente en unos instantes.<br>Error 500: No se pudo procesar la solicitud,<br>intentá nuevamente"/]
+    L1 --> FIN9([Fin])
+    L -- No --> M["Enviar email de verificación (después del commit)<br>Asunto: Tu código de verificación — Bajoneá<br>Si el envío falla, el registro no se revierte"]
+    M --> N[/"HTTP 201: Cliente registrado correctamente,<br>verificá tu email<br>(no se inicia sesión)"/]
+    N --> O[/"Revisá tu email: Te enviamos un código de 6 dígitos.<br>Ingresalo en la pantalla de verificación para activar<br>tu cuenta y empezar a pedir en Bajoneá."/]
+    O --> P["Botón: Ingresar código de verificación"]
+    P --> FIN10([Fin])

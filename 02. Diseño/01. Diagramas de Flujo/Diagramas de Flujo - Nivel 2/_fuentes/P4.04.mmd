@@ -1,0 +1,35 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Qué pasa con el pedido?"}
+    B -- "Dueño o Empleado toca Marcar como despachado<br>o Marcar como listo para retirar" --> C0["Botón: Actualizando...<br>PUT /pedidos/comercio/id/despachar<br>Sin cuerpo. Dueño o Empleado activo (delegable), X-Comercio-Id obligatorio"]
+    B -- "Consulta de estados" --> T0["Tabla de transiciones tal como las implementa el código"]
+
+    C0 --> C1{"¿Acceso válido y pedido del comercio que llegó pagado?"}
+    C1 -- No --> C2[/"HTTP 404 COMERCIO_NO_DISPONIBLE: Comercio no encontrado<br>o HTTP 404: Pedido no encontrado"/]
+    C2 --> FIN1([Fin])
+    C1 -- Sí --> C3
+    subgraph TX [Transacción BD - despachar]
+        C3["Bloqueos: usuarios (LOCK IN SHARE MODE, id ascendente), relación del Empleado,<br>estado del comercio, pedido (FOR UPDATE)<br>NO aplica el guard de comercio no operativo: funciona con el comercio suspendido"] --> C4{"¿El actor está SUSPENDIDO<br>o es un Empleado que es el Cliente del pedido?"}
+        C4 -- Sí --> C5[/"HTTP 409 CUENTA_SUSPENDIDA con el motivo<br>o HTTP 409 PEDIDO_PROPIO: No podés gestionar tus propios pedidos"/]
+        C4 -- No --> C6{"Estado del pedido"}
+        C6 -- "PENDIENTE_CONFIRMACION_COMERCIO" --> C7[/"HTTP 409: Primero tenés que aceptar el pedido"/]
+        C6 -- "Otro distinto de EN_PREPARACION" --> C8[/"HTTP 409: El pedido ya fue resuelto"/]
+        C6 -- "EN_PREPARACION" --> C9{"tipo_entrega"}
+        C9 -- "DOMICILIO" --> C10["UPDATE pedido: estado = EN_CAMINO<br>INSERT historial_estado_pedido: EN_CAMINO, actor DUENO o EMPLEADO<br>INSERT aviso al Cliente PEDIDO_EN_CAMINO:<br>Tu pedido de (comercio) fue despachado y está en camino."]
+        C9 -- "RETIRO" --> C11["UPDATE pedido: estado = LISTO_PARA_RETIRAR<br>INSERT historial_estado_pedido: LISTO_PARA_RETIRAR, actor DUENO o EMPLEADO<br>INSERT aviso al Cliente PEDIDO_LISTO_RETIRO:<br>Tu pedido de (comercio) está listo para retirar en el local."]
+    end
+    C5 --> FIN2([Fin])
+    C7 --> C12
+    C8 --> C12
+    C12[/"El 409 sale como aviso fijo con el texto del servidor<br>La pantalla se actualiza con el estado real"/] --> FIN3([Fin])
+    C10 --> C13[/"HTTP 200: Pedido despachado correctamente<br>Toast: Pedido actualizado. Sin reembolso ni email"/]
+    C11 --> C13
+    C13 --> C14[/"Comercio en EN_CAMINO: sin botones. Despachaste este pedido. Está en camino al cliente.<br>(Empleado: Este pedido está en camino al cliente.)<br>Comercio en LISTO_PARA_RETIRAR: Entregar y Cerrar como no retirado (ver P4.07)"/]
+    C14 --> FIN4([Fin])
+
+    T0 --> T1["Nace en PENDIENTE_PAGO (actor CLIENTE, ver P4.15)<br>PENDIENTE_PAGO a PENDIENTE_CONFIRMACION_COMERCIO: pago aprobado (actor SISTEMA, ver P5.03)<br>PENDIENTE_PAGO a CANCELADO_POR_SISTEMA: vence a los 30 minutos (ver P4.14)<br>PENDIENTE_PAGO a CANCELADO: Cliente (ver P4.05)"]
+    T1 --> T2["PENDIENTE_CONFIRMACION_COMERCIO a EN_PREPARACION: aceptar (ver P4.03)<br>a RECHAZADO: rechazar o suspensión (ver P4.03 y P2.09)<br>a EXPIRADO: job de 5 minutos, 30 minutos (ver P4.03)<br>a CANCELADO: Cliente (ver P4.05)"]
+    T2 --> T3["EN_PREPARACION a EN_CAMINO (domicilio) o LISTO_PARA_RETIRAR (retiro): despachar<br>a ANULADO: anular (ver P4.06)<br>a CANCELADO: Cliente (ver P4.05)<br>a ANULADO o CANCELADO_POR_SISTEMA: topes de la suspensión (ver P2.09)"]
+    T3 --> T4["EN_CAMINO a ENTREGADO: Cliente o autoconfirmación a los 90 minutos (ver P4.07)<br>LISTO_PARA_RETIRAR a ENTREGADO o NO_RETIRADO (ver P4.07)<br>Un domicilio nunca pasa por LISTO_PARA_RETIRAR y un retiro nunca por EN_CAMINO<br>Finales: ENTREGADO, NO_RETIRADO, RECHAZADO, CANCELADO, ANULADO, CANCELADO_POR_SISTEMA, EXPIRADO"]
+    T4 --> T5[/"Lo que ve el Cliente (se actualiza solo cada 15 s mientras no sea final):<br>Esperando pago. Todavía no pagaste este pedido.<br>Esperando al comercio. Tu pedido fue enviado a (comercio). Esperando confirmación.<br>En preparación. (comercio) aceptó tu pedido y lo está preparando.<br>En camino. Tu pedido de (comercio) está en camino.<br>Listo para retirar. Tu pedido está listo para retirar en (comercio).<br>Entregado. Tu pedido fue entregado."/]
+    T5 --> T6["Jobs de tiempo que mueven pedidos:<br>expirarPagosVencidos (60 s), expirarPedidosSinRespuestaComercio (300 s),<br>avisar75MinYAutoconfirmar (60 s, ver P4.07) y los de suspensión (ver P2.09)<br>No hay job que mueva EN_PREPARACION por tiempo salvo los de suspensión"]
+    T6 --> FIN5([Fin])

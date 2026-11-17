@@ -1,0 +1,67 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Qué acción realiza<br>el usuario?"}
+    B -- "Verificar el código" --> C[/"Email y código de 6 dígitos<br>(el email viene en la URL o se ingresa)"/]
+    C --> C1{"¿Email y código completos<br>y válidos?"}
+    C1 -- No --> C2[/"El email es obligatorio<br>Ingresá un email válido<br>Ingresá el código de 6 dígitos."/]
+    C2 --> FIN1([Fin])
+    C1 -- Sí --> D["POST /auth/verificar"]
+    D --> D1{"¿Pasa las validaciones<br>del DTO?"}
+    D1 -- No --> D2[/"Error 400: No debe estar vacío<br>Ingresá un email con formato válido<br>El código debe tener 6 dígitos numéricos"/]
+    D2 --> FIN2([Fin])
+    D1 -- Sí --> E["SELECT usuario<br>WHERE email = email_ingresado<br>(bloqueo FOR UPDATE)"]
+    E --> E1{"¿Existe el usuario?"}
+    E1 -- No --> E2[/"Error 401: Código incorrecto o vencido"/]
+    E2 --> FE1[/"Error bajo el campo del código<br>(el mensaje del servidor)"/]
+    FE1 --> FIN3([Fin])
+    E1 -- Sí --> F["SELECT token<br>WHERE usuario_id = id AND tipo = VERIFICACION_EMAIL<br>AND estado = PENDIENTE<br>ORDER BY fecha_creacion DESC (el más reciente)"]
+    F --> F1{"¿Hay un código<br>pendiente?"}
+    F1 -- No --> E2
+    F1 -- Sí --> G{"¿Venció el código?<br>(fecha_vencimiento anterior a ahora)"}
+    G -- Sí --> G1[/"Error 409: El código venció.<br>Solicitá uno nuevo."/]
+    G1 --> FE2[/"Pantalla No pudimos verificar tu cuenta<br>con el mensaje del servidor"/]
+    FE2 --> FE3["Botones: Pedir un código nuevo<br>e Ir al inicio de sesión"]
+    FE3 --> FIN4([Fin])
+    G -- No --> H{"¿El código coincide?"}
+    H -- No --> H1["UPDATE token:<br>intentos_fallidos = intentos_fallidos + 1<br>(se guarda aunque responda error)"]
+    H1 --> H2{"¿Llegó a 5 intentos?"}
+    H2 -- Sí --> H3["UPDATE token:<br>estado = UTILIZADO<br>fecha_uso = NOW()"]
+    H3 --> H4[/"Error 409: Superaste el máximo de intentos<br>permitidos. Solicitá un nuevo código."/]
+    H4 --> FE2
+    H2 -- No --> H5[/"Error 401: Código incorrecto.<br>Te quedan N intento(s)."/]
+    H5 --> FE1
+    H -- Sí --> I1
+    subgraph TX1 [Transacción BD]
+        I1["UPDATE token:<br>estado = UTILIZADO<br>fecha_uso = NOW()"] --> J{"¿El usuario<br>está PENDIENTE?"}
+        J -- Sí --> J1["UPDATE usuario:<br>estado = ACTIVO<br>motivo_suspension = NULL, suspendido_desde = NULL<br>fecha_actualizacion = NOW()<br>fecha_ultimo_acceso = NOW()"]
+        J1 --> J2["INSERT historial_estado_usuario:<br>estado_origen = PENDIENTE<br>estado_destino = ACTIVO<br>motivo = Verificación de email"]
+    end
+    J -- No --> K
+    J2 --> K[/"HTTP 200: Email verificado correctamente"/]
+    K --> K1[/"Email verificado: Tu cuenta ya está activa.<br>Ya podés iniciar sesión en Bajoneá."/]
+    K1 --> K2["Botón: Ir al inicio de sesión<br>(no se inicia sesión automáticamente)"]
+    K2 --> FIN5([Fin])
+    B -- "Pedir un código nuevo" --> R1["Botón: Reenviar código<br>(espera de 30 segundos entre reenvíos,<br>solo en la pantalla)"]
+    R1 --> R2["POST /auth/reenviar-verificacion"]
+    R2 --> R3{"¿El email es válido?"}
+    R3 -- No --> R4[/"Error 400: No debe estar vacío<br>Ingresá un email con formato válido"/]
+    R4 --> FIN6([Fin])
+    R3 -- Sí --> R5["SELECT usuario<br>WHERE email = email_ingresado"]
+    R5 --> R6{"¿Existe el usuario?"}
+    R6 -- No --> R7[/"Error 404: No existe una cuenta con ese email"/]
+    R7 --> RF[/"Se muestra el mensaje del servidor<br>(o No pudimos reenviar el código. Intentá nuevamente.)"/]
+    RF --> FIN7([Fin])
+    R6 -- Sí --> R8{"¿El estado<br>es PENDIENTE?"}
+    R8 -- No --> R9[/"Error 409: Esta cuenta ya está verificada"/]
+    R9 --> RF
+    R8 -- Sí --> R10
+    subgraph TX2 [Transacción BD]
+        R10["UPDATE token (los PENDIENTE del usuario<br>de tipo VERIFICACION_EMAIL):<br>estado = UTILIZADO"] --> R11["INSERT token:<br>tipo = VERIFICACION_EMAIL, código de 6 dígitos,<br>estado = PENDIENTE, vence en 24 horas,<br>intentos_fallidos = 0"]
+    end
+    R11 --> R12{"¿Falló la generación<br>del código?"}
+    R12 -- Sí --> R13[/"Error 500: No pudimos generar el código de verificación.<br>Intentá nuevamente en unos instantes."/]
+    R13 --> RF
+    R12 -- No --> R14["Enviar email de verificación (después del commit)<br>Asunto: Tu código de verificación — Bajoneá"]
+    R14 --> R15[/"HTTP 200: Si la cuenta existe y está pendiente de<br>verificación, se envió un nuevo código"/]
+    R15 --> R16[/"Te enviamos un nuevo código."/]
+    R16 --> R17["El botón queda deshabilitado 30 segundos:<br>Reenviar código (N s)"]
+    R17 --> FIN8([Fin])

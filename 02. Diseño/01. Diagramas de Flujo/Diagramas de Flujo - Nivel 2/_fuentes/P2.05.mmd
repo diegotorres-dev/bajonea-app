@@ -1,0 +1,63 @@
+flowchart TD
+    A([Inicio]) --> B["comercio-perfil.html<br>Dueño o Empleado dentro de un comercio (X-Comercio-Id)"]
+    B --> C{"¿Qué edita?"}
+    C -- "Datos del comercio (solo Dueño)" --> D1[/"Nombre, descripción (hasta 2000), teléfono, delivery y retiro<br>Ingresá el nombre de tu comercio.<br>Ingresá tu teléfono.<br>Debés ofrecer al menos una modalidad de entrega."/]
+    C -- "Descripción y teléfono (Dueño o Empleado)" --> D2[/"Descripción (opcional) y teléfono<br>Ingresá el teléfono del comercio.<br>Ingresá un teléfono argentino válido (código de área + número)."/]
+    C -- "Horarios (Dueño o Empleado)" --> D3[/"Franjas por día y hora de apertura y cierre<br>Un día sin franja es un día cerrado<br>Cargá al menos una franja horaria de atención."/]
+    D1 --> E1["PUT /comercios/perfil<br>(solo Dueño: el Empleado recibe 403)"]
+    D2 --> E2["PUT /comercios/perfil/datos-operativos"]
+    D3 --> E3["PUT /comercios/perfil/horarios"]
+    E1 --> F{"¿Cuerpo válido?"}
+    F -- No --> F1[/"HTTP 400 con el mapa campo y mensaje:<br>No debe estar vacío, Ingresá un nombre de comercio válido,<br>La descripción no puede superar los 2000 caracteres,<br>o El comercio debe ofrecer al menos una modalidad de entrega (delivery o retiro)"/]
+    F1 --> FIN1([Fin])
+    E2 --> G{"¿Cuerpo válido?"}
+    G -- No --> G1[/"HTTP 400: teléfono vacío o inválido, descripción de más de 2000 caracteres,<br>o soloDescripcionYTelefono: Solo se pueden enviar la descripción y el teléfono<br>(si el cuerpo trae cualquier otro campo; no cambia nada)"/]
+    G1 --> FIN2([Fin])
+    E3 --> H{"¿Trae al menos una franja<br>con día, apertura y cierre?"}
+    H -- No --> H1[/"HTTP 400: Cargá al menos un horario de atención"/]
+    H1 --> FIN3([Fin])
+    F -- Sí --> I
+    G -- Sí --> I
+    H -- Sí --> I
+    I["Resolución del comercio: X-Comercio-Id<br>Dueño: el comercio debe ser suyo<br>Empleado: relación ACTIVO en empleado_comercio y comercio accesible"] --> I1{"¿Acceso válido?"}
+    I1 -- No --> I2[/"HTTP 404 COMERCIO_NO_DISPONIBLE: Comercio no encontrado"/]
+    I2 --> FIN4([Fin])
+    I1 -- Sí --> J
+    subgraph TX [Transacción BD]
+        J{"¿La cuenta del actor está suspendida?"} -- Sí --> J1[/"HTTP 409: cuenta suspendida"/]
+        J -- No --> K["Si es Empleado: SELECT empleado_comercio (bloqueo compartido)<br>SELECT comercio (FOR UPDATE)"]
+        K --> K1{"¿Estado del comercio?"}
+        K1 -- SUSPENDIDO --> K2[/"HTTP 409 COMERCIO_SUSPENDIDO:<br>El comercio está suspendido: por ahora no se puede modificar."/]
+        K1 -- INACTIVO --> K3[/"HTTP 409 COMERCIO_INACTIVO:<br>El comercio está inactivo: por ahora no se puede modificar."/]
+        K1 -- "APROBADO, APTO_VENTA o CERRADO_TEMPORALMENTE" --> L{"¿Qué edita?"}
+        L -- "Datos del comercio" --> M1{"¿Cambió el nombre<br>y ya existe otro comercio con ese nombre?"}
+        M1 -- Sí --> M2[/"HTTP 409: Ya existe un comercio con ese nombre. Elegí otro."/]
+        M1 -- No --> M3["UPDATE comercio: nombre, descripción, teléfono,<br>acepta_delivery, acepta_retiro, fecha_modificacion"]
+        L -- "Descripción y teléfono" --> N1["UPDATE comercio: descripción y teléfono, fecha_modificacion<br>Si el cuerpo no trae la descripción, se borra (queda NULL)"]
+        L -- Horarios --> O1{"Reglas de horario:<br>¿cierre igual a apertura o franjas superpuestas<br>en la semana circular?"}
+        O1 -- Sí --> O2[/"HTTP 400: La hora de cierre no puede ser igual a la de apertura...<br>o Ya tenés un horario cargado el día de apertura a cierre, que se superpone con este"/]
+        O1 -- No --> O3{"¿Un turno de hoy cruza la medianoche<br>y la franja nueva de mañana empieza antes de su cierre?"}
+        O3 -- Sí --> O4[/"HTTP 400: Tu turno de hoy (día de hora a hora) termina el día a las hora<br>y se superpone con la franja del día. Movela para que empiece después de las hora."/]
+        O3 -- No --> O5{"¿Las franjas nuevas son iguales a las vigentes<br>(ignorando el orden)?"}
+        O5 -- Sí --> O6["Si había un cambio programado: lo borra<br>(Canceló el cambio de horarios programado)<br>Si no: no hace nada"]
+        O5 -- No --> O7["Borra el cambio programado anterior<br>UPDATE horario vigentes: vigente_hasta = hoy<br>INSERT horario nuevas: vigente_desde = mañana"]
+        M3 --> P{"¿Hubo cambio efectivo?"}
+        N1 --> P
+        O7 --> P
+        P -- Sí --> P1["INSERT historial_edicion_comercio:<br>entidad COMERCIO u HORARIO, acción EDITAR, rol del actor,<br>detalle con los nombres de los campos, nunca los valores<br>Horarios: Editó: horarios (rigen desde dd/MM/yyyy)"]
+        P -- No --> P2["Sin historial"]
+    end
+    J1 --> FIN5([Fin])
+    K2 --> FIN6([Fin])
+    K3 --> FIN7([Fin])
+    M2 --> FIN8([Fin])
+    O2 --> FIN9([Fin])
+    O4 --> FIN10([Fin])
+    O6 --> Q3[/"Toast: No hiciste cambios en los horarios<br>o Cambio de horarios cancelado"/]
+    Q3 --> FIN11([Fin])
+    P1 --> Q{"¿Qué editó?"}
+    P2 --> Q
+    Q -- "Datos o descripción y teléfono" --> Q1[/"HTTP 200: Perfil actualizado correctamente<br>Toast: Datos actualizados correctamente<br>(Dueño recibe el perfil completo, Empleado el reducido)"/]
+    Q -- Horarios --> Q2[/"HTTP 200: Horarios actualizados correctamente<br>Respuesta con vigentes, pendientes y fecha desde la que rige<br>Toast: Horarios guardados. Rigen desde mañana."/]
+    Q1 --> FIN12([Fin])
+    Q2 --> FIN13([Fin])

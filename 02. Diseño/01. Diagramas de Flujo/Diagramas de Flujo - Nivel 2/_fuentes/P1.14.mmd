@@ -1,0 +1,48 @@
+flowchart TD
+    A([Inicio]) --> B["Administrador: Dueños (admin-duenos.html)<br>Buscador, filtros Todos, Suspendidos, Bloqueados, Inactivos"]
+    B --> C["Hoja de acciones del Dueño: Suspender cuenta"]
+    C --> D["GET /administrador/duenos/id/suspension/previa<br>3 consultas: comercios, pedidos por comercio y estado,<br>Empleados activos por comercio (sin bloqueos)"]
+    D --> E[/"Suspender a nombre<br>No va a poder ingresar. Su comercio se suspende. / Sus N comercios se suspenden. / N de sus M comercios se suspenden.<br>Por comercio: Se suspende o Queda como está<br>1 pendiente: se rechaza y se reembolsa ahora.<br>N en preparación: los resuelven quienes en hasta N min.<br>1 en preparación: se anula y se reembolsa ahora, porque no tiene Empleados activos.<br>1 listo para retirar: se cancela y se reembolsa ahora, porque no tiene Empleados activos.<br>1 en camino sigue igual. 1 sin pagar ya no se puede pagar.<br>Motivo (lo va a ver la persona), mínimo 10 caracteres"/]
+    E --> F{"¿El motivo tiene 10 caracteres o más?"}
+    F -- No --> F1["El botón Suspender al Dueño queda deshabilitado"]
+    F1 --> FIN1([Fin])
+    F -- Sí --> G["PUT /administrador/duenos/id/suspender"]
+    G --> H{"¿Pasa las validaciones del DTO?"}
+    H -- No --> H1[/"Error 400: Ingresá el motivo de la suspensión<br>El motivo debe tener entre 10 y 500 caracteres"/]
+    H1 --> FIN2([Fin])
+    H -- Sí --> I{"¿Es el mismo Administrador?"}
+    I -- Sí --> ER1[/"Error 409: No podés suspender tu propia cuenta"/]
+    I -- No --> J{"¿Existe y es un Dueño?"}
+    J -- No --> ER2[/"Error 404: Dueño no encontrado<br>Error 409: No se puede suspender a un Administrador"/]
+    J -- Sí --> K["SELECT comercios del Dueño y relaciones ACTIVO de sus Empleados<br>(sin bloqueo y fuera de la transacción: son los candidatos a recibir aviso)"]
+    K --> T1
+    subgraph TX [Transacción BD: fase 1]
+        T1["SELECT usuario: Dueño (FOR UPDATE), Administrador y cada Empleado candidato<br>(bloqueo compartido), en orden de id"] --> T2{"¿El Dueño ya está SUSPENDIDO?"}
+        T2 -- Sí --> T2A[/"Error 409: La cuenta ya está suspendida"/]
+        T2 -- No --> T3["Bloquear las relaciones empleado_comercio candidatas<br>(reciben aviso las ACTIVO con cuenta no suspendida)"]
+        T3 --> T4["SELECT comercios del Dueño.<br>Los APROBADO, APTO_VENTA o CERRADO_TEMPORALMENTE se bloquean (FOR UPDATE)<br>y se revalida su estado. Los PENDIENTE, RECHAZADO, RECHAZO_DEFINITIVO<br>e INACTIVO no se tocan. Los ya SUSPENDIDO por separado se anotan"]
+        T4 --> T5["UPDATE usuario (Dueño): estado = SUSPENDIDO, motivo_suspension, suspendido_desde<br>INSERT historial_estado_usuario (con motivo y administrador_id)"]
+        T5 --> T6["UPDATE sesion (activas del Dueño):<br>activa = false, tipo_cierre = SUSPENSION"]
+        T6 --> T7["Por cada comercio bloqueado:<br>UPDATE comercio: estado = SUSPENDIDO, suspension_origen = DUENO,<br>suspendido_desde = NOW(), motivo_suspension<br>INSERT historial_estado_comercio:<br>estado anterior a SUSPENDIDO, motivo, administrador_id, suspension_origen DUENO"]
+        T7 --> T8["INSERT avisos in-app:<br>al Dueño, uno por comercio (COMERCIO_SUSPENDIDO): Tu cuenta fue suspendida y tu comercio nombre quedó suspendido. Motivo: motivo<br>a cada Empleado activo, uno por comercio (COMERCIO_SUSPENDIDO_EQUIPO): El comercio nombre fue suspendido. Mientras dure no se aceptan pedidos nuevos.<br>Email al Dueño programado para después del commit"]
+    end
+    ER1 --> ERR
+    ER2 --> ERR
+    T2A --> ERR
+    ERR[/"No pudimos suspender la cuenta. Probá de nuevo.<br>o el mensaje del servidor. Cerrá esta ventana: la lista se actualiza."/]
+    ERR --> FIN3([Fin])
+    T8 --> U["Email al Dueño (un solo intento, después del commit):<br>Asunto: Tu cuenta de Bajoneá fue suspendida<br>Motivo, lista de comercios suspendidos (o Todavía no tenías comercios aprobados),<br>Los pedidos que ya estaban en preparación los atiende tu equipo, si tenés Empleados; si no, se cancelan y se devuelve el dinero a tus clientes.<br>INSERT notificacion (DUENO_SUSPENDIDO, canal EMAIL)"]
+    U --> V["Fase 2, después del commit, en la misma request:<br>por cada comercio que quedó SUSPENDIDO, en orden de id"]
+    V --> W["Rechazar los pedidos PENDIENTE_CONFIRMACION_COMERCIO,<br>uno por transacción: RECHAZADO, reembolso total<br>(ver P2.09 y P7.04)<br>Aviso al Cliente: Cancelamos tu pedido #id porque el comercio no está disponible. Te devolvemos el dinero."]
+    W --> X{"¿El comercio tiene Empleados activos?"}
+    X -- Sí --> X1["No se tocan EN_PREPARACION ni LISTO_PARA_RETIRAR:<br>los atienden los Empleados, con los topes de 90 minutos<br>(ver P2.09 y P7.04)"]
+    X -- No --> X2["EN_PREPARACION: ANULADO, motivo El comercio no está disponible,<br>reembolso total y aviso al Cliente<br>LISTO_PARA_RETIRAR: CANCELADO_POR_SISTEMA con reembolso total<br>(uno por transacción)"]
+    X1 --> Y
+    X2 --> Y["EN_CAMINO no se toca.<br>PENDIENTE_PAGO no se toca por esta vía (sigue su propio vencimiento)"]
+    Y --> Z{"¿Quedan más comercios?"}
+    Z -- Sí --> V
+    Z -- No --> AA["Cada 60 segundos dos barridos de seguridad vuelven a evaluar:<br>pendientes de cualquier comercio suspendido y<br>pedidos sin atención de comercios suspendidos con Dueño suspendido"]
+    AA --> AB[/"HTTP 200: Cuenta suspendida correctamente<br>ids de comercios suspendidos, pedidos rechazados y procesados"/]
+    AB --> AC[/"Dueño suspendido"/]
+    AC --> AD["Los Empleados no pierden la sesión ni la relación (siguen ACTIVO):<br>entran al comercio en solo lectura (ver P1.16).<br>Las invitaciones pendientes no se tocan: aceptarlas da<br>Esta invitación ya no está disponible (ver P1.11)"]
+    AD --> FIN4([Fin])

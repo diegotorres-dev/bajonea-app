@@ -1,0 +1,28 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Cómo llega?"}
+    B -- "Barra de escritorio Buscar productos<br>(hasta 80 caracteres)" --> C["explorar.html?q=texto"]
+    B -- "Entra directo a Explorar" --> D["explorar.html"]
+    C --> E
+    D --> E
+    E["Título: Explorar productos<br>Campo: Buscar producto por nombre<br>El valor inicial sale de ?q (trim, máximo 80)<br>Muestra el esqueleto de productos"] --> F["GET /catalogo/filtros (público)<br>Categorías y tags en uso<br>Sin tratamiento de error propio"]
+    F --> G["Arma la fila Filtrar por categoría (Todas y una por categoría)<br>y la fila Filtrar por tags (se oculta si no hay tags)"]
+    G --> H["GET /catalogo/productos?categoriaId&tagIds&q&pagina<br>(público; se descarta la respuesta de una solicitud vieja)"]
+    H --> I{"¿Hay productos?"}
+    I -- "No, sin filtros ni búsqueda" --> I1[/"Todavía no hay productos disponibles<br>Estamos incorporando negocios locales en Tierra del Fuego.<br>Volvé a revisar pronto."/]
+    I -- "No, con filtros o búsqueda" --> I2[/"Sin resultados<br>Probá con otro filtro o con otra búsqueda para ver más productos."/]
+    I -- Sí --> J["Contador: 1 resultado o N resultados<br>Tarjetas: foto, nombre, precio sin centavos, nombre del comercio<br>Un producto AGOTADO se ve atenuado pero se puede tocar<br>Orden aleatorio en cada pedido del servidor<br>Paginación numerada de 20 por página (se oculta con una sola página)"]
+    I1 --> K
+    I2 --> K
+    J --> K{"¿Qué hace el usuario?"}
+    K -- "Escribe en el buscador" --> L["Espera 300 ms sin teclear (debounce)<br>trim y minúsculas, vuelve a la página 1<br>Botón X: borra solo el texto"]
+    K -- "Elige una categoría" --> M["Una sola categoría activa<br>(tocar la activa la desactiva), vuelve a la página 1"]
+    K -- "Elige tags" --> N["Varios tags activos a la vez (el servidor los combina con AND),<br>vuelve a la página 1"]
+    K -- "Cambia de página" --> O["Pide esa página y sube la pantalla con scroll suave<br>(el orden se vuelve a sortear)"]
+    K -- "Limpiar filtros" --> P["Visible si hay búsqueda, categoría o tags:<br>limpia todo y devuelve el foco al buscador"]
+    L --> H
+    M --> H
+    N --> H
+    O --> H
+    P --> H
+    K -- "Toca un producto" --> Q["Abre comercio-detalle.html?id=comercioId&producto=id (ver P3.05)"]
+    Q --> FIN1([Fin])

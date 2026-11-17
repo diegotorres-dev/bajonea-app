@@ -1,0 +1,53 @@
+flowchart TD
+    A([Inicio]) --> M["Cliente toca Ir a pagar - $X en el resumen (ver P4.02)<br>Botón deshabilitado<br>POST /pedidos/cliente<br>tipoEntrega, direccionId, totalEsperado = total que vio<br>(timeout con aviso Se cortó la conexión: revisá Mis pedidos antes de volver a enviar)"]
+    M --> N{"Validación del cuerpo:<br>¿tipoEntrega presente y totalEsperado válido?"}
+    N -- No --> N1[/"HTTP 400, campo: mensaje<br>Debés seleccionar una modalidad de entrega<br>El total esperado no puede ser negativo o no es válido"/]
+    N1 --> FIN5([Fin])
+    N -- Sí --> O
+    subgraph TX [Transacción BD - confirmarPedido]
+        O{"¿Cliente SUSPENDIDO?<br>(SELECT usuario LOCK IN SHARE MODE)"} -- Sí --> O1[/"HTTP 409 CUENTA_SUSPENDIDA con el motivo<br>(la pantalla abre la cuenta suspendida)"/]
+        O -- No --> P{"¿Existe el Cliente?"}
+        P -- No --> P1[/"HTTP 404: Cliente no encontrado"/]
+        P -- Sí --> Q{"¿El carrito tiene ítems?"}
+        Q -- No --> Q1[/"HTTP 409: El carrito está vacío"/]
+        Q -- Sí --> R["SELECT comercio (LOCK IN SHARE MODE)<br>validarAceptaPedidos (ver P3.02)"]
+        R --> R1{"¿El comercio acepta pedidos?"}
+        R1 -- No --> R2[/"HTTP 409 con el mensaje de cierre, no operativo o suspendido<br>(textos en P3.02; la pantalla muestra el banner con Volver al catálogo)"/]
+        R1 -- Sí --> S{"¿La modalidad la ofrece el comercio?"}
+        S -- No --> S1[/"HTTP 409: El comercio no ofrece entrega a domicilio<br>o El comercio no permite retiro en el local"/]
+        S -- Sí --> T{"¿DOMICILIO sin direccionId?"}
+        T -- Sí --> T1[/"HTTP 409: La dirección es obligatoria para entrega a domicilio"/]
+        T -- No --> U{"¿La dirección existe, es del Cliente<br>y no está eliminada?<br>(SELECT dirección LOCK IN SHARE MODE)"}
+        U -- No --> U1[/"HTTP 404: Dirección no encontrada"/]
+        U -- Sí --> V["Calcula con la tarifa vigente:<br>subtotal = suma de precio vigente por cantidad<br>cargo del Cliente (FIJO o PORCENTAJE) y cargo del comercio sobre el subtotal"]
+        V --> W{"¿Un ítem o el total superan 99.999.999?"}
+        W -- Sí --> W1[/"HTTP 400: El subtotal de (producto) supera el monto máximo permitido ($99999999)<br>o El total del pedido supera el monto máximo permitido por el sistema ($99999999)"/]
+        W -- No --> X{"¿totalEsperado distinto del total real?"}
+        X -- Sí --> X1[/"HTTP 409 PRECIO_CAMBIO:<br>Los montos de tu pedido cambiaron. Revisá el nuevo total antes de pagar.<br>con subtotal, cargo, total e ítems. No crea nada"/]
+        X -- No --> Y["INSERT pedido: estado PENDIENTE_PAGO, pago_estado PENDIENTE,<br>subtotal, cargos, total, copia de la dirección de entrega (nula en retiro),<br>fecha_creacion con el Clock<br>INSERT detalle_pedido por ítem: producto, cantidad, precio_unitario vigente, nota, subtotal<br>INSERT historial_estado_pedido: PENDIENTE_PAGO, actor CLIENTE<br>El carrito NO se vacía acá y no se avisa a nadie"]
+    end
+    O1 --> FIN6([Fin])
+    P1 --> FIN7([Fin])
+    Q1 --> FIN8([Fin])
+    R2 --> FIN9([Fin])
+    S1 --> FIN10([Fin])
+    T1 --> FIN11([Fin])
+    U1 --> FIN12([Fin])
+    W1 --> FIN13([Fin])
+    X1 --> X2[/"La pantalla reemplaza ítems, subtotal, cargo y total por los del 409<br>Aviso: el texto del servidor o El cargo por servicio cambió. Revisá el nuevo total antes de pagar.<br>Botón: Confirmar con el nuevo total - $X (sin límite de repeticiones)"/]
+    X2 --> X3["Vuelve al paso 3 con los montos nuevos (ver P4.02)"]
+    X3 --> FIN19([Fin])
+    Y --> Z[/"HTTP 201: Pedido confirmado correctamente<br>estado PENDIENTE_PAGO"/]
+    Z --> Z1[/"Paso 4: Pago<br>Te vamos a redirigir a Mercado Pago para completar el pago.<br>Total del pedido. Botón: Ir a pagar con Mercado Pago"/]
+    Z1 --> Z2["Botón: Generando link de pago...<br>POST /pedidos/cliente/id/pago (ver P5.02)"]
+    Z2 --> Z3{"Respuesta del pago"}
+    Z3 -- "yaPagado" --> Z4[/"Toast: Tu pago se realizó correctamente<br>Va a pedido-detalle.html con pago=exito (ver P4.14)"/]
+    Z3 -- "enRevision" --> Z5[/"Toast: Tu pago está pendiente de confirmación<br>Reactiva el botón"/]
+    Z3 -- "Con urlPago" --> Z6["Redirige a Mercado Pago<br>Vuelve a pedido-detalle.html con pago=exito, pendiente o fallo (ver P4.14)"]
+    Z3 -- "Error 503" --> Z7[/"Toast con el mensaje del servidor<br>Reactiva el botón"/]
+    Z3 -- "Otro error" --> Z8[/"No pudimos generar el link de pago. Intentá nuevamente."/]
+    Z4 --> FIN14([Fin])
+    Z5 --> FIN15([Fin])
+    Z6 --> FIN16([Fin])
+    Z7 --> FIN17([Fin])
+    Z8 --> FIN18([Fin])

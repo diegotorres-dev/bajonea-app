@@ -1,0 +1,49 @@
+flowchart TD
+    A([Inicio]) --> B["Administrador en admin-documentos.html<br>GET /administrador/documentos/pendientes (más antiguos primero)"]
+    B --> C{"¿Hay documentos por revisar?"}
+    C -- No --> C1[/"No hay documentos por revisar.<br>Cuando un comercio suba un documento, va a aparecer acá."/]
+    C1 --> FIN1([Fin])
+    C -- Sí --> D["admin-documento-revision.html<br>GET /administrador/documentos/id/archivo<br>GET /administrador/comercios/id/documentos<br>Muestra vista previa, datos del comercio,<br>Mercado Pago: vinculado o sin vincular, otros documentos"]
+    D --> E{"¿Qué decide?"}
+    E -- Aprobar --> E1[/"¿Aprobar este documento?"/]
+    E -- Rechazar --> E2[/"Rechazar documento: El Dueño va a ver este motivo<br>y podrá subir un documento nuevo.<br>Motivo obligatorio (la pantalla deja 500 caracteres, el servidor 255)"/]
+    E -- "Revocar aprobación" --> E3[/"Revocar aprobación: Si era el único aprobado,<br>el comercio deja de recibir pedidos."/]
+    E1 --> F["PUT /administrador/documentos/id/resolver<br>(rol ADMINISTRADOR, sin X-Comercio-Id)"]
+    E2 --> F
+    E3 --> F
+    F --> G{"¿Cuerpo válido?"}
+    G -- No --> G1[/"HTTP 400: Indicá si aprobás o rechazás el documento<br>o El motivo puede tener hasta 255 caracteres<br>o El motivo es obligatorio al rechazar un documento"/]
+    G1 --> FIN2([Fin])
+    G -- Sí --> H["SELECT comercio_id del documento y dueno_id del comercio<br>(fuera de la transacción)"]
+    H --> H1{"¿Existen el documento y el comercio?"}
+    H1 -- No --> H2[/"HTTP 404: Documento no encontrado<br>o Comercio no encontrado"/]
+    H2 --> FIN3([Fin])
+    H1 -- Sí --> I
+    subgraph TX [Transacción BD]
+        I["SELECT usuario y cuenta_mercado_pago del Dueño (FOR UPDATE)<br>SELECT comercio (FOR UPDATE)<br>SELECT documento (FOR UPDATE)"] --> J{"¿Estado actual del documento<br>y acción pedida?"}
+        J -- "Aprobar y está PENDIENTE" --> K1["UPDATE documento: estado = APROBADO, motivo_rechazo = NULL"]
+        J -- "Rechazar y está PENDIENTE" --> K2["UPDATE documento: estado = RECHAZADO, motivo_rechazo = motivo"]
+        J -- "Rechazar y está APROBADO (revocación)" --> K3["UPDATE documento: estado = RECHAZADO, motivo_rechazo = motivo"]
+        J -- "Cualquier otra combinación<br>(por ejemplo un RECHAZADO)" --> J1[/"HTTP 409 DOCUMENTO_YA_RESUELTO:<br>El documento ya fue resuelto"/]
+        K1 --> L["UPDATE documento: fecha_resolucion = ahora, administrador_id"]
+        K2 --> L
+        K3 --> L
+        L --> M["Cuenta documentos del comercio:<br>aprobados y pendientes (lectura bloqueante)"]
+        M --> N{"Regla de aptitud (única fuente: AptitudVentaComercioService)<br>Estado actual del comercio"}
+        N -- APROBADO --> N1{"¿Puede entrar?<br>Mercado Pago activo Y (documentación no exigida<br>O (al menos 1 aprobado Y 0 pendientes))"}
+        N1 -- Sí --> N2["UPDATE comercio: APTO_VENTA<br>(CERRADO_TEMPORALMENTE si el Dueño está bloqueado)<br>INSERT historial_estado_comercio (sin administrador)"]
+        N1 -- No --> N3["Sigue APROBADO, sin cambio"]
+        N -- APTO_VENTA --> N4{"¿Puede seguir?<br>Mercado Pago activo Y (documentación no exigida<br>O al menos 1 aprobado)"}
+        N4 -- No --> N5["UPDATE comercio: APROBADO<br>INSERT historial_estado_comercio (sin administrador)<br>El comercio sale del catálogo y no acepta pedidos nuevos"]
+        N4 -- Sí --> N6["Sigue APTO_VENTA<br>(CERRADO_TEMPORALMENTE si el Dueño está bloqueado)"]
+        N -- "SUSPENDIDO, CERRADO_TEMPORALMENTE,<br>INACTIVO, PENDIENTE, RECHAZADO" --> N7["No se mueve en este flujo"]
+        N2 --> O
+        N3 --> O
+        N5 --> O
+        N6 --> O
+        N7 --> O
+        O["INSERT notificacion al Dueño:<br>Aprobar: Tu documento etiqueta de comercio fue aprobado.<br>Rechazar: ... fue rechazado. Motivo: motivo. Subí uno nuevo.<br>Revocar: Se revocó la aprobación de tu documento ... Subí uno nuevo.<br>Si cambió la aptitud: Tu comercio nombre ya puede recibir pedidos.<br>o Tu comercio nombre dejó de recibir pedidos: falta vincular Mercado Pago /<br>falta tener un documento aprobado"]
+    end
+    J1 --> FIN4([Fin])
+    O --> P[/"HTTP 200: Documento aprobado o Documento rechazado<br>Toasts: Documento aprobado, Documento rechazado, Aprobación revocada<br>Sin email<br>Los pedidos en curso no se tocan: perder la aptitud no cancela ni reembolsa"/]
+    P --> FIN5([Fin])

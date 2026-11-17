@@ -1,0 +1,39 @@
+flowchart TD
+    A([Inicio]) --> B["Perfil del comercio, sección Mi lugar en el equipo<br>(Empleado dentro de un comercio)"]
+    B --> C["Botón: Dejar de trabajar en este comercio<br>Ayuda: Dejás de formar parte del equipo de comercio.<br>Tu cuenta sigue funcionando."]
+    C --> D[/"¿Dejar de trabajar en comercio?<br>Vas a salir del equipo y no vas a poder volver a operar en este comercio.<br>Se le notificará al dueño. Tu cuenta y tus datos personales continuarán intactos.<br>Casilla: Entiendo que para volver el dueño me tiene que invitar de nuevo."/]
+    D --> E{"¿Marcó la casilla<br>y tocó Dejar de trabajar?"}
+    E -- "Volver" --> FIN1([Fin])
+    E -- Sí --> F["PUT /empleados/comercios/id/renunciar<br>(rol CLIENTE; Dueño o Administrador reciben 403)"]
+    F --> G["SELECT comercio.dueno_id WHERE id = comercioId<br>(fuera de la transacción)"]
+    G --> G1{"¿Existe el comercio?"}
+    G1 -- No --> G2[/"Error 404: Comercio no encontrado"/]
+    G2 --> G3[/"No encontramos este comercio entre los tuyos.<br>Es posible que ya no formes parte del equipo."/]
+    G3 --> FIN2([Fin])
+    G1 -- Sí --> H
+    subgraph TX [Transacción BD]
+        H["SELECT usuario del Dueño y del Empleado<br>(bloqueo compartido, en orden de id)"] --> H1{"¿Existen el Dueño<br>y el Empleado?"}
+        H1 -- No --> H2[/"Error 404: Miembro no encontrado<br>o Comercio no encontrado"/]
+        H1 -- Sí --> I["SELECT empleado_comercio<br>WHERE empleado_id AND comercio_id (FOR UPDATE)"]
+        I --> I1{"¿Tiene relación<br>con el comercio?"}
+        I1 -- No --> I2[/"Error 404: Comercio no encontrado<br>(igual que un comercio inexistente)"/]
+        I1 -- Sí --> J{"¿La relación ya está INACTIVO?"}
+        J -- Sí --> J1[/"HTTP 200: Ya habías dejado de trabajar en este comercio"/]
+        J -- No --> K["UPDATE empleado_comercio:<br>estado = INACTIVO, fecha_baja = NOW()"]
+        K --> L["INSERT historial_empleado_comercio:<br>motivo = RENUNCIA, ACTIVO a INACTIVO,<br>actor = el propio Empleado"]
+        L --> M["DELETE avisos anteriores del Empleado<br>de ese comercio (por clave primaria)"]
+        M --> N["INSERT aviso al Dueño (tipo EMPLEADO_DESACTIVADO, con comercio_id):<br>nombre apellido dejó de trabajar en comercio."]
+    end
+    H2 --> H3[/"No pudimos procesar tu salida del equipo. Intentá de nuevo."/]
+    H3 --> FIN3([Fin])
+    I2 --> G3
+    J1 --> P
+    N --> O[/"HTTP 200: Dejaste de trabajar en el comercio<br>(sin email y sin cerrar la sesión de Cliente)"/]
+    O --> P["El navegador limpia el contexto,<br>olvida el último comercio usado<br>y guarda el aviso pendiente"]
+    P --> Q[/"Dejaste de trabajar en comercio"/]
+    Q --> R["Redirige a seleccionar-contexto.html"]
+    R --> S{"¿Le quedan comercios<br>con relación ACTIVO?"}
+    S -- Sí --> T["Muestra el selector de cuenta (ver P1.16)"]
+    T --> FIN4([Fin])
+    S -- No --> U["Entra como Cliente a index.html"]
+    U --> FIN5([Fin])

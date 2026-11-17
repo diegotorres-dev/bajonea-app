@@ -1,0 +1,39 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Qué hace el Cliente en el carrito?<br>(rol CLIENTE, sin X-Comercio-Id)"}
+    B -- "Toca + o − de un ítem" --> PU0["PUT /carrito/items/id<br>cantidad (el − se deshabilita en 1 y el + en 20)<br>El + revisa antes en la pantalla el subtotal máximo del ítem:<br>No podés agregar más unidades: el subtotal de este producto superaría el máximo permitido ($99.999.999)."]
+    B -- "Toca el tacho de un ítem<br>(sin confirmación ni deshacer)" --> DE0["DELETE /carrito/items/id"]
+    B -- "Toca Vaciar todo" --> VA0[/"Hoja: ¿Vaciar el carrito?<br>Vas a eliminar todos los productos del carrito. Esta acción no se puede deshacer.<br>Botones: Sí, vaciar carrito y Cancelar (foco inicial)"/]
+    PU0 --> PU1{"¿Cantidad de 1 a 20?"}
+    PU1 -- No --> PU2[/"HTTP 400: La cantidad mínima es 1 o La cantidad máxima es 20"/]
+    PU2 --> FIN10([Fin])
+    PU1 -- Sí --> PU3
+    subgraph TX2 [Transacción BD - cambiar cantidad]
+        PU3["SELECT carrito (FOR UPDATE)<br>UPDATE item_carrito SET cantidad solo si el ítem es de ese carrito<br>No revalida el producto, el comercio ni el subtotal máximo"] --> PU4{"¿Se actualizó alguna fila?"}
+        PU4 -- No --> PU5[/"HTTP 404: Ítem no encontrado"/]
+    end
+    PU5 --> PU6[/"Toast: No pudimos actualizar la cantidad. (o el mensaje del servidor)<br>El stepper vuelve a habilitarse"/]
+    PU6 --> FIN11([Fin])
+    PU4 -- Sí --> PU7[/"HTTP 200: Cantidad actualizada correctamente<br>Redibuja el carrito con la respuesta, sin toast"/]
+    PU7 --> FIN12([Fin])
+    DE0 --> DE1
+    subgraph TX3 [Transacción BD - quitar un ítem]
+        DE1["SELECT carrito (FOR UPDATE)<br>DELETE del ítem de ese carrito"] --> DE2{"¿Se borró alguna fila?"}
+        DE2 -- No --> DE3[/"HTTP 404: Ítem no encontrado"/]
+        DE2 -- Sí --> DE4{"¿Queda algún ítem?"}
+        DE4 -- No --> DE5["UPDATE carrito: comercio = nulo"]
+        DE4 -- Sí --> DE6["Sin más cambios"]
+    end
+    DE3 --> DE7[/"Toast: No pudimos eliminar el producto."/]
+    DE7 --> FIN13([Fin])
+    DE5 --> DE8[/"HTTP 200: Ítem eliminado del carrito<br>Toast: Quitaste (producto) del carrito<br>Redibuja con la respuesta (vacío si no quedan ítems)"/]
+    DE6 --> DE8
+    DE8 --> FIN14([Fin])
+    VA0 --> VA1{"¿Confirma?"}
+    VA1 -- Cancelar --> FIN15([Fin])
+    VA1 -- "Sí, vaciar carrito" --> VA2["Botón: Vaciando...<br>DELETE /carrito"]
+    VA2 --> VA3
+    subgraph TX4 [Transacción BD - vaciar]
+        VA3["SELECT carrito (FOR UPDATE)<br>DELETE de todos sus ítems<br>UPDATE carrito: comercio = nulo<br>(idempotente: un carrito vacío también responde 200)"]
+    end
+    VA3 --> VA4[/"HTTP 200: Carrito vaciado correctamente<br>Toast: Vaciaste el carrito<br>Funciona aunque el comercio esté cerrado o suspendido"/]
+    VA4 --> FIN16([Fin])

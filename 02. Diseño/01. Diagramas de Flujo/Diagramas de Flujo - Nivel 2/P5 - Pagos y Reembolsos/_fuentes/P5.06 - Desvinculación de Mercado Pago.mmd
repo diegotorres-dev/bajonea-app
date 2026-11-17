@@ -1,0 +1,31 @@
+flowchart TD
+    A([Inicio]) --> B["Dueño toca Desvincular cuenta<br>GET /oauth/mercadopago/desvinculacion/previa (rol DUENO, sin X-Comercio-Id)"]
+    B --> C{"¿Tiene cuenta activa?"}
+    C -- No --> C1[/"HTTP 404: El Dueño no tiene ninguna cuenta de Mercado Pago vinculada"/]
+    C1 --> FIN1([Fin])
+    C -- Sí --> D["SELECT pedidos por comercio y estado (PENDIENTE_CONFIRMACION_COMERCIO, EN_PREPARACION, EN_CAMINO,<br>LISTO_PARA_RETIRAR y PENDIENTE_PAGO)<br>puedeReintentarDesde = creación del PENDIENTE_PAGO más reciente + 30 minutos (pedido.timeout.pago-minutos)"]
+    D --> E{"¿Hay pedidos esperando el pago de un cliente?"}
+    E -- Sí --> F[/"Hoja: No podés desvincular ahora<br>Hay 1 cliente pagando un pedido en Mercado Pago (Comercio: N). Si desvinculás ahora, ese pago no se podría confirmar. (plural: N clientes ... esos pagos no se podrían confirmar)<br>Probá de nuevo alrededor de las HH:mm. Un pedido sin pagar vence a los 30 minutos.<br>Si hay comercios cerrables: Cerrá el comercio para que no entren más pedidos mientras esperás. Botón Cerrar comercio<br>Botón Entendido"/]
+    F --> FIN2([Fin])
+    E -- No --> G[/"Hoja: ¿Desvincular Mercado Pago?<br>Tus comercios dejarán de recibir pedidos nuevos y saldrán del catálogo hasta que vuelvas a vincular una cuenta.<br>Pedidos en curso, siguen su camino (o No tenés pedidos en curso)<br>Si hay que devolver el dinero de alguno de estos pedidos, lo gestiona el equipo de Bajoneá de forma manual.<br>Botones Desvincular y Cancelar"/]
+    G --> H{"¿Qué elige?"}
+    H -- Cancelar --> FIN3([Fin])
+    H -- Desvincular --> I["Botón: Desvinculando...<br>DELETE /oauth/mercadopago/desvincular (rol DUENO, sin X-Comercio-Id)"]
+    I --> J
+    subgraph TX [Transacción BD - desvincular]
+        J["Bloqueos en orden: usuario del Dueño (LOCK IN SHARE MODE), cuenta_mercado_pago (FOR UPDATE),<br>comercios del Dueño (FOR UPDATE), pedidos PENDIENTE_PAGO de esos comercios (LOCK IN SHARE MODE)"] --> K{"¿Hay cuenta activa?"}
+        K -- No --> K1[/"HTTP 404: El Dueño no tiene ninguna cuenta de Mercado Pago vinculada"/]
+        K -- Sí --> L{"¿Algún comercio SUSPENDIDO?"}
+        L -- Sí --> L1[/"HTTP 409: No podés desvincular Mercado Pago mientras un comercio tuyo esté suspendido. Se usa para devolver el dinero de los pedidos."/]
+        L -- No --> M{"¿Hay pedidos PENDIENTE_PAGO?"}
+        M -- Sí --> M1[/"HTTP 409: Hay 1 pedido de un cliente que todavía está pagando. Probá de nuevo alrededor de las HH:mm. (o N pedidos ... están pagando)<br>con cantidadPagosPendientes y puedeReintentarDesde"/]
+        M -- No --> N["UPDATE cuenta_mercado_pago: activa = falso, fecha_desvinculacion = ahora (los tokens no se borran)"]
+        N --> O["Recalcula la aptitud de venta de los comercios (motivo MP_DESVINCULADO)<br>Los APTO_VENTA vuelven a APROBADO<br>Los pedidos en curso siguen su flujo<br>Un reembolso posterior queda PENDIENTE_REVISION_MANUAL (ver P5.04)"]
+    end
+    K1 --> E1
+    L1 --> E2
+    M1 --> E2
+    E2[/"Con 409: se vuelve a pedir la previa y se repinta la hoja"/] --> FIN4([Fin])
+    E1[/"Con 404: se refresca el estado y se avisa"/] --> FIN5([Fin])
+    O --> P[/"HTTP 200: Cuenta de Mercado Pago desvinculada correctamente<br>Toast con ese mensaje<br>Otro error: No pudimos desvincular la cuenta. Probá de nuevo."/]
+    P --> FIN6([Fin])

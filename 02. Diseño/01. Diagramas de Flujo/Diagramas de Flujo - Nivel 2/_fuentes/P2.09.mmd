@@ -1,0 +1,80 @@
+flowchart TD
+    A([Inicio]) --> B["Administrador abre la suspensión de un comercio<br>GET /administrador/comercios/id/suspension/previa<br>(conteos de pedidos por estado y topes)"]
+    B --> BP[/"Pantalla del Administrador (modal de detalle del comercio):<br>botón Suspender (solo APROBADO, APTO_VENTA y CERRADO_TEMPORALMENTE)<br>o Levantar suspensión (si SUSPENDIDO)<br>Hoja Suspender nombre: Deja de aparecer en el catálogo. y bloque Ver detalle:<br>N pedidos pendientes: se rechazan ahora y se reembolsan. No se puede deshacer.<br>N en preparación: tienen el tope en minutos para despacharlos o se cancelan con reembolso<br>N listos para retirar; N en camino siguen igual; N sin pagar no se pueden pagar<br>o No tiene pedidos en curso. (si falla: aviso Igual podés suspender el comercio.)<br>Campo Motivo (lo va a ver el Dueño), mínimo 10 caracteres para habilitar el botón"/]
+    BP --> C{"¿Qué decide?"}
+    C -- Suspender --> D[/"Motivo de la suspensión (entre 10 y 500 caracteres)"/]
+    C -- "Levantar suspensión" --> L0[/"Motivo opcional (hasta 500 caracteres)"/]
+    C -- "Reenviar email fallido" --> R0["POST /administrador/comercios/id/suspension/reenviar-email"]
+    D --> D1["PUT /administrador/comercios/id/suspender"]
+    D1 --> D2{"¿Motivo válido?"}
+    D2 -- No --> D3[/"HTTP 400: Ingresá el motivo de la suspensión<br>o El motivo debe tener entre 10 y 500 caracteres"/]
+    D3 --> FIN1([Fin])
+    D2 -- Sí --> D4["Lee destinatarios fuera de la transacción:<br>Dueño y Empleados activos"]
+    D4 --> E
+    subgraph TX1 [Transacción BD - suspender]
+        E["Bloquea usuarios (Dueño y Empleados activos, compartido, por id),<br>relaciones y comercio (FOR UPDATE)"] --> E1{"¿Estado del comercio?"}
+        E1 -- "SUSPENDIDO con origen DUENO" --> E2["Lo convierte a origen INDIVIDUAL<br>conservando suspendido_desde (sin avisos)"]
+        E1 -- "SUSPENDIDO con otro origen" --> E3[/"HTTP 409: El comercio ya está suspendido"/]
+        E1 -- "Distinto de APROBADO, APTO_VENTA<br>y CERRADO_TEMPORALMENTE" --> E4[/"HTTP 409: Solo se puede suspender un comercio aprobado"/]
+        E1 -- "APROBADO, APTO_VENTA<br>o CERRADO_TEMPORALMENTE" --> E5["UPDATE comercio: estado = SUSPENDIDO, suspension_origen = INDIVIDUAL,<br>suspendido_desde = ahora, motivo_suspension<br>INSERT historial_estado_comercio (con administrador)<br>El estado de origen no se guarda: al levantar se recalcula<br>No toca cerrado_manualmente"]
+        E5 --> E6["INSERT aviso al Dueño COMERCIO_SUSPENDIDO:<br>Tu comercio nombre fue suspendido. Motivo: motivo<br>INSERT aviso a cada Empleado activo COMERCIO_SUSPENDIDO_EQUIPO:<br>El comercio nombre fue suspendido.<br>Mientras dure no se aceptan pedidos nuevos."]
+    end
+    E3 --> FIN2([Fin])
+    E4 --> FIN3([Fin])
+    E2 --> F
+    E6 --> E7["Después del commit: email al Dueño<br>Asunto: Tu comercio nombre fue suspendido (un intento)<br>Si falla queda FALLIDO y se reenvía a mano<br>No cierra sesiones"]
+    E7 --> F
+    F["Cascada sobre pedidos, después del commit<br>(un pedido por transacción, con bloqueo del orden global y revalidación)"] --> G{"Estado del pedido"}
+    G -- PENDIENTE_PAGO --> G1["No se toca<br>Si el pago se aprueba después: CANCELADO_POR_SISTEMA con reembolso<br>(nota SUSPENSION_COMERCIO)"]
+    G -- PENDIENTE_CONFIRMACION_COMERCIO --> G2["RECHAZADO en el acto (actor SISTEMA, motivo SUSPENSION_COMERCIO)<br>Reembolso total<br>Aviso al Cliente: Cancelamos tu pedido número porque el comercio no está disponible.<br>Te devolvemos el dinero.<br>(llamada directa y barrido cada 60 segundos)"]
+    G -- EN_PREPARACION --> G3["A los 90 minutos desde suspendido_desde:<br>CANCELADO_POR_SISTEMA con reembolso (TIMEOUT_PREPARACION_SUSPENSION)<br>Antes, el equipo puede despachar o anular<br>(job cada 60 segundos)"]
+    G -- LISTO_PARA_RETIRAR --> G4["A los 90 minutos desde el posterior entre quedó listo y suspendido_desde:<br>NO_RETIRADO sin reembolso (TIMEOUT_RETIRO_SUSPENSION)<br>Aviso al Cliente<br>(job cada 300 segundos)"]
+    G -- EN_CAMINO --> G5["No se toca<br>(lo confirma el Cliente o la autoconfirmación de 90 minutos)"]
+    G1 --> G6["Si además el Dueño está SUSPENDIDO y no hay Empleados activos:<br>EN_PREPARACION pasa a ANULADO y LISTO_PARA_RETIRAR a CANCELADO_POR_SISTEMA,<br>ambos de inmediato y con reembolso (SUSPENSION_DUENO_SIN_ATENCION)<br>Ese camino es de la suspensión del Dueño: ver P1.14 y P7.04"]
+    G2 --> G6
+    G3 --> G6
+    G4 --> G6
+    G5 --> G6
+    G6 --> H[/"HTTP 200: Comercio suspendido correctamente"/]
+    H --> HP[/"Pantalla del Administrador: toast Comercio suspendido y recarga la lista<br>Con 409 muestra el mensaje y pide cerrar la ventana"/]
+    HP --> HQ[/"Pantalla del Dueño y del Empleado con el comercio suspendido:<br>tarjeta Comercio suspendido (Dueño) o Este comercio está suspendido (Empleado);<br>solo el Dueño ve la fecha y el Motivo; enlace Contactar a Soporte<br>Franja en pedidos: Tenés hasta las hora para resolver los pedidos en curso.<br>Por pedido: Se va a rechazar y reembolsar solo.; Despachalo o anulalo antes de las hora.;<br>Entregalo o marcalo como no retirado antes de las hora.; Sigue su curso.<br>Controles deshabilitados con El comercio está suspendido; productos en solo lectura (ver P2.08)"/]
+    HQ --> FIN4([Fin])
+    L0 --> L1["PUT /administrador/comercios/id/levantar-suspension"]
+    L1 --> L2{"¿Motivo de más de 500 caracteres?"}
+    L2 -- Sí --> L3[/"HTTP 400: El motivo no puede superar los 500 caracteres"/]
+    L3 --> FIN5([Fin])
+    L2 -- No --> M
+    subgraph TX2 [Transacción BD - levantar]
+        M["Mismo orden de bloqueo más cuenta_mercado_pago del Dueño"] --> M1{"¿Está SUSPENDIDO?"}
+        M1 -- No --> M2[/"HTTP 409: El comercio no está suspendido"/]
+        M1 -- Sí --> M3{"¿El origen es DUENO?"}
+        M3 -- Sí --> M4[/"HTTP 409: Este comercio está suspendido porque se suspendió a su Dueño.<br>Hay que levantar la suspensión del Dueño"/]
+        M3 -- No --> M5{"¿La cuenta del Dueño está suspendida?"}
+        M5 -- Sí --> M6[/"HTTP 409: El Dueño tiene la cuenta suspendida. Levantá la suspensión primero."/]
+        M5 -- No --> M7{"Destino (destinoAlLevantarSuspension, ver P2.04):<br>¿sin Mercado Pago activo o, con documentación exigida,<br>sin documento aprobado?"}
+        M7 -- Sí --> M8["Destino APROBADO"]
+        M7 -- No --> M9{"¿El Dueño está bloqueado?"}
+        M9 -- Sí --> M10["Destino CERRADO_TEMPORALMENTE"]
+        M9 -- No --> M11["Destino APTO_VENTA<br>(un documento pendiente no lo frena)"]
+        M8 --> M12
+        M10 --> M12
+        M11 --> M12
+        M12["UPDATE comercio: estado = destino, limpia suspension_origen,<br>suspendido_desde y motivo_suspension<br>INSERT historial_estado_comercio (con administrador)<br>INSERT aviso al Dueño SUSPENSION_LEVANTADA<br>INSERT aviso a Empleados COMERCIO_SUSPENSION_LEVANTADA_EQUIPO:<br>Levantaron la suspensión del comercio nombre. Ya vuelve a funcionar con normalidad."]
+    end
+    M2 --> FIN6([Fin])
+    M4 --> FIN7([Fin])
+    M6 --> FIN8([Fin])
+    M12 --> M13["Después del commit: email al Dueño<br>Asunto: Levantamos la suspensión de tu comercio nombre<br>Los pedidos ya rechazados o cancelados no se restauran;<br>los jobs se detienen al dejar de estar SUSPENDIDO"]
+    M13 --> M14[/"HTTP 200: Suspensión levantada correctamente"/]
+    M14 --> M15[/"Pantalla: hoja Levantar suspensión con Suspendido desde la fecha y el motivo<br>Vuelve a vender si tiene cuenta de cobro activa y documentación aprobada. Si no, queda aprobado sin poder vender.<br>Campo Mensaje para el Dueño (opcional); toast Suspensión levantada<br>Si el origen es el Dueño: Suspendido junto con el Dueño, enlace Ir al Dueño y Levantar deshabilitado;<br>botón Suspender solo este comercio"/]
+    M15 --> FIN9([Fin])
+    R0 --> R1{"¿Hay un email fallido para reenviar?"}
+    R1 -- No --> R2[/"HTTP 409: No hay ningún email fallido para reenviar"/]
+    R2 --> FIN10([Fin])
+    R1 -- Sí --> R3["Reintenta el envío y actualiza la misma fila de notificacion"]
+    R3 --> R4{"¿Salió el email?"}
+    R4 -- Sí --> R5[/"HTTP 200: Email reenviado correctamente"/]
+    R4 -- No --> R6[/"HTTP 502: No se pudo reenviar el email. Probá de nuevo más tarde"/]
+    R5 --> R7[/"Pantalla: No se envió el email con botón Reenviar<br>Toasts Email reenviado o No pudimos reenviar el email. Probá de nuevo."/]
+    R7 --> FIN11([Fin])
+    R6 --> R7

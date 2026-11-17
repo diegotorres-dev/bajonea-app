@@ -1,0 +1,39 @@
+flowchart TD
+    A([Inicio]) --> B["Usuario abre index.html (catálogo de comercios)<br>js/catalogo.js, initCatalogo"]
+    B --> C{"¿Quién entra?"}
+    C -- "Dueño o Administrador" --> C1["Redirige a su pantalla de inicio según el rol<br>(o a login.html si falla)<br>No ven el catálogo"]
+    C1 --> FIN1([Fin])
+    C -- "Cliente que también es Empleado,<br>sin contexto elegido" --> C2["Redirige al selector de contexto (ver P1.16)"]
+    C2 --> FIN2([Fin])
+    C -- "Visitante o Cliente" --> D["Saludo:<br>Visitante: Iniciá sesión para bajonear ;)<br>Cliente: Hola, nombre y ¿Qué comemos hoy?"]
+    D --> E["Muestra el esqueleto de 3 tarjetas<br>GET /catalogo/comercios (público, sin parámetros, una sola vez)"]
+    E --> F{"¿Falló la carga?"}
+    F -- Sí --> F1[/"No pudimos cargar los comercios.<br>Botón: Reintentar (recarga la página)"/]
+    F1 --> FIN3([Fin])
+    F -- No --> G{"¿El servidor devolvió comercios?"}
+    G -- No --> G1[/"Todavía no hay comercios disponibles<br>Estamos incorporando negocios locales en Tierra del Fuego.<br>Volvé a revisar pronto."/]
+    G1 --> FIN4([Fin])
+    G -- Sí --> H["Normaliza nombre, razón social y calle a Title Case<br>Chip activo inicial: Todos"]
+    H --> I{"Chip elegido<br>(uno solo activo, todo en memoria,<br>sin volver a llamar al servidor)"}
+    I -- Todos --> J1["Pasan todos"]
+    I -- Delivery --> J2["Pasan los que aceptan delivery"]
+    I -- Retiro --> J3["Pasan los que aceptan retiro"]
+    I -- "Abierto ahora" --> J4["Pasan los que tienen estadoApertura = ABIERTO"]
+    J1 --> K
+    J2 --> K
+    J3 --> K
+    J4 --> K
+    K["Ordena: los abiertos primero;<br>dentro de cada grupo, el orden del servidor (sin ORDER BY)<br>Sin búsqueda de texto, sin filtro por tipo ni por localidad,<br>sin paginación: se pintan todos"] --> L{"¿Quedó algún comercio?"}
+    L -- No --> L1[/"Sin resultados para este filtro<br>Probá con otro filtro para ver más comercios disponibles."/]
+    L1 --> I
+    L -- Sí --> M{"estadoApertura de cada comercio"}
+    M -- ABIERTO --> M1["Tarjeta normal con chip Abierto junto al nombre"]
+    M -- "CERRADO_HORARIO o CERRADO_MANUAL" --> M2["Tarjeta atenuada con chip Cerrado al final<br>(cualquier valor distinto de ABIERTO se trata como cerrado)"]
+    M -- CERRADO_TEMPORALMENTE --> M3["Tarjeta atenuada con chip Cerrado temporalmente"]
+    M1 --> N
+    M2 --> N
+    M3 --> N
+    N["La tarjeta no muestra textoReapertura<br>(solo el detalle lo muestra)<br>Una tarjeta cerrada sigue siendo un enlace"] --> O{"¿Toca una tarjeta<br>o cambia de chip?"}
+    O -- "Cambia de chip" --> I
+    O -- "Toca una tarjeta" --> P["Abre comercio-detalle.html?id=comercioId (ver P3.05)"]
+    P --> FIN5([Fin])

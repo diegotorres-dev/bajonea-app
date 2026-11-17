@@ -1,0 +1,61 @@
+flowchart TD
+    A([Inicio]) --> B["Administrador abre Reclamos (admin-reclamos.html)<br>GET /administrador/reclamos?filtro=&limite=50&pagina=0"]
+    B --> C[/"Chips: Pendientes, Reembolso en proceso, Resueltos con contadores<br>Pendientes: más viejos primero. Resueltos: más recientes primero<br>Vacíos: No hay reclamos pendientes de revisar. / No hay reembolsos de reclamos en proceso. / Todavía no resolviste ningún reclamo.<br>Error: No pudimos cargar los reclamos."/]
+    C --> D["Elige un reclamo: Ver detalle<br>GET /administrador/reclamos/id (y fotos: GET .../fotos/fotoId, nosniff, no-store)"]
+    D --> E{"¿Existe?"}
+    E -- No --> E1[/"HTTP 404: Reclamo no encontrado<br>Pantalla: No encontramos ese reclamo. Volver a Reclamos"/]
+    E1 --> FIN1([Fin])
+    E -- Sí --> F[/"Detalle: pedido, comercio, cliente, entrega, total pagado, Lo que contó el Cliente,<br>productos, fotos (visor), Saldo reembolsable"/]
+    F --> G{"¿Estado del reclamo?"}
+    G -- "Resuelto" --> G1[/"Bloque Resolución (tipo, monto reembolsado, fecha, motivo)<br>Bloque Reembolso si está en proceso o fallido: Mercado Pago no pudo hacer el reembolso. /<br>El comercio no tiene saldo suficiente en Mercado Pago para este reembolso. / El reembolso todavía no se procesó.<br>Enlace Ir a Reembolsos para reintentar (ver P5.05)"/]
+    G1 --> FIN2([Fin])
+    G -- "Pendiente" --> H[/"Formulario Cómo se resuelve: Reembolso total, Reembolso parcial (Monto a reembolsar, Máximo $X) o Rechazar reclamo (Motivo del rechazo: El Cliente va a ver este texto.)"/]
+    H --> I{"¿Eligió una opción?"}
+    I -- No --> I1[/"Elegí cómo se resuelve el reclamo"/]
+    I1 --> H
+    I -- Sí --> J[/"Hoja Resolver reclamo<br>Rechazo: ¿Rechazar este reclamo? El Cliente va a ver el motivo que escribiste. No se puede deshacer.<br>Reembolso: ¿Reembolsar $X al Cliente? El reembolso lo hace la cuenta de Mercado Pago del comercio. No se puede deshacer.<br>Botones Confirmar y Cancelar"/]
+    J --> K{"¿Qué elige?"}
+    K -- Cancelar --> H
+    K -- Confirmar --> L["Botón: Resolviendo...<br>PUT /administrador/reclamos/id/resolver con tipo, monto y motivo"]
+    L --> M{"¿Forma válida?<br>RECHAZO: motivo de 10 a 500 y sin monto<br>PARCIAL: monto mayor a cero con 2 decimales<br>TOTAL: sin monto"}
+    M -- No --> M1[/"HTTP 400 por campo: Elegí cómo se resuelve el reclamo / Escribí el motivo del rechazo en entre 10 y 500 caracteres /<br>Un rechazo no lleva monto / Indicá cuánto devolver / El monto tiene que ser mayor a cero. /<br>El reembolso total no lleva monto / El monto tiene que ser un importe con hasta 2 decimales"/]
+    M1 --> ERR
+    M -- Sí --> N["SELECT pedido_id del reclamo (transacción de solo lectura)"]
+    N --> N1{"¿Existe?"}
+    N1 -- No --> N1a[/"HTTP 404: Reclamo no encontrado"/]
+    N1a --> ERR
+    N1 -- Sí --> O
+    subgraph TX [Transacción BD - resolver reclamo]
+        O["Bloqueos en orden: usuarios (LOCK IN SHARE MODE), pedido (FOR UPDATE),<br>pago (FOR UPDATE, solo reembolsos), reclamo (FOR UPDATE)"] --> P{"¿El reclamo sigue PENDIENTE?"}
+        P -- No --> P1[/"HTTP 409: Este reclamo ya fue resuelto."/]
+        P -- Sí --> Q{"¿Tipo de resolución?"}
+        Q -- RECHAZO --> R["UPDATE reclamo: estado = RECHAZADO, tipo_resolucion = RECHAZO,<br>nota_resolucion = motivo, administrador_id, fecha_resolucion<br>INSERT aviso in-app al Cliente RECLAMO_RECHAZADO:<br>Revisamos tu reclamo del pedido número y no pudimos aprobarlo. Motivo: (texto)"]
+        Q -- "TOTAL o PARCIAL" --> S{"¿Hay pago aprobado con saldo para reembolsar?"}
+        S -- "Sin pago" --> S1[/"HTTP 409: El pedido no tiene ningún pago para reembolsar"/]
+        S -- "Pago no aprobado" --> S2[/"HTTP 409: El pago del pedido no está aprobado en Mercado Pago: no hay nada que reembolsar"/]
+        S -- "Total sin saldo" --> S3[/"HTTP 409: Este pedido ya no tiene nada para reembolsar"/]
+        S -- "Parcial igual al saldo" --> S4[/"HTTP 400 en monto: Para devolver todo, elegí reembolso total."/]
+        S -- "Parcial mayor al saldo" --> S5[/"HTTP 400 en monto: El monto supera lo que queda por reembolsar ($X)."/]
+        S -- Sí --> T{"¿La cuenta de Mercado Pago del Dueño está vinculada?"}
+        T -- No --> T1["INSERT nota_credito RECLAMO: PENDIENTE_REVISION_MANUAL<br>con el error de cuenta desvinculada (no se llama a Mercado Pago)"]
+        T -- Sí --> T2["INSERT nota_credito RECLAMO (saldo calculado con las otras notas en FOR UPDATE)"]
+        T1 --> U
+        T2 --> U
+        U["UPDATE reclamo: estado = APROBADO, tipo_resolucion, monto_aprobado = monto de la nota,<br>administrador_id, fecha_resolucion<br>INSERT aviso in-app al Cliente RECLAMO_APROBADO:<br>Aprobamos tu reclamo del pedido número y te vamos a devolver $X. El reembolso puede tardar unos días en acreditarse.<br>INSERT aviso in-app al Dueño RECLAMO_REEMBOLSO_DUENO:<br>Reembolsamos $X al Cliente por un reclamo del pedido número. (sin aviso al Empleado)"]
+    end
+    P1 --> ERR
+    S1 --> ERR
+    S2 --> ERR
+    S3 --> ERR
+    S4 --> ERR
+    S5 --> ERR
+    R --> V["Después del commit: email al Cliente por Resend, un solo intento, sin reintento<br>Rechazo: asunto Resolvimos tu reclamo del pedido número — Bajoneá<br>(se registra el resultado en una fila de canal EMAIL)"]
+    U --> W{"¿La nota quedó en cuenta activa?"}
+    W -- Sí --> W1["Después del commit: reembolso en Mercado Pago (ver P5.04)<br>total sin cuerpo, parcial con el monto, clave nc-id-intento<br>Si falla, la nota queda FALLIDA y se reintenta a mano desde Reembolsos (ver P5.05)"]
+    W -- No --> W2["La nota espera revisión manual (ver P5.05)"]
+    W1 --> X["Email al Cliente por Resend, un solo intento<br>Aprobado: asunto Aprobamos tu reclamo del pedido número — Bajoneá"]
+    W2 --> X
+    V --> Y[/"HTTP 200: Reclamo resuelto con el detalle actualizado<br>Toast: Reclamo resuelto"/]
+    X --> Y
+    Y --> FIN3([Fin])
+    ERR[/"Error en la hoja o bajo el campo: No pudimos resolver el reclamo. Probá de nuevo.<br>(o el mensaje del servidor)"/] --> FIN4([Fin])

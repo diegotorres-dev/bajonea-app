@@ -1,0 +1,88 @@
+flowchart TD
+    A([Inicio]) --> B["Perfil del comercio (comercio-perfil.html)<br>Dueño. No tiene pantalla para sus datos personales<br>ni para su foto personal: el avatar es la foto del comercio"]
+    B --> B1["GET /comercios/perfil (header X-Comercio-Id)"]
+    B1 --> B2{"¿El comercio es del Dueño?"}
+    B2 -- No --> B3[/"Error 400: Falta indicar el comercio / El comercio indicado no es válido<br>Error 404: Comercio no encontrado"/]
+    B3 --> FIN1([Fin])
+    B2 -- Sí --> B4[/"HTTP 200: Perfil obtenido correctamente<br>Foto, nombre, teléfono, estado y localidad<br>Filas: Editar datos del comercio, Editar horarios, Ver datos legales,<br>Ver equipo, Documentación, Cobros con Mercado Pago, Cambiar contraseña,<br>Ayuda, Mis consultas a Soporte, Cerrar sesión"/]
+    B4 --> C{"¿Qué acción?"}
+    C -- "Cambiar contraseña" --> C1["Ver P1.15"]
+    C1 --> FIN2([Fin])
+    C -- "Ver equipo" --> C2["Ver P1.10 y P1.12"]
+    C2 --> FIN3([Fin])
+    C -- "Ver datos legales" --> L1[/"Datos legales (solo lectura):<br>Razón social, CUIT, Condición IVA, Tipo de sociedad,<br>Domicilio fiscal, Fecha de inicio<br>No hay endpoint para editarlos desde el perfil"/]
+    L1 --> FIN4([Fin])
+
+    C -- "Editar datos del comercio" --> E1[/"Nombre del comercio, Descripción, Teléfono de contacto,<br>Modalidades de entrega (delivery y retiro)"/]
+    E1 --> E1A["Disponibilidad del nombre en vivo (ver P1.17)"]
+    E1A --> E2{"¿Pasa las validaciones del navegador?"}
+    E2 -- No --> E2A[/"Ingresá el nombre de tu comercio.<br>El nombre no puede contener solo caracteres especiales.<br>Ingresá tu teléfono.<br>Ingresá un teléfono argentino válido (código de área + número).<br>Debés ofrecer al menos una modalidad."/]
+    E2A --> FIN5([Fin])
+    E2 -- Sí --> E3["PUT /comercios/perfil (solo Dueño)"]
+    E3 --> E4{"¿Pasa las validaciones del DTO?"}
+    E4 -- No --> E4A[/"Error 400: No debe estar vacío<br>Ingresá un nombre de comercio válido<br>La descripción no puede superar los 2000 caracteres.<br>Ingresá un número de teléfono válido (cod. área + número)"/]
+    E4A --> E4B[/"No pudimos guardar los cambios. Intentá nuevamente."/]
+    E4B --> FIN6([Fin])
+    E4 -- Sí --> E5{"¿Ofrece al menos una modalidad?"}
+    E5 -- No --> E5A[/"Error 400: El comercio debe ofrecer al menos una<br>modalidad de entrega (delivery o retiro)"/]
+    E5A --> FIN7([Fin])
+    E5 -- Sí --> T1
+    subgraph TX [Transacción BD]
+        T1["SELECT usuario del Dueño (FOR UPDATE)<br>SELECT comercio (FOR UPDATE)"] --> T2{"¿El comercio está SUSPENDIDO?"}
+        T2 -- Sí --> T2A[/"Error 409: El comercio está suspendido:<br>por ahora no se puede modificar."/]
+        T2 -- No --> T3{"¿El comercio está INACTIVO?"}
+        T3 -- Sí --> T3A[/"Error 409: El comercio está inactivo:<br>por ahora no se puede modificar."/]
+        T3 -- No --> T4["Nombre en Title Case"]
+        T4 --> T5{"¿Cambió el nombre?"}
+        T5 -- Sí --> T6{"¿Ya existe un comercio con ese nombre?"}
+        T6 -- Sí --> T6A[/"Error 409: Ya existe un comercio con ese nombre. Elegí otro."/]
+        T6 -- No --> T7
+        T5 -- No --> T7["UPDATE comercio: nombre, descripcion, telefono,<br>acepta_delivery, acepta_retiro, fecha_modificacion = NOW()"]
+        T7 --> T8{"¿Cambió algún campo?"}
+        T8 -- Sí --> T9["INSERT historial_edicion_comercio:<br>tipo COMERCIO, acción EDITAR, nombres de los campos (no los valores)"]
+    end
+    T2A --> ER[/"Error mostrado en el campo (409 de nombre) o en el banner"/]
+    T3A --> ER
+    T6A --> ER
+    ER --> FIN8([Fin])
+    T8 -- No --> OK1
+    T9 --> OK1[/"HTTP 200: Perfil actualizado correctamente"/]
+    OK1 --> OK2[/"Datos actualizados correctamente"/]
+    OK2 --> FIN9([Fin])
+
+    C -- "Foto del comercio" --> F0{"¿Ya tiene foto?"}
+    F0 -- Sí --> F0A[/"Foto de perfil: Editar foto, Cancelar<br>(no hay Eliminar)"/]
+    F0A --> F0B{"¿Qué elige?"}
+    F0B -- Cancelar --> FIN10([Fin])
+    F0B -- "Editar foto" --> F1
+    F0 -- No --> F1[/"Selector de archivo (JPG, PNG o WEBP)"/]
+    F1 --> F2{"¿Formato permitido y hasta 5 MB?"}
+    F2 -- No --> F2A[/"Formato no permitido. Usá JPG, PNG o WEBP.<br>La imagen no puede superar los 5 MB."/]
+    F2A --> FIN11([Fin])
+    F2 -- Sí --> F3["Editor de recorte 1:1"]
+    F3 --> F4["POST /comercios/perfil/foto/firma<br>(solo Dueño; carpeta comercios/id/perfil/)"]
+    F4 --> F5["El navegador sube el archivo directo a Cloudinary"]
+    F5 --> F5A{"¿Cloudinary respondió bien?"}
+    F5A -- No --> F5B[/"No pudimos conectar con el servicio de imágenes. Probá nuevamente.<br>No pudimos subir la imagen."/]
+    F5B --> FIN12([Fin])
+    F5A -- Sí --> F6["PUT /comercios/perfil/foto con la URL"]
+    F6 --> F7{"¿Pasa las validaciones del DTO?"}
+    F7 -- No --> F7A[/"Error 400: No debe estar vacío<br>La URL debe pertenecer al dominio de Cloudinary<br>La URL debe apuntar a un archivo jpg, jpeg, png o webp<br>La URL de la foto de perfil no puede superar los 500 caracteres"/]
+    F7A --> FIN13([Fin])
+    F7 -- Sí --> G1
+    subgraph TXF [Transacción BD]
+        G1["SELECT usuario del Dueño y comercio (FOR UPDATE)"] --> G2{"¿El comercio está SUSPENDIDO o INACTIVO?"}
+        G2 -- Sí --> G2A[/"Error 409: El comercio está suspendido / inactivo:<br>por ahora no se puede modificar."/]
+        G2 -- No --> G3{"¿La URL es de la carpeta<br>comercios/id/perfil/ de este comercio?"}
+        G3 -- No --> G3A[/"Error 400: La foto de perfil no es válida.<br>Subila de nuevo desde el formulario."/]
+        G3 -- Sí --> G4["UPDATE comercio: foto_perfil_url, fecha_modificacion = NOW()<br>(no se borra la foto anterior de Cloudinary)"]
+        G4 --> G5{"¿Cambió la URL?"}
+        G5 -- Sí --> G6["INSERT historial_edicion_comercio: foto de perfil"]
+    end
+    G2A --> GE[/"No pudimos subir la foto. (o el mensaje del servidor)"/]
+    G3A --> GE
+    GE --> FIN14([Fin])
+    G5 -- No --> H1
+    G6 --> H1[/"HTTP 200: Foto de perfil actualizada correctamente"/]
+    H1 --> H2[/"Foto de perfil actualizada"/]
+    H2 --> FIN15([Fin])

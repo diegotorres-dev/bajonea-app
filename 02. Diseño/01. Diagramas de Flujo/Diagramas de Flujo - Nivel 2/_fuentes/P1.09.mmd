@@ -1,0 +1,94 @@
+flowchart TD
+    A([Inicio]) --> B["Mis direcciones (perfil) o paso de entrega a domicilio del checkout<br>(Cliente; un Empleado las gestiona desde su cuenta de Cliente)"]
+    B --> C{"¿Qué acción?"}
+
+    C -- "Agregar" --> AL0{"¿Ya tiene 5 direcciones activas?<br>(el navegador deshabilita el botón)"}
+    AL0 -- Sí --> AL0A[/"Llegaste al máximo de 5 direcciones.<br>Podés eliminar alguna para agregar otra."/]
+    AL0A --> FIN1([Fin])
+    AL0 -- No --> AL1[/"Formulario Agregar dirección: calle, número, piso/depto,<br>código postal, nombre, referencia, localidad<br>y si es la predeterminada"/]
+    AL1 --> AL2{"¿Pasa las validaciones<br>del navegador?"}
+    AL2 -- No --> AL2A[/"La calle es obligatoria. El número es obligatorio.<br>El número solo puede tener dígitos.<br>El código postal es obligatorio.<br>Ingresá un código postal válido (4 dígitos o formato CPA).<br>Seleccioná una localidad.<br>No puede contener solo caracteres especiales."/]
+    AL2A --> FIN2([Fin])
+    AL2 -- Sí --> AL3["POST /clientes/direcciones<br>(rol CLIENTE)"]
+    AL3 --> AL4{"¿Pasa las validaciones<br>del DTO?"}
+    AL4 -- No --> AL4A[/"Error 400 con los mensajes por campo, por ejemplo:<br>La calle no puede superar los 150 caracteres<br>El nombre no puede superar los 40 caracteres<br>La referencia no puede superar los 150 caracteres"/]
+    AL4A --> FIN3([Fin])
+    AL4 -- Sí --> AL5["SELECT usuario WHERE id = id_del_token<br>(bloqueo FOR UPDATE)<br>SELECT cliente WHERE id = id_del_token"]
+    AL5 --> AL5A{"¿Existe el cliente?"}
+    AL5A -- No --> AL5B[/"Error 404: Cliente no encontrado"/]
+    AL5B --> FIN4([Fin])
+    AL5A -- Sí --> AL6["SELECT localidad WHERE id = localidadId"]
+    AL6 --> AL6A{"¿Existe la localidad?"}
+    AL6A -- No --> AL6B[/"Error 404: La localidad indicada no existe"/]
+    AL6B --> FIN5([Fin])
+    AL6A -- Sí --> AL6C{"¿Está habilitada?<br>(Río Grande, Ushuaia o Tolhuin)"}
+    AL6C -- No --> AL6D[/"Error 400: Esa localidad todavía no está disponible"/]
+    AL6D --> FIN6([Fin])
+    AL6C -- Sí --> AL7["SELECT COUNT(*) FROM direccion<br>WHERE cliente_id = id AND eliminada = false"]
+    AL7 --> AL7A{"¿Tiene 5 o más?"}
+    AL7A -- Sí --> AL7B[/"Error 409: Ya tenés el máximo de 5 direcciones.<br>Eliminá una para agregar otra."/]
+    AL7B --> FIN7([Fin])
+    AL7A -- No --> AL8["SELECT direccion predeterminada activa<br>WHERE cliente_id = id AND principal = true AND eliminada = false"]
+    AL8 --> AL8A{"¿No tiene predeterminada<br>o la nueva se pidió predeterminada?"}
+    AL8A -- Sí --> AL8B["La nueva será predeterminada"]
+    AL8B --> AL8C{"¿Había una predeterminada?"}
+    AL8C -- Sí --> AL8D["UPDATE direccion (la vieja):<br>principal = false<br>(se confirma antes de insertar)"]
+    AL8C -- No --> AL9
+    AL8D --> AL9
+    AL8A -- No --> AL9["INSERT direccion:<br>calle (Title Case), numero, piso_depto, codigo_postal,<br>nombre, referencia, localidad_id, principal,<br>eliminada = false, fecha_creacion = NOW()"]
+    AL9 --> AL10[/"HTTP 201: Dirección agregada correctamente"/]
+    AL10 --> AL11[/"Dirección agregada"/]
+    AL11 --> FIN8([Fin])
+
+    C -- "Editar" --> ED1[/"Formulario Editar dirección<br>(el interruptor de predeterminada solo aplica si se pide serlo)"/]
+    ED1 --> ED2{"¿Pasa las validaciones<br>del navegador?"}
+    ED2 -- No --> ED2A[/"Mensajes del formulario<br>(igual que al agregar)"/]
+    ED2A --> FIN9([Fin])
+    ED2 -- Sí --> ED3["PUT /clientes/direcciones/id"]
+    ED3 --> ED4{"¿Pasa las validaciones<br>del DTO?"}
+    ED4 -- No --> ED4A[/"Error 400 con los mensajes por campo"/]
+    ED4A --> FIN10([Fin])
+    ED4 -- Sí --> ED5["SELECT usuario (FOR UPDATE)<br>SELECT direccion WHERE id = id_de_la_ruta<br>AND cliente_id = id_del_token AND eliminada = false"]
+    ED5 --> ED5A{"¿Existe la dirección?"}
+    ED5A -- No --> ED5B[/"Error 404: Dirección no encontrada<br>Esa dirección ya no existe. Actualizamos tu lista."/]
+    ED5B --> FIN11([Fin])
+    ED5A -- Sí --> ED6{"¿La localidad existe<br>y está habilitada?"}
+    ED6 -- No --> ED6A[/"Error 404: La localidad indicada no existe<br>o Error 400: Esa localidad todavía no está disponible"/]
+    ED6A --> FIN12([Fin])
+    ED6 -- Sí --> ED7["UPDATE direccion:<br>nombre, calle, numero, piso_depto, codigo_postal,<br>referencia, localidad_id, fecha_modificacion = NOW()<br>(no cambia principal)"]
+    ED7 --> ED8[/"HTTP 200: Dirección actualizada correctamente"/]
+    ED8 --> ED9{"¿Pidió ser la predeterminada<br>y todavía no lo era?"}
+    ED9 -- No --> ED10[/"Dirección actualizada"/]
+    ED10 --> FIN13([Fin])
+    ED9 -- Sí --> PR2
+
+    C -- "Elegir otra como predeterminada" --> PR1["Seleccionar el radio de otra dirección"]
+    PR1 --> PR2["PUT /clientes/direcciones/id/principal"]
+    PR2 --> PR3["SELECT usuario (FOR UPDATE)<br>SELECT direccion activa del cliente"]
+    PR3 --> PR3A{"¿Existe la dirección?"}
+    PR3A -- No --> PR3B[/"Error 404: Dirección no encontrada"/]
+    PR3B --> FIN14([Fin])
+    PR3A -- Sí --> PR4{"¿Ya es la predeterminada?"}
+    PR4 -- Sí --> PR6
+    PR4 -- No --> PR5["UPDATE direccion (la actual): principal = false<br>UPDATE direccion (la elegida): principal = true"]
+    PR5 --> PR6[/"HTTP 200: Dirección predeterminada actualizada correctamente<br>(devuelve la lista)"/]
+    PR6 --> PR7[/"nombre ahora es tu dirección predeterminada.<br>Botón: Deshacer (6 segundos, vuelve a llamar a /principal<br>con la anterior)"/]
+    PR7 --> FIN15([Fin])
+
+    C -- "Eliminar" --> EL1[/"¿Eliminar esta dirección?<br>(o ¿Eliminar tu dirección predeterminada?)<br>Los pedidos que ya hiciste con esta dirección no cambian.<br>Si era la predeterminada: tu dirección más reciente<br>pasa a ser la predeterminada."/]
+    EL1 --> EL2{"¿Confirma?"}
+    EL2 -- "Cancelar" --> FIN16([Fin])
+    EL2 -- "Eliminar" --> EL3["DELETE /clientes/direcciones/id"]
+    EL3 --> EL4["SELECT usuario (FOR UPDATE)<br>SELECT direccion activa del cliente"]
+    EL4 --> EL4A{"¿Existe la dirección?"}
+    EL4A -- No --> EL4B[/"Error 404: Dirección no encontrada"/]
+    EL4B --> FIN17([Fin])
+    EL4A -- Sí --> EL5{"¿Es su única dirección activa?"}
+    EL5 -- Sí --> EL5A[/"Error 409: No podés eliminar tu única dirección.<br>Agregá otra primero."/]
+    EL5A --> FIN18([Fin])
+    EL5 -- No --> EL6["UPDATE direccion:<br>eliminada = true, principal = false,<br>fecha_baja = NOW(), fecha_modificacion = NOW()"]
+    EL6 --> EL7{"¿Era la predeterminada?"}
+    EL7 -- Sí --> EL8["UPDATE direccion (la activa de mayor id):<br>principal = true"]
+    EL7 -- No --> EL9
+    EL8 --> EL9[/"HTTP 200: Dirección eliminada correctamente<br>(devuelve la lista)"/]
+    EL9 --> FIN19([Fin])

@@ -1,0 +1,39 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Qué dispara el flujo?<br>(rol CLIENTE, sin X-Comercio-Id)"}
+    B -- "Abre carrito.html" --> V0["Exige contexto Cliente (si no, login.html)<br>Esqueleto de carga<br>GET /carrito"]
+    B -- "Agrega un producto<br>(desde el menú, ver P3.05)" --> AG0["POST /carrito/items<br>productoId, cantidad, nota"]
+    B -- "Cambia la cantidad, quita un ítem o vacía el carrito" --> X0["Ver P4.12"]
+    X0 --> FIN90([Fin])
+    V0 --> V1{"¿Falló la carga?"}
+    V1 -- Sí --> V2[/"No pudimos cargar tu carrito.<br>Botón: Reintentar (recarga la página)"/]
+    V2 --> FIN1([Fin])
+    V1 -- No --> V3["Servidor: SELECT carrito del Cliente<br>(si no existe lo crea, con bloqueo)<br>subtotal = suma de precio vigente por cantidad<br>cargoServicioCliente con la tarifa vigente solo si subtotal es mayor que 0<br>precioCambio de cada ítem = precio_visto distinto del precio vigente"]
+    V3 --> V4{"¿Tiene ítems?"}
+    V4 -- No --> V5[/"Tu carrito está vacío<br>Explorá los comercios disponibles y agregá productos para comenzar tu pedido.<br>Botón: Explorar comercios"/]
+    V5 --> FIN2([Fin])
+    V4 -- Sí --> V6[/"Tarjeta Vas a hacer un pedido a (comercio) y la lista de ítems:<br>miniatura, nombre, precio c/u (si cambió: precio anterior tachado y etiqueta Cambió el precio),<br>nota si existe, tacho, stepper y subtotal<br>Pie: Subtotal, Cargo por servicio, Total y botón Confirmar pedido - $X (ver P4.02)<br>No muestra ningún aviso si el comercio está cerrado"/]
+    V6 --> FIN3([Fin])
+    AG0 --> AG1{"Validación del cuerpo:<br>¿productoId, cantidad de 1 a 20<br>y nota de hasta 255 caracteres?"}
+    AG1 -- No --> AG2[/"HTTP 400, campo: mensaje<br>El producto es obligatorio<br>La cantidad es obligatoria, La cantidad mínima es 1, La cantidad máxima es 20<br>La nota no puede superar los 255 caracteres"/]
+    AG2 --> FIN4([Fin])
+    AG1 -- Sí --> AG3
+    subgraph TX1 [Transacción BD - agregar al carrito]
+        AG3["SELECT producto (LOCK IN SHARE MODE), antes de bloquear el carrito"] --> AG4{"¿Existe y está DISPONIBLE?"}
+        AG4 -- "No existe" --> AG5[/"HTTP 404: Producto no encontrado"/]
+        AG4 -- "No está DISPONIBLE" --> AG6[/"HTTP 409: El producto no está disponible"/]
+        AG4 -- Sí --> AG7["SELECT carrito (FOR UPDATE)<br>Lo crea si no existe (INSERT ... ON DUPLICATE KEY UPDATE)"]
+        AG7 --> AG8{"validarAceptaPedidos del comercio<br>(cerrado, suspendido, no operativo, fuera de horario)<br>ver P3.02"}
+        AG8 -- "Falla" --> AG9[/"HTTP 409 con el mensaje de cierre<br>(textos en P3.02 y P3.05)"/]
+        AG8 -- "Pasa" --> AG10{"¿El carrito ya tiene productos<br>de otro comercio?"}
+        AG10 -- Sí --> AG11[/"HTTP 409: El carrito ya tiene productos de otro comercio.<br>Vaciá el carrito para agregar de un comercio distinto."/]
+        AG10 -- No --> AG12{"¿El producto ya está en el carrito?"}
+        AG12 -- Sí --> AG13["UPDATE item_carrito: cantidad = el menor entre existente más nueva y 20 (sin error),<br>nota reemplazada por la recibida (incluso por nula)<br>No toca precio_visto"]
+        AG12 -- No --> AG14["Fija el comercio del carrito si no tenía<br>INSERT item_carrito: precio_visto = precio vigente del producto"]
+    end
+    AG5 --> FIN5([Fin])
+    AG6 --> FIN6([Fin])
+    AG9 --> FIN7([Fin])
+    AG11 --> FIN8([Fin])
+    AG13 --> AG15[/"HTTP 201: Producto agregado al carrito (carrito completo)<br>Toast Producto agregado al carrito y actualiza el contador<br>(header y barra inferior, 9+ si supera 9)"/]
+    AG14 --> AG15
+    AG15 --> FIN9([Fin])

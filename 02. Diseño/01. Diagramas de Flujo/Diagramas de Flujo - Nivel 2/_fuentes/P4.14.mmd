@@ -1,0 +1,30 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Cómo sigue un pedido en PENDIENTE_PAGO?"}
+    B -- "El Cliente vuelve de Mercado Pago<br>pedido-detalle.html?id&pago=exito, pendiente o fallo" --> C["En escritorio redirige a pedidos.html con la misma búsqueda"]
+    C --> D{"¿pago es exito, pendiente o fallo?"}
+    D -- No --> D1["Sin ciclo: refresca el pedido cada 15 s mientras no esté en un estado final"]
+    D1 --> FIN1([Fin])
+    D -- Sí --> E["POST /pedidos/cliente/id/pago/sincronizar<br>(con paymentId si vino en la URL)<br>Hasta 15 intentos cada 3 s (un solo intento con pago=fallo)"]
+    E --> E1[/"Mientras sigue PENDIENTE_PAGO con pagoEstado PENDIENTE:<br>Estamos confirmando tu pago. Esta pantalla se actualiza sola.<br>Botón: El pago se está procesando (deshabilitado)"/]
+    E1 --> F{"Estado del pedido"}
+    F -- "PAGADO" --> F1[/"Toast: Tu pago se realizó correctamente<br>Pedido en PENDIENTE_CONFIRMACION_COMERCIO:<br>Esperando al comercio. Tu pedido fue enviado a (comercio). Esperando confirmación.<br>El carrito se vació al aprobarse el pago (ver P4.13)"/]
+    F -- "PENDIENTE_PAGO con pagoEstado RECHAZADO" --> F2[/"Toast de error: El pago no se pudo procesar. Podés intentar de nuevo desde la sección Mis pedidos.<br>No pudimos procesar tu pago. Podés intentar de nuevo."/]
+    F -- "PENDIENTE_PAGO con pago=exito sin finalizar" --> F3[/"Toast: Tu pago se está procesando. Esto puede tardar unos segundos."/]
+    F -- "Resto" --> F4[/"Toast: Tu pago está pendiente de confirmación."/]
+    F1 --> FIN2([Fin])
+    F2 --> FIN3([Fin])
+    F3 --> FIN4([Fin])
+    F4 --> FIN5([Fin])
+    B -- "Pedido sin pagar" --> G[/"Esperando pago. Todavía no pagaste este pedido.<br>Si el comercio está suspendido: etiqueta Sin pagar,<br>Este comercio no está recibiendo pedidos por ahora. y<br>Vas a poder pagar cuando el comercio vuelva a estar disponible, si el pedido no venció.<br>(el botón Cancelar pedido solo aparece en este caso, ver P4.05)"/]
+    G --> FIN6([Fin])
+    B -- "Job expirarPagosVencidos<br>(cada 60 s, pedido.timeout.pago-minutos = 30)" --> H["SELECT pedidos en PENDIENTE_PAGO con fecha_creacion anterior al corte<br>Una transacción por pedido"]
+    H --> I
+    subgraph TX [Transacción BD por pedido]
+        I["SELECT pedido (FOR UPDATE)"] --> J{"¿pagoEstado es RECHAZADO?"}
+        J -- Sí --> J1["motivo = Pago rechazado"]
+        J -- No --> J2["motivo = Pago no confirmado"]
+        J1 --> K["UPDATE pedido: estado CANCELADO_POR_SISTEMA, cancelado_por SISTEMA, motivo<br>INSERT historial_estado_pedido: actor SISTEMA, motivo_timeout TIMEOUT_PAGO<br>INSERT aviso al Cliente PEDIDO_CANCELADO_SISTEMA:<br>Tu pedido número fue cancelado automáticamente: no se confirmó el pago a tiempo.<br>Sin nota de crédito (no hubo pago) y sin email"]
+        J2 --> K
+    end
+    K --> L[/"El Cliente ve Cancelado: Tu pedido fue cancelado automáticamente."/]
+    L --> FIN7([Fin])

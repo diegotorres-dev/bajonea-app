@@ -1,0 +1,65 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Quién reactiva<br>la cuenta?"}
+    B -- "El propio usuario<br>(desde el inicio de sesión)" --> C[/"Inicio de sesión con la cuenta INACTIVA y la<br>contraseña correcta (ver P1.04)<br>Error 409: Cuenta inactiva. Solicitá la reactivación de tu cuenta<br>con la lista de comercios y su resultado"/]
+    C --> C1["El navegador vacía el campo de contraseña<br>y la guarda solo en memoria"]
+    C1 --> D[/"Tu cuenta está inactiva: Pasaron más de 3 meses sin que<br>ingresaras, así que la dejamos en pausa. Tus datos y<br>tus pedidos están a salvo."/]
+    D --> D1{"¿Es Dueño con<br>comercios afectados?"}
+    D1 -- Sí --> D2[/"Tus comercios:<br>nombre vuelve a estar disponible. (estaba INACTIVO)<br>nombre sigue suspendido. Si creés que es un error,<br>escribinos. (estaba SUSPENDIDO)"/]
+    D2 --> E
+    D1 -- No --> E{"¿Qué elige<br>el usuario?"}
+    E -- "Volver a ingresar" --> E1["Se descartan las credenciales de la memoria<br>y se vuelve al inicio de sesión"]
+    E1 --> FIN1([Fin])
+    E -- "Contactar a Soporte" --> E2["Ir a Soporte (consulta: No puedo entrar)"]
+    E2 --> FIN2([Fin])
+    E -- "Reactivar mi cuenta" --> F["Botón: Reactivar mi cuenta<br>(Reactivando tu cuenta…)<br>POST /auth/reactivar-cuenta/con-credenciales<br>con nombre de usuario y contraseña"]
+    F --> F1["Normalizar: nombre de usuario con trim y minúsculas<br>Validar que ninguno llegue vacío (Error 400: No debe estar vacío)"]
+    F1 --> G["SELECT usuario<br>WHERE nombre_usuario = nombre_ingresado<br>(bloqueo FOR UPDATE)"]
+    G --> G1{"¿Existe el usuario<br>y está INACTIVO?"}
+    G1 -- No --> G2[/"Error 401: Usuario o contraseña incorrectos<br>(no suma intentos ni revela el estado real)"/]
+    G2 --> FE
+    G1 -- Sí --> H{"¿intentos_fallidos >= 3?"}
+    H -- Sí --> H1[/"Error 409: Cuenta bloqueada.<br>Recuperá tu contraseña para desbloquearla"/]
+    H1 --> FE
+    H -- No --> I["Comparar la contraseña con BCrypt"]
+    I --> I1{"¿Contraseña correcta?"}
+    I1 -- No --> I2["UPDATE usuario:<br>intentos_fallidos = intentos_fallidos + 1"]
+    I2 --> I3[/"Error 401: Usuario o contraseña incorrectos<br>(con intentosRestantes)"/]
+    I3 --> FE[/"Caja de alerta con el mensaje del servidor<br>(o No pudimos reactivar tu cuenta. Probá de nuevo.)"/]
+    FE --> FIN3([Fin])
+    I1 -- Sí --> J1
+    subgraph TXU [Transacción BD]
+        J1["UPDATE usuario:<br>estado = ACTIVO, fecha_actualizacion = NOW(),<br>fecha_ultimo_acceso = NOW()"] --> J2["INSERT historial_estado_usuario:<br>INACTIVO a ACTIVO<br>motivo = Reactivación de cuenta"]
+        J2 --> J3["UPDATE usuario:<br>intentos_fallidos = 0"]
+        J3 --> J4{"¿El usuario<br>es Dueño?"}
+        J4 -- Sí --> J5["UPDATE comercio (los INACTIVO):<br>estado = APTO_VENTA o APROBADO<br>según Mercado Pago y documentos<br>(los SUSPENDIDOS no se tocan)"]
+        J5 --> J6["INSERT historial_estado_comercio<br>(uno por comercio)<br>motivo = Restauración por reactivación de cuenta"]
+        J4 -- No --> J7
+        J6 --> J7["Iniciar sesión (ver P1.04):<br>UPDATE sesion anterior a FORZADO, INSERT sesion<br>y generar el token JWT"]
+    end
+    J7 --> K[/"HTTP 200: Cuenta reactivada correctamente<br>(token y datos del usuario)"/]
+    K --> K1["Guardar token y usuario en el navegador<br>y descartar las credenciales"]
+    K1 --> K2[/"Cuenta reactivada. ¡Qué bueno verte de nuevo!"/]
+    K2 --> K3["Redirigir según el rol<br>(igual que en el inicio de sesión, ver P1.04)"]
+    K3 --> FIN4([Fin])
+    B -- "El Administrador" --> L["GET /administrador/cuentas/{usuarioId}/reactivar/previa<br>(solo lectura, requiere rol ADMINISTRADOR)"]
+    L --> L1{"¿Existe el usuario?"}
+    L1 -- No --> L2[/"Error 404: Usuario no encontrado"/]
+    L2 --> FIN5([Fin])
+    L1 -- Sí --> L3{"¿Es Administrador?"}
+    L3 -- Sí --> L4[/"Error 409: No se puede reactivar la cuenta<br>de un Administrador"/]
+    L4 --> FIN6([Fin])
+    L3 -- No --> L5[/"HTTP 200: Vista previa obtenida correctamente<br>(usuarioId, rol, estado y comercios)"/]
+    L5 --> M["PUT /administrador/cuentas/{usuarioId}/reactivar"]
+    M --> M1{"¿La cuenta<br>está INACTIVA?"}
+    M1 -- No --> M2[/"Error 409: La cuenta no está inactiva"/]
+    M2 --> FIN7([Fin])
+    M1 -- Sí --> M3["Bloqueo del administrador y del usuario<br>(FOR UPDATE, en orden ascendente de id)"]
+    M3 --> N1
+    subgraph TXA [Transacción BD]
+        N1["UPDATE usuario:<br>estado = ACTIVO, fecha_ultimo_acceso = NOW(),<br>intentos_fallidos = 0"] --> N2["INSERT historial_estado_usuario:<br>INACTIVO a ACTIVO, con el administrador<br>motivo = Reactivación por el Administrador"]
+        N2 --> N3{"¿El usuario<br>es Dueño?"}
+        N3 -- Sí --> N4["UPDATE comercio (los INACTIVO):<br>estado = APTO_VENTA o APROBADO<br>INSERT historial_estado_comercio<br>motivo = Reactivación de la cuenta del Dueño por el Administrador"]
+    end
+    N3 -- No --> N5
+    N4 --> N5[/"HTTP 200: Cuenta reactivada correctamente<br>(usuarioId y estado, sin inicio de sesión)"/]
+    N5 --> FIN8([Fin])

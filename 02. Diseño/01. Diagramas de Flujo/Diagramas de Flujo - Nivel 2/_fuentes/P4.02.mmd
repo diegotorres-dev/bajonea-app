@@ -1,0 +1,32 @@
+flowchart TD
+    A([Inicio]) --> B["Cliente toca Confirmar pedido en el carrito<br>checkout.html (rol CLIENTE; si no, login.html)<br>GET /carrito"]
+    B --> C{"¿Falló o el carrito está vacío?"}
+    C -- Sí --> C1["Redirige a carrito.html sin mensaje"]
+    C1 --> FIN1([Fin])
+    C -- No --> D["GET /catalogo/comercios (público)<br>busca el comercio del carrito"]
+    D --> E{"¿Está en el catálogo?"}
+    E -- No --> E1[/"No pudimos cargar los datos del comercio. Volvé al carrito e intentá nuevamente.<br>Botón Continuar deshabilitado"/]
+    E1 --> FIN2([Fin])
+    E -- Sí --> F{"¿El comercio está abierto para clientes?<br>(estadoApertura del catálogo)"}
+    F -- No --> F1[/"Este comercio está cerrado en este momento. No podés completar el pedido hasta que vuelva a abrir.<br>Botón: Volver al catálogo"/]
+    F1 --> FIN3([Fin])
+    F -- Sí --> G{"¿Qué modalidades acepta el comercio?"}
+    G -- Ninguna --> G1[/"Este comercio no tiene modalidades de entrega disponibles en este momento."/]
+    G1 --> FIN4([Fin])
+    G -- "Una sola" --> H["La elige sola y pasa al paso 2<br>(no se muestra el botón Editar del resumen)"]
+    G -- "Las dos" --> G2[/"Paso 1: ¿Cómo querés recibir tu pedido?<br>Tarjetas Envío a domicilio y Retiro en el local"/]
+    G2 --> H
+    H --> I{"Modalidad"}
+    I -- "RETIRO" --> J[/"Paso 2: tarjeta con la dirección del comercio<br>¿Cómo funciona el retiro? Confirmás el pedido. El comercio lo prepara y te avisa cuando está listo.<br>Vas al local con tu nombre y número de pedido.<br>Botón: Confirmar retiro"/]
+    I -- "DOMICILIO" --> K["Paso 2: ¿Dónde recibís tu pedido?<br>Esqueleto de dos tarjetas<br>Carga las direcciones activas del Cliente (ver P1.21)"]
+    K --> K1{"¿Qué pasó con las direcciones?"}
+    K1 -- "Error de carga" --> K2[/"No pudimos cargar tus direcciones.<br>Botón: Reintentar"/]
+    K2 --> K
+    K1 -- "No tiene ninguna" --> K3[/"No tenés una dirección registrada. Agregá una para recibir tu pedido a domicilio.<br>Botón: Agregar dirección (al guardar, la elige)"/]
+    K3 --> K4
+    K1 -- "Tiene direcciones" --> K4[/"Grupo Dirección de entrega: una tarjeta por dirección<br>Elegida: la anterior, si no la principal, si no la primera<br>Agregar otra dirección (deshabilitado con 5: Llegaste al máximo de 5 direcciones...)<br>Administrar mis direcciones (guarda el checkout pendiente y vuelve después)<br>No compara la localidad con el comercio ni hay zona de reparto<br>Botón: Confirmar dirección"/]
+    J --> L
+    K4 --> L
+    L[/"Paso 3: Resumen de tu pedido<br>Modalidad con dirección y Editar, Desglose (cantidad x producto, subtotal,<br>precio anterior tachado si cambió), Cargo por servicio y Total<br>Total = subtotal más cargo, igual para retiro y domicilio<br>Botón: Ir a pagar - $X<br>No hay costo de envío, método de pago ni nota del pedido"/] --> M["Botón deshabilitado<br>POST /pedidos/cliente<br>tipoEntrega, direccionId, totalEsperado = total que vio<br>(timeout con aviso Se cortó la conexión: revisá Mis pedidos antes de volver a enviar)"]
+    M --> M1["Sigue en P4.15 (validaciones, creación del pedido y paso al pago)"]
+    M1 --> FIN5([Fin])

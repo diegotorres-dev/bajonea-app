@@ -1,0 +1,32 @@
+flowchart TD
+    A([Inicio]) --> B["Pedido en EN_PREPARACION, Dueño o Empleado abre el detalle<br>Botón Anular pedido (solo en EN_PREPARACION, si el contexto puede gestionar pedidos<br>y el pedido no es propio)"]
+    B --> C[/"Hoja: ¿Anular el pedido número?<br>El cliente recibe la devolución de todo el pago por Mercado Pago. Puede demorar en verse en su cuenta.<br>Le avisamos el motivo y tu comentario.<br>Motivo de la anulación (las mismas 7 opciones que el rechazo)<br>Comentario (opcional; pasa a Comentario con Otro)<br>Botones: Anular pedido y Volver"/]
+    C --> D{"Validación de la pantalla"}
+    D -- "Sin motivo" --> D1[/"Seleccioná un motivo de anulación."/]
+    D1 --> C
+    D -- "Motivo Otro sin comentario" --> D2[/"Ingresá un comentario para especificar el motivo de la anulación."/]
+    D2 --> C
+    D -- "Válido" --> E["Botón: Anulando...<br>PUT /pedidos/comercio/id/anular<br>motivo (uno de 7), comentario (hasta 500)<br>Dueño o Empleado activo (delegable), X-Comercio-Id obligatorio"]
+    E --> F{"¿Acceso válido y pedido del comercio?"}
+    F -- No --> F1[/"HTTP 404 COMERCIO_NO_DISPONIBLE o HTTP 404: Pedido no encontrado"/]
+    F1 --> FIN1([Fin])
+    F -- Sí --> G
+    subgraph TX [Transacción BD - anular]
+        G["Bloqueos: usuarios (LOCK IN SHARE MODE, id ascendente), relación del Empleado, pedido (FOR UPDATE)<br>NO aplica el guard de estado del comercio: se puede anular con el comercio suspendido"] --> H{"¿Actor SUSPENDIDO<br>o Empleado que es el Cliente del pedido?"}
+        H -- Sí --> H1[/"HTTP 409 CUENTA_SUSPENDIDA con el motivo<br>o HTTP 409 PEDIDO_PROPIO: No podés gestionar tus propios pedidos"/]
+        H -- No --> I{"Estado del pedido"}
+        I -- "PENDIENTE_CONFIRMACION_COMERCIO" --> I1[/"HTTP 409: Un pedido sin aceptar no se anula, se rechaza"/]
+        I -- "Otro distinto de EN_PREPARACION" --> I2[/"HTTP 409: El pedido ya no se puede anular"/]
+        I -- "EN_PREPARACION" --> J{"¿Motivo OTRO sin comentario?"}
+        J -- Sí --> J1[/"HTTP 400: Ingresá un comentario para especificar el motivo de la anulación."/]
+        J -- No --> K["UPDATE pedido: estado = ANULADO, cancelado_por = COMERCIO,<br>motivo_rechazo, comentario_rechazo (recortado; vacío pasa a nulo),<br>motivo = etiqueta o etiqueta, punto y comentario<br>INSERT historial_estado_pedido: ANULADO, actor DUENO o EMPLEADO<br>INSERT nota_credito ANULACION_COMERCIO (reembolso total siempre: el pedido está pagado)"]
+        K --> L["INSERT aviso in-app al Cliente PEDIDO_ANULADO_COMERCIO:<br>Tu pedido número a (comercio) fue anulado por el comercio<br>más y estamos gestionando la devolución de tu pago<br>más Motivo: (etiqueta) y el comentario. Sin email"]
+    end
+    H1 --> M
+    I1 --> M
+    I2 --> M
+    J1 --> M
+    M[/"El mensaje del servidor queda dentro de la hoja, que no se cierra<br>Si fue 409, el detalle se vuelve a pedir y se muestra el aviso fijo"/] --> FIN2([Fin])
+    L --> N["Después del commit: reembolso en Mercado Pago (ver P5.04)<br>Con la cuenta del Dueño desvinculada la nota queda PENDIENTE_REVISION_MANUAL"]
+    N --> O[/"HTTP 200: Pedido anulado correctamente<br>Toast: Pedido anulado<br>Comercio: Anulado. Anulaste este pedido. (Empleado: El comercio anuló este pedido.)<br>Cliente: Anulado. (comercio) anuló tu pedido. con el motivo y el bloque de reembolso<br>Diferencias: rechazar es solo desde PENDIENTE_CONFIRMACION_COMERCIO (ver P4.03);<br>la cancelación del sistema por suspensión usa actor SISTEMA (ver P2.09);<br>cancelar del Cliente da estado CANCELADO (ver P4.05)"/]
+    O --> FIN3([Fin])

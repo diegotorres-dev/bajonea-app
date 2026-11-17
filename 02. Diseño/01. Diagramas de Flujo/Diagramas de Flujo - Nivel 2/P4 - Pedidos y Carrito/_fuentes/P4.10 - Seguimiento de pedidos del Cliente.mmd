@@ -1,0 +1,42 @@
+flowchart TD
+    A([Inicio]) --> B["Cliente abre Mis pedidos (pedidos.html)<br>Exige contexto de Cliente y rol CLIENTE, si no va a login.html"]
+    B --> C[/"Skeleton de pedidos"/]
+    C --> D["En paralelo:<br>GET /pedidos/cliente (rol CLIENTE, sin X-Comercio-Id)<br>GET /catalogo/comercios (público, para nombre, foto y dirección)"]
+    D --> E["SELECT pedido WHERE cliente_id = usuario<br>(todos los pedidos, sin filtro, sin paginación y sin límite de fecha)<br>+ fechas de pago aprobado, últimas notas de crédito y bloque reclamo (consultas en lote)"]
+    E --> F{"¿Cargó bien?"}
+    F -- No --> F1[/"No pudimos cargar tus pedidos. con Reintentar"/]
+    F1 --> FIN1([Fin])
+    F -- Sí --> G{"¿Tiene pedidos?"}
+    G -- No --> G1[/"Todavía no hiciste ningún pedido<br>Cuando realices un pedido, vas a poder seguir su estado acá.<br>Botón Explorar comercios"/]
+    G1 --> FIN2([Fin])
+    G -- Sí --> H{"¿Ancho de pantalla?"}
+    H -- "Móvil" --> I[/"Una sola lista por fecha de creación descendente (sin pestañas, filtros ni agrupar por día)<br>Tarjeta: comercio, Pedido número y fecha, estado, resumen de los dos primeros ítems y 3 más,<br>aviso del comercio, chip de reclamo, total, Ver detalle<br>Sin sondeo en la lista"/]
+    H -- "Escritorio (1024 px o más)" --> J[/"Lista de 440 px + panel de detalle sin navegar (pedidos.html?id=N)<br>Filtros: Todos, En curso, Entregados (ENTREGADO y NO_RETIRADO), Cancelados<br>Vacío del filtro: No hay pedidos con este filtro. Panel: Elegí un pedido<br>Flechas arriba y abajo para moverse"/]
+    J --> J1["Sondeo cada 15 s con la pestaña visible:<br>GET /pedidos/cliente y compara la firma de toda la lista<br>Si cambió, repinta la lista y el panel"]
+    J1 --> J1
+    I --> K{"¿Abre un pedido?"}
+    K -- No --> FIN3([Fin])
+    K -- Sí --> L["pedido-detalle.html?id=N (en escritorio redirige a pedidos.html?id=N)<br>No hay endpoint de detalle: pide la lista completa y busca el id"]
+    J --> L
+    L --> M{"¿El pedido existe y es del Cliente?"}
+    M -- No --> M1[/"No encontramos este pedido<br>El pedido que buscás no existe o no pertenece a tu cuenta. Botón Ver mis pedidos"/]
+    M1 --> FIN4([Fin])
+    M -- Sí --> N[/"Encabezado de estado con texto por estado:<br>Entregado: Tu pedido fue entregado. / No retirado: (Comercio) cerró tu pedido como no retirado. Como ya estaba preparado, no hay devolución del pago. /<br>Rechazado, Cancelado, Anulado, Cancelado por el sistema, Expirado (con motivo y texto de reembolso si corresponde)<br>Franja amarilla si el comercio no está disponible<br>Modalidad (domicilio con dirección y referencia, o retiro con la dirección del comercio)<br>Desglose, cargo por servicio y total. Bloque de reclamo (ver P4.08). Ver comercio si está en el catálogo"/]
+    N --> O{"¿Estado del pedido?"}
+    O -- "PENDIENTE_PAGO" --> O1[/"Ir a pagar con Mercado Pago (ver P5.01), deshabilitado con comercio suspendido o pago en proceso<br>Cancelar pedido solo con comercio suspendido (ver P4.05)"/]
+    O -- "PENDIENTE_CONFIRMACION_COMERCIO o EN_PREPARACION" --> O2[/"Cancelar pedido (ver P4.05)"/]
+    O -- "EN_CAMINO" --> O3[/"Confirmar que recibí mi pedido (ver P4.07)"/]
+    O -- "ENTREGADO" --> O4[/"Reclamar (ver P4.08)"/]
+    O -- "LISTO_PARA_RETIRAR" --> O5[/"Sin botones: solo el comercio lo cierra"/]
+    O -- "Estados finales" --> O6[/"Sin botones"/]
+    O1 --> P
+    O2 --> P
+    O3 --> P
+    O4 --> FIN5([Fin])
+    O5 --> P
+    O6 --> FIN6([Fin])
+    P{"¿Volvió de Mercado Pago<br>(?pago= en la dirección)?"}
+    P -- Sí --> P1["Ciclo: POST /pedidos/cliente/id/pago/sincronizar cada 3 s, hasta 15 veces (1 si fallo)<br>Toasts: Tu pago se realizó correctamente / El pago no se pudo procesar. Podés intentar de nuevo desde la sección Mis pedidos. /<br>Tu pago se está procesando. Esto puede tardar unos segundos. / Tu pago está pendiente de confirmación. (ver P4.14)"]
+    P -- No --> Q["Sondeo cada 15 s si la pestaña está visible y el estado no es final:<br>GET /pedidos/cliente y compara estado, pago, comercio no disponible y reembolso<br>Si cambió, repinta el detalle. Errores de red en silencio. Sin refresco al volver a la pestaña"]
+    Q --> Q
+    P1 --> FIN7([Fin])

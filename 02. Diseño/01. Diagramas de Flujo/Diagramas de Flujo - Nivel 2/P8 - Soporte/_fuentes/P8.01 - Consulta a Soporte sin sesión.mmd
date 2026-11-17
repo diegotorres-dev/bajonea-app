@@ -1,0 +1,43 @@
+flowchart TD
+    A([Inicio]) --> B[/"El Visitante abre soporte.html: Contactar a Soporte<br>Completa Tu email, Tipo de consulta y Contanos qué pasó (mínimo 10, máximo 1000)<br>Botón: Enviar consulta"/]
+    B --> C["POST /api/v1/soporte/publico/consultas (público, sin JWT, sin X-Comercio-Id)<br>IP = getRemoteAddr recortada a 45 caracteres, vacía = desconocida<br>El email se pasa a minúsculas y se recorta"]
+    C --> D{"¿Pasa la validación del DTO?"}
+    D -- No --> D1[/"HTTP 400 con un mensaje por campo:<br>El email es obligatorio / Ingresá un email válido / El email no puede superar los 254 caracteres<br>Elegí el motivo de tu consulta<br>Escribí tu mensaje / El mensaje debe tener entre 10 y 1000 caracteres<br>La pantalla lo muestra bajo cada campo y enfoca el primero"/]
+    D1 --> FIN1([Fin])
+    D -- Sí --> E
+    subgraph TX ["Transacción BD - SoporteService.crear (los errores de límite se guardan y se lanzan después del commit)"]
+        E["INSERT soporte_limite CREAR_EMAIL con el email y después CREAR_IP con la IP, SELECT FOR UPDATE de cada fila (solo cerrojos, no cuentan)"] --> F["SELECT COUNT ticket_soporte WHERE email = (email) AND creado_en mayor a ahora menos 24 horas"]
+        F --> G{"¿Son 3 o más?"}
+        G -- Sí --> G1["Resultado de error: límite diario (ventana móvil de 24 h)"]
+        G -- No --> H["SELECT COUNT ticket_soporte WHERE email = (email) AND estado distinto de CERRADO"]
+        H --> I{"¿Son 3 o más?"}
+        I -- Sí --> I1["Resultado de error: límite de abiertas"]
+        I -- No --> J["SELECT COUNT ticket_soporte WHERE ip = (ip) AND creado_en mayor a ahora menos 24 horas"]
+        J --> K{"¿Son 10 o más?"}
+        K -- Sí --> K1["Resultado de error: límite por IP"]
+        K -- No --> L["Genera el código: 8 caracteres de 23456789ABCDEFGHJKMNPQRSTUVWXYZ con SecureRandom"]
+        L --> M["INSERT ticket_soporte: codigo, email, usuario_id vacío, tipo, estado ESPERA_SOPORTE, ip, cantidad_mensajes 1, creado_en, actualizado_en"]
+        M --> N{"¿El código ya existe?"}
+        N -- "Sí, hasta 10 intentos" --> L
+        N -- "Sí, agotó los 10" --> N1["ServicioNoDisponibleException"]
+        N -- No --> O["INSERT ticket_soporte_mensaje: autor PERSONA, texto, creado_en, email_enviado true (no hay email por mensajes de la persona)"]
+        O --> P["Registra el email Recibimos tu consulta para después del commit"]
+    end
+    G1 --> Q
+    I1 --> Q
+    K1 --> Q
+    Q{"¿Qué límite se superó?"}
+    Q -- "Diario por email" --> Q1[/"HTTP 429: Ya enviaste 3 consultas hoy. Probá de nuevo mañana o esperá la respuesta de Soporte."/]
+    Q -- "Abiertas por email" --> Q2[/"HTTP 429: Ya tenés 3 consultas abiertas. Esperá a que Soporte las responda para enviar otra."/]
+    Q -- "Por IP" --> Q3[/"HTTP 429: Se enviaron demasiadas consultas desde tu conexión. Probá de nuevo más tarde."/]
+    Q1 --> R["La pantalla muestra el texto del servidor en un aviso de alerta"]
+    Q2 --> R
+    Q3 --> R
+    N1 --> S[/"HTTP 503: No pudimos crear tu consulta. Probá de nuevo en unos minutos.<br>No queda nada guardado"/]
+    S --> R
+    R --> FIN2([Fin])
+    P --> T["Después del commit: un solo intento por Resend, sin reintento<br>Asunto: Recibimos tu consulta — Bajoneá<br>Cuerpo: Recibimos tu consulta y vamos a responderte lo antes posible. / El código de tu consulta es: (código) / Ver mi consulta: (enlace con el código y el email en el fragmento) / Guardá el código: con tu email y ese código podés ver la respuesta y seguir la conversación aunque no puedas iniciar sesión. / Equipo de Bajoneá"]
+    T --> U[/"HTTP 201: Recibimos tu consulta<br>id, código y estado ESPERA_SOPORTE"/]
+    U --> V[/"La pantalla muestra: Recibimos tu consulta<br>Guardá este código. Lo necesitás si querés ver la consulta sin iniciar sesión.<br>El código en grande / También te lo mandamos a (email)<br>Botones: Copiar código (toast Código copiado) y Ver mi consulta"/]
+    V -.-> W["Si falla el envío por Resend no hay efecto visible: la respuesta ya fue 201<br>No se emite aviso al Administrador (ver P8.05: solo el contador de consultas que esperan)"]
+    V --> FIN3([Fin])

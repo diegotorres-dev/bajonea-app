@@ -1,0 +1,51 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Qué hace el Administrador en admin-tarifas.html?"}
+    B -- "Ver tarifas" --> C["GET /api/v1/administrador/tarifas/vigente y GET /tarifas/historial (rol ADMINISTRADOR, sin X-Comercio-Id)"]
+    C --> D["SELECT configuracion_tarifa ORDER BY fecha_vigencia DESC LIMIT 1<br>SELECT configuracion_tarifa ORDER BY fecha_vigencia DESC (todas, sin paginar)"]
+    D --> E{"¿Hay una tarifa vigente?"}
+    E -- No --> E1[/"HTTP 409: No hay ninguna configuración de tarifa vigente<br>La pantalla queda sin contenido (sin try/catch local)"/]
+    E1 --> FIN1([Fin])
+    E -- Sí --> F[/"Tarifa vigente: Activa desde (fecha)<br>Cargo al cliente (Monto fijo por pedido o Sobre el subtotal) y Cargo al comercio<br>Historial: todas las anteriores. Vacío: Todavía no hay configuraciones anteriores.<br>Botón: + Nueva configuración"/]
+    F --> FIN2([Fin])
+    B -- "Nueva configuración" --> G[/"Completa Cargo al cliente (por defecto Monto fijo) y Cargo al comercio (por defecto Porcentaje)<br>Móvil: hoja Nueva configuración de tarifa. Escritorio: formulario en línea<br>Botón: Guardar nueva tarifa"/]
+    G --> H{"¿Valor vacío, no numérico o menor a 0?"}
+    H -- Sí --> H1[/"Ingresá un valor numérico igual o mayor a 0."/]
+    H1 --> FIN3([Fin])
+    H -- No --> I[/"Hoja: ¿Aplicar la nueva tarifa?<br>Se aplica a los pedidos que se confirmen desde ahora. Los pedidos ya creados conservan la tarifa con la que se confirmaron.<br>Si un cliente está por confirmar su pedido, va a ver el total actualizado antes de pagar.<br>Comparación antes y ahora. Botones: Aplicar tarifa y Cancelar"/]
+    I --> J{"¿Confirma?"}
+    J -- Cancelar --> FIN4([Fin])
+    J -- Sí --> K["POST /api/v1/administrador/tarifas con cargoCliente, tipoCargoCliente, cargoComercio y tipoCargoComercio"]
+    K --> L{"¿Pasa la validación del DTO?"}
+    L -- No --> L1[/"HTTP 400: El cargo al cliente es obligatorio / no puede ser negativo / Seleccioná el tipo de cargo al cliente<br>El cargo al comercio es obligatorio / no puede ser negativo / Seleccioná el tipo de cargo al comercio<br>Tipo distinto de FIJO o PORCENTAJE o número ilegible: El cuerpo de la solicitud contiene datos con formato inválido<br>No hay tope de porcentaje ni de monto"/]
+    L1 --> L2["La hoja muestra el mensaje y rehabilita el botón"]
+    L2 --> FIN5([Fin])
+    L -- Sí --> M
+    subgraph TX ["Transacción BD - ConfiguracionTarifaService.crear (sin bloqueos)"]
+        M["SELECT administrador WHERE id = (usuario autenticado)"] --> M1{"¿Existe?"}
+        M1 -- No --> M2["RecursoNoEncontrado"]
+        M1 -- Sí --> M3["INSERT configuracion_tarifa: administrador_id, cargo_cliente, tipo_cargo_cliente, cargo_comercio, tipo_cargo_comercio, fecha_vigencia = ahora<br>Solo inserta: no existe vigencia hasta ni se modifica la fila anterior. La vigente es la de fecha_vigencia más alta"]
+    end
+    M2 --> M4[/"HTTP 404: Administrador no encontrado"/]
+    M4 --> M5["La hoja muestra el mensaje"]
+    M5 --> FIN6([Fin])
+    M3 --> N[/"HTTP 201: Tarifa creada correctamente<br>Toast: Tarifa creada correctamente. Recarga vigente e historial"/]
+    N -.-> O["Sin aviso ni email a Dueños o Clientes, sin tabla de auditoría: el rastro es administrador_id y fecha_vigencia"]
+    N --> FIN7([Fin])
+    B -- "Se usa la tarifa vigente (sin pantalla)" --> P{"¿Quién la lee?"}
+    P -- "Carrito (ver P4.01)" --> Q{"¿El subtotal es mayor a 0?"}
+    Q -- No --> Q1["cargoServicioCliente = 0, no consulta la tarifa"]
+    Q -- Sí --> R
+    P -- "Confirmar pedido (ver P4.02)" --> R["obtenerVigente: SELECT la fila con fecha_vigencia más alta"]
+    Q1 --> FIN8([Fin])
+    R --> S{"¿Hay tarifa?"}
+    S -- No --> S1[/"HTTP 409: No hay ninguna configuración de tarifa vigente<br>El carrito con ítems y confirmarPedido quedan bloqueados"/]
+    S1 --> FIN9([Fin])
+    S -- Sí --> T{"¿Tipo de cargo?"}
+    T -- FIJO --> T1["Cargo = valor con 2 decimales, redondeo HALF_UP, sin depender del subtotal"]
+    T -- PORCENTAJE --> T2["Cargo = subtotal por valor dividido 100, 2 decimales, HALF_UP<br>El cargo al comercio siempre se calcula sobre el subtotal"]
+    T1 --> U
+    T2 --> U["Carrito: muestra el cargo al cliente<br>Confirmar pedido: INSERT pedido con subtotal, cargo_servicio_cliente, cargo_servicio_comercio y total = subtotal + cargo al cliente<br>El pedido guarda solo los montos, sin id ni tipo ni tasa de la configuración"]
+    U --> V{"¿El total esperado que mandó el Cliente coincide?"}
+    V -- Sí --> FIN10([Fin])
+    V -- No --> V1[/"HTTP 409 PRECIO_CAMBIO con subtotal, cargoServicioCliente, total e items<br>El checkout repinta el cargo actualizado"/]
+    V1 --> FIN11([Fin])

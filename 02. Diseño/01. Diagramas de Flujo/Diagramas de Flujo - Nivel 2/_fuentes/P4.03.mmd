@@ -1,0 +1,65 @@
+flowchart TD
+    A([Inicio]) --> B{"¿Qué dispara el flujo?"}
+    B -- "Dueño o Empleado toca Aceptar pedido" --> C1["PUT /pedidos/comercio/id/aceptar<br>Sin cuerpo. Rol Dueño o Empleado activo (delegable), X-Comercio-Id obligatorio"]
+    B -- "Dueño o Empleado toca Rechazar pedido" --> R0[/"Hoja: ¿Rechazar el pedido número?<br>El cliente recibe la devolución de todo el pago por Mercado Pago. Puede demorar en verse en su cuenta.<br>Le avisamos el motivo y tu comentario.<br>Motivo del rechazo (placeholder Seleccioná un motivo) y Comentario (opcional)<br>Botones: Rechazar pedido y Volver (foco inicial)"/]
+    B -- "Job expirarPedidosSinRespuestaComercio<br>(cada 300 s, plazo de 30 minutos)" --> J0
+
+    C1 --> C2{"¿Acceso válido?<br>(Dueño del comercio o Empleado con relación ACTIVO)"}
+    C2 -- No --> C3[/"HTTP 400 si falta X-Comercio-Id<br>o HTTP 404 COMERCIO_NO_DISPONIBLE: Comercio no encontrado"/]
+    C3 --> FIN1([Fin])
+    C2 -- Sí --> C4{"¿Existe el pedido en este comercio<br>y llegó alguna vez pagado?"}
+    C4 -- No --> C5[/"HTTP 404: Pedido no encontrado"/]
+    C5 --> FIN2([Fin])
+    C4 -- Sí --> C6
+    subgraph TX1 [Transacción BD - aceptar]
+        C6["Bloqueos en orden: usuarios del actor, del Cliente y del Dueño<br>(LOCK IN SHARE MODE, id ascendente), relación del Empleado,<br>estado del comercio (LOCK IN SHARE MODE), pedido (FOR UPDATE)"] --> C7{"¿El actor está SUSPENDIDO?"}
+        C7 -- Sí --> C8[/"HTTP 409 CUENTA_SUSPENDIDA con el motivo"/]
+        C7 -- No --> C9{"¿El comercio puede aceptar pedidos nuevos?"}
+        C9 -- "Dueño con comercio SUSPENDIDO" --> C10[/"HTTP 409 COMERCIO_SIN_OPERACION:<br>El comercio está suspendido: no podés aceptar pedidos nuevos. Sí podés rechazarlos."/]
+        C9 -- "Empleado con comercio SUSPENDIDO o CERRADO_TEMPORALMENTE" --> C11[/"HTTP 409 COMERCIO_SIN_OPERACION:<br>El comercio no está operativo: no podés aceptar pedidos nuevos. Sí podés rechazarlos."/]
+        C9 -- "Sí (el Dueño con CERRADO_TEMPORALMENTE sí acepta)" --> C12{"¿Empleado que es el Cliente del pedido?"}
+        C12 -- Sí --> C13[/"HTTP 409 PEDIDO_PROPIO: No podés gestionar tus propios pedidos"/]
+        C12 -- No --> C14{"¿Estado PENDIENTE_CONFIRMACION_COMERCIO?"}
+        C14 -- No --> C15[/"HTTP 409: El pedido ya fue resuelto"/]
+        C14 -- Sí --> C16["UPDATE pedido: estado = EN_PREPARACION<br>INSERT historial_estado_pedido: EN_PREPARACION, actor DUENO o EMPLEADO<br>INSERT aviso in-app al Cliente PEDIDO_ACEPTADO:<br>Tu pedido a (comercio) fue aceptado y está en preparación.<br>Sin email ni cambio de turno (el turno se fijó al pagar)"]
+    end
+    C8 --> FIN3([Fin])
+    C10 --> FIN4([Fin])
+    C11 --> FIN5([Fin])
+    C13 --> FIN6([Fin])
+    C15 --> C17
+    C16 --> C18[/"HTTP 200: Pedido aceptado correctamente<br>Toast: Pedido aceptado<br>El detalle muestra Marcar como despachado o Marcar como listo para retirar y Anular pedido (ver P4.04)"/]
+    C18 --> FIN7([Fin])
+    C17[/"El 409 sale como aviso fijo con el texto del servidor<br>El botón vuelve a Aceptar pedido<br>La pantalla pide GET /pedidos/comercio y muestra el estado real"/] --> FIN8([Fin])
+
+    R0 --> R1{"Validación de la pantalla"}
+    R1 -- "Sin motivo" --> R2[/"Seleccioná un motivo de rechazo."/]
+    R2 --> R0
+    R1 -- "Motivo Otro sin comentario" --> R3[/"Ingresá un comentario para especificar el motivo del rechazo."/]
+    R3 --> R0
+    R1 -- "Válido" --> R4["Botón: Rechazando...<br>PUT /pedidos/comercio/id/rechazar<br>motivo (uno de 7), comentario (hasta 500)<br>Mismo acceso, pedido y bloqueos que aceptar,<br>pero NO mira el estado del comercio (se puede rechazar con el comercio suspendido)"]
+    R4 --> R5
+    subgraph TX2 [Transacción BD - rechazar]
+        R5{"¿Pedido en PENDIENTE_CONFIRMACION_COMERCIO?"} -- No --> R6[/"HTTP 409: El pedido ya fue resuelto<br>(también 409 CUENTA_SUSPENDIDA y PEDIDO_PROPIO, como en aceptar)"/]
+        R5 -- Sí --> R7{"¿Motivo OTRO sin comentario?"}
+        R7 -- Sí --> R8[/"HTTP 400: Ingresá un comentario para especificar el motivo del rechazo."/]
+        R7 -- No --> R9["UPDATE pedido: estado = RECHAZADO, cancelado_por = COMERCIO,<br>motivo_rechazo, comentario_rechazo (tal cual llegó)<br>INSERT historial_estado_pedido: RECHAZADO, actor DUENO o EMPLEADO<br>INSERT nota_credito RECHAZO_COMERCIO (reembolso total, ver P5.04)"]
+        R9 --> R10["INSERT aviso in-app al Cliente PEDIDO_RECHAZADO:<br>Tu pedido número a (comercio) fue rechazado por el comercio. Motivo: (etiqueta).<br>más Estamos gestionando la devolución de tu pago. si hay nota<br>más el comentario si hay<br>Sin email"]
+    end
+    R6 --> R11[/"El mensaje del servidor queda dentro de la hoja, que no se cierra<br>Si fue 409, el detalle se vuelve a pedir y se muestra el aviso fijo"/]
+    R8 --> R11
+    R11 --> FIN9([Fin])
+    R10 --> R12["Después del commit: llamada a Mercado Pago para el reembolso (ver P5.04)"]
+    R12 --> R13[/"HTTP 200: Pedido rechazado correctamente<br>Toast: Pedido rechazado. Detalle en Rechazado: Rechazaste este pedido. con motivo y comentario<br>Motivos: Sin stock, Comercio cerrado, Alto volumen de pedidos,<br>Producto no disponible temporalmente, Sin delivery disponible, Problema técnico, Otro"/]
+    R13 --> FIN10([Fin])
+
+    J0["SELECT pedidos en PENDIENTE_CONFIRMACION_COMERCIO<br>Una transacción por pedido (un error no frena a los demás)"] --> J1
+    subgraph TX3 [Transacción BD por pedido - expirar]
+        J1["Bloquea usuarios del Cliente, del Dueño y de los Empleados candidatos<br>(LOCK IN SHARE MODE) y el pedido (FOR UPDATE)"] --> J2{"¿Sigue PENDIENTE_CONFIRMACION_COMERCIO<br>y pasaron 30 minutos desde el pago confirmado?<br>(última fila del historial en ese estado)"}
+        J2 -- No --> J3["No hace nada"]
+        J2 -- Sí --> J4["UPDATE pedido: estado = EXPIRADO, cancelado_por = SISTEMA<br>INSERT historial_estado_pedido: actor SISTEMA, motivo_timeout TIMEOUT_RESPUESTA_COMERCIO<br>INSERT nota_credito EXPIRACION_SIN_RESPUESTA"]
+        J4 --> J5["INSERT aviso al Cliente PEDIDO_EXPIRADO_CLIENTE:<br>El comercio no respondió en 30 minutos tu pedido número. Se canceló y estamos gestionando la devolución de tu pago;<br>podés ver su estado en el detalle del pedido.<br>INSERT aviso al Dueño y a cada Empleado activo PEDIDO_EXPIRADO_COMERCIO:<br>El pedido número se canceló porque nadie lo respondió a tiempo."]
+    end
+    J3 --> FIN11([Fin])
+    J5 --> J6["Después del commit: reembolso en Mercado Pago (ver P5.04)<br>Vence entre los 30 y los 35 minutos, porque el job corre cada 5 minutos"]
+    J6 --> FIN12([Fin])

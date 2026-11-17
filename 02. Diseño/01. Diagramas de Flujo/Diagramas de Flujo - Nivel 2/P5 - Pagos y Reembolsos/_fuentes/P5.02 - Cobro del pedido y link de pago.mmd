@@ -1,0 +1,67 @@
+flowchart TD
+    A([Inicio]) --> B[/"Cliente toca Ir a pagar con Mercado Pago (checkout paso 4 o detalle del pedido)<br>Botón: Generando link de pago..."/]
+    B --> C["POST /pedidos/cliente/id/pago<br>Rol CLIENTE, sin cuerpo, sin X-Comercio-Id"]
+    C --> D
+    subgraph TX1 [Transacción BD corta 1 - preparar pago]
+        D{"¿El Cliente está suspendido?"} -- Sí --> D1[/"HTTP 409 CUENTA_SUSPENDIDA con el motivo"/]
+        D -- No --> E{"¿El pedido es del Cliente?"}
+        E -- No --> E1[/"HTTP 404: Pedido no encontrado"/]
+        E -- Sí --> F{"¿pedido.pago_estado = PAGADO?"}
+        F -- Sí --> F1["Respuesta directa yaPagado = verdadero<br>(sin llamar a Mercado Pago)"]
+        F -- No --> G{"¿Estado PENDIENTE_PAGO?"}
+        G -- No --> G1[/"HTTP 409: El pedido no está esperando el pago"/]
+        G -- Sí --> H{"¿El comercio está SUSPENDIDO?"}
+        H -- Sí --> H1[/"HTTP 409: Este comercio no está disponible en este momento"/]
+        H -- No --> I{"¿El Dueño tiene cuenta de Mercado Pago activa?"}
+        I -- No --> I1[/"HTTP 409: El comercio de este pedido no tiene una cuenta de Mercado Pago vinculada. No se puede procesar el pago."/]
+        I -- Sí --> J{"¿El pago ya tiene mp_preferencia_id?"}
+    end
+    J -- No --> K["Arma la preferencia:<br>un ítem por detalle_pedido (producto, cantidad, precio unitario, ARS) más Cargo por servicio Bajoneá<br>back_urls a pedido-detalle.html con pago = exito, pendiente o fallo<br>notification_url = (backend)/api/v1/webhooks/mercadopago?pedidoId=id<br>auto_return = approved, external_reference = id del pedido<br>marketplace_fee = cargo del Cliente + cargo del comercio<br>vence = fecha de creación del pedido + 30 minutos (pedido.timeout.pago-minutos)"]
+    K --> K1{"¿Ya venció el pedido?"}
+    K1 -- Sí --> K1a[/"HTTP 409: El pedido venció, ya no se puede pagar"/]
+    K1 -- No --> L["Sin transacción: POST (API de Mercado Pago)/checkout/preferences<br>Token del Dueño, conexión 5 s, lectura 5 s, sin reintentos"]
+    L --> L1{"¿Respondió con id?"}
+    L1 -- "Error HTTP" --> L1a[/"HTTP 409: No se pudo generar el link de pago con Mercado Pago (estado)"/]
+    L1 -- "Sin id" --> L1b[/"HTTP 409: Mercado Pago no devolvió una preferencia de pago válida"/]
+    L1 -- Sí --> M
+    subgraph TX2 [Transacción BD corta 2 - guardar preferencia]
+        M["Bloqueos: usuarios (LOCK IN SHARE MODE), pedido (FOR UPDATE)"] --> M1{"¿El pedido sigue siendo del Cliente y PENDIENTE_PAGO?"}
+        M1 -- No --> M1a[/"HTTP 404 o 409: El pedido no está esperando el pago"/]
+        M1 -- Sí --> M2["INSERT pago ON DUPLICATE KEY UPDATE (preferencia, init_point, sandbox_init_point)<br>y relee la fila FOR UPDATE: si otra solicitud ya guardó la suya, usa esa y descarta la de más"]
+    end
+    M2 --> N{"¿La cuenta es de prueba (es_cuenta_prueba)?"}
+    N -- Sí --> N1["urlPago = sandbox_init_point"]
+    N -- No --> N2["urlPago = init_point"]
+    N1 --> Z[/"HTTP 200: Link de pago generado correctamente<br>estado, monto, urlPago, yaPagado = falso, enRevision = falso"/]
+    N2 --> Z
+    J -- Sí --> O["Sin transacción: GET (API de Mercado Pago)/v1/payments/search<br>external_reference = id, orden por fecha descendente, límite 20<br>Elige el primer pago approved o, si no hay, el más reciente"]
+    O --> O1{"¿Falló la consulta (red, tiempo o HTTP)?"}
+    O1 -- Sí --> O1a[/"HTTP 503: No pudimos verificar el estado de tu pago. Probá de nuevo en unos segundos."/]
+    O1 -- No --> P
+    subgraph TX3 [Transacción BD corta 3 - resolver pago existente]
+        P["Si hay pago en Mercado Pago: aplica el resultado con la misma rutina del webhook (ver P5.03)"] --> Q{"¿Resultado?"}
+        Q -- "Pedido PAGADO" --> Q1["yaPagado = verdadero"]
+        Q -- "Pago en Mercado Pago distinto de approved, rejected y cancelled<br>(pending, in_process)" --> Q2["enRevision = verdadero, sin link<br>(queda así hasta que se resuelva o venza el pedido)"]
+        Q -- "Sin pago, rejected o cancelled" --> Q3["Devuelve de nuevo el link existente<br>(sandbox_init_point o init_point)"]
+    end
+    Q1 --> Z1[/"HTTP 200: Link de pago generado correctamente con yaPagado = verdadero"/]
+    Q2 --> Z2[/"HTTP 200 con enRevision = verdadero"/]
+    Q3 --> Z
+    F1 --> Z1
+    Z --> W[/"El navegador va a Mercado Pago (window.location = urlPago)"/]
+    Z1 --> W1[/"Toast: Tu pago se realizó correctamente<br>Va a pedido-detalle.html?id=...&pago=exito"/]
+    Z2 --> W2[/"Toast: Tu pago está pendiente de confirmación<br>El botón se reactiva"/]
+    W --> FIN1([Fin])
+    W1 --> FIN2([Fin])
+    W2 --> FIN3([Fin])
+    D1 --> ER
+    E1 --> ER
+    G1 --> ER
+    H1 --> ER
+    I1 --> ER
+    K1a --> ER
+    L1a --> ER
+    L1b --> ER
+    M1a --> ER
+    O1a --> ER
+    ER[/"Checkout: banner No pudimos generar el link de pago. Intentá nuevamente. (o el mensaje del servidor)<br>Detalle del pedido: toast No pudimos generar el link de pago (o el mensaje)<br>Con 503: toast con el mensaje del servidor<br>Detalle con comercio no disponible: botón deshabilitado y Vas a poder pagar cuando el comercio vuelva a estar disponible, si el pedido no venció."/] --> FIN4([Fin])

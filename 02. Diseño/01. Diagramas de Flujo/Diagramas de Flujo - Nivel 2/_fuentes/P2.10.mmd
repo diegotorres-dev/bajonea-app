@@ -1,0 +1,41 @@
+flowchart TD
+    A([Inicio]) --> B["Administrador abre una pantalla de listados<br>No existe un catálogo global del Administrador:<br>el único catálogo global es el público GET /catalogo/productos (ver P3.02)<br>(rol ADMINISTRADOR, /api/v1/administrador/..., sin X-Comercio-Id)"]
+    B --> C{"¿Qué listado pide?"}
+    C -- "GET /comercios" --> D1["SELECT todos los comercios, cualquier estado, orden por id<br>Incluye dirección, horarios vigentes, redes<br>y la bandera de email de suspensión fallido"]
+    C -- "GET /comercios/pendientes" --> D2["SELECT comercios PENDIENTE sin re-solicitudes<br>(ver P2.02)"]
+    C -- "GET /comercios/resolicitudes" --> D3["SELECT comercios PENDIENTE con re-solicitudes<br>más antigua primero (ver P2.02)"]
+    C -- "GET /clientes" --> D4["SELECT Clientes"]
+    C -- "GET /duenos" --> D5["SELECT Dueños"]
+    C -- "GET /comercios/id/equipo" --> D6["SELECT equipo del comercio (Empleados y su relación)"]
+    C -- "GET /comercios/id/actividad<br>(limite, cursor, fuente)" --> D7["SELECT actividad del comercio<br>(historial_edicion_comercio y otras fuentes), por cursor"]
+    C -- "GET /metricas" --> D8["Cuenta: comercios pendientes, re-solicitudes pendientes,<br>comerciosTotal (todos los estados), clientesTotal,<br>categorías y tags activos, documentos pendientes,<br>consultas de soporte en espera, reclamos pendientes"]
+    D1 --> E
+    D2 --> E
+    D3 --> E
+    D4 --> E
+    D5 --> E
+    D6 --> E
+    D7 --> E
+    D8 --> E
+    E["Sin parámetros de filtro, orden ni paginación en el servidor:<br>devuelve todo completo"] --> F[/"HTTP 200: lista o métricas"/]
+    F --> PL{"Pantalla"}
+    PL -- "Dueños" --> PL1[/"Todo el filtrado es de la pantalla: búsqueda Nombre o email (sin tildes ni mayúsculas)<br>Chips Todos, Suspendidos, Bloqueados, Inactivos, orden por nombre<br>Ver más de a 30, contador Mostrando N de M dueños<br>Vacíos: No hay dueños registrados o No hay dueños con esos filtros.<br>Error: aviso con Reintentar"/]
+    PL -- "Clientes" --> PL2[/"Mismo diseño con chip Pendientes y sin Ver más<br>Vacíos: No hay clientes registrados o No hay clientes con esos filtros.<br>Menú: Reactivar cuenta, Levantar suspensión, Suspender cuenta, Reenviar email"/]
+    PL -- "Comercios" --> PL3[/"Sin búsqueda, sin filtros y sin paginación, orden por nombre<br>Columnas Comercio, Localidad, Estado y Ver detalle<br>Vacío: No hay comercios"/]
+    PL1 --> G
+    PL2 --> G
+    PL3 --> G
+    G{"¿Qué hace el Administrador desde el listado?"}
+    G -- "Suspender o levantar un comercio" --> G1["Ver P2.09"]
+    G -- "Suspender o levantar un Dueño" --> G2["Ver P1.14 y P1.20"]
+    G -- "Suspender o levantar un Cliente" --> G3["Ver P1.13"]
+    G -- "Resolver una solicitud" --> G4["Ver P2.02"]
+    G -- "Revisar documentos" --> G5["Ver P2.04"]
+    G -- "Reactivar una cuenta" --> G6["Ver P1.07"]
+    G -- "Nada más" --> FIN1([Fin])
+    G1 --> FIN2([Fin])
+    G2 --> FIN3([Fin])
+    G3 --> FIN4([Fin])
+    G4 --> FIN5([Fin])
+    G5 --> FIN6([Fin])
+    G6 --> FIN7([Fin])

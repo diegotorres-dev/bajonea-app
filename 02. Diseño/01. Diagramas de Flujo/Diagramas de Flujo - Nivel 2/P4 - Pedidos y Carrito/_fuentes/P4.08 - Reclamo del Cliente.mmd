@@ -1,0 +1,51 @@
+flowchart TD
+    A([Inicio]) --> B["Cliente abre el detalle de un pedido ENTREGADO<br>(pedido-detalle.html o panel de pedidos.html)"]
+    B --> C{"¿El pedido ya tiene reclamo?"}
+    C -- Sí --> C1[/"Sección Tu reclamo: chip En revisión, Aprobado o Rechazado, motivo y fotos adjuntas<br>Pendiente: Lo estamos revisando. Te avisamos cuando tengamos novedades.<br>Aprobado: Aprobamos tu reclamo. Te devolvemos $X. (parcial: $X de los $Y que pagaste) y estado del reembolso<br>Rechazado: No pudimos aprobar tu reclamo. Motivo y botón Contactar a Soporte"/]
+    C1 --> FIN1([Fin])
+    C -- No --> D{"¿puedeReclamar según el servidor?"}
+    D -- "Plazo vencido" --> D1[/"Texto del servidor y botón Tuve un problema con este pedido deshabilitado"/]
+    D1 --> FIN2([Fin])
+    D -- "No reclamable por otra causa" --> D2[/"No se pinta nada"/]
+    D2 --> FIN3([Fin])
+    D -- Sí --> E[/"Texto: ¿Tuviste un problema con este pedido? Tenés hasta el (fecha) para reclamar.<br>Botón Tuve un problema con este pedido"/]
+    E --> F[/"Pantalla reclamo-nuevo.html: Tuve un problema, Pedido número<br>Lista ¿Qué pasó? (No recibí el pedido solo a domicilio, Faltan productos, Productos equivocados, Producto en mal estado, Cobro incorrecto, Otro problema)<br>Contanos más (10 a 1000 caracteres) con contador<br>Fotos opcionales: hasta 3 de 5 MB, solo las ve nuestro equipo<br>Aviso: Podés enviar un solo reclamo por pedido y después no se puede cambiar<br>Botones Enviar reclamo y Cancelar"/]
+    F --> G{"¿Qué elige?"}
+    G -- Cancelar --> FIN4([Fin])
+    G -- "Enviar reclamo" --> H["Botón: Enviando...<br>POST /pedidos/cliente/id/reclamo<br>JSON o multipart (parte reclamo con motivo y descripción, hasta 3 partes fotos)<br>Rol CLIENTE, sin X-Comercio-Id"]
+    H --> I{"¿Datos válidos?"}
+    I -- No --> I1[/"HTTP 400 por campo:<br>Elegí el motivo del reclamo / Contanos qué pasó / Contanos qué pasó en entre 10 y 1000 caracteres"/]
+    I1 --> Z
+    I -- Sí --> J{"¿Fotos válidas?<br>(antes de abrir la transacción)"}
+    J -- No --> J1[/"HTTP 400: Podés adjuntar hasta 3 fotos / Una de las fotos está vacía /<br>Una foto pesa X y el máximo es Y / No pudimos leer una de las fotos /<br>Solo se aceptan fotos en formato JPG, PNG o WebP / Las fotos HEIC de iPhone no se pueden adjuntar"/]
+    J1 --> Z
+    J -- Sí --> K{"¿El pedido es del Cliente?"}
+    K -- No --> K1[/"HTTP 404: Pedido no encontrado"/]
+    K1 --> Z
+    K -- Sí --> L
+    subgraph TX [Transacción BD - crear reclamo]
+        L["Bloqueos: usuario (LOCK IN SHARE MODE), pedido (FOR UPDATE), pago (FOR UPDATE)<br>SELECT reclamo por pedido (lectura común, sin bloqueo)"] --> M{"¿Ya existe un reclamo<br>(uq_reclamo_pedido)?"}
+        M -- Sí --> M1[/"HTTP 409: Ya hiciste un reclamo por este pedido."/]
+        M -- No --> N{"¿Estado ENTREGADO?"}
+        N -- No --> N1[/"HTTP 409: Solo podés reclamar un pedido que ya te entregaron."/]
+        N -- Sí --> O{"¿Pago aprobado y confirmado?"}
+        O -- No --> O1[/"HTTP 409: Este pedido no tiene un pago aprobado, así que no se puede reclamar."/]
+        O -- Sí --> P{"¿Tiene fecha_entrega?"}
+        P -- No --> P1[/"HTTP 409: No pudimos verificar la fecha de entrega de este pedido, así que no se puede reclamar."/]
+        P -- Sí --> Q{"¿Pasaron más de 7 días corridos desde fecha_entrega?<br>(reclamo.plazo-dias)"}
+        Q -- Sí --> Q1[/"HTTP 409: Pasaron los 7 días para reclamar este pedido."/]
+        Q -- No --> R{"¿Motivo NO_RECIBI_PEDIDO en un pedido de retiro?"}
+        R -- Sí --> R1[/"HTTP 400 en el campo motivo: Este pedido era para retirar en el local. Elegí otro motivo."/]
+        R -- No --> S["INSERT reclamo: estado PENDIENTE, fecha_creacion = ahora"]
+        S --> T["INSERT reclamo_foto y reclamo_foto_archivo (LONGBLOB), una por foto, orden 1 a 3"]
+    end
+    M1 --> Z
+    N1 --> Z
+    O1 --> Z
+    P1 --> Z
+    Q1 --> Z
+    R1 --> Z
+    T --> U["El pedido no cambia de estado<br>No se retiene ni se frena ningún reembolso ni liquidación<br>No se emite ningún aviso (el Administrador lo ve en el contador del panel)"]
+    U --> V[/"HTTP 201: Recibimos tu reclamo<br>Toast: Reclamo enviado<br>Pantalla: Recibimos tu reclamo. Lo vamos a revisar y te avisamos con el resultado, acá y por email.<br>Botón Volver al pedido"/]
+    V --> FIN5([Fin])
+    Z[/"Errores por campo bajo cada campo (se enfoca el primero)<br>El resto en el aviso del formulario<br>Si no hay mensaje: No pudimos enviar tu reclamo. Probá de nuevo."/] --> FIN6([Fin])

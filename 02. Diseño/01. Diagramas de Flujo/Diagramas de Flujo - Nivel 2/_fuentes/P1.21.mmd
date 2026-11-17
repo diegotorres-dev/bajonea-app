@@ -1,0 +1,35 @@
+flowchart TD
+    A([Inicio]) --> B["El Empleado está trabajando en un comercio<br>(contexto Empleado, comercio-dashboard.html)"]
+    B --> C{"¿Cómo se detecta<br>que ya no tiene acceso?"}
+    C -- "Una request con X-Comercio-Id" --> C1["Error 404: Comercio no encontrado<br>(COMERCIO_NO_DISPONIBLE)"]
+    C -- "Sondeo cada 15 segundos" --> C2["GET /empleados/mis-comercios<br>y el comercio ya no aparece en la lista"]
+    C1 --> D
+    C2 --> D
+    D{"¿Ya se mostró el aviso<br>en esta carga de pantalla?"}
+    D -- Sí --> FIN1([Fin])
+    D -- No --> E["Limpia el contexto y olvida el último<br>comercio usado si era ese"]
+    E --> F["GET /empleados/comercios/id/acceso<br>(rol CLIENTE; espera máxima)"]
+    F --> G{"¿Respondió a tiempo?"}
+    G -- No --> N["Causa genérica"]
+    G -- Sí --> G1["SELECT empleado_comercio<br>WHERE empleado_id AND comercio_id"]
+    G1 --> G2{"¿Existe la relación?"}
+    G2 -- No --> G3[/"Error 404: Comercio no encontrado<br>(COMERCIO_NO_DISPONIBLE)"/]
+    G3 --> N
+    G2 -- Sí --> H["HTTP 200 Acceso obtenido correctamente:<br>estado, motivoBaja (BAJA_DUENO, RENUNCIA o nulo),<br>comercioAccesible"]
+    H --> I{"¿Qué causa tiene?"}
+    I -- "INACTIVO por BAJA_DUENO" --> J1[/"Ya no tenés acceso a este comercio<br>comercio te dio de baja del equipo.<br>Si creés que fue un error, comunicate con el dueño."/]
+    I -- "INACTIVO por RENUNCIA" --> J2[/"Dejaste de trabajar en este comercio<br>Ya no sos parte del equipo de comercio.<br>Si querés volver, el dueño te tiene que invitar de nuevo."/]
+    I -- "ACTIVO y comercioAccesible = false" --> J3[/"Este comercio no está disponible<br>comercio no está disponible en este momento.<br>Intentá más tarde o comunicate con el dueño."/]
+    I -- "Otro caso" --> N
+    N --> J4[/"Ya no tenés acceso a este comercio<br>Ya no tenés acceso a este comercio."/]
+    J1 --> K
+    J2 --> K
+    J3 --> K
+    J4 --> K
+    K[/"Segunda línea en todos los casos:<br>Elegí con qué cuenta seguir.<br>Hoja bloqueante con el botón Entendido<br>(Escape y clic fuera también continúan)"/]
+    K --> L["Redirige a seleccionar-contexto.html"]
+    L --> M{"¿Le quedan comercios<br>con relación ACTIVO?"}
+    M -- Sí --> M1["Muestra el selector de cuenta (ver P1.16)"]
+    M1 --> FIN2([Fin])
+    M -- No --> M2["Entra como Cliente a index.html"]
+    M2 --> FIN3([Fin])

@@ -1,0 +1,38 @@
+flowchart TD
+    A([Inicio]) --> B["Job CierreTurnoJob cada 60 s, fase 1: cierres<br>(turno.cierre.job-habilitado, falso en pruebas)<br>Si estuvo caído se pone al día dentro de 3 días (turno.cierre.dias-atras); los cierres más viejos se pierden"]
+    B --> C{"¿Job habilitado?"}
+    C -- No --> FIN1([Fin])
+    C -- Sí --> D
+    subgraph TXR [Transacción BD de solo lectura - candidatos]
+        D["SELECT comercios en APTO_VENTA, SUSPENDIDO o CERRADO_TEMPORALMENTE<br>(APROBADO, INACTIVO, PENDIENTE y RECHAZADO no generan cierre)"] --> E["SELECT horarios vigentes de esos comercios (sin franjas no hay turnos)<br>SELECT último fin de cierre_turno por comercio en los últimos 5 días"]
+        E --> F{"¿El comercio tiene un cierre en los últimos 5 días?"}
+        F -- No --> F1["Candidato: solo su último turno terminado, si terminó antes de ahora menos 30 minutos"]
+        F -- Sí --> F2["Candidatos: todos los turnos con fin entre el mayor de (último fin, ahora menos 3 días) y ahora menos 30 minutos, de viejo a nuevo"]
+    end
+    F1 --> G
+    F2 --> G
+    G{"¿Quedan candidatos?"}
+    G -- No --> Z["Pasa a la fase 2: envío del resumen (ver P7.07)"]
+    Z --> FIN2([Fin])
+    G -- Sí --> H
+    subgraph TX [Transacción BD REPEATABLE READ - un cierre de un comercio y turno]
+        H{"¿Hay un pedido PENDIENTE_PAGO creado antes del fin del turno?"} -- Sí --> H1{"¿Ahora es menor que el fin + 120 minutos?"}
+        H1 -- Sí --> H2["DIFERIDO: no cierra todavía"]
+        H1 -- No --> H3["Aviso en el log y cierra igual"]
+        H -- No --> I
+        H3 --> I
+        I["Calcula las cifras con el mismo código del panel (ver P4.11):<br>pedidos del turno en EN_PREPARACION, EN_CAMINO, LISTO_PARA_RETIRAR, ENTREGADO y NO_RETIRADO<br>vendido, comisión, neto = vendido menos comisión, cantidad de pedidos<br>pendientes = todos los PENDIENTE_CONFIRMACION_COMERCIO del comercio, de cualquier turno"] --> J{"¿APTO_VENTA, o con pedidos, o con pendientes?"}
+        J -- Sí --> J1["INSERT cierre_turno con email_estado = PENDIENTE"]
+        J -- No --> J2["INSERT cierre_turno con email_estado = OMITIDO, motivo Comercio no operativo sin pedidos ni pendientes"]
+        J1 --> K{"¿Ya existía (UNIQUE comercio, turno_fecha, horario)?"}
+        J2 --> K
+        K -- Sí --> K1["YA_CERRADO"]
+        K -- No --> K2["CERRADO"]
+    end
+    H2 --> L["Termina con ese comercio en esta corrida (mantiene el orden de sus turnos)"]
+    K1 --> M["Sigue con el turno siguiente del comercio"]
+    K2 --> M
+    M --> G
+    L --> G
+    H -.-> X["Si falla un cierre: error en el log, termina con ese comercio y reintenta al minuto<br>La única escritura es el INSERT (las claves foráneas toman bloqueos compartidos sobre comercio y horario)<br>No hay pantalla de cierre de turno"]
+    X --> FIN3([Fin])
